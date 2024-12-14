@@ -10,7 +10,8 @@ import contestRoutes from './routes/contests.js';
 import tradeRoutes from './routes/trades.js';
 import statsRoutes from './routes/stats.js';
 import testRoutes from './routes/test-routes.js';
-import logger from './config/logger.js';
+import logger from '../utils/logger.js';
+import { setupSwagger } from './config/swagger.js';
 
 const app = express();
 const port = process.env.API_PORT || 3003;
@@ -22,24 +23,41 @@ console.log('Starting API server with config:', {
   dbHost: process.env.DB_HOST,
   dbName: process.env.DB_NAME,
   dbUser: process.env.DB_USER,
-  hasDbPassword: !!process.env.DB_PASSWORD
+  hasDbPassword: !!process.env.DB_PASS
 });
+
+// Set up Swagger before other routes
+setupSwagger(app);
 
 // Configure middleware
 configureMiddleware(app);
 
-/* Custom Routes */
-// v2 routes:
+// Default route
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Welcome to the DegenDuel API!</h1><br>
+    <a href="/api/health">Server Health</a><br>
+    <a href="/api/test">Test Route</a><br>
+    <a href="/api/users">Users Route</a><br>
+    <a href="/api/auth">Auth Route</a><br>
+    <a href="/api/contests">Contests Route</a><br>
+    <a href="/api/trades">Trades Route</a><br>
+    <a href="/api/stats">Stats Route</a><br>
+    <p>Enjoy DegenDuel!</p><br>
+  `);
+});
+
+// Core API routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/trades', tradeRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/test', testRoutes);
-// v1 routes:
-////app.use('/api/leaderboard', leaderboardRoutes);
 
-// Health check route
+// Generic test route
+app.use('/api/test', testRoutes);
+
+// Server health check route
 app.get('/api/health', async (req, res) => {
   try {
     // Test PostgreSQL connection
@@ -66,7 +84,6 @@ app.get('/api/health', async (req, res) => {
 // Error handling
 app.use(errorHandler);
 
-// Initialize databases and start server
 // Initialize databases and start server
 async function startServer() {
   try {
