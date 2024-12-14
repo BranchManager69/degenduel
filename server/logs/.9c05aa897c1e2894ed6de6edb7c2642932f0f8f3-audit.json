@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/websites/degenduel/server/logs/.9c05aa897c1e2894ed6de6edb7c2642932f0f8f3-audit.json",
+    "files": [
+        {
+            "date": 1734141363611,
+            "name": "/home/websites/degenduel/server/logs/frontend-2024-12-13.log",
+            "hash": "529832fadb2b693a19242203f02ad5673432fbe9e012be2b58fe950a4692e0f3"
+        }
+    ],
+    "hashType": "sha256"
+}

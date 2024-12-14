@@ -1,6 +1,6 @@
 import express from 'express';
 import { pool } from '../config/pg-database.js';
-import logger from '../config/logger.js';
+import logger from '../../utils/logger.js';
 
 const router = express.Router();
 

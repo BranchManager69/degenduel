@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import logger from './logger.js';
+import logger from '../../utils/logger.js';
 import fs from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
