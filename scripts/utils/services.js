@@ -1,5 +1,5 @@
 import { execute } from './git.js';
-import { logApi, logFrontend } from '../../server/config/logger.js';
+import { logApi, logFrontend } from './utils/logger.js';
 
 export async function stopServices(targetBranch) {
   execute('pm2 stop all');

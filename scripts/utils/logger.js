@@ -1,4 +1,14 @@
-import { logApi, logFrontend } from '../../server/config/logger.js';
+/**
+ * Lightweight logging utility for development scripts.
+ * Uses console-based logging with styled output.
+ * 
+ * Not to be confused with the logger in utils/logger.js
+ * which is used for backend services.
+ * 
+ * This logger is used for development scripts.
+ */
+
+import { logApi, logFrontend } from './utils/logger.js';
 import colors from 'colors';
 
 export function logSuccess(message, details = {}) {

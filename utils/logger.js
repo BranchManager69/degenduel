@@ -1,8 +1,18 @@
+/**
+ * Production-grade logging utility for backend services.
+ * Utilizes winston for log rotation and error handling.
+ * 
+ * Not to be confused with the logger in scripts/utils/logger.js
+ * which is used for development scripts.
+ * 
+ * This logger is used for backend services.
+ */
+
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import { join } from 'path';
-import { createLogDirectory, getLogFormat } from '../server/utils/logging.js';
-import paths from '../server/config/paths.js';
+import { createLogDirectory, getLogFormat } from './logging.js';
+import paths from '../config/paths.js';
 
 // Ensure log directory exists with correct permissions
 createLogDirectory(paths.logs);
