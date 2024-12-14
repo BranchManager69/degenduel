@@ -1,4 +1,4 @@
-# DegenDuel Project Blueprint
+# DegenDuel ⚔️ Project Blueprint
 
 ## 1. Project Overview
 **Purpose**:  
