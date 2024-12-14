@@ -2,3 +2,4 @@
 * Fresh start; goal is to split existing monorepo (oyoops/beta-branch-bet) into separate frontend and backend
 * Created new repos: oyoops/degenduel (backend) and oyoops/degenduel-fe (frontend)
 * Created new repos: oyoops/degenduel-server (backend) and oyoops/degenduel-fe (frontend)
+* Created new branch: feat-db-integration
