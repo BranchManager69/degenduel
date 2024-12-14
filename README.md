@@ -1,10 +1,11 @@
 <h1 align="center">
   ⚔️ DEGENDUEL ⚔️ 
 </h1>
-<h3 align="center">
+<h2 align="center">
   Server Backend
-</h3>
+</h2>
 <p align="center"><i>Looking for the <a href="https://github.com/oyoops/degenduel-fe">Client Frontend</a> repo?</i></p>
+</br>
 
 <div align="center">
   <p>
