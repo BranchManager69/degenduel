@@ -108,6 +108,7 @@ router.get('/:wallet', async (req, res) => {
  * /api/users:
  *   post:
  *     summary: Create a new user
+ *     tags: [Users]
  *     requestBody:
  *       required: true
  *       content:
@@ -213,6 +214,7 @@ router.put('/:wallet', async (req, res) => {
  * /api/users/{wallet}/settings:
  *   put:
  *     summary: Update a user's settings
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: wallet
