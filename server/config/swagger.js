@@ -22,9 +22,9 @@ const swaggerDefinition = {
 // Options for Swagger docs
 const swaggerOptions = {
     swaggerDefinition,
-    apis: ['./../routes/*.js'], // Adjust relative path to the route files
+    apis: ['server/routes/*.js'], // Adjust relative path to the route files
   };
-  
+
 // Initialize Swagger JSDoc
 const swaggerSpec = swaggerJsDoc(swaggerOptions);
 
