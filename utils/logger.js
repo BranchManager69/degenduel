@@ -1,8 +1,8 @@
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import { join } from 'path';
-import { createLogDirectory, getLogFormat } from '../utils/logging.js';
-import paths from './paths.js';
+import { createLogDirectory, getLogFormat } from '../server/utils/logging.js';
+import paths from '../server/config/paths.js';
 
 // Ensure log directory exists with correct permissions
 createLogDirectory(paths.logs);
