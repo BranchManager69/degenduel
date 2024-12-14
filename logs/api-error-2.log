@@ -423,3 +423,348 @@ ReferenceError: Cannot access 'app' before initialization
     at file:///home/websites/degenduel/server/index.js:17:14
     at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: path is not defined
+    at file:///home/websites/degenduel/server/config/swagger.js:25:12
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
