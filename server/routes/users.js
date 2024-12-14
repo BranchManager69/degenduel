@@ -8,7 +8,7 @@ const router = express.Router();
  * @swagger
  * tags:
  *   name: Users
- *   description: API endpoints for user management and profiles
+ *   description: API endpoints for managing user accounts and profiles
  */
 
 /**
