@@ -16,6 +16,7 @@ const router = express.Router();
  * /api/users:
  *   get:
  *     summary: Get all users
+ *     tags: [Users]
  *     responses:
  *       200:
  *         description: A list of users.
@@ -62,6 +63,7 @@ router.get('/', async (req, res) => {
  * /api/users/{wallet}:
  *   get:
  *     summary: Get a user by wallet address
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: wallet
@@ -158,6 +160,7 @@ router.post('/', async (req, res) => {
  * /api/users/{wallet}:
  *   put:
  *     summary: Update a user profile
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: wallet
