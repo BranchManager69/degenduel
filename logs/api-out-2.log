@@ -232,3 +232,14 @@
 2024-12-13 23:53:36 -05:00: Swagger docs available at /api-docs
 2024-12-13 23:53:36 -05:00: Initializing databases...
 2024-12-13 23:53:36 -05:00: API server started and listening on port 3003
+2024-12-14 00:42:04 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2024-12-14 00:42:04 -05:00: Swagger docs available at /api-docs
+2024-12-14 00:42:04 -05:00: Initializing databases...
+2024-12-14 00:42:04 -05:00: API server started and listening on port 3003
