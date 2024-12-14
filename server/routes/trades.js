@@ -4,7 +4,79 @@ import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
-// Submit trade for contest
+/**
+ * @swagger
+ * tags:
+ *   name: Trades
+ *   description: API endpoints for managing contest trades
+ */
+
+/**
+ * @swagger
+ * /api/trades/{contestId}:
+ *   post:
+ *     summary: Submit a new trade for a contest
+ *     tags: [Trades]
+ *     parameters:
+ *       - in: path
+ *         name: contestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the contest
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - wallet
+ *               - token_id
+ *               - type
+ *               - amount
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: User's wallet address
+ *               token_id:
+ *                 type: string
+ *                 description: ID of the token being traded
+ *               type:
+ *                 type: string
+ *                 enum: [buy, sell]
+ *                 description: Type of trade
+ *               amount:
+ *                 type: number
+ *                 description: Amount of tokens to trade
+ *     responses:
+ *       200:
+ *         description: Trade submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 contest_id:
+ *                   type: string
+ *                 wallet_address:
+ *                   type: string
+ *                 token_id:
+ *                   type: string
+ *                 trade_type:
+ *                   type: string
+ *                 amount:
+ *                   type: number
+ *                 created_at:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Contest not active or invalid trade parameters
+ *       500:
+ *         description: Server error
+ */
 router.post('/:contestId', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -43,7 +115,59 @@ router.post('/:contestId', async (req, res) => {
   }
 });
 
-// Get user's trades for contest
+/**
+ * @swagger
+ * /api/trades/{contestId}:
+ *   get:
+ *     summary: Get user's trades for a specific contest
+ *     tags: [Trades]
+ *     parameters:
+ *       - in: path
+ *         name: contestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the contest
+ *       - in: query
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *     responses:
+ *       200:
+ *         description: List of user's trades for the contest
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   contest_id:
+ *                     type: string
+ *                   wallet_address:
+ *                     type: string
+ *                   token_id:
+ *                     type: string
+ *                   symbol:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   trade_type:
+ *                     type: string
+ *                   amount:
+ *                     type: number
+ *                   token_price:
+ *                     type: number
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ *       500:
+ *         description: Server error
+ */
 router.get('/:contestId', async (req, res) => {
   try {
     const result = await pool.query(`
