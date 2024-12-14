@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/websites/beta-branch-bet/server/logs/.30eef6dce46e07558365917f2d0e745babe040a1-audit.json",
+    "files": [
+        {
+            "date": 1733962621167,
+            "name": "/home/websites/beta-branch-bet/server/logs/frontend-2024-12-12.log",
+            "hash": "6bd8ed170d87d6f6cd76678a1e558c7604e7cfe1da293ed86132daaeb801e86f"
+        }
+    ],
+    "hashType": "sha256"
+}

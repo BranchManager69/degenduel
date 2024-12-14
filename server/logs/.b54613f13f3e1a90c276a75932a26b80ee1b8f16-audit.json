@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/websites/beta-branch-bet/server/logs/.b54613f13f3e1a90c276a75932a26b80ee1b8f16-audit.json",
+    "files": [
+        {
+            "date": 1733962621163,
+            "name": "/home/websites/beta-branch-bet/server/logs/api-2024-12-12.log",
+            "hash": "717ef4615d958b4e4f576e16a85c249f1d0f4243bc11257a03d03f441507c6bf"
+        },
+        {
+            "date": 1734068348993,
+            "name": "/home/websites/beta-branch-bet/server/logs/api-2024-12-13.log",
+            "hash": "fd18a83d1a7aa515e5c84339f9624f8dc0a9bbf11a3878db5770d0b60f84f26b"
+        }
+    ],
+    "hashType": "sha256"
+}
