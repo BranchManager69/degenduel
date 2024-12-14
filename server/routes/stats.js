@@ -4,7 +4,49 @@ import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
-// Get user's overall stats
+/**
+ * @swagger
+ * tags:
+ *   name: Statistics
+ *   description: API endpoints for user statistics and achievements
+ */
+
+/**
+ * @swagger
+ * /api/stats/{wallet}:
+ *   get:
+ *     summary: Get user's overall statistics
+ *     tags: [Statistics]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *     responses:
+ *       200:
+ *         description: User's statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 wallet_address:
+ *                   type: string
+ *                 nickname:
+ *                   type: string
+ *                 total_contests:
+ *                   type: integer
+ *                   description: Total number of contests participated in
+ *                 total_wins:
+ *                   type: integer
+ *                   description: Total number of contests won
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 router.get('/:wallet', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -35,7 +77,60 @@ router.get('/:wallet', async (req, res) => {
     }
 });
   
-// Get user's trading history
+/**
+ * @swagger
+ * /api/stats/{wallet}/history:
+ *   get:
+ *     summary: Get user's trading history
+ *     tags: [Statistics]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of records to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of records to skip
+ *     responses:
+ *       200:
+ *         description: User's contest history
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   contest_id:
+ *                     type: string
+ *                   contest_name:
+ *                     type: string
+ *                   start_time:
+ *                     type: string
+ *                     format: date-time
+ *                   end_time:
+ *                     type: string
+ *                     format: date-time
+ *                   initial_balance:
+ *                     type: number
+ *                   current_balance:
+ *                     type: number
+ *                   rank:
+ *                     type: integer
+ *       500:
+ *         description: Server error
+ */
 router.get('/:wallet/history', async (req, res) => {
 try {
       const result = await pool.query(`
@@ -62,7 +157,42 @@ try {
     }
 });
 
-// Get user's achievements
+/**
+ * @swagger
+ * /api/stats/{wallet}/achievements:
+ *   get:
+ *     summary: Get user's achievements
+ *     tags: [Statistics]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *     responses:
+ *       200:
+ *         description: User's achievements
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   achievement:
+ *                     type: string
+ *                     enum: [first_contest, three_contests, five_contests]
+ *                   achieved_at:
+ *                     type: string
+ *                     format: date-time
+ *                   display_name:
+ *                     type: string
+ *                     description: Human-readable achievement name
+ *                     example: "First Contest Entry"
+ *       500:
+ *         description: Server error
+ */
 router.get('/:wallet/achievements', async (req, res) => {
     try {
       const result = await pool.query(`

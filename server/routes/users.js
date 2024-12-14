@@ -6,6 +6,13 @@ const router = express.Router();
 
 /**
  * @swagger
+ * tags:
+ *   name: Users
+ *   description: API endpoints for user management and profiles
+ */
+
+/**
+ * @swagger
  * /api/users:
  *   get:
  *     summary: Get all users

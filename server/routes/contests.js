@@ -4,7 +4,52 @@ import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
-// Get active contests
+/**
+ * @swagger
+ * tags:
+ *   name: Contests
+ *   description: API endpoints for managing trading contests
+ */
+
+/**
+ * @swagger
+ * /api/contests/active:
+ *   get:
+ *     summary: Get all active contests
+ *     tags: [Contests]
+ *     parameters:
+ *       - in: query
+ *         name: wallet
+ *         schema:
+ *           type: string
+ *         description: User's wallet address to check participation status
+ *     responses:
+ *       200:
+ *         description: List of active contests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   start_time:
+ *                     type: string
+ *                     format: date-time
+ *                   end_time:
+ *                     type: string
+ *                     format: date-time
+ *                   participant_count:
+ *                     type: integer
+ *                   is_participating:
+ *                     type: boolean
+ *       500:
+ *         description: Server error
+ */
 router.get('/active', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -27,7 +72,48 @@ router.get('/active', async (req, res) => {
   }
 });
 
-// Get contest details
+/**
+ * @swagger
+ * /api/contests/{contestId}:
+ *   get:
+ *     summary: Get contest details by ID
+ *     tags: [Contests]
+ *     parameters:
+ *       - in: path
+ *         name: contestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the contest
+ *     responses:
+ *       200:
+ *         description: Contest details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 start_time:
+ *                   type: string
+ *                   format: date-time
+ *                 end_time:
+ *                   type: string
+ *                   format: date-time
+ *                 participant_count:
+ *                   type: integer
+ *                 allowed_tokens:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       404:
+ *         description: Contest not found
+ *       500:
+ *         description: Server error
+ */
 router.get('/:contestId', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -52,7 +138,37 @@ router.get('/:contestId', async (req, res) => {
   }
 });
 
-// Enter contest
+/**
+ * @swagger
+ * /api/contests/{contestId}/enter:
+ *   post:
+ *     summary: Enter a contest
+ *     tags: [Contests]
+ *     parameters:
+ *       - in: path
+ *         name: contestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the contest to enter
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - wallet
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: User's wallet address
+ *     responses:
+ *       200:
+ *         description: Successfully entered contest
+ *       500:
+ *         description: Server error or contest already started
+ */
 router.post('/:contestId/enter', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -86,7 +202,44 @@ router.post('/:contestId/enter', async (req, res) => {
   }
 });
 
-// Get contest leaderboard
+/**
+ * @swagger
+ * /api/contests/{contestId}/leaderboard:
+ *   get:
+ *     summary: Get contest leaderboard
+ *     tags: [Contests]
+ *     parameters:
+ *       - in: path
+ *         name: contestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the contest
+ *     responses:
+ *       200:
+ *         description: Contest leaderboard
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   wallet_address:
+ *                     type: string
+ *                   nickname:
+ *                     type: string
+ *                   total_pl:
+ *                     type: number
+ *                   tokens_traded:
+ *                     type: integer
+ *                   best_trade:
+ *                     type: number
+ *                   rank:
+ *                     type: integer
+ *       500:
+ *         description: Server error
+ */
 router.get('/:contestId/leaderboard', async (req, res) => {
   try {
     const result = await pool.query(`
