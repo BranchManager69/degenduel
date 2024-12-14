@@ -1,4 +1,4 @@
-import { pool } from '../server/config/pg-database.js';
+import { pool } from '../config/pg-database.js';
 import logger from '../utils/logger.js';
 
 export async function seedData() {

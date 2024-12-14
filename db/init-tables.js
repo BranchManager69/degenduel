@@ -1,4 +1,4 @@
-import { pool } from '../server/config/pg-database.js';
+import { pool } from '../config/pg-database.js';
 import { readFile } from 'fs/promises';
 import logger from '../utils/logger.js';
 import { seedData } from './seed.js';
