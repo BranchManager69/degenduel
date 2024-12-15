@@ -3,13 +3,14 @@ import { initDatabase, closeDatabase } from './config/database.js';  // SQLite f
 import { pool, initPgDatabase, closePgDatabase } from './config/pg-database.js';
 import { configureMiddleware } from './config/middleware.js';
 import { errorHandler } from './utils/errorHandler.js';
-import leaderboardRoutes from './routes/leaderboard.js';
 import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
 import contestRoutes from './routes/contests.js';
 import tradeRoutes from './routes/trades.js';
 import statsRoutes from './routes/stats.js';
-import tokenRoutes from './routes/tokens.js';
+import tokenRoutes from './routes/tokens.js'; // new
+import tokenBucketRoutes from './routes/tokenBuckets.js'; // new
+import leaderboardRoutes from './routes/leaderboard.js'; // almost forgot this one!
 import testRoutes from './routes/test-routes.js';
 import logger from './utils/logger.js'; // fixed
 import { setupSwagger } from './config/swagger.js';
@@ -55,6 +56,7 @@ app.use('/api/contests', contestRoutes);
 app.use('/api/trades', tradeRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/tokens', tokenRoutes); // new
+app.use('/api/token-buckets', tokenBucketRoutes); // new
 app.use('/api/leaderboard', leaderboardRoutes); // almost forgot this one!
 
 // Generic test route
