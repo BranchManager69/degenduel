@@ -4,14 +4,18 @@ import fs from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/*
 // In production, use absolute path from environment
 const PROJECT_ROOT = process.env.PROJECT_ROOT || 
   (process.env.NODE_ENV === 'production' 
-    ? '/home/websites/beta-branch-bet'
+    ? '/home/websites/degenduel'
     : join(__dirname, '..', '..'));
+const SERVER_ROOT = join(PROJECT_ROOT, 'server'); 
+*/
+const PROJECT_ROOT = join(__dirname, '..');
+console.log('PROJECT_ROOT', PROJECT_ROOT);
 
-const SERVER_ROOT = join(PROJECT_ROOT, 'server');
-
+/*
 // Ensure all paths are absolute
 const paths = {
   root: PROJECT_ROOT,
@@ -20,6 +24,10 @@ const paths = {
   data: process.env.DATA_DIR || join(SERVER_ROOT, 'data'),
   public: join(PROJECT_ROOT, 'public'),
   dist: join(PROJECT_ROOT, 'dist')
+};
+*/
+const paths = {
+  logs: join(PROJECT_ROOT, 'logs')
 };
 
 // Create directories if they don't exist
