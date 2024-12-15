@@ -260,4 +260,257 @@ router.put('/:wallet/settings', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/top:
+ *   get:
+ *     summary: Get top users by rank score
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Limit the number of top users returned
+ *     responses:
+ *       200:
+ *         description: List of top users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   wallet_address:
+ *                     type: string
+ *                   nickname:
+ *                     type: string
+ *                   rank_score:
+ *                     type: integer
+ *                   total_earnings:
+ *                     type: string
+ *       500:
+ *         description: Server error
+ */
+router.get('/top', async (req, res) => {
+  const { limit = 10 } = req.query;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT wallet_address, nickname, rank_score, total_earnings 
+      FROM users 
+      ORDER BY rank_score DESC 
+      LIMIT $1;
+      `,
+      [limit]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    logger.error('Get top users failed:', error);
+    res.status(500).json({ error: 'Failed to fetch top users.' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/{wallet}/rank/reset:
+ *   post:
+ *     summary: Reset user rank score
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Wallet address of the user
+ *     responses:
+ *       200:
+ *         description: User rank score reset successfully
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/:wallet/rank/reset', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      UPDATE users 
+      SET rank_score = 1000 
+      WHERE wallet_address = $1 
+      RETURNING *;
+      `,
+      [req.params.wallet]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    res.json({ success: true, user: result.rows[0] });
+  } catch (error) {
+    logger.error('Reset rank score failed:', error);
+    res.status(500).json({ error: 'Failed to reset rank score.' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/earnings:
+ *   get:
+ *     summary: Get users by earnings range
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: min
+ *         schema:
+ *           type: string
+ *           default: 0
+ *         description: Minimum earnings
+ *       - in: query
+ *         name: max
+ *         schema:
+ *           type: string
+ *           default: 1000000
+ *         description: Maximum earnings
+ *     responses:
+ *       200:
+ *         description: List of users within the earnings range
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   wallet_address:
+ *                     type: string
+ *                   nickname:
+ *                     type: string
+ *                   total_earnings:
+ *                     type: string
+ *       500:
+ *         description: Server error
+ */
+router.get('/earnings', async (req, res) => {
+  const { min = '0', max = '1000000' } = req.query;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT wallet_address, nickname, total_earnings 
+      FROM users 
+      WHERE total_earnings BETWEEN $1 AND $2;
+      `,
+      [min, max]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    logger.error('Get users by earnings range failed:', error);
+    res.status(500).json({ error: 'Failed to fetch users by earnings range.' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/{wallet}/deactivate:
+ *   patch:
+ *     summary: Deactivate a user account
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Wallet address of the user
+ *     responses:
+ *       200:
+ *         description: User deactivated successfully
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.patch('/:wallet/deactivate', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      UPDATE users 
+      SET is_active = false 
+      WHERE wallet_address = $1 
+      RETURNING *;
+      `,
+      [req.params.wallet]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    res.json({ success: true, user: result.rows[0] });
+  } catch (error) {
+    logger.error('Deactivate user failed:', error);
+    res.status(500).json({ error: 'Failed to deactivate user.' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/{wallet}/rank/recalculate:
+ *   post:
+ *     summary: Recalculate user rank score
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Wallet address of the user
+ *     responses:
+ *       200:
+ *         description: User rank score recalculated successfully
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/:wallet/rank/recalculate', async (req, res) => {
+  try {
+    const userCheck = await pool.query(
+      `SELECT * FROM users WHERE wallet_address = $1`,
+      [req.params.wallet]
+    );
+
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const newRankScore = Math.max(
+      1000,
+      Math.floor(userCheck.rows[0].total_wins * 50 + userCheck.rows[0].total_earnings / 1000)
+    );
+
+    const result = await pool.query(
+      `
+      UPDATE users 
+      SET rank_score = $2 
+      WHERE wallet_address = $1 
+      RETURNING *;
+      `,
+      [req.params.wallet, newRankScore]
+    );
+
+    res.json({ success: true, user: result.rows[0] });
+  } catch (error) {
+    logger.error('Recalculate rank failed:', error);
+    res.status(500).json({ error: 'Failed to recalculate rank.' });
+  }
+});
+
 export default router;

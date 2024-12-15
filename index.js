@@ -11,7 +11,10 @@ import statsRoutes from './routes/stats.js';
 import tokenRoutes from './routes/tokens.js'; // new
 import tokenBucketRoutes from './routes/tokenBuckets.js'; // new
 import leaderboardRoutes from './routes/leaderboard.js'; // almost forgot this one!
-import testRoutes from './routes/test-routes.js';
+//import testRoutesV1 from './routes/test-routes.js'; // OLD v1
+//import testRoutesV2 from './routes/test-utils.js'; // MID v2
+//import testRoutesV3 from './routes/test-utilities.js'; // NEW NOW OLD v3
+import testRoutes from './routes/test-routes.js'; // NEWEST v4
 import logger from './utils/logger.js'; // fixed
 import { setupSwagger } from './config/swagger.js';
 
@@ -37,15 +40,7 @@ configureMiddleware(app);
 // Default route
 app.get('/', (req, res) => {
   res.send(`
-    <h1>Welcome to the DegenDuel API!</h1><br>
-    <a href="/api/health">Server Health</a><br>
-    <a href="/api/test">Test Route</a><br>
-    <a href="/api/users">Users Route</a><br>
-    <a href="/api/auth">Auth Route</a><br>
-    <a href="/api/contests">Contests Route</a><br>
-    <a href="/api/trades">Trades Route</a><br>
-    <a href="/api/stats">Stats Route</a><br>
-    <p>Enjoy DegenDuel!</p><br>
+    Welcome to the DegenDuel API!
   `);
 });
 
@@ -58,11 +53,13 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/tokens', tokenRoutes); // new
 app.use('/api/token-buckets', tokenBucketRoutes); // new
 app.use('/api/leaderboard', leaderboardRoutes); // almost forgot this one!
+// Test routes
+//app.use('/api/test-routes', testRoutesV1); // OLD; tests v1
+//app.use('/api/test-utils', testRoutesV2); // MID; tests v2
+//app.use('/api/test-utilities', testRoutesV3); // NEW NOW OLD; tests v3
+app.use('/api/test', testRoutes); // NEWEST; tests v4
 
-// Generic test route
-app.use('/api/test', testRoutes);
-
-// Server health check route
+// Server health route
 app.get('/api/health', async (req, res) => {
   try {
     // Test PostgreSQL connection
