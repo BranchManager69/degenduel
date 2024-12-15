@@ -262,7 +262,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
-END;
+END
 $$ LANGUAGE plpgsql;
 
 -- Add total weight constraint for portfolios
@@ -278,7 +278,7 @@ BEGIN
         RAISE EXCEPTION 'Total portfolio weight cannot exceed 100%%';
     END IF;
     RETURN NEW;
-END;
+END
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER check_portfolio_weight
@@ -300,7 +300,7 @@ BEGIN
         NEW.status := 'completed';
     END IF;
     RETURN NEW;
-END;
+END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION validate_portfolio_buckets()
@@ -321,7 +321,7 @@ BEGIN
     ELSE
         RAISE EXCEPTION 'Token not in allowed buckets for this contest';
     END IF;
-END;
+END
 $$ LANGUAGE plpgsql;
 
 -- Function to get a contest by its code
@@ -329,7 +329,7 @@ CREATE OR REPLACE FUNCTION get_contest_by_code(p_contest_code TEXT)
 RETURNS contests AS $$
 BEGIN
     RETURN (SELECT * FROM contests WHERE contest_code = p_contest_code);
-END;
+END
 $$ LANGUAGE plpgsql;
 
 -- Function to check if a contest code is valid
@@ -337,7 +337,7 @@ CREATE OR REPLACE FUNCTION is_valid_contest_code(p_contest_code TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
     RETURN EXISTS (SELECT 1 FROM contests WHERE contest_code = p_contest_code);
-END;
+END
 $$ LANGUAGE plpgsql;
 
 -- Function to get a bucket by its code
@@ -345,7 +345,7 @@ CREATE OR REPLACE FUNCTION get_bucket_by_code(p_bucket_code TEXT)
 RETURNS token_buckets AS $$
 BEGIN
     RETURN (SELECT * FROM token_buckets WHERE bucket_code = p_bucket_code);
-END;
+END
 $$ LANGUAGE plpgsql;
 
 -- Function to refresh the leaderboard
@@ -354,7 +354,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY contest_leaderboard;
     RETURN NULL;
-END;
+END
 $$ LANGUAGE plpgsql;
 
 -- Add trigger for leaderboard refresh
@@ -403,7 +403,6 @@ LEFT JOIN contests c ON cp.contest_id = c.id
 GROUP BY u.wallet_address, u.nickname;
 
 -- Create materialized view for contest leaderboard
-\echo 'About to create materialized view'
 CREATE MATERIALIZED VIEW contest_leaderboard AS
 SELECT 
     cp.contest_id,
@@ -417,12 +416,9 @@ FROM contest_participants cp
 JOIN users u ON cp.wallet_address = u.wallet_address
 JOIN contests c ON cp.contest_id = c.id
 WITH DATA;
-\echo 'Materialized view created'
 
 -- Create indexes for the materialized view
-\echo 'About to create indexes'
 CREATE UNIQUE INDEX ON contest_leaderboard (contest_id, wallet_address);
 CREATE INDEX idx_contest_leaderboard_balance ON contest_leaderboard(current_balance DESC);
 -- Create index on token_buckets
 CREATE INDEX idx_token_buckets_code ON token_buckets(bucket_code);
-\echo 'Indexes created'
