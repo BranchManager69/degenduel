@@ -83,7 +83,12 @@ router.post('/:contestId', async (req, res) => {
     await client.query('BEGIN');
     
     const { wallet, token_id, type, amount } = req.body;
-    
+
+    // Validate trade parameters
+    if (!wallet || !token_id || !type || !amount) {
+      return res.status(400).json({ error: 'Missing required trade parameters.' });
+    }
+
     // Verify contest is active
     const contestCheck = await client.query(`
       SELECT * FROM contests 
@@ -93,9 +98,9 @@ router.post('/:contestId', async (req, res) => {
     `, [req.params.contestId]);
     
     if (contestCheck.rows.length === 0) {
-      throw new Error('Contest not active');
+      throw new Error('Contest not active.');
     }
-    
+
     // Record trade
     const result = await client.query(`
       INSERT INTO contest_token_performance 
@@ -169,19 +174,27 @@ router.post('/:contestId', async (req, res) => {
  *         description: Server error
  */
 router.get('/:contestId', async (req, res) => {
+  const { contestId } = req.params;
+  const { wallet } = req.query;
+
   try {
+    if (!wallet) {
+      return res.status(400).json({ error: 'Wallet address is required.' });
+    }
+
     const result = await pool.query(`
       SELECT 
         ctp.*,
         t.symbol,
         t.name,
-        tp.price as token_price
+        tp.price AS token_price
       FROM contest_token_performance ctp
       JOIN tokens t ON ctp.token_id = t.id
       LEFT JOIN token_prices tp ON t.id = tp.token_id
       WHERE contest_id = $1 AND wallet_address = $2
       ORDER BY ctp.created_at DESC
-    `, [req.params.contestId, req.query.wallet]);
+    `, [contestId, wallet]);
+
     res.json(result.rows);
   } catch (error) {
     logger.error('Get trades failed:', error);

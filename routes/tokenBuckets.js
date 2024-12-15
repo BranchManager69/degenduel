@@ -7,9 +7,8 @@ const router = express.Router();
  * @swagger
  * tags:
  *   name: Token Buckets
- *   description: API endpoints for token management
+ *   description: API endpoints for managing token buckets
  */
-
 
 /**
  * @swagger
@@ -181,6 +180,105 @@ router.get('/', async (_req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch token buckets.' });
   }
+});
+
+/**
+ * @swagger
+ * /api/token-buckets/{bucketId}:
+ *   patch:
+ *     summary: Update token bucket details
+ *     tags: [Token Buckets]
+ *     parameters:
+ *       - in: path
+ *         name: bucketId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the token bucket to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: New name for the bucket
+ *               description:
+ *                 type: string
+ *                 description: New description for the bucket
+ *     responses:
+ *       200:
+ *         description: Token bucket updated successfully
+ *       404:
+ *         description: Token bucket not found
+ *       500:
+ *         description: Server error
+ */
+router.patch('/:bucketId', async (req, res) => {
+    const { bucketId } = req.params;
+    const { name, description } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE token_buckets SET 
+                name = COALESCE($1, name), 
+                description = COALESCE($2, description) 
+            WHERE id = $3 RETURNING *;`,
+            [name, description, bucketId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Token bucket not found.' });
+        }
+
+        res.json({ success: true, updated: result.rows[0] });
+    } catch (error) {
+        console.error('Error updating token bucket:', error);
+        res.status(500).json({ error: 'Failed to update token bucket.' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/token-buckets/{bucketId}:
+ *   delete:
+ *     summary: Delete token bucket
+ *     tags: [Token Buckets]
+ *     parameters:
+ *       - in: path
+ *         name: bucketId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the token bucket to delete
+ *     responses:
+ *       200:
+ *         description: Token bucket deleted successfully
+ *       404:
+ *         description: Token bucket not found
+ *       500:
+ *         description: Server error
+ */
+router.delete('/:bucketId', async (req, res) => {
+    const { bucketId } = req.params;
+
+    try {
+        const result = await pool.query(
+            `DELETE FROM token_buckets WHERE id = $1 RETURNING *;`,
+            [bucketId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Token bucket not found.' });
+        }
+
+        res.json({ success: true, deleted: result.rows[0] });
+    } catch (error) {
+        console.error('Error deleting token bucket:', error);
+        res.status(500).json({ error: 'Failed to delete token bucket.' });
+    }
 });
 
 export default router;
