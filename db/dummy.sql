@@ -10,7 +10,7 @@ TRUNCATE TABLE users CASCADE;
 
 -- Insert Users
 INSERT INTO users (wallet_address, nickname, created_at, total_contests, total_wins) VALUES
-('BranchManager111111111111111111111111', 'branchManager', NOW() - INTERVAL '90 days', 33, 32),
+('BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', 'branchManager', NOW() - INTERVAL '90 days', 33, 32),
 ('GayGuy2222222222222222222222222222222', 'gayGuy', NOW() - INTERVAL '30 days', 10, 4),
 ('GigaChad33333333333333333333333333333', 'gigaChad', NOW() - INTERVAL '15 days', 3, 1),
 ('BasedDev44444444444444444444444444444', 'basedDev', NOW() - INTERVAL '5 days', 7, 3),
@@ -99,8 +99,8 @@ INSERT INTO contests (name, description, start_time, end_time, entry_fee, prize_
 
 -- Insert Participants to Contests
 INSERT INTO contest_participants (contest_id, wallet_address) VALUES
-(1, 'BranchManager111111111111111111111111'),
-(2, 'BranchManager111111111111111111111111'),
+(1, 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp'),
+(2, 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp'),
 (2, 'GayGuy2222222222222222222222222222222'),
 (2, 'GigaChad33333333333333333333333333333'),
 (2, 'BasedDev44444444444444444444444444444'),
@@ -150,9 +150,9 @@ INSERT INTO token_bucket_memberships (bucket_id, token_id) VALUES
 -- Insert Contest Token Prices
 INSERT INTO contest_token_prices (contest_id, wallet_address, token_id, amount, price) VALUES
 ((SELECT id FROM contests WHERE name = 'Ancient History Contest'), 
- 'BranchManager111111111111111111111111', (SELECT id FROM tokens WHERE symbol = 'BONKFA'), 1000, 0.05),
+ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', (SELECT id FROM tokens WHERE symbol = 'BONKFA'), 1000, 0.05),
 ((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
- 'BranchManager111111111111111111111111', (SELECT id FROM tokens WHERE symbol = 'GOAT'), 10, 0.51),
+ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', (SELECT id FROM tokens WHERE symbol = 'GOAT'), 10, 0.51),
 ((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
  'GayGuy2222222222222222222222222222222', (SELECT id FROM tokens WHERE symbol = 'USDC'), 500, 1.00),
 ((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
@@ -161,9 +161,9 @@ INSERT INTO contest_token_prices (contest_id, wallet_address, token_id, amount, 
 -- Insert Contest Token Performance
 INSERT INTO contest_token_performance (contest_id, wallet_address, token_id, profit_loss) VALUES
 ((SELECT id FROM contests WHERE name = 'Ancient History Contest'), 
- 'BranchManager111111111111111111111111', (SELECT id FROM tokens WHERE symbol = 'BONKFA'), 4.20),
+ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', (SELECT id FROM tokens WHERE symbol = 'BONKFA'), 4.20),
 ((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
- 'BranchManager111111111111111111111111', (SELECT id FROM tokens WHERE symbol = 'GOAT'), 0.69),
+ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', (SELECT id FROM tokens WHERE symbol = 'GOAT'), 0.69),
 ((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
  'GayGuy2222222222222222222222222222222', (SELECT id FROM tokens WHERE symbol = 'USDC'), 0.05),
 ((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
