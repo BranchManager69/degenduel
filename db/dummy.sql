@@ -18,7 +18,6 @@ INSERT INTO users (wallet_address, nickname, created_at, total_contests, total_w
 
 -- Insert Tokens
 INSERT INTO tokens (address, symbol, name, decimals) VALUES
----- Real:
 ('So11111111111111111111111111111111111111111', 'SOL', 'Solana', 9),
 ('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', 'USDC', 'USD Coin', 6),
 ('DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', 'BONK', 'Bonk', 5),
@@ -36,8 +35,7 @@ INSERT INTO tokens (address, symbol, name, decimals) VALUES
 ('ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY', 'MOODENG', 'Moo Deng', 8),
 ('2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump', 'Pnut', 'Peanut the Squirrel', 8),
 ('CNvitvFnSM5ed6K28RUNSaAjqqz5tX1rA5HgaBN9pump', 'FRED', 'First Convicted RACCON', 8),
-('CBdCxKo9QavR9hfShgpEBG3zekorAeD7W1jfq2o3pump', 'LUCE', 'Official Mascot of the Holy Year', 8);
----- Fake:
+('CBdCxKo9QavR9hfShgpEBG3zekorAeD7W1jfq2o3pump', 'LUCE', 'Official Mascot of the Holy Year', 8),
 ('fAkEg23YS8cfNCBbZx7GTxQWvJmzAiDwTeDxxxGOAT', 'FLOAT', 'Floatseus Faximus', 8),
 ('fAkEa8LiCf2MVoYZNp9LWJbxJq3N12xxAnimals', 'LOVEDUX', 'Duck Lovers Anonymous', 8),
 ('fAkEsUiCFbcB2LqCS62EuU2x1K2NWbJJo1xxxAnimals', 'PLATRICK', 'Platrick the Trans Platypus', 8),
@@ -55,7 +53,6 @@ INSERT INTO tokens (address, symbol, name, decimals) VALUES
 ('fAkEYKMJoLpWNxBCR9XZ12xxWashedUp', 'WHAT', 'That One Coin You Forgot About', 8);
 
 -- Insert Token Prices
----- Real:
 INSERT INTO token_prices (token_id, price) VALUES
 ((SELECT id FROM tokens WHERE symbol = 'SOL'), 223.50),
 ((SELECT id FROM tokens WHERE symbol = 'USDC'), 1.00),
@@ -67,7 +64,7 @@ INSERT INTO token_prices (token_id, price) VALUES
 ((SELECT id FROM tokens WHERE symbol = 'GOAT'), 0.85),
 ((SELECT id FROM tokens WHERE symbol = 'ai16z'), 0.94),
 ((SELECT id FROM tokens WHERE symbol = 'GME'), 0.03),
-((SELECT id FROM tokens WHERE symbol = 'BONKFA', 0.02),
+((SELECT id FROM tokens WHERE symbol = 'BONKFA'), 0.02),
 ((SELECT id FROM tokens WHERE symbol = 'PRINT'), 0.01),
 ((SELECT id FROM tokens WHERE symbol = 'SIGMA'), 0.75),
 ((SELECT id FROM tokens WHERE symbol = 'CHILLGUY'), 0.41),
@@ -75,22 +72,21 @@ INSERT INTO token_prices (token_id, price) VALUES
 ((SELECT id FROM tokens WHERE symbol = 'Pnut'), 1.02),
 ((SELECT id FROM tokens WHERE symbol = 'FRED'), 0.21),
 ((SELECT id FROM tokens WHERE symbol = 'LUCE'), 0.55),
----- Fake:
-((SELECT id FROM tokens WHERE symbol = 'FLOAT', 0.01),
-((SELECT id FROM tokens WHERE symbol = 'LOVEDUX', 0.02),
-((SELECT id FROM tokens WHERE symbol = 'PLATRICK', 0.03),
-((SELECT id FROM tokens WHERE symbol = 'BLUECOIN', 0.04),
-((SELECT id FROM tokens WHERE symbol = 'PIGSKIN', 0.05),
-((SELECT id FROM tokens WHERE symbol = 'ILLBUCKS', 0.06),
-((SELECT id FROM tokens WHERE symbol = 'KABAL', 0.07),
-((SELECT id FROM tokens WHERE symbol = 'MYLEG', 0.08),
-((SELECT id FROM tokens WHERE symbol = 'ZOOM', 0.09),
-((SELECT id FROM tokens WHERE symbol = 'LOKAP', 0.10),
-((SELECT id FROM tokens WHERE symbol = 'MEMARS', 0.11),
-((SELECT id FROM tokens WHERE symbol = 'fUSD', 0.12),
-((SELECT id FROM tokens WHERE symbol = 'DIKDOK', 0.13),
-((SELECT id FROM tokens WHERE symbol = 'iBUYuTIL', 0.14),
-((SELECT id FROM tokens WHERE symbol = 'WHAT', 0.15);
+((SELECT id FROM tokens WHERE symbol = 'FLOAT'), 0.01),
+((SELECT id FROM tokens WHERE symbol = 'LOVEDUX'), 0.02),
+((SELECT id FROM tokens WHERE symbol = 'PLATRICK'), 0.03),
+((SELECT id FROM tokens WHERE symbol = 'BLUECOIN'), 0.04),
+((SELECT id FROM tokens WHERE symbol = 'PIGSKIN'), 0.05),
+((SELECT id FROM tokens WHERE symbol = 'ILLBUCKS'), 0.06),
+((SELECT id FROM tokens WHERE symbol = 'KABAL'), 0.07),
+((SELECT id FROM tokens WHERE symbol = 'MYLEG'), 0.08),
+((SELECT id FROM tokens WHERE symbol = 'ZOOM'), 0.09),
+((SELECT id FROM tokens WHERE symbol = 'LOKAP'), 0.10),
+((SELECT id FROM tokens WHERE symbol = 'MEMARS'), 0.11),
+((SELECT id FROM tokens WHERE symbol = 'fUSD'), 0.12),
+((SELECT id FROM tokens WHERE symbol = 'DIKDOK'), 0.13),
+((SELECT id FROM tokens WHERE symbol = 'iBUYuTIL'), 0.14),
+((SELECT id FROM tokens WHERE symbol = 'WHAT'), 0.15);
 
 -- Insert Contests
 INSERT INTO contests (name, description, start_time, end_time, entry_fee, prize_pool, status, settings) VALUES
@@ -103,10 +99,10 @@ INSERT INTO contests (name, description, start_time, end_time, entry_fee, prize_
 
 -- Insert Participants to Contests
 INSERT INTO contest_participants (contest_id, wallet_address) VALUES
+(1, 'BranchManager111111111111111111111111'),
 (2, 'BranchManager111111111111111111111111'),
 (2, 'GayGuy2222222222222222222222222222222'),
 (2, 'GigaChad33333333333333333333333333333'),
-(1, 'BasedDev44444444444444444444444444444'),
 (2, 'BasedDev44444444444444444444444444444'),
 (2, 'ExitLiq555555555555555555555555555555');
 
@@ -128,14 +124,12 @@ INSERT INTO token_buckets (name, description) VALUES
 
 -- Link Tokens to Buckets
 INSERT INTO token_bucket_memberships (bucket_id, token_id) VALUES
----- Real:
 ((SELECT id FROM token_buckets WHERE name = 'AI'), (SELECT id FROM tokens WHERE symbol = 'GOAT')),
 ((SELECT id FROM token_buckets WHERE name = 'Blue Chips'), (SELECT id FROM tokens WHERE symbol = 'SOL')),
 ((SELECT id FROM token_buckets WHERE name = 'Stablecoins'), (SELECT id FROM tokens WHERE symbol = 'USDC')),
 ((SELECT id FROM token_buckets WHERE name = 'Animals'), (SELECT id FROM tokens WHERE symbol = 'Pnut')),
 ((SELECT id FROM token_buckets WHERE name = 'Branch Bags'), (SELECT id FROM tokens WHERE symbol = 'BONKFA')),
-((SELECT id FROM token_buckets WHERE name = 'Utility'), (SELECT id FROM tokens WHERE symbol = 'PRINT'));
----- Fake:
+((SELECT id FROM token_buckets WHERE name = 'Utility'), (SELECT id FROM tokens WHERE symbol = 'PRINT')),
 ((SELECT id FROM token_buckets WHERE name = 'Animals'), (SELECT id FROM tokens WHERE symbol = 'PLATRICK')),
 ((SELECT id FROM token_buckets WHERE name = 'Blue Chips'), (SELECT id FROM tokens WHERE symbol = 'BLUECOIN')),
 ((SELECT id FROM token_buckets WHERE name = 'Branch Bags'), (SELECT id FROM tokens WHERE symbol = 'PIGSKIN')),
@@ -146,5 +140,32 @@ INSERT INTO token_bucket_memberships (bucket_id, token_id) VALUES
 ((SELECT id FROM token_buckets WHERE name = 'Meme Tokens'), (SELECT id FROM tokens WHERE symbol = 'MEMARS')),
 ((SELECT id FROM token_buckets WHERE name = 'Stablecoins'), (SELECT id FROM tokens WHERE symbol = 'fUSD')),
 ((SELECT id FROM token_buckets WHERE name = 'Tik-Tok'), (SELECT id FROM tokens WHERE symbol = 'DIKDOK')),
-((SELECT id FROM token_buckets WHERE name = 'Utility'), (SELECT id FROM tokens WHERE symbol = 'IBUYUTIL')),
+((SELECT id FROM token_buckets WHERE name = 'Utility'), (SELECT id FROM tokens WHERE symbol = 'iBUYuTIL')),
 ((SELECT id FROM token_buckets WHERE name = 'Washed-Up'), (SELECT id FROM tokens WHERE symbol = 'WHAT'));
+
+
+-- HAVENT TESTED THESE BELOW THIS LINE YET.
+-- PLEASE MAKE YOUR BEST JUDGMENT ABOUT WHETHER TO COMMENT THEM OUT OR NOT:
+
+-- Insert Contest Token Prices
+INSERT INTO contest_token_prices (contest_id, wallet_address, token_id, amount, price) VALUES
+((SELECT id FROM contests WHERE name = 'Ancient History Contest'), 
+ 'BranchManager111111111111111111111111', (SELECT id FROM tokens WHERE symbol = 'BONKFA'), 1000, 0.05),
+((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
+ 'BranchManager111111111111111111111111', (SELECT id FROM tokens WHERE symbol = 'GOAT'), 10, 0.51),
+((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
+ 'GayGuy2222222222222222222222222222222', (SELECT id FROM tokens WHERE symbol = 'USDC'), 500, 1.00),
+((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
+ 'GigaChad33333333333333333333333333333', (SELECT id FROM tokens WHERE symbol = 'BONK'), 1000, 0.01);
+
+-- Insert Contest Token Performance
+INSERT INTO contest_token_performance (contest_id, wallet_address, token_id, profit_loss) VALUES
+((SELECT id FROM contests WHERE name = 'Ancient History Contest'), 
+ 'BranchManager111111111111111111111111', (SELECT id FROM tokens WHERE symbol = 'BONKFA'), 4.20),
+((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
+ 'BranchManager111111111111111111111111', (SELECT id FROM tokens WHERE symbol = 'GOAT'), 0.69),
+((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
+ 'GayGuy2222222222222222222222222222222', (SELECT id FROM tokens WHERE symbol = 'USDC'), 0.05),
+((SELECT id FROM contests WHERE name = 'Bah Humbug Contest'), 
+ 'GigaChad33333333333333333333333333333', (SELECT id FROM tokens WHERE symbol = 'BONK'), -0.02);
+

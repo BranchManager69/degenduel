@@ -24,15 +24,21 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Get all tokens
-router.get('/', async (_req, res) => {
+// Get all tokens (optional: filter by is_active)
+router.get('/', async (req, res) => {
+  const { isActive } = req.query;
   try {
-    const result = await pool.query('SELECT * FROM tokens ORDER BY created_at DESC');
-    res.json(result.rows);
+      const query = isActive
+          ? `SELECT * FROM tokens WHERE is_active = $1`
+          : `SELECT * FROM tokens`;
+      const params = isActive ? [isActive === 'true'] : [];
+      const result = await pool.query(query, params);
+      res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch tokens.' });
+      res.status(500).json({ error: 'Failed to fetch tokens.' });
   }
 });
+
 
 // Get token by ID
 router.get('/:tokenId', async (req, res) => {
