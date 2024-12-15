@@ -11,7 +11,31 @@ const router = express.Router();
  */
 
 
-// Create a new token bucket
+/**
+ * @swagger
+ * /api/token-buckets:
+ *   post:
+ *     summary: Create a new token bucket
+ *     tags: [Token Buckets]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Bucket name
+ *               description:
+ *                 type: string
+ *                 description: Bucket description
+ *     responses:
+ *       201:
+ *         description: Token bucket created successfully
+ *       500:
+ *         description: Failed to create token bucket
+ */
 router.post('/', async (req, res) => {
   const { name, description } = req.body;
   try {
@@ -25,7 +49,39 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Add tokens to a bucket
+/**
+ * @swagger
+ * /api/token-buckets/{bucketId}/tokens:
+ *   post:
+ *     summary: Add tokens to a bucket
+ *     tags: [Token Buckets]
+ *     parameters:
+ *       - in: path
+ *         name: bucketId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the bucket to add tokens
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               tokenIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: List of token IDs to add
+ *     responses:
+ *       200:
+ *         description: Tokens added successfully
+ *       400:
+ *         description: No valid tokens provided
+ *       500:
+ *         description: Failed to add tokens to bucket
+ */
 router.post('/:bucketId/tokens', async (req, res) => {
     const { bucketId } = req.params;
     const { tokenIds } = req.body;
@@ -52,7 +108,33 @@ router.post('/:bucketId/tokens', async (req, res) => {
     }
 });
 
-// Remove a token from a bucket
+/**
+ * @swagger
+ * /api/token-buckets/{bucketId}/tokens/{tokenId}:
+ *   delete:
+ *     summary: Remove a token from a bucket
+ *     tags: [Token Buckets]
+ *     parameters:
+ *       - in: path
+ *         name: bucketId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the bucket
+ *       - in: path
+ *         name: tokenId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the token to remove
+ *     responses:
+ *       200:
+ *         description: Token removed successfully
+ *       404:
+ *         description: Token not found in bucket
+ *       500:
+ *         description: Failed to remove token from bucket
+ */
 router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
     try {
         const { bucketId, tokenId } = req.params;
@@ -70,7 +152,18 @@ router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
     }
 });
 
-// Get all token buckets and their active tokens
+/**
+ * @swagger
+ * /api/token-buckets:
+ *   get:
+ *     summary: Get all token buckets and their tokens
+ *     tags: [Token Buckets]
+ *     responses:
+ *       200:
+ *         description: List of token buckets with tokens
+ *       500:
+ *         description: Failed to fetch token buckets
+ */
 router.get('/', async (_req, res) => {
   try {
     const result = await pool.query(`
