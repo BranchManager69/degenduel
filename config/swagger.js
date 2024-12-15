@@ -14,9 +14,14 @@ const swaggerDefinition = {
     },
     servers: [
       {
-        url: process.env.NODE_ENV === 'production' ? 'https://degenduel.me' : 'http://localhost:3003',
+          url: 'https://degenduel.me',
+          description: 'Production server'
       },
-    ],
+      {
+          url: 'http://localhost:3003',
+          description: 'Development server'
+      }
+  ],
   };
 
 // Options for Swagger docs
