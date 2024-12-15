@@ -10,7 +10,42 @@ const router = express.Router();
  *   description: API endpoints for token management
  */
 
-// Add a new token
+
+/**
+ * @swagger
+ * /api/tokens:
+ *   post:
+ *     summary: Add a new token
+ *     tags: [Tokens]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               address:
+ *                 type: string
+ *                 description: Token address
+ *                 example: "randomToken12345"
+ *               symbol:
+ *                 type: string
+ *                 description: Token symbol
+ *                 example: "RND"
+ *               name:
+ *                 type: string
+ *                 description: Token name
+ *                 example: "RandomToken"
+ *               decimals:
+ *                 type: integer
+ *                 description: Decimal places of the token
+ *                 example: 8
+ *     responses:
+ *       201:
+ *         description: Token added successfully
+ *       500:
+ *         description: Failed to add token
+ */
 router.post('/', async (req, res) => {
   const { address, symbol, name, decimals } = req.body;
   try {
@@ -24,7 +59,24 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Get all tokens (optional: filter by is_active)
+/**
+ * @swagger
+ * /api/tokens:
+ *   get:
+ *     summary: Get all tokens
+ *     tags: [Tokens]
+ *     parameters:
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter tokens by active status
+ *     responses:
+ *       200:
+ *         description: List of tokens
+ *       500:
+ *         description: Failed to fetch tokens
+ */
 router.get('/', async (req, res) => {
   const { isActive } = req.query;
   try {
@@ -40,7 +92,27 @@ router.get('/', async (req, res) => {
 });
 
 
-// Get token by ID
+/**
+ * @swagger
+ * /api/tokens/{tokenId}:
+ *   get:
+ *     summary: Get a token by ID
+ *     tags: [Tokens]
+ *     parameters:
+ *       - in: path
+ *         name: tokenId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the token to fetch
+ *     responses:
+ *       200:
+ *         description: Token details
+ *       404:
+ *         description: Token not found
+ *       500:
+ *         description: Failed to fetch token
+ */
 router.get('/:tokenId', async (req, res) => {
   const { tokenId } = req.params;
   try {
@@ -54,7 +126,46 @@ router.get('/:tokenId', async (req, res) => {
   }
 });
 
-// Update token
+/**
+ * @swagger
+ * /api/tokens/{tokenId}:
+ *   put:
+ *     summary: Update a token
+ *     tags: [Tokens]
+ *     parameters:
+ *       - in: path
+ *         name: tokenId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the token to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               symbol:
+ *                 type: string
+ *                 description: Token symbol
+ *               name:
+ *                 type: string
+ *                 description: Token name
+ *               decimals:
+ *                 type: integer
+ *                 description: Decimal places of the token
+ *               is_active:
+ *                 type: boolean
+ *                 description: Active status of the token
+ *     responses:
+ *       200:
+ *         description: Token updated successfully
+ *       404:
+ *         description: Token not found
+ *       500:
+ *         description: Failed to update token
+ */
 router.put('/:tokenId', async (req, res) => {
   const { tokenId } = req.params;
   const { symbol, name, decimals, is_active } = req.body;
@@ -77,7 +188,37 @@ router.put('/:tokenId', async (req, res) => {
   }
 });
 
-// Enable/Disable token
+/**
+ * @swagger
+ * /api/tokens/{tokenId}/status:
+ *   patch:
+ *     summary: Enable or disable a token
+ *     tags: [Tokens]
+ *     parameters:
+ *       - in: path
+ *         name: tokenId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the token to update status
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               is_active:
+ *                 type: boolean
+ *                 description: Active status of the token
+ *     responses:
+ *       200:
+ *         description: Token status updated successfully
+ *       404:
+ *         description: Token not found
+ *       500:
+ *         description: Failed to update token status
+ */
 router.patch('/:tokenId/status', async (req, res) => {
   const { tokenId } = req.params;
   const { is_active } = req.body;
