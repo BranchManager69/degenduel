@@ -13,12 +13,11 @@ export const pool = new pg.Pool({
   port: parseInt(process.env.DB_PORT || '5432'),
 });
 
-// Debug listeners
 pool.on('connect', () => logger.info('PostgreSQL connected successfully'));
 pool.on('error', (err) => logger.error('PostgreSQL connection error:', err));
 
 /**
- * Initialize the PostgreSQL database
+ * Initialize new PostgreSQL database and seed tables
  */
 export async function initPgDatabase() {
   try {

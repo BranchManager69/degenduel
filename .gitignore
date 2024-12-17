@@ -1,3 +1,14 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment files
 .env
 .DS_Store
+
+# Database
+/db/
+/db/backup/
+/db/autogenerate_backups.sh
+
+# Documentation scripts
+/docs/generate_project_tree.sh

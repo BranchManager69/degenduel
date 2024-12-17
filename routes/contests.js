@@ -126,12 +126,12 @@ const validatePortfolio = async (client, portfolio, contestId) => {
     );
   }
 
-  if (portfolio.length > 10) {
+  if (portfolio.length > 5) {
     throw new ContestError(
       'Too many tokens in portfolio', 
       'EXCESS_TOKENS',
       { 
-        maximum: 10, 
+        maximum: 5, 
         received: portfolio.length,
         tokens: portfolio.map(p => p.symbol)
       }
@@ -164,14 +164,14 @@ const validatePortfolio = async (client, portfolio, contestId) => {
 
   // Individual weight validation
   for (const { symbol, weight } of portfolio) {
-    if (weight < 5 || weight > 50) {
+    if (weight <= 0 || weight > 100) {
       throw new ContestError(
         'Invalid token weight', 
         'INVALID_TOKEN_WEIGHT',
         {
           token: symbol,
           weight,
-          limits: { min: 5, max: 50 }
+          limits: { min: 0, max: 100 }
         }
       );
     }
@@ -197,7 +197,7 @@ const validatePortfolio = async (client, portfolio, contestId) => {
     WITH contest_buckets AS (
       SELECT DISTINCT tb.id
       FROM token_buckets tb
-      JOIN contest_token_buckets ctb ON tb.id = ctb.bucket_id
+      JOIN contest_token_buckets ctb ON tb.id = ctb.bucket_id  -- Changed from bucket to bucket_id
       WHERE ctb.contest_id = $1
     )
     SELECT 
@@ -388,18 +388,43 @@ router.get('/', async (req, res) => {
     if (wallet) {
       walletFilter = `
         EXISTS (
-          SELECT 1 FROM contest_participants cp
-          WHERE cp.contest_id = c.id AND cp.wallet_address = $${values.length + 1}
+          SELECT 1 FROM contest_participants cp2
+          WHERE cp2.contest_id = c.id AND cp2.wallet_address = $${values.length + 1}
         ) AS is_participating
       `;
       values.push(wallet);
+
+      // Add debug logging
+      console.log('Checking participation for:', {
+        wallet,
+        query: `
+          SELECT c.id, c.name, 
+          EXISTS (
+            SELECT 1 FROM contest_participants cp2
+            WHERE cp2.contest_id = c.id AND cp2.wallet_address = $1
+          ) as is_participating
+          FROM contests c
+          WHERE c.id = 2
+        `,
+        values: [wallet]
+      });
+
+      // Run a separate query to verify participation
+      const verifyQuery = await pool.query(`
+        SELECT EXISTS (
+          SELECT 1 FROM contest_participants
+          WHERE contest_id = $1 AND wallet_address = $2
+        )
+      `, [2, wallet]);
+
+      console.log('Verification result:', verifyQuery.rows[0]);
     }
 
     const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
     const query = `
       SELECT c.*, 
-             COUNT(cp.wallet_address) AS participant_count,
+             COUNT(DISTINCT cp.wallet_address) AS participant_count,
              ${walletFilter}
       FROM contests c
       LEFT JOIN contest_participants cp ON c.id = cp.contest_id
@@ -409,6 +434,12 @@ router.get('/', async (req, res) => {
     `;
 
     const result = await pool.query(query, values);
+    
+    // Log the full result for contest ID 2
+    if (wallet) {
+      console.log('Contest 2 details:', result.rows.find(r => r.id === 2));
+    }
+
     res.json(result.rows);
   } catch (error) {
     logger.error('Failed to fetch contests:', error);
@@ -1365,7 +1396,7 @@ router.patch('/:contestId', async (req, res) => {
 router.get('/:contestId/portfolio', async (req, res) => {
   const { contestId } = req.params;
   const { wallet: requestedWallet } = req.query;
-  const walletAddress = req.user?.wallet_address;
+  const walletAddress = req.user?.wallet_address;  // <--- IS THIS THE ERROR!?!?!?!?!?
 
   try {
     if (!walletAddress) {
@@ -1406,7 +1437,7 @@ router.get('/:contestId/portfolio', async (req, res) => {
         )
         SELECT 
           c.*,
-          cp.wallet_address IS NOT NULL as is_participant,
+          cp.wallet_address IS NOT NULL as is_participating,  // Changed from is_participant
           pd.tokens,
           pd.total_value,
           rd.rank,
@@ -1614,7 +1645,7 @@ router.put('/:contestId/portfolio', async (req, res) => {
       const contestResult = await client.query(`
         SELECT 
           c.*,
-          cp.wallet_address IS NOT NULL as is_participant,
+            cp.wallet_address IS NOT NULL as is_participating,
           (
             SELECT json_agg(json_build_object(
               'symbol', t.symbol,
@@ -1642,7 +1673,7 @@ router.put('/:contestId/portfolio', async (req, res) => {
       const contest = contestResult.rows[0];
 
       // Comprehensive state validation
-      if (!contest.is_participant) {
+      if (!contest.is_participating) {  // Changed from is_participant
         return res.status(403).json({
           error: 'Not entered in contest',
           details: {

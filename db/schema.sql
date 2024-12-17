@@ -147,7 +147,10 @@ ADD CONSTRAINT valid_participant_range CHECK (
 ),
 ADD CONSTRAINT valid_contest_code CHECK (
     contest_code ~ '^[A-Z0-9-]{3,20}$'
-);
+),
+ALTER TABLE contests 
+  ADD CONSTRAINT valid_status 
+  CHECK (status IN ('pending', 'active', 'in_progress', 'in-progress', 'completed', 'cancelled')); -- clean this up someday. but definitely not today.
 
 -- Create token_prices table
 CREATE TABLE IF NOT EXISTS token_prices (
@@ -231,6 +234,14 @@ CREATE TABLE IF NOT EXISTS transactions (
     processed_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT valid_balance_change CHECK (balance_after >= 0),
     CONSTRAINT valid_amount CHECK (amount != 0)
+);
+
+-- Create contest_token_buckets table
+CREATE TABLE contest_token_buckets (
+  contest_id INTEGER REFERENCES contests(id),
+  token_id INTEGER REFERENCES tokens(id),
+  bucket INTEGER NOT NULL,
+  PRIMARY KEY (contest_id, token_id)
 );
 
 -- Add columns related to transactions to contest_participants table

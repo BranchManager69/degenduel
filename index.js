@@ -1,4 +1,5 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { initDatabase, closeDatabase } from './config/database.js';  // SQLite for leaderboard
 import { pool, initPgDatabase, closePgDatabase } from './config/pg-database.js';
 import { configureMiddleware } from './config/middleware.js';
@@ -17,9 +18,13 @@ import leaderboardRoutes from './routes/leaderboard.js'; // almost forgot this o
 import testRoutes from './routes/test-routes.js'; // NEWEST v4
 import logger from './utils/logger.js'; // fixed
 import { setupSwagger } from './config/swagger.js';
+import superadminRoutes from './routes/superadmin.js';
 
 const app = express();
 const port = process.env.API_PORT || 3003;
+
+// Use cookies
+app.use(cookieParser());
 
 // Log startup configuration
 console.log('Starting API server with config:', {
@@ -58,6 +63,9 @@ app.use('/api/leaderboard', leaderboardRoutes); // almost forgot this one!
 //app.use('/api/test-utils', testRoutesV2); // MID; tests v2
 //app.use('/api/test-utilities', testRoutesV3); // NEW NOW OLD; tests v3
 app.use('/api/test', testRoutes); // NEWEST; tests v4
+
+// Superadmin routes
+app.use('/api/superadmin', superadminRoutes);
 
 // Server health route
 app.get('/api/health', async (req, res) => {
