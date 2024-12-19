@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import { initDatabase, closeDatabase } from './config/database.js';  // SQLite for leaderboard
 import { pool, initPgDatabase, closePgDatabase } from './config/pg-database.js';
 import { configureMiddleware } from './config/middleware.js';
+////////import { authDebugMiddleware } from './middleware/debugMiddleware.js';
 import { errorHandler } from './utils/errorHandler.js';
 import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
@@ -17,8 +18,10 @@ import leaderboardRoutes from './routes/leaderboard.js'; // almost forgot this o
 //import testRoutesV3 from './routes/test-utilities.js'; // NEW NOW OLD v3
 import testRoutes from './routes/test-routes.js'; // NEWEST v4
 import logger from './utils/logger.js'; // fixed
-import { setupSwagger } from './config/swagger.js';
+import setupSwagger from './config/swagger.js'; // ES6 default import
 import superadminRoutes from './routes/superadmin.js';
+import chalk from 'chalk';
+import gradient from 'gradient-string';
 
 const app = express();
 const port = process.env.API_PORT || 3003;
@@ -94,35 +97,45 @@ app.get('/api/health', async (req, res) => {
 // Error handling
 app.use(errorHandler);
 
-// Initialize databases and start server
+// Add the startup sequence right before your startServer() function
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Visual startup sequence
+async function displayStartupSequence() {
+  console.log('\n  ✨ DEGENDUEL API INITIALIZING ✨\n');
+}
+
+// Modify your existing startServer function
 async function startServer() {
-  try {
-    console.log('Initializing databases...');
-    
-    await Promise.all([
-      initDatabase().catch(err => {
-        console.error('SQLite initialization failed:', err);
-        throw err;
-      }),
-      initPgDatabase().catch(err => {
-        console.error('PostgreSQL initialization failed:', err);
-        throw err;
-      })
-    ]);
-    
-    const server = app.listen(port, '0.0.0.0', () => {
-      console.log(`API server started and listening on port ${port}`);
-    });
+    try {
+        console.log(`\n      🎮  Starting DegenDuel API...`);
+        
+        await Promise.all([
+            initDatabase().catch(err => {
+                console.error('SQLite initialization failed:', err);
+                throw err;
+            }),
+            initPgDatabase().catch(err => {
+                console.error('PostgreSQL initialization failed:', err);
+                throw err;
+            })
+        ]);
+
+        await displayStartupSequence();
+        
+        const server = app.listen(port, '0.0.0.0', () => {
+            console.log(`    🎮  DegenDuel API ready on port ${port}`);
+        });
 
     server.on('error', (error) => {
       console.error('Server error:', error);
       process.exit(1);
     });
 
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
+    } catch (error) {
+        console.error(`    ⛔  Failed to start server:`, error);
+        process.exit(1);
+    }
 }
 
 // Handle graceful shutdown
