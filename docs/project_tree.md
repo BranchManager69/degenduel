@@ -1,5 +1,5 @@
 # DegenDuel Repository - Project Tree
-Generated at: 2024-12-17 05:00:02
+Generated at: 2024-12-18 20:00:00
 
 ```
 /home/websites/degenduel
@@ -7,12 +7,13 @@ Generated at: 2024-12-17 05:00:02
 |-- controllers
 |-- data
 |-- db
-|   `-- backups
-|       |-- functions
-|       |-- indexes
-|       |-- schema
-|       |-- triggers
-|       `-- views
+|   |-- backups
+|   |   |-- functions
+|   |   |-- indexes
+|   |   |-- schema
+|   |   |-- triggers
+|   |   `-- views
+|   `-- schema_backups
 |-- docs
 |   `-- _archive
 |-- middleware
@@ -20,11 +21,14 @@ Generated at: 2024-12-17 05:00:02
 |-- models
 |-- routes
 |-- scripts
+|   |-- archive
 |   `-- utils
 |-- tests
+|   `-- results
+|       `-- json
 `-- utils
 
-21 directories
+25 directories
 ```
 
 > Notes:
