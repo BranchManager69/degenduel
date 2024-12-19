@@ -1,0 +1,303 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PROD")
+}
+generator client {
+  provider = "prisma-client-js"
+}
+model contest_participants {
+  contest_id                                                           Int
+  wallet_address                                                       String
+  initial_balance                                                      Decimal?      @default(1000000) @db.Decimal(20, 0)
+  current_balance                                                      Decimal?      @default(1000000) @db.Decimal(20, 0)
+  rank                                                                 Int?
+  joined_at                                                            DateTime?     @default(now()) @db.Timestamptz(6)
+  entry_transaction_id                                                 Int?
+  entry_time                                                           DateTime?     @default(now()) @db.Timestamptz(6)
+  final_rank                                                           Int?
+  prize_amount                                                         Decimal?      @db.Decimal(20, 0)
+  prize_paid_at                                                        DateTime?     @db.Timestamptz(6)
+  prize_transaction_id                                                 Int?
+  contests                                                             contests      @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  transactions_contest_participants_entry_transaction_idTotransactions transactions? @relation("contest_participants_entry_transaction_idTotransactions", fields: [entry_transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  transactions_contest_participants_prize_transaction_idTotransactions transactions? @relation("contest_participants_prize_transaction_idTotransactions", fields: [prize_transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                                                                users         @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([contest_id, wallet_address])
+  @@index([joined_at], map: "idx_contest_participants_joined")
+  @@index([wallet_address], map: "idx_contest_participants_wallet")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model contest_portfolios {
+  contest_id     Int
+  wallet_address String
+  token_id       Int
+  weight         Int
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  contests       contests  @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens         tokens    @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([contest_id, wallet_address, token_id])
+  @@index([contest_id], map: "idx_contest_portfolios_contest")
+  @@index([contest_id, wallet_address], map: "idx_contest_portfolios_lookup")
+  @@index([wallet_address], map: "idx_contest_portfolios_wallet")
+}
+
+model contest_templates {
+  id                  Int       @id @default(autoincrement())
+  name                String
+  description         String?
+  duration_minutes    Int?
+  entry_fee           Decimal?  @default(0) @db.Decimal
+  max_participants    Int?      @default(2)
+  bucket_requirements Json?
+  scoring_rules       Json?
+  is_active           Boolean?  @default(true)
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model contest_token_buckets {
+  contest_id Int
+  token_id   Int
+  bucket_id  Int
+  contests   contests @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens     tokens   @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([contest_id, token_id, bucket_id])
+}
+
+model contest_token_performance {
+  contest_id     Int
+  wallet_address String
+  token_id       Int
+  profit_loss    Decimal? @default(0) @db.Decimal(20, 8)
+  timestamp      DateTime @default(now()) @db.Timestamptz(6)
+  contests       contests @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens         tokens   @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([contest_id, wallet_address, token_id, timestamp])
+}
+
+model contest_token_prices {
+  contest_id     Int
+  wallet_address String
+  token_id       Int
+  amount         Decimal? @default(0) @db.Decimal(20, 0)
+  price          Decimal  @db.Decimal(20, 8)
+  timestamp      DateTime @default(now()) @db.Timestamptz(6)
+  contests       contests @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens         tokens   @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([contest_id, wallet_address, token_id, timestamp])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model contests {
+  id                        Int                         @id @default(autoincrement())
+  contest_code              String                      @unique
+  name                      String
+  description               String?
+  start_time                DateTime?                   @db.Timestamptz(6)
+  end_time                  DateTime?                   @db.Timestamptz(6)
+  entry_fee                 Decimal?                    @default(0) @db.Decimal(20, 0)
+  prize_pool                Decimal?                    @default(0) @db.Decimal(20, 0)
+  status                    contest_status?             @default(pending)
+  settings                  Json?                       @default("{}")
+  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  current_prize_pool        Decimal?                    @default(0) @db.Decimal(20, 0)
+  allowed_buckets           Int[]
+  participant_count         Int?                        @default(0)
+  last_entry_time           DateTime?                   @db.Timestamptz(6)
+  min_participants          Int?                        @default(2)
+  max_participants          Int?
+  entry_deadline            DateTime?                   @db.Timestamptz(6)
+  cancelled_at              DateTime?                   @db.Timestamptz(6)
+  cancellation_reason       String?
+  updated_at                DateTime?                   @db.Timestamptz(6)
+  contest_participants      contest_participants[]
+  contest_portfolios        contest_portfolios[]
+  contest_token_buckets     contest_token_buckets[]
+  contest_token_performance contest_token_performance[]
+  contest_token_prices      contest_token_prices[]
+  transactions              transactions[]
+
+  @@index([contest_code], map: "idx_contests_code")
+  @@index([status, start_time], map: "idx_contests_status_start")
+  @@index([status, start_time, end_time], map: "idx_contests_status_time")
+}
+
+model token_bucket_memberships {
+  bucket_id     Int
+  token_id      Int
+  token_buckets token_buckets @relation(fields: [bucket_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens        tokens        @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([bucket_id, token_id])
+  @@index([token_id], map: "idx_token_bucket_memberships_token")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model token_buckets {
+  id                       Int                        @id @default(autoincrement())
+  bucket_code              String                     @unique
+  name                     String
+  description              String?
+  created_at               DateTime?                  @default(now()) @db.Timestamptz(6)
+  token_bucket_memberships token_bucket_memberships[]
+
+  @@index([bucket_code], map: "idx_token_buckets_code")
+}
+
+model token_prices {
+  token_id   Int       @id
+  price      Decimal   @db.Decimal(20, 8)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  tokens     tokens    @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([updated_at(sort: Desc)], map: "idx_token_prices_updated")
+}
+
+model tokens {
+  id                        Int                         @id @default(autoincrement())
+  address                   String                      @unique
+  symbol                    String                      @unique(map: "unique_token_symbol")
+  name                      String
+  decimals                  Int?                        @default(18)
+  is_active                 Boolean?                    @default(true)
+  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  market_cap                Decimal?                    @db.Decimal(20, 0)
+  change_24h                Decimal?                    @db.Decimal(5, 2)
+  volume_24h                Decimal?                    @db.Decimal(20, 0)
+  contest_portfolios        contest_portfolios[]
+  contest_token_buckets     contest_token_buckets[]
+  contest_token_performance contest_token_performance[]
+  contest_token_prices      contest_token_prices[]
+  token_bucket_memberships  token_bucket_memberships[]
+  token_prices              token_prices?
+
+  @@index([symbol], map: "idx_tokens_symbol")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model transactions {
+  id                                                                           Int                    @id @default(autoincrement())
+  wallet_address                                                               String?
+  type                                                                         transaction_type
+  amount                                                                       Decimal                @db.Decimal(20, 0)
+  balance_before                                                               Decimal                @db.Decimal(20, 0)
+  balance_after                                                                Decimal                @db.Decimal(20, 0)
+  contest_id                                                                   Int?
+  description                                                                  String?
+  status                                                                       transaction_status?    @default(completed)
+  metadata                                                                     Json?                  @default("{}")
+  created_at                                                                   DateTime?              @default(now()) @db.Timestamptz(6)
+  processed_at                                                                 DateTime?              @db.Timestamptz(6)
+  contest_participants_contest_participants_entry_transaction_idTotransactions contest_participants[] @relation("contest_participants_entry_transaction_idTotransactions")
+  contest_participants_contest_participants_prize_transaction_idTotransactions contest_participants[] @relation("contest_participants_prize_transaction_idTotransactions")
+  contests                                                                     contests?              @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                                                                        users?                 @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([contest_id], map: "idx_transactions_contest")
+  @@index([type, created_at], map: "idx_transactions_type_created")
+  @@index([wallet_address], map: "idx_transactions_wallet")
+}
+
+model user_achievements {
+  id               Int       @id @default(autoincrement())
+  wallet_address   String?
+  achievement_type String
+  value            Json?
+  achieved_at      DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model user_social_profiles {
+  wallet_address    String
+  platform          String
+  platform_user_id  String
+  username          String
+  verified          Boolean?  @default(false)
+  verification_date DateTime? @db.Timestamptz(6)
+  last_verified     DateTime? @db.Timestamptz(6)
+  metadata          Json?
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@id([wallet_address, platform])
+  @@unique([platform, platform_user_id])
+  @@index([platform, platform_user_id], map: "idx_user_social_profiles_platform")
+}
+
+model user_stats {
+  wallet_address    String    @id
+  contests_entered  Int?      @default(0)
+  contests_won      Int?      @default(0)
+  total_prize_money Decimal?  @default(0) @db.Decimal
+  best_score        Decimal?  @db.Decimal
+  avg_score         Decimal?  @db.Decimal
+  last_updated      DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model user_token_stats {
+  wallet_address       String
+  token_address        String
+  times_picked         Int?     @default(0)
+  wins_with_token      Int?     @default(0)
+  avg_score_with_token Decimal? @db.Decimal
+
+  @@id([wallet_address, token_address])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  wallet_address            String                      @id
+  nickname                  String?
+  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  last_login                DateTime?                   @db.Timestamptz(6)
+  total_contests            Int?                        @default(0)
+  total_wins                Int?                        @default(0)
+  total_earnings            Decimal?                    @default(0) @db.Decimal(20, 0)
+  rank_score                Int?                        @default(1000)
+  settings                  Json?                       @default("{}")
+  balance                   Decimal?                    @default(0) @db.Decimal(20, 0)
+  is_banned                 Boolean?                    @default(false)
+  ban_reason                String?
+  last_deposit_at           DateTime?                   @db.Timestamptz(6)
+  last_withdrawal_at        DateTime?                   @db.Timestamptz(6)
+  kyc_status                String?
+  risk_level                Int?                        @default(0)
+  updated_at                DateTime?                   @db.Timestamptz(6)
+  contest_participants      contest_participants[]
+  contest_portfolios        contest_portfolios[]
+  contest_token_performance contest_token_performance[]
+  contest_token_prices      contest_token_prices[]
+  transactions              transactions[]
+
+  @@index([balance], map: "idx_users_balance")
+}
+
+enum contest_status {
+  pending
+  active
+  completed
+  cancelled
+}
+
+enum transaction_status {
+  pending
+  completed
+  failed
+  reversed
+}
+
+enum transaction_type {
+  CONTEST_ENTRY
+  PRIZE_PAYOUT
+  DEPOSIT
+  WITHDRAWAL
+  REFERRAL_BONUS
+  PROMOTION
+}

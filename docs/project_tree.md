@@ -1,34 +1,10 @@
 # DegenDuel Repository - Project Tree
-Generated at: 2024-12-18 20:00:00
+Generated at: 2024-12-19 02:00:01
 
 ```
-/home/websites/degenduel
-|-- config
-|-- controllers
-|-- data
-|-- db
-|   |-- backups
-|   |   |-- functions
-|   |   |-- indexes
-|   |   |-- schema
-|   |   |-- triggers
-|   |   `-- views
-|   `-- schema_backups
-|-- docs
-|   `-- _archive
-|-- middleware
-|-- migrations
-|-- models
-|-- routes
-|-- scripts
-|   |-- archive
-|   `-- utils
-|-- tests
-|   `-- results
-|       `-- json
-`-- utils
+/home/websites/degenduel  [13 entries exceeds filelimit, not opening dir]
 
-25 directories
+1 directory
 ```
 
 > Notes:

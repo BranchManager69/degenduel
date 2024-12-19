@@ -28,3 +28,1062 @@
     '    at async file:///home/websites/degenduel/routes/contests.js:620:35',
   details: { required: '100', available: 0 }
 }
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@prisma/client' imported from /home/websites/degenduel/routes/prisma/users.js
+    at packageResolve (node:internal/modules/esm/resolve:838:9)
+    at moduleResolve (node:internal/modules/esm/resolve:907:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1037:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:650:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:599:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:582:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:241:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:132:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@prisma/client' imported from /home/websites/degenduel/routes/prisma/users.js
+    at packageResolve (node:internal/modules/esm/resolve:838:9)
+    at moduleResolve (node:internal/modules/esm/resolve:907:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1037:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:650:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:599:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:582:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:241:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:132:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@prisma/client' imported from /home/websites/degenduel/routes/prisma/users.js
+    at packageResolve (node:internal/modules/esm/resolve:838:9)
+    at moduleResolve (node:internal/modules/esm/resolve:907:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1037:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:650:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:599:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:582:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:241:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:132:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@prisma/client' imported from /home/websites/degenduel/routes/prisma/users.js
+    at packageResolve (node:internal/modules/esm/resolve:838:9)
+    at moduleResolve (node:internal/modules/esm/resolve:907:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1037:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:650:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:599:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:582:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:241:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:132:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@prisma/client' imported from /home/websites/degenduel/routes/prisma/users.js
+    at packageResolve (node:internal/modules/esm/resolve:838:9)
+    at moduleResolve (node:internal/modules/esm/resolve:907:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1037:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:650:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:599:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:582:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:241:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:132:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@prisma/client' imported from /home/websites/degenduel/routes/prisma/users.js
+    at packageResolve (node:internal/modules/esm/resolve:838:9)
+    at moduleResolve (node:internal/modules/esm/resolve:907:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1037:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:650:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:599:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:582:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:241:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:132:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: router is not defined
+    at file:///home/websites/degenduel/routes/prisma/users.js:9:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+Error: ENOENT: no such file or directory, open 'app.log'
+Error: ENOENT: no such file or directory, open 'app.log'
+Error: ENOENT: no such file or directory, open 'app.log'
+Error: ENOENT: no such file or directory, open 'app.log'
+Error: ENOENT: no such file or directory, open 'app.log'
+Error: ENOENT: no such file or directory, open 'app.log'
+Error: ENOENT: no such file or directory, open 'app.log'
+Error: ENOENT: no such file or directory, open 'app.log'
+Error: ENOENT: no such file or directory, open 'app.log'

@@ -1,0 +1,44 @@
+import fs from 'fs';
+import dotenv from 'dotenv';
+import { WebSocketServer } from 'ws';
+
+dotenv.config();
+
+const LOG_FILE_PATH = '/home/websites/degenduel/logs/app.log';
+const LOGS_PORT = process.env.LOGS_PORT || 3334;
+
+// Ensure log file exists else create it
+if (!fs.existsSync(LOG_FILE_PATH)) {
+    console.log(`Log file not found. Creating ${LOG_FILE_PATH}...`);
+    fs.writeFileSync(LOG_FILE_PATH, '', { encoding: 'utf8' });
+    console.log(`Log file created at ${LOG_FILE_PATH}`);
+}
+
+// New WebSocket server listening on logs WSS port (default: 3334)
+const wss = new WebSocketServer({ port: LOGS_PORT });
+console.log('WebSocket server listening on ws://localhost:'+LOGS_PORT+' and','logs.degenduel.com');
+
+wss.on('connection', (ws) => {
+    console.log('Client connected');
+    ws.send(`You're connected to the DegenDuel WebSocket and logs server 🚀`);
+
+    // Stream log file to connected clients
+    const logStream = fs.createReadStream(LOG_FILE_PATH, { encoding: 'utf8' });
+
+    logStream.on('data', (chunk) => {
+        ws.send(chunk);
+    });
+
+    ws.on('close', () => {
+        console.log('Client disconnected');
+        logStream.destroy();
+    });
+
+    ws.on('error', (error) => {
+        console.error('WebSocket client error:', error);
+    });
+});
+
+wss.on('error', (error) => {
+    console.error('WebSocket server error:', error);
+});
