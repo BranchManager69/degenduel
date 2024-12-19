@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node server/server.js",
+    "test:api": "./tests/api-test.sh",
+    "generate-swagger": "node scripts/generate-swagger.js",
     "start:api": "pm2 start ecosystem.config.cjs --only degenduel-api",
     "stop:api": "pm2 stop degenduel-api",
     "restart:api": "pm2 restart degenduel-api",
@@ -36,6 +38,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.18.3",
     "express-validator": "^7.0.1",
+    "gradient-string": "^3.0.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.1",

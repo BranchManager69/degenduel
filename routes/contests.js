@@ -2,6 +2,8 @@ import express from 'express';
 import { pool } from '../config/pg-database.js';
 import logger from '../utils/logger.js';
 import crypto from 'crypto';
+import { debugMiddleware, postAuthDebug } from '../middleware/debugMiddleware.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -13,101 +15,6 @@ class ContestError extends Error {
     this.details = details;
   }
 }
-
-const validateContestEntry = async (client, contestId, wallet) => {
-  const contestResult = await client.query(`
-    SELECT 
-      c.*,
-      COUNT(cp.wallet_address) AS current_participants,
-      EXISTS(
-        SELECT 1 FROM contest_participants 
-        WHERE contest_id = c.id AND wallet_address = $2
-      ) as is_registered,
-      (
-        SELECT json_build_object(
-          'balance', u.balance,
-          'total_contests', u.total_contests,
-          'is_banned', u.is_banned
-        )
-        FROM users u WHERE u.wallet_address = $2
-      ) as user_info
-    FROM contests c
-    LEFT JOIN contest_participants cp ON c.id = cp.contest_id
-    WHERE c.id = $1
-    GROUP BY c.id
-  `, [contestId, wallet]);
-
-  if (contestResult.rows.length === 0) {
-    throw new ContestError('Contest not found', 'CONTEST_NOT_FOUND', { contestId });
-  }
-
-  const contest = contestResult.rows[0];
-  const now = new Date();
-  const userInfo = contest.user_info || {};
-
-  // Comprehensive validation
-  if (contest.is_registered) {
-    throw new ContestError(
-      'Already registered for this contest', 
-      'ALREADY_REGISTERED',
-      { contestId, wallet }
-    );
-  }
-
-  if (new Date(contest.start_time) <= now) {
-    throw new ContestError(
-      'Contest has already started', 
-      'CONTEST_STARTED',
-      { 
-        startTime: contest.start_time,
-        currentTime: now,
-        timeElapsed: `${Math.floor((now - new Date(contest.start_time)) / 1000 / 60)} minutes`
-      }
-    );
-  }
-
-  if (contest.status !== 'pending' && contest.status !== 'active') {
-    throw new ContestError(
-      'Contest is not open for registration', 
-      'CONTEST_NOT_OPEN',
-      { status: contest.status }
-    );
-  }
-
-  if (parseInt(contest.current_participants) >= parseInt(contest.settings.max_participants)) {
-    throw new ContestError(
-      'Contest is full', 
-      'CONTEST_FULL',
-      { 
-        maxParticipants: contest.settings.max_participants,
-        currentParticipants: contest.current_participants
-      }
-    );
-  }
-
-  if (userInfo.is_banned) {
-    throw new ContestError(
-      'Account is banned from contests', 
-      'USER_BANNED'
-    );
-  }
-
-  if (contest.entry_fee > userInfo.balance) {
-    throw new ContestError(
-      'Insufficient funds for entry fee', 
-      'INSUFFICIENT_FUNDS',
-      {
-        required: contest.entry_fee,
-        available: userInfo.balance
-      }
-    );
-  }
-
-  return {
-    contest,
-    userInfo
-  };
-};
 
 const validatePortfolio = async (client, portfolio, contestId) => {
   // Basic structure validation
@@ -264,6 +171,101 @@ const validatePortfolio = async (client, portfolio, contestId) => {
   };
 };
 
+const validateContestEntry = async (client, contestId, wallet) => {
+  const contestResult = await client.query(`
+    SELECT 
+      c.*,
+      COUNT(cp.wallet_address) AS current_participants,
+      EXISTS(
+        SELECT 1 FROM contest_participants 
+        WHERE contest_id = c.id AND wallet_address = $2
+      ) as is_registered,
+      (
+        SELECT json_build_object(
+          'balance', u.balance,
+          'total_contests', u.total_contests,
+          'is_banned', u.is_banned
+        )
+        FROM users u WHERE u.wallet_address = $2
+      ) as user_info
+    FROM contests c
+    LEFT JOIN contest_participants cp ON c.id = cp.contest_id
+    WHERE c.id = $1
+    GROUP BY c.id
+  `, [contestId, wallet]);
+
+  if (contestResult.rows.length === 0) {
+    throw new ContestError('Contest not found', 'CONTEST_NOT_FOUND', { contestId });
+  }
+
+  const contest = contestResult.rows[0];
+  const now = new Date();
+  const userInfo = contest.user_info || {};
+
+  // Comprehensive validation
+  if (contest.is_registered) {
+    throw new ContestError(
+      'Already registered for this contest', 
+      'ALREADY_REGISTERED',
+      { contestId, wallet }
+    );
+  }
+
+  if (new Date(contest.start_time) <= now) {
+    throw new ContestError(
+      'Contest has already started', 
+      'CONTEST_STARTED',
+      { 
+        startTime: contest.start_time,
+        currentTime: now,
+        timeElapsed: `${Math.floor((now - new Date(contest.start_time)) / 1000 / 60)} minutes`
+      }
+    );
+  }
+
+  if (contest.status !== 'pending' && contest.status !== 'active') {
+    throw new ContestError(
+      'Contest is not open for registration', 
+      'CONTEST_NOT_OPEN',
+      { status: contest.status }
+    );
+  }
+
+  if (parseInt(contest.current_participants) >= parseInt(contest.settings.max_participants)) {
+    throw new ContestError(
+      'Contest is full', 
+      'CONTEST_FULL',
+      { 
+        maxParticipants: contest.settings.max_participants,
+        currentParticipants: contest.current_participants
+      }
+    );
+  }
+
+  if (userInfo.is_banned) {
+    throw new ContestError(
+      'Account is banned from contests', 
+      'USER_BANNED'
+    );
+  }
+
+  if (contest.entry_fee > userInfo.balance) {
+    throw new ContestError(
+      'Insufficient funds for entry fee', 
+      'INSUFFICIENT_FUNDS',
+      {
+        required: contest.entry_fee,
+        available: userInfo.balance
+      }
+    );
+  }
+
+  return {
+    contest,
+    userInfo
+  };
+};
+
 const processEntryFee = async (client, wallet, contestId, entryFee) => {
   // Start with optimistic locking for balance check
   const balanceResult = await client.query(`
@@ -295,17 +297,25 @@ const processEntryFee = async (client, wallet, contestId, entryFee) => {
   `, [entryFee, wallet]);
 
   // Record the transaction
-  const txnResult = await client.query(`
-    INSERT INTO transactions (
-      wallet_address,
-      type,
-      amount,
-      contest_id,
-      description
-    ) VALUES (
-      $1, 'CONTEST_ENTRY', $2, $3, 'Contest entry fee'
-    ) RETURNING id
-  `, [wallet, entryFee, contestId]);
+const txnResult = await client.query(`
+  INSERT INTO transactions (
+    wallet_address,
+    type,
+    amount,
+    contest_id,
+    description,
+    balance_before,    -- Add these
+    balance_after      -- two fields
+  ) VALUES (
+    $1, 'CONTEST_ENTRY', $2, $3, 'Contest entry fee', $4, $5
+  ) RETURNING id
+`, [
+  wallet, 
+  entryFee, 
+  contestId, 
+  currentBalance,              // balance_before
+  currentBalance - entryFee    // balance_after
+]);
 
   return {
     transactionId: txnResult.rows[0].id,
@@ -324,7 +334,6 @@ const processEntryFee = async (client, wallet, contestId, entryFee) => {
 /*********************
   CONTEST ENDPOINTS  |
 **********************/
-
 
 /**
  * @swagger
@@ -435,10 +444,10 @@ router.get('/', async (req, res) => {
 
     const result = await pool.query(query, values);
     
-    // Log the full result for contest ID 2
-    if (wallet) {
-      console.log('Contest 2 details:', result.rows.find(r => r.id === 2));
-    }
+    // // Log the full result for contest ID 2
+    // if (wallet) {
+    //   console.log('Contest 2 details:', result.rows.find(r => r.id === 2));
+    // }
 
     res.json(result.rows);
   } catch (error) {
@@ -553,7 +562,12 @@ router.get('/', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/:contestId/enter', async (req, res) => {
+router.post('/:contestId/enter', 
+  debugMiddleware,
+  requireAuth,
+  postAuthDebug,
+  // NEED SUPER ADMIN
+  async (req, res) => {
   const { contestId } = req.params;
   const { wallet, portfolio } = req.body;
   let client;
@@ -791,7 +805,6 @@ router.post('/:contestId/enter', async (req, res) => {
   }
 });
 
-
 /**
  * @swagger
  * /api/contests/summary:
@@ -855,7 +868,6 @@ router.get('/summary', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 /**
  * @swagger
@@ -922,7 +934,6 @@ router.get('/active', async (req, res) => {
   }
 });
 
-
 /**
  * @swagger
  * /api/contests/{contestId}:
@@ -965,41 +976,58 @@ router.get('/active', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.get('/:contestId', async (req, res) => {
-  const { wallet } = req.query;
-  const { contestId } = req.params;
+router.get('/:contestId', 
+  debugMiddleware,
+  requireAuth,
+  postAuthDebug,
+  async (req, res) => {
+    const { wallet_address } = req.user;
+    const { contestId } = req.params;
 
-  try {
-    const query = `
-      SELECT c.*, 
-             COUNT(cp.wallet_address) AS participant_count,
-             CASE 
-               WHEN $1 IS NOT NULL AND COUNT(cp.wallet_address) > 0 THEN TRUE
-               ELSE FALSE
-             END AS is_participating,
-             json_agg(DISTINCT t.symbol) AS allowed_tokens
-      FROM contests c
-      LEFT JOIN contest_participants cp ON c.id = cp.contest_id AND cp.wallet_address = $1
-      LEFT JOIN token_bucket_memberships tbm ON c.id = tbm.bucket_id
-      LEFT JOIN tokens t ON tbm.token_id = t.id
-      WHERE c.id = $2
-      GROUP BY c.id
-    `;
+    console.log('\n📊 ==== Database Query Debug ====');
+    console.log('🎮 Attempting to fetch contest:', contestId);
+    console.log('👛 Using wallet address:', wallet_address);
 
-    const result = await pool.query(query, [wallet || null, contestId]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Contest not found' });
+    try {
+      const query = `
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM contest_participants WHERE contest_id = c.id) AS participant_count,
+          EXISTS(
+            SELECT 1 
+            FROM contest_participants 
+            WHERE contest_id = c.id 
+            AND wallet_address = $1
+          ) as is_participating,
+          json_agg(DISTINCT t.symbol) AS allowed_tokens
+        FROM contests c
+        LEFT JOIN token_bucket_memberships tbm ON c.id = tbm.bucket_id 
+        LEFT JOIN tokens t ON tbm.token_id = t.id
+        WHERE c.id = $2
+        GROUP BY c.id
+      `;
+
+      console.log('🔍 Executing query with parameters:', [wallet_address, contestId]);
+      
+      const result = await pool.query(query, [wallet_address, contestId]);
+      
+      console.log('📊 Query result rows:', result.rows.length);
+      console.log('📊 First row preview:', result.rows[0] ? 'Data found' : 'No data');
+
+      if (result.rows.length === 0) {
+        console.log('❌ Contest not found in database');
+        return res.status(404).json({ error: 'Contest not found' });
+      }
+
+      console.log('✅ Successfully retrieved contest data');
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.log('❌ Database error:', error.message);
+      console.log('Stack trace:', error.stack);
+      logger.error('Get contest failed:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    logger.error('Get contest failed:', error);
-    res.status(500).json({ error: error.message });
-  }
 });
-
-
 
 /**
  * @swagger
@@ -1070,7 +1098,12 @@ router.get('/:contestId', async (req, res) => {
  *       500:
  *         description: Failed to create contest
  */
-router.post('/', async (req, res) => {
+router.post('/',  
+  debugMiddleware,
+  requireAuth,
+  postAuthDebug,
+  // NEED SUPER ADMIN... AT LEAST FOR NOW...
+  async (req, res) => {
   const { name, description, start_time, end_time, entry_fee, prize_pool, settings } = req.body;
 
   if (!name || !start_time || !end_time) {
@@ -1109,10 +1142,6 @@ router.post('/', async (req, res) => {
     client.release();
   }
 });
-
-
-
-
 
 /**
  * @swagger
@@ -1187,7 +1216,6 @@ router.get('/:contestId/leaderboard', async (req, res) => {
   }
 });
 
-
 /**
  * @swagger
  * /api/contests/{contestId}:
@@ -1209,7 +1237,12 @@ router.get('/:contestId/leaderboard', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.delete('/:contestId', async (req, res) => {
+router.delete('/:contestId', 
+  debugMiddleware,
+  requireAuth,
+  postAuthDebug,
+  // NEED SUPER ADMIN
+  async (req, res) => {
   const { contestId } = req.params;
 
   try {
@@ -1229,7 +1262,6 @@ router.delete('/:contestId', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 /**
  * @swagger
@@ -1273,7 +1305,12 @@ router.delete('/:contestId', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.patch('/:contestId', async (req, res) => {
+router.patch('/:contestId', 
+  debugMiddleware,
+  requireAuth,
+  postAuthDebug,
+  // NEED SUPER ADMIN
+  async (req, res) => {
   const { contestId } = req.params;
   const { name, description, start_time, end_time, entry_fee, prize_pool } = req.body;
 
@@ -1310,7 +1347,6 @@ router.patch('/:contestId', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 /******************************
   CONTEST PORTFOLIO ENDPOINTS  |
@@ -1393,152 +1429,155 @@ router.patch('/:contestId', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.get('/:contestId/portfolio', async (req, res) => {
-  const { contestId } = req.params;
-  const { wallet: requestedWallet } = req.query;
-  const walletAddress = req.user?.wallet_address;  // <--- IS THIS THE ERROR!?!?!?!?!?
+router.get('/:contestId/portfolio', 
+  debugMiddleware,
+  requireAuth,
+  postAuthDebug,
+  async (req, res) => {
+    const { contestId } = req.params;
+    const { wallet: requestedWallet } = req.query;
+    const walletAddress = req.user?.wallet_address;  // this is correct now because requireAuth sets req.user
 
-  try {
-    if (!walletAddress) {
-      return res.status(401).json({ 
-        error: 'Authentication required' 
-      });
-    }
-
-    // Use the requested wallet or default to the authenticated user
-    const targetWallet = requestedWallet || walletAddress;
-
-    const client = await pool.connect();
     try {
-      // Get comprehensive contest and portfolio information
-      const result = await client.query(`
-        WITH portfolio_data AS (
-          SELECT 
-            cp.wallet_address,
-            json_agg(json_build_object(
-              'symbol', t.symbol,
-              'name', t.name,
-              'weight', cp.weight,
-              'currentPrice', tp.price
-            ) ORDER BY cp.weight DESC) as tokens,
-            sum(cp.weight * tp.price / 100) as total_value
-          FROM contest_portfolios cp
-          JOIN tokens t ON cp.token_id = t.id
-          LEFT JOIN token_prices tp ON t.id = tp.token_id
-          WHERE cp.contest_id = $1 AND cp.wallet_address = $2
-          GROUP BY cp.wallet_address
-        ),
-        ranking_data AS (
-          SELECT 
-            wallet_address,
-            RANK() OVER (ORDER BY total_value DESC) as rank,
-            COUNT(*) OVER () as total_participants
-          FROM portfolio_data
-        )
-        SELECT 
-          c.*,
-          cp.wallet_address IS NOT NULL as is_participating,  // Changed from is_participant
-          pd.tokens,
-          pd.total_value,
-          rd.rank,
-          rd.total_participants,
-          (
-            SELECT COUNT(*) 
-            FROM contest_participants 
-            WHERE contest_id = c.id
-          ) as current_participants
-        FROM contests c
-        LEFT JOIN contest_participants cp 
-          ON c.id = cp.contest_id 
-          AND cp.wallet_address = $2
-        LEFT JOIN portfolio_data pd ON pd.wallet_address = $2
-        LEFT JOIN ranking_data rd ON rd.wallet_address = $2
-        WHERE c.id = $1
-      `, [contestId, targetWallet]);
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          error: 'Contest not found',
-          details: { contestId }
+      if (!walletAddress) {
+        return res.status(401).json({ 
+          error: 'Authentication required' 
         });
       }
 
-      const contest = result.rows[0];
-      const now = new Date();
-      const startTime = new Date(contest.start_time);
-      const hasStarted = startTime <= now;
+      // Use the requested wallet or default to the authenticated user
+      const targetWallet = requestedWallet || walletAddress;
 
-      // If trying to view someone else's portfolio before contest starts
-      if (targetWallet !== walletAddress && !hasStarted) {
-        return res.status(403).json({
-          error: 'Cannot view other portfolios before contest starts',
-          details: {
-            contestStart: startTime,
-            timeUntilStart: `${Math.floor((startTime - now) / 1000 / 60)} minutes`
-          }
-        });
-      }
+      const client = await pool.connect();
+      try {
+        // Get comprehensive contest and portfolio information
+        const result = await client.query(`
+          WITH portfolio_data AS (
+            SELECT 
+              cp.wallet_address,
+              json_agg(json_build_object(
+                'symbol', t.symbol,
+                'name', t.name,
+                'weight', cp.weight,
+                'currentPrice', tp.price
+              ) ORDER BY cp.weight DESC) as tokens,
+              sum(cp.weight * tp.price / 100) as total_value
+            FROM contest_portfolios cp
+            JOIN tokens t ON cp.token_id = t.id
+            LEFT JOIN token_prices tp ON t.id = tp.token_id
+            WHERE cp.contest_id = $1 AND cp.wallet_address = $2
+            GROUP BY cp.wallet_address
+          ),
+          ranking_data AS (
+            SELECT 
+              wallet_address,
+              RANK() OVER (ORDER BY total_value DESC) as rank,
+              COUNT(*) OVER () as total_participants
+            FROM portfolio_data
+          )
+          SELECT 
+            c.*,
+            cp.wallet_address IS NOT NULL as is_participating,  // Changed from is_participant
+            pd.tokens,
+            pd.total_value,
+            rd.rank,
+            rd.total_participants,
+            (
+              SELECT COUNT(*) 
+              FROM contest_participants 
+              WHERE contest_id = c.id
+            ) as current_participants
+          FROM contests c
+          LEFT JOIN contest_participants cp 
+            ON c.id = cp.contest_id 
+            AND cp.wallet_address = $2
+          LEFT JOIN portfolio_data pd ON pd.wallet_address = $2
+          LEFT JOIN ranking_data rd ON rd.wallet_address = $2
+          WHERE c.id = $1
+        `, [contestId, targetWallet]);
 
-      // Format response based on contest state
-      const response = {
-        contestInfo: {
-          id: contest.id,
-          name: contest.name,
-          status: contest.status,
-          startTime: contest.start_time,
-          endTime: contest.end_time,
-          timeRemaining: hasStarted 
-            ? `${Math.floor((new Date(contest.end_time) - now) / 1000 / 60)} minutes`
-            : `${Math.floor((startTime - now) / 1000 / 60)} minutes until start`,
-          entryFee: contest.entry_fee,
-          prizePool: contest.prize_pool,
-          participantCount: contest.current_participants,
-          maxParticipants: contest.settings?.max_participants
+        if (result.rows.length === 0) {
+          return res.status(404).json({
+            error: 'Contest not found',
+            details: { contestId }
+          });
         }
-      };
 
-      // Add portfolio data if it exists
-      if (contest.tokens) {
-        response.portfolio = {
-          tokens: contest.tokens,
-          totalValue: contest.total_value,
-          rank: hasStarted ? contest.rank : null,
-          totalParticipants: contest.total_participants
+        const contest = result.rows[0];
+        const now = new Date();
+        const startTime = new Date(contest.start_time);
+        const hasStarted = startTime <= now;
+
+        // If trying to view someone else's portfolio before contest starts
+        if (targetWallet !== walletAddress && !hasStarted) {
+          return res.status(403).json({
+            error: 'Cannot view other portfolios before contest starts',
+            details: {
+              contestStart: startTime,
+              timeUntilStart: `${Math.floor((startTime - now) / 1000 / 60)} minutes`
+            }
+          });
+        }
+
+        // Format response based on contest state
+        const response = {
+          contestInfo: {
+            id: contest.id,
+            name: contest.name,
+            status: contest.status,
+            startTime: contest.start_time,
+            endTime: contest.end_time,
+            timeRemaining: hasStarted 
+              ? `${Math.floor((new Date(contest.end_time) - now) / 1000 / 60)} minutes`
+              : `${Math.floor((startTime - now) / 1000 / 60)} minutes until start`,
+            entryFee: contest.entry_fee,
+            prizePool: contest.prize_pool,
+            participantCount: contest.current_participants,
+            maxParticipants: contest.settings?.max_participants
+          }
         };
 
-        // Add performance data if contest has started
-        if (hasStarted) {
-          response.portfolio.performance = {
-            valueChange: 0, // Calculate from historical data
-            percentageChange: 0, // Calculate from historical data
-            ranking: contest.rank,
+        // Add portfolio data if it exists
+        if (contest.tokens) {
+          response.portfolio = {
+            tokens: contest.tokens,
+            totalValue: contest.total_value,
+            rank: hasStarted ? contest.rank : null,
             totalParticipants: contest.total_participants
           };
+
+          // Add performance data if contest has started
+          if (hasStarted) {
+            response.portfolio.performance = {
+              valueChange: 0, // Calculate from historical data
+              percentageChange: 0, // Calculate from historical data
+              ranking: contest.rank,
+              totalParticipants: contest.total_participants
+            };
+          }
+        } else if (!contest.is_participant) {
+          response.entryInfo = {
+            canEnter: contest.status === 'pending' || contest.status === 'active',
+            requiresEntry: true,
+            entryFee: contest.entry_fee,
+            spotsRemaining: contest.settings?.max_participants - contest.current_participants
+          };
         }
-      } else if (!contest.is_participant) {
-        response.entryInfo = {
-          canEnter: contest.status === 'pending' || contest.status === 'active',
-          requiresEntry: true,
-          entryFee: contest.entry_fee,
-          spotsRemaining: contest.settings?.max_participants - contest.current_participants
-        };
+
+        res.json(response);
+
+      } finally {
+        client.release();
       }
 
-      res.json(response);
-
-    } finally {
-      client.release();
+    } catch (error) {
+      logger.error('Failed to fetch portfolio:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch portfolio information',
+        details: error.message 
+      });
     }
-
-  } catch (error) {
-    logger.error('Failed to fetch portfolio:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch portfolio information',
-      details: error.message 
-    });
-  }
 });
-
 
 /**
  * @swagger
@@ -1616,7 +1655,11 @@ router.get('/:contestId/portfolio', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.put('/:contestId/portfolio', async (req, res) => {
+router.put('/:contestId/portfolio', 
+  debugMiddleware,
+  requireAuth,
+  postAuthDebug,
+  async (req, res) => {
   const { contestId } = req.params;
   const { portfolio } = req.body;
   const walletAddress = req.user?.wallet_address;
@@ -1764,6 +1807,4 @@ router.put('/:contestId/portfolio', async (req, res) => {
 });
 
 
-
 export default router;
-

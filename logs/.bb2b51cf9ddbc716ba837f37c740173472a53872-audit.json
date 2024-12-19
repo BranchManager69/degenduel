@@ -6,9 +6,9 @@
     "auditLog": "/home/websites/degenduel/logs/.bb2b51cf9ddbc716ba837f37c740173472a53872-audit.json",
     "files": [
         {
-            "date": 1734415922140,
-            "name": "/home/websites/degenduel/logs/api-2024-12-17.log",
-            "hash": "d5700433e4035fe7664e4cabf40a812322059398010d3214b2f8f293f53d4f46"
+            "date": 1734505462140,
+            "name": "/home/websites/degenduel/logs/api-2024-12-18.log",
+            "hash": "9040ca3121b4c5b444369b7430460b82f0b529de2dba0319643d9c0ee666a065"
         }
     ],
     "hashType": "sha256"

@@ -1,14 +1,59 @@
-# Dependencies
+# Node.js dependencies
 node_modules/
 
-# Environment files
-.env
+# Logs and debug files
+logs/
+*.log
+debug.log
+
+# Database-related files
+data/
+db/
+*.dbml
+*.sql
+
+# Temporary files
+*.swp
+*.swo
+*~
 .DS_Store
+Thumbs.db
 
-# Database
-/db/
-/db/backup/
-/db/autogenerate_backups.sh
+# Build or transpiled files
+dist/
+build/
+*.tsbuildinfo
 
-# Documentation scripts
-/docs/generate_project_tree.sh
+# Generated documentation
+docs/
+
+# Temporary editor/project files
+.vscode/
+.idea/
+*.code-workspace
+
+# Configurations
+config/
+
+# Generated or archived scripts
+scripts/
+
+# Test outputs and artifacts
+tests/
+
+# Generated assets
+*.png
+*.jpg
+*.svg
+*.ico
+
+# Ignore migrations (optional)
+migrations/
+
+# All hidden files (e.g., temporary or config files)
+.*
+
+# Exceptions to allow specific files
+!.gitignore
+!.README.md
+!.env.example
