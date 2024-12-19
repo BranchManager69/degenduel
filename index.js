@@ -1,5 +1,11 @@
-import express from 'express';
 import cookieParser from 'cookie-parser';
+import express from 'express';
+import dotenv from 'dotenv';
+import chalk from 'chalk';
+import gradient from 'gradient-string';
+////import http from 'http'; // HTTP server for logs
+////import fs from 'fs'; // File streaming for logs
+////import { WebSocketServer } from 'ws'; // WebSocket support
 import { initDatabase, closeDatabase } from './config/database.js';  // SQLite for leaderboard
 import { pool, initPgDatabase, closePgDatabase } from './config/pg-database.js';
 import { configureMiddleware } from './config/middleware.js';
@@ -20,11 +26,14 @@ import testRoutes from './routes/test-routes.js'; // NEWEST v4
 import logger from './utils/logger.js'; // fixed
 import setupSwagger from './config/swagger.js'; // ES6 default import
 import superadminRoutes from './routes/superadmin.js';
-import chalk from 'chalk';
-import gradient from 'gradient-string';
+import prismaUserRoutes from './routes/prisma/users.js';
+
+dotenv.config();
 
 const app = express();
-const port = process.env.API_PORT || 3003;
+
+const port = process.env.API_PORT || 3003; // Main port
+////const logsPort = process.env.LOGS_PORT || 3334; // Log streaming port
 
 // Use cookies
 app.use(cookieParser());
@@ -61,11 +70,10 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/tokens', tokenRoutes); // new
 app.use('/api/token-buckets', tokenBucketRoutes); // new
 app.use('/api/leaderboard', leaderboardRoutes); // almost forgot this one!
-// Test routes
-//app.use('/api/test-routes', testRoutesV1); // OLD; tests v1
-//app.use('/api/test-utils', testRoutesV2); // MID; tests v2
-//app.use('/api/test-utilities', testRoutesV3); // NEW NOW OLD; tests v3
 app.use('/api/test', testRoutes); // NEWEST; tests v4
+
+// (testing) New Prisma routes
+app.use('/api/daddy', prismaUserRoutes);
 
 // Superadmin routes
 app.use('/api/superadmin', superadminRoutes);
@@ -97,7 +105,7 @@ app.get('/api/health', async (req, res) => {
 // Error handling
 app.use(errorHandler);
 
-// Add the startup sequence right before your startServer() function
+// Startup sequence occurs before startServer()
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Visual startup sequence
@@ -105,37 +113,71 @@ async function displayStartupSequence() {
   console.log('\n  ✨ DEGENDUEL API INITIALIZING ✨\n');
 }
 
-// Modify your existing startServer function
+// Main
 async function startServer() {
-    try {
-        console.log(`\n      🎮  Starting DegenDuel API...`);
-        
-        await Promise.all([
-            initDatabase().catch(err => {
-                console.error('SQLite initialization failed:', err);
-                throw err;
-            }),
-            initPgDatabase().catch(err => {
-                console.error('PostgreSQL initialization failed:', err);
-                throw err;
-            })
-        ]);
+  try {
+      console.log(`\n      🎮  Starting DegenDuel API...`);
 
-        await displayStartupSequence();
-        
-        const server = app.listen(port, '0.0.0.0', () => {
-            console.log(`    🎮  DegenDuel API ready on port ${port}`);
-        });
+      await Promise.all([
+          initDatabase().catch(err => {
+              console.error('SQLite initialization failed:', err);
+              throw err;
+          }),
+          initPgDatabase().catch(err => {
+              console.error('PostgreSQL initialization failed:', err);
+              throw err;
+          })
+      ]);
 
-    server.on('error', (error) => {
-      console.error('Server error:', error);
+      await displayStartupSequence();
+
+      // Main API server on port 3003
+      const apiServer = app.listen(port, '0.0.0.0', () => {
+          console.log(`    🎮  DegenDuel API ready on port ${port}`);
+      });
+
+      apiServer.on('error', (error) => {
+          console.error('API Server error:', error);
+          process.exit(1);
+      });
+
+      /*
+      // WebSocket server for logs on port 3334
+      const logsServer = http.createServer(); // Create a separate HTTP server for logs
+      const wss = new WebSocketServer({ server: logsServer }); // Attach WebSocket server to logs server
+
+      wss.on('connection', (ws) => {
+          console.log('WebSocket connection established for logs.');
+
+          // Stream log file to connected clients
+          const stream = fs.createReadStream('app.log', { encoding: 'utf8' });
+          stream.on('data', (chunk) => {
+              ws.send(chunk);
+          });
+
+          ws.on('close', () => {
+              console.log('WebSocket connection closed.');
+              stream.destroy();
+          });
+
+          ws.on('error', (error) => console.error('WebSocket error:', error));
+
+      });
+
+      logsServer.listen(logsPort, '0.0.0.0', () => {
+          console.log(`    📜  Logs WebSocket server ready on port ${logsPort}`);
+      });
+
+      logsServer.on('error', (error) => {
+          console.error('Logs Server error:', error);
+          process.exit(1);
+      });
+      */
+
+  } catch (error) {
+      console.error(`    ⛔  Failed to start server:`, error);
       process.exit(1);
-    });
-
-    } catch (error) {
-        console.error(`    ⛔  Failed to start server:`, error);
-        process.exit(1);
-    }
+  }
 }
 
 // Handle graceful shutdown
