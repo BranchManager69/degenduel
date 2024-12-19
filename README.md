@@ -288,3 +288,5 @@ git push origin feature/your-feature
   <p>Sharpen your trading skills while competing to win real prizes. Ape and jeet with zero risk.</p>
   <p><b>DEGENDUEL</b> is a Branch Manager production. All rights reserved.</p>
 </div>
+
+# Winter is coming.
