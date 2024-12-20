@@ -1,60 +1,88 @@
 import express from 'express';
-import { pool } from '../config/pg-database.js';
+import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
+const prisma = new PrismaClient();
 
 /**
  * @swagger
  * tags:
  *   name: Users
- *   description: API endpoints for managing user accounts and profiles
+ *   description: API endpoints for user management
  */
 
 /**
  * @swagger
  * /api/users:
  *   get:
- *     summary: Get all users
+ *     summary: Get all users with optional filters
  *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [rank_score, total_earnings, total_contests]
  *     responses:
  *       200:
- *         description: A list of users.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   wallet_address:
- *                     type: string
- *                   nickname:
- *                     type: string
- *                   created_at:
- *                     type: string
- *                     format: date-time
- *                   last_login:
- *                     type: string
- *                     format: date-time
- *                   total_contests:
- *                     type: integer
- *                   total_wins:
- *                     type: integer
- *                   total_earnings:
- *                     type: string
- *                   rank_score:
- *                     type: integer
- *                   settings:
- *                     type: object
+ *         description: List of users
  */
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM users');
-    res.json(result.rows);
+    const { limit = 10, offset = 0, sort } = req.query;
+    
+    const orderBy = sort ? {
+      [sort]: 'desc'
+    } : {
+      created_at: 'desc'
+    };
+
+    const [users, total] = await Promise.all([
+      prisma.users.findMany({
+        take: parseInt(limit),
+        skip: parseInt(offset),
+        orderBy,
+        select: {
+          wallet_address: true,
+          nickname: true,
+          total_contests: true,
+          total_wins: true,
+          total_earnings: true,
+          rank_score: true,
+          created_at: true,
+          last_login: true,
+          _count: {
+            select: {
+              contest_participants: true
+            }
+          }
+        }
+      }),
+      prisma.users.count()
+    ]);
+
+    res.json({
+      users,
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
   } catch (error) {
-    logger.error('Get users failed:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Failed to fetch users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
@@ -62,7 +90,7 @@ router.get('/', async (req, res) => {
  * @swagger
  * /api/users/{wallet}:
  *   get:
- *     summary: Get a user by wallet address
+ *     summary: Get user profile by wallet address
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -70,36 +98,37 @@ router.get('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: Wallet address of the user
  *     responses:
  *       200:
- *         description: A single user
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 wallet_address:
- *                   type: string
- *                 nickname:
- *                   type: string
+ *         description: User profile data
  *       404:
  *         description: User not found
  */
 router.get('/:wallet', async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM users WHERE wallet_address = $1',
-      [req.params.wallet]
-    );
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: req.params.wallet },
+      include: {
+        contest_participants: {
+          take: 5,
+          orderBy: { joined_at: 'desc' },
+          include: {
+            contests: true
+          }
+        },
+        user_stats: true,
+        user_social_profiles: true
+      }
+    });
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(result.rows[0]);
+
+    res.json(user);
   } catch (error) {
-    logger.error('Get user failed:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Failed to fetch user:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
@@ -107,7 +136,7 @@ router.get('/:wallet', async (req, res) => {
  * @swagger
  * /api/users:
  *   post:
- *     summary: Create a new user
+ *     summary: Create new user
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -117,42 +146,57 @@ router.get('/:wallet', async (req, res) => {
  *             type: object
  *             required:
  *               - wallet_address
- *               - nickname
  *             properties:
  *               wallet_address:
  *                 type: string
+ *                 example: "0x1234..."
  *               nickname:
  *                 type: string
+ *                 example: "CryptoTrader123"
  *     responses:
  *       201:
  *         description: User created successfully
  *         content:
  *           application/json:
  *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/User'
+ *                 - type: object
+ *                   properties:
+ *                     user_stats:
+ *                       $ref: '#/components/schemas/UserStats'
+ *       400:
+ *         description: Invalid request
+ *         content:
+ *           application/json:
+ *             schema:
  *               type: object
  *               properties:
- *                 wallet_address:
+ *                 error:
  *                   type: string
- *                 nickname:
- *                   type: string
- *       400:
- *         description: Missing required fields
+ *                   example: "Wallet address already exists"
  */
 router.post('/', async (req, res) => {
-  const { wallet_address, nickname } = req.body;
-  if (!wallet_address || !nickname) {
-    return res.status(400).json({ error: 'Missing wallet_address or nickname' });
-  }
-
   try {
-    const result = await pool.query(
-      'INSERT INTO users (wallet_address, nickname) VALUES ($1, $2) RETURNING *',
-      [wallet_address, nickname]
-    );
-    res.status(201).json(result.rows[0]);
+    const { wallet_address, nickname } = req.body;
+
+    const user = await prisma.users.create({
+      data: {
+        wallet_address,
+        nickname,
+        user_stats: {
+          create: {} // Creates default stats
+        }
+      },
+      include: {
+        user_stats: true
+      }
+    });
+
+    res.status(201).json(user);
   } catch (error) {
-    logger.error('Error adding user:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Failed to create user:', error);
+    res.status(500).json({ error: 'Failed to create user' });
   }
 });
 
@@ -160,7 +204,7 @@ router.post('/', async (req, res) => {
  * @swagger
  * /api/users/{wallet}:
  *   put:
- *     summary: Update a user profile
+ *     summary: Update user profile
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -168,7 +212,7 @@ router.post('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: Wallet address of the user
+ *         description: User's wallet address
  *     requestBody:
  *       required: true
  *       content:
@@ -178,42 +222,44 @@ router.post('/', async (req, res) => {
  *             properties:
  *               nickname:
  *                 type: string
+ *               settings:
+ *                 type: object
+ *                 example: { "notifications": true, "theme": "dark" }
  *     responses:
  *       200:
  *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
  *       404:
- *         description: User not found
+ *         $ref: '#/components/responses/UserNotFound'
  */
 router.put('/:wallet', async (req, res) => {
   try {
-    const { nickname } = req.body;
-    const result = await pool.query(
-      `
-      UPDATE users 
-      SET 
-        nickname = COALESCE($2, nickname),
-        last_login = CURRENT_TIMESTAMP
-      WHERE wallet_address = $1
-      RETURNING *
-      `,
-      [req.params.wallet, nickname]
-    );
+    const { nickname, settings } = req.body;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    res.json(result.rows[0]);
+    const user = await prisma.users.update({
+      where: { wallet_address: req.params.wallet },
+      data: {
+        nickname,
+        settings: settings ? { ...settings } : undefined,
+        updated_at: new Date()
+      }
+    });
+
+    res.json(user);
   } catch (error) {
-    logger.error('Update user failed:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Failed to update user:', error);
+    res.status(500).json({ error: 'Failed to update user' });
   }
 });
 
 /**
  * @swagger
- * /api/users/{wallet}/settings:
- *   put:
- *     summary: Update a user's settings
+ * /api/users/{wallet}/achievements:
+ *   get:
+ *     summary: Get user achievements
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -221,104 +267,38 @@ router.put('/:wallet', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: Wallet address of the user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               settings:
- *                 type: object
+ *         description: User's wallet address
  *     responses:
  *       200:
- *         description: User settings updated successfully
- *       404:
- *         description: User not found
- */
-router.put('/:wallet/settings', async (req, res) => {
-  try {
-    const { settings } = req.body;
-    const result = await pool.query(
-      `
-      UPDATE users 
-      SET settings = settings || $2::jsonb
-      WHERE wallet_address = $1
-      RETURNING *
-      `,
-      [req.params.wallet, JSON.stringify(settings)]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    logger.error('Update settings failed:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/users/top:
- *   get:
- *     summary: Get top users by rank score
- *     tags: [Users]
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Limit the number of top users returned
- *     responses:
- *       200:
- *         description: List of top users
+ *         description: User achievements
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   wallet_address:
- *                     type: string
- *                   nickname:
- *                     type: string
- *                   rank_score:
- *                     type: integer
- *                   total_earnings:
- *                     type: string
- *       500:
- *         description: Server error
+ *                 $ref: '#/components/schemas/UserAchievement'
+ *       404:
+ *         $ref: '#/components/responses/UserNotFound'
  */
-router.get('/top', async (req, res) => {
-  const { limit = 10 } = req.query;
-
+router.get('/:wallet/achievements', async (req, res) => {
   try {
-    const result = await pool.query(
-      `
-      SELECT wallet_address, nickname, rank_score, total_earnings 
-      FROM users 
-      ORDER BY rank_score DESC 
-      LIMIT $1;
-      `,
-      [limit]
-    );
-    res.json(result.rows);
+    const achievements = await prisma.user_achievements.findMany({
+      where: { wallet_address: req.params.wallet },
+      orderBy: { achieved_at: 'desc' }
+    });
+
+    res.json(achievements);
   } catch (error) {
-    logger.error('Get top users failed:', error);
-    res.status(500).json({ error: 'Failed to fetch top users.' });
+    logger.error('Failed to fetch achievements:', error);
+    res.status(500).json({ error: 'Failed to fetch achievements' });
   }
 });
 
 /**
  * @swagger
- * /api/users/{wallet}/rank/reset:
- *   post:
- *     summary: Reset user rank score
+ * /api/users/{wallet}/stats:
+ *   get:
+ *     summary: Get detailed user statistics
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -326,190 +306,61 @@ router.get('/top', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: Wallet address of the user
+ *         description: User's wallet address
  *     responses:
  *       200:
- *         description: User rank score reset successfully
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
- */
-router.post('/:wallet/rank/reset', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `
-      UPDATE users 
-      SET rank_score = 1000 
-      WHERE wallet_address = $1 
-      RETURNING *;
-      `,
-      [req.params.wallet]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    res.json({ success: true, user: result.rows[0] });
-  } catch (error) {
-    logger.error('Reset rank score failed:', error);
-    res.status(500).json({ error: 'Failed to reset rank score.' });
-  }
-});
-
-/**
- * @swagger
- * /api/users/earnings:
- *   get:
- *     summary: Get users by earnings range
- *     tags: [Users]
- *     parameters:
- *       - in: query
- *         name: min
- *         schema:
- *           type: string
- *           default: 0
- *         description: Minimum earnings
- *       - in: query
- *         name: max
- *         schema:
- *           type: string
- *           default: 1000000
- *         description: Maximum earnings
- *     responses:
- *       200:
- *         description: List of users within the earnings range
+ *         description: User statistics
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   wallet_address:
- *                     type: string
- *                   nickname:
- *                     type: string
- *                   total_earnings:
- *                     type: string
- *       500:
- *         description: Server error
- */
-router.get('/earnings', async (req, res) => {
-  const { min = '0', max = '1000000' } = req.query;
-
-  try {
-    const result = await pool.query(
-      `
-      SELECT wallet_address, nickname, total_earnings 
-      FROM users 
-      WHERE total_earnings BETWEEN $1 AND $2;
-      `,
-      [min, max]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    logger.error('Get users by earnings range failed:', error);
-    res.status(500).json({ error: 'Failed to fetch users by earnings range.' });
-  }
-});
-
-/**
- * @swagger
- * /api/users/{wallet}/deactivate:
- *   patch:
- *     summary: Deactivate a user account
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: wallet
- *         required: true
- *         schema:
- *           type: string
- *         description: Wallet address of the user
- *     responses:
- *       200:
- *         description: User deactivated successfully
+ *               type: object
+ *               properties:
+ *                 general:
+ *                   $ref: '#/components/schemas/UserStats'
+ *                 tokens:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       token_address:
+ *                         type: string
+ *                       times_picked:
+ *                         type: integer
+ *                       wins_with_token:
+ *                         type: integer
+ *                       avg_score_with_token:
+ *                         type: string
+ *                       tokens:
+ *                         type: object
+ *                         properties:
+ *                           symbol:
+ *                             type: string
+ *                           name:
+ *                             type: string
  *       404:
- *         description: User not found
- *       500:
- *         description: Server error
+ *         $ref: '#/components/responses/UserNotFound'
  */
-router.patch('/:wallet/deactivate', async (req, res) => {
+router.get('/:wallet/stats', async (req, res) => {
   try {
-    const result = await pool.query(
-      `
-      UPDATE users 
-      SET is_active = false 
-      WHERE wallet_address = $1 
-      RETURNING *;
-      `,
-      [req.params.wallet]
-    );
+    const [stats, tokenStats] = await Promise.all([
+      prisma.user_stats.findUnique({
+        where: { wallet_address: req.params.wallet }
+      }),
+      prisma.user_token_stats.findMany({
+        where: { wallet_address: req.params.wallet },
+        include: {
+          tokens: true
+        }
+      })
+    ]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    res.json({ success: true, user: result.rows[0] });
+    res.json({
+      general: stats,
+      tokens: tokenStats
+    });
   } catch (error) {
-    logger.error('Deactivate user failed:', error);
-    res.status(500).json({ error: 'Failed to deactivate user.' });
-  }
-});
-
-/**
- * @swagger
- * /api/users/{wallet}/rank/recalculate:
- *   post:
- *     summary: Recalculate user rank score
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: wallet
- *         required: true
- *         schema:
- *           type: string
- *         description: Wallet address of the user
- *     responses:
- *       200:
- *         description: User rank score recalculated successfully
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
- */
-router.post('/:wallet/rank/recalculate', async (req, res) => {
-  try {
-    const userCheck = await pool.query(
-      `SELECT * FROM users WHERE wallet_address = $1`,
-      [req.params.wallet]
-    );
-
-    if (userCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    const newRankScore = Math.max(
-      1000,
-      Math.floor(userCheck.rows[0].total_wins * 50 + userCheck.rows[0].total_earnings / 1000)
-    );
-
-    const result = await pool.query(
-      `
-      UPDATE users 
-      SET rank_score = $2 
-      WHERE wallet_address = $1 
-      RETURNING *;
-      `,
-      [req.params.wallet, newRankScore]
-    );
-
-    res.json({ success: true, user: result.rows[0] });
-  } catch (error) {
-    logger.error('Recalculate rank failed:', error);
-    res.status(500).json({ error: 'Failed to recalculate rank.' });
+    logger.error('Failed to fetch user stats:', error);
+    res.status(500).json({ error: 'Failed to fetch user stats' });
   }
 });
 
