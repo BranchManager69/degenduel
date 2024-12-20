@@ -2167,3 +2167,566 @@
   ✨ DEGENDUEL API INITIALIZING ✨
 
 2024-12-19 02:16:49 -05:00:     🎮  DegenDuel API ready on port 3003
+2024-12-19 02:24:53 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 02:24:53 -05:00: ⏰ Time: 2024-12-19T07:24:53.893Z
+2024-12-19 02:24:53 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 02:24:53 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:24:53 -05:00: 
+🍪 Session Cookie: Not present
+2024-12-19 02:24:57 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 02:24:57 -05:00: ⏰ Time: 2024-12-19T07:24:57.233Z
+2024-12-19 02:24:57 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 02:24:57 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:24:57 -05:00: 
+🍪 Session Cookie: Not present
+2024-12-19 02:24:58 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 02:24:58 -05:00: ⏰ Time: 2024-12-19T07:24:58.824Z
+2024-12-19 02:24:58 -05:00: 📍 Route: GET /api/contests/2
+2024-12-19 02:24:58 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:24:58 -05:00: 
+🍪 Session Cookie: Not present
+2024-12-19 02:25:03 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 02:25:03 -05:00: ⏰ Time: 2024-12-19T07:25:03.231Z
+2024-12-19 02:25:03 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 02:25:03 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:03 -05:00: 
+🍪 Session Cookie: Not present
+2024-12-19 02:25:17 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 02:25:17 -05:00: ⏰ Time: 2024-12-19T07:25:17.572Z
+2024-12-19 02:25:17 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 02:25:17 -05:00: 
+👛 X-Wallet-Address Header: Not present
+2024-12-19 02:25:17 -05:00: 
+🍪 Session Cookie: Not present
+2024-12-19 02:25:29 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 02:25:29 -05:00: ⏰ Time: 2024-12-19T07:25:29.584Z
+2024-12-19 02:25:29 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 02:25:29 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:29 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 02:25:29 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 02:25:29 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:29 -05:00:    Issued At: 2024-12-19T07:25:23.000Z
+2024-12-19 02:25:29 -05:00:    Expires: 2024-12-20T07:25:23.000Z
+2024-12-19 02:25:29 -05:00:    Current Time: 2024-12-19T07:25:29.587Z
+2024-12-19 02:25:29 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 02:25:29 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734593123963,
+  iat: 1734593123,
+  exp: 1734679523
+}
+2024-12-19 02:25:29 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:29 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 02:25:29 -05:00: 🎯 Contest ID being requested: 3
+2024-12-19 02:25:29 -05:00: 🛣️ Moving to route handler
+2024-12-19 02:25:29 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 02:25:29 -05:00: 🎮 Attempting to fetch contest: 3
+2024-12-19 02:25:29 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:29 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '3' ]
+2024-12-19 02:25:29 -05:00: 📊 Query result rows: 1
+2024-12-19 02:25:29 -05:00: 📊 First row preview: Data found
+2024-12-19 02:25:29 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 02:25:43 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 02:25:43 -05:00: ⏰ Time: 2024-12-19T07:25:43.550Z
+2024-12-19 02:25:43 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 02:25:43 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:43 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 02:25:43 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 02:25:43 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:43 -05:00:    Issued At: 2024-12-19T07:25:23.000Z
+2024-12-19 02:25:43 -05:00:    Expires: 2024-12-20T07:25:23.000Z
+2024-12-19 02:25:43 -05:00:    Current Time: 2024-12-19T07:25:43.551Z
+2024-12-19 02:25:43 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 02:25:43 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734593123963,
+  iat: 1734593123,
+  exp: 1734679523
+}
+2024-12-19 02:25:43 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:43 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 02:25:43 -05:00: 🎯 Contest ID being requested: 3
+2024-12-19 02:25:43 -05:00: 🛣️ Moving to route handler
+2024-12-19 02:25:43 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 02:25:43 -05:00: 🎮 Attempting to fetch contest: 3
+2024-12-19 02:25:43 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 02:25:43 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '3' ]
+2024-12-19 02:25:43 -05:00: 📊 Query result rows: 1
+2024-12-19 02:25:43 -05:00: 📊 First row preview: Data found
+2024-12-19 02:25:43 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:28:26 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:28:26 -05:00: ⏰ Time: 2024-12-19T08:28:26.544Z
+2024-12-19 03:28:26 -05:00: 📍 Route: GET /api/contests/2
+2024-12-19 03:28:26 -05:00: 
+👛 X-Wallet-Address Header: Not present
+2024-12-19 03:28:26 -05:00: 
+🍪 Session Cookie: Not present
+2024-12-19 03:28:28 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:28:28 -05:00: ⏰ Time: 2024-12-19T08:28:28.140Z
+2024-12-19 03:28:28 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 03:28:28 -05:00: 
+👛 X-Wallet-Address Header: Not present
+2024-12-19 03:28:28 -05:00: 
+🍪 Session Cookie: Not present
+2024-12-19 03:28:57 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:28:57 -05:00: ⏰ Time: 2024-12-19T08:28:57.680Z
+2024-12-19 03:28:57 -05:00: 📍 Route: GET /api/contests/2
+2024-12-19 03:28:57 -05:00: 
+👛 X-Wallet-Address Header: Not present
+2024-12-19 03:28:57 -05:00: 
+🍪 Session Cookie: Not present
+2024-12-19 03:29:07 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:07 -05:00: ⏰ Time: 2024-12-19T08:29:07.946Z
+2024-12-19 03:29:07 -05:00: 📍 Route: GET /api/contests/2
+2024-12-19 03:29:07 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:07 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:07 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:07 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:07 -05:00:    Issued At: 2024-12-19T08:29:01.000Z
+2024-12-19 03:29:07 -05:00:    Expires: 2024-12-20T08:29:01.000Z
+2024-12-19 03:29:07 -05:00:    Current Time: 2024-12-19T08:29:07.947Z
+2024-12-19 03:29:07 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:07 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734596941174,
+  iat: 1734596941,
+  exp: 1734683341
+}
+2024-12-19 03:29:07 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:07 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:07 -05:00: 🎯 Contest ID being requested: 2
+2024-12-19 03:29:07 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:07 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:07 -05:00: 🎮 Attempting to fetch contest: 2
+2024-12-19 03:29:07 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:07 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '2' ]
+2024-12-19 03:29:07 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:07 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:07 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:08 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:08 -05:00: ⏰ Time: 2024-12-19T08:29:08.160Z
+2024-12-19 03:29:08 -05:00: 📍 Route: GET /api/contests/2
+2024-12-19 03:29:08 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:08 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:08 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00:    Issued At: 2024-12-19T08:29:01.000Z
+2024-12-19 03:29:08 -05:00:    Expires: 2024-12-20T08:29:01.000Z
+2024-12-19 03:29:08 -05:00:    Current Time: 2024-12-19T08:29:08.161Z
+2024-12-19 03:29:08 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:08 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734596941174,
+  iat: 1734596941,
+  exp: 1734683341
+}
+2024-12-19 03:29:08 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:08 -05:00: 🎯 Contest ID being requested: 2
+2024-12-19 03:29:08 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:08 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:08 -05:00: 🎮 Attempting to fetch contest: 2
+2024-12-19 03:29:08 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '2' ]
+2024-12-19 03:29:08 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:08 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:08 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:08 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:08 -05:00: ⏰ Time: 2024-12-19T08:29:08.410Z
+2024-12-19 03:29:08 -05:00: 📍 Route: GET /api/contests/2
+2024-12-19 03:29:08 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:08 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:08 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00:    Issued At: 2024-12-19T08:29:01.000Z
+2024-12-19 03:29:08 -05:00:    Expires: 2024-12-20T08:29:01.000Z
+2024-12-19 03:29:08 -05:00:    Current Time: 2024-12-19T08:29:08.411Z
+2024-12-19 03:29:08 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:08 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734596941174,
+  iat: 1734596941,
+  exp: 1734683341
+}
+2024-12-19 03:29:08 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:08 -05:00: 🎯 Contest ID being requested: 2
+2024-12-19 03:29:08 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:08 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:08 -05:00: 🎮 Attempting to fetch contest: 2
+2024-12-19 03:29:08 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '2' ]
+2024-12-19 03:29:08 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:08 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:08 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:08 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:08 -05:00: ⏰ Time: 2024-12-19T08:29:08.649Z
+2024-12-19 03:29:08 -05:00: 📍 Route: GET /api/contests/2
+2024-12-19 03:29:08 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:08 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:08 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00:    Issued At: 2024-12-19T08:29:01.000Z
+2024-12-19 03:29:08 -05:00:    Expires: 2024-12-20T08:29:01.000Z
+2024-12-19 03:29:08 -05:00:    Current Time: 2024-12-19T08:29:08.650Z
+2024-12-19 03:29:08 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:08 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734596941174,
+  iat: 1734596941,
+  exp: 1734683341
+}
+2024-12-19 03:29:08 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:08 -05:00: 🎯 Contest ID being requested: 2
+2024-12-19 03:29:08 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:08 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:08 -05:00: 🎮 Attempting to fetch contest: 2
+2024-12-19 03:29:08 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '2' ]
+2024-12-19 03:29:08 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:08 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:08 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:08 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:08 -05:00: ⏰ Time: 2024-12-19T08:29:08.876Z
+2024-12-19 03:29:08 -05:00: 📍 Route: GET /api/contests/2
+2024-12-19 03:29:08 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:08 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:08 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00:    Issued At: 2024-12-19T08:29:01.000Z
+2024-12-19 03:29:08 -05:00:    Expires: 2024-12-20T08:29:01.000Z
+2024-12-19 03:29:08 -05:00:    Current Time: 2024-12-19T08:29:08.877Z
+2024-12-19 03:29:08 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:08 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734596941174,
+  iat: 1734596941,
+  exp: 1734683341
+}
+2024-12-19 03:29:08 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:08 -05:00: 🎯 Contest ID being requested: 2
+2024-12-19 03:29:08 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:08 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:08 -05:00: 🎮 Attempting to fetch contest: 2
+2024-12-19 03:29:08 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:08 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '2' ]
+2024-12-19 03:29:08 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:08 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:08 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:10 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:10 -05:00: ⏰ Time: 2024-12-19T08:29:10.374Z
+2024-12-19 03:29:10 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 03:29:10 -05:00: 
+👛 X-Wallet-Address Header: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:10 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:10 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:10 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:10 -05:00:    Issued At: 2024-12-19T08:29:01.000Z
+2024-12-19 03:29:10 -05:00:    Expires: 2024-12-20T08:29:01.000Z
+2024-12-19 03:29:10 -05:00:    Current Time: 2024-12-19T08:29:10.375Z
+2024-12-19 03:29:10 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:10 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734596941174,
+  iat: 1734596941,
+  exp: 1734683341
+}
+2024-12-19 03:29:10 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:10 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:10 -05:00: 🎯 Contest ID being requested: 3
+2024-12-19 03:29:10 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:10 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:10 -05:00: 🎮 Attempting to fetch contest: 3
+2024-12-19 03:29:10 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:10 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '3' ]
+2024-12-19 03:29:10 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:10 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:10 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:21 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:21 -05:00: ⏰ Time: 2024-12-19T08:29:21.215Z
+2024-12-19 03:29:21 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 03:29:21 -05:00: 
+👛 X-Wallet-Address Header: Not present
+2024-12-19 03:29:21 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:21 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:21 -05:00:    Wallet: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:21 -05:00:    Issued At: 2024-12-19T08:29:01.000Z
+2024-12-19 03:29:21 -05:00:    Expires: 2024-12-20T08:29:01.000Z
+2024-12-19 03:29:21 -05:00:    Current Time: 2024-12-19T08:29:21.216Z
+2024-12-19 03:29:21 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:21 -05:00: 👤 Original req.user: {
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: 1734596941174,
+  iat: 1734596941,
+  exp: 1734683341
+}
+2024-12-19 03:29:21 -05:00: 🔑 Wallet address being used: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:21 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:21 -05:00: 🎯 Contest ID being requested: 3
+2024-12-19 03:29:21 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:21 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:21 -05:00: 🎮 Attempting to fetch contest: 3
+2024-12-19 03:29:21 -05:00: 👛 Using wallet address: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+2024-12-19 03:29:21 -05:00: 🔍 Executing query with parameters: [ 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp', '3' ]
+2024-12-19 03:29:21 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:21 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:21 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:38 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:38 -05:00: ⏰ Time: 2024-12-19T08:29:38.979Z
+2024-12-19 03:29:38 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 03:29:38 -05:00: 
+👛 X-Wallet-Address Header: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:38 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:38 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:38 -05:00:    Wallet: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:38 -05:00:    Issued At: 2024-12-19T08:29:23.000Z
+2024-12-19 03:29:38 -05:00:    Expires: 2024-12-20T08:29:23.000Z
+2024-12-19 03:29:38 -05:00:    Current Time: 2024-12-19T08:29:38.980Z
+2024-12-19 03:29:38 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:38 -05:00: 👤 Original req.user: {
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  timestamp: 1734596963576,
+  iat: 1734596963,
+  exp: 1734683363
+}
+2024-12-19 03:29:38 -05:00: 🔑 Wallet address being used: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:38 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:38 -05:00: 🎯 Contest ID being requested: 3
+2024-12-19 03:29:38 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:38 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:38 -05:00: 🎮 Attempting to fetch contest: 3
+2024-12-19 03:29:38 -05:00: 👛 Using wallet address: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:38 -05:00: 🔍 Executing query with parameters: [ '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8', '3' ]
+2024-12-19 03:29:38 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:38 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:38 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:40 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:40 -05:00: ⏰ Time: 2024-12-19T08:29:40.490Z
+2024-12-19 03:29:40 -05:00: 📍 Route: GET /api/contests/3/portfolio
+2024-12-19 03:29:40 -05:00: 
+👛 X-Wallet-Address Header: Not present
+2024-12-19 03:29:40 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:40 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:40 -05:00:    Wallet: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:40 -05:00:    Issued At: 2024-12-19T08:29:23.000Z
+2024-12-19 03:29:40 -05:00:    Expires: 2024-12-20T08:29:23.000Z
+2024-12-19 03:29:40 -05:00:    Current Time: 2024-12-19T08:29:40.491Z
+2024-12-19 03:29:40 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:40 -05:00: 👤 Original req.user: {
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  timestamp: 1734596963576,
+  iat: 1734596963,
+  exp: 1734683363
+}
+2024-12-19 03:29:40 -05:00: 🔑 Wallet address being used: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:40 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:40 -05:00: 🎯 Contest ID being requested: 3
+2024-12-19 03:29:40 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:40 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:40 -05:00: ⏰ Time: 2024-12-19T08:29:40.495Z
+2024-12-19 03:29:40 -05:00: 📍 Route: GET /api/contests/3
+2024-12-19 03:29:40 -05:00: 
+👛 X-Wallet-Address Header: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:40 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:40 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:40 -05:00:    Wallet: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:40 -05:00:    Issued At: 2024-12-19T08:29:23.000Z
+2024-12-19 03:29:40 -05:00:    Expires: 2024-12-20T08:29:23.000Z
+2024-12-19 03:29:40 -05:00:    Current Time: 2024-12-19T08:29:40.496Z
+2024-12-19 03:29:40 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:40 -05:00: 👤 Original req.user: {
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  timestamp: 1734596963576,
+  iat: 1734596963,
+  exp: 1734683363
+}
+2024-12-19 03:29:40 -05:00: 🔑 Wallet address being used: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:40 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:40 -05:00: 🎯 Contest ID being requested: 3
+2024-12-19 03:29:40 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:40 -05:00: 
+📊 ==== Database Query Debug ====
+2024-12-19 03:29:40 -05:00: 🎮 Attempting to fetch contest: 3
+2024-12-19 03:29:40 -05:00: 👛 Using wallet address: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:40 -05:00: 🔍 Executing query with parameters: [ '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8', '3' ]
+2024-12-19 03:29:40 -05:00: 📊 Query result rows: 1
+2024-12-19 03:29:40 -05:00: 📊 First row preview: Data found
+2024-12-19 03:29:40 -05:00: ✅ Successfully retrieved contest data
+2024-12-19 03:29:47 -05:00: 
+🔍 ====== Auth Debug Log ======
+2024-12-19 03:29:47 -05:00: ⏰ Time: 2024-12-19T08:29:47.079Z
+2024-12-19 03:29:47 -05:00: 📍 Route: POST /api/contests/3/enter
+2024-12-19 03:29:47 -05:00: 
+👛 X-Wallet-Address Header: Not present
+2024-12-19 03:29:47 -05:00: 
+🍪 Session Cookie: Present
+2024-12-19 03:29:47 -05:00: 
+🔓 Decoded JWT Token:
+2024-12-19 03:29:47 -05:00:    Wallet: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:47 -05:00:    Issued At: 2024-12-19T08:29:23.000Z
+2024-12-19 03:29:47 -05:00:    Expires: 2024-12-20T08:29:23.000Z
+2024-12-19 03:29:47 -05:00:    Current Time: 2024-12-19T08:29:47.080Z
+2024-12-19 03:29:47 -05:00: 
+🔍 ==== Post-Auth Debug ====
+2024-12-19 03:29:47 -05:00: 👤 Original req.user: {
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  timestamp: 1734596963576,
+  iat: 1734596963,
+  exp: 1734683363
+}
+2024-12-19 03:29:47 -05:00: 🔑 Wallet address being used: 5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8
+2024-12-19 03:29:47 -05:00: 📝 Complete user object keys: [ 'wallet_address', 'timestamp', 'iat', 'exp' ]
+2024-12-19 03:29:47 -05:00: 🎯 Contest ID being requested: 3
+2024-12-19 03:29:47 -05:00: 🛣️ Moving to route handler
+2024-12-19 03:29:47 -05:00: Received request: {
+  requestId: '3ba60e71-ecc5-4b51-8eac-3988e5fd7dd1',
+  contestId: '3',
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  portfolio: [ { symbol: 'USDC', weight: 100 } ]
+}
+2024-12-19 03:29:47 -05:00: DB client connected
+2024-12-19 15:39:46 -05:00: PROJECT_ROOT /home/websites/degenduel
+2024-12-19 15:39:46 -05:00: Not all input has been taken into account at your final specification.
+2024-12-19 15:39:46 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2024-12-19 15:39:46 -05:00: Swagger docs available at /api-docs
+2024-12-19 15:39:46 -05:00: 
+      🎮  Starting DegenDuel API...
+2024-12-19 15:39:46 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2024-12-19 15:39:46 -05:00:     🎮  DegenDuel API ready on port 3003
+2024-12-19 15:46:01 -05:00: PROJECT_ROOT /home/websites/degenduel
+2024-12-19 15:46:01 -05:00: Not all input has been taken into account at your final specification.
+2024-12-19 15:46:02 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2024-12-19 15:46:02 -05:00: Swagger docs available at /api-docs
+2024-12-19 15:46:02 -05:00: 
+      🎮  Starting DegenDuel API...
+2024-12-19 15:46:02 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2024-12-19 15:46:02 -05:00:     🎮  DegenDuel API ready on port 3003
+2024-12-19 15:46:36 -05:00: >>>query received>>> | /api/admin/activities
+2024-12-19 15:57:23 -05:00: PROJECT_ROOT /home/websites/degenduel
+2024-12-19 15:57:23 -05:00: Not all input has been taken into account at your final specification.
+2024-12-19 15:57:24 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2024-12-19 15:57:24 -05:00: Swagger docs available at /api-docs
+2024-12-19 15:57:24 -05:00: 
+      🎮  Starting DegenDuel API...
+2024-12-19 15:57:24 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2024-12-19 15:57:24 -05:00:     🎮  DegenDuel API ready on port 3003
+2024-12-19 15:57:49 -05:00: >>>query received>>> | /api/admin/activities
+2024-12-19 15:57:49 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2024-12-19 15:57:49 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2024-12-19T20:57:49.401Z },
+  { id: 2, action: 'update', created_at: 2024-12-19T20:57:49.401Z }
+]
+2024-12-19 15:57:49 -05:00: Total count: 2
+2024-12-19 18:19:02 -05:00: >>>query received>>> | /api/admin/activities
+2024-12-19 18:19:02 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2024-12-19 18:19:02 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2024-12-19T23:19:02.513Z },
+  { id: 2, action: 'update', created_at: 2024-12-19T23:19:02.513Z }
+]
+2024-12-19 18:19:02 -05:00: Total count: 2

@@ -1,0 +1,266 @@
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import logger from '../utils/logger.js';
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Analytics
+ *   description: Analytics API endpoints for platform insights
+ */
+
+/**
+ * @swagger
+ * /api/analytics/users/overview:
+ *   get:
+ *     summary: Get user analytics overview
+ *     tags: [Analytics]
+ *     responses:
+ *       200:
+ *         description: User analytics overview data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalUsers:
+ *                   type: integer
+ *                 activeUsers:
+ *                   type: integer
+ *                 totalDeposited:
+ *                   type: string
+ *                 avgUserBalance:
+ *                   type: string
+ *                 topEarners:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       wallet_address:
+ *                         type: string
+ *                       nickname:
+ *                         type: string
+ *                       total_earnings:
+ *                         type: string
+ */
+router.get('/users/overview', async (req, res) => {
+  try {
+    const [
+      totalUsers,
+      activeUsers,
+      depositStats,
+      topEarners
+    ] = await Promise.all([
+      // Total registered users
+      prisma.users.count(),
+      
+      // Active users (logged in last 30 days)
+      prisma.users.count({
+        where: {
+          last_login: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+          }
+        }
+      }),
+      
+      // Aggregate deposit statistics
+      prisma.users.aggregate({
+        _avg: {
+          balance: true
+        },
+        _sum: {
+          balance: true
+        }
+      }),
+      
+      // Top 10 earners
+      prisma.users.findMany({
+        select: {
+          wallet_address: true,
+          nickname: true,
+          total_earnings: true
+        },
+        orderBy: {
+          total_earnings: 'desc'
+        },
+        take: 10
+      })
+    ]);
+
+    res.json({
+      totalUsers,
+      activeUsers,
+      totalDeposited: depositStats._sum.balance?.toString() || '0',
+      avgUserBalance: depositStats._avg.balance?.toString() || '0',
+      topEarners
+    });
+  } catch (error) {
+    logger.error('Failed to fetch user analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics data' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/analytics/users/growth:
+ *   get:
+ *     summary: Get user growth metrics over time
+ *     tags: [Analytics]
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [day, week, month, year]
+ *         default: month
+ *         description: Time period for growth analysis
+ *     responses:
+ *       200:
+ *         description: User growth metrics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 signups:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       date:
+ *                         type: string
+ *                       count:
+ *                         type: integer
+ */
+router.get('/users/growth', async (req, res) => {
+  const { period = 'month' } = req.query;
+  
+  try {
+    const periodMap = {
+      day: 1,
+      week: 7,
+      month: 30,
+      year: 365
+    };
+
+    const days = periodMap[period] || 30;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const signups = await prisma.users.groupBy({
+      by: ['created_at'],
+      where: {
+        created_at: {
+          gte: startDate
+        }
+      },
+      _count: true,
+      orderBy: {
+        created_at: 'asc'
+      }
+    });
+
+    const formattedSignups = signups.map(entry => ({
+      date: entry.created_at.toISOString().split('T')[0],
+      count: entry._count
+    }));
+
+    res.json({ signups: formattedSignups });
+  } catch (error) {
+    logger.error('Failed to fetch user growth metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch growth metrics' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/analytics/users/engagement:
+ *   get:
+ *     summary: Get user engagement metrics
+ *     tags: [Analytics]
+ *     responses:
+ *       200:
+ *         description: User engagement metrics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 avgContestsPerUser:
+ *                   type: number
+ *                 totalContestEntries:
+ *                   type: integer
+ *                 contestParticipationRate:
+ *                   type: number
+ *                 userRetention:
+ *                   type: object
+ *                   properties:
+ *                     daily:
+ *                       type: number
+ *                     weekly:
+ *                       type: number
+ *                     monthly:
+ *                       type: number
+ */
+router.get('/users/engagement', async (req, res) => {
+  try {
+    const [
+      userStats,
+      totalUsers,
+      retentionStats
+    ] = await Promise.all([
+      // Average contests and total entries
+      prisma.users.aggregate({
+        _avg: {
+          total_contests: true
+        },
+        _sum: {
+          total_contests: true
+        }
+      }),
+      
+      prisma.users.count(),
+      
+      // Retention calculations
+      prisma.users.groupBy({
+        by: ['wallet_address'],
+        where: {
+          OR: [
+            { last_login: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+            { last_login: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+            { last_login: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }
+          ]
+        },
+        _count: true
+      })
+    ]);
+
+    const dailyActive = retentionStats.filter(u => 
+      new Date(u.last_login) >= new Date(Date.now() - 24 * 60 * 60 * 1000)
+    ).length;
+
+    const weeklyActive = retentionStats.filter(u =>
+      new Date(u.last_login) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    ).length;
+
+    const monthlyActive = retentionStats.length;
+
+    res.json({
+      avgContestsPerUser: userStats._avg.total_contests || 0,
+      totalContestEntries: userStats._sum.total_contests || 0,
+      contestParticipationRate: totalUsers ? (userStats._sum.total_contests || 0) / totalUsers : 0,
+      userRetention: {
+        daily: totalUsers ? dailyActive / totalUsers : 0,
+        weekly: totalUsers ? weeklyActive / totalUsers : 0,
+        monthly: totalUsers ? monthlyActive / totalUsers : 0
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to fetch user engagement metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch engagement metrics' });
+  }
+});
+
+export default router; 

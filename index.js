@@ -26,7 +26,11 @@ import testRoutes from './routes/test-routes.js'; // NEWEST v4
 import logger from './utils/logger.js'; // fixed
 import setupSwagger from './config/swagger.js'; // ES6 default import
 import superadminRoutes from './routes/superadmin.js';
+
+// Prisma routes
 import prismaUserRoutes from './routes/prisma/users.js';
+import prismaStatsRoutes from './routes/prisma/stats.js';
+import prismaAdminRoutes from './routes/prisma/admin.js';
 
 dotenv.config();
 
@@ -66,7 +70,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/trades', tradeRoutes);
-app.use('/api/stats', statsRoutes);
+////app.use('/api/stats', statsRoutes);
 app.use('/api/tokens', tokenRoutes); // new
 app.use('/api/token-buckets', tokenBucketRoutes); // new
 app.use('/api/leaderboard', leaderboardRoutes); // almost forgot this one!
@@ -74,6 +78,8 @@ app.use('/api/test', testRoutes); // NEWEST; tests v4
 
 // (testing) New Prisma routes
 app.use('/api/daddy', prismaUserRoutes);
+app.use('/api/stats', prismaStatsRoutes);
+app.use('/api/admin', prismaAdminRoutes);
 
 // Superadmin routes
 app.use('/api/superadmin', superadminRoutes);
