@@ -14,6 +14,11 @@
             "date": 1734584974301,
             "name": "/home/websites/degenduel/logs/frontend-2024-12-19.log",
             "hash": "72f010d49ba4ada6055dcf753d704712774dcc18618476fbfd80189739ba217f"
+        },
+        {
+            "date": 1734680861847,
+            "name": "/home/websites/degenduel/logs/frontend-2024-12-20.log",
+            "hash": "f44b8b397bcf2b294c943be3613acc9b7c40036ab4618a5074a660d1a1d9f767"
         }
     ],
     "hashType": "sha256"
