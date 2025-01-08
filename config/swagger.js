@@ -1,6 +1,7 @@
+// /config/swagger.js
+import dotenv from 'dotenv';
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-import dotenv from 'dotenv';
 
 dotenv.config();
 

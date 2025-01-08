@@ -1,0 +1,192 @@
+2025-01-08 02:16:24 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 14:32:10 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 15:28:19 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 15:29:32 -05:00: prisma:query SELECT 1
+2025-01-08 15:29:32 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 15:30:19 -05:00: prisma:query SELECT 1
+2025-01-08 15:30:19 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 15:31:36 -05:00: prisma:query SELECT 1
+2025-01-08 15:31:36 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 15:34:21 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.

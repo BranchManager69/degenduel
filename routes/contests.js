@@ -3,7 +3,9 @@ import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+});
 
 /**
  * @swagger

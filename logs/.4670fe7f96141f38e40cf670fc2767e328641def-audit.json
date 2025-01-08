@@ -6,19 +6,19 @@
     "auditLog": "/home/websites/degenduel/logs/.4670fe7f96141f38e40cf670fc2767e328641def-audit.json",
     "files": [
         {
-            "date": 1734505462143,
-            "name": "/home/websites/degenduel/logs/frontend-2024-12-18.log",
-            "hash": "7aac810cbf97d9ac6d38c4038647f9dd893231caacfeee1083bc695948a17b49"
+            "date": 1734929915059,
+            "name": "/home/websites/degenduel/logs/frontend-2024-12-22.log",
+            "hash": "b66ee2da5daaf746b6e0977a57ebe9861bef2c97dfc7692abd643b71f2e6fe54"
         },
         {
-            "date": 1734584974301,
-            "name": "/home/websites/degenduel/logs/frontend-2024-12-19.log",
-            "hash": "72f010d49ba4ada6055dcf753d704712774dcc18618476fbfd80189739ba217f"
+            "date": 1734942866634,
+            "name": "/home/websites/degenduel/logs/frontend-2024-12-23.log",
+            "hash": "e34e91aa4201d5a7de3219440bdbb250df5afea0520c5f7bec9175bc88f8ede2"
         },
         {
-            "date": 1734680861847,
-            "name": "/home/websites/degenduel/logs/frontend-2024-12-20.log",
-            "hash": "f44b8b397bcf2b294c943be3613acc9b7c40036ab4618a5074a660d1a1d9f767"
+            "date": 1736087632070,
+            "name": "/home/websites/degenduel/logs/frontend-2025-01-05.log",
+            "hash": "08add0c8b6cdff98b771eaee3e61dc44351376e5df702f4ee14fb6ae4c5f2c7b"
         }
     ],
     "hashType": "sha256"

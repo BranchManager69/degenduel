@@ -18,6 +18,13 @@ const prisma = new PrismaClient();
  *   schemas:
  *     Token:
  *       type: object
+ *       required:
+ *         - id
+ *         - address
+ *         - symbol
+ *         - name
+ *         - decimals
+ *         - is_active
  *       properties:
  *         id:
  *           type: integer
@@ -36,6 +43,7 @@ const prisma = new PrismaClient();
  *           example: 18
  *         is_active:
  *           type: boolean
+ *           example: true
  *         market_cap:
  *           type: string
  *           example: "200000000000"
@@ -45,24 +53,34 @@ const prisma = new PrismaClient();
  *         volume_24h:
  *           type: string
  *           example: "1000000000"
- *     
  *     TokenPrice:
  *       type: object
+ *       required:
+ *         - token_id
+ *         - price
+ *         - updated_at
  *       properties:
  *         token_id:
  *           type: integer
+ *           example: 1
  *         price:
  *           type: string
  *           example: "1850.75"
  *         updated_at:
  *           type: string
  *           format: date-time
- *     
+ *           example: "2024-12-21T15:30:00Z"
  *     TokenBucket:
  *       type: object
+ *       required:
+ *         - id
+ *         - bucket_code
+ *         - name
+ *         - description
  *       properties:
  *         id:
  *           type: integer
+ *           example: 1
  *         bucket_code:
  *           type: string
  *           example: "DEFI-BLUE-CHIPS"
@@ -72,7 +90,6 @@ const prisma = new PrismaClient();
  *         description:
  *           type: string
  *           example: "Top DeFi tokens by market cap"
- *   
  *   responses:
  *     TokenNotFound:
  *       description: Token was not found
@@ -83,7 +100,7 @@ const prisma = new PrismaClient();
  *             properties:
  *               error:
  *                 type: string
- *                 example: Token not found
+ *                 example: "Token not found"
  */
 
 /**
@@ -195,16 +212,16 @@ router.get('/', async (req, res) => {
  *               allOf:
  *                 - $ref: '#/components/schemas/Token'
  *                 - type: object
- *                     properties:
- *                       token_prices:
- *                         $ref: '#/components/schemas/TokenPrice'
- *                       token_bucket_memberships:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             token_buckets:
- *                               $ref: '#/components/schemas/TokenBucket'
+ *                   properties:
+ *                     token_prices:
+ *                       $ref: '#/components/schemas/TokenPrice'
+ *                     token_bucket_memberships:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           token_buckets:
+ *                             $ref: '#/components/schemas/TokenBucket'
  *       404:
  *         $ref: '#/components/responses/TokenNotFound'
  */

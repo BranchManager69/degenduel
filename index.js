@@ -1,36 +1,34 @@
+// /index.js
 import cookieParser from 'cookie-parser';
-import express from 'express';
 import dotenv from 'dotenv';
-import chalk from 'chalk';
-import gradient from 'gradient-string';
+import express from 'express';
 ////import http from 'http'; // HTTP server for logs
 ////import fs from 'fs'; // File streaming for logs
 ////import { WebSocketServer } from 'ws'; // WebSocket support
-import { initDatabase, closeDatabase } from './config/database.js';  // SQLite for leaderboard
-import { pool, initPgDatabase, closePgDatabase } from './config/pg-database.js';
+import { closeDatabase, initDatabase } from './config/database.js'; // SQLite for leaderboard
 import { configureMiddleware } from './config/middleware.js';
+import { closePgDatabase, initPgDatabase, pool } from './config/pg-database.js';
 ////////import { authDebugMiddleware } from './middleware/debugMiddleware.js';
-import { errorHandler } from './utils/errorHandler.js';
-import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
 import contestRoutes from './routes/contests.js';
-import tradeRoutes from './routes/trades.js';
-import statsRoutes from './routes/stats.js';
-import tokenRoutes from './routes/tokens.js'; // new
-import tokenBucketRoutes from './routes/tokenBuckets.js'; // new
 import leaderboardRoutes from './routes/leaderboard.js'; // almost forgot this one!
+import tokenBucketRoutes from './routes/tokenBuckets.js'; // new
+import tokenRoutes from './routes/tokens.js'; // new
+import tradeRoutes from './routes/trades.js';
+import userRoutes from './routes/users.js';
+import { errorHandler } from './utils/errorHandler.js';
 //import testRoutesV1 from './routes/test-routes.js'; // OLD v1
 //import testRoutesV2 from './routes/test-utils.js'; // MID v2
 //import testRoutesV3 from './routes/test-utilities.js'; // NEW NOW OLD v3
-import testRoutes from './routes/test-routes.js'; // NEWEST v4
-import logger from './utils/logger.js'; // fixed
 import setupSwagger from './config/swagger.js'; // ES6 default import
 import superadminRoutes from './routes/superadmin.js';
+import testRoutes from './routes/test-routes.js'; // NEWEST v4
+import logger from './utils/logger.js'; // fixed
 
 // Prisma routes
-import prismaUserRoutes from './routes/prisma/users.js';
-import prismaStatsRoutes from './routes/prisma/stats.js';
 import prismaAdminRoutes from './routes/prisma/admin.js';
+import prismaStatsRoutes from './routes/prisma/stats.js';
+import prismaUserRoutes from './routes/prisma/users.js';
 
 dotenv.config();
 

@@ -34,7 +34,7 @@ class LogTransform extends Transform {
       }
     } catch (err) {
       // For non-JSON lines, pass through as-is
-      this.push({ timestamp: new Date().toISOString(), level: 'info', message: chunk.toString() });
+      this.push({ timestamp: new Date().toISOString(), level: 'error', message: chunk.toString() });
     }
     callback();
   }
@@ -53,7 +53,7 @@ class PrettyFormatTransform extends Transform {
       const metaStr = Object.keys(meta).length ? 
         `\n  ${JSON.stringify(meta, null, 2).replace(/\n/g, '\n  ')}` : '';
       
-      this.push(`${timestamp} ${serviceStr}[${level?.toUpperCase() || 'INFO'}] ${message}${metaStr}\n`);
+      this.push(`${timestamp} ${serviceStr}[${level?.toUpperCase() || 'ERROR'}] ${message}${metaStr}\n`);
     } catch (err) {
       // If formatting fails, output raw message
       this.push(`${chunk.toString()}\n`);
