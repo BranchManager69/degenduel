@@ -6,19 +6,34 @@
     "auditLog": "/home/websites/degenduel/logs/.bb2b51cf9ddbc716ba837f37c740173472a53872-audit.json",
     "files": [
         {
-            "date": 1734505462140,
-            "name": "/home/websites/degenduel/logs/api-2024-12-18.log",
-            "hash": "9040ca3121b4c5b444369b7430460b82f0b529de2dba0319643d9c0ee666a065"
+            "date": 1735288132763,
+            "name": "/home/websites/degenduel/logs/api-2024-12-27.log",
+            "hash": "e50bb7ed4898b8ff8fcdd4f282725116b8f1b0358dd9693dbaa909e3e22ff5d7"
         },
         {
-            "date": 1734584973911,
-            "name": "/home/websites/degenduel/logs/api-2024-12-19.log",
-            "hash": "09bb1a92c4673e2af9a1b3e5e9052056643dc0c819ff9ff8d5b6a93a6bacbfc5"
+            "date": 1735404394701,
+            "name": "/home/websites/degenduel/logs/api-2024-12-28.log",
+            "hash": "f7215b7b9fcacef2efc580876ceeb145e36af216f3e6e0ad3039338cefac7bbc"
         },
         {
-            "date": 1734680861843,
-            "name": "/home/websites/degenduel/logs/api-2024-12-20.log",
-            "hash": "75d0e9a65d472b41ff0786397497cc7c852c70b4503393ebadb22d81c9e3d010"
+            "date": 1735798600677,
+            "name": "/home/websites/degenduel/logs/api-2025-01-02.log",
+            "hash": "3579a26193c23a2b01813279455b92c30785a257c657d8b3b13327e73a4c766c"
+        },
+        {
+            "date": 1735973476758,
+            "name": "/home/websites/degenduel/logs/api-2025-01-04.log",
+            "hash": "00c09a696e40058022b4d145e7e92ecf564d29a9689c3e3633f1918f733aabc8"
+        },
+        {
+            "date": 1736087169803,
+            "name": "/home/websites/degenduel/logs/api-2025-01-05.log",
+            "hash": "e4d2a03e758a3c2f8b62b6b696c4460f9862d7d5a66f90845c9d6f67728b1593"
+        },
+        {
+            "date": 1736320584217,
+            "name": "/home/websites/degenduel/logs/api-2025-01-08.log",
+            "hash": "b519dd4a3c7dacb33279126d733dbf11a1a75166b78d55063993bdfa1a5d14b4"
         }
     ],
     "hashType": "sha256"
