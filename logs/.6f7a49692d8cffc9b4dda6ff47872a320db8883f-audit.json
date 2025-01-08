@@ -6,19 +6,34 @@
     "auditLog": "/home/websites/degenduel/logs/.6f7a49692d8cffc9b4dda6ff47872a320db8883f-audit.json",
     "files": [
         {
-            "date": 1734505462141,
-            "name": "/home/websites/degenduel/logs/error-2024-12-18.log",
-            "hash": "f6238bd4d0958db70557d58f2e7e805bdc7be3868c7e0371d026db895cfda5e1"
+            "date": 1735288132776,
+            "name": "/home/websites/degenduel/logs/error-2024-12-27.log",
+            "hash": "8d0c44334333a2a3c97d0d202fdc77c84c68cdaf0d48157f806885153db0e2bd"
         },
         {
-            "date": 1734584974299,
-            "name": "/home/websites/degenduel/logs/error-2024-12-19.log",
-            "hash": "f877266c4547149acb004bd47c0ca419f6b0cd9f84e71d0d23d39cb903843c9f"
+            "date": 1735404394714,
+            "name": "/home/websites/degenduel/logs/error-2024-12-28.log",
+            "hash": "951de172d321e7cc6cb087a27c996be020f7e2517f2c094736f5db4a243654eb"
         },
         {
-            "date": 1734680861845,
-            "name": "/home/websites/degenduel/logs/error-2024-12-20.log",
-            "hash": "51d60e64edbec6fce9c9933e9c91a9d3548a58706173e7b00f60b23d9209c1d6"
+            "date": 1735798600715,
+            "name": "/home/websites/degenduel/logs/error-2025-01-02.log",
+            "hash": "71f3e21ad07fd2ed0243e225b3f7cd8aed30f32759db601a681f6f7dc3513730"
+        },
+        {
+            "date": 1735973476780,
+            "name": "/home/websites/degenduel/logs/error-2025-01-04.log",
+            "hash": "7acfaee8ffcb5c3ab2306b0fea935c468e3326891c5a9fbac3134e9d1538bd45"
+        },
+        {
+            "date": 1736087169810,
+            "name": "/home/websites/degenduel/logs/error-2025-01-05.log",
+            "hash": "2c9e7dcd1384a1f26e88d6e05679e0fa6984e90e15cd0becd2f58d538d5019e5"
+        },
+        {
+            "date": 1736320584249,
+            "name": "/home/websites/degenduel/logs/error-2025-01-08.log",
+            "hash": "c49a6bfb5e01a2829107b08837d8fb250a72685f749c855b81b058e2101999d7"
         }
     ],
     "hashType": "sha256"
