@@ -6,6 +6,17 @@ import logger from '../utils/logger.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Zod input validation schemas
+const getUsersQuerySchema = z.object({
+  limit: z.string().transform(val => parseInt(val)).default('10'),
+  offset: z.string().transform(val => parseInt(val)).default('0'),
+  sort: z.enum(['rank_score', 'total_earnings', 'total_contests']).optional()
+});
+const createUserSchema = z.object({
+  wallet_address: z.string(), // TODO: Add validation for wallet_address
+  nickname: z.string().min(3).max(50).optional() // TODO: Add validation for nickname
+});
+
 /**
  * @swagger
  * tags:
@@ -17,41 +28,13 @@ const prisma = new PrismaClient();
  * @swagger
  * /api/users:
  *   get:
- *     summary: Get all users with optional filters
+ *     summary: Get all users
  *     tags: [Users]
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
- *       - in: query
- *         name: sort
- *         schema:
- *           type: string
- *           enum: [rank_score, total_earnings, total_contests]
  *     responses:
  *       200:
  *         description: List of users
  */
-
-// Add input validation schemas
-const getUsersQuerySchema = z.object({
-  limit: z.string().transform(val => parseInt(val)).default('10'),
-  offset: z.string().transform(val => parseInt(val)).default('0'),
-  sort: z.enum(['rank_score', 'total_earnings', 'total_contests']).optional()
-});
-
-const createUserSchema = z.object({
-  wallet_address: z.string(), // TODO: Add validation for wallet_address
-  nickname: z.string().min(3).max(50).optional() // TODO: Add validation for nickname
-});
-
+// Get all users
 router.get('/', async (req, res) => {
   const logContext = { 
     path: 'GET /api/users',
@@ -165,6 +148,7 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: User not found
  */
+// Get user profile by wallet address
 router.get('/:wallet', async (req, res) => {
   const logContext = {
     path: 'GET /api/users/:wallet',
@@ -276,6 +260,7 @@ router.get('/:wallet', async (req, res) => {
  *                   type: string
  *                   example: "Wallet address already exists"
  */
+// Create new user; need wallet_address ("BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"), chain_id ("SOLANA"), and nickname ("BranchManager69") in request body
 router.post('/', async (req, res) => {
   const logContext = {
     path: 'POST /api/users',
@@ -397,6 +382,7 @@ router.post('/', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
  */
+// Update user profile by wallet address
 router.put('/:wallet', async (req, res) => {
   try {
     const { nickname, settings } = req.body;
@@ -442,6 +428,7 @@ router.put('/:wallet', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
  */
+// Get user achievements by wallet address
 router.get('/:wallet/achievements', async (req, res) => {
   try {
     const achievements = await prisma.user_achievements.findMany({
@@ -502,6 +489,7 @@ router.get('/:wallet/achievements', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
  */
+// Get detailed user statistics by wallet address
 router.get('/:wallet/stats', async (req, res) => {
   try {
     const [stats, tokenStats] = await Promise.all([

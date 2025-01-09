@@ -168,7 +168,7 @@ const prisma = new PrismaClient({
  */
 router.get('/', async (req, res) => {
   try {
-    const { status, limit = 10, offset = 0 } = req.query;
+    const { status, limit = 10, offset = 0, wallet_address } = req.query;
     
     const where = status ? { status } : {};
     
@@ -180,7 +180,13 @@ router.get('/', async (req, res) => {
             select: {
               contest_participants: true
             }
-          }
+          },
+          // Include contest_participants but only for this wallet
+          contest_participants: wallet_address ? {
+            where: {
+              wallet_address
+            }
+          } : false
         },
         take: parseInt(limit),
         skip: parseInt(offset),
@@ -191,8 +197,16 @@ router.get('/', async (req, res) => {
       prisma.contests.count({ where })
     ]);
 
+    // Add is_participating flag based on contest_participants
+    const contestsWithParticipation = contests.map(contest => ({
+      ...contest,
+      is_participating: contest.contest_participants?.length > 0,
+      // Remove the contest_participants array since we only needed it for the check
+      contest_participants: undefined
+    }));
+
     res.json({
-      contests,
+      contests: contestsWithParticipation,
       pagination: {
         total,
         limit: parseInt(limit),
