@@ -507,20 +507,21 @@ router.post('/', async (req, res) => {
           throw new Error('Invalid number format');
         }
 
-        // Convert to number and back to string to normalize format
-        parsedEntryFee = Number(cleanedFee).toString();
+        // Use the cleaned string directly without Number conversion
+        parsedEntryFee = cleanedFee;
       } else if (typeof entry_fee === 'number') {
         // Handle number input
         if (!Number.isFinite(entry_fee)) {
           throw new Error('Invalid number');
         }
+        // Convert to string with full precision
         parsedEntryFee = entry_fee.toString();
       } else {
         throw new Error('Invalid entry fee type');
       }
 
-      // Validate the value is non-negative
-      if (Number(parsedEntryFee) < 0) {
+      // Validate the value is non-negative using Prisma.Decimal for precise comparison
+      if (new Prisma.Decimal(parsedEntryFee).isNegative()) {
         logger.warn({
           requestId,
           message: 'Negative entry fee provided',
