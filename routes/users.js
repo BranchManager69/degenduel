@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import express from 'express';
+import { z } from 'zod';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -38,9 +39,34 @@ const prisma = new PrismaClient();
  *       200:
  *         description: List of users
  */
+
+// Add input validation schemas
+const getUsersQuerySchema = z.object({
+  limit: z.string().transform(val => parseInt(val)).default('10'),
+  offset: z.string().transform(val => parseInt(val)).default('0'),
+  sort: z.enum(['rank_score', 'total_earnings', 'total_contests']).optional()
+});
+
+const createUserSchema = z.object({
+  wallet_address: z.string(), // TODO: Add validation for wallet_address
+  nickname: z.string().min(3).max(50).optional() // TODO: Add validation for nickname
+});
+
 router.get('/', async (req, res) => {
+  const logContext = { 
+    path: 'GET /api/users',
+    query: req.query 
+  };
+  
   try {
-    const { limit = 10, offset = 0, sort } = req.query;
+    // Validate query parameters
+    const validatedQuery = await getUsersQuerySchema.parseAsync(req.query)
+      .catch(error => {
+        logger.warn('Invalid query parameters', { ...logContext, error });
+        throw { status: 400, message: 'Invalid query parameters', details: error.errors };
+      });
+    
+    const { limit, offset, sort } = validatedQuery;
     
     const orderBy = sort ? {
       [sort]: 'desc'
@@ -48,10 +74,17 @@ router.get('/', async (req, res) => {
       created_at: 'desc'
     };
 
+    logger.debug('Fetching users with parameters', { 
+      ...logContext, 
+      limit, 
+      offset, 
+      orderBy 
+    });
+
     const [users, total] = await Promise.all([
       prisma.users.findMany({
-        take: parseInt(limit),
-        skip: parseInt(offset),
+        take: limit,
+        skip: offset,
         orderBy,
         select: {
           wallet_address: true,
@@ -70,19 +103,47 @@ router.get('/', async (req, res) => {
         }
       }),
       prisma.users.count()
-    ]);
+    ]).catch(error => {
+      logger.error('Database error while fetching users', { 
+        ...logContext,
+        error: error instanceof Error ? error.message : error
+      });
+      throw { status: 500, message: 'Database error while fetching users' };
+    });
+
+    logger.info('Successfully fetched users', { 
+      ...logContext,
+      userCount: users.length,
+      totalUsers: total
+    });
 
     res.json({
       users,
       pagination: {
         total,
-        limit: parseInt(limit),
-        offset: parseInt(offset)
+        limit,
+        offset
       }
     });
   } catch (error) {
-    logger.error('Failed to fetch users:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    const status = error.status || 500;
+    const message = error.message || 'Internal server error';
+    
+    logger.error('Error in GET /users handler', {
+      ...logContext,
+      status,
+      message,
+      error: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error
+    });
+
+    res.status(status).json({ 
+      error: message,
+      details: process.env.NODE_ENV === 'development' ? error.details : undefined
+    });
   }
 });
 
@@ -105,8 +166,18 @@ router.get('/', async (req, res) => {
  *         description: User not found
  */
 router.get('/:wallet', async (req, res) => {
+  const logContext = {
+    path: 'GET /api/users/:wallet',
+    wallet: req.params.wallet
+  };
+
   try {
-    logger.info(`Attempting to fetch user with wallet: ${req.params.wallet}`);
+    //if (!req.params.wallet?.match(/^0x[a-fA-F0-9]{40}$/)) {
+    //  logger.warn('Invalid wallet address format', logContext);
+    //  throw { status: 400, message: 'Invalid wallet address format' };
+    //}
+
+    logger.debug('Fetching user profile', logContext);
     
     const user = await prisma.users.findUnique({
       where: { wallet_address: req.params.wallet },
@@ -118,29 +189,45 @@ router.get('/:wallet', async (req, res) => {
             contests: true
           }
         }
-        // Removed invalid relations: user_stats and user_social_profiles
       }
+    }).catch(error => {
+      logger.error('Database error while fetching user', {
+        ...logContext,
+        error: error instanceof Error ? error.message : error
+      });
+      throw { status: 500, message: 'Database error while fetching user' };
     });
 
     if (!user) {
-      logger.info(`No user found for wallet: ${req.params.wallet}`);
-      return res.status(404).json({ error: 'User not found' });
+      logger.info('User not found', logContext);
+      throw { status: 404, message: 'User not found' };
     }
+
+    logger.info('Successfully fetched user profile', {
+      ...logContext,
+      userId: user.id,
+      hasContests: user.contest_participants.length > 0
+    });
 
     res.json(user);
   } catch (error) {
-    logger.error('Failed to fetch user:', {
-      wallet: req.params.wallet,
+    const status = error.status || 500;
+    const message = error.message || 'Internal server error';
+
+    logger.error('Error in GET /users/:wallet handler', {
+      ...logContext,
+      status,
+      message,
       error: error instanceof Error ? {
+        name: error.name,
         message: error.message,
         stack: error.stack
       } : error
     });
-    res.status(500).json({ 
-      error: 'Failed to fetch user',
-      details: process.env.NODE_ENV === 'development' ? 
-        error instanceof Error ? error.message : String(error) 
-        : undefined
+
+    res.status(status).json({ 
+      error: message,
+      details: process.env.NODE_ENV === 'development' ? error.details : undefined
     });
   }
 });
@@ -190,13 +277,41 @@ router.get('/:wallet', async (req, res) => {
  *                   example: "Wallet address already exists"
  */
 router.post('/', async (req, res) => {
+  const logContext = {
+    path: 'POST /api/users',
+    body: req.body
+  };
+
   try {
-    const { wallet_address, nickname } = req.body;
+    // Validate request body
+    const validatedData = await createUserSchema.parseAsync(req.body)
+      .catch(error => {
+        logger.warn('Invalid request body', { ...logContext, error });
+        throw { status: 400, message: 'Invalid request body', details: error.errors };
+      });
+
+    logger.debug('Creating new user', { 
+      ...logContext, 
+      wallet: validatedData.wallet_address 
+    });
+
+    // Check if user already exists
+    const existingUser = await prisma.users.findUnique({
+      where: { wallet_address: validatedData.wallet_address },
+      select: { wallet_address: true }
+    });
+
+    if (existingUser) {
+      logger.warn('User already exists', { 
+        ...logContext, 
+        wallet: validatedData.wallet_address 
+      });
+      throw { status: 409, message: 'User already exists' };
+    }
 
     const user = await prisma.users.create({
       data: {
-        wallet_address,
-        nickname,
+        ...validatedData,
         user_stats: {
           create: {} // Creates default stats
         }
@@ -204,12 +319,40 @@ router.post('/', async (req, res) => {
       include: {
         user_stats: true
       }
+    }).catch(error => {
+      logger.error('Database error while creating user', {
+        ...logContext,
+        error: error instanceof Error ? error.message : error
+      });
+      throw { status: 500, message: 'Database error while creating user' };
+    });
+
+    logger.info('Successfully created new user', {
+      ...logContext,
+      userId: user.id,
+      wallet: user.wallet_address
     });
 
     res.status(201).json(user);
   } catch (error) {
-    logger.error('Failed to create user:', error);
-    res.status(500).json({ error: 'Failed to create user' });
+    const status = error.status || 500;
+    const message = error.message || 'Internal server error';
+
+    logger.error('Error in POST /users handler', {
+      ...logContext,
+      status,
+      message,
+      error: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error
+    });
+
+    res.status(status).json({ 
+      error: message,
+      details: process.env.NODE_ENV === 'development' ? error.details : undefined
+    });
   }
 });
 
