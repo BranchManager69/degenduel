@@ -6,19 +6,14 @@
     "auditLog": "/home/websites/degenduel/logs/.4670fe7f96141f38e40cf670fc2767e328641def-audit.json",
     "files": [
         {
-            "date": 1734929915059,
-            "name": "/home/websites/degenduel/logs/frontend-2024-12-22.log",
-            "hash": "b66ee2da5daaf746b6e0977a57ebe9861bef2c97dfc7692abd643b71f2e6fe54"
-        },
-        {
-            "date": 1734942866634,
-            "name": "/home/websites/degenduel/logs/frontend-2024-12-23.log",
-            "hash": "e34e91aa4201d5a7de3219440bdbb250df5afea0520c5f7bec9175bc88f8ede2"
-        },
-        {
             "date": 1736087632070,
             "name": "/home/websites/degenduel/logs/frontend-2025-01-05.log",
             "hash": "08add0c8b6cdff98b771eaee3e61dc44351376e5df702f4ee14fb6ae4c5f2c7b"
+        },
+        {
+            "date": 1736369195956,
+            "name": "/home/websites/degenduel/logs/frontend-2025-01-08.log",
+            "hash": "31aef8c2e02d16be6b3444393f16e0372a06eaf3de0274a090b6434041e5e6f7"
         }
     ],
     "hashType": "sha256"

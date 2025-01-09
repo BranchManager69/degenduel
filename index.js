@@ -1,41 +1,54 @@
 // /index.js
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
-////import http from 'http'; // HTTP server for logs
-////import fs from 'fs'; // File streaming for logs
-////import { WebSocketServer } from 'ws'; // WebSocket support
 import { closeDatabase, initDatabase } from './config/database.js'; // SQLite for leaderboard
 import { configureMiddleware } from './config/middleware.js';
 import { closePgDatabase, initPgDatabase, pool } from './config/pg-database.js';
-////////import { authDebugMiddleware } from './middleware/debugMiddleware.js';
+import setupSwagger from './config/swagger.js'; // ES6 default import
 import authRoutes from './routes/auth.js';
 import contestRoutes from './routes/contests.js';
 import leaderboardRoutes from './routes/leaderboard.js'; // almost forgot this one!
+import superadminRoutes from './routes/superadmin.js';
+import testRoutes from './routes/test-routes.js'; // NEWEST v4
 import tokenBucketRoutes from './routes/tokenBuckets.js'; // new
 import tokenRoutes from './routes/tokens.js'; // new
 import tradeRoutes from './routes/trades.js';
 import userRoutes from './routes/users.js';
 import { errorHandler } from './utils/errorHandler.js';
-//import testRoutesV1 from './routes/test-routes.js'; // OLD v1
-//import testRoutesV2 from './routes/test-utils.js'; // MID v2
-//import testRoutesV3 from './routes/test-utilities.js'; // NEW NOW OLD v3
-import setupSwagger from './config/swagger.js'; // ES6 default import
-import superadminRoutes from './routes/superadmin.js';
-import testRoutes from './routes/test-routes.js'; // NEWEST v4
 import logger from './utils/logger.js'; // fixed
-
-// Prisma routes
-import prismaAdminRoutes from './routes/prisma/admin.js';
-import prismaStatsRoutes from './routes/prisma/stats.js';
-import prismaUserRoutes from './routes/prisma/users.js';
-
 dotenv.config();
 
-const app = express();
 
+/* DegenDuel API Server */
+
+const app = express();
 const port = process.env.API_PORT || 3003; // Main port
 ////const logsPort = process.env.LOGS_PORT || 3334; // Log streaming port
+
+// CORS settings
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:3003', 
+  'http://localhost:3004', 
+  'https://degenduel.me', 
+  'https://data.degenduel.me', 
+  'https://branch.bet', 
+  'https://app.branch.bet',
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow cookies and other credentials
+}));
 
 // Use cookies
 app.use(cookieParser());
@@ -63,16 +76,21 @@ app.get('/', (req, res) => {
   `);
 });
 
+// Prisma routes
+import prismaAdminRoutes from './routes/prisma/admin.js';
+import prismaStatsRoutes from './routes/prisma/stats.js';
+import prismaUserRoutes from './routes/prisma/users.js';
+
 // Core API routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/trades', tradeRoutes);
-////app.use('/api/stats', statsRoutes);
 app.use('/api/tokens', tokenRoutes); // new
 app.use('/api/token-buckets', tokenBucketRoutes); // new
 app.use('/api/leaderboard', leaderboardRoutes); // almost forgot this one!
 app.use('/api/test', testRoutes); // NEWEST; tests v4
+////app.use('/api/stats', statsRoutes);
 
 // (testing) New Prisma routes
 app.use('/api/daddy', prismaUserRoutes);
@@ -198,12 +216,18 @@ async function shutdown() {
   }
 }
 
+
+/* Server Events */
+
 process.on('SIGTERM', shutdown);
+
 process.on('SIGINT', shutdown);
+
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   process.exit(1);
 });
+
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
