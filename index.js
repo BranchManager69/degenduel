@@ -80,8 +80,8 @@ app.get('/', (req, res) => {
 
 // Prisma routes
 import prismaAdminRoutes from './routes/prisma/admin.js';
+import prismaBalanceRoutes from './routes/prisma/balance.js';
 import prismaStatsRoutes from './routes/prisma/stats.js';
-import prismaUserRoutes from './routes/prisma/users.js';
 
 // New DD-Serv routes
 import ddServRoutes from './routes/dd-serv/tokens.js';
@@ -98,7 +98,7 @@ app.use('/api/test', testRoutes); // NEWEST; tests v4
 ////app.use('/api/stats', statsRoutes);
 
 // (testing) New Prisma routes
-app.use('/api/daddy', prismaUserRoutes);
+app.use('/api/balance', prismaBalanceRoutes);
 app.use('/api/stats', prismaStatsRoutes);
 app.use('/api/admin', prismaAdminRoutes);
 

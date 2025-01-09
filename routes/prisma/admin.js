@@ -1,5 +1,5 @@
-import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { Router } from 'express';
 import logger from '../../utils/logger.js';
 
 const router = Router();
@@ -290,6 +290,159 @@ router.post('/users/:wallet/ban', async (req, res) => {
   } catch (error) {
     logger.error('Failed to ban user:', error);
     res.status(500).json({ error: 'Failed to ban user' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/users/{wallet}/balance:
+ *   post:
+ *     summary: Adjust user's balance (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - adminAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 description: Amount to adjust (positive for increase, negative for decrease)
+ *                 example: 1000000
+ *     responses:
+ *       200:
+ *         description: Balance adjusted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 previous_balance:
+ *                   type: string
+ *                   example: "1000000"
+ *                 new_balance:
+ *                   type: string
+ *                   example: "2000000"
+ *                 adjustment:
+ *                   type: string
+ *                   example: "1000000"
+ *       404:
+ *         description: User not found
+ *       403:
+ *         description: Not authorized
+ */
+router.post('/users/:wallet/balance', async (req, res) => {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  const { wallet } = req.params;
+  const { amount } = req.body;
+
+  logger.info('Adjusting user balance', {
+    requestId,
+    wallet_address: wallet,
+    adjustment_amount: amount
+  });
+
+  try {
+    // Verify admin authorization here
+    // TODO: Implement proper admin check
+    
+    const result = await prisma.$transaction(async (prisma) => {
+      // Find user
+      const user = await prisma.users.findUnique({
+        where: { wallet_address: wallet }
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const previousBalance = new Prisma.Decimal(user.balance || '0');
+      const adjustment = new Prisma.Decimal(amount);
+      const newBalance = previousBalance.plus(adjustment);
+
+      // Prevent negative balance
+      if (newBalance.lessThan(0)) {
+        throw new Error('Insufficient balance for deduction');
+      }
+
+      // Update user balance
+      const updatedUser = await prisma.users.update({
+        where: { wallet_address: wallet },
+        data: { 
+          balance: newBalance.toString(),
+          updated_at: new Date()
+        }
+      });
+
+      // Log the adjustment
+      await prisma.admin_logs.create({
+        data: {
+          admin_address: req.headers['x-admin-address'] || 'SYSTEM',
+          action: 'ADJUST_BALANCE',
+          details: {
+            wallet_address: wallet,
+            previous_balance: previousBalance.toString(),
+            adjustment: adjustment.toString(),
+            new_balance: newBalance.toString()
+          },
+          ip_address: req.ip
+        }
+      });
+
+      return {
+        previous_balance: previousBalance.toString(),
+        new_balance: newBalance.toString(),
+        adjustment: adjustment.toString()
+      };
+    });
+
+    logger.info('Successfully adjusted balance', {
+      requestId,
+      wallet_address: wallet,
+      ...result,
+      duration: Date.now() - startTime
+    });
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('Failed to adjust balance', {
+      requestId,
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code,
+        meta: error?.meta
+      },
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      duration: Date.now() - startTime
+    });
+
+    if (error.message === 'User not found') {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (error.message === 'Insufficient balance for deduction') {
+      return res.status(400).json({ error: 'Insufficient balance for deduction' });
+    }
+
+    res.status(500).json({
+      error: 'Failed to adjust balance',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
