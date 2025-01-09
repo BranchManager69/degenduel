@@ -898,158 +898,148 @@ router.put('/:id', async (req, res) => {
   const requestId = crypto.randomUUID();
   const contestId = parseInt(req.params.id);
 
-  logger.info('Attempting to update contest', {
-    requestId,
-    contestId
-  });
-
-  if (isNaN(contestId)) {
-    logger.warn('Invalid contest ID format', {
-      requestId,
-      contestId: req.params.id
-    });
-    return res.status(400).json({
-      error: 'Invalid request',
-      details: 'Contest ID must be a number'
-    });
-  }
-
   try {
     const {
       name,
+      contest_code,
       description,
       entry_fee,
+      prize_pool,
+      current_prize_pool,
       start_time,
       end_time,
-      allowed_buckets
+      entry_deadline,
+      min_participants,
+      max_participants,
+      allowed_buckets,
+      participant_count,
+      last_entry_time,
+      status,
+      settings,
+      cancelled_at,
+      cancellation_reason
     } = req.body;
 
-    // Validate dates if provided
-    if (start_time && end_time) {
-      const startDate = new Date(start_time);
-      const endDate = new Date(end_time);
+    logger.info('Contest update request received:', {
+      requestId,
+      contestId,
+      body: req.body,
+      headers: req.headers
+    });
 
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw new ContestError('Invalid date format', 400, {
-          details: 'start_time and end_time must be valid dates'
-        });
-      }
-
-      if (endDate <= startDate) {
-        throw new ContestError('Invalid date range', 400, {
-          details: 'end_time must be after start_time'
-        });
-      }
-    }
-
-    // Validate entry fee if provided
-    if (entry_fee !== undefined) {
-      try {
-        BigInt(entry_fee);
-      } catch (e) {
-        throw new ContestError('Invalid entry fee format', 400, {
-          details: 'entry_fee must be a valid numeric string'
-        });
-      }
-    }
-
-    // Validate allowed buckets if provided
-    if (allowed_buckets !== undefined && !Array.isArray(allowed_buckets)) {
-      throw new ContestError('Invalid allowed_buckets format', 400, {
-        details: 'allowed_buckets must be an array'
-      });
-    }
-
-    // Check if contest exists first
+    // Validate contest exists
     const existingContest = await prisma.contests.findUnique({
       where: { id: contestId }
     });
 
     if (!existingContest) {
+      logger.warn('Contest not found:', {
+        requestId,
+        contestId
+      });
       throw new ContestError('Contest not found', 404);
     }
 
-    // Prevent updates to active or completed contests
-    if (existingContest.status !== 'pending') {
-      throw new ContestError('Contest cannot be modified', 400, {
-        status: existingContest.status,
-        details: 'Only pending contests can be modified'
-      });
-    }
+    // Prepare update data with exact field matching
+    const updateData = {
+      ...(name !== undefined && { name }),
+      ...(contest_code !== undefined && { contest_code }),
+      ...(description !== undefined && { description }),
+      ...(entry_fee !== undefined && { 
+        entry_fee: new Prisma.Decimal(entry_fee.toString().replace(/,|\s/g, ''))
+      }),
+      ...(prize_pool !== undefined && { 
+        prize_pool: new Prisma.Decimal(prize_pool.toString().replace(/,|\s/g, ''))
+      }),
+      ...(current_prize_pool !== undefined && {
+        current_prize_pool: new Prisma.Decimal(current_prize_pool.toString().replace(/,|\s/g, ''))
+      }),
+      ...(start_time !== undefined && { start_time: new Date(start_time) }),
+      ...(end_time !== undefined && { end_time: new Date(end_time) }),
+      ...(entry_deadline !== undefined && { entry_deadline: new Date(entry_deadline) }),
+      ...(min_participants !== undefined && { min_participants: parseInt(min_participants) }),
+      ...(max_participants !== undefined && { max_participants: parseInt(max_participants) }),
+      ...(allowed_buckets !== undefined && { allowed_buckets }),
+      ...(participant_count !== undefined && { participant_count: parseInt(participant_count) }),
+      ...(last_entry_time !== undefined && { last_entry_time: last_entry_time ? new Date(last_entry_time) : null }),
+      ...(status !== undefined && { status }),
+      ...(settings !== undefined && { 
+        settings: typeof settings === 'string' ? JSON.parse(settings) : settings 
+      }),
+      ...(cancelled_at !== undefined && { cancelled_at: cancelled_at ? new Date(cancelled_at) : null }),
+      ...(cancellation_reason !== undefined && { cancellation_reason }),
+      updated_at: new Date()
+    };
+
+    logger.info('Attempting Prisma update:', {
+      requestId,
+      contestId,
+      updateData: JSON.stringify(updateData)
+    });
 
     const contest = await prisma.contests.update({
       where: { id: contestId },
-      data: {
-        ...(name && { name }),
-        ...(description && { description }),
-        ...(entry_fee && { entry_fee: BigInt(entry_fee) }),
-        ...(start_time && { start_time: new Date(start_time) }),
-        ...(end_time && { end_time: new Date(end_time) }),
-        ...(allowed_buckets && { allowed_buckets }),
-        updated_at: new Date()
+      data: updateData,
+      select: {
+        id: true,
+        contest_code: true,
+        name: true,
+        description: true,
+        start_time: true,
+        end_time: true,
+        entry_fee: true,
+        prize_pool: true,
+        status: true,
+        settings: true,
+        created_at: true,
+        current_prize_pool: true,
+        allowed_buckets: true,
+        participant_count: true,
+        last_entry_time: true,
+        min_participants: true,
+        max_participants: true,
+        entry_deadline: true,
+        cancelled_at: true,
+        cancellation_reason: true,
+        updated_at: true
       }
     });
 
-    logger.info('Successfully updated contest', {
+    logger.info('Contest updated successfully:', {
       requestId,
       contestId,
-      updatedFields: Object.keys(req.body)
+      contest: JSON.stringify(contest)
     });
 
     res.json(contest);
 
   } catch (error) {
-    if (error instanceof ContestError) {
-      logger.warn('Contest operation failed', {
-        requestId,
-        error: error.message,
-        statusCode: error.statusCode,
-        details: error.details,
-        contestId
-      });
+    logger.error('Contest update failed:', {
+      requestId,
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        meta: error.meta
+      },
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      body: JSON.stringify(req.body)
+    });
 
+    if (error instanceof ContestError) {
       return res.status(error.statusCode).json({
         error: error.message,
         ...(error.details && { details: error.details })
       });
     }
 
-    if (error instanceof PrismaClientKnownRequestError) {
-      logger.error('Database operation failed', {
-        requestId,
-        error: {
-          code: error.code,
-          message: error.message,
-          meta: error.meta
-        },
-        contestId
-      });
-
-      if (error.code === 'P2025') {
-        return res.status(404).json({
-          error: 'Contest not found'
-        });
-      }
-
-      return res.status(400).json({
-        error: 'Database operation failed',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
-    }
-
-    logger.error('Unexpected error while updating contest', {
-      requestId,
-      error: {
-        name: error.name,
-        message: error.message
-      },
-      contestId,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-
     res.status(500).json({
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
+      error: 'Failed to update contest',
+      details: process.env.NODE_ENV === 'development' ? {
+        message: error.message,
+        code: error.code,
+        meta: error.meta
+      } : undefined
     });
   }
 });
