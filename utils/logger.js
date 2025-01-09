@@ -8,11 +8,11 @@
  * This logger is used for backend services.
  */
 
+import { join } from 'path';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
-import { join } from 'path';
-import { createLogDirectory, getLogFormat } from './logging.js';
 import paths from '../config/paths.js';
+import { createLogDirectory, getLogFormat } from './logging.js';
 
 // Ensure log directory exists with correct permissions
 createLogDirectory(paths.logs);

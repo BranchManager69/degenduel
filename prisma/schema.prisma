@@ -245,6 +245,7 @@ model user_stats {
   best_score        Decimal?  @db.Decimal
   avg_score         Decimal?  @db.Decimal
   last_updated      DateTime? @default(now()) @db.Timestamptz(6)
+  user              users     @relation(fields: [wallet_address], references: [wallet_address])
 }
 
 model user_token_stats {
@@ -259,23 +260,25 @@ model user_token_stats {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
-  wallet_address            String                      @id
-  nickname                  String?
-  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
-  last_login                DateTime?                   @db.Timestamptz(6)
-  total_contests            Int?                        @default(0)
-  total_wins                Int?                        @default(0)
-  total_earnings            Decimal?                    @default(0) @db.Decimal(20, 0)
-  rank_score                Int?                        @default(1000)
-  settings                  Json?                       @default("{}")
-  balance                   Decimal?                    @default(0) @db.Decimal(20, 0)
-  is_banned                 Boolean?                    @default(false)
-  ban_reason                String?
-  last_deposit_at           DateTime?                   @db.Timestamptz(6)
-  last_withdrawal_at        DateTime?                   @db.Timestamptz(6)
-  kyc_status                String?
-  risk_level                Int?                        @default(0)
-  updated_at                DateTime?                   @db.Timestamptz(6)
+  wallet_address     String      @id
+  nickname           String?
+  created_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  last_login         DateTime?   @db.Timestamptz(6)
+  total_contests     Int?        @default(0)
+  total_wins         Int?        @default(0)
+  total_earnings     Decimal?    @default(0) @db.Decimal(20, 0)
+  rank_score         Int?        @default(1000)
+  settings           Json?       @default("{}")
+  balance            Decimal?    @default(0) @db.Decimal(20, 0)
+  is_banned          Boolean?    @default(false)
+  ban_reason         String?
+  last_deposit_at    DateTime?   @db.Timestamptz(6)
+  last_withdrawal_at DateTime?   @db.Timestamptz(6)
+  kyc_status         String?
+  risk_level         Int?        @default(0)
+  updated_at         DateTime?   @db.Timestamptz(6)
+  user_stats         user_stats?
+
   contest_participants      contest_participants[]
   contest_portfolios        contest_portfolios[]
   contest_token_performance contest_token_performance[]
