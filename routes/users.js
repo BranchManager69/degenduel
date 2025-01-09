@@ -289,6 +289,11 @@ router.post('/', async (req, res) => {
         logger.warn('Invalid request body', { ...logContext, error });
         throw { status: 400, message: 'Invalid request body', details: error.errors };
       });
+    
+    console.log('VALIDATED DATA', validatedData);
+    console.log('LOG CONTEXT', logContext);
+    console.log('WALLET', validatedData.wallet_address);
+    console.log('NICKNAME', validatedData.nickname);
 
     logger.debug('Creating new user', { 
       ...logContext, 
@@ -320,6 +325,7 @@ router.post('/', async (req, res) => {
         user_stats: true
       }
     }).catch(error => {
+      console.log('DATABASE ERROR', error);
       logger.error('Database error while creating user', {
         ...logContext,
         error: error instanceof Error ? error.message : error
