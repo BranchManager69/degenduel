@@ -1,6 +1,6 @@
+import fs from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -45,6 +45,11 @@ for (const [key, path] of Object.entries(paths)) {
 
 // Log paths in development
 if (process.env.NODE_ENV !== 'production') {
+  console.log('Paths configuration:', paths);
+}
+
+// Log paths in production
+if (process.env.NODE_ENV === 'production') {
   console.log('Paths configuration:', paths);
 }
 

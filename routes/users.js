@@ -1,5 +1,5 @@
-import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import express from 'express';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -106,6 +106,8 @@ router.get('/', async (req, res) => {
  */
 router.get('/:wallet', async (req, res) => {
   try {
+    logger.info(`Attempting to fetch user with wallet: ${req.params.wallet}`);
+    
     const user = await prisma.users.findUnique({
       where: { wallet_address: req.params.wallet },
       include: {
@@ -115,20 +117,31 @@ router.get('/:wallet', async (req, res) => {
           include: {
             contests: true
           }
-        },
-        user_stats: true,
-        user_social_profiles: true
+        }
+        // Removed invalid relations: user_stats and user_social_profiles
       }
     });
 
     if (!user) {
+      logger.info(`No user found for wallet: ${req.params.wallet}`);
       return res.status(404).json({ error: 'User not found' });
     }
 
     res.json(user);
   } catch (error) {
-    logger.error('Failed to fetch user:', error);
-    res.status(500).json({ error: 'Failed to fetch user' });
+    logger.error('Failed to fetch user:', {
+      wallet: req.params.wallet,
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack
+      } : error
+    });
+    res.status(500).json({ 
+      error: 'Failed to fetch user',
+      details: process.env.NODE_ENV === 'development' ? 
+        error instanceof Error ? error.message : String(error) 
+        : undefined
+    });
   }
 });
 
