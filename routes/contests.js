@@ -1,6 +1,7 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
 import express from 'express';
 import { logApi as logger } from '../utils/logger.js';
+const { Prisma, PrismaClient, PrismaClientKnownRequestError } = pkg;
 
 const router = express.Router();
 const prisma = new PrismaClient({
@@ -652,6 +653,7 @@ router.post('/', async (req, res) => {
  */
 router.post('/:id/join', async (req, res) => {
   const requestId = crypto.randomUUID();
+  const startTime = Date.now();
   const { wallet_address } = req.body;
   const contestId = parseInt(req.params.id);
 
@@ -661,29 +663,29 @@ router.post('/:id/join', async (req, res) => {
     wallet_address,
   });
 
-  // Input validation
-  if (!wallet_address) {
-    logger.warn('Missing wallet address in join contest request', {
-      requestId
-    });
-    return res.status(400).json({ 
-      error: 'Invalid request',
-      details: 'wallet_address is required'
-    });
-  }
-
-  if (isNaN(contestId)) {
-    logger.warn('Invalid contest ID format', {
-      requestId,
-      contestId: req.params.id
-    });
-    return res.status(400).json({ 
-      error: 'Invalid request',
-      details: 'Contest ID must be a number'
-    });
-  }
-
   try {
+    // Input validation
+    if (!wallet_address) {
+      logger.warn('Missing wallet address in join contest request', {
+        requestId
+      });
+      return res.status(400).json({ 
+        error: 'Invalid request',
+        details: 'wallet_address is required'
+      });
+    }
+
+    if (isNaN(contestId)) {
+      logger.warn('Invalid contest ID format', {
+        requestId,
+        contestId: req.params.id
+      });
+      return res.status(400).json({ 
+        error: 'Invalid request',
+        details: 'Contest ID must be a number'
+      });
+    }
+
     const result = await prisma.$transaction(async (prisma) => {
       // Check if contest exists and is joinable
       logger.debug('Fetching contest details', {
@@ -718,20 +720,7 @@ router.post('/:id/join', async (req, res) => {
         throw new ContestError('Already participating in this contest', 409);
       }
 
-      if (contest.status !== 'pending') {
-        throw new ContestError('Contest is not open for entry', 400, {
-          status: contest.status
-        });
-      }
-
-      if (contest._count.contest_participants >= (contest.max_participants || 0)) {
-        throw new ContestError('Contest is full', 400, {
-          currentParticipants: contest._count.contest_participants,
-          maxParticipants: contest.max_participants
-        });
-      }
-
-      // Check if user exists and has enough balance
+      // Check if user exists
       const user = await prisma.users.findUnique({
         where: { wallet_address }
       });
@@ -740,113 +729,113 @@ router.post('/:id/join', async (req, res) => {
         throw new ContestError('User not found', 404);
       }
 
-      const userBalance = BigInt(user.balance);
-      const entryFee = BigInt(contest.entry_fee);
-
-      if (userBalance < entryFee) {
-        throw new ContestError('Insufficient balance', 400, {
-          required: entryFee.toString(),
-          available: userBalance.toString()
+      // Validate contest status
+      if (contest.status !== 'pending') {
+        throw new ContestError('Contest is not open for entry', 400, {
+          status: contest.status
         });
+      }
+
+      // Check participant limits
+      if (contest._count.contest_participants >= (contest.max_participants || 0)) {
+        throw new ContestError('Contest is full', 400, {
+          currentParticipants: contest._count.contest_participants,
+          maxParticipants: contest.max_participants
+        });
+      }
+
+      // Convert and validate balances
+      const userBalance = new Prisma.Decimal(user.balance || '0');
+      const entryFee = new Prisma.Decimal(contest.entry_fee || '0');
+
+      logger.info('Balance validation', {
+        requestId,
+        contestId,
+        userBalance: userBalance.toString(),
+        entryFee: entryFee.toString()
+      });
+
+      if (userBalance.lessThan(entryFee)) {
+        const requiredFormatted = entryFee.dividedBy(1000000).toFixed(2);
+        const availableFormatted = userBalance.dividedBy(1000000).toFixed(2);
+        
+        throw new ContestError(
+          `Insufficient balance. Required: ${requiredFormatted} USDC, Available: ${availableFormatted} USDC`,
+          400,
+          {
+            required: entryFee.toString(),
+            available: userBalance.toString(),
+            difference: entryFee.minus(userBalance).toString()
+          }
+        );
       }
 
       // Create participation record
-      try {
-        const participation = await prisma.contest_participants.create({
-          data: {
-            contest_id: contestId,
-            wallet_address,
-            initial_balance: BigInt(1000000),
-            current_balance: BigInt(1000000)
-          }
-        });
-
-        // Update contest participant count
-        await prisma.contests.update({
-          where: { id: contestId },
-          data: {
-            participant_count: {
-              increment: 1
-            }
-          }
-        });
-
-        // Deduct entry fee
-        await prisma.users.update({
-          where: { wallet_address },
-          data: {
-            balance: (userBalance - entryFee).toString()
-          }
-        });
-
-        logger.info('Successfully joined contest', {
-          requestId,
-          contestId,
+      const participation = await prisma.contest_participants.create({
+        data: {
+          contest_id: contestId,
           wallet_address,
-          participationId: participation.id
-        });
-
-        return participation;
-
-      } catch (dbError) {
-        // Handle specific database errors
-        if (dbError.code === 'P2002') {
-          throw new ContestError('Concurrent participation attempt detected', 409);
+          initial_balance: new Prisma.Decimal(1000000),
+          current_balance: new Prisma.Decimal(1000000)
         }
-        throw dbError; // Re-throw other database errors
-      }
+      });
+
+      // Update contest participant count
+      await prisma.contests.update({
+        where: { id: contestId },
+        data: {
+          participant_count: {
+            increment: 1
+          }
+        }
+      });
+
+      // Deduct entry fee
+      await prisma.users.update({
+        where: { wallet_address },
+        data: {
+          balance: userBalance.minus(entryFee).toString()
+        }
+      });
+
+      logger.info('Successfully joined contest', {
+        requestId,
+        contestId,
+        wallet_address,
+        participationId: participation.id
+      });
+
+      return participation;
     });
 
     res.json(result);
 
   } catch (error) {
-    if (error instanceof ContestError) {
-      // Handle our custom contest errors
-      logger.warn('Contest operation failed', {
-        requestId,
-        error: error.message,
-        statusCode: error.statusCode,
-        details: error.details,
-        contestId,
-        wallet_address
-      });
+    logger.error('Error in join contest endpoint', {
+      requestId,
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code,
+        meta: error?.meta
+      },
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      duration: Date.now() - startTime
+    });
 
+    if (error instanceof ContestError) {
       return res.status(error.statusCode).json({
         error: error.message,
         ...(error.details && { details: error.details })
       });
     }
 
-    if (error instanceof PrismaClientKnownRequestError) {
-      // Handle known Prisma errors
-      logger.error('Database operation failed', {
-        requestId,
-        error: {
-          code: error.code,
-          message: error.message,
-          meta: error.meta
-        },
-        contestId,
-        wallet_address
-      });
-
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return res.status(400).json({
         error: 'Database operation failed',
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
-
-    // Handle unexpected errors
-    logger.error('Unexpected error while joining contest', {
-      requestId,
-      error: {
-        name: error.name,
-        message: error.message
-      },
-      contestId,
-      wallet_address,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
 
     res.status(500).json({
       error: 'Internal server error',
