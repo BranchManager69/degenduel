@@ -190,3 +190,841 @@ Invalid `prisma.contests.findUnique()` invocation:
 }
 
 Argument `id` is missing.
+2025-01-08 15:46:35 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 15:46:36 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 15:46:36 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-08 15:46:36 -05:00: Swagger docs available at /api-docs
+2025-01-08 15:46:36 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-08 15:46:36 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-08 15:46:36 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-08 15:53:00 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 15:53:01 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 15:53:01 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-08 15:53:01 -05:00: Swagger docs available at /api-docs
+2025-01-08 15:53:01 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-08 15:53:01 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-08 15:53:01 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-08 15:54:34 -05:00: prisma:info Starting a postgresql pool with 17 connections.
+2025-01-08 15:54:34 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+{
+  data: {
+    name: "AAA",
+    contest_code: "BBB",
+    description: "CCC",
+    entry_fee: 123n,
+               ~~~~
+    start_time: new Date("2025-01-08T20:59:26.027Z"),
+    end_time: new Date("2025-01-08T21:59:26.027Z"),
+    min_participants: 1,
+    max_participants: 5,
+    allowed_buckets: [
+      0
+    ],
+    status: "pending"
+  }
+}
+
+Argument `entry_fee`: Invalid value provided. Expected Decimal or Null, provided BigInt.
+2025-01-08 15:55:40 -05:00: prisma:query SELECT 1
+2025-01-08 15:55:40 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+{
+  data: {
+    name: "AAA",
+    contest_code: "BBB",
+    description: "CCC",
+    entry_fee: 0n,
+               ~~
+    start_time: new Date("2025-01-08T20:59:26.027Z"),
+    end_time: new Date("2025-01-08T21:59:26.027Z"),
+    min_participants: 1,
+    max_participants: 5,
+    allowed_buckets: [
+      0
+    ],
+    status: "pending"
+  }
+}
+
+Argument `entry_fee`: Invalid value provided. Expected Decimal or Null, provided BigInt.
+2025-01-08 15:56:26 -05:00: prisma:query SELECT 1
+2025-01-08 15:56:26 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+{
+  data: {
+    name: "AAA",
+    contest_code: "BBB",
+    description: "CCC",
+    entry_fee: 0n,
+               ~~
+    start_time: new Date("2025-01-08T20:59:26.027Z"),
+    end_time: new Date("2025-01-08T21:59:26.027Z"),
+    min_participants: 1,
+    max_participants: 5,
+    allowed_buckets: [
+      0
+    ],
+    status: "pending"
+  }
+}
+
+Argument `entry_fee`: Invalid value provided. Expected Decimal or Null, provided BigInt.
+2025-01-08 15:57:07 -05:00: prisma:query SELECT 1
+2025-01-08 15:57:07 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 15:57:07 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 16:02:22 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 16:02:22 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 16:02:22 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-08 16:02:22 -05:00: Swagger docs available at /api-docs
+2025-01-08 16:02:22 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-08 16:02:22 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-08 16:02:22 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-08 16:02:51 -05:00: prisma:info Starting a postgresql pool with 17 connections.
+2025-01-08 16:02:51 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+{
+  data: {
+    name: "AAA",
+    contest_code: "BBB",
+    description: "CCC",
+    entry_fee: 1n,
+               ~~
+    start_time: new Date("2025-01-08T21:05:26.027Z"),
+    end_time: new Date("2025-01-08T22:05:26.027Z"),
+    min_participants: 1,
+    max_participants: 5,
+    allowed_buckets: [
+      0
+    ],
+    status: "pending"
+  }
+}
+
+Argument `entry_fee`: Invalid value provided. Expected Decimal or Null, provided BigInt.
+2025-01-08 16:03:28 -05:00: prisma:query SELECT 1
+2025-01-08 16:03:28 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+{
+  data: {
+    name: "AAA",
+    contest_code: "BBB",
+    description: "CCC",
+    entry_fee: 0n,
+               ~~
+    start_time: new Date("2025-01-08T21:05:26.027Z"),
+    end_time: new Date("2025-01-08T22:05:26.027Z"),
+    min_participants: 1,
+    max_participants: 5,
+    allowed_buckets: [
+      0
+    ],
+    status: "pending"
+  }
+}
+
+Argument `entry_fee`: Invalid value provided. Expected Decimal or Null, provided BigInt.
+2025-01-08 16:05:05 -05:00: prisma:query SELECT 1
+2025-01-08 16:05:05 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+{
+  data: {
+    name: "Weekly Trading Contest",
+    contest_code: "WTC-2024-01",
+    description: "Join our weekly trading competition",
+    entry_fee: 1000000n,
+               ~~~~~~~~
+    start_time: new Date("2025-01-08T21:06:47.927Z"),
+    end_time: new Date("2025-01-08T22:06:47.927Z"),
+    min_participants: 10,
+    max_participants: 100,
+    allowed_buckets: [
+      1,
+      2,
+      3
+    ],
+    status: "pending"
+  }
+}
+
+Argument `entry_fee`: Invalid value provided. Expected Decimal or Null, provided BigInt.
+2025-01-08 16:10:29 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 16:10:29 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 16:10:29 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-08 16:10:29 -05:00: Swagger docs available at /api-docs
+2025-01-08 16:10:29 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-08 16:10:29 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-08 16:10:29 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-08 16:10:50 -05:00: prisma:info Starting a postgresql pool with 17 connections.
+2025-01-08 16:10:51 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+
+Could not convert argument value Object {"$type": String("BigInt"), "value": String("1000000000000000000000000")} to ArgumentValue.
+2025-01-08 18:58:24 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 18:58:25 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 18:58:25 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-08 18:58:25 -05:00: Swagger docs available at /api-docs
+2025-01-08 18:58:25 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-08 18:58:25 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-08 18:58:25 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-08 18:59:35 -05:00: prisma:info Starting a postgresql pool with 17 connections.
+2025-01-08 18:59:36 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+
+Could not convert argument value Object {"$type": String("BigInt"), "value": String("1000000000000000000000000")} to ArgumentValue.
+2025-01-08 19:00:59 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 19:00:59 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 19:00:59 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-08 19:00:59 -05:00: Swagger docs available at /api-docs
+2025-01-08 19:00:59 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-08 19:00:59 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-08 19:00:59 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-08 19:01:06 -05:00: prisma:info Starting a postgresql pool with 17 connections.
+2025-01-08 19:01:06 -05:00: prisma:query INSERT INTO "public"."contests" ("contest_code","name","description","start_time","end_time","entry_fee","prize_pool","status","settings","created_at","current_prize_pool","allowed_buckets","participant_count","min_participants","max_participants") VALUES ($1,$2,$3,$4,$5,$6,$7,CAST($8::text AS "public"."contest_status"),$9,$10,$11,$12,$13,$14,$15) RETURNING "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at"
+2025-01-08 19:01:20 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:01:22 -05:00: prisma:query SELECT 1
+2025-01-08 19:01:22 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 19:01:22 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 19:01:51 -05:00: prisma:query SELECT 1
+2025-01-08 19:01:51 -05:00: prisma:query SELECT 1
+2025-01-08 19:01:51 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 19:01:51 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 19:02:01 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 19:02:01 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 19:02:07 -05:00: prisma:query SELECT 1
+2025-01-08 19:02:07 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:02:13 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:02:18 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:02:22 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:02:27 -05:00: prisma:query SELECT 1
+2025-01-08 19:02:27 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:02:38 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:03:44 -05:00: prisma:query SELECT 1
+2025-01-08 19:03:44 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:04:02 -05:00: prisma:query SELECT 1
+2025-01-08 19:04:02 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:15:57 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 19:15:57 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 19:21:09 -05:00: prisma:query INSERT INTO "public"."contests" ("contest_code","name","description","start_time","end_time","entry_fee","prize_pool","status","settings","created_at","current_prize_pool","allowed_buckets","participant_count","min_participants","max_participants") VALUES ($1,$2,$3,$4,$5,$6,$7,CAST($8::text AS "public"."contest_status"),$9,$10,$11,$12,$13,$14,$15) RETURNING "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at"
+2025-01-08 19:21:09 -05:00: prisma:error 
+Invalid `prisma.contests.create()` invocation:
+
+
+Unique constraint failed on the fields: (`contest_code`)
+2025-01-08 19:21:19 -05:00: prisma:query INSERT INTO "public"."contests" ("contest_code","name","description","start_time","end_time","entry_fee","prize_pool","status","settings","created_at","current_prize_pool","allowed_buckets","participant_count","min_participants","max_participants") VALUES ($1,$2,$3,$4,$5,$6,$7,CAST($8::text AS "public"."contest_status"),$9,$10,$11,$12,$13,$14,$15) RETURNING "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at"
+2025-01-08 19:21:38 -05:00: prisma:query SELECT 1
+2025-01-08 19:21:38 -05:00: prisma:query INSERT INTO "public"."contests" ("contest_code","name","description","start_time","end_time","entry_fee","prize_pool","status","settings","created_at","current_prize_pool","allowed_buckets","participant_count","min_participants","max_participants") VALUES ($1,$2,$3,$4,$5,$6,$7,CAST($8::text AS "public"."contest_status"),$9,$10,$11,$12,$13,$14,$15) RETURNING "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at"
+2025-01-08 19:21:58 -05:00: prisma:query SELECT 1
+2025-01-08 19:21:58 -05:00: prisma:query INSERT INTO "public"."contests" ("contest_code","name","description","start_time","end_time","entry_fee","prize_pool","status","settings","created_at","current_prize_pool","allowed_buckets","participant_count","min_participants","max_participants") VALUES ($1,$2,$3,$4,$5,$6,$7,CAST($8::text AS "public"."contest_status"),$9,$10,$11,$12,$13,$14,$15) RETURNING "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at"
+2025-01-08 19:22:16 -05:00: prisma:query SELECT 1
+2025-01-08 19:22:16 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 19:22:16 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 19:34:27 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 19:34:28 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 19:34:31 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 19:34:31 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 19:34:35 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 19:34:35 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 19:34:38 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-08 19:34:38 -05:00: Not all input has been taken into account at your final specification.
+2025-01-08 19:34:38 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-08 19:34:38 -05:00: Swagger docs available at /api-docs
+2025-01-08 19:34:38 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-08 19:34:39 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-08 19:34:39 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-08 19:35:46 -05:00: prisma:info Starting a postgresql pool with 17 connections.
+2025-01-08 19:35:46 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:35:46 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 19:47:37 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 20:06:49 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 20:07:22 -05:00: prisma:query SELECT 1
+2025-01-08 20:07:22 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 20:07:23 -05:00: prisma:error 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing.
+2025-01-08 20:20:05 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:20:05 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:20:16 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:20:16 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:20:53 -05:00: prisma:query SELECT 1
+2025-01-08 20:20:53 -05:00: prisma:query SELECT 1
+2025-01-08 20:20:53 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:20:53 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:20:53 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:20:53 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:21:35 -05:00: prisma:query SELECT 1
+2025-01-08 20:21:35 -05:00: prisma:query SELECT 1
+2025-01-08 20:21:35 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:21:35 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:21:38 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:21:38 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:21:40 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:21:40 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:21:58 -05:00: prisma:query SELECT 1
+2025-01-08 20:21:58 -05:00: prisma:query SELECT 1
+2025-01-08 20:21:58 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:21:58 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:25:26 -05:00: prisma:query SELECT 1
+2025-01-08 20:25:26 -05:00: prisma:query SELECT 1
+2025-01-08 20:25:26 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:25:26 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:29:39 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:29:40 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:31:02 -05:00: prisma:query SELECT 1
+2025-01-08 20:31:02 -05:00: prisma:query SELECT 1
+2025-01-08 20:31:02 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:31:02 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:31:17 -05:00: prisma:query SELECT 1
+2025-01-08 20:31:17 -05:00: prisma:query SELECT 1
+2025-01-08 20:31:17 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:31:17 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:31:20 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:31:20 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:33:32 -05:00: prisma:query SELECT 1
+2025-01-08 20:33:32 -05:00: prisma:query SELECT 1
+2025-01-08 20:33:32 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:33:32 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:33:32 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:33:32 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:33:34 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:33:34 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:33:34 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:33:34 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:33:37 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:33:37 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:33:42 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:33:42 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:33:46 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:33:46 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:34:00 -05:00: prisma:query SELECT 1
+2025-01-08 20:34:00 -05:00: prisma:query SELECT 1
+2025-01-08 20:34:00 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:34:00 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:34:01 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:34:01 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:34:15 -05:00: prisma:query SELECT 1
+2025-01-08 20:34:15 -05:00: prisma:query SELECT 1
+2025-01-08 20:34:15 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:34:15 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:34:15 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:34:15 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:35:35 -05:00: prisma:query SELECT 1
+2025-01-08 20:35:35 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:35:35 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:35:35 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:35:35 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:35:42 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:35:42 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:35:44 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-08 20:35:44 -05:00: prisma:query SELECT "public"."contest_participants"."contest_id", "public"."contest_participants"."wallet_address", "public"."contest_participants"."initial_balance", "public"."contest_participants"."current_balance", "public"."contest_participants"."rank", "public"."contest_participants"."joined_at", "public"."contest_participants"."entry_transaction_id", "public"."contest_participants"."entry_time", "public"."contest_participants"."final_rank", "public"."contest_participants"."prize_amount", "public"."contest_participants"."prize_paid_at", "public"."contest_participants"."prize_transaction_id" FROM "public"."contest_participants" WHERE "public"."contest_participants"."contest_id" IN ($1) OFFSET $2
+2025-01-08 20:35:44 -05:00: prisma:query SELECT "public"."users"."wallet_address", "public"."users"."nickname" FROM "public"."users" WHERE "public"."users"."wallet_address" IN ($1,$2,$3,$4,$5) OFFSET $6
+2025-01-08 20:35:44 -05:00: prisma:query SELECT "public"."contest_portfolios"."contest_id", "public"."contest_portfolios"."wallet_address", "public"."contest_portfolios"."token_id", "public"."contest_portfolios"."weight", "public"."contest_portfolios"."created_at" FROM "public"."contest_portfolios" WHERE "public"."contest_portfolios"."contest_id" IN ($1) OFFSET $2
+2025-01-08 20:35:44 -05:00: prisma:query SELECT "public"."tokens"."id", "public"."tokens"."address", "public"."tokens"."symbol", "public"."tokens"."name", "public"."tokens"."decimals", "public"."tokens"."is_active", "public"."tokens"."created_at", "public"."tokens"."market_cap", "public"."tokens"."change_24h", "public"."tokens"."volume_24h" FROM "public"."tokens" WHERE "public"."tokens"."id" IN ($1,$2,$3,$4,$5,$6,$7,$8,$9) OFFSET $10
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."contest_participants"."contest_id", "public"."contest_participants"."wallet_address", "public"."contest_participants"."initial_balance", "public"."contest_participants"."current_balance", "public"."contest_participants"."rank", "public"."contest_participants"."joined_at", "public"."contest_participants"."entry_transaction_id", "public"."contest_participants"."entry_time", "public"."contest_participants"."final_rank", "public"."contest_participants"."prize_amount", "public"."contest_participants"."prize_paid_at", "public"."contest_participants"."prize_transaction_id" FROM "public"."contest_participants" WHERE "public"."contest_participants"."contest_id" IN ($1) OFFSET $2
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."users"."wallet_address", "public"."users"."nickname" FROM "public"."users" WHERE "public"."users"."wallet_address" IN ($1,$2,$3,$4,$5) OFFSET $6
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."contest_portfolios"."contest_id", "public"."contest_portfolios"."wallet_address", "public"."contest_portfolios"."token_id", "public"."contest_portfolios"."weight", "public"."contest_portfolios"."created_at" FROM "public"."contest_portfolios" WHERE "public"."contest_portfolios"."contest_id" IN ($1) OFFSET $2
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."tokens"."id", "public"."tokens"."address", "public"."tokens"."symbol", "public"."tokens"."name", "public"."tokens"."decimals", "public"."tokens"."is_active", "public"."tokens"."created_at", "public"."tokens"."market_cap", "public"."tokens"."change_24h", "public"."tokens"."volume_24h" FROM "public"."tokens" WHERE "public"."tokens"."id" IN ($1,$2,$3,$4,$5,$6,$7,$8,$9) OFFSET $10
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."contest_participants"."contest_id", "public"."contest_participants"."wallet_address", "public"."contest_participants"."initial_balance", "public"."contest_participants"."current_balance", "public"."contest_participants"."rank", "public"."contest_participants"."joined_at", "public"."contest_participants"."entry_transaction_id", "public"."contest_participants"."entry_time", "public"."contest_participants"."final_rank", "public"."contest_participants"."prize_amount", "public"."contest_participants"."prize_paid_at", "public"."contest_participants"."prize_transaction_id" FROM "public"."contest_participants" WHERE "public"."contest_participants"."contest_id" IN ($1) OFFSET $2
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."users"."wallet_address", "public"."users"."nickname" FROM "public"."users" WHERE "public"."users"."wallet_address" IN ($1,$2,$3,$4,$5) OFFSET $6
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."contest_portfolios"."contest_id", "public"."contest_portfolios"."wallet_address", "public"."contest_portfolios"."token_id", "public"."contest_portfolios"."weight", "public"."contest_portfolios"."created_at" FROM "public"."contest_portfolios" WHERE "public"."contest_portfolios"."contest_id" IN ($1) OFFSET $2
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."tokens"."id", "public"."tokens"."address", "public"."tokens"."symbol", "public"."tokens"."name", "public"."tokens"."decimals", "public"."tokens"."is_active", "public"."tokens"."created_at", "public"."tokens"."market_cap", "public"."tokens"."change_24h", "public"."tokens"."volume_24h" FROM "public"."tokens" WHERE "public"."tokens"."id" IN ($1,$2,$3,$4,$5,$6,$7,$8,$9) OFFSET $10
+2025-01-08 20:35:45 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:35:45 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:35:47 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:35:47 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:38:00 -05:00: prisma:query SELECT 1
+2025-01-08 20:38:00 -05:00: prisma:query SELECT 1
+2025-01-08 20:38:00 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:38:00 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:38:17 -05:00: prisma:query SELECT 1
+2025-01-08 20:38:17 -05:00: prisma:query SELECT 1
+2025-01-08 20:38:17 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:38:17 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:38:26 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:38:26 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:38:29 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:38:29 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:38:30 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:38:30 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:39:12 -05:00: prisma:query SELECT 1
+2025-01-08 20:39:12 -05:00: prisma:query SELECT 1
+2025-01-08 20:39:12 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:39:12 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:40:09 -05:00: prisma:query SELECT 1
+2025-01-08 20:40:09 -05:00: prisma:query SELECT 1
+2025-01-08 20:40:09 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:40:09 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:41:34 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:41:34 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:41:42 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:41:42 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-08 20:41:42 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-08 20:41:42 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
