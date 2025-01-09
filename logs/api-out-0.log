@@ -5003,3 +5003,348 @@ Argument `entry_fee`: Invalid value provided. Expected Decimal, NullableDecimalF
 2025-01-09 07:20:41 -05:00: Total count: 2
 2025-01-09 07:20:41 -05:00: <<<response<<< | /api/admin/activities
 2025-01-09 07:20:52 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-09 07:22:19 -05:00: prisma:query SELECT 1
+2025-01-09 07:22:19 -05:00: prisma:query SELECT 1
+2025-01-09 07:22:19 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:22:19 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:22:19 -05:00: >>>query received>>> | /api/stats/platform
+2025-01-09 07:22:19 -05:00: Mock Data Generated: {
+  userCount: 5000,
+  contestStats: { _count: { _all: 100, contest_participants: 2500 } },
+  volumeStats: { _sum: { amount: 1250000 } },
+  tokenStats: [
+    { token_id: 1, tokens: [Object], _avg: [Object], _count: [Object] },
+    { token_id: 2, tokens: [Object], _avg: [Object], _count: [Object] }
+  ],
+  activeContests: 25
+}
+2025-01-09 07:22:19 -05:00: <<<query response<<< | Mock stats:     {
+  totalUsers: 5000,
+  totalContests: 100,
+  totalVolume: '1250000',
+  activeContests: 25,
+  totalPrizesPaid: 625000,
+  avgContestSize: 25,
+  topPerformingTokens: [
+    { symbol: 'BTC', winRate: 0.15, useCount: 250 },
+    { symbol: 'ETH', winRate: 0.12, useCount: 200 }
+  ]
+}
+2025-01-09 07:22:19 -05:00: >>>query received>>> | /api/admin/activities
+2025-01-09 07:22:19 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2025-01-09 07:22:19 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2025-01-09T12:22:19.282Z },
+  { id: 2, action: 'update', created_at: 2025-01-09T12:22:19.282Z }
+]
+2025-01-09 07:22:19 -05:00: Total count: 2
+2025-01-09 07:22:19 -05:00: <<<response<<< | /api/admin/activities
+2025-01-09 07:22:28 -05:00: prisma:query SELECT 1
+2025-01-09 07:22:28 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:22:28 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:22:28 -05:00: prisma:query SELECT 1
+2025-01-09 07:22:28 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:22:28 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:22:28 -05:00: >>>query received>>> | /api/stats/platform
+2025-01-09 07:22:28 -05:00: Mock Data Generated: {
+  userCount: 5000,
+  contestStats: { _count: { _all: 100, contest_participants: 2500 } },
+  volumeStats: { _sum: { amount: 1250000 } },
+  tokenStats: [
+    { token_id: 1, tokens: [Object], _avg: [Object], _count: [Object] },
+    { token_id: 2, tokens: [Object], _avg: [Object], _count: [Object] }
+  ],
+  activeContests: 25
+}
+2025-01-09 07:22:28 -05:00: <<<query response<<< | Mock stats:     {
+  totalUsers: 5000,
+  totalContests: 100,
+  totalVolume: '1250000',
+  activeContests: 25,
+  totalPrizesPaid: 625000,
+  avgContestSize: 25,
+  topPerformingTokens: [
+    { symbol: 'BTC', winRate: 0.15, useCount: 250 },
+    { symbol: 'ETH', winRate: 0.12, useCount: 200 }
+  ]
+}
+2025-01-09 07:22:28 -05:00: >>>query received>>> | /api/stats/platform
+2025-01-09 07:22:28 -05:00: Mock Data Generated: {
+  userCount: 5000,
+  contestStats: { _count: { _all: 100, contest_participants: 2500 } },
+  volumeStats: { _sum: { amount: 1250000 } },
+  tokenStats: [
+    { token_id: 1, tokens: [Object], _avg: [Object], _count: [Object] },
+    { token_id: 2, tokens: [Object], _avg: [Object], _count: [Object] }
+  ],
+  activeContests: 25
+}
+2025-01-09 07:22:28 -05:00: <<<query response<<< | Mock stats:     {
+  totalUsers: 5000,
+  totalContests: 100,
+  totalVolume: '1250000',
+  activeContests: 25,
+  totalPrizesPaid: 625000,
+  avgContestSize: 25,
+  topPerformingTokens: [
+    { symbol: 'BTC', winRate: 0.15, useCount: 250 },
+    { symbol: 'ETH', winRate: 0.12, useCount: 200 }
+  ]
+}
+2025-01-09 07:22:28 -05:00: >>>query received>>> | /api/admin/activities
+2025-01-09 07:22:28 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2025-01-09 07:22:28 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2025-01-09T12:22:28.576Z },
+  { id: 2, action: 'update', created_at: 2025-01-09T12:22:28.576Z }
+]
+2025-01-09 07:22:28 -05:00: Total count: 2
+2025-01-09 07:22:28 -05:00: <<<response<<< | /api/admin/activities
+2025-01-09 07:22:28 -05:00: >>>query received>>> | /api/admin/activities
+2025-01-09 07:22:28 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2025-01-09 07:22:28 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2025-01-09T12:22:28.578Z },
+  { id: 2, action: 'update', created_at: 2025-01-09T12:22:28.578Z }
+]
+2025-01-09 07:22:28 -05:00: Total count: 2
+2025-01-09 07:22:28 -05:00: <<<response<<< | /api/admin/activities
+2025-01-09 07:22:35 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-09 07:24:12 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-09 07:24:12 -05:00: Paths configuration: { logs: '/home/websites/degenduel/logs' }
+2025-01-09 07:24:12 -05:00: Not all input has been taken into account at your final specification.
+2025-01-09 07:24:12 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-09 07:24:12 -05:00: Swagger docs available at /api-docs
+2025-01-09 07:24:12 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-09 07:24:12 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-09 07:24:12 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-09 07:24:20 -05:00: prisma:info Starting a postgresql pool with 17 connections.
+2025-01-09 07:24:20 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:24:20 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:24:20 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:24:20 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:24:20 -05:00: >>>query received>>> | /api/stats/platform
+2025-01-09 07:24:20 -05:00: Mock Data Generated: {
+  userCount: 5000,
+  contestStats: { _count: { _all: 100, contest_participants: 2500 } },
+  volumeStats: { _sum: { amount: 1250000 } },
+  tokenStats: [
+    { token_id: 1, tokens: [Object], _avg: [Object], _count: [Object] },
+    { token_id: 2, tokens: [Object], _avg: [Object], _count: [Object] }
+  ],
+  activeContests: 25
+}
+2025-01-09 07:24:20 -05:00: <<<query response<<< | Mock stats:     {
+  totalUsers: 5000,
+  totalContests: 100,
+  totalVolume: '1250000',
+  activeContests: 25,
+  totalPrizesPaid: 625000,
+  avgContestSize: 25,
+  topPerformingTokens: [
+    { symbol: 'BTC', winRate: 0.15, useCount: 250 },
+    { symbol: 'ETH', winRate: 0.12, useCount: 200 }
+  ]
+}
+2025-01-09 07:24:20 -05:00: >>>query received>>> | /api/stats/platform
+2025-01-09 07:24:20 -05:00: Mock Data Generated: {
+  userCount: 5000,
+  contestStats: { _count: { _all: 100, contest_participants: 2500 } },
+  volumeStats: { _sum: { amount: 1250000 } },
+  tokenStats: [
+    { token_id: 1, tokens: [Object], _avg: [Object], _count: [Object] },
+    { token_id: 2, tokens: [Object], _avg: [Object], _count: [Object] }
+  ],
+  activeContests: 25
+}
+2025-01-09 07:24:20 -05:00: <<<query response<<< | Mock stats:     {
+  totalUsers: 5000,
+  totalContests: 100,
+  totalVolume: '1250000',
+  activeContests: 25,
+  totalPrizesPaid: 625000,
+  avgContestSize: 25,
+  topPerformingTokens: [
+    { symbol: 'BTC', winRate: 0.15, useCount: 250 },
+    { symbol: 'ETH', winRate: 0.12, useCount: 200 }
+  ]
+}
+2025-01-09 07:24:20 -05:00: >>>query received>>> | /api/admin/activities
+2025-01-09 07:24:20 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2025-01-09 07:24:20 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2025-01-09T12:24:20.813Z },
+  { id: 2, action: 'update', created_at: 2025-01-09T12:24:20.813Z }
+]
+2025-01-09 07:24:20 -05:00: Total count: 2
+2025-01-09 07:24:20 -05:00: <<<response<<< | /api/admin/activities
+2025-01-09 07:24:20 -05:00: >>>query received>>> | /api/admin/activities
+2025-01-09 07:24:20 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2025-01-09 07:24:20 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2025-01-09T12:24:20.815Z },
+  { id: 2, action: 'update', created_at: 2025-01-09T12:24:20.815Z }
+]
+2025-01-09 07:24:20 -05:00: Total count: 2
+2025-01-09 07:24:20 -05:00: <<<response<<< | /api/admin/activities
+2025-01-09 07:24:28 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-09 07:24:28 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-09 07:24:28 -05:00: Paths configuration: { logs: '/home/websites/degenduel/logs' }
+2025-01-09 07:24:29 -05:00: Not all input has been taken into account at your final specification.
+2025-01-09 07:24:29 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-09 07:24:29 -05:00: Swagger docs available at /api-docs
+2025-01-09 07:24:29 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-09 07:24:29 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-09 07:24:29 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-09 07:25:15 -05:00: PROJECT_ROOT /home/websites/degenduel
+2025-01-09 07:25:15 -05:00: Paths configuration: { logs: '/home/websites/degenduel/logs' }
+2025-01-09 07:25:15 -05:00: Not all input has been taken into account at your final specification.
+2025-01-09 07:25:15 -05:00: Starting API server with config: {
+  port: '3003',
+  nodeEnv: 'production',
+  dbHost: 'localhost',
+  dbName: 'degenduel',
+  dbUser: 'branchmanager',
+  hasDbPassword: true
+}
+2025-01-09 07:25:15 -05:00: Swagger docs available at /api-docs
+2025-01-09 07:25:15 -05:00: 
+      🎮  Starting DegenDuel API...
+2025-01-09 07:25:16 -05:00: 
+  ✨ DEGENDUEL API INITIALIZING ✨
+
+2025-01-09 07:25:16 -05:00:     🎮  DegenDuel API ready on port 3003
+2025-01-09 07:25:21 -05:00: prisma:info Starting a postgresql pool with 17 connections.
+2025-01-09 07:25:21 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-09 07:25:21 -05:00: prisma:query UPDATE "public"."contests" SET "name" = $1, "description" = $2, "entry_fee" = $3, "prize_pool" = $4, "current_prize_pool" = $5, "start_time" = $6, "end_time" = $7, "allowed_buckets" = $8, "participant_count" = $9, "status" = CAST($10::text AS "public"."contest_status"), "settings" = $11, "updated_at" = $12 WHERE ("public"."contests"."id" = $13 AND 1=1) RETURNING "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at"
+2025-01-09 07:25:21 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:25:21 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:25:21 -05:00: >>>query received>>> | /api/stats/platform
+2025-01-09 07:25:21 -05:00: Mock Data Generated: {
+  userCount: 5000,
+  contestStats: { _count: { _all: 100, contest_participants: 2500 } },
+  volumeStats: { _sum: { amount: 1250000 } },
+  tokenStats: [
+    { token_id: 1, tokens: [Object], _avg: [Object], _count: [Object] },
+    { token_id: 2, tokens: [Object], _avg: [Object], _count: [Object] }
+  ],
+  activeContests: 25
+}
+2025-01-09 07:25:21 -05:00: <<<query response<<< | Mock stats:     {
+  totalUsers: 5000,
+  totalContests: 100,
+  totalVolume: '1250000',
+  activeContests: 25,
+  totalPrizesPaid: 625000,
+  avgContestSize: 25,
+  topPerformingTokens: [
+    { symbol: 'BTC', winRate: 0.15, useCount: 250 },
+    { symbol: 'ETH', winRate: 0.12, useCount: 200 }
+  ]
+}
+2025-01-09 07:25:21 -05:00: >>>query received>>> | /api/admin/activities
+2025-01-09 07:25:21 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2025-01-09 07:25:21 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2025-01-09T12:25:21.887Z },
+  { id: 2, action: 'update', created_at: 2025-01-09T12:25:21.887Z }
+]
+2025-01-09 07:25:21 -05:00: Total count: 2
+2025-01-09 07:25:21 -05:00: <<<response<<< | /api/admin/activities
+2025-01-09 07:25:33 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:25:33 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:25:33 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:25:33 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:25:40 -05:00: prisma:query SELECT 1
+2025-01-09 07:25:40 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-09 07:25:40 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at" FROM "public"."contests" WHERE ("public"."contests"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+2025-01-09 07:25:40 -05:00: prisma:query SELECT "public"."contest_participants"."contest_id", "public"."contest_participants"."wallet_address", "public"."contest_participants"."initial_balance", "public"."contest_participants"."current_balance", "public"."contest_participants"."rank", "public"."contest_participants"."joined_at", "public"."contest_participants"."entry_transaction_id", "public"."contest_participants"."entry_time", "public"."contest_participants"."final_rank", "public"."contest_participants"."prize_amount", "public"."contest_participants"."prize_paid_at", "public"."contest_participants"."prize_transaction_id" FROM "public"."contest_participants" WHERE "public"."contest_participants"."contest_id" IN ($1) OFFSET $2
+2025-01-09 07:25:40 -05:00: prisma:query SELECT "public"."contest_participants"."contest_id", "public"."contest_participants"."wallet_address", "public"."contest_participants"."initial_balance", "public"."contest_participants"."current_balance", "public"."contest_participants"."rank", "public"."contest_participants"."joined_at", "public"."contest_participants"."entry_transaction_id", "public"."contest_participants"."entry_time", "public"."contest_participants"."final_rank", "public"."contest_participants"."prize_amount", "public"."contest_participants"."prize_paid_at", "public"."contest_participants"."prize_transaction_id" FROM "public"."contest_participants" WHERE "public"."contest_participants"."contest_id" IN ($1) OFFSET $2
+2025-01-09 07:25:40 -05:00: prisma:query SELECT "public"."contest_portfolios"."contest_id", "public"."contest_portfolios"."wallet_address", "public"."contest_portfolios"."token_id", "public"."contest_portfolios"."weight", "public"."contest_portfolios"."created_at" FROM "public"."contest_portfolios" WHERE "public"."contest_portfolios"."contest_id" IN ($1) OFFSET $2
+2025-01-09 07:25:40 -05:00: prisma:query SELECT "public"."contest_portfolios"."contest_id", "public"."contest_portfolios"."wallet_address", "public"."contest_portfolios"."token_id", "public"."contest_portfolios"."weight", "public"."contest_portfolios"."created_at" FROM "public"."contest_portfolios" WHERE "public"."contest_portfolios"."contest_id" IN ($1) OFFSET $2
+2025-01-09 07:25:51 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:25:51 -05:00: prisma:query SELECT 1
+2025-01-09 07:25:51 -05:00: prisma:query SELECT 1
+2025-01-09 07:25:51 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:25:51 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:25:51 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:25:53 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:25:53 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:25:53 -05:00: prisma:query SELECT COUNT(*) FROM (SELECT "public"."contests"."id" FROM "public"."contests" WHERE 1=1 OFFSET $1) AS "sub"
+2025-01-09 07:25:53 -05:00: prisma:query SELECT "public"."contests"."id", "public"."contests"."contest_code", "public"."contests"."name", "public"."contests"."description", "public"."contests"."start_time", "public"."contests"."end_time", "public"."contests"."entry_fee", "public"."contests"."prize_pool", "public"."contests"."status"::text, "public"."contests"."settings", "public"."contests"."created_at", "public"."contests"."current_prize_pool", "public"."contests"."allowed_buckets", "public"."contests"."participant_count", "public"."contests"."last_entry_time", "public"."contests"."min_participants", "public"."contests"."max_participants", "public"."contests"."entry_deadline", "public"."contests"."cancelled_at", "public"."contests"."cancellation_reason", "public"."contests"."updated_at", COALESCE("aggr_selection_0_contest_participants"."_aggr_count_contest_participants", 0) AS "_aggr_count_contest_participants" FROM "public"."contests" LEFT JOIN (SELECT "public"."contest_participants"."contest_id", COUNT(*) AS "_aggr_count_contest_participants" FROM "public"."contest_participants" WHERE 1=1 GROUP BY "public"."contest_participants"."contest_id") AS "aggr_selection_0_contest_participants" ON ("public"."contests"."id" = "aggr_selection_0_contest_participants"."contest_id") WHERE 1=1 ORDER BY "public"."contests"."created_at" DESC LIMIT $1 OFFSET $2
+2025-01-09 07:25:53 -05:00: >>>query received>>> | /api/stats/platform
+2025-01-09 07:25:53 -05:00: Mock Data Generated: {
+  userCount: 5000,
+  contestStats: { _count: { _all: 100, contest_participants: 2500 } },
+  volumeStats: { _sum: { amount: 1250000 } },
+  tokenStats: [
+    { token_id: 1, tokens: [Object], _avg: [Object], _count: [Object] },
+    { token_id: 2, tokens: [Object], _avg: [Object], _count: [Object] }
+  ],
+  activeContests: 25
+}
+2025-01-09 07:25:53 -05:00: <<<query response<<< | Mock stats:     {
+  totalUsers: 5000,
+  totalContests: 100,
+  totalVolume: '1250000',
+  activeContests: 25,
+  totalPrizesPaid: 625000,
+  avgContestSize: 25,
+  topPerformingTokens: [
+    { symbol: 'BTC', winRate: 0.15, useCount: 250 },
+    { symbol: 'ETH', winRate: 0.12, useCount: 200 }
+  ]
+}
+2025-01-09 07:25:53 -05:00: >>>query received>>> | /api/stats/platform
+2025-01-09 07:25:53 -05:00: Mock Data Generated: {
+  userCount: 5000,
+  contestStats: { _count: { _all: 100, contest_participants: 2500 } },
+  volumeStats: { _sum: { amount: 1250000 } },
+  tokenStats: [
+    { token_id: 1, tokens: [Object], _avg: [Object], _count: [Object] },
+    { token_id: 2, tokens: [Object], _avg: [Object], _count: [Object] }
+  ],
+  activeContests: 25
+}
+2025-01-09 07:25:53 -05:00: <<<query response<<< | Mock stats:     {
+  totalUsers: 5000,
+  totalContests: 100,
+  totalVolume: '1250000',
+  activeContests: 25,
+  totalPrizesPaid: 625000,
+  avgContestSize: 25,
+  topPerformingTokens: [
+    { symbol: 'BTC', winRate: 0.15, useCount: 250 },
+    { symbol: 'ETH', winRate: 0.12, useCount: 200 }
+  ]
+}
+2025-01-09 07:25:53 -05:00: >>>query received>>> | /api/admin/activities
+2025-01-09 07:25:53 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2025-01-09 07:25:53 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2025-01-09T12:25:53.371Z },
+  { id: 2, action: 'update', created_at: 2025-01-09T12:25:53.371Z }
+]
+2025-01-09 07:25:53 -05:00: Total count: 2
+2025-01-09 07:25:53 -05:00: <<<response<<< | /api/admin/activities
+2025-01-09 07:25:53 -05:00: >>>query received>>> | /api/admin/activities
+2025-01-09 07:25:53 -05:00: Query parameters: { limit: 50, offset: 0, action: undefined }
+2025-01-09 07:25:53 -05:00: Filtered activities: [
+  { id: 1, action: 'login', created_at: 2025-01-09T12:25:53.373Z },
+  { id: 2, action: 'update', created_at: 2025-01-09T12:25:53.373Z }
+]
+2025-01-09 07:25:53 -05:00: Total count: 2
+2025-01-09 07:25:53 -05:00: <<<response<<< | /api/admin/activities

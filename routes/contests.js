@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import express from 'express';
 import { logApi as logger } from '../utils/logger.js';
 
@@ -940,33 +940,49 @@ router.put('/:id', async (req, res) => {
       throw new ContestError('Contest not found', 404);
     }
 
-    // Prepare update data with exact field matching
+    // Helper function to safely convert to Decimal
+    const toDecimal = (value) => {
+      if (value === undefined || value === null) return undefined;
+      if (value === '') return null;
+      const cleaned = value.toString().replace(/,|\s/g, '');
+      return new Prisma.Decimal(cleaned);
+    };
+
+    // Helper function to safely convert to Date
+    const toDate = (value) => {
+      if (value === undefined || value === null) return undefined;
+      if (value === '') return null;
+      return new Date(value);
+    };
+
+    // Helper function to safely convert to integer
+    const toInt = (value) => {
+      if (value === undefined || value === null) return undefined;
+      if (value === '') return null;
+      return parseInt(value);
+    };
+
+    // Prepare update data with exact field matching and type conversion
     const updateData = {
       ...(name !== undefined && { name }),
       ...(contest_code !== undefined && { contest_code }),
       ...(description !== undefined && { description }),
-      ...(entry_fee !== undefined && { 
-        entry_fee: new Prisma.Decimal(entry_fee.toString().replace(/,|\s/g, ''))
-      }),
-      ...(prize_pool !== undefined && { 
-        prize_pool: new Prisma.Decimal(prize_pool.toString().replace(/,|\s/g, ''))
-      }),
-      ...(current_prize_pool !== undefined && {
-        current_prize_pool: new Prisma.Decimal(current_prize_pool.toString().replace(/,|\s/g, ''))
-      }),
-      ...(start_time !== undefined && { start_time: new Date(start_time) }),
-      ...(end_time !== undefined && { end_time: new Date(end_time) }),
-      ...(entry_deadline !== undefined && { entry_deadline: new Date(entry_deadline) }),
-      ...(min_participants !== undefined && { min_participants: parseInt(min_participants) }),
-      ...(max_participants !== undefined && { max_participants: parseInt(max_participants) }),
+      ...(entry_fee !== undefined && { entry_fee: toDecimal(entry_fee) }),
+      ...(prize_pool !== undefined && { prize_pool: toDecimal(prize_pool) }),
+      ...(current_prize_pool !== undefined && { current_prize_pool: toDecimal(current_prize_pool) }),
+      ...(start_time !== undefined && { start_time: toDate(start_time) }),
+      ...(end_time !== undefined && { end_time: toDate(end_time) }),
+      ...(entry_deadline !== undefined && { entry_deadline: toDate(entry_deadline) }),
+      ...(min_participants !== undefined && { min_participants: toInt(min_participants) }),
+      ...(max_participants !== undefined && { max_participants: toInt(max_participants) }),
       ...(allowed_buckets !== undefined && { allowed_buckets }),
-      ...(participant_count !== undefined && { participant_count: parseInt(participant_count) }),
-      ...(last_entry_time !== undefined && { last_entry_time: last_entry_time ? new Date(last_entry_time) : null }),
+      ...(participant_count !== undefined && { participant_count: toInt(participant_count) }),
+      ...(last_entry_time !== undefined && { last_entry_time: toDate(last_entry_time) }),
       ...(status !== undefined && { status }),
       ...(settings !== undefined && { 
         settings: typeof settings === 'string' ? JSON.parse(settings) : settings 
       }),
-      ...(cancelled_at !== undefined && { cancelled_at: cancelled_at ? new Date(cancelled_at) : null }),
+      ...(cancelled_at !== undefined && { cancelled_at: toDate(cancelled_at) }),
       ...(cancellation_reason !== undefined && { cancellation_reason }),
       updated_at: new Date()
     };
@@ -974,44 +990,40 @@ router.put('/:id', async (req, res) => {
     logger.info('Attempting Prisma update:', {
       requestId,
       contestId,
-      updateData: JSON.stringify(updateData)
+      updateData: JSON.stringify(updateData, (key, value) => 
+        value instanceof Prisma.Decimal ? value.toString() : value
+      )
     });
 
-    const contest = await prisma.contests.update({
-      where: { id: contestId },
-      data: updateData,
-      select: {
-        id: true,
-        contest_code: true,
-        name: true,
-        description: true,
-        start_time: true,
-        end_time: true,
-        entry_fee: true,
-        prize_pool: true,
-        status: true,
-        settings: true,
-        created_at: true,
-        current_prize_pool: true,
-        allowed_buckets: true,
-        participant_count: true,
-        last_entry_time: true,
-        min_participants: true,
-        max_participants: true,
-        entry_deadline: true,
-        cancelled_at: true,
-        cancellation_reason: true,
-        updated_at: true
-      }
-    });
+    try {
+      const contest = await prisma.contests.update({
+        where: { id: contestId },
+        data: updateData
+      });
 
-    logger.info('Contest updated successfully:', {
-      requestId,
-      contestId,
-      contest: JSON.stringify(contest)
-    });
+      logger.info('Contest updated successfully:', {
+        requestId,
+        contestId,
+        contest: JSON.stringify(contest, (key, value) => 
+          value instanceof Prisma.Decimal ? value.toString() : value
+        )
+      });
 
-    res.json(contest);
+      res.json(contest);
+    } catch (prismaError) {
+      logger.error('Prisma update failed:', {
+        requestId,
+        error: {
+          name: prismaError.name,
+          message: prismaError.message,
+          code: prismaError.code,
+          meta: prismaError.meta
+        },
+        query: prismaError.query,
+        stack: process.env.NODE_ENV === 'development' ? prismaError.stack : undefined
+      });
+      throw prismaError;
+    }
 
   } catch (error) {
     logger.error('Contest update failed:', {
@@ -1030,6 +1042,17 @@ router.put('/:id', async (req, res) => {
       return res.status(error.statusCode).json({
         error: error.message,
         ...(error.details && { details: error.details })
+      });
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      return res.status(400).json({
+        error: 'Database operation failed',
+        details: process.env.NODE_ENV === 'development' ? {
+          code: error.code,
+          meta: error.meta,
+          message: error.message
+        } : undefined
       });
     }
 
