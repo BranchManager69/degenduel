@@ -1,12 +1,12 @@
+// /config/middleware.js
 import cors from 'cors';
-import helmet from 'helmet';
+////import helmet from 'helmet';
 import express from 'express';
 import logger from '../utils/logger.js'; // unique
-import { CORS_CONFIG } from './constants.js';
 
 export function configureMiddleware(app) {
   // Security headers
-  app.use(helmet());
+  ////app.use(helmet());
 
   // CORS configuration
   /* 
@@ -19,12 +19,32 @@ export function configureMiddleware(app) {
     maxAge: CORS_CONFIG.MAX_AGE
   }; 
   */
+  const allowedOrigins = [
+    'http://localhost:3000', 
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003', 
+    'http://localhost:3004', 
+    'https://degenduel.me', 
+    'https://data.degenduel.me', 
+    'https://dev.degenduel.me',
+    'https://branch.bet', 
+    'https://app.branch.bet',
+  ];
   const corsOptions = {
-    origin: '*',  // Allow all origins for testing purposes
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Adjust as needed
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: (origin, callback) => {
+      if (allowedOrigins.includes(origin) || !origin) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,  // <-- RE-ENABLE THIS
+    methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-Requested-With', 'Cache-Control', 'X-Wallet-Address'],
     maxAge: 86400
   };
+  
   
   app.use(cors(corsOptions));
   
