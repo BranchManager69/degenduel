@@ -1,5 +1,5 @@
-import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import express from 'express';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -293,31 +293,96 @@ router.get('/:id', async (req, res) => {
  *             properties:
  *               name:
  *                 type: string
+ *                 example: "Weekly Trading Contest"
  *               contest_code:
  *                 type: string
+ *                 example: "WTC-2024-01"
+ *                 description: Unique identifier for the contest
  *               description:
  *                 type: string
+ *                 example: "Join our weekly trading competition"
  *               entry_fee:
  *                 type: string
+ *                 example: "1000000"
+ *                 description: |
+ *                   Entry fee in base units (non-negative).
+ *                   Accepts:
+ *                   - String numbers: "1000000", "1.5"
+ *                   - Numbers with commas: "1,000,000"
+ *                   - Regular numbers: 1000000
+ *                   Will be converted to appropriate base units with up to 18 decimal places.
  *               start_time:
  *                 type: string
  *                 format: date-time
+ *                 description: Must be in the future
  *               end_time:
  *                 type: string
  *                 format: date-time
+ *                 description: Must be after start_time
  *               min_participants:
  *                 type: integer
+ *                 minimum: 2
+ *                 example: 10
  *               max_participants:
  *                 type: integer
+ *                 minimum: 2
+ *                 example: 100
  *               allowed_buckets:
  *                 type: array
  *                 items:
  *                   type: integer
+ *                 example: [1, 2, 3]
  *     responses:
  *       201:
  *         description: Contest created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Contest'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Missing required fields"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["name", "contest_code"]
+ *       409:
+ *         description: Conflict error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Contest code already exists"
+ *                 field:
+ *                   type: string
+ *                   example: "contest_code"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                 message:
+ *                   type: string
  */
 router.post('/', async (req, res) => {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+
   try {
     const {
       name,
@@ -331,14 +396,160 @@ router.post('/', async (req, res) => {
       allowed_buckets = []
     } = req.body;
 
+    logger.info({
+      requestId,
+      message: 'Creating new contest',
+      data: {
+        contest_code,
+        name,
+        start_time,
+        end_time,
+        min_participants,
+        max_participants
+      }
+    });
+
+    // Validate required fields
+    const requiredFields = ['name', 'contest_code', 'entry_fee', 'start_time', 'end_time'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    if (missingFields.length > 0) {
+      logger.warn({
+        requestId,
+        message: 'Missing required fields for contest creation',
+        missingFields,
+        duration: Date.now() - startTime
+      });
+      return res.status(400).json({
+        error: 'Missing required fields',
+        fields: missingFields
+      });
+    }
+
+    // Validate dates
+    const startDate = new Date(start_time);
+    const endDate = new Date(end_time);
+    const now = new Date();
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      logger.warn({
+        requestId,
+        message: 'Invalid date format in contest creation',
+        data: { start_time, end_time },
+        duration: Date.now() - startTime
+      });
+      return res.status(400).json({
+        error: 'Invalid date format for start_time or end_time'
+      });
+    }
+
+    if (startDate <= now) {
+      logger.warn({
+        requestId,
+        message: 'Invalid start time - must be in future',
+        data: { start_time, current_time: now },
+        duration: Date.now() - startTime
+      });
+      return res.status(400).json({
+        error: 'start_time must be in the future'
+      });
+    }
+
+    if (endDate <= startDate) {
+      logger.warn({
+        requestId,
+        message: 'Invalid end time - must be after start time',
+        data: { start_time, end_time },
+        duration: Date.now() - startTime
+      });
+      return res.status(400).json({
+        error: 'end_time must be after start_time'
+      });
+    }
+
+    // Validate participants limits
+    if (min_participants && max_participants && min_participants > max_participants) {
+      logger.warn({
+        requestId,
+        message: 'Invalid participant limits',
+        data: { min_participants, max_participants },
+        duration: Date.now() - startTime
+      });
+      return res.status(400).json({
+        error: 'min_participants cannot be greater than max_participants'
+      });
+    }
+
+    // Validate and parse entry fee
+    let parsedEntryFee;
+    try {
+      // Handle different input formats
+      if (typeof entry_fee === 'string') {
+        // Remove any commas and whitespace
+        const cleanedFee = entry_fee.replace(/,|\s/g, '');
+        
+        // Check if it's a valid decimal or integer format
+        if (!/^\-?\d*\.?\d+$/.test(cleanedFee)) {
+          throw new Error('Invalid number format');
+        }
+
+        // Convert to number and back to string to normalize format
+        parsedEntryFee = Number(cleanedFee).toString();
+      } else if (typeof entry_fee === 'number') {
+        // Handle number input
+        if (!Number.isFinite(entry_fee)) {
+          throw new Error('Invalid number');
+        }
+        parsedEntryFee = entry_fee.toString();
+      } else {
+        throw new Error('Invalid entry fee type');
+      }
+
+      // Validate the value is non-negative
+      if (Number(parsedEntryFee) < 0) {
+        logger.warn({
+          requestId,
+          message: 'Negative entry fee provided',
+          data: { entry_fee, parsed: parsedEntryFee },
+          duration: Date.now() - startTime
+        });
+        return res.status(400).json({
+          error: 'entry_fee cannot be negative'
+        });
+      }
+    } catch (e) {
+      logger.warn({
+        requestId,
+        message: 'Invalid entry fee format',
+        data: { entry_fee, error: e.message },
+        duration: Date.now() - startTime
+      });
+      return res.status(400).json({
+        error: 'Invalid entry_fee format',
+        details: 'Entry fee must be a valid number or string representation of a number'
+      });
+    }
+
+    // Validate allowed_buckets
+    if (!Array.isArray(allowed_buckets)) {
+      logger.warn({
+        requestId,
+        message: 'Invalid allowed_buckets format',
+        data: { allowed_buckets },
+        duration: Date.now() - startTime
+      });
+      return res.status(400).json({
+        error: 'allowed_buckets must be an array'
+      });
+    }
+
     const contest = await prisma.contests.create({
       data: {
         name,
         contest_code,
         description,
-        entry_fee: entry_fee ? BigInt(entry_fee) : BigInt(0),
-        start_time: new Date(start_time),
-        end_time: new Date(end_time),
+        entry_fee: parsedEntryFee,
+        start_time: startDate,
+        end_time: endDate,
         min_participants,
         max_participants,
         allowed_buckets,
@@ -346,10 +557,51 @@ router.post('/', async (req, res) => {
       }
     });
 
+    logger.info({
+      requestId,
+      message: 'Contest created successfully',
+      data: {
+        contest_id: contest.id,
+        contest_code: contest.contest_code
+      },
+      duration: Date.now() - startTime
+    });
+
     res.status(201).json(contest);
   } catch (error) {
-    logger.error('Failed to create contest:', error);
-    res.status(500).json({ error: 'Failed to create contest' });
+    logger.error({
+      requestId,
+      message: 'Failed to create contest',
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        meta: error.meta
+      },
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      duration: Date.now() - startTime
+    });
+    
+    // Handle specific database errors
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        error: 'Contest code already exists',
+        field: error.meta?.target?.[0]
+      });
+    }
+
+    // Handle other specific Prisma errors
+    if (error.name === 'PrismaClientValidationError') {
+      return res.status(400).json({
+        error: 'Invalid data format',
+        details: error.message
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to create contest',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
