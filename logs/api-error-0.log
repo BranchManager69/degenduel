@@ -1919,3 +1919,71 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
+2025-01-09 11:26:48 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-09 11:35:53 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
