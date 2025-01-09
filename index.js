@@ -1,6 +1,6 @@
 // /index.js
 import cookieParser from 'cookie-parser';
-import cors from 'cors';
+// import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import { closeDatabase, initDatabase } from './config/database.js'; // SQLite for leaderboard
@@ -28,27 +28,29 @@ const port = process.env.API_PORT || 3003; // Main port
 ////const logsPort = process.env.LOGS_PORT || 3334; // Log streaming port
 
 // CORS settings
-const allowedOrigins = [
-  'http://localhost:3000', 
-  'http://localhost:3001',
-  'http://localhost:3002',
-  'http://localhost:3003', 
-  'http://localhost:3004', 
-  'https://degenduel.me', 
-  'https://data.degenduel.me', 
-  'https://branch.bet', 
-  'https://app.branch.bet',
-];
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // Allow cookies and other credentials
-}));
+// const allowedOrigins = [
+//   'http://localhost:3000', 
+//   'http://localhost:3001',
+//   'http://localhost:3002',
+//   'http://localhost:3003', 
+//   'http://localhost:3004', 
+//   'https://degenduel.me', 
+//   'https://data.degenduel.me', 
+//   'https://branch.bet', 
+//   'https://app.branch.bet',
+// ];
+// const corsOptions = {
+//   origin: (origin, callback) => {
+//     if (allowedOrigins.includes(origin) || !origin) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true,
+//   allowedHeaders: ['Authorization', 'Content-Type', 'X-Requested-With', 'Cache-Control', 'X-Wallet-Address'],
+// };
+// app.use(cors(corsOptions));
 
 // Use cookies
 app.use(cookieParser());
