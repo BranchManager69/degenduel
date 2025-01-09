@@ -83,6 +83,9 @@ import prismaAdminRoutes from './routes/prisma/admin.js';
 import prismaStatsRoutes from './routes/prisma/stats.js';
 import prismaUserRoutes from './routes/prisma/users.js';
 
+// New DD-Serv routes
+import ddServRoutes from './routes/dd-serv/tokens.js';
+
 // Core API routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
@@ -98,6 +101,9 @@ app.use('/api/test', testRoutes); // NEWEST; tests v4
 app.use('/api/daddy', prismaUserRoutes);
 app.use('/api/stats', prismaStatsRoutes);
 app.use('/api/admin', prismaAdminRoutes);
+
+// (testing) New DD-Serv routes
+app.use('/api/dd-serv', ddServRoutes);
 
 // Superadmin routes
 app.use('/api/superadmin', superadminRoutes);

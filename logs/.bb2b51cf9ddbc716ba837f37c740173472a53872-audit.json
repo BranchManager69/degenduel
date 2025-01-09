@@ -34,6 +34,11 @@
             "date": 1736320584217,
             "name": "/home/websites/degenduel/logs/api-2025-01-08.log",
             "hash": "b519dd4a3c7dacb33279126d733dbf11a1a75166b78d55063993bdfa1a5d14b4"
+        },
+        {
+            "date": 1736399042249,
+            "name": "/home/websites/degenduel/logs/api-2025-01-09.log",
+            "hash": "717ebd3a9ba21788357384a6c7a7616d29eb79bbf70053dccd2c5b535fc4c5c2"
         }
     ],
     "hashType": "sha256"
