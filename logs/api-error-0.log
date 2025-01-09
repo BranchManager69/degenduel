@@ -1,0 +1,355 @@
+2025-01-08 15:46:36 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-08 15:53:01 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-08 16:02:22 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-08 16:10:29 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-08 18:58:25 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-08 19:00:59 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-08 19:34:28 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: cors is not defined
+    at file:///home/websites/degenduel/index.js:41:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-08 19:34:31 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: cors is not defined
+    at file:///home/websites/degenduel/index.js:41:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-08 19:34:35 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: cors is not defined
+    at file:///home/websites/degenduel/index.js:41:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-08 19:34:38 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
