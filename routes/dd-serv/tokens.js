@@ -33,6 +33,7 @@ const router = express.Router();
  *                   items:
  *                     type: object
  */
+// Get list of tokens
 router.get('/tokens', async (req, res) => {
   try {
     // Fetch from Server B’s public endpoint
@@ -55,6 +56,31 @@ router.get('/tokens', async (req, res) => {
   } catch (err) {
     // Catch network errors, etc.
     logger.error('[dd-serv] Error fetching tokens:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/dd-serv/tokens/{tokenAddress}/price-history:
+ *   get:
+ *     summary: Get price history of a token
+ *     tags: [DD-Serv]
+ *     parameters:
+ *       - in: path
+ *         name: tokenAddress
+ *         required: true
+ *         description: The address of the token
+ */
+// Get price history of a token
+router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
+  const { tokenAddress } = req.params;
+  try {
+    const response = await fetch(`https://data.degenduel.me/api/tokens/${tokenAddress}/price-history`);
+    const priceHistory = await response.json();
+    res.json(priceHistory);
+  } catch (err) {
+    logger.error('[dd-serv] Error fetching price history:', err);
     res.status(500).json({ error: err.message });
   }
 });
