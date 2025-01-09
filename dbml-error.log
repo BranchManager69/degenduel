@@ -1,0 +1,21 @@
+2024-12-18T18:21:57.347Z
+error: missing FROM-clause entry for table "t"
+    at /root/.nvm/versions/node/v22.11.0/lib/node_modules/@dbml/cli/node_modules/pg/lib/client.js:535:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async generateTablesAndFields (/root/.nvm/versions/node/v22.11.0/lib/node_modules/@dbml/cli/node_modules/@dbml/connector/dist/connectors/postgresConnector.js:159:35)
+    at async Promise.all (index 0)
+    at async fetchSchemaJson (/root/.nvm/versions/node/v22.11.0/lib/node_modules/@dbml/cli/node_modules/@dbml/connector/dist/connectors/postgresConnector.js:420:17)
+    at async connectionHandler (/root/.nvm/versions/node/v22.11.0/lib/node_modules/@dbml/cli/lib/cli/connector.js:24:24)
+
+2024-12-18T18:28:02.505Z
+error: missing FROM-clause entry for table "t"
+    at /root/.nvm/versions/node/v22.11.0/lib/node_modules/@dbml/cli/node_modules/pg/lib/client.js:535:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async generateTablesAndFields (/root/.nvm/versions/node/v22.11.0/lib/node_modules/@dbml/cli/node_modules/@dbml/connector/dist/connectors/postgresConnector.js:159:35)
+    at async Promise.all (index 0)
+    at async fetchSchemaJson (/root/.nvm/versions/node/v22.11.0/lib/node_modules/@dbml/cli/node_modules/@dbml/connector/dist/connectors/postgresConnector.js:420:17)
+    at async connectionHandler (/root/.nvm/versions/node/v22.11.0/lib/node_modules/@dbml/cli/lib/cli/connector.js:24:24)
+
+2024-12-18T18:33:18.759Z
+undefined
+

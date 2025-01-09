@@ -3,8 +3,7 @@ node_modules/
 
 # Logs and debug files
 logs/
-*.log
-debug.log
+*/logs/
 
 # Database-related files
 data/
