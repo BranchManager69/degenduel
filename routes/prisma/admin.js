@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import logger from '../../utils/logger.js';
 
@@ -36,6 +36,7 @@ const prisma = new PrismaClient();
  *       in: header
  *       name: X-Admin-Token
  */
+
 
 /**
  * @swagger
@@ -349,6 +350,7 @@ router.post('/users/:wallet/balance', async (req, res) => {
   const { wallet } = req.params;
   const { amount } = req.body;
 
+  console.log('>>>query received>>> | 1 | /api/admin/users/:wallet/balance');
   logger.info('Adjusting user balance', {
     requestId,
     wallet_address: wallet,
@@ -358,26 +360,30 @@ router.post('/users/:wallet/balance', async (req, res) => {
   try {
     // Verify admin authorization here
     // TODO: Implement proper admin check
-    
+    console.log('>>>query received>>> | 2 | /api/admin/users/:wallet/balance');
     const result = await prisma.$transaction(async (prisma) => {
       // Find user
+      console.log('>>>query received>>> | 3 | /api/admin/users/:wallet/balance');
       const user = await prisma.users.findUnique({
         where: { wallet_address: wallet }
       });
-
+      console.log('>>>query received>>> | 4 | /api/admin/users/:wallet/balance');
       if (!user) {
         throw new Error('User not found');
       }
-
+      console.log('>>>query received>>> | 5 | /api/admin/users/:wallet/balance');
       const previousBalance = new Prisma.Decimal(user.balance || '0');
+      console.log('>>>query received>>> | 6 | /api/admin/users/:wallet/balance');
       const adjustment = new Prisma.Decimal(amount);
+      console.log('>>>query received>>> | 7 | /api/admin/users/:wallet/balance');
       const newBalance = previousBalance.plus(adjustment);
+      console.log('>>>query received>>> | 8 | /api/admin/users/:wallet/balance');
 
       // Prevent negative balance
       if (newBalance.lessThan(0)) {
         throw new Error('Insufficient balance for deduction');
       }
-
+      console.log('>>>query received>>> | 9 | /api/admin/users/:wallet/balance');
       // Update user balance
       const updatedUser = await prisma.users.update({
         where: { wallet_address: wallet },
@@ -386,6 +392,7 @@ router.post('/users/:wallet/balance', async (req, res) => {
           updated_at: new Date()
         }
       });
+      console.log('>>>query received>>> | 10 | /api/admin/users/:wallet/balance');
 
       // Log the adjustment
       await prisma.admin_logs.create({
@@ -401,7 +408,9 @@ router.post('/users/:wallet/balance', async (req, res) => {
           ip_address: req.ip
         }
       });
-
+      console.log('                 >>> | previous_balance: ', previousBalance.toString());
+      console.log('                 >>> | new_balance: ', newBalance.toString());
+      console.log('                 >>> | adjustment: ', adjustment.toString());
       return {
         previous_balance: previousBalance.toString(),
         new_balance: newBalance.toString(),
@@ -409,6 +418,10 @@ router.post('/users/:wallet/balance', async (req, res) => {
       };
     });
 
+    console.log('                 >>> | result: ', result);
+    console.log('                 >>> | requestId: ', requestId);
+    console.log('                 >>> | wallet_address: ', wallet);
+    console.log('                 >>> | duration: ', Date.now() - startTime);
     logger.info('Successfully adjusted balance', {
       requestId,
       wallet_address: wallet,
