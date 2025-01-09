@@ -4,6 +4,12 @@ import logger from '../utils/logger.js';
 
 const router = express.Router();
 
+/*
+ *
+ *  NEEDS TO BE UPDATED TO USE PRISMA!
+ *
+ */
+
 /**
  * @swagger
  * tags:
@@ -47,6 +53,7 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
+// Get user's overall statistics
 router.get('/:wallet', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -131,6 +138,7 @@ router.get('/:wallet', async (req, res) => {
  *       500:
  *         description: Server error
  */
+// Get user's contest history
 router.get('/:wallet/history', async (req, res) => {
 try {
       const result = await pool.query(`
@@ -193,6 +201,7 @@ try {
  *       500:
  *         description: Server error
  */
+// Get user's achievements
 router.get('/:wallet/achievements', async (req, res) => {
     try {
       const result = await pool.query(`
@@ -237,6 +246,6 @@ router.get('/:wallet/achievements', async (req, res) => {
       logger.error('Get achievements failed:', error);
       res.status(500).json({ error: error.message });
     }
-  });
+});
 
 export default router;
