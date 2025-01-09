@@ -105,7 +105,7 @@ model contests {
   description               String?
   start_time                DateTime?                   @db.Timestamptz(6)
   end_time                  DateTime?                   @db.Timestamptz(6)
-  entry_fee                 Decimal?                    @default(0) @db.Decimal(20, 0)
+  entry_fee                 Decimal?                    @default(0) @db.Decimal(20, 8)
   prize_pool                Decimal?                    @default(0) @db.Decimal(20, 0)
   status                    contest_status?             @default(pending)
   settings                  Json?                       @default("{}")
