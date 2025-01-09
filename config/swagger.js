@@ -28,7 +28,7 @@ const swaggerDefinition = {
 // Options for Swagger docs
 const swaggerOptions = {
   swaggerDefinition,
-  apis: ['routes/*.js', 'routes/prisma/*.js'], // Adjust relative path to the route files
+  apis: ['routes/*.js', 'routes/dd-serv/*.js', 'routes/prisma/*.js'], // Adjust relative path to the route files
   customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.4.2/swagger-ui.css',
 };
 

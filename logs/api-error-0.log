@@ -1,4 +1,12 @@
-2025-01-08 15:46:36 -05:00: Here's the report: 
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+file:///home/websites/degenduel/index.js:87
+import ddServDataRoutes from './routes/dd-serv/data.js';
+       ^^^^^^^^^^^^^^^^
+SyntaxError: The requested module './routes/dd-serv/data.js' does not provide an export named 'default'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:181:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:264:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-09 00:06:20 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -32,7 +40,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 15:53:01 -05:00: Here's the report: 
+2025-01-09 00:06:59 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -66,7 +74,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 16:02:22 -05:00: Here's the report: 
+2025-01-09 00:08:54 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -100,7 +108,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 16:10:29 -05:00: Here's the report: 
+2025-01-09 00:10:21 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -134,7 +142,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 18:58:25 -05:00: Here's the report: 
+2025-01-09 00:11:38 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -168,7 +176,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 19:00:59 -05:00: Here's the report: 
+2025-01-09 00:12:41 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -202,7 +210,109 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 19:34:28 -05:00: Here's the report: 
+2025-01-09 00:12:43 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-09 00:17:55 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-09 00:18:56 -05:00: Here's the report: 
+
+
+ Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-09 00:20:45 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -237,11 +347,11 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                         ^^^^^^…
 
 You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
-ReferenceError: cors is not defined
-    at file:///home/websites/degenduel/index.js:41:5
-    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
-    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
-2025-01-08 19:34:31 -05:00: Here's the report: 
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13484:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/websites/degenduel/routes/dd-serv/tokens.js:33:23
+2025-01-09 00:21:22 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -275,12 +385,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
-ReferenceError: cors is not defined
-    at file:///home/websites/degenduel/index.js:41:5
-    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
-    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
-2025-01-08 19:34:35 -05:00: Here's the report: 
+2025-01-09 00:42:29 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -314,12 +419,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
-ReferenceError: cors is not defined
-    at file:///home/websites/degenduel/index.js:41:5
-    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
-    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
-2025-01-08 19:34:38 -05:00: Here's the report: 
+2025-01-09 00:51:03 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -353,7 +453,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 21:08:05 -05:00: Here's the report: 
+2025-01-09 00:57:27 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -387,7 +487,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 21:14:12 -05:00: Here's the report: 
+2025-01-09 01:03:38 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
@@ -421,313 +521,7 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
                 - type: object
                         ^^^^^^…
 
-2025-01-08 21:53:28 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 22:17:32 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 22:18:06 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 22:38:24 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 22:40:33 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 22:46:17 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 22:47:50 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 22:52:42 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 23:16:34 -05:00: Here's the report: 
-
-
- Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-,Error in routes/tokens.js :
-YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
-
-                - type: object
-                  ^^^^^^^^^^^^…
-
-YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
-
-                - type: object
-                        ^^^^^^…
-
-2025-01-08 23:25:34 -05:00: Here's the report: 
+2025-01-09 01:08:57 -05:00: Here's the report: 
 
 
  Error in routes/tokens.js :
