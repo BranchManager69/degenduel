@@ -8855,3 +8855,692 @@ Did you mean to import "./utils/logger-suite/index.js"?
     at ModuleLoader.resolve (node:internal/modules/esm/loader:595:38)
     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:248:38)
     at ModuleJob._link (node:internal/modules/esm/module_job:136:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'cli-progress' imported from /home/websites/degenduel/utils/logger-suite/logging.js
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:267:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:854:18)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:688:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:612:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:595:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:248:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:136:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'cli-progress' imported from /home/websites/degenduel/utils/logger-suite/logging.js
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:267:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:854:18)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:688:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:612:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:595:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:248:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:136:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'ora' imported from /home/websites/degenduel/utils/logger-suite/logging.js
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:267:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:854:18)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:688:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:612:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:595:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:248:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:136:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logAPI is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+ReferenceError: logApi is not defined
+    at file:///home/websites/degenduel/utils/logger-suite/index.js:6:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:41:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:31 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:32 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:32 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:33 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:33 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:34 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:34 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:35 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:36 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:36 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:37 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:37 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:38 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:38 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:39 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:25:40 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:48 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:49 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:49 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:50 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:50 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:51 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:51 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:52 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:53 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:53 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:54 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:54 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:55 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:55 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:56 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:28:57 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+file:///home/websites/degenduel/config/database.js:5
+import { logApi } from '../utils/logger-suite/logger.js'; // unique
+         ^^^^^^
+SyntaxError: The requested module '../utils/logger-suite/logger.js' does not provide an export named 'logApi'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:181:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:264:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 02:41:21 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:43:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)

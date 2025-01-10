@@ -1,10 +1,79 @@
 // /utils/logger-suite/logging.js
 import boxen from 'boxen';
+import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import figlet from 'figlet';
 import gradient from 'gradient-string';
 import ora from 'ora';
 import winston from 'winston';
+
+// Create base logger instance first
+const baseLogger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json(),
+    winston.format.prettyPrint()
+  ),
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    }),
+    new winston.transports.File({ 
+      filename: 'error.log', 
+      level: 'error' 
+    }),
+    new winston.transports.File({ 
+      filename: 'combined.log' 
+    })
+  ]
+});
+
+// Create singleton class
+class LoggerSingleton {
+  constructor() {
+    if (LoggerSingleton.instance) {
+      return LoggerSingleton.instance;
+    }
+    LoggerSingleton.instance = this;
+    this.logger = baseLogger;
+    this.initialized = false;
+    return this;
+  }
+
+  init(config = {}) {
+    if (this.initialized) return this.logger;
+
+    // Add all the fancy custom methods
+    this.logger = addCustomLoggers(this.logger);
+    setupGracefulLogging(this.logger);
+
+    // Display a fancy startup banner
+    console.log(gradient.rainbow(figlet.textSync('DEGENDUEL MAINFRAME', {
+      font: 'ANSI Shadow',
+      horizontalLayout: 'full'
+    })));
+
+    this.initialized = true;
+    return this.logger;
+  }
+
+  getInstance() {
+    if (!this.initialized) {
+      return this.init();
+    }
+    return this.logger;
+  }
+}
+
+// Create the singleton instance
+const loggerInstance = new LoggerSingleton();
+export const logAPI = loggerInstance.init();
+export const logApi = logAPI; // Backwards compatibility
+export default logAPI;
 
 // Advanced styling configurations
 const STYLES = {
@@ -51,58 +120,6 @@ const LOG_STYLES = {
   },
   // ... other levels
 };
-
-// Create a singleton instance that can be easily imported anywhere
-class LoggerSingleton {
-  constructor() {
-    if (LoggerSingleton.instance) {
-      return LoggerSingleton.instance;
-    }
-    LoggerSingleton.instance = this;
-    this.initialized = false;
-  }
-
-  init(config = {}) {
-    if (this.initialized) return this.logger;
-
-    const logFormat = getLogFormat();
-    this.logger = winston.createLogger({
-      format: logFormat,
-      transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'combined.log' })
-      ],
-      ...config
-    });
-
-    // Add all the fancy custom methods
-    this.logger = addCustomLoggers(this.logger);
-    setupGracefulLogging(this.logger);
-
-    // Display a fancy startup banner
-    console.log(gradient.rainbow(figlet.textSync('DEGENDUEL MAINFRAME', {
-      font: 'ANSI Shadow',
-      horizontalLayout: 'full'
-    })));
-
-    this.initialized = true;
-    return this.logger;
-  }
-
-  getInstance() {
-    if (!this.initialized) {
-      return this.init();
-    }
-    return this.logger;
-  }
-}
-
-// Create and export the singleton instance
-export const logAPI = new LoggerSingleton();
-
-// This makes it super easy to replace existing logAPI imports
-export default logAPI.getInstance();
 
 // Add these new utility functions
 export function createBanner(text, level = 'info') {
@@ -263,12 +280,4 @@ export function addCustomLoggers(logger) {
   };
 
   return logger;
-}
-
-export function getLogFormat() {
-  return winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json(),
-    winston.format.prettyPrint()
-  );
 }
