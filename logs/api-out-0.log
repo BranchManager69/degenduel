@@ -4126,3 +4126,1248 @@
 2025-01-10 03:51:50 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:51:50.951Z"}
 2025-01-10 03:51:50 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:51:50.952Z"}
 2025-01-10 03:51:50 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:51:50.953Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:53:26.561Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:53:26.561Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.629Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.633Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.635Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.635Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.638Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.639Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.640Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.641Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.642Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.643Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.734Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.735Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.735Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.738Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.738Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.739Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.740Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.741Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.742Z"}
+2025-01-10 03:53:26 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:26.743Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:53:39.312Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:53:39.313Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.384Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.385Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.385Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.387Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.388Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.390Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.391Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.392Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.395Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.396Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.478Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.479Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.480Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.481Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.482Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.484Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.485Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.487Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.488Z"}
+2025-01-10 03:53:39 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:39.490Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:53:45.010Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:53:45.011Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.097Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.098Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.099Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.101Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.102Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.103Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.104Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.105Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.106Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.107Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.172Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.173Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.175Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.178Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.179Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.179Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.180Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.181Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.184Z"}
+2025-01-10 03:53:45 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:53:45.185Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T08:56:14.703Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:56:14.704Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T08:56:14.704Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:56:14.705Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T08:56:14.708Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T08:56:14.769Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T08:56:14.769Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.769Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.771Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.772Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.776Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.776Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.777Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.780Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.780Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.781Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.782Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T08:56:14.786Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.838Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.839Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.840Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.842Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.843Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.845Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.845Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.847Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.849Z"}
+2025-01-10 03:56:14 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:14.850Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:56:24.222Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:56:24.226Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.300Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.305Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.316Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.317Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.317Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.319Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.320Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.322Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.323Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.325Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.359Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.398Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.399Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.402Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.403Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.404Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.407Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.409Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.410Z"}
+2025-01-10 03:56:24 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:56:24.410Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T08:58:34.402Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T08:58:34.403Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T08:58:34.403Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:58:34.405Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:58:34.407Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T08:58:34.473Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T08:58:34.474Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T08:58:34.475Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.489Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.490Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.490Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.491Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.494Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.495Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.496Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.498Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.499Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.503Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.555Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.556Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.557Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.559Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.560Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.560Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.564Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.565Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.566Z"}
+2025-01-10 03:58:34 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:34.567Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T08:58:47.435Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T08:58:47.437Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T08:58:47.438Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T08:58:47.438Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.510Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.510Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.511Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.511Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.514Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.515Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.516Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.518Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.519Z"}
+2025-01-10 03:58:47 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T08:58:47.520Z"}
+2025-01-10 04:00:41 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:00:41.884Z"}
+2025-01-10 04:02:59 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:02:59.041Z"}
+2025-01-10 04:03:01 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:03:01.099Z"}
+2025-01-10 04:03:10 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:03:10.863Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T09:03:14.119Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T09:03:14.120Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.197Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.198Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.199Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.199Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.200Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.203Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.206Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.208Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.210Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.211Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.266Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.267Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.267Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.268Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.270Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.271Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.272Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.273Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.273Z"}
+2025-01-10 04:03:14 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:14.274Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T09:03:16.899Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T09:03:16.902Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.976Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.977Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.978Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.981Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.982Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.982Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.982Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.985Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.987Z"}
+2025-01-10 04:03:16 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:16.988Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.039Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.044Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.044Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.045Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.048Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.048Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.050Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.051Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.051Z"}
+2025-01-10 04:03:17 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:03:17.053Z"}
+2025-01-10 04:03:20 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:03:20.681Z"}
+2025-01-10 04:03:20 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:03:20.754Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:05:04.314Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T09:05:04.377Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T09:05:04.561Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T09:05:04.645Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.763Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.765Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.765Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.766Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.767Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.769Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.771Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.772Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.775Z"}
+2025-01-10 04:05:04 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:05:04.776Z"}
+2025-01-10 04:06:45 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:06:45.838Z"}
+2025-01-10 04:06:45 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T09:06:45.901Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T09:06:46.091Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T09:06:46.158Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.231Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.232Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.237Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.238Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.238Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.240Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.241Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.242Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.243Z"}
+2025-01-10 04:06:46 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:06:46.245Z"}
+2025-01-10 04:07:01 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:07:01.794Z"}
+2025-01-10 04:07:01 -05:00: [32minfo[39m: GET /api/api/stats/platform {"timestamp":"2025-01-10T09:07:01.795Z"}
+2025-01-10 04:07:01 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T09:07:01.865Z"}
+2025-01-10 04:07:01 -05:00: [32minfo[39m: GET /api/api/stats/activity {"timestamp":"2025-01-10T09:07:01.866Z"}
+2025-01-10 04:07:01 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T09:07:01.924Z"}
+2025-01-10 04:07:01 -05:00: [32minfo[39m: GET /api/api/users {"timestamp":"2025-01-10T09:07:01.929Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T09:07:02.047Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests {"timestamp":"2025-01-10T09:07:02.053Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.215Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.216Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.217Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.224Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.228Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.229Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.230Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.234Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.235Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.235Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.275Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.276Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.277Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.281Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.281Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.283Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.285Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.286Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.288Z"}
+2025-01-10 04:07:02 -05:00: [32minfo[39m: GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:07:02.290Z"}
+2025-01-10 04:08:14 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:08:14.489Z"}
+2025-01-10 04:08:14 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:08:14 -05:00: Detected API routes: None found
+2025-01-10 04:08:14 -05:00: 
+
+2025-01-10 04:08:14 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:08:14 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:08:14.996Z"}
+2025-01-10 04:08:15 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:08:15.007Z"}
+2025-01-10 04:08:15 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:08:15.045Z"}
+2025-01-10 04:08:15 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:08:15.051Z"}
+2025-01-10 04:08:15 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:08:15.051Z"}
+2025-01-10 04:08:15 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:08:15 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:08:15 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:08:21 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:08:21.229Z"}
+2025-01-10 04:08:21 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:08:21 -05:00: Detected API routes: None found
+2025-01-10 04:08:21 -05:00: 
+
+2025-01-10 04:08:21 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:08:21 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:08:21.739Z"}
+2025-01-10 04:08:21 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:08:21.748Z"}
+2025-01-10 04:08:21 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:08:21.781Z"}
+2025-01-10 04:08:21 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:08:21.787Z"}
+2025-01-10 04:08:21 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:08:21.787Z"}
+2025-01-10 04:08:21 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:08:21 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:08:21 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:08:27 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:08:27.410Z"}
+2025-01-10 04:08:27 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:08:27 -05:00: Detected API routes: None found
+2025-01-10 04:08:27 -05:00: 
+
+2025-01-10 04:08:27 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:08:27 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:08:27.958Z"}
+2025-01-10 04:08:27 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:08:27.967Z"}
+2025-01-10 04:08:28 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:08:28.007Z"}
+2025-01-10 04:08:28 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:08:28.013Z"}
+2025-01-10 04:08:28 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:08:28.014Z"}
+2025-01-10 04:08:28 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:08:28 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:08:28 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:10:08 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:10:08.400Z"}
+2025-01-10 04:10:08 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:10:08 -05:00: Detected API routes: None found
+2025-01-10 04:10:08 -05:00: 
+
+2025-01-10 04:10:08 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:10:08 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:10:08.938Z"}
+2025-01-10 04:10:08 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:10:08.949Z"}
+2025-01-10 04:10:08 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:10:08.990Z"}
+2025-01-10 04:10:08 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:10:08.996Z"}
+2025-01-10 04:10:08 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:10:08.998Z"}
+2025-01-10 04:10:08 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:10:09 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:10:09 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:10:13 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:10:13.142Z"}
+2025-01-10 04:10:13 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:10:13 -05:00: Detected API routes: None found
+2025-01-10 04:10:13 -05:00: 
+
+2025-01-10 04:10:13 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:10:13 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:10:13.659Z"}
+2025-01-10 04:10:13 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:10:13.669Z"}
+2025-01-10 04:10:13 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:10:13.704Z"}
+2025-01-10 04:10:13 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:10:13.710Z"}
+2025-01-10 04:10:13 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:10:13.710Z"}
+2025-01-10 04:10:13 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:10:13 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:10:13 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:10:27 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:10:27.593Z"}
+2025-01-10 04:10:28 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:10:28 -05:00: Detected API routes: None found
+2025-01-10 04:10:28 -05:00: 
+
+2025-01-10 04:10:28 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:10:28 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:10:28.110Z"}
+2025-01-10 04:10:28 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:10:28.119Z"}
+2025-01-10 04:10:28 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:10:28.156Z"}
+2025-01-10 04:10:28 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:10:28.161Z"}
+2025-01-10 04:10:28 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:10:28.161Z"}
+2025-01-10 04:10:28 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:10:28 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:10:28 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:12:34 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:12:34.046Z"}
+2025-01-10 04:12:34 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:12:34 -05:00: Detected API routes: None found
+2025-01-10 04:12:34 -05:00: 
+
+2025-01-10 04:12:34 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:12:34 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:12:34.533Z"}
+2025-01-10 04:12:34 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:12:34.542Z"}
+2025-01-10 04:12:34 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:12:34.579Z"}
+2025-01-10 04:12:34 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:12:34.585Z"}
+2025-01-10 04:12:34 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:12:34.585Z"}
+2025-01-10 04:12:34 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:12:34 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:12:34 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:12:42 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:12:42.056Z"}
+2025-01-10 04:12:42 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:12:42 -05:00: Detected API routes: None found
+2025-01-10 04:12:42 -05:00: 
+
+2025-01-10 04:12:42 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:12:42 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:12:42.542Z"}
+2025-01-10 04:12:42 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:12:42.551Z"}
+2025-01-10 04:12:42 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:12:42.586Z"}
+2025-01-10 04:12:42 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:12:42.590Z"}
+2025-01-10 04:12:42 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:12:42.591Z"}
+2025-01-10 04:12:42 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:12:42 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:12:42 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:12:51 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:12:51.846Z"}
+2025-01-10 04:12:52 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:12:52 -05:00: Detected API routes: None found
+2025-01-10 04:12:52 -05:00: 
+
+2025-01-10 04:12:52 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:12:52 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:12:52.354Z"}
+2025-01-10 04:12:52 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:12:52.364Z"}
+2025-01-10 04:12:52 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:12:52.395Z"}
+2025-01-10 04:12:52 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:12:52.401Z"}
+2025-01-10 04:12:52 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:12:52.401Z"}
+2025-01-10 04:12:52 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:12:52 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:12:52 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:13:03 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:13:03.017Z"}
+2025-01-10 04:13:03 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:13:03 -05:00: Detected API routes: None found
+2025-01-10 04:13:03 -05:00: 
+
+2025-01-10 04:13:03 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:13:03 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:13:03.508Z"}
+2025-01-10 04:13:03 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:13:03.517Z"}
+2025-01-10 04:13:03 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:13:03.559Z"}
+2025-01-10 04:13:03 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:13:03.564Z"}
+2025-01-10 04:13:03 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:13:03.564Z"}
+2025-01-10 04:13:03 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:13:03 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:13:03 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:18:03 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:18:03.306Z"}
+2025-01-10 04:18:03 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:18:03 -05:00: Detected API routes: None found
+2025-01-10 04:18:03 -05:00: 
+
+2025-01-10 04:18:03 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:18:03 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:18:03.807Z"}
+2025-01-10 04:18:03 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:18:03.816Z"}
+2025-01-10 04:18:03 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:18:03.855Z"}
+2025-01-10 04:18:03 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:18:03.860Z"}
+2025-01-10 04:18:03 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:18:03.861Z"}
+2025-01-10 04:18:03 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:18:03 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:18:03 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:23:03 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:23:03.779Z"}
+2025-01-10 04:23:04 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:23:04 -05:00: Detected API routes: None found
+2025-01-10 04:23:04 -05:00: 
+
+2025-01-10 04:23:04 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:23:04 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:23:04.304Z"}
+2025-01-10 04:23:04 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:23:04.315Z"}
+2025-01-10 04:23:04 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:23:04.356Z"}
+2025-01-10 04:23:04 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:23:04.361Z"}
+2025-01-10 04:23:04 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:23:04.362Z"}
+2025-01-10 04:23:04 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:23:04 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:23:04 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:25:51 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:25:51.533Z"}
+2025-01-10 04:25:52 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:25:52 -05:00: Detected API routes: None found
+2025-01-10 04:25:52 -05:00: 
+
+2025-01-10 04:25:52 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:25:52 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:25:52.039Z"}
+2025-01-10 04:25:52 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:25:52.048Z"}
+2025-01-10 04:25:52 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:25:52.082Z"}
+2025-01-10 04:25:52 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:25:52.087Z"}
+2025-01-10 04:25:52 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:25:52.087Z"}
+2025-01-10 04:25:52 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:25:52 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:25:52 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:26:23 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:26:23.317Z"}
+2025-01-10 04:26:23 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:26:23 -05:00: Detected API routes: None found
+2025-01-10 04:26:23 -05:00: 
+
+2025-01-10 04:26:23 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:26:23 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:26:23.802Z"}
+2025-01-10 04:26:23 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:26:23.813Z"}
+2025-01-10 04:26:23 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:26:23.846Z"}
+2025-01-10 04:26:23 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:26:23.851Z"}
+2025-01-10 04:26:23 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:26:23.852Z"}
+2025-01-10 04:26:23 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:26:23 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:26:23 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:26:34 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:26:34.755Z"}
+2025-01-10 04:26:35 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:26:35 -05:00: Detected API routes: None found
+2025-01-10 04:26:35 -05:00: 
+
+2025-01-10 04:26:35 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:26:35 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:26:35.285Z"}
+2025-01-10 04:26:35 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:26:35.296Z"}
+2025-01-10 04:26:35 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:26:35.333Z"}
+2025-01-10 04:26:35 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:26:35.338Z"}
+2025-01-10 04:26:35 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:26:35.338Z"}
+2025-01-10 04:26:35 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:26:35 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:26:35 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:27:04 -05:00: [32minfo[39m: GET /api/stats/platform {"timestamp":"2025-01-10T09:27:04.471Z"}
+2025-01-10 04:27:05 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:27:05 -05:00: Detected API routes: None found
+2025-01-10 04:27:05 -05:00: 
+
+2025-01-10 04:27:05 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:27:05 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:27:05.011Z"}
+2025-01-10 04:27:05 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:27:05.021Z"}
+2025-01-10 04:27:05 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:27:05.055Z"}
+2025-01-10 04:27:05 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:27:05.061Z"}
+2025-01-10 04:27:05 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:27:05.061Z"}
+2025-01-10 04:27:05 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:27:05 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:27:05 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:29:24 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:29:24.709Z"}
+2025-01-10 04:29:24 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:29:24.837Z"}
+2025-01-10 04:29:24 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:29:24.980Z"}
+2025-01-10 04:29:25 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:29:25.045Z","totalUsers":3,"userCount":3}
+2025-01-10 04:29:25 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:29:25.233Z"}
+2025-01-10 04:29:25 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:29:25.275Z"}
+2025-01-10 04:30:41 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:30:41.684Z"}
+2025-01-10 04:30:41 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:30:41.686Z"}
+2025-01-10 04:30:41 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:30:41.805Z"}
+2025-01-10 04:30:41 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:30:41.807Z"}
+2025-01-10 04:30:41 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:30:41.935Z"}
+2025-01-10 04:30:41 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:30:41.936Z"}
+2025-01-10 04:30:41 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:30:41.939Z","totalUsers":3,"userCount":3}
+2025-01-10 04:30:41 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:30:41.956Z","totalUsers":3,"userCount":3}
+2025-01-10 04:30:42 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:30:42.086Z"}
+2025-01-10 04:30:42 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:30:42.088Z"}
+2025-01-10 04:30:42 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:30:42.090Z"}
+2025-01-10 04:30:42 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:30:42.091Z"}
+2025-01-10 04:30:47 -05:00: [32minfo[39m: GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance {"timestamp":"2025-01-10T09:30:47.686Z"}
+2025-01-10 04:34:34 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:34:34.417Z"}
+2025-01-10 04:34:34 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:34:34.555Z"}
+2025-01-10 04:34:34 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:34:34.702Z"}
+2025-01-10 04:34:34 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:34:34.705Z","totalUsers":3,"userCount":3}
+2025-01-10 04:34:34 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:34:34.863Z"}
+2025-01-10 04:34:34 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:34:34.880Z"}
+2025-01-10 04:34:37 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:34:37.330Z"}
+2025-01-10 04:34:37 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:34:37.474Z"}
+2025-01-10 04:34:37 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:34:37.616Z"}
+2025-01-10 04:34:37 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:34:37.621Z","totalUsers":3,"userCount":3}
+2025-01-10 04:34:37 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:34:37.753Z"}
+2025-01-10 04:34:37 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:34:37.755Z"}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:34:41.111Z"}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:34:41.115Z"}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:34:41.258Z"}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:34:41.262Z"}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:34:41.392Z"}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:34:41.394Z","totalUsers":3,"userCount":3}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:34:41.402Z"}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:34:41.404Z","totalUsers":3,"userCount":3}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:34:41.512Z"}
+2025-01-10 04:34:41 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:34:41.514Z"}
+2025-01-10 04:34:41 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:34:41.526Z"}
+2025-01-10 04:34:41 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:34:41.528Z"}
+2025-01-10 04:34:45 -05:00: [32minfo[39m: GET /api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:34:45.126Z"}
+2025-01-10 04:34:45 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:34:45 -05:00: Detected API routes: None found
+2025-01-10 04:34:45 -05:00: 
+
+2025-01-10 04:34:45 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:34:45 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:34:45.649Z"}
+2025-01-10 04:34:45 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:34:45.659Z"}
+2025-01-10 04:34:45 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:34:45.701Z"}
+2025-01-10 04:34:45 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:34:45.706Z"}
+2025-01-10 04:34:45 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:34:45.707Z"}
+2025-01-10 04:34:45 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:34:45 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:34:45 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:37:13 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:37:13.338Z"}
+2025-01-10 04:37:13 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:37:13.480Z"}
+2025-01-10 04:37:13 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:37:13.605Z"}
+2025-01-10 04:37:13 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:37:13.670Z","totalUsers":3,"userCount":3}
+2025-01-10 04:37:13 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:37:13.836Z"}
+2025-01-10 04:37:13 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:37:13.884Z"}
+2025-01-10 04:37:15 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:37:15.899Z"}
+2025-01-10 04:37:16 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:37:16.041Z"}
+2025-01-10 04:37:16 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:37:16.158Z"}
+2025-01-10 04:37:16 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:37:16.163Z","totalUsers":3,"userCount":3}
+2025-01-10 04:37:16 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:37:16.296Z"}
+2025-01-10 04:37:16 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:37:16.298Z"}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:37:19.436Z"}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:37:19.437Z"}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:37:19.556Z"}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:37:19.561Z"}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:37:19.676Z"}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:37:19.678Z"}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:37:19.682Z","totalUsers":3,"userCount":3}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:37:19.701Z","totalUsers":3,"userCount":3}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:37:19.809Z"}
+2025-01-10 04:37:19 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:37:19.812Z"}
+2025-01-10 04:37:19 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:37:19.821Z"}
+2025-01-10 04:37:19 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:37:19.823Z"}
+2025-01-10 04:37:23 -05:00: [32minfo[39m: GET /api/admin/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:37:23.898Z"}
+2025-01-10 04:39:35 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:39:35.985Z"}
+2025-01-10 04:39:35 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:39:35.991Z"}
+2025-01-10 04:39:36 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:39:36.145Z"}
+2025-01-10 04:39:36 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:39:36.150Z"}
+2025-01-10 04:39:36 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:39:36.275Z"}
+2025-01-10 04:39:36 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:39:36.277Z"}
+2025-01-10 04:39:36 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:39:36.282Z","totalUsers":3,"userCount":3}
+2025-01-10 04:39:36 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:39:36.284Z","totalUsers":3,"userCount":3}
+2025-01-10 04:39:36 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:39:36.407Z"}
+2025-01-10 04:39:36 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:39:36.409Z"}
+2025-01-10 04:39:36 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:39:36.421Z"}
+2025-01-10 04:39:36 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:39:36.423Z"}
+2025-01-10 04:40:37 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:40:37.160Z"}
+2025-01-10 04:40:37 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:40:37.161Z"}
+2025-01-10 04:40:37 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:40:37.163Z"}
+2025-01-10 04:40:37 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:40:37.164Z"}
+2025-01-10 04:45:33 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:45:33.407Z"}
+2025-01-10 04:45:33 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:45:33.423Z"}
+2025-01-10 04:46:13 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-10T09:46:13.026Z"}
+2025-01-10 04:46:13 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:46:13 -05:00: Detected API routes: None found
+2025-01-10 04:46:13 -05:00: 
+
+2025-01-10 04:46:13 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:46:13 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:46:13.615Z"}
+2025-01-10 04:46:13 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:46:13.625Z"}
+2025-01-10 04:46:13 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:46:13.668Z"}
+2025-01-10 04:46:13 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:46:13.673Z"}
+2025-01-10 04:46:13 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:46:13.673Z"}
+2025-01-10 04:46:13 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:46:13 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:46:13 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:48:43 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:48:43.366Z"}
+2025-01-10 04:48:43 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:48:43.410Z"}
+2025-01-10 04:49:28 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:49:28.038Z"}
+2025-01-10 04:49:28 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:49:28.042Z"}
+2025-01-10 04:49:33 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:49:33.046Z"}
+2025-01-10 04:49:33 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:49:33.047Z"}
+2025-01-10 04:49:53 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-10T09:49:53.420Z"}
+2025-01-10 04:49:54 -05:00: Swagger docs available at /api-docs
+2025-01-10 04:49:54 -05:00: Detected API routes: None found
+2025-01-10 04:49:54 -05:00: 
+
+2025-01-10 04:49:54 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 04:49:54 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T09:49:54.026Z"}
+2025-01-10 04:49:54 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T09:49:54.037Z"}
+2025-01-10 04:49:54 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T09:49:54.074Z"}
+2025-01-10 04:49:54 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T09:49:54.080Z"}
+2025-01-10 04:49:54 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T09:49:54.081Z"}
+2025-01-10 04:49:54 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 04:49:54 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 04:49:54 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 04:50:21 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:50:21.359Z"}
+2025-01-10 04:50:21 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:50:21.409Z"}
+2025-01-10 04:50:21 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:50:21.471Z"}
+2025-01-10 04:50:21 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:50:21.474Z"}
+2025-01-10 04:50:45 -05:00: [32minfo[39m: POST /api/auth/verify-wallet {"timestamp":"2025-01-10T09:50:45.071Z"}
+2025-01-10 04:50:45 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-10T09:50:45.071Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 04:50:45 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-10T09:50:45.074Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 04:50:45 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-10T09:50:45.074Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 04:50:45 -05:00: [32minfo[39m: GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:50:45.159Z"}
+2025-01-10 04:50:45 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T09:50:45.205Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 04:50:47 -05:00: [32minfo[39m: GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"timestamp":"2025-01-10T09:50:47.782Z"}
+2025-01-10 04:50:47 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T09:50:47.788Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 04:50:50 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:50:50.964Z"}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:50:51.029Z"}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:50:51.040Z"}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:50:51.100Z"}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:50:51.104Z"}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:50:51.121Z","totalUsers":3,"userCount":3}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:50:51.182Z"}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:50:51.186Z","totalUsers":3,"userCount":3}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:50:51.198Z"}
+2025-01-10 04:50:51 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:50:51.202Z"}
+2025-01-10 04:50:51 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:50:51.264Z"}
+2025-01-10 04:50:51 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:50:51.266Z"}
+2025-01-10 04:50:59 -05:00: [32minfo[39m: GET /api/admin/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance {"timestamp":"2025-01-10T09:50:59.792Z"}
