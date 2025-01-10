@@ -682,7 +682,7 @@ router.post('/', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// Join a contest
+// Join a wallet into acontest
 //   example: POST https://degenduel.me/api/contests/1/join
 //      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
 router.post('/:id/join', async (req, res) => {
@@ -751,7 +751,7 @@ router.post('/:id/join', async (req, res) => {
       });
 
       if (existingParticipation) {
-        throw new ContestError('Already participating in this contest', 409);
+        throw new ContestError(`You've already got a spot reserved at this table.`, 409);
       }
 
       // Check if user exists
@@ -760,19 +760,19 @@ router.post('/:id/join', async (req, res) => {
       });
 
       if (!user) {
-        throw new ContestError('User not found', 404);
+        throw new ContestError('You\'ve gotta login it to win it, buddy...', 404);
       }
 
-      // Validate contest status
+      // Validate contest status #TODO: remove this
       if (contest.status !== 'pending') {
-        throw new ContestError('Contest is not open for entry', 400, {
+        throw new ContestError('Hey, this table isn\'t supposed to be open right now. How did you get here?', 400, {
           status: contest.status
         });
       }
 
-      // Check participant limits
+      // Check participant limits #TODO: fix this (max_participants is not being set properly initially via CreateContestModal)
       if (contest._count.contest_participants >= (contest.max_participants || 0)) {
-        throw new ContestError('Contest is full', 400, {
+        throw new ContestError('Sorry, there are no more open seats at this table.', 400, {
           currentParticipants: contest._count.contest_participants,
           maxParticipants: contest.max_participants
         });
@@ -794,7 +794,7 @@ router.post('/:id/join', async (req, res) => {
         const availableFormatted = userBalance.dividedBy(1000000).toFixed(2);
         
         throw new ContestError(
-          `Insufficient balance. Required: ${requiredFormatted} USDC, Available: ${availableFormatted} USDC`,
+          `Insufficient balance!\nRequired: ${requiredFormatted} points. Available: ${availableFormatted} points.`,
           400,
           {
             required: entryFee.toString(),
@@ -809,8 +809,8 @@ router.post('/:id/join', async (req, res) => {
         data: {
           contest_id: contestId,
           wallet_address,
-          initial_balance: new Decimal(1000000),
-          current_balance: new Decimal(1000000)
+          initial_balance: new Decimal(10000000),
+          current_balance: new Decimal(10000000)
         }
       });
 
@@ -917,9 +917,9 @@ router.post('/:id/join', async (req, res) => {
  *       200:
  *         description: Contest updated successfully
  */
-// Update contest details
-//   example: PUT https://degenduel.me/api/contests/1
-//      body: { "name": "Weekly Trading Contest", "contest_code": "WTC-2024-01", "entry_fee": "1000000", "start_time": "2025-01-01T00:00:00Z", "end_time": "2025-01-07T23:59:59Z", "min_participants": 10, "max_participants": 100, "allowed_buckets": [1, 2, 3] }
+// Update the details of a contest
+//   example: PUT https://degenduel.me/api/contests/10
+//      body: { "name": "World Trade Center Rememberance Contest", "contest_code": "WTC-2001-911", "entry_fee": "0.911", "start_time": "2025-02-01T00:00:00Z", "end_time": "2025-02-07T23:59:59Z", "min_participants": 3, "max_participants": 100, "allowed_buckets": [1, 2, 3, 4, 5, 6, 7, 8, 9] }
 router.put('/:id', async (req, res) => {
   const requestId = crypto.randomUUID();
   const contestId = parseInt(req.params.id);
@@ -1126,8 +1126,9 @@ router.put('/:id', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// Start a contest
+// "Start" a contest (<< doesn't actually start it; starts are timed. this just sets the status to active).
 //   example: POST https://degenduel.me/api/contests/1/start
+//      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
 router.post('/:id/start', async (req, res) => {
   try {
     const contest = await prisma.contests.findUnique({
@@ -1212,8 +1213,9 @@ router.post('/:id/start', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// End a contest and calculate winners
+// End a contest and calculate winners  (<< doesn't actually end it; ends are timed. this just sets the status to completed).
 //   example: POST https://degenduel.me/api/contests/1/end
+//      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
 router.post('/:id/end', async (req, res) => {
   try {
     const result = await prisma.$transaction(async (prisma) => {
@@ -1312,8 +1314,39 @@ router.post('/:id/end', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// Get contest leaderboard
+/* 
+ *  Get a contest's "leaderboard"(*)
 //   example: GET https://degenduel.me/api/contests/1/leaderboard
+ *    This is a misnomer. 
+ *      It's not actually the contest's leaderboard.
+ *      It's just the list of participants sorted by the User's 'balance' 
+ *        (or 'points', or 'D.D. Bux', or whatever else refer to them as).
+ * 
+ *  IDEALLY, 
+ *     Points should be a property of a Portfolio;
+ *     and a Portfolio should be a property of a Participant;
+ *     and a Participant should be a property of a Contest.
+ * 
+ *  AS IT STANDS,
+ *     Points ('balance' in Users table) is property of a Participant a.k.a. a User -- :p (BAD)
+ *     and a Participant is a property of a Contest.
+ * 
+ *  AND EVENTUALLY,
+ *     Points should be a property of a Portfolio;
+ *     and a Portfolio should be a property of a Participant;
+ *     and a Participant should be a property of a Contest;
+ *     and a Contest should be a property of a Contest_Series;
+ *     and a Contest_Series should be a property of a Contest_Series_Season (...)
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
 router.get('/:id/leaderboard', async (req, res) => {
   try {
     const leaderboard = await prisma.contest_participants.findMany({
