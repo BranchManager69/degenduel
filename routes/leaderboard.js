@@ -2,7 +2,7 @@
 import express from 'express';
 import { addScore, getLeaderboard } from '../archive/controllers/leaderboard.js';
 import { validateGetLeaderboard, validateScore } from '../middleware/leaderboardValidation.js';
-import { logApi } from '../utils/logger-suite/logger.js';
+import { logApi } from '../utils/logger-suite';
 
 const router = express.Router();
 

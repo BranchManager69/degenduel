@@ -1,4 +1,4 @@
-import { logApi } from './logger-suite/logger.js';
+import { logApi } from './logger-suite';
 
 export class AppError extends Error {
   constructor(message, statusCode = 500) {

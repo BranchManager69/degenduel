@@ -7,11 +7,9 @@ import { configureMiddleware } from './config/middleware.js';
 import { closePgDatabase, initPgDatabase, pool } from './config/pg-database.js';
 import setupSwagger from './config/swagger.js';
 import { errorHandler } from './utils/errorHandler.js';
-import { logApi } from './utils/logger-suite/logger.js';
+import { logApi } from './utils/logger-suite';
 dotenv.config();
 
-
-// ------------------------------------------------------------------------------------------------
 
 /* DegenDuel API Server */
 
@@ -30,7 +28,6 @@ configureMiddleware(app);
 
 // Log startup configuration (optional)
 /*
- Log startup configuration
   console.log('Starting API server with config:', {
    port,
    nodeEnv: process.env.NODE_ENV,
@@ -41,8 +38,6 @@ configureMiddleware(app);
  });
 */
 
-
-// ------------------------------------------------------------------------------------------------
 
 /* Routes Setup */
 
@@ -138,8 +133,10 @@ async function startServer() {
       // Visual startup sequence
       await displayStartupSequence();
 
-      // Main API server listening on all interfaces
-      const apiServer = app.listen(port, '0.0.0.0', () => {
+      //// Main API server listening on all interfaces
+      ////const apiServer = app.listen(port, '0.0.0.0', () => {
+      // Main API server listening only on localhost
+      const apiServer = app.listen(port, '127.0.0.1', () => {
           console.log(`\t   🎯  DegenDuel API  \t\t|  READY!`);
           console.log(`\t     '--------------> Port ${port}`);
       });
