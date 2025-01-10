@@ -162,6 +162,7 @@ router.get('/:wallet', async (req, res) => {
  *       403:
  *         description: Not authorized
  */
+// NOT WORKING???
 // Adjust a user's point balance by wallet address (Admin only)
 router.post('/:wallet/balance', async (req, res) => {
   const log = logApi.withRequest(req);
@@ -293,9 +294,7 @@ router.post('/:wallet/balance', async (req, res) => {
 });
 
 
-
 // -----------------------------------------------------------
-
 
 
 /**
