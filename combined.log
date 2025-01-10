@@ -10658,3 +10658,2032 @@
   message: 'Successfully fetched user profile',
   timestamp: '2025-01-10T08:25:25.552Z'
 }
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.835Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.840Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.918Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.919Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.919Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.920Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.920Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.921Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.923Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.926Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.927Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.927Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.996Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.998Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.998Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:54.999Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:55.003Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:55.004Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:55.007Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:55.008Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:55.009Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:27:55.009Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.498Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.499Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.566Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.568Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.570Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.570Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.572Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.572Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.574Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.574Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.579Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.581Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.640Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.641Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.645Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.646Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.650Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.650Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.651Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.651Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.653Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:13.655Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:16.506Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T08:28:16.511Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.843Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.843Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.907Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.907Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.908Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.911Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.912Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.913Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.914Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.915Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.916Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.916Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.970Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.971Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.971Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.972Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.974Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.978Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.979Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.982Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.983Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:19.984Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.325Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.326Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.389Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.390Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.390Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.393Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.394Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.394Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.395Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.396Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.397Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.398Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.468Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.469Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.469Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.470Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.473Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.474Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.475Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.476Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.477Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:22.478Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.059Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.060Z'
+}
+{
+  message: 'GET /api/api/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.061Z'
+}
+{
+  message: 'GET /api/api/users',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.063Z'
+}
+{
+  message: 'GET /api/api/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.064Z'
+}
+{
+  message: 'GET /api/api/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.120Z'
+}
+{
+  message: 'GET /api/api/users',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.121Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.125Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.126Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.126Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.127Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.127Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.129Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.130Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.131Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.133Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.135Z'
+}
+{
+  message: 'GET /api/api/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.181Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.192Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.198Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.199Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.200Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.203Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.209Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.210Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.215Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.218Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:28:25.220Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:30:25.988Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:30:25.990Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:30:46.103Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:30:46.104Z'
+}
+{
+  message: 'POST /api/auth/verify-wallet',
+  level: 'info',
+  timestamp: '2025-01-10T08:31:22.666Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-10T08:31:22.666Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-10T08:31:22.667Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-10T08:31:22.667Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:31:22.796Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T08:31:22.816Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.722Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.723Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.815Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.816Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.817Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.819Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.820Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.820Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.822Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.825Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.826Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.827Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.828Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.830Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.832Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.833Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.834Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.836Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.837Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.839Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.840Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:34.841Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.445Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.446Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.516Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.517Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.519Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.520Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.521Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.522Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.523Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.524Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.526Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.527Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.528Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.529Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.531Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.532Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.532Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.533Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.534Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.535Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.536Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:38:35.537Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.124Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.126Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.264Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.265Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.266Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.266Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.268Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.269Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.269Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.270Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.270Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.274Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.318Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.324Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.325Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.326Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.328Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.329Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.330Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.332Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.335Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:05.339Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.855Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.856Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.936Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.937Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.938Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.939Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.942Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.943Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.944Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.944Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.945Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.946Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:17.998Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.004Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.005Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.005Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.008Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.009Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.013Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.014Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.014Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:18.015Z'
+}
+{
+  message: 'GET /api/api/users',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:21.945Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:21.946Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:21.947Z'
+}
+{
+  message: 'GET /api/api/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:21.948Z'
+}
+{
+  message: 'GET /api/api/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:21.949Z'
+}
+{
+  message: 'GET /api/api/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.007Z'
+}
+{
+  message: 'GET /api/api/users',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.009Z'
+}
+{
+  message: 'GET /api/api/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.014Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.015Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.017Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.018Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.020Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.021Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.022Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.022Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.023Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.024Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.025Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.097Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.098Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.099Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.100Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.103Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.104Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.104Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.105Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.105Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:22.106Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.834Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.835Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.903Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.906Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.908Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.909Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.910Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.911Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.914Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.915Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.916Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.916Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.978Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.979Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.980Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.980Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.982Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.983Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.985Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.986Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.987Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:40:43.987Z'
+}
+{
+  message: 'GET /api/api/users',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.235Z'
+}
+{
+  message: 'GET /api/api/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.237Z'
+}
+{
+  message: 'GET /api/api/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.238Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.239Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.329Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.329Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.330Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.332Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.332Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.333Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.333Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.335Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.335Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:45:22.336Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T08:46:30.617Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T08:46:31.190Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T08:46:31.200Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T08:46:31.239Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T08:46:31.244Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T08:46:31.244Z'
+}
+{
+  message: 'GET /api/health',
+  level: 'info',
+  timestamp: '2025-01-10T08:49:34.294Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T08:49:34.303Z'
+}
+{
+  message: 'GET /api/health',
+  level: 'info',
+  timestamp: '2025-01-10T08:49:34.316Z'
+}
+{
+  message: 'GET /api/api/users',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.383Z'
+}
+{
+  message: 'GET /api/api/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.386Z'
+}
+{
+  message: 'GET /api/api/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.388Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.389Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.515Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.517Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.519Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.521Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.522Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.523Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.524Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.525Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.527Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:50:22.528Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:03.371Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:03.933Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:03.942Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:03.978Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:03.984Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:03.984Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.804Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.809Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.945Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.949Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.952Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.954Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.956Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.959Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.961Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.965Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.967Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:25.969Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.013Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.014Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.017Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.021Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.023Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.028Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.031Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.035Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.036Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:26.037Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.094Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.095Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.174Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.175Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.176Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.177Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.178Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.179Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.181Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.183Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.185Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.187Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.233Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.237Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.243Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.249Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.250Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.250Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.252Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.255Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.258Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:31.258Z'
+}
+{
+  message: 'GET /api/api/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.669Z'
+}
+{
+  message: 'GET /api/api/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.672Z'
+}
+{
+  message: 'GET /api/api/users',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.676Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.677Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.679Z'
+}
+{
+  message: 'GET /api/api/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.724Z'
+}
+{
+  message: 'GET /api/api/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.743Z'
+}
+{
+  message: 'GET /api/api/users',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.744Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.749Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.750Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.750Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.751Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.755Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.757Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.758Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.760Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.761Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.762Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.828Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.830Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.832Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.833Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.838Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.840Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.841Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.843Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.844Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:36.846Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.772Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.774Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.845Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.846Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.846Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.847Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.848Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.851Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.852Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.852Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.853Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.855Z'
+}
+{
+  message: 'GET /api/contests/7/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.929Z'
+}
+{
+  message: 'GET /api/contests/8/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.930Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.933Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.942Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.944Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.944Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.948Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.951Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.952Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T08:51:50.953Z'
+}

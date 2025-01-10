@@ -136,9 +136,9 @@ async function startServer() {
       //// Main API server listening on all interfaces
       ////const apiServer = app.listen(port, '0.0.0.0', () => {
       // Main API server listening only on localhost
-      const apiServer = app.listen(port, '127.0.0.1', () => {
+      const apiServer = app.listen(port, '0.0.0.0', () => {
           console.log(`\t   🎯  DegenDuel API  \t\t|  READY!`);
-          console.log(`\t     '--------------> Port ${port}`);
+          console.log(`\t     '--------------> Port ${port} (all interfaces)`);
       });
 
       apiServer.on('error', (error) => {
