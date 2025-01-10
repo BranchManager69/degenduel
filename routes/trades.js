@@ -1,7 +1,7 @@
 // /routes/trades.js
 import express from 'express';
 import { pool } from '../config/pg-database.js';
-import { logApi } from '../utils/logger-suite/logger.js';
+import { logApi } from '../utils/logger-suite';
 
 const router = express.Router();
 
