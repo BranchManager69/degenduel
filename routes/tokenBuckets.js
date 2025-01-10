@@ -46,6 +46,7 @@ const router = express.Router();
  *         description: Failed to create token bucket
  */
 // Create a new token bucket
+//   example: POST https://degenduel.me/api/token-buckets
 router.post('/', async (req, res) => {
   const { name, description } = req.body;
   try {
@@ -93,6 +94,7 @@ router.post('/', async (req, res) => {
  *                                   type: string
  */
 // Get all token buckets
+//   example: GET https://degenduel.me/api/token-buckets/buckets
 router.get('/buckets', async (req, res) => {
     try {
       const buckets = await prisma.token_buckets.findMany({
@@ -157,6 +159,7 @@ router.get('/buckets', async (req, res) => {
  *         $ref: '#/components/responses/TokenNotFound'
  */
 // Get token bucket by ID
+//   example: GET https://degenduel.me/api/token-buckets/1
 router.get('/buckets/:id', async (req, res) => {
 try {
     const bucket = await prisma.token_buckets.findUnique({
@@ -219,6 +222,8 @@ try {
  *         description: Failed to add tokens to bucket
  */
 // Add tokens to a bucket
+//   example: POST https://degenduel.me/api/token-buckets/1/tokens
+//      body: { "tokenIds": [1, 2, 3] }
 router.post('/:bucketId/tokens', async (req, res) => {
     const { bucketId } = req.params;
     const { tokenIds } = req.body;
@@ -273,6 +278,7 @@ router.post('/:bucketId/tokens', async (req, res) => {
  *         description: Failed to remove token from bucket
  */
 // Remove a token from a bucket
+//   example: DELETE https://degenduel.me/api/token-buckets/1/tokens/1
 router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
     try {
         const { bucketId, tokenId } = req.params;
@@ -303,6 +309,7 @@ router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
  *         description: Failed to fetch token buckets
  */
 // Get all token buckets (with tokens)
+//   example: GET https://degenduel.me/api/token-buckets
 router.get('/', async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -357,6 +364,7 @@ router.get('/', async (_req, res) => {
  *         description: Server error
  */
 // Update token bucket details
+//   example: PUT https://degenduel.me/api/token-buckets/1
 router.patch('/:bucketId', async (req, res) => {
     const { bucketId } = req.params;
     const { name, description } = req.body;
@@ -403,6 +411,7 @@ router.patch('/:bucketId', async (req, res) => {
  *         description: Server error
  */
 // Delete token bucket
+//   example: DELETE https://degenduel.me/api/token-buckets/1
 router.delete('/:bucketId', async (req, res) => {
     const { bucketId } = req.params;
 

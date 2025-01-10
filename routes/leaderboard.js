@@ -13,7 +13,6 @@ const router = express.Router();
  * 
  */
 
-
 /**
  * @swagger
  * @swagger
@@ -84,6 +83,7 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
+//   example: GET https://degenduel.me/api/leaderboard?timeframe=all&limit=10&offset=0
 router.get('/', validateGetLeaderboard, getLeaderboard);
 
 /**
@@ -135,6 +135,8 @@ router.get('/', validateGetLeaderboard, getLeaderboard);
  *       500:
  *         description: Server error
  */
+//   example: POST https://degenduel.me/api/leaderboard
+//   body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "score": 100, "contest_id": "1" }
 router.post('/', validateScore, addScore);
 
 /**
@@ -179,6 +181,7 @@ router.post('/', validateScore, addScore);
  *       500:
  *         description: Server error
  */
+//   example: GET https://degenduel.me/api/leaderboard/contest/1?limit=10
 router.get('/contest/:contestId', async (req, res) => {
     const { contestId } = req.params;
     const { limit = 10 } = req.query;
@@ -258,6 +261,7 @@ router.get('/contest/:contestId', async (req, res) => {
  *       500:
  *         description: Server error
  */
+//   example: GET https://degenduel.me/api/leaderboard/token/1?limit=10
 router.get('/token/:tokenId', async (req, res) => {
     const { tokenId } = req.params;
     const { limit = 10 } = req.query;
@@ -326,6 +330,7 @@ router.get('/token/:tokenId', async (req, res) => {
  *       500:
  *         description: Server error
  */
+//   example: GET https://degenduel.me/api/leaderboard/history?season=2024
 router.get('/history', async (req, res) => {
     const { season } = req.query;
 
@@ -375,6 +380,8 @@ router.get('/history', async (req, res) => {
  *       500:
  *         description: Server error
  */
+//   example: PATCH https://degenduel.me/api/leaderboard/adjust
+//   body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "adjustment": 100 }
 router.patch('/adjust', async (req, res) => {
     const { wallet_address, adjustment } = req.body;
 
@@ -416,6 +423,7 @@ router.patch('/adjust', async (req, res) => {
  *       500:
  *         description: Server error
  */
+//   example: POST https://degenduel.me/api/leaderboard/reset
 router.post('/reset', async (req, res) => {
     try {
         await pool.query(`

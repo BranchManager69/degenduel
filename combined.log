@@ -16639,3 +16639,383 @@
   level: 'info',
   timestamp: '2025-01-10T09:50:59.792Z'
 }
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T09:55:51.087Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T09:55:51.146Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T09:55:51.227Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T09:55:51.252Z'
+}
+{
+  message: 'GET /api/contests/all',
+  level: 'info',
+  timestamp: '2025-01-10T09:55:51.319Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest: \n' +
+    'Invalid `prisma.contests.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    contest_participants: {\n' +
+    '      include: {\n' +
+    '        users: {\n' +
+    '          select: {\n' +
+    '            nickname: true,\n' +
+    '            wallet_address: true\n' +
+    '          }\n' +
+    '        }\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_portfolios: {\n' +
+    '      include: {\n' +
+    '        tokens: true\n' +
+    '      }\n' +
+    '    }\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.contests.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    contest_participants: {\n' +
+    '      include: {\n' +
+    '        users: {\n' +
+    '          select: {\n' +
+    '            nickname: true,\n' +
+    '            wallet_address: true\n' +
+    '          }\n' +
+    '        }\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_portfolios: {\n' +
+    '      include: {\n' +
+    '        tokens: true\n' +
+    '      }\n' +
+    '    }\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/contests.js:270:21',
+  timestamp: '2025-01-10T09:55:51.334Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T10:00:52.238Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T10:00:52.307Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T10:00:52.369Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T10:00:52.386Z'
+}
+{
+  message: 'GET /api/contests/all',
+  level: 'info',
+  timestamp: '2025-01-10T10:00:52.450Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest: \n' +
+    'Invalid `prisma.contests.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    contest_participants: {\n' +
+    '      include: {\n' +
+    '        users: {\n' +
+    '          select: {\n' +
+    '            nickname: true,\n' +
+    '            wallet_address: true\n' +
+    '          }\n' +
+    '        }\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_portfolios: {\n' +
+    '      include: {\n' +
+    '        tokens: true\n' +
+    '      }\n' +
+    '    }\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.contests.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    contest_participants: {\n' +
+    '      include: {\n' +
+    '        users: {\n' +
+    '          select: {\n' +
+    '            nickname: true,\n' +
+    '            wallet_address: true\n' +
+    '          }\n' +
+    '        }\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_portfolios: {\n' +
+    '      include: {\n' +
+    '        tokens: true\n' +
+    '      }\n' +
+    '    }\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/contests.js:270:21',
+  timestamp: '2025-01-10T10:00:52.464Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T10:05:52.049Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T10:05:52.113Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T10:05:52.182Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T10:05:52.185Z'
+}
+{
+  message: 'GET /api/contests/all',
+  level: 'info',
+  timestamp: '2025-01-10T10:05:52.246Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest: \n' +
+    'Invalid `prisma.contests.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    contest_participants: {\n' +
+    '      include: {\n' +
+    '        users: {\n' +
+    '          select: {\n' +
+    '            nickname: true,\n' +
+    '            wallet_address: true\n' +
+    '          }\n' +
+    '        }\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_portfolios: {\n' +
+    '      include: {\n' +
+    '        tokens: true\n' +
+    '      }\n' +
+    '    }\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.contests.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    contest_participants: {\n' +
+    '      include: {\n' +
+    '        users: {\n' +
+    '          select: {\n' +
+    '            nickname: true,\n' +
+    '            wallet_address: true\n' +
+    '          }\n' +
+    '        }\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_portfolios: {\n' +
+    '      include: {\n' +
+    '        tokens: true\n' +
+    '      }\n' +
+    '    }\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/contests.js:270:21',
+  timestamp: '2025-01-10T10:05:52.248Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T10:10:52.036Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T10:10:52.101Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T10:10:52.182Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T10:10:52.204Z'
+}
+{
+  message: 'GET /api/contests/all',
+  level: 'info',
+  timestamp: '2025-01-10T10:10:52.273Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest: \n' +
+    'Invalid `prisma.contests.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    contest_participants: {\n' +
+    '      include: {\n' +
+    '        users: {\n' +
+    '          select: {\n' +
+    '            nickname: true,\n' +
+    '            wallet_address: true\n' +
+    '          }\n' +
+    '        }\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_portfolios: {\n' +
+    '      include: {\n' +
+    '        tokens: true\n' +
+    '      }\n' +
+    '    }\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.contests.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    contest_participants: {\n' +
+    '      include: {\n' +
+    '        users: {\n' +
+    '          select: {\n' +
+    '            nickname: true,\n' +
+    '            wallet_address: true\n' +
+    '          }\n' +
+    '        }\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_portfolios: {\n' +
+    '      include: {\n' +
+    '        tokens: true\n' +
+    '      }\n' +
+    '    }\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/contests.js:270:21',
+  timestamp: '2025-01-10T10:10:52.286Z'
+}
