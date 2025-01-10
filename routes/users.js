@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import express from 'express';
 import { z } from 'zod';
-import { logApi } from '../utils/logger-suite';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();

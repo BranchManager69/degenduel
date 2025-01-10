@@ -7,7 +7,7 @@ import { configureMiddleware } from './config/middleware.js';
 import { closePgDatabase, initPgDatabase, pool } from './config/pg-database.js';
 import setupSwagger from './config/swagger.js';
 import { errorHandler } from './utils/errorHandler.js';
-import { logApi } from './utils/logger-suite';
+import { logApi } from './utils/logger-suite/logger.js';
 dotenv.config();
 
 

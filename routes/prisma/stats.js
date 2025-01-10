@@ -1,7 +1,7 @@
 // /routes/prisma/stats.js - Centralized logging for DegenDuel backend services.
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
-import { logApi } from '../../utils/logger-suite'; // New DD Logging System
+import { logApi } from '../../utils/logger-suite/logger.js'; // New DD Logging System
 
 const router = Router();
 const prisma = new PrismaClient();
