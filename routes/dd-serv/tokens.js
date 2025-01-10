@@ -1,5 +1,6 @@
 // /routes/dd-serv/tokens.js
 import express from 'express';
+import { logApi } from '../../utils/logger-suite/logger.js';
 
 const router = express.Router();
 
@@ -42,20 +43,20 @@ router.get('/tokens', async (req, res) => {
     if (!response.ok) {
       // If data.degenduel.me responds with 4xx/5xx, handle it
       const text = await response.text();
-      logger.error(`[dd-serv] tokens fetch error ${response.status}: ${text}`);
+      logApi.error(`[dd-serv] tokens fetch error ${response.status}: ${text}`);
       return res.status(response.status).json({ error: text });
     }
 
     // Parse the JSON from data.degenduel.me
     const tokenDataJson = await response.json();
-    logger.info('[dd-serv] Fetched token list:', tokenDataJson);
+    logApi.info('[dd-serv] Fetched token list:', tokenDataJson);
 
     // Respond to the caller with the same JSON
     res.json(tokenDataJson);
 
   } catch (err) {
     // Catch network errors, etc.
-    logger.error('[dd-serv] Error fetching tokens:', err);
+    logApi.error('[dd-serv] Error fetching tokens:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -80,7 +81,7 @@ router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
     const priceHistory = await response.json();
     res.json(priceHistory);
   } catch (err) {
-    logger.error('[dd-serv] Error fetching price history:', err);
+    logApi.error('[dd-serv] Error fetching price history:', err);
     res.status(500).json({ error: err.message });
   }
 });

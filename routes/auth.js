@@ -53,9 +53,20 @@ const router = express.Router();
  */
 // Verify wallet signature and establish a session
 router.post('/verify-wallet', async (req, res) => {
+  logApi.info('Starting wallet verification', {
+    requestId: req.id,
+    wallet: req.body.wallet
+  });
+
   try {
     const { wallet, signature, message } = req.body;
     
+    logApi.debug('Received verification request', {
+      requestId: req.id,
+      wallet,
+      messageLength: message?.length
+    });
+
     // TODO: Add actual signature verification
     const verified = true; // Replace with actual verification
 
@@ -66,7 +77,7 @@ router.post('/verify-wallet', async (req, res) => {
       });
     }
 
-    // Create a session token
+    logApi.debug('Creating session token', { requestId: req.id });
     const token = sign(
       { 
         wallet,
@@ -92,6 +103,11 @@ router.post('/verify-wallet', async (req, res) => {
       requestId: req.id
     });
 
+    logApi.info('Wallet authentication complete', {
+      requestId: req.id,
+      wallet
+    });
+
     res.json({ 
       verified: true,
       // Optionally include any user data needed by the frontend
@@ -101,8 +117,11 @@ router.post('/verify-wallet', async (req, res) => {
     });
 
   } catch (error) {
-    logApi.error('Wallet verification failed:', {
-      error,
+    logApi.error('Wallet verification failed', {
+      error: {
+        message: error.message,
+        stack: error.stack
+      },
       requestId: req.id
     });
 
@@ -153,10 +172,19 @@ router.post('/verify-wallet', async (req, res) => {
  */
 // Connect wallet and create/update user
 router.post('/connect', async (req, res) => {
+  logApi.info('Starting wallet connection', {
+    requestId: req.id,
+    wallet: req.body.wallet_address
+  });
+
   try {
     const { wallet_address, nickname } = req.body;
     
-    // Insert user if doesn't exist
+    logApi.debug('Attempting database operation', {
+      requestId: req.id,
+      wallet: wallet_address
+    });
+    
     const result = await pool.query(`
       INSERT INTO users (wallet_address, nickname)
       VALUES ($1, $2)
@@ -164,6 +192,11 @@ router.post('/connect', async (req, res) => {
       DO UPDATE SET last_login = CURRENT_TIMESTAMP
       RETURNING *
     `, [wallet_address, nickname]);
+
+    logApi.debug('Database operation complete', {
+      requestId: req.id,
+      success: !!result.rows[0]
+    });
 
     // Create a fresh session token
     const token = sign(
@@ -191,9 +224,22 @@ router.post('/connect', async (req, res) => {
       requestId: req.id
     });
 
+    logApi.info('Wallet connection complete', {
+      requestId: req.id,
+      wallet: wallet_address
+    });
+
     res.json(result.rows[0]);
   } catch (error) {
-    logApi.error('Auth connect failed:', error);
+    logApi.error('Auth connect failed', {
+      error: {
+        message: error.message,
+        stack: error.stack,
+        code: error.code // Useful for PostgreSQL errors
+      },
+      requestId: req.id,
+      wallet: req.body.wallet_address
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -224,20 +270,48 @@ router.post('/connect', async (req, res) => {
  */
 // Disconnect wallet
 router.post('/disconnect', async (req, res) => {
+  logApi.info('Starting wallet disconnection', {
+    requestId: req.id,
+    wallet: req.body.wallet
+  });
+
   try {
     const { wallet } = req.body;
+    
+    logApi.debug('Attempting database update', {
+      requestId: req.id,
+      wallet
+    });
+
     await pool.query(`
       UPDATE users 
       SET last_login = CURRENT_TIMESTAMP
       WHERE wallet_address = $1
     `, [wallet]);
 
-    // Clear the session cookie
+    logApi.debug('Database update complete', {
+      requestId: req.id,
+      wallet
+    });
+
     res.clearCookie('session');
     
+    logApi.info('Wallet disconnection complete', {
+      requestId: req.id,
+      wallet
+    });
+
     res.json({ success: true });
   } catch (error) {
-    logApi.error('Wallet disconnect failed:', error);
+    logApi.error('Wallet disconnect failed', {
+      error: {
+        message: error.message,
+        stack: error.stack,
+        code: error.code
+      },
+      requestId: req.id,
+      wallet: req.body.wallet
+    });
     res.status(500).json({ error: error.message });
   }
 });
