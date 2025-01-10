@@ -9544,3 +9544,19 @@ SyntaxError: The requested module '../utils/logger-suite/logger.js' does not pro
     at file:///home/websites/degenduel/config/swagger.js:43:17
     at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 03:46:31 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 03:51:03 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
