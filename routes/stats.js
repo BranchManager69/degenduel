@@ -1,6 +1,6 @@
 import express from 'express';
 import { pool } from '../config/pg-database.js';
-import logger from '../utils/logger.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 
@@ -16,6 +16,9 @@ const router = express.Router();
  *   name: Statistics
  *   description: API endpoints for user statistics and achievements
  */
+
+
+/* Stats Routes */
 
 /**
  * @swagger
@@ -79,7 +82,7 @@ router.get('/:wallet', async (req, res) => {
         }
         res.json(result.rows[0]);
     } catch (error) {
-        logger.error('Get stats failed:', error);
+        logApi.error('Get stats failed:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -160,7 +163,7 @@ try {
       
       res.json(result.rows);
     } catch (error) {
-      logger.error('Get history failed:', error);
+      logApi.error('Get history failed:', error);
       res.status(500).json({ error: error.message });
     }
 });
@@ -243,7 +246,7 @@ router.get('/:wallet/achievements', async (req, res) => {
       
       res.json(result.rows);
     } catch (error) {
-      logger.error('Get achievements failed:', error);
+      logApi.error('Get achievements failed:', error);
       res.status(500).json({ error: error.message });
     }
 });

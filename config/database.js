@@ -1,8 +1,8 @@
+import fs from 'fs';
+import { dirname, join } from 'path';
 import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import logger from '../utils/logger.js'; // unique
-import fs from 'fs';
+import { logApi } from '../utils/logger-suite/logger.js'; // unique
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DB_PATH 
@@ -28,13 +28,13 @@ export function initDatabase() {
             fs.chmodSync(dbPath, 0o644);
           }
         } catch (err) {
-          logger.warn('Could not set permissions:', err);
+          logApi.warn('Could not set permissions:', err);
         }
       }
 
       db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
         if (err) {
-          logger.error('Failed to open database:', err);
+          logApi.error('Failed to open database:', err);
           reject(err);
           return;
         }
@@ -62,12 +62,12 @@ export function initDatabase() {
             ON leaderboard(returnPercentage DESC)
           `);
 
-          logger.info('Database initialized successfully at ' + dbPath);
+          logApi.info('Database initialized successfully at ' + dbPath);
           resolve(db);
         });
       });
     } catch (error) {
-      logger.error('Failed to initialize database:', error);
+      logApi.error('Failed to initialize database:', error);
       reject(error);
     }
   });
@@ -85,12 +85,12 @@ export function closeDatabase() {
     if (db) {
       db.close((err) => {
         if (err) {
-          logger.error('Error closing database:', err);
+          logApi.error('Error closing database:', err);
           reject(err);
           return;
         }
         db = null;
-        logger.info('Database connection closed');
+        logApi.info('Database connection closed');
         resolve();
       });
     } else {

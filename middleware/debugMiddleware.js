@@ -1,7 +1,8 @@
+// /middleware/debugMiddleware.js
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
 
-// Our original debug middleware
+// Auth debug middleware
 export const debugMiddleware = (req, res, next) => {
     console.log('\n🔍 ====== Auth Debug Log ======');
     console.log(`⏰ Time: ${new Date().toISOString()}`);
@@ -31,7 +32,7 @@ export const debugMiddleware = (req, res, next) => {
     next();
 };
 
-// Our post-auth debug middleware
+// Post-auth debug middleware
 export const postAuthDebug = (req, res, next) => {
     console.log('\n🔍 ==== Post-Auth Debug ====');
     console.log('👤 Original req.user:', req.user);

@@ -1,12 +1,15 @@
+// /routes/contests.js
 import pkg from '@prisma/client';
 import express from 'express';
-import { logApi as logger } from '../utils/logger.js';
-const { Prisma, PrismaClient, PrismaClientKnownRequestError } = pkg;
+import { logApi } from '../utils/logger-suite/logger.js';
+const { PrismaClient } = pkg;
+const prisma = new PrismaClient();
+
+// For Decimal type and error handling
+const { Decimal } = pkg.Prisma;
+const { PrismaClientKnownRequestError } = pkg;
 
 const router = express.Router();
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
-});
 
 /**
  * @swagger
@@ -27,13 +30,13 @@ const prisma = new PrismaClient({
  *           example: 1
  *         contest_code:
  *           type: string
- *           example: "WEEKLY-001"
+ *           example: "GAY-001"
  *         name:
  *           type: string
- *           example: "Weekly Crypto Challenge"
+ *           example: "Gay Crypto Challenge"
  *         description:
  *           type: string
- *           example: "Compete in our weekly trading contest"
+ *           example: "Compete in our weekly gay trading contest"
  *         start_time:
  *           type: string
  *           format: date-time
@@ -42,27 +45,27 @@ const prisma = new PrismaClient({
  *           format: date-time
  *         entry_fee:
  *           type: string
- *           example: "1000000"
+ *           example: "1.00"
  *         prize_pool:
  *           type: string
- *           example: "10000000"
+ *           example: "100.00"
  *         status:
  *           type: string
  *           enum: [pending, active, completed, cancelled]
  *         participant_count:
  *           type: integer
- *           example: 42
+ *           example: 37
  *         min_participants:
  *           type: integer
  *           example: 2
  *         max_participants:
  *           type: integer
- *           example: 100
+ *           example: 50
  *         allowed_buckets:
  *           type: array
  *           items:
  *             type: integer
- *           example: [1, 2, 3]
+ *           example: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
  *     
  *     ContestParticipant:
  *       type: object
@@ -106,6 +109,8 @@ const prisma = new PrismaClient({
  *                 type: string
  *                 example: Contest not found
  */
+
+/* Contests Routes */
 
 /**
  * @swagger
@@ -166,6 +171,7 @@ const prisma = new PrismaClient({
  *                 error:
  *                   type: string
  */
+// Get all contests with optional filters
 router.get('/', async (req, res) => {
   try {
     const { status, limit = 10, offset = 0, wallet_address } = req.query;
@@ -214,7 +220,7 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Failed to fetch contests:', error);
+    logApi.error('Failed to fetch contests:', error);
     res.status(500).json({ error: 'Failed to fetch contests' });
   }
 });
@@ -253,6 +259,7 @@ router.get('/', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
+// Get contest by ID with full details
 router.get('/:id', async (req, res) => {
   try {
     const contest = await prisma.contests.findUnique({
@@ -282,7 +289,7 @@ router.get('/:id', async (req, res) => {
 
     res.json(contest);
   } catch (error) {
-    logger.error('Failed to fetch contest:', error);
+    logApi.error('Failed to fetch contest:', error);
     res.status(500).json({ error: 'Failed to fetch contest' });
   }
 });
@@ -394,6 +401,7 @@ router.get('/:id', async (req, res) => {
  *                 message:
  *                   type: string
  */
+// Create a new contest
 router.post('/', async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -411,7 +419,7 @@ router.post('/', async (req, res) => {
       allowed_buckets = []
     } = req.body;
 
-    logger.info({
+    logApi.info({
       requestId,
       message: 'Creating new contest',
       data: {
@@ -428,7 +436,7 @@ router.post('/', async (req, res) => {
     const requiredFields = ['name', 'contest_code', 'entry_fee', 'start_time', 'end_time'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
     if (missingFields.length > 0) {
-      logger.warn({
+      logApi.warn({
         requestId,
         message: 'Missing required fields for contest creation',
         missingFields,
@@ -446,7 +454,7 @@ router.post('/', async (req, res) => {
     const now = new Date();
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      logger.warn({
+      logApi.warn({
         requestId,
         message: 'Invalid date format in contest creation',
         data: { start_time, end_time },
@@ -458,7 +466,7 @@ router.post('/', async (req, res) => {
     }
 
     if (startDate <= now) {
-      logger.warn({
+      logApi.warn({
         requestId,
         message: 'Invalid start time - must be in future',
         data: { start_time, current_time: now },
@@ -470,7 +478,7 @@ router.post('/', async (req, res) => {
     }
 
     if (endDate <= startDate) {
-      logger.warn({
+      logApi.warn({
         requestId,
         message: 'Invalid end time - must be after start time',
         data: { start_time, end_time },
@@ -483,7 +491,7 @@ router.post('/', async (req, res) => {
 
     // Validate participants limits
     if (min_participants && max_participants && min_participants > max_participants) {
-      logger.warn({
+      logApi.warn({
         requestId,
         message: 'Invalid participant limits',
         data: { min_participants, max_participants },
@@ -521,8 +529,8 @@ router.post('/', async (req, res) => {
       }
 
       // Validate the value is non-negative using Prisma.Decimal for precise comparison
-      if (new Prisma.Decimal(parsedEntryFee).isNegative()) {
-        logger.warn({
+      if (new Decimal(parsedEntryFee).isNegative()) {
+        logApi.warn({
           requestId,
           message: 'Negative entry fee provided',
           data: { entry_fee, parsed: parsedEntryFee },
@@ -533,7 +541,7 @@ router.post('/', async (req, res) => {
         });
       }
     } catch (e) {
-      logger.warn({
+      logApi.warn({
         requestId,
         message: 'Invalid entry fee format',
         data: { entry_fee, error: e.message },
@@ -547,7 +555,7 @@ router.post('/', async (req, res) => {
 
     // Validate allowed_buckets
     if (!Array.isArray(allowed_buckets)) {
-      logger.warn({
+      logApi.warn({
         requestId,
         message: 'Invalid allowed_buckets format',
         data: { allowed_buckets },
@@ -563,7 +571,7 @@ router.post('/', async (req, res) => {
         name,
         contest_code,
         description,
-        entry_fee: parsedEntryFee,
+        entry_fee: new Decimal(parsedEntryFee),
         start_time: startDate,
         end_time: endDate,
         min_participants,
@@ -573,7 +581,7 @@ router.post('/', async (req, res) => {
       }
     });
 
-    logger.info({
+    logApi.info({
       requestId,
       message: 'Contest created successfully',
       data: {
@@ -585,7 +593,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(contest);
   } catch (error) {
-    logger.error({
+    logApi.error({
       requestId,
       message: 'Failed to create contest',
       error: {
@@ -666,13 +674,14 @@ router.post('/', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
+// Join a contest
 router.post('/:id/join', async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
   const { wallet_address } = req.body;
   const contestId = parseInt(req.params.id);
 
-  logger.info('Attempting to join contest', {
+  logApi.info('Attempting to join contest', {
     requestId,
     contestId,
     wallet_address,
@@ -681,7 +690,7 @@ router.post('/:id/join', async (req, res) => {
   try {
     // Input validation
     if (!wallet_address) {
-      logger.warn('Missing wallet address in join contest request', {
+      logApi.warn('Missing wallet address in join contest request', {
         requestId
       });
       return res.status(400).json({ 
@@ -691,7 +700,7 @@ router.post('/:id/join', async (req, res) => {
     }
 
     if (isNaN(contestId)) {
-      logger.warn('Invalid contest ID format', {
+      logApi.warn('Invalid contest ID format', {
         requestId,
         contestId: req.params.id
       });
@@ -703,7 +712,7 @@ router.post('/:id/join', async (req, res) => {
 
     const result = await prisma.$transaction(async (prisma) => {
       // Check if contest exists and is joinable
-      logger.debug('Fetching contest details', {
+      logApi.debug('Fetching contest details', {
         requestId,
         contestId
       });
@@ -760,10 +769,10 @@ router.post('/:id/join', async (req, res) => {
       }
 
       // Convert and validate balances
-      const userBalance = new Prisma.Decimal(user.balance || '0');
-      const entryFee = new Prisma.Decimal(contest.entry_fee || '0');
+      const userBalance = new Decimal(user.balance || '0');
+      const entryFee = new Decimal(contest.entry_fee || '0');
 
-      logger.info('Balance validation', {
+      logApi.info('Balance validation', {
         requestId,
         contestId,
         userBalance: userBalance.toString(),
@@ -790,8 +799,8 @@ router.post('/:id/join', async (req, res) => {
         data: {
           contest_id: contestId,
           wallet_address,
-          initial_balance: new Prisma.Decimal(1000000),
-          current_balance: new Prisma.Decimal(1000000)
+          initial_balance: new Decimal(1000000),
+          current_balance: new Decimal(1000000)
         }
       });
 
@@ -813,7 +822,7 @@ router.post('/:id/join', async (req, res) => {
         }
       });
 
-      logger.info('Successfully joined contest', {
+      logApi.info('Successfully joined contest', {
         requestId,
         contestId,
         wallet_address,
@@ -826,7 +835,7 @@ router.post('/:id/join', async (req, res) => {
     res.json(result);
 
   } catch (error) {
-    logger.error('Error in join contest endpoint', {
+    logApi.error('Error in join contest endpoint', {
       requestId,
       error: {
         name: error.name,
@@ -898,6 +907,7 @@ router.post('/:id/join', async (req, res) => {
  *       200:
  *         description: Contest updated successfully
  */
+// Update contest details
 router.put('/:id', async (req, res) => {
   const requestId = crypto.randomUUID();
   const contestId = parseInt(req.params.id);
@@ -924,7 +934,7 @@ router.put('/:id', async (req, res) => {
       cancellation_reason
     } = req.body;
 
-    logger.info('Contest update request received:', {
+    logApi.info('Contest update request received:', {
       requestId,
       contestId,
       body: req.body,
@@ -937,7 +947,7 @@ router.put('/:id', async (req, res) => {
     });
 
     if (!existingContest) {
-      logger.warn('Contest not found:', {
+      logApi.warn('Contest not found:', {
         requestId,
         contestId
       });
@@ -949,7 +959,7 @@ router.put('/:id', async (req, res) => {
       if (value === undefined || value === null) return undefined;
       if (value === '') return null;
       const cleaned = value.toString().replace(/,|\s/g, '');
-      return new Prisma.Decimal(cleaned);
+      return new Decimal(cleaned);
     };
 
     // Helper function to safely convert to Date
@@ -991,11 +1001,11 @@ router.put('/:id', async (req, res) => {
       updated_at: new Date()
     };
 
-    logger.info('Attempting Prisma update:', {
+    logApi.info('Attempting Prisma update:', {
       requestId,
       contestId,
       updateData: JSON.stringify(updateData, (key, value) => 
-        value instanceof Prisma.Decimal ? value.toString() : value
+        value instanceof Decimal ? value.toString() : value
       )
     });
 
@@ -1005,17 +1015,17 @@ router.put('/:id', async (req, res) => {
         data: updateData
       });
 
-      logger.info('Contest updated successfully:', {
+      logApi.info('Contest updated successfully:', {
         requestId,
         contestId,
         contest: JSON.stringify(contest, (key, value) => 
-          value instanceof Prisma.Decimal ? value.toString() : value
+          value instanceof Decimal ? value.toString() : value
         )
       });
 
       res.json(contest);
     } catch (prismaError) {
-      logger.error('Prisma update failed:', {
+      logApi.error('Prisma update failed:', {
         requestId,
         error: {
           name: prismaError.name,
@@ -1030,7 +1040,7 @@ router.put('/:id', async (req, res) => {
     }
 
   } catch (error) {
-    logger.error('Contest update failed:', {
+    logApi.error('Contest update failed:', {
       requestId,
       error: {
         name: error.name,
@@ -1104,6 +1114,7 @@ router.put('/:id', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
+// Start a contest
 router.post('/:id/start', async (req, res) => {
   try {
     const contest = await prisma.contests.findUnique({
@@ -1136,7 +1147,7 @@ router.post('/:id/start', async (req, res) => {
 
     res.json(updatedContest);
   } catch (error) {
-    logger.error('Failed to start contest:', error);
+    logApi.error('Failed to start contest:', error);
     res.status(500).json({ error: 'Failed to start contest' });
   }
 });
@@ -1188,6 +1199,7 @@ router.post('/:id/start', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
+// End a contest and calculate winners
 router.post('/:id/end', async (req, res) => {
   try {
     const result = await prisma.$transaction(async (prisma) => {
@@ -1246,7 +1258,7 @@ router.post('/:id/end', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    logger.error('Failed to end contest:', error);
+    logApi.error('Failed to end contest:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1286,6 +1298,7 @@ router.post('/:id/end', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
+// Get contest leaderboard
 router.get('/:id/leaderboard', async (req, res) => {
   try {
     const leaderboard = await prisma.contest_participants.findMany({
@@ -1307,7 +1320,7 @@ router.get('/:id/leaderboard', async (req, res) => {
 
     res.json(leaderboard);
   } catch (error) {
-    logger.error('Failed to fetch leaderboard:', error);
+    logApi.error('Failed to fetch leaderboard:', error);
     res.status(500).json({ error: 'Failed to fetch leaderboard' });
   }
 });
@@ -1376,6 +1389,7 @@ router.get('/:id/leaderboard', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
+// Submit or update contest portfolio
 router.post('/:id/portfolio', async (req, res) => {
   const { wallet_address, tokens } = req.body;
   const contestId = parseInt(req.params.id);
@@ -1423,7 +1437,7 @@ router.post('/:id/portfolio', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    logger.error('Failed to update portfolio:', error);
+    logApi.error('Failed to update portfolio:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1472,6 +1486,7 @@ router.post('/:id/portfolio', async (req, res) => {
  *                   type: string
  *                   example: "Portfolio not found"
  */
+// Get user's contest portfolio
 router.get('/:id/portfolio/:wallet', async (req, res) => {
   try {
     const portfolio = await prisma.contest_portfolios.findMany({
@@ -1486,11 +1501,12 @@ router.get('/:id/portfolio/:wallet', async (req, res) => {
 
     res.json(portfolio);
   } catch (error) {
-    logger.error('Failed to fetch portfolio:', error);
+    logApi.error('Failed to fetch portfolio:', error);
     res.status(500).json({ error: 'Failed to fetch portfolio' });
   }
 });
 
+/*
 // Additional endpoints would include:
 // PUT /contests/{id} - Update contest
 // POST /contests/{id}/start - Start contest
@@ -1498,6 +1514,7 @@ router.get('/:id/portfolio/:wallet', async (req, res) => {
 // GET /contests/{id}/leaderboard - Get contest leaderboard
 // POST /contests/{id}/portfolio - Submit/update portfolio
 // GET /contests/{id}/portfolio/{wallet} - Get user's portfolio
+*/
 
 // Custom error class for contest-related errors
 class ContestError extends Error {
