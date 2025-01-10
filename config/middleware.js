@@ -1,7 +1,7 @@
 // /config/middleware.js
 import cors from 'cors';
 import express from 'express';
-import logger from '../utils/logger-suite/logger.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 export function configureMiddleware(app) {
   const allowedOrigins = [
@@ -39,14 +39,14 @@ export function configureMiddleware(app) {
   // Request logging in development
   if (process.env.NODE_ENV !== 'production') {
     app.use((req, res, next) => {
-      logger.info(`${req.method} ${req.url}`);
+      logApi.info(`${req.method} ${req.url}`);
       next();
     });
   }
   // Request logging in production
   if (process.env.NODE_ENV === 'production') {
     app.use((req, res, next) => {
-      logger.info(`${req.method} ${req.url}`);
+      logApi.info(`${req.method} ${req.url}`);
       next();
     });
   }

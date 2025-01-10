@@ -6,8 +6,8 @@ export const DB_CONFIG = {
   
   export const CORS_CONFIG = {
     ALLOWED_ORIGINS: {
-      production: ['https://degenduel.me', 'https://www.degenduel.me'],
-      development: ['http://localhost:*']
+      production: ['https://degenduel.me', 'https://www.degenduel.me', 'https://data.degenduel.me', 'https://dev.degenduel.me', 'https://branch.bet', 'https://app.branch.bet'],
+      development: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005']
     },
     MAX_AGE: 86400,
     METHODS: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -20,6 +20,7 @@ export const DB_CONFIG = {
     ]
   };
   
+  // usernames
   export const VALIDATION = {
     NAME: {
       MIN_LENGTH: 1,

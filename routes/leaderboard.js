@@ -2,15 +2,27 @@
 import express from 'express';
 import { addScore, getLeaderboard } from '../archive/controllers/leaderboard.js';
 import { validateGetLeaderboard, validateScore } from '../middleware/leaderboardValidation.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 
+/*
+ *
+ * I am not sure if even a single one of these endpoints actually works
+ * (I highly doubt it)
+ * 
+ */
+
+
 /**
+ * @swagger
  * @swagger
  * tags:
  *   name: Leaderboard
  *   description: API endpoints for global leaderboard management
  */
+
+/* Leaderboard Routes */
 
 /**
  * @swagger
@@ -170,6 +182,11 @@ router.post('/', validateScore, addScore);
 router.get('/contest/:contestId', async (req, res) => {
     const { contestId } = req.params;
     const { limit = 10 } = req.query;
+
+    logApi.info('Fetching contest leaderboard', {
+        contestId,
+        limit
+    });
 
     try {
         const result = await pool.query(
@@ -383,7 +400,6 @@ router.patch('/adjust', async (req, res) => {
     }
 });
 
-
 /**
  * @swagger
  * /api/leaderboard/reset:
@@ -412,6 +428,5 @@ router.post('/reset', async (req, res) => {
         res.status(500).json({ error: 'Failed to reset leaderboard.' });
     }
 });
-
 
 export default router;
