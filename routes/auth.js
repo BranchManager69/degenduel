@@ -1,8 +1,9 @@
+// /routes/auth.js
 import express from 'express';
 import pkg from 'jsonwebtoken';
 import { config } from '../config/config.js';
 import { pool } from '../config/pg-database.js';
-import { logApi } from '../utils/logger-suite';
+import { logApi } from '../utils/logger-suite/logger.js';
 const { sign } = pkg;
 
 const router = express.Router();

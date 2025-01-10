@@ -8833,3 +8833,25 @@ SyntaxError: The requested module './logging.js' does not provide an export name
     at ModuleJob._instantiate (node:internal/modules/esm/module_job:181:21)
     at async ModuleJob.run (node:internal/modules/esm/module_job:264:5)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_UNSUPPORTED_DIR_IMPORT]: Directory import '/home/websites/degenduel/utils/logger-suite' is not supported resolving ES modules imported from /home/websites/degenduel/index.js
+Did you mean to import "./utils/logger-suite/index.js"?
+    at finalizeResolution (node:internal/modules/esm/resolve:263:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:688:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:612:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:595:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:248:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:136:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+Error [ERR_UNSUPPORTED_DIR_IMPORT]: Directory import '/home/websites/degenduel/utils/logger-suite' is not supported resolving ES modules imported from /home/websites/degenduel/index.js
+Did you mean to import "./utils/logger-suite/index.js"?
+    at finalizeResolution (node:internal/modules/esm/resolve:263:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:688:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:612:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:595:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:248:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:136:49)
