@@ -53145,3 +53145,6112 @@
   level: 'info',
   timestamp: '2025-01-10T12:16:54.697Z'
 }
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:18.055Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:18.064Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:18.297Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:18.843Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:18.844Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:18.848Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:18.895Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:18.968Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:19.405Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:19.499Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:19.513Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:19.552Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:19.588Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.080Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.083Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.121Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.141Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.146Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.664Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.670Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.719Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:20.775Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:22.967Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:23.093Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:23.598Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:23.600Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:23.602Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:23.604Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:23.721Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.208Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.234Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.298Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.301Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.353Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.787Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.846Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.901Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.943Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:24.945Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:25.394Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:25.437Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:25.500Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:25.623Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:25.626Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:27.387Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:27.516Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:27.979Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.010Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.029Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.035Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.087Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.608Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.614Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.643Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.680Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:28.710Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.195Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.232Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.254Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.310Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.390Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.790Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.796Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.801Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:29.922Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:18:30.020Z'
+}
+{
+  message: 'GET /api/contests/9',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:18.675Z'
+}
+{
+  message: 'GET /api/contests/9',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:18.681Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:18.780Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:18.885Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:35.809Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:35.922Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:35.934Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:35.937Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:35.938Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:35.965Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:36.461Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:36.519Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:36.574Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:36.578Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:36.623Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:36.624Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.075Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.106Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.159Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.214Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.261Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.266Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.669Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.701Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.790Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:37.921Z'
+}
+{
+  message: 'GET /api/contests/11',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:43.738Z'
+}
+{
+  message: 'GET /api/contests/11',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:43.741Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:43.864Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:43.939Z'
+}
+{
+  message: 'GET /api/contests/11',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.032Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.078Z'
+}
+{
+  message: 'GET /api/contests/11',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.081Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.083Z'
+}
+{
+  timestamp: '2025-01-10T12:19:58.167Z',
+  data: [
+    {
+      id: 105871,
+      symbol: 'ALCH',
+      name: 'Alchemist AI',
+      contractAddress: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:49:35.312Z',
+      updatedAt: '2025-01-10T12:19:47.259Z',
+      marketCap: '120807244',
+      price: '0.1421',
+      volume24h: '14862097.04',
+      changesJson: { h1: -0.0085, h6: 0.0418, m5: 0.0124, h24: -0.0034 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump.png?key=a88f75',
+      liquidity: { usd: 4809147.38, base: 16937063, quote: 12551 },
+      pairUrl: 'https://dexscreener.com/solana/fydf3vkqfbcvntsbi7l7lremrfpmxkbqqgagnpg1hxxd',
+      transactionsJson: {
+        h1: { buys: 365, sells: 217 },
+        h6: { buys: 2286, sells: 2022 },
+        m5: { buys: 36, sells: 9 },
+        h24: { buys: 9283, sells: 8234 }
+      },
+      baseToken: {
+        name: 'Alchemist AI',
+        symbol: 'ALCH',
+        address: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump/header.png?key=a88f75',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.alchemistai.app/', label: 'Website' },
+        { url: 'https://docs.alchemistai.app/docs', label: 'Docs' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 408982,
+          tokenId: 105871,
+          timeframe: 'm5',
+          percentage: '0.0124'
+        },
+        {
+          id: 408983,
+          tokenId: 105871,
+          timeframe: 'h1',
+          percentage: '-0.0085'
+        },
+        {
+          id: 408984,
+          tokenId: 105871,
+          timeframe: 'h6',
+          percentage: '0.0418'
+        },
+        {
+          id: 408985,
+          tokenId: 105871,
+          timeframe: 'h24',
+          percentage: '-0.0034'
+        }
+      ],
+      socials: [
+        {
+          id: 217901,
+          tokenId: 105871,
+          platform: 'twitter',
+          url: 'https://x.com/alchemistAIapp',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47672,
+      symbol: 'BULLY',
+      name: 'Dolos The Bully',
+      contractAddress: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:44:08.983Z',
+      updatedAt: '2025-01-10T12:19:47.270Z',
+      marketCap: '55164320',
+      price: '0.05743',
+      volume24h: '6195560.8',
+      changesJson: { h1: 0.025, h6: 0.2172, m5: 0.0098, h24: 0.2443 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump.png?key=4512cd',
+      liquidity: { usd: 2427169.66, base: 21109440, quote: 6348.5239 },
+      pairUrl: 'https://dexscreener.com/solana/a88btp7eexypkgbwvfbymnm5nom2bks6s1o1f5u6gohb',
+      transactionsJson: {
+        h1: { buys: 217, sells: 190 },
+        h6: { buys: 1900, sells: 1853 },
+        m5: { buys: 10, sells: 10 },
+        h24: { buys: 7070, sells: 5757 }
+      },
+      baseToken: {
+        name: 'Dolos The Bully',
+        symbol: 'BULLY',
+        address: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump/header.png?key=4512cd',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://Dolosdiary.com', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185532,
+          tokenId: 47672,
+          timeframe: 'm5',
+          percentage: '0.0098'
+        },
+        {
+          id: 185533,
+          tokenId: 47672,
+          timeframe: 'h1',
+          percentage: '0.025'
+        },
+        {
+          id: 185534,
+          tokenId: 47672,
+          timeframe: 'h6',
+          percentage: '0.2172'
+        },
+        {
+          id: 185535,
+          tokenId: 47672,
+          timeframe: 'h24',
+          percentage: '0.2443'
+        }
+      ],
+      socials: [
+        {
+          id: 102328,
+          tokenId: 47672,
+          platform: 'telegram',
+          url: 'https://t.me/dolosTheBully_portal',
+          count: null
+        },
+        {
+          id: 102327,
+          tokenId: 47672,
+          platform: 'twitter',
+          url: 'https://x.com/dolos_diary',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47698,
+      symbol: 'SOL',
+      name: 'Wrapped SOL',
+      contractAddress: 'So11111111111111111111111111111111111111112',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:46:12.321Z',
+      updatedAt: '2025-01-10T12:19:47.281Z',
+      marketCap: null,
+      price: '191.31',
+      volume24h: '202786408.77',
+      changesJson: { h1: -0.0031, h6: 0.0076, m5: 0.0018, h24: 0.0003 },
+      imageUrl: null,
+      liquidity: { usd: 6818644.36, base: 26785, quote: 1694010 },
+      pairUrl: 'https://dexscreener.com/solana/8slbnzoa1cfnvmjlpfp98zlanfsycfapfjkmbixnlwxj',
+      transactionsJson: {
+        h1: { buys: 3197, sells: 2429 },
+        h6: { buys: 19386, sells: 18863 },
+        m5: { buys: 276, sells: 195 },
+        h24: { buys: 92188, sells: 88365 }
+      },
+      baseToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      headerImage: null,
+      openGraphImage: null,
+      quoteToken: {
+        name: 'USD Coin',
+        symbol: 'USDC',
+        address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+      },
+      websites: null,
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185616,
+          tokenId: 47698,
+          timeframe: 'm5',
+          percentage: '0.0018'
+        },
+        {
+          id: 185617,
+          tokenId: 47698,
+          timeframe: 'h1',
+          percentage: '-0.0031'
+        },
+        {
+          id: 185618,
+          tokenId: 47698,
+          timeframe: 'h6',
+          percentage: '0.0076'
+        },
+        {
+          id: 185619,
+          tokenId: 47698,
+          timeframe: 'h24',
+          percentage: '0.0003'
+        }
+      ],
+      socials: []
+    },
+    {
+      id: 104324,
+      symbol: 'ZEREBRO',
+      name: 'zerebro',
+      contractAddress: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:16.867Z',
+      updatedAt: '2025-01-10T12:19:47.289Z',
+      marketCap: '324257464',
+      price: '0.3242',
+      volume24h: '16506291.77',
+      changesJson: { h1: -0.01, h6: 0.0057, m5: 0.0022, h24: -0.0088 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn.png?key=2785d3',
+      liquidity: { usd: 7147094.92, base: 11006627, quote: 18706 },
+      pairUrl: 'https://dexscreener.com/solana/3sjnocnkkhwpvxygdtem8rccihsgc9jsfzuuazkbvrvp',
+      transactionsJson: {
+        h1: { buys: 153, sells: 174 },
+        h6: { buys: 1556, sells: 1516 },
+        m5: { buys: 7, sells: 1 },
+        h24: { buys: 6857, sells: 6456 }
+      },
+      baseToken: {
+        name: 'zerebro',
+        symbol: 'ZEREBRO',
+        address: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn/header.png?key=2785d3',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://zerebro.org/', label: 'Website' },
+        { url: 'https://warpcast.com/zerebro', label: 'warpcast' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403018,
+          tokenId: 104324,
+          timeframe: 'm5',
+          percentage: '0.0022'
+        },
+        {
+          id: 403019,
+          tokenId: 104324,
+          timeframe: 'h1',
+          percentage: '-0.01'
+        },
+        {
+          id: 403020,
+          tokenId: 104324,
+          timeframe: 'h6',
+          percentage: '0.0057'
+        },
+        {
+          id: 403021,
+          tokenId: 104324,
+          timeframe: 'h24',
+          percentage: '-0.0088'
+        }
+      ],
+      socials: [
+        {
+          id: 214959,
+          tokenId: 104324,
+          platform: 'telegram',
+          url: 'https://t.me/zerebro_portal',
+          count: null
+        },
+        {
+          id: 214958,
+          tokenId: 104324,
+          platform: 'twitter',
+          url: 'https://x.com/0xzerebro',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104323,
+      symbol: 'zero',
+      name: 'ZERO',
+      contractAddress: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:05.537Z',
+      updatedAt: '2025-01-10T12:19:47.299Z',
+      marketCap: '72203',
+      price: '0.00008762',
+      volume24h: '4206.18',
+      changesJson: { h1: 0.0559, h6: 0.0567, h24: 0.1431 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump.png?key=8f2797',
+      liquidity: { usd: 51902.43, base: 296366498, quote: 135.3663 },
+      pairUrl: 'https://dexscreener.com/solana/bnsspdwrsuigbaiukc3pphp4sns5igdhlm2a9qacthky',
+      transactionsJson: {
+        h1: { buys: 4, sells: 3 },
+        h6: { buys: 5, sells: 9 },
+        m5: { buys: 0, sells: 0 },
+        h24: { buys: 20, sells: 47 }
+      },
+      baseToken: {
+        name: 'ZERO',
+        symbol: 'zero',
+        address: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/header.png?key=8f2797',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403017,
+          tokenId: 104323,
+          timeframe: 'h24',
+          percentage: '0.1431'
+        },
+        {
+          id: 403015,
+          tokenId: 104323,
+          timeframe: 'h1',
+          percentage: '0.0559'
+        },
+        {
+          id: 403016,
+          tokenId: 104323,
+          timeframe: 'h6',
+          percentage: '0.0567'
+        },
+        {
+          id: 403136,
+          tokenId: 104323,
+          timeframe: 'm5',
+          percentage: '0.0064'
+        }
+      ],
+      socials: [
+        {
+          id: 214956,
+          tokenId: 104323,
+          platform: 'twitter',
+          url: 'https://x.com/zero_cto',
+          count: null
+        },
+        {
+          id: 214957,
+          tokenId: 104323,
+          platform: 'telegram',
+          url: 'https://t.me/ZeroCommunityCTO',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300479,
+      symbol: 'LLM',
+      name: 'Large Language Model',
+      contractAddress: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:38.066Z',
+      updatedAt: '2025-01-10T12:19:47.308Z',
+      marketCap: '119166478',
+      price: '0.1191',
+      volume24h: '80483477.92',
+      changesJson: { h1: 0.0176, h6: 0.3998, m5: -0.0336, h24: 0.0052 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump.png?key=7acaee',
+      liquidity: { usd: 3014125.37, base: 12630897, quote: 7891.1287 },
+      pairUrl: 'https://dexscreener.com/solana/g6xzu9m4yamow1ugfkcahuw5ufpurbk4kcewr9dp1kxj',
+      transactionsJson: {
+        h1: { buys: 1210, sells: 1551 },
+        h6: { buys: 10430, sells: 11614 },
+        m5: { buys: 118, sells: 92 },
+        h24: { buys: 58130, sells: 54937 }
+      },
+      baseToken: {
+        name: 'Large Language Model',
+        symbol: 'LLM',
+        address: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump/header.png?key=7acaee',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://linktr.ee/largelanguagemodel',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149141,
+          tokenId: 300479,
+          timeframe: 'm5',
+          percentage: '-0.0336'
+        },
+        {
+          id: 1149142,
+          tokenId: 300479,
+          timeframe: 'h1',
+          percentage: '0.0176'
+        },
+        {
+          id: 1149143,
+          tokenId: 300479,
+          timeframe: 'h6',
+          percentage: '0.3998'
+        },
+        {
+          id: 1149144,
+          tokenId: 300479,
+          timeframe: 'h24',
+          percentage: '0.0052'
+        }
+      ],
+      socials: [
+        {
+          id: 588852,
+          tokenId: 300479,
+          platform: 'telegram',
+          url: 'https://t.me/largelanguagemodelsolchannel',
+          count: null
+        },
+        {
+          id: 588851,
+          tokenId: 300479,
+          platform: 'twitter',
+          url: 'https://x.com/ai160kg',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300441,
+      symbol: 'HYPER',
+      name: 'Hyperfy',
+      contractAddress: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:14:01.209Z',
+      updatedAt: '2025-01-10T12:19:47.319Z',
+      marketCap: '107365770',
+      price: '0.1073',
+      volume24h: '7403114.8',
+      changesJson: { h1: -0.0051, h6: -0.014, m5: 0.0511, h24: 0.2053 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8.png?key=1f2d0a',
+      liquidity: { usd: 1194490.85, base: 5562717, quote: 3121.05677 },
+      pairUrl: 'https://dexscreener.com/solana/cs94de2znqtyxcftfdfpsejkphbdsvzevkhloykmx7ge',
+      transactionsJson: {
+        h1: { buys: 173, sells: 107 },
+        h6: { buys: 1816, sells: 1642 },
+        m5: { buys: 5, sells: 33 },
+        h24: { buys: 7233, sells: 6488 }
+      },
+      baseToken: {
+        name: 'Hyperfy',
+        symbol: 'HYPER',
+        address: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8/header.png?key=1f2d0a',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://hyperfy.io/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149039,
+          tokenId: 300441,
+          timeframe: 'm5',
+          percentage: '0.0511'
+        },
+        {
+          id: 1149040,
+          tokenId: 300441,
+          timeframe: 'h1',
+          percentage: '-0.0051'
+        },
+        {
+          id: 1149041,
+          tokenId: 300441,
+          timeframe: 'h6',
+          percentage: '-0.014'
+        },
+        {
+          id: 1149042,
+          tokenId: 300441,
+          timeframe: 'h24',
+          percentage: '0.2053'
+        }
+      ],
+      socials: [
+        {
+          id: 588778,
+          tokenId: 300441,
+          platform: 'twitter',
+          url: 'https://x.com/hyperfy_io',
+          count: null
+        },
+        {
+          id: 588779,
+          tokenId: 300441,
+          platform: 'discord',
+          url: 'http://discord.gg/TGtyTEWB2X',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47691,
+      symbol: 'degenai',
+      name: 'Degen Spartan AI',
+      contractAddress: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:45:39.648Z',
+      updatedAt: '2025-01-10T12:19:47.363Z',
+      marketCap: '60043222',
+      price: '0.06004',
+      volume24h: '5493076.44',
+      changesJson: { h1: -0.0204, h6: 0.0767, m5: -0.0026, h24: 0.1706 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump.png?key=5a4d29',
+      liquidity: { usd: 2480835.58, base: 20683543, quote: 6472.9969 },
+      pairUrl: 'https://dexscreener.com/solana/dlaoh9okkk4gdtxj2mkh3wjue7vbhmbjrukmcid1pszx',
+      transactionsJson: {
+        h1: { buys: 191, sells: 133 },
+        h6: { buys: 1508, sells: 1507 },
+        m5: { buys: 8, sells: 6 },
+        h24: { buys: 6546, sells: 6436 }
+      },
+      baseToken: {
+        name: 'Degen Spartan AI',
+        symbol: 'degenai',
+        address: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump/header.png?key=5a4d29',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://ai16z.ai', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185584,
+          tokenId: 47691,
+          timeframe: 'm5',
+          percentage: '-0.0026'
+        },
+        {
+          id: 185585,
+          tokenId: 47691,
+          timeframe: 'h1',
+          percentage: '-0.0204'
+        },
+        {
+          id: 185586,
+          tokenId: 47691,
+          timeframe: 'h6',
+          percentage: '0.0767'
+        },
+        {
+          id: 185587,
+          tokenId: 47691,
+          timeframe: 'h24',
+          percentage: '0.1706'
+        }
+      ],
+      socials: [
+        {
+          id: 102368,
+          tokenId: 47691,
+          platform: 'twitter',
+          url: 'https://twitter.com/degenspartanai',
+          count: null
+        },
+        {
+          id: 102369,
+          tokenId: 47691,
+          platform: 'telegram',
+          url: 'https://t.me/degenspartanai',
+          count: null
+        },
+        {
+          id: 102370,
+          tokenId: 47691,
+          platform: 'discord',
+          url: 'https://discord.gg/EbzMcW3pWK',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47716,
+      symbol: 'ai16z',
+      name: 'ai16z',
+      contractAddress: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:47:27.093Z',
+      updatedAt: '2025-01-10T12:19:47.352Z',
+      marketCap: '1780632133',
+      price: '1.61',
+      volume24h: '55704378.99',
+      changesJson: { h1: -0.0228, h6: 0.0508, m5: 0.0006, h24: 0.116 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC.png?key=b380cb',
+      liquidity: { usd: 6608009.36, base: 2438313, quote: 13917 },
+      pairUrl: 'https://dexscreener.com/solana/8sn9549p3zn6xpqrqpapn57xzkch6sjxlwuejcg2w4ji',
+      transactionsJson: {
+        h1: { buys: 335, sells: 436 },
+        h6: { buys: 2906, sells: 3324 },
+        m5: { buys: 7, sells: 4 },
+        h24: { buys: 13686, sells: 12036 }
+      },
+      baseToken: {
+        name: 'ai16z',
+        symbol: 'ai16z',
+        address: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC/header.png?key=b380cb',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://elizaos.ai/', label: 'Website' },
+        {
+          url: 'https://www.daos.fun/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+          label: 'Daos.fun'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185686,
+          tokenId: 47716,
+          timeframe: 'm5',
+          percentage: '0.0006'
+        },
+        {
+          id: 185687,
+          tokenId: 47716,
+          timeframe: 'h1',
+          percentage: '-0.0228'
+        },
+        {
+          id: 185688,
+          tokenId: 47716,
+          timeframe: 'h6',
+          percentage: '0.0508'
+        },
+        {
+          id: 185689,
+          tokenId: 47716,
+          timeframe: 'h24',
+          percentage: '0.116'
+        }
+      ],
+      socials: [
+        {
+          id: 102418,
+          tokenId: 47716,
+          platform: 'telegram',
+          url: 'https://t.me/ai16zcommunity',
+          count: null
+        },
+        {
+          id: 102419,
+          tokenId: 47716,
+          platform: 'discord',
+          url: 'https://discord.gg/ai16z',
+          count: null
+        },
+        {
+          id: 102417,
+          tokenId: 47716,
+          platform: 'twitter',
+          url: 'https://x.com/ai16zdao',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300495,
+      symbol: 'MLG',
+      name: '360noscope420blazeit',
+      contractAddress: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:16:13.319Z',
+      updatedAt: '2025-01-10T12:19:47.330Z',
+      marketCap: '84858289',
+      price: '0.08504',
+      volume24h: '35296261.36',
+      changesJson: { h1: -0.0181, h6: -0.1153, m5: -0.0048, h24: 0.165 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL.png?key=04f2c9',
+      liquidity: { usd: 2152149.01, base: 12637015, quote: 5633.5009 },
+      pairUrl: 'https://dexscreener.com/solana/f4hdxnulqjsbwcl5vweucpjueqop3gdteussqaxbeyw4',
+      transactionsJson: {
+        h1: { buys: 535, sells: 264 },
+        h6: { buys: 4308, sells: 4345 },
+        m5: { buys: 17, sells: 15 },
+        h24: { buys: 24956, sells: 24452 }
+      },
+      baseToken: {
+        name: '360noscope420blazeit',
+        symbol: 'MLG',
+        address: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL/header.png?key=04f2c9',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.mlg.lol/', label: 'Website' },
+        { url: 'https://mlgedit.com/', label: 'Meme Maker' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149206,
+          tokenId: 300495,
+          timeframe: 'm5',
+          percentage: '-0.0048'
+        },
+        {
+          id: 1149207,
+          tokenId: 300495,
+          timeframe: 'h1',
+          percentage: '-0.0181'
+        },
+        {
+          id: 1149208,
+          tokenId: 300495,
+          timeframe: 'h6',
+          percentage: '-0.1153'
+        },
+        {
+          id: 1149209,
+          tokenId: 300495,
+          timeframe: 'h24',
+          percentage: '0.165'
+        }
+      ],
+      socials: [
+        {
+          id: 588880,
+          tokenId: 300495,
+          platform: 'twitter',
+          url: 'https://x.com/MLGsolana420',
+          count: null
+        },
+        {
+          id: 588881,
+          tokenId: 300495,
+          platform: 'telegram',
+          url: 'https://t.me/MLGCTOPORTAL',
+          count: null
+        },
+        {
+          id: 588882,
+          tokenId: 300495,
+          platform: 'discord',
+          url: 'https://discord.com/invite/munnopoly',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 168485,
+      symbol: 'PERSAI',
+      name: 'Persona',
+      contractAddress: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX',
+      chain: 'SOLANA',
+      createdAt: '2025-01-05T04:00:02.850Z',
+      updatedAt: '2025-01-10T12:19:47.342Z',
+      marketCap: '50732',
+      price: '0.00005074',
+      volume24h: '13205.4',
+      changesJson: { h1: -0.01, h6: -0.0199, h24: 0.3564 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX.png?key=70eae2',
+      liquidity: { usd: 41541.65, base: 408984761, quote: 108.7396 },
+      pairUrl: 'https://dexscreener.com/solana/fowf3hssemckhwdchse8etjns7byqm1mi3labnk25gw',
+      transactionsJson: {
+        h1: { buys: 3, sells: 7 },
+        h6: { buys: 42, sells: 49 },
+        m5: { buys: 0, sells: 0 },
+        h24: { buys: 170, sells: 190 }
+      },
+      baseToken: {
+        name: 'Persona',
+        symbol: 'PERSAI',
+        address: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX/header.png?key=70eae2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 648657,
+          tokenId: 168485,
+          timeframe: 'h1',
+          percentage: '-0.01'
+        },
+        {
+          id: 648658,
+          tokenId: 168485,
+          timeframe: 'h6',
+          percentage: '-0.0199'
+        },
+        {
+          id: 648659,
+          tokenId: 168485,
+          timeframe: 'h24',
+          percentage: '0.3564'
+        },
+        {
+          id: 648656,
+          tokenId: 168485,
+          timeframe: 'm5',
+          percentage: '-0.0104'
+        }
+      ],
+      socials: [
+        {
+          id: 336868,
+          tokenId: 168485,
+          platform: 'telegram',
+          url: 'https://t.me/personAIonly',
+          count: null
+        },
+        {
+          id: 336867,
+          tokenId: 168485,
+          platform: 'twitter',
+          url: 'https://x.com/personAIonly',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104502,
+      symbol: 'DUNA',
+      name: 'DUNA',
+      contractAddress: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:33:34.938Z',
+      updatedAt: '2025-01-10T12:19:47.374Z',
+      marketCap: '388132',
+      price: '0.0003881',
+      volume24h: '186397.85',
+      changesJson: { h1: -0.0293, h6: 0.1481, m5: 0.0291, h24: 0.2643 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump.png?key=744569',
+      liquidity: { usd: 143157.3, base: 184529505, quote: 374.5635 },
+      pairUrl: 'https://dexscreener.com/solana/czisgeuhnsrlzmfsc1jq7krz4ga1j1fncvmdkrjescua',
+      transactionsJson: {
+        h1: { buys: 26, sells: 34 },
+        h6: { buys: 276, sells: 199 },
+        m5: { buys: 2, sells: 0 },
+        h24: { buys: 730, sells: 609 }
+      },
+      baseToken: {
+        name: 'DUNA',
+        symbol: 'DUNA',
+        address: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump/header.png?key=744569',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://m.theblockbeats.info/en/news/51974',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403685,
+          tokenId: 104502,
+          timeframe: 'm5',
+          percentage: '0.0291'
+        },
+        {
+          id: 403686,
+          tokenId: 104502,
+          timeframe: 'h1',
+          percentage: '-0.0293'
+        },
+        {
+          id: 403687,
+          tokenId: 104502,
+          timeframe: 'h6',
+          percentage: '0.1481'
+        },
+        {
+          id: 403688,
+          tokenId: 104502,
+          timeframe: 'h24',
+          percentage: '0.2643'
+        }
+      ],
+      socials: [
+        {
+          id: 215313,
+          tokenId: 104502,
+          platform: 'telegram',
+          url: 'https://t.me/dunaportal',
+          count: null
+        },
+        {
+          id: 215312,
+          tokenId: 104502,
+          platform: 'twitter',
+          url: 'https://x.com/i/communities/1874537471955927076',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300480,
+      symbol: 'Fartcoin ',
+      name: 'Fartcoin ',
+      contractAddress: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:54.075Z',
+      updatedAt: '2025-01-10T12:19:47.385Z',
+      marketCap: '895117510',
+      price: '0.8951',
+      volume24h: '32754173.26',
+      changesJson: { h1: 0.0066, h6: -0.0054, m5: 0.0066, h24: 0.0378 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump.png?key=8180d2',
+      liquidity: { usd: 16971552.47, base: 9491785, quote: 44289 },
+      pairUrl: 'https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw',
+      transactionsJson: {
+        h1: { buys: 379, sells: 152 },
+        h6: { buys: 2577, sells: 2183 },
+        m5: { buys: 25, sells: 1 },
+        h24: { buys: 10507, sells: 11909 }
+      },
+      baseToken: {
+        name: 'Fartcoin ',
+        symbol: 'Fartcoin ',
+        address: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump/header.png?key=8180d2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149145,
+          tokenId: 300480,
+          timeframe: 'm5',
+          percentage: '0.0066'
+        },
+        {
+          id: 1149146,
+          tokenId: 300480,
+          timeframe: 'h1',
+          percentage: '0.0066'
+        },
+        {
+          id: 1149147,
+          tokenId: 300480,
+          timeframe: 'h6',
+          percentage: '-0.0054'
+        },
+        {
+          id: 1149148,
+          tokenId: 300480,
+          timeframe: 'h24',
+          percentage: '0.0378'
+        }
+      ],
+      socials: [
+        {
+          id: 588853,
+          tokenId: 300480,
+          platform: 'twitter',
+          url: 'https://x.com/FartCoinOfSOL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300466,
+      symbol: 'TRUST',
+      name: 'Trust Protocol AI',
+      contractAddress: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:18.178Z',
+      updatedAt: '2025-01-10T12:19:47.395Z',
+      marketCap: '2435966',
+      price: '0.002536',
+      volume24h: '14096933.45',
+      changesJson: { h1: 0.0842, h6: 0.6159, m5: -0.0255, h24: 3.25 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump.png?key=016d6e',
+      liquidity: { usd: 246788.91, base: 48588243, quote: 645.5402 },
+      pairUrl: 'https://dexscreener.com/solana/6gxvabfmlbupbf152wmuf9v8u5emfcdfn99wpsyz1jac',
+      transactionsJson: {
+        h1: { buys: 449, sells: 445 },
+        h6: { buys: 3371, sells: 3185 },
+        m5: { buys: 30, sells: 34 },
+        h24: { buys: 38562, sells: 31760 }
+      },
+      baseToken: {
+        name: 'Trust Protocol AI',
+        symbol: 'TRUST',
+        address: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump/header.png?key=016d6e',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://www.trustprotocol.app/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149137,
+          tokenId: 300466,
+          timeframe: 'm5',
+          percentage: '-0.0255'
+        },
+        {
+          id: 1149138,
+          tokenId: 300466,
+          timeframe: 'h1',
+          percentage: '0.0842'
+        },
+        {
+          id: 1149139,
+          tokenId: 300466,
+          timeframe: 'h6',
+          percentage: '0.6159'
+        },
+        {
+          id: 1149140,
+          tokenId: 300466,
+          timeframe: 'h24',
+          percentage: '3.25'
+        }
+      ],
+      socials: [
+        {
+          id: 588827,
+          tokenId: 300466,
+          platform: 'telegram',
+          url: 'http://t.me/trustprotocolai',
+          count: null
+        },
+        {
+          id: 588826,
+          tokenId: 300466,
+          platform: 'twitter',
+          url: 'http://x.com/trustprotocolai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 105610,
+      symbol: 'aether',
+      name: 'aether collective',
+      contractAddress: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:36:26.383Z',
+      updatedAt: '2025-01-10T12:19:47.406Z',
+      marketCap: '16828276',
+      price: '0.01683',
+      volume24h: '5925070.8',
+      changesJson: { h1: 0.0842, h6: -0.022, m5: -0.0232, h24: 0.3832 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump.png?key=aa8dc2',
+      liquidity: { usd: 841815.06, base: 24982755, quote: 2201.4161 },
+      pairUrl: 'https://dexscreener.com/solana/c1iq2fynymmntnvd6cvdtdgxfz2sxqbydmpcun1v4nf9',
+      transactionsJson: {
+        h1: { buys: 157, sells: 311 },
+        h6: { buys: 2330, sells: 2177 },
+        m5: { buys: 5, sells: 15 },
+        h24: { buys: 10034, sells: 12854 }
+      },
+      baseToken: {
+        name: 'aether collective',
+        symbol: 'aether',
+        address: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump/header.png?key=aa8dc2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.aetheros.co/', label: 'Website' },
+        {
+          url: 'https://github.com/AetherFrameworkAI/aether-framework',
+          label: 'Github'
+        },
+        {
+          url: 'https://aether-framework.gitbook.io/aetherframework/faq',
+          label: 'Gitbook'
+        },
+        { url: 'https://www.iamjedi.org/', label: 'JEDI AI' },
+        {
+          url: 'https://terminal.iamjedi.org/',
+          label: 'JEDI Terminal'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 407960,
+          tokenId: 105610,
+          timeframe: 'm5',
+          percentage: '-0.0232'
+        },
+        {
+          id: 407961,
+          tokenId: 105610,
+          timeframe: 'h1',
+          percentage: '0.0842'
+        },
+        {
+          id: 407962,
+          tokenId: 105610,
+          timeframe: 'h6',
+          percentage: '-0.022'
+        },
+        {
+          id: 407963,
+          tokenId: 105610,
+          timeframe: 'h24',
+          percentage: '0.3832'
+        }
+      ],
+      socials: [
+        {
+          id: 217406,
+          tokenId: 105610,
+          platform: 'telegram',
+          url: 'https://t.me/aetherdotfun',
+          count: null
+        },
+        {
+          id: 217405,
+          tokenId: 105610,
+          platform: 'twitter',
+          url: 'https://x.com/aetherdotfun',
+          count: null
+        }
+      ]
+    }
+  ],
+  level: 'info',
+  message: '[dd-serv] Fetched token list:'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.200Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.341Z'
+}
+{
+  timestamp: '2025-01-10T12:19:58.352Z',
+  data: [
+    {
+      id: 105871,
+      symbol: 'ALCH',
+      name: 'Alchemist AI',
+      contractAddress: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:49:35.312Z',
+      updatedAt: '2025-01-10T12:19:47.259Z',
+      marketCap: '120807244',
+      price: '0.1421',
+      volume24h: '14862097.04',
+      changesJson: { h1: -0.0085, h6: 0.0418, m5: 0.0124, h24: -0.0034 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump.png?key=a88f75',
+      liquidity: { usd: 4809147.38, base: 16937063, quote: 12551 },
+      pairUrl: 'https://dexscreener.com/solana/fydf3vkqfbcvntsbi7l7lremrfpmxkbqqgagnpg1hxxd',
+      transactionsJson: {
+        h1: { buys: 365, sells: 217 },
+        h6: { buys: 2286, sells: 2022 },
+        m5: { buys: 36, sells: 9 },
+        h24: { buys: 9283, sells: 8234 }
+      },
+      baseToken: {
+        name: 'Alchemist AI',
+        symbol: 'ALCH',
+        address: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump/header.png?key=a88f75',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.alchemistai.app/', label: 'Website' },
+        { url: 'https://docs.alchemistai.app/docs', label: 'Docs' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 408982,
+          tokenId: 105871,
+          timeframe: 'm5',
+          percentage: '0.0124'
+        },
+        {
+          id: 408983,
+          tokenId: 105871,
+          timeframe: 'h1',
+          percentage: '-0.0085'
+        },
+        {
+          id: 408984,
+          tokenId: 105871,
+          timeframe: 'h6',
+          percentage: '0.0418'
+        },
+        {
+          id: 408985,
+          tokenId: 105871,
+          timeframe: 'h24',
+          percentage: '-0.0034'
+        }
+      ],
+      socials: [
+        {
+          id: 217901,
+          tokenId: 105871,
+          platform: 'twitter',
+          url: 'https://x.com/alchemistAIapp',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47672,
+      symbol: 'BULLY',
+      name: 'Dolos The Bully',
+      contractAddress: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:44:08.983Z',
+      updatedAt: '2025-01-10T12:19:47.270Z',
+      marketCap: '55164320',
+      price: '0.05743',
+      volume24h: '6195560.8',
+      changesJson: { h1: 0.025, h6: 0.2172, m5: 0.0098, h24: 0.2443 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump.png?key=4512cd',
+      liquidity: { usd: 2427169.66, base: 21109440, quote: 6348.5239 },
+      pairUrl: 'https://dexscreener.com/solana/a88btp7eexypkgbwvfbymnm5nom2bks6s1o1f5u6gohb',
+      transactionsJson: {
+        h1: { buys: 217, sells: 190 },
+        h6: { buys: 1900, sells: 1853 },
+        m5: { buys: 10, sells: 10 },
+        h24: { buys: 7070, sells: 5757 }
+      },
+      baseToken: {
+        name: 'Dolos The Bully',
+        symbol: 'BULLY',
+        address: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump/header.png?key=4512cd',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://Dolosdiary.com', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185532,
+          tokenId: 47672,
+          timeframe: 'm5',
+          percentage: '0.0098'
+        },
+        {
+          id: 185533,
+          tokenId: 47672,
+          timeframe: 'h1',
+          percentage: '0.025'
+        },
+        {
+          id: 185534,
+          tokenId: 47672,
+          timeframe: 'h6',
+          percentage: '0.2172'
+        },
+        {
+          id: 185535,
+          tokenId: 47672,
+          timeframe: 'h24',
+          percentage: '0.2443'
+        }
+      ],
+      socials: [
+        {
+          id: 102328,
+          tokenId: 47672,
+          platform: 'telegram',
+          url: 'https://t.me/dolosTheBully_portal',
+          count: null
+        },
+        {
+          id: 102327,
+          tokenId: 47672,
+          platform: 'twitter',
+          url: 'https://x.com/dolos_diary',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47698,
+      symbol: 'SOL',
+      name: 'Wrapped SOL',
+      contractAddress: 'So11111111111111111111111111111111111111112',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:46:12.321Z',
+      updatedAt: '2025-01-10T12:19:47.281Z',
+      marketCap: null,
+      price: '191.31',
+      volume24h: '202786408.77',
+      changesJson: { h1: -0.0031, h6: 0.0076, m5: 0.0018, h24: 0.0003 },
+      imageUrl: null,
+      liquidity: { usd: 6818644.36, base: 26785, quote: 1694010 },
+      pairUrl: 'https://dexscreener.com/solana/8slbnzoa1cfnvmjlpfp98zlanfsycfapfjkmbixnlwxj',
+      transactionsJson: {
+        h1: { buys: 3197, sells: 2429 },
+        h6: { buys: 19386, sells: 18863 },
+        m5: { buys: 276, sells: 195 },
+        h24: { buys: 92188, sells: 88365 }
+      },
+      baseToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      headerImage: null,
+      openGraphImage: null,
+      quoteToken: {
+        name: 'USD Coin',
+        symbol: 'USDC',
+        address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+      },
+      websites: null,
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185616,
+          tokenId: 47698,
+          timeframe: 'm5',
+          percentage: '0.0018'
+        },
+        {
+          id: 185617,
+          tokenId: 47698,
+          timeframe: 'h1',
+          percentage: '-0.0031'
+        },
+        {
+          id: 185618,
+          tokenId: 47698,
+          timeframe: 'h6',
+          percentage: '0.0076'
+        },
+        {
+          id: 185619,
+          tokenId: 47698,
+          timeframe: 'h24',
+          percentage: '0.0003'
+        }
+      ],
+      socials: []
+    },
+    {
+      id: 104324,
+      symbol: 'ZEREBRO',
+      name: 'zerebro',
+      contractAddress: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:16.867Z',
+      updatedAt: '2025-01-10T12:19:47.289Z',
+      marketCap: '324257464',
+      price: '0.3242',
+      volume24h: '16506291.77',
+      changesJson: { h1: -0.01, h6: 0.0057, m5: 0.0022, h24: -0.0088 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn.png?key=2785d3',
+      liquidity: { usd: 7147094.92, base: 11006627, quote: 18706 },
+      pairUrl: 'https://dexscreener.com/solana/3sjnocnkkhwpvxygdtem8rccihsgc9jsfzuuazkbvrvp',
+      transactionsJson: {
+        h1: { buys: 153, sells: 174 },
+        h6: { buys: 1556, sells: 1516 },
+        m5: { buys: 7, sells: 1 },
+        h24: { buys: 6857, sells: 6456 }
+      },
+      baseToken: {
+        name: 'zerebro',
+        symbol: 'ZEREBRO',
+        address: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn/header.png?key=2785d3',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://zerebro.org/', label: 'Website' },
+        { url: 'https://warpcast.com/zerebro', label: 'warpcast' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403018,
+          tokenId: 104324,
+          timeframe: 'm5',
+          percentage: '0.0022'
+        },
+        {
+          id: 403019,
+          tokenId: 104324,
+          timeframe: 'h1',
+          percentage: '-0.01'
+        },
+        {
+          id: 403020,
+          tokenId: 104324,
+          timeframe: 'h6',
+          percentage: '0.0057'
+        },
+        {
+          id: 403021,
+          tokenId: 104324,
+          timeframe: 'h24',
+          percentage: '-0.0088'
+        }
+      ],
+      socials: [
+        {
+          id: 214959,
+          tokenId: 104324,
+          platform: 'telegram',
+          url: 'https://t.me/zerebro_portal',
+          count: null
+        },
+        {
+          id: 214958,
+          tokenId: 104324,
+          platform: 'twitter',
+          url: 'https://x.com/0xzerebro',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104323,
+      symbol: 'zero',
+      name: 'ZERO',
+      contractAddress: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:05.537Z',
+      updatedAt: '2025-01-10T12:19:47.299Z',
+      marketCap: '72203',
+      price: '0.00008762',
+      volume24h: '4206.18',
+      changesJson: { h1: 0.0559, h6: 0.0567, h24: 0.1431 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump.png?key=8f2797',
+      liquidity: { usd: 51902.43, base: 296366498, quote: 135.3663 },
+      pairUrl: 'https://dexscreener.com/solana/bnsspdwrsuigbaiukc3pphp4sns5igdhlm2a9qacthky',
+      transactionsJson: {
+        h1: { buys: 4, sells: 3 },
+        h6: { buys: 5, sells: 9 },
+        m5: { buys: 0, sells: 0 },
+        h24: { buys: 20, sells: 47 }
+      },
+      baseToken: {
+        name: 'ZERO',
+        symbol: 'zero',
+        address: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/header.png?key=8f2797',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403017,
+          tokenId: 104323,
+          timeframe: 'h24',
+          percentage: '0.1431'
+        },
+        {
+          id: 403015,
+          tokenId: 104323,
+          timeframe: 'h1',
+          percentage: '0.0559'
+        },
+        {
+          id: 403016,
+          tokenId: 104323,
+          timeframe: 'h6',
+          percentage: '0.0567'
+        },
+        {
+          id: 403136,
+          tokenId: 104323,
+          timeframe: 'm5',
+          percentage: '0.0064'
+        }
+      ],
+      socials: [
+        {
+          id: 214956,
+          tokenId: 104323,
+          platform: 'twitter',
+          url: 'https://x.com/zero_cto',
+          count: null
+        },
+        {
+          id: 214957,
+          tokenId: 104323,
+          platform: 'telegram',
+          url: 'https://t.me/ZeroCommunityCTO',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300479,
+      symbol: 'LLM',
+      name: 'Large Language Model',
+      contractAddress: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:38.066Z',
+      updatedAt: '2025-01-10T12:19:47.308Z',
+      marketCap: '119166478',
+      price: '0.1191',
+      volume24h: '80483477.92',
+      changesJson: { h1: 0.0176, h6: 0.3998, m5: -0.0336, h24: 0.0052 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump.png?key=7acaee',
+      liquidity: { usd: 3014125.37, base: 12630897, quote: 7891.1287 },
+      pairUrl: 'https://dexscreener.com/solana/g6xzu9m4yamow1ugfkcahuw5ufpurbk4kcewr9dp1kxj',
+      transactionsJson: {
+        h1: { buys: 1210, sells: 1551 },
+        h6: { buys: 10430, sells: 11614 },
+        m5: { buys: 118, sells: 92 },
+        h24: { buys: 58130, sells: 54937 }
+      },
+      baseToken: {
+        name: 'Large Language Model',
+        symbol: 'LLM',
+        address: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump/header.png?key=7acaee',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://linktr.ee/largelanguagemodel',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149141,
+          tokenId: 300479,
+          timeframe: 'm5',
+          percentage: '-0.0336'
+        },
+        {
+          id: 1149142,
+          tokenId: 300479,
+          timeframe: 'h1',
+          percentage: '0.0176'
+        },
+        {
+          id: 1149143,
+          tokenId: 300479,
+          timeframe: 'h6',
+          percentage: '0.3998'
+        },
+        {
+          id: 1149144,
+          tokenId: 300479,
+          timeframe: 'h24',
+          percentage: '0.0052'
+        }
+      ],
+      socials: [
+        {
+          id: 588852,
+          tokenId: 300479,
+          platform: 'telegram',
+          url: 'https://t.me/largelanguagemodelsolchannel',
+          count: null
+        },
+        {
+          id: 588851,
+          tokenId: 300479,
+          platform: 'twitter',
+          url: 'https://x.com/ai160kg',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300441,
+      symbol: 'HYPER',
+      name: 'Hyperfy',
+      contractAddress: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:14:01.209Z',
+      updatedAt: '2025-01-10T12:19:47.319Z',
+      marketCap: '107365770',
+      price: '0.1073',
+      volume24h: '7403114.8',
+      changesJson: { h1: -0.0051, h6: -0.014, m5: 0.0511, h24: 0.2053 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8.png?key=1f2d0a',
+      liquidity: { usd: 1194490.85, base: 5562717, quote: 3121.05677 },
+      pairUrl: 'https://dexscreener.com/solana/cs94de2znqtyxcftfdfpsejkphbdsvzevkhloykmx7ge',
+      transactionsJson: {
+        h1: { buys: 173, sells: 107 },
+        h6: { buys: 1816, sells: 1642 },
+        m5: { buys: 5, sells: 33 },
+        h24: { buys: 7233, sells: 6488 }
+      },
+      baseToken: {
+        name: 'Hyperfy',
+        symbol: 'HYPER',
+        address: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8/header.png?key=1f2d0a',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://hyperfy.io/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149039,
+          tokenId: 300441,
+          timeframe: 'm5',
+          percentage: '0.0511'
+        },
+        {
+          id: 1149040,
+          tokenId: 300441,
+          timeframe: 'h1',
+          percentage: '-0.0051'
+        },
+        {
+          id: 1149041,
+          tokenId: 300441,
+          timeframe: 'h6',
+          percentage: '-0.014'
+        },
+        {
+          id: 1149042,
+          tokenId: 300441,
+          timeframe: 'h24',
+          percentage: '0.2053'
+        }
+      ],
+      socials: [
+        {
+          id: 588778,
+          tokenId: 300441,
+          platform: 'twitter',
+          url: 'https://x.com/hyperfy_io',
+          count: null
+        },
+        {
+          id: 588779,
+          tokenId: 300441,
+          platform: 'discord',
+          url: 'http://discord.gg/TGtyTEWB2X',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47691,
+      symbol: 'degenai',
+      name: 'Degen Spartan AI',
+      contractAddress: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:45:39.648Z',
+      updatedAt: '2025-01-10T12:19:47.363Z',
+      marketCap: '60043222',
+      price: '0.06004',
+      volume24h: '5493076.44',
+      changesJson: { h1: -0.0204, h6: 0.0767, m5: -0.0026, h24: 0.1706 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump.png?key=5a4d29',
+      liquidity: { usd: 2480835.58, base: 20683543, quote: 6472.9969 },
+      pairUrl: 'https://dexscreener.com/solana/dlaoh9okkk4gdtxj2mkh3wjue7vbhmbjrukmcid1pszx',
+      transactionsJson: {
+        h1: { buys: 191, sells: 133 },
+        h6: { buys: 1508, sells: 1507 },
+        m5: { buys: 8, sells: 6 },
+        h24: { buys: 6546, sells: 6436 }
+      },
+      baseToken: {
+        name: 'Degen Spartan AI',
+        symbol: 'degenai',
+        address: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump/header.png?key=5a4d29',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://ai16z.ai', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185584,
+          tokenId: 47691,
+          timeframe: 'm5',
+          percentage: '-0.0026'
+        },
+        {
+          id: 185585,
+          tokenId: 47691,
+          timeframe: 'h1',
+          percentage: '-0.0204'
+        },
+        {
+          id: 185586,
+          tokenId: 47691,
+          timeframe: 'h6',
+          percentage: '0.0767'
+        },
+        {
+          id: 185587,
+          tokenId: 47691,
+          timeframe: 'h24',
+          percentage: '0.1706'
+        }
+      ],
+      socials: [
+        {
+          id: 102368,
+          tokenId: 47691,
+          platform: 'twitter',
+          url: 'https://twitter.com/degenspartanai',
+          count: null
+        },
+        {
+          id: 102369,
+          tokenId: 47691,
+          platform: 'telegram',
+          url: 'https://t.me/degenspartanai',
+          count: null
+        },
+        {
+          id: 102370,
+          tokenId: 47691,
+          platform: 'discord',
+          url: 'https://discord.gg/EbzMcW3pWK',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47716,
+      symbol: 'ai16z',
+      name: 'ai16z',
+      contractAddress: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:47:27.093Z',
+      updatedAt: '2025-01-10T12:19:47.352Z',
+      marketCap: '1780632133',
+      price: '1.61',
+      volume24h: '55704378.99',
+      changesJson: { h1: -0.0228, h6: 0.0508, m5: 0.0006, h24: 0.116 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC.png?key=b380cb',
+      liquidity: { usd: 6608009.36, base: 2438313, quote: 13917 },
+      pairUrl: 'https://dexscreener.com/solana/8sn9549p3zn6xpqrqpapn57xzkch6sjxlwuejcg2w4ji',
+      transactionsJson: {
+        h1: { buys: 335, sells: 436 },
+        h6: { buys: 2906, sells: 3324 },
+        m5: { buys: 7, sells: 4 },
+        h24: { buys: 13686, sells: 12036 }
+      },
+      baseToken: {
+        name: 'ai16z',
+        symbol: 'ai16z',
+        address: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC/header.png?key=b380cb',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://elizaos.ai/', label: 'Website' },
+        {
+          url: 'https://www.daos.fun/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+          label: 'Daos.fun'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185686,
+          tokenId: 47716,
+          timeframe: 'm5',
+          percentage: '0.0006'
+        },
+        {
+          id: 185687,
+          tokenId: 47716,
+          timeframe: 'h1',
+          percentage: '-0.0228'
+        },
+        {
+          id: 185688,
+          tokenId: 47716,
+          timeframe: 'h6',
+          percentage: '0.0508'
+        },
+        {
+          id: 185689,
+          tokenId: 47716,
+          timeframe: 'h24',
+          percentage: '0.116'
+        }
+      ],
+      socials: [
+        {
+          id: 102418,
+          tokenId: 47716,
+          platform: 'telegram',
+          url: 'https://t.me/ai16zcommunity',
+          count: null
+        },
+        {
+          id: 102419,
+          tokenId: 47716,
+          platform: 'discord',
+          url: 'https://discord.gg/ai16z',
+          count: null
+        },
+        {
+          id: 102417,
+          tokenId: 47716,
+          platform: 'twitter',
+          url: 'https://x.com/ai16zdao',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300495,
+      symbol: 'MLG',
+      name: '360noscope420blazeit',
+      contractAddress: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:16:13.319Z',
+      updatedAt: '2025-01-10T12:19:47.330Z',
+      marketCap: '84858289',
+      price: '0.08504',
+      volume24h: '35296261.36',
+      changesJson: { h1: -0.0181, h6: -0.1153, m5: -0.0048, h24: 0.165 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL.png?key=04f2c9',
+      liquidity: { usd: 2152149.01, base: 12637015, quote: 5633.5009 },
+      pairUrl: 'https://dexscreener.com/solana/f4hdxnulqjsbwcl5vweucpjueqop3gdteussqaxbeyw4',
+      transactionsJson: {
+        h1: { buys: 535, sells: 264 },
+        h6: { buys: 4308, sells: 4345 },
+        m5: { buys: 17, sells: 15 },
+        h24: { buys: 24956, sells: 24452 }
+      },
+      baseToken: {
+        name: '360noscope420blazeit',
+        symbol: 'MLG',
+        address: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL/header.png?key=04f2c9',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.mlg.lol/', label: 'Website' },
+        { url: 'https://mlgedit.com/', label: 'Meme Maker' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149206,
+          tokenId: 300495,
+          timeframe: 'm5',
+          percentage: '-0.0048'
+        },
+        {
+          id: 1149207,
+          tokenId: 300495,
+          timeframe: 'h1',
+          percentage: '-0.0181'
+        },
+        {
+          id: 1149208,
+          tokenId: 300495,
+          timeframe: 'h6',
+          percentage: '-0.1153'
+        },
+        {
+          id: 1149209,
+          tokenId: 300495,
+          timeframe: 'h24',
+          percentage: '0.165'
+        }
+      ],
+      socials: [
+        {
+          id: 588880,
+          tokenId: 300495,
+          platform: 'twitter',
+          url: 'https://x.com/MLGsolana420',
+          count: null
+        },
+        {
+          id: 588881,
+          tokenId: 300495,
+          platform: 'telegram',
+          url: 'https://t.me/MLGCTOPORTAL',
+          count: null
+        },
+        {
+          id: 588882,
+          tokenId: 300495,
+          platform: 'discord',
+          url: 'https://discord.com/invite/munnopoly',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 168485,
+      symbol: 'PERSAI',
+      name: 'Persona',
+      contractAddress: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX',
+      chain: 'SOLANA',
+      createdAt: '2025-01-05T04:00:02.850Z',
+      updatedAt: '2025-01-10T12:19:47.342Z',
+      marketCap: '50732',
+      price: '0.00005074',
+      volume24h: '13205.4',
+      changesJson: { h1: -0.01, h6: -0.0199, h24: 0.3564 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX.png?key=70eae2',
+      liquidity: { usd: 41541.65, base: 408984761, quote: 108.7396 },
+      pairUrl: 'https://dexscreener.com/solana/fowf3hssemckhwdchse8etjns7byqm1mi3labnk25gw',
+      transactionsJson: {
+        h1: { buys: 3, sells: 7 },
+        h6: { buys: 42, sells: 49 },
+        m5: { buys: 0, sells: 0 },
+        h24: { buys: 170, sells: 190 }
+      },
+      baseToken: {
+        name: 'Persona',
+        symbol: 'PERSAI',
+        address: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX/header.png?key=70eae2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 648657,
+          tokenId: 168485,
+          timeframe: 'h1',
+          percentage: '-0.01'
+        },
+        {
+          id: 648658,
+          tokenId: 168485,
+          timeframe: 'h6',
+          percentage: '-0.0199'
+        },
+        {
+          id: 648659,
+          tokenId: 168485,
+          timeframe: 'h24',
+          percentage: '0.3564'
+        },
+        {
+          id: 648656,
+          tokenId: 168485,
+          timeframe: 'm5',
+          percentage: '-0.0104'
+        }
+      ],
+      socials: [
+        {
+          id: 336868,
+          tokenId: 168485,
+          platform: 'telegram',
+          url: 'https://t.me/personAIonly',
+          count: null
+        },
+        {
+          id: 336867,
+          tokenId: 168485,
+          platform: 'twitter',
+          url: 'https://x.com/personAIonly',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104502,
+      symbol: 'DUNA',
+      name: 'DUNA',
+      contractAddress: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:33:34.938Z',
+      updatedAt: '2025-01-10T12:19:47.374Z',
+      marketCap: '388132',
+      price: '0.0003881',
+      volume24h: '186397.85',
+      changesJson: { h1: -0.0293, h6: 0.1481, m5: 0.0291, h24: 0.2643 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump.png?key=744569',
+      liquidity: { usd: 143157.3, base: 184529505, quote: 374.5635 },
+      pairUrl: 'https://dexscreener.com/solana/czisgeuhnsrlzmfsc1jq7krz4ga1j1fncvmdkrjescua',
+      transactionsJson: {
+        h1: { buys: 26, sells: 34 },
+        h6: { buys: 276, sells: 199 },
+        m5: { buys: 2, sells: 0 },
+        h24: { buys: 730, sells: 609 }
+      },
+      baseToken: {
+        name: 'DUNA',
+        symbol: 'DUNA',
+        address: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump/header.png?key=744569',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://m.theblockbeats.info/en/news/51974',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403685,
+          tokenId: 104502,
+          timeframe: 'm5',
+          percentage: '0.0291'
+        },
+        {
+          id: 403686,
+          tokenId: 104502,
+          timeframe: 'h1',
+          percentage: '-0.0293'
+        },
+        {
+          id: 403687,
+          tokenId: 104502,
+          timeframe: 'h6',
+          percentage: '0.1481'
+        },
+        {
+          id: 403688,
+          tokenId: 104502,
+          timeframe: 'h24',
+          percentage: '0.2643'
+        }
+      ],
+      socials: [
+        {
+          id: 215313,
+          tokenId: 104502,
+          platform: 'telegram',
+          url: 'https://t.me/dunaportal',
+          count: null
+        },
+        {
+          id: 215312,
+          tokenId: 104502,
+          platform: 'twitter',
+          url: 'https://x.com/i/communities/1874537471955927076',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300480,
+      symbol: 'Fartcoin ',
+      name: 'Fartcoin ',
+      contractAddress: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:54.075Z',
+      updatedAt: '2025-01-10T12:19:47.385Z',
+      marketCap: '895117510',
+      price: '0.8951',
+      volume24h: '32754173.26',
+      changesJson: { h1: 0.0066, h6: -0.0054, m5: 0.0066, h24: 0.0378 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump.png?key=8180d2',
+      liquidity: { usd: 16971552.47, base: 9491785, quote: 44289 },
+      pairUrl: 'https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw',
+      transactionsJson: {
+        h1: { buys: 379, sells: 152 },
+        h6: { buys: 2577, sells: 2183 },
+        m5: { buys: 25, sells: 1 },
+        h24: { buys: 10507, sells: 11909 }
+      },
+      baseToken: {
+        name: 'Fartcoin ',
+        symbol: 'Fartcoin ',
+        address: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump/header.png?key=8180d2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149145,
+          tokenId: 300480,
+          timeframe: 'm5',
+          percentage: '0.0066'
+        },
+        {
+          id: 1149146,
+          tokenId: 300480,
+          timeframe: 'h1',
+          percentage: '0.0066'
+        },
+        {
+          id: 1149147,
+          tokenId: 300480,
+          timeframe: 'h6',
+          percentage: '-0.0054'
+        },
+        {
+          id: 1149148,
+          tokenId: 300480,
+          timeframe: 'h24',
+          percentage: '0.0378'
+        }
+      ],
+      socials: [
+        {
+          id: 588853,
+          tokenId: 300480,
+          platform: 'twitter',
+          url: 'https://x.com/FartCoinOfSOL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300466,
+      symbol: 'TRUST',
+      name: 'Trust Protocol AI',
+      contractAddress: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:18.178Z',
+      updatedAt: '2025-01-10T12:19:47.395Z',
+      marketCap: '2435966',
+      price: '0.002536',
+      volume24h: '14096933.45',
+      changesJson: { h1: 0.0842, h6: 0.6159, m5: -0.0255, h24: 3.25 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump.png?key=016d6e',
+      liquidity: { usd: 246788.91, base: 48588243, quote: 645.5402 },
+      pairUrl: 'https://dexscreener.com/solana/6gxvabfmlbupbf152wmuf9v8u5emfcdfn99wpsyz1jac',
+      transactionsJson: {
+        h1: { buys: 449, sells: 445 },
+        h6: { buys: 3371, sells: 3185 },
+        m5: { buys: 30, sells: 34 },
+        h24: { buys: 38562, sells: 31760 }
+      },
+      baseToken: {
+        name: 'Trust Protocol AI',
+        symbol: 'TRUST',
+        address: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump/header.png?key=016d6e',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://www.trustprotocol.app/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149137,
+          tokenId: 300466,
+          timeframe: 'm5',
+          percentage: '-0.0255'
+        },
+        {
+          id: 1149138,
+          tokenId: 300466,
+          timeframe: 'h1',
+          percentage: '0.0842'
+        },
+        {
+          id: 1149139,
+          tokenId: 300466,
+          timeframe: 'h6',
+          percentage: '0.6159'
+        },
+        {
+          id: 1149140,
+          tokenId: 300466,
+          timeframe: 'h24',
+          percentage: '3.25'
+        }
+      ],
+      socials: [
+        {
+          id: 588827,
+          tokenId: 300466,
+          platform: 'telegram',
+          url: 'http://t.me/trustprotocolai',
+          count: null
+        },
+        {
+          id: 588826,
+          tokenId: 300466,
+          platform: 'twitter',
+          url: 'http://x.com/trustprotocolai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 105610,
+      symbol: 'aether',
+      name: 'aether collective',
+      contractAddress: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:36:26.383Z',
+      updatedAt: '2025-01-10T12:19:47.406Z',
+      marketCap: '16828276',
+      price: '0.01683',
+      volume24h: '5925070.8',
+      changesJson: { h1: 0.0842, h6: -0.022, m5: -0.0232, h24: 0.3832 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump.png?key=aa8dc2',
+      liquidity: { usd: 841815.06, base: 24982755, quote: 2201.4161 },
+      pairUrl: 'https://dexscreener.com/solana/c1iq2fynymmntnvd6cvdtdgxfz2sxqbydmpcun1v4nf9',
+      transactionsJson: {
+        h1: { buys: 157, sells: 311 },
+        h6: { buys: 2330, sells: 2177 },
+        m5: { buys: 5, sells: 15 },
+        h24: { buys: 10034, sells: 12854 }
+      },
+      baseToken: {
+        name: 'aether collective',
+        symbol: 'aether',
+        address: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump/header.png?key=aa8dc2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump?timestamp=1736511600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.aetheros.co/', label: 'Website' },
+        {
+          url: 'https://github.com/AetherFrameworkAI/aether-framework',
+          label: 'Github'
+        },
+        {
+          url: 'https://aether-framework.gitbook.io/aetherframework/faq',
+          label: 'Gitbook'
+        },
+        { url: 'https://www.iamjedi.org/', label: 'JEDI AI' },
+        {
+          url: 'https://terminal.iamjedi.org/',
+          label: 'JEDI Terminal'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 407960,
+          tokenId: 105610,
+          timeframe: 'm5',
+          percentage: '-0.0232'
+        },
+        {
+          id: 407961,
+          tokenId: 105610,
+          timeframe: 'h1',
+          percentage: '0.0842'
+        },
+        {
+          id: 407962,
+          tokenId: 105610,
+          timeframe: 'h6',
+          percentage: '-0.022'
+        },
+        {
+          id: 407963,
+          tokenId: 105610,
+          timeframe: 'h24',
+          percentage: '0.3832'
+        }
+      ],
+      socials: [
+        {
+          id: 217406,
+          tokenId: 105610,
+          platform: 'telegram',
+          url: 'https://t.me/aetherdotfun',
+          count: null
+        },
+        {
+          id: 217405,
+          tokenId: 105610,
+          platform: 'twitter',
+          url: 'https://x.com/aetherdotfun',
+          count: null
+        }
+      ]
+    }
+  ],
+  level: 'info',
+  message: '[dd-serv] Fetched token list:'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.795Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/So11111111111111111111111111111111111111112/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.851Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.894Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.906Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.912Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:58.968Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:19:59.388Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:03.928Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:03.931Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:04.617Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:04.750Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:04.886Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:04.908Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:05.051Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:05.974Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:06.107Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:06.276Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:06.829Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:08.226Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/So11111111111111111111111111111111111111112/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:08.464Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:08.514Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:08.568Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:09.504Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:09.975Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:10.214Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:11.788Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:13.438Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:13.489Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:13.552Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:13.604Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:13.656Z'
+}
+{
+  message: 'GET /api/dd-serv/tokens/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump/price-history',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:14.743Z'
+}
+{
+  message: 'POST /api/contests/11/join',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:31.711Z'
+}
+{
+  requestId: '6e8f35dd-a3a3-4ed0-98f2-f86816b1d701',
+  contestId: 11,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T12:20:31.712Z'
+}
+{
+  requestId: '6e8f35dd-a3a3-4ed0-98f2-f86816b1d701',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 12,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T12:20:31.724Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:41.648Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:42.261Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:42.267Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:42.355Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:20:42.419Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:42.859Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:43.002Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:43.427Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:20:43.430Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:43.597Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:43.642Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:43.652Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:43.657Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:43.658Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.040Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.242Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.274Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.295Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.300Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.304Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.942Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.945Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.947Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.949Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.952Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:44.956Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:45.540Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:45.542Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:45.543Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:45.546Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:45.548Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:46.166Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:46.186Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:46.742Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:46.780Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:46.792Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:47.333Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:47.383Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:20:48.001Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:53.242Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:53.346Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:53.355Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:53.463Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:53.468Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:21:53.472Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:53.608Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:21:53.611Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:54.251Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:54.825Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:54.838Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:54.878Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:54.887Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:54.891Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:54.892Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:55.427Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:55.438Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:55.550Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:55.565Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:55.625Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:55.628Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.048Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.106Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.164Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.210Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.254Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.270Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.626Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.677Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.742Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:56.869Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:57.470Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:57.521Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:58.071Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:58.112Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:58.120Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:58.746Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:58.750Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:21:59.345Z'
+}
+{
+  message: 'PUT /api/contests/18',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:02.163Z'
+}
+{
+  requestId: '37da5d4b-f472-41a1-9e2a-63f8af6f92d0',
+  contestId: 18,
+  body: {
+    name: 'mmm good contest',
+    description: 'One hundred degens. One hundred SOL. One hour of unadulterated PvP for all the glory.',
+    entry_fee: '3.25',
+    prize_pool: '38.025',
+    current_prize_pool: '0',
+    start_time: '2025-01-10T16:00:00.000Z',
+    end_time: '2025-01-10T22:00:00.000Z',
+    allowed_buckets: [ 1, 2, 3, 4, 5 ],
+    participant_count: 0,
+    status: 'pending',
+    settings: {
+      difficulty: 'guppy',
+      min_trades: 1,
+      max_participants: 13,
+      min_participants: 3,
+      token_types: [],
+      rules: []
+    }
+  },
+  headers: {
+    connection: 'close',
+    host: 'degenduel.me',
+    'x-real-ip': '147.79.74.67',
+    'x-forwarded-for': '147.79.74.67',
+    'x-forwarded-proto': 'https',
+    'x-forwarded-port': '443',
+    'x-request-start': 't=1736511722.160',
+    'content-length': '464',
+    'sec-ch-ua-platform': '"Windows"',
+    'x-wallet-address': 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    'content-type': 'application/json',
+    'sec-ch-ua-mobile': '?0',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    accept: '*/*',
+    origin: 'http://localhost:3004',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-dest': 'empty',
+    referer: 'http://localhost:3004/admin',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-US,en;q=0.9',
+    'access-control-allow-origin': '*'
+  },
+  level: 'info',
+  message: 'Contest update request received:',
+  timestamp: '2025-01-10T12:22:02.164Z'
+}
+{
+  requestId: '37da5d4b-f472-41a1-9e2a-63f8af6f92d0',
+  contestId: 18,
+  updateData: '{"name":"mmm good contest","description":"One hundred degens. One hundred SOL. One hour of unadulterated PvP for all the glory.","entry_fee":"3.25","prize_pool":"38.025","current_prize_pool":"0","start_time":"2025-01-10T16:00:00.000Z","end_time":"2025-01-10T22:00:00.000Z","allowed_buckets":[1,2,3,4,5],"participant_count":0,"status":"pending","settings":{"difficulty":"guppy","min_trades":1,"max_participants":13,"min_participants":3,"token_types":[],"rules":[]},"updated_at":"2025-01-10T12:22:02.180Z"}',
+  level: 'info',
+  message: 'Attempting Prisma update:',
+  timestamp: '2025-01-10T12:22:02.181Z'
+}
+{
+  requestId: '37da5d4b-f472-41a1-9e2a-63f8af6f92d0',
+  contestId: 18,
+  contest: '{"id":18,"contest_code":"NC-5622","name":"mmm good contest","description":"One hundred degens. One hundred SOL. One hour of unadulterated PvP for all the glory.","start_time":"2025-01-10T16:00:00.000Z","end_time":"2025-01-10T22:00:00.000Z","entry_fee":"3.25","prize_pool":"38","status":"pending","settings":{"rules":[],"difficulty":"guppy","min_trades":1,"token_types":[],"max_participants":13,"min_participants":3},"created_at":"2025-01-10T10:50:44.658Z","current_prize_pool":"0","allowed_buckets":[1,2,3,4,5],"participant_count":0,"last_entry_time":null,"min_participants":2,"max_participants":null,"entry_deadline":null,"cancelled_at":null,"cancellation_reason":null,"updated_at":"2025-01-10T12:22:02.180Z"}',
+  level: 'info',
+  message: 'Contest updated successfully:',
+  timestamp: '2025-01-10T12:22:02.198Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:02.832Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:03.040Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:03.667Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:22:03.670Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:03.886Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:04.274Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:04.501Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:04.503Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:04.543Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:04.557Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:04.611Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:04.859Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:05.153Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:05.170Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:05.209Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:05.219Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:05.243Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:05.862Z'
+}
+{
+  message: 'GET /api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:43.173Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:43.641Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:43.651Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:43.685Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:43.690Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:43.691Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:57.145Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:57.294Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:57.420Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:57.833Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:57.867Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:57.870Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:57.897Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:57.899Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:58.069Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:58.476Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:58.481Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:58.536Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:58.540Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:58.543Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:58.738Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.092Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.150Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.206Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.272Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.276Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.462Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.702Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.749Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.825Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.982Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:22:59.987Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:00.077Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:00.374Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:00.397Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:00.465Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:00.573Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:00.619Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:00.762Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:00.994Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.056Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.119Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.182Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.236Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.360Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.595Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.717Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.755Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.891Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:01.922Z'
+}
+{
+  message: 'GET /api/contests/9',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:14.597Z'
+}
+{
+  message: 'GET /api/contests/9',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:14.599Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:14.706Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:14.812Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:15.020Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:16.337Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:16.890Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:16.955Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:17.065Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:17.576Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:23:17.634Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:18.231Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:18.235Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:23:18.239Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:18.453Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:18.809Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:18.815Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:18.818Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:18.820Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:18.856Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:19.121Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:19.420Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:19.456Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:19.458Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:19.461Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.085Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.088Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.090Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.125Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.141Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.144Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.743Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.744Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.748Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.749Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:20.754Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:21.343Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:21.345Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:21.968Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:22.010Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:22.013Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:22.619Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:22.620Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:23.205Z'
+}
+{
+  message: 'PUT /api/contests/18',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:43.424Z'
+}
+{
+  requestId: 'a3d59763-c727-42c5-8bd6-6cfc1dfa402f',
+  contestId: 18,
+  body: {
+    name: 'mmm good contest',
+    description: 'One hundred degens. One hundred SOL. One hour of unadulterated PvP for all the glory.',
+    entry_fee: '3.25',
+    prize_pool: '38.025',
+    current_prize_pool: '0',
+    start_time: '2025-01-10T16:00:00.000Z',
+    end_time: '2025-01-10T22:00:00.000Z',
+    entry_deadline: '2025-01-10T12:23:00.000Z',
+    allowed_buckets: [ 1, 2, 3, 4, 5 ],
+    participant_count: 0,
+    status: 'pending',
+    settings: {
+      difficulty: 'guppy',
+      min_trades: 1,
+      max_participants: 13,
+      min_participants: 3,
+      token_types: [],
+      rules: []
+    }
+  },
+  headers: {
+    connection: 'close',
+    host: 'degenduel.me',
+    'x-real-ip': '147.79.74.67',
+    'x-forwarded-for': '147.79.74.67',
+    'x-forwarded-proto': 'https',
+    'x-forwarded-port': '443',
+    'x-request-start': 't=1736511823.417',
+    'content-length': '508',
+    'sec-ch-ua-platform': '"Windows"',
+    'x-wallet-address': 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    'content-type': 'application/json',
+    'sec-ch-ua-mobile': '?0',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    accept: '*/*',
+    origin: 'http://localhost:3004',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-dest': 'empty',
+    referer: 'http://localhost:3004/admin',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-US,en;q=0.9',
+    'access-control-allow-origin': '*'
+  },
+  level: 'info',
+  message: 'Contest update request received:',
+  timestamp: '2025-01-10T12:23:43.425Z'
+}
+{
+  requestId: 'a3d59763-c727-42c5-8bd6-6cfc1dfa402f',
+  contestId: 18,
+  updateData: '{"name":"mmm good contest","description":"One hundred degens. One hundred SOL. One hour of unadulterated PvP for all the glory.","entry_fee":"3.25","prize_pool":"38.025","current_prize_pool":"0","start_time":"2025-01-10T16:00:00.000Z","end_time":"2025-01-10T22:00:00.000Z","entry_deadline":"2025-01-10T12:23:00.000Z","allowed_buckets":[1,2,3,4,5],"participant_count":0,"status":"pending","settings":{"difficulty":"guppy","min_trades":1,"max_participants":13,"min_participants":3,"token_types":[],"rules":[]},"updated_at":"2025-01-10T12:23:43.428Z"}',
+  level: 'info',
+  message: 'Attempting Prisma update:',
+  timestamp: '2025-01-10T12:23:43.428Z'
+}
+{
+  requestId: 'a3d59763-c727-42c5-8bd6-6cfc1dfa402f',
+  contestId: 18,
+  contest: '{"id":18,"contest_code":"NC-5622","name":"mmm good contest","description":"One hundred degens. One hundred SOL. One hour of unadulterated PvP for all the glory.","start_time":"2025-01-10T16:00:00.000Z","end_time":"2025-01-10T22:00:00.000Z","entry_fee":"3.25","prize_pool":"38","status":"pending","settings":{"rules":[],"difficulty":"guppy","min_trades":1,"token_types":[],"max_participants":13,"min_participants":3},"created_at":"2025-01-10T10:50:44.658Z","current_prize_pool":"0","allowed_buckets":[1,2,3,4,5],"participant_count":0,"last_entry_time":null,"min_participants":2,"max_participants":null,"entry_deadline":"2025-01-10T12:23:00.000Z","cancelled_at":null,"cancellation_reason":null,"updated_at":"2025-01-10T12:23:43.428Z"}',
+  level: 'info',
+  message: 'Contest updated successfully:',
+  timestamp: '2025-01-10T12:23:43.433Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:43.658Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:44.559Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:44.858Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:23:44.862Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:45.774Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:45.926Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:45.990Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:46.741Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:46.743Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:46.745Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:46.747Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:46.750Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:46.919Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:47.468Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:47.516Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:47.518Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:47.521Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:23:47.523Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:16.853Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:17.106Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:17.715Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:28:17.733Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:17.974Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:18.338Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:18.601Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:18.606Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:18.655Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:18.658Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:18.660Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:18.935Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:19.272Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:19.274Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:19.281Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:19.306Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:19.330Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:28:19.900Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:27.814Z'
+}
+{
+  message: 'GET /api/admin/stats/platform',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:27.905Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:28.031Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:28.135Z'
+}
+{
+  message: 'GET /api/admin/stats/activity',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:28.138Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:34:28.159Z'
+}
+{
+  message: 'GET /api/users',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:28.312Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T12:34:28.320Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:28.791Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:29.391Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:29.392Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:29.397Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:29.399Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:29.404Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:29.407Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:29.981Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.009Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.013Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.018Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.041Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.044Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.612Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.662Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.663Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.666Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.695Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:30.714Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:31.173Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:31.225Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:31.235Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:31.281Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:31.787Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:31.837Z'
+}
+{
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:32.410Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:32.466Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:32.523Z'
+}
+{
+  message: 'GET /api/users/5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:33.086Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:33.164Z'
+}
+{
+  message: 'GET /api/users/DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK/portfolio',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:33.736Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:38.118Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:38.459Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:38.713Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:38.755Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:38.774Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:38.777Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:38.780Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:39.015Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:39.320Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:39.373Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:39.378Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:39.431Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:39.437Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:39.628Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:39.989Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:40.050Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:40.054Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:40.074Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:40.105Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:40.233Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:40.568Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:34:40.629Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T12:36:43.078Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T12:36:43.701Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T12:36:43.712Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T12:36:43.753Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T12:36:43.758Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T12:36:43.759Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.093Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.297Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.299Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.305Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.310Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.350Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.739Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.901Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.919Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.960Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.962Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:58.975Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:59.376Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:59.461Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:59.557Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:59.566Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:59.624Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:59.627Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:42:59.985Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.049Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.174Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.180Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.233Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.236Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.561Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.678Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.797Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.859Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.877Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:00.916Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:01.179Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:01.293Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:01.389Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:01.440Z'
+}
+{
+  message: 'GET /api/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:01.511Z'
+}
+{
+  message: 'GET /api/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:01.515Z'
+}
+{
+  message: 'GET /api/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:01.814Z'
+}
+{
+  message: 'GET /api/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:01.954Z'
+}
+{
+  message: 'GET /api/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:02.063Z'
+}
+{
+  message: 'GET /api/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:02.124Z'
+}
+{
+  message: 'GET /api/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:02.151Z'
+}
+{
+  message: 'GET /api/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:02.171Z'
+}
+{
+  message: 'GET /api/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:02.434Z'
+}
+{
+  message: 'GET /api/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:43:02.562Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:40.613Z'
+}
+{
+  message: 'GET /api/contests',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:40.678Z'
+}
+{
+  message: 'GET /contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:40.780Z'
+}
+{
+  message: 'GET /contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:40.853Z'
+}
+{
+  message: 'GET /contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:40.902Z'
+}
+{
+  message: 'GET /contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:40.966Z'
+}
+{
+  message: 'GET /contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:40.967Z'
+}
+{
+  message: 'GET /contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.035Z'
+}
+{
+  message: 'GET /contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.036Z'
+}
+{
+  message: 'GET /contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.128Z'
+}
+{
+  message: 'GET /contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.128Z'
+}
+{
+  message: 'GET /contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.174Z'
+}
+{
+  message: 'GET /contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.201Z'
+}
+{
+  message: 'GET /contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.202Z'
+}
+{
+  message: 'GET /contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.252Z'
+}
+{
+  message: 'GET /contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.293Z'
+}
+{
+  message: 'GET /contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.326Z'
+}
+{
+  message: 'GET /contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.338Z'
+}
+{
+  message: 'GET /contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.387Z'
+}
+{
+  message: 'GET /contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.393Z'
+}
+{
+  message: 'GET /contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.397Z'
+}
+{
+  message: 'GET /contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:41.470Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:51.288Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:51.868Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:51.879Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:51.917Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:51.922Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T12:44:51.923Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T12:47:19.821Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T12:47:19.972Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T12:47:20.129Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T12:47:20.131Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T12:47:22.547Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T12:47:22.622Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0.6778.154 Mobile/15E148 Safari/604.1',
+  level: 'info',
+  message: 'GET /api/contests/16',
+  timestamp: '2025-01-10T12:52:23.397Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0.6778.154 Mobile/15E148 Safari/604.1',
+  level: 'info',
+  message: 'GET /api/contests/16',
+  timestamp: '2025-01-10T12:52:23.400Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T13:30:17.210Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T13:30:17.789Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T13:30:17.798Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T13:30:17.833Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T13:30:17.838Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T13:30:17.838Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:39.211Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:39.785Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:39.796Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:39.829Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:39.834Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:39.835Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:58.208Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:58.789Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:58.802Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:58.843Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:58.849Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T13:34:58.850Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T13:35:37.697Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T13:35:37.703Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T13:41:50.908Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T13:41:51.478Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T13:41:51.490Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T13:41:51.524Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T13:41:51.528Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T13:41:51.529Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T16:47:25.204Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T16:47:25.352Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.366Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.372Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.373Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.374Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.376Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.378Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.379Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.381Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.382Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.383Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.428Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.432Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.438Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.439Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.441Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.496Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.497Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.506Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.507Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:25.509Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T16:47:28.888Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/contests',
+  timestamp: '2025-01-10T16:47:28.953Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.959Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.960Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.961Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.962Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.962Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.963Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.964Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.965Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.966Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:28.967Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/18/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.039Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/17/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.040Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/16/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.042Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/15/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.043Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/14/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.044Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/13/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.073Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/12/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.075Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/11/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.077Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/10/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.078Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/admin/contests/9/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:47:29.081Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T16:47:34.202Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T16:47:34.260Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T16:47:36.833Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T16:47:36.902Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T16:47:39.623Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T16:47:39.676Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T16:47:48.145Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T16:47:48.226Z'
+}
+{
+  origin: 'https://degenduel.me',
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'POST /api/auth/verify-wallet',
+  timestamp: '2025-01-10T16:48:04.268Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-10T16:48:04.269Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-10T16:48:04.272Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-10T16:48:04.273Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-10T16:48:04.358Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T16:48:04.411Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T18:17:33.636Z'
+}
+{
+  origin: undefined,
+  ip: '127.0.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  level: 'info',
+  message: 'GET /api/api/contests',
+  timestamp: '2025-01-10T18:17:33.701Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T18:42:51.590Z'
+}
+{
+  message: 'Database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T18:42:51.596Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:42:52.401Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:42:52.416Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:42:52.515Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:42:52.541Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:42:52.542Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-10T18:43:36.073Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-10T18:43:36.078Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-10T18:43:36.078Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T18:43:36.223Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:43:51.141Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:43:51.151Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:43:51.185Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:43:51.190Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:43:51.191Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:48:39.589Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:48:39.600Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:48:39.642Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:48:39.649Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:18.061Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:18.703Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:18.722Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:18.768Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:18.774Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:18.775Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:57.464Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:58.157Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:58.172Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:58.219Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:58.229Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:54:58.229Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T18:55:51.043Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:55:51.650Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:55:51.659Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:55:51.698Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:55:51.703Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:55:51.704Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T18:57:04.212Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:57:04.793Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:57:04.803Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:57:04.851Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:57:04.858Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:57:04.859Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:01.913Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:03.106Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:03.121Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:03.184Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:03.193Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:03.196Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:34.423Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:35.232Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:35.243Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:35.289Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:35.294Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T18:58:35.295Z'
+}

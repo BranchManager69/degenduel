@@ -2462,3 +2462,17 @@
   message: 'Error in join contest endpoint',
   timestamp: '2025-01-10T11:56:46.713Z'
 }
+{
+  requestId: '6e8f35dd-a3a3-4ed0-98f2-f86816b1d701',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 12,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T12:20:31.724Z'
+}
