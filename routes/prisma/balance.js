@@ -64,10 +64,13 @@ const ADMIN_WALLET_ADDRESSES = process.env.ADMIN_WALLET_ADDRESSES; // TODO: Move
 // Get a user's point balance by wallet address
 //   example: GET https://degenduel.me/api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:wallet', async (req, res) => {
-  const log = logApi.withRequest(req);
   const { wallet } = req.params;
 
-  log.info('Fetching user balance', { wallet_address: wallet });
+  logApi.info('Fetching user balance', { 
+    wallet_address: wallet,
+    path: req.path,
+    method: req.method 
+  });
 
   try {
     const user = await prisma.users.findUnique({
@@ -75,7 +78,11 @@ router.get('/:wallet', async (req, res) => {
     });
 
     if (!user) {
-      log.warn('User not found', { wallet_address: wallet });
+      logApi.warn('User not found', { 
+        wallet_address: wallet,
+        path: req.path,
+        method: req.method 
+      });
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -83,7 +90,7 @@ router.get('/:wallet', async (req, res) => {
     const exactUSDC = balance.dividedBy(1000000);
     const formattedBalance = exactUSDC.toFixed(2);
 
-    log.info('Balance fetched successfully', {
+    logApi.info('Balance fetched successfully', {
       wallet_address: wallet,
       balance: balance.toString(),
       exact_usdc: exactUSDC.toString()
@@ -97,13 +104,15 @@ router.get('/:wallet', async (req, res) => {
     });
 
   } catch (error) {
-    log.error('Failed to fetch balance', {
+    logApi.error('Failed to fetch balance', {
       error: {
         name: error.name,
         message: error.message,
         code: error?.code
       },
-      wallet_address: wallet
+      wallet_address: wallet,
+      path: req.path,
+      method: req.method
     });
 
     res.status(500).json({
@@ -168,14 +177,13 @@ router.get('/:wallet', async (req, res) => {
 //   example: POST https://degenduel.me/api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance
 //      body: { "amount": 100 }
 router.post('/:wallet/balance', async (req, res) => {
-  const log = logApi.withRequest(req);
   const { wallet } = req.params;
   const { amount } = req.body;
   const adminAddress = req.headers['x-admin-address'];
 
   // Add validation logging
   if (!adminAddress) {
-    log.warn('Unauthorized balance adjustment attempt by non-admin', {
+    logApi.warn('Unauthorized balance adjustment attempt by non-admin', {
       wallet_address: wallet,
       ip_address: req.ip
     });
@@ -183,18 +191,25 @@ router.post('/:wallet/balance', async (req, res) => {
   }
 
   if (!amount || isNaN(amount)) {
-      log.warn('Invalid amount in balance adjustment request', {
+      logApi.warn('Invalid amount in balance adjustment request', {
       wallet_address: wallet,
       admin_address: adminAddress,
-      invalid_amount: amount
+      invalid_amount: amount,
+      path: req.path,
+      method: req.method
     });
     return res.status(400).json({ error: 'Valid amount required' });
   }
 
-  log.info('Balance adjustment requested', {
+  logApi.info('Adjusting user balance', {
     wallet_address: wallet,
     adjustment_amount: amount,
-    admin_address: adminAddress
+    request: {
+      path: req.path,
+      method: req.method,
+      ip: req.ip,
+      headers: req.headers
+    }
   });
 
   try {
@@ -204,8 +219,10 @@ router.post('/:wallet/balance', async (req, res) => {
       });
 
       if (!user) {
-        log.warn('Balance adjustment failed - User not found', {
-          wallet_address: wallet
+        logApi.warn('Balance adjustment failed - User not found', {
+          wallet_address: wallet,
+          path: req.path,
+          method: req.method
         });
         throw new Error('User not found');
       }
@@ -215,10 +232,12 @@ router.post('/:wallet/balance', async (req, res) => {
       const newBalance = previousBalance.plus(adjustment);
 
       if (newBalance.lessThan(0)) {
-        log.warn('Balance adjustment failed - Insufficient funds', {
+        logApi.warn('Balance adjustment failed - Insufficient funds', {
           wallet_address: wallet,
           previous_balance: previousBalance.toString(),
-          attempted_adjustment: adjustment.toString()
+          attempted_adjustment: adjustment.toString(),
+          path: req.path,
+          method: req.method
         });
         throw new Error('Insufficient balance for deduction');
       }
@@ -231,7 +250,7 @@ router.post('/:wallet/balance', async (req, res) => {
           updated_at: new Date()
         }
       });
-      log.info('Balance adjusted successfully', {
+      logApi.info('Balance adjusted successfully', {
         wallet_address: wallet,
         previous_balance: previousBalance.toString(),
         adjustment: adjustment.toString(),
@@ -253,7 +272,7 @@ router.post('/:wallet/balance', async (req, res) => {
         }
       });
 
-      log.info('Balance adjusted successfully', {
+      logApi.info('Balance adjusted successfully', {
         wallet_address: wallet,
         previous_balance: previousBalance.toString(),
         adjustment: adjustment.toString(),
@@ -271,14 +290,16 @@ router.post('/:wallet/balance', async (req, res) => {
     res.json(result);
 
   } catch (error) {
-    log.error('Balance adjustment failed', {
+    logApi.error('Balance adjustment failed', {
       error: {
         name: error.name,
         message: error.message,
         code: error?.code
       },
       wallet_address: wallet,
-      attempted_adjustment: amount
+      attempted_adjustment: amount,
+      path: req.path,
+      method: req.method
     });
 
     if (error.message === 'User not found') {

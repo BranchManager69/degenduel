@@ -4,9 +4,15 @@ import { config } from '../config/config.js';
 
 // Auth debug middleware
 export const debugMiddleware = (req, res, next) => {
-    console.log('\n🔍 ====== Auth Debug Log ======');
-    console.log(`⏰ Time: ${new Date().toISOString()}`);
-    console.log(`📍 Route: ${req.method} ${req.originalUrl}`);
+    if (config.env === 'development') { 
+        console.log('\n🔍 ====== Dev Auth Debug Log ======');
+        console.log(`⏰ Time: ${new Date().toISOString()}`);
+        console.log(`📍 Route: ${req.method} ${req.originalUrl}`);
+    } else {
+        console.log('\n🔍 ====== Prod Auth Debug Log ======');
+        console.log(`⏰ Time: ${new Date().toISOString()}`);
+        console.log(`📍 Route: ${req.method} ${req.originalUrl}`);
+    }
 
     // Log wallet address header
     const walletHeader = req.headers['x-wallet-address'];
@@ -34,11 +40,20 @@ export const debugMiddleware = (req, res, next) => {
 
 // Post-auth debug middleware
 export const postAuthDebug = (req, res, next) => {
-    console.log('\n🔍 ==== Post-Auth Debug ====');
-    console.log('👤 Original req.user:', req.user);
-    console.log('🔑 Wallet address being used:', req.user?.wallet_address);
-    console.log('📝 Complete user object keys:', Object.keys(req.user || {}));
-    console.log('🎯 Contest ID being requested:', req.params.contestId);
-    console.log('🛣️ Moving to route handler');
+    if (config.env === 'development') {
+        console.log('\n🔍 ==== Dev Post-Auth Debug ====');
+        console.log('👤 Original req.user:', req.user);
+        console.log('🔑 Wallet address being used:', req.user?.wallet_address);
+        console.log('📝 Complete user object keys:', Object.keys(req.user || {}));
+        console.log('🎯 Contest ID being requested:', req.params.contestId);
+        console.log('🛣️ Moving to route handler');
+    } else {
+        console.log('\n🔍 ==== Prod Post-Auth Debug ====');
+        console.log('👤 Original req.user:', req.user);
+        console.log('🔑 Wallet address being used:', req.user?.wallet_address);
+        console.log('📝 Complete user object keys:', Object.keys(req.user || {}));
+        console.log('🎯 Contest ID being requested:', req.params.contestId);
+        console.log('🛣️ Moving to route handler');
+    }
     next();
 };
