@@ -5,39 +5,50 @@ import swaggerUi from 'swagger-ui-express';
 
 dotenv.config();
 
-// Swagger definition
 const swaggerDefinition = {
   openapi: '3.0.0',
   info: {
     title: 'DegenDuel API',
     version: '1.0.0',
-    description: 'Documentation for the DegenDuel API',
+    description: 'Documentation for the DegenDuel API'
   },
   servers: [
     {
-      url: 'https://degenduel.me',
-      description: 'Production server',
+      url: process.env.API_URL || 'https://degenduel.me',
+      description: 'Production server'
     },
     {
       url: 'http://localhost:3003',
-      description: 'Development server',
-    },
+      description: 'Development server'
+    }
   ],
+  components: {
+    schemas: {},
+    responses: {},
+    securitySchemes: {}
+  }
 };
 
-// Options for Swagger docs
-const swaggerOptions = {
-  swaggerDefinition,
-  apis: ['routes/*.js', 'routes/dd-serv/*.js', 'routes/prisma/*.js'], // Adjust relative path to the route files
-  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.4.2/swagger-ui.css',
+const options = {
+  definition: swaggerDefinition,
+  apis: [
+    './routes/*.js',
+    './routes/dd-serv/*.js',
+    './routes/prisma/*.js'
+  ]
 };
 
-// Initialize Swagger JSDoc
-const swaggerSpec = swaggerJsDoc(swaggerOptions);
+const swaggerSpec = swaggerJsDoc(options);
 
 function setupSwagger(app) {
-  app.use(['/api-docs', '/api-docs/'], swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  const swaggerUiOptions = {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: '⚔️ | DegenDuel API',
+    customfavIcon: '/favicon.ico'
+  };
+
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
   console.log('Swagger docs available at /api-docs');
 }
 
-export default setupSwagger; // ES6 default export
+export default setupSwagger;

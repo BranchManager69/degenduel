@@ -1,21 +1,21 @@
 // /routes/contests.js
 import pkg from '@prisma/client';
 import express from 'express';
-import { logApi } from '../utils/logger-suite/logger.js';
-const { PrismaClient } = pkg;
+import { logApi } from '../utils/logger-suite';
+const { Prisma, PrismaClient } = pkg;
+
+const router = express.Router();
 const prisma = new PrismaClient();
 
 // For Decimal type and error handling
 const { Decimal } = pkg.Prisma;
 const { PrismaClientKnownRequestError } = pkg;
 
-const router = express.Router();
-
 /**
  * @swagger
  * tags:
  *   name: Contests
- *   description: API endpoints for contest management
+ *   description: Contest management endpoints
  */
 
 /**
@@ -24,16 +24,20 @@ const router = express.Router();
  *   schemas:
  *     Contest:
  *       type: object
+ *       required:
+ *         - id
+ *         - name
+ *         - contest_code
  *       properties:
  *         id:
  *           type: integer
  *           example: 1
- *         contest_code:
- *           type: string
- *           example: "GAY-001"
  *         name:
  *           type: string
- *           example: "Gay Crypto Challenge"
+ *           example: "Weekly Trading Contest"
+ *         contest_code:
+ *           type: string
+ *           example: "WTC-001"
  *         description:
  *           type: string
  *           example: "Compete in our weekly gay trading contest"
@@ -109,6 +113,7 @@ const router = express.Router();
  *                 type: string
  *                 example: Contest not found
  */
+
 
 /* Contests Routes */
 

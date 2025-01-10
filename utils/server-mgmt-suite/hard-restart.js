@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 import colors from 'colors';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { logApi } from './utils/logger-suite/logger.js';
+import { logApi } from './utils/logger-suite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, '..');
