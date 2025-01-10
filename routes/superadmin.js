@@ -1,6 +1,14 @@
-import express from 'express';
+// /routes/superadmin.js
 import { exec } from 'child_process';
+import express from 'express';
 import jwt from 'jsonwebtoken';
+
+/*
+ *
+ *  THIS IS NOT A REAL ENDPOINT
+ *  IT IS ENTIRELY USELESS
+ *
+ */
 
 // Middleware to verify Superadmin token
 const verifySuperadminToken = (req, res, next) => {

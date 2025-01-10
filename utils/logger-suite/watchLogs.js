@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import { join } from 'path';
 import { Transform } from 'stream';
-import paths from '../config/paths.js';
+import paths from '../../config/paths.js';
 
 class JsonParseTransform extends Transform {
   constructor(options = {}) {

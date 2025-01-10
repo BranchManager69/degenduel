@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import express from 'express';
 import { z } from 'zod';
-import logger from '../utils/logger.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -17,12 +17,15 @@ const createUserSchema = z.object({
   nickname: z.string().min(3).max(50).optional() // TODO: Add validation for nickname
 });
 
+
 /**
  * @swagger
  * tags:
  *   name: Users
  *   description: API endpoints for user management
  */
+
+/* Users Routes */
 
 /**
  * @swagger
@@ -45,7 +48,7 @@ router.get('/', async (req, res) => {
     // Validate query parameters
     const validatedQuery = await getUsersQuerySchema.parseAsync(req.query)
       .catch(error => {
-        logger.warn('Invalid query parameters', { ...logContext, error });
+        logApi.warn('Invalid query parameters', { ...logContext, error });
         throw { status: 400, message: 'Invalid query parameters', details: error.errors };
       });
     
@@ -57,7 +60,7 @@ router.get('/', async (req, res) => {
       created_at: 'desc'
     };
 
-    logger.debug('Fetching users with parameters', { 
+    logApi.debug('Fetching users with parameters', { 
       ...logContext, 
       limit, 
       offset, 
@@ -87,14 +90,14 @@ router.get('/', async (req, res) => {
       }),
       prisma.users.count()
     ]).catch(error => {
-      logger.error('Database error while fetching users', { 
+      logApi.error('Database error while fetching users', { 
         ...logContext,
         error: error instanceof Error ? error.message : error
       });
       throw { status: 500, message: 'Database error while fetching users' };
     });
 
-    logger.info('Successfully fetched users', { 
+    logApi.info('Successfully fetched users', { 
       ...logContext,
       userCount: users.length,
       totalUsers: total
@@ -112,7 +115,7 @@ router.get('/', async (req, res) => {
     const status = error.status || 500;
     const message = error.message || 'Internal server error';
     
-    logger.error('Error in GET /users handler', {
+    logApi.error('Error in GET /users handler', {
       ...logContext,
       status,
       message,
@@ -157,11 +160,11 @@ router.get('/:wallet', async (req, res) => {
 
   try {
     //if (!req.params.wallet?.match(/^0x[a-fA-F0-9]{40}$/)) {
-    //  logger.warn('Invalid wallet address format', logContext);
+    //  logApi.warn('Invalid wallet address format', logContext);
     //  throw { status: 400, message: 'Invalid wallet address format' };
     //}
 
-    logger.debug('Fetching user profile', logContext);
+    logApi.debug('Fetching user profile', logContext);
     
     const user = await prisma.users.findUnique({
       where: { wallet_address: req.params.wallet },
@@ -175,7 +178,7 @@ router.get('/:wallet', async (req, res) => {
         }
       }
     }).catch(error => {
-      logger.error('Database error while fetching user', {
+      logApi.error('Database error while fetching user', {
         ...logContext,
         error: error instanceof Error ? error.message : error
       });
@@ -183,11 +186,11 @@ router.get('/:wallet', async (req, res) => {
     });
 
     if (!user) {
-      logger.info('User not found', logContext);
+      logApi.info('User not found', logContext);
       throw { status: 404, message: 'User not found' };
     }
 
-    logger.info('Successfully fetched user profile', {
+    logApi.info('Successfully fetched user profile', {
       ...logContext,
       userId: user.id,
       hasContests: user.contest_participants.length > 0
@@ -198,7 +201,7 @@ router.get('/:wallet', async (req, res) => {
     const status = error.status || 500;
     const message = error.message || 'Internal server error';
 
-    logger.error('Error in GET /users/:wallet handler', {
+    logApi.error('Error in GET /users/:wallet handler', {
       ...logContext,
       status,
       message,
@@ -260,7 +263,7 @@ router.get('/:wallet', async (req, res) => {
  *                   type: string
  *                   example: "Wallet address already exists"
  */
-// Create new user; need wallet_address ("BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"), chain_id ("SOLANA"), and nickname ("BranchManager69") in request body
+// Create new user
 router.post('/', async (req, res) => {
   const logContext = {
     path: 'POST /api/users',
@@ -271,16 +274,11 @@ router.post('/', async (req, res) => {
     // Validate request body
     const validatedData = await createUserSchema.parseAsync(req.body)
       .catch(error => {
-        logger.warn('Invalid request body', { ...logContext, error });
+        logApi.warn('Invalid request body', { ...logContext, error });
         throw { status: 400, message: 'Invalid request body', details: error.errors };
       });
     
-    console.log('VALIDATED DATA', validatedData);
-    console.log('LOG CONTEXT', logContext);
-    console.log('WALLET', validatedData.wallet_address);
-    console.log('NICKNAME', validatedData.nickname);
-
-    logger.debug('Creating new user', { 
+    logApi.debug('Creating new user', { 
       ...logContext, 
       wallet: validatedData.wallet_address 
     });
@@ -292,7 +290,7 @@ router.post('/', async (req, res) => {
     });
 
     if (existingUser) {
-      logger.warn('User already exists', { 
+      logApi.warn('User already exists', { 
         ...logContext, 
         wallet: validatedData.wallet_address 
       });
@@ -310,15 +308,14 @@ router.post('/', async (req, res) => {
         user_stats: true
       }
     }).catch(error => {
-      console.log('DATABASE ERROR', error);
-      logger.error('Database error while creating user', {
+      logApi.error('Database error while creating user', {
         ...logContext,
         error: error instanceof Error ? error.message : error
       });
       throw { status: 500, message: 'Database error while creating user' };
     });
 
-    logger.info('Successfully created new user', {
+    logApi.info('Successfully created new user', {
       ...logContext,
       userId: user.id,
       wallet: user.wallet_address
@@ -329,7 +326,7 @@ router.post('/', async (req, res) => {
     const status = error.status || 500;
     const message = error.message || 'Internal server error';
 
-    logger.error('Error in POST /users handler', {
+    logApi.error('Error in POST /users handler', {
       ...logContext,
       status,
       message,
@@ -398,7 +395,7 @@ router.put('/:wallet', async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    logger.error('Failed to update user:', error);
+    logApi.error('Failed to update user:', error);
     res.status(500).json({ error: 'Failed to update user' });
   }
 });
@@ -438,7 +435,7 @@ router.get('/:wallet/achievements', async (req, res) => {
 
     res.json(achievements);
   } catch (error) {
-    logger.error('Failed to fetch achievements:', error);
+    logApi.error('Failed to fetch achievements:', error);
     res.status(500).json({ error: 'Failed to fetch achievements' });
   }
 });
@@ -509,7 +506,7 @@ router.get('/:wallet/stats', async (req, res) => {
       tokens: tokenStats
     });
   } catch (error) {
-    logger.error('Failed to fetch user stats:', error);
+    logApi.error('Failed to fetch user stats:', error);
     res.status(500).json({ error: 'Failed to fetch user stats' });
   }
 });

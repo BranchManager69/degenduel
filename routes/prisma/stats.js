@@ -1,9 +1,11 @@
-import { Router } from 'express';
+// /routes/prisma/stats.js - Centralized logging for DegenDuel backend services.
 import { PrismaClient } from '@prisma/client';
-import logger from '../../utils/logger.js';
+import { Router } from 'express';
+import { logApi } from '../../utils/logger-suite/logger.js'; // New DD Logging System
 
 const router = Router();
 const prisma = new PrismaClient();
+
 
 /**
  * @swagger
@@ -11,6 +13,8 @@ const prisma = new PrismaClient();
  *   name: Statistics
  *   description: Platform and wallet statistics endpoints
  */
+
+/* Stats Routes */
 
 /**
  * @swagger
@@ -56,15 +60,18 @@ const prisma = new PrismaClient();
  *                       useCount:
  *                         type: integer
  */
+// Get platform stats
 router.get('/platform', async (req, res) => {
-    console.log('>>>query received>>> | /api/stats/platform');
-
-    const debugMode = true; // Simple debug flag to toggle on/off
+    const log = logApi.withRequest(req);
+    
+    log.info('Fetching platform statistics');
+    const debugMode = true;
 
     try {
-        // If debug mode is on, use mock data
         if (debugMode) {
-            // Mock data to simulate database results
+            // Mock data generation...
+            log.debug('Using mock data for platform statistics');
+            
             const mockUserCount = 5000;
 
             const mockContestStats = {
@@ -122,11 +129,11 @@ router.get('/platform', async (req, res) => {
                 }))
             };
 
-            console.log('<<<query response<<< | Mock stats:    ', mockStats);
+            log.info('Mock platform statistics generated successfully', { stats: mockStats });
             return res.json(mockStats);
         }
 
-        // Production database query
+        // Production code
         const [
             userCount,
             contestStats,
@@ -204,11 +211,18 @@ router.get('/platform', async (req, res) => {
             }))
         };
 
-        console.log('<<<query response<<< | Actual stats:    ', stats);
+        log.info('Platform statistics fetched successfully', { stats });
         res.json(stats);
 
     } catch (error) {
-        logger.error('Failed to fetch platform stats:', error);
+        log.error('Failed to fetch platform statistics', {
+            error: {
+                name: error.name,
+                message: error.message,
+                code: error?.code
+            }
+        });
+        
         res.status(500).json({ error: 'Failed to fetch platform statistics' });
     }
 });
@@ -269,10 +283,14 @@ router.get('/platform', async (req, res) => {
  *                         type: string
  *                         format: date-time
  */
+// Get stats of a wallet
 router.get('/wallet/:address', async (req, res) => {
-  try {
-    const { address } = req.params;
+  const log = logApi.withRequest(req);
+  const { address } = req.params;
+  
+  log.info('Fetching wallet statistics', { wallet_address: address });
 
+  try {
     const [
       contestStats,
       tokenStats,
@@ -335,7 +353,7 @@ router.get('/wallet/:address', async (req, res) => {
       }
     });
 
-    res.json({
+    const response = {
       contestStats: {
         totalParticipated: contestStats._count._all,
         winRate: contestStats._count._all ? totalWins / contestStats._count._all : 0,
@@ -352,9 +370,27 @@ router.get('/wallet/:address', async (req, res) => {
         amount: activity.amount.toString(),
         timestamp: activity.created_at
       }))
+    };
+
+    log.info('Wallet statistics fetched successfully', {
+      wallet_address: address,
+      stats_summary: {
+        total_participated: response.contestStats.totalParticipated,
+        win_rate: response.contestStats.winRate,
+        total_earnings: response.contestStats.totalEarnings
+      }
     });
+
+    res.json(response);
   } catch (error) {
-    logger.error('Failed to fetch wallet stats:', error);
+    log.error('Failed to fetch wallet statistics', {
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code
+      },
+      wallet_address: address
+    });
     res.status(500).json({ error: 'Failed to fetch wallet statistics' });
   }
 });

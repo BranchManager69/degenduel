@@ -1,7 +1,15 @@
+// /routes/tokenBuckets.js
 import express from 'express';
 import { pool } from '../config/pg-database.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
+
+/*
+ *
+ *  THIS IS AN *OLD* ENDPOINT
+ *  WE SHOULD BRING IT UP TO DATE
+ */
 
 /**
  * @swagger
@@ -9,6 +17,8 @@ const router = express.Router();
  *   name: Token Buckets
  *   description: API endpoints for managing token buckets
  */
+
+/* Token Buckets Routes */
 
 /**
  * @swagger
@@ -35,6 +45,7 @@ const router = express.Router();
  *       500:
  *         description: Failed to create token bucket
  */
+// Create a new token bucket
 router.post('/', async (req, res) => {
   const { name, description } = req.body;
   try {
@@ -46,6 +57,132 @@ router.post('/', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to create token bucket.' });
   }
+});
+
+/**
+ * @swagger
+ * /api/tokens/buckets:
+ *   get:
+ *     summary: Get all token buckets
+ *     tags: [Tokens]
+ *     responses:
+ *       200:
+ *         description: List of token buckets
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 allOf:
+ *                   - $ref: '#/components/schemas/TokenBucket'
+ *                   - type: object
+ *                     properties:
+ *                       token_bucket_memberships:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             tokens:
+ *                               type: object
+ *                               properties:
+ *                                 id:
+ *                                   type: integer
+ *                                 symbol:
+ *                                   type: string
+ *                                 name:
+ *                                   type: string
+ */
+// Get all token buckets
+router.get('/buckets', async (req, res) => {
+    try {
+      const buckets = await prisma.token_buckets.findMany({
+        include: {
+          token_bucket_memberships: {
+            include: {
+              tokens: {
+                select: {
+                  id: true,
+                  symbol: true,
+                  name: true
+                }
+              }
+            }
+          }
+        }
+      });
+  
+      res.json(buckets);
+    } catch (error) {
+      logApi.error('Failed to fetch token buckets:', error);
+      res.status(500).json({ error: 'Failed to fetch token buckets' });
+    }
+  });
+  
+/**
+ * @swagger
+ * /api/tokens/buckets/{id}:
+ *   get:
+ *     summary: Get token bucket by ID
+ *     tags: [Tokens]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Bucket ID
+ *     responses:
+ *       200:
+ *         description: Token bucket details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/TokenBucket'
+ *                 - type: object
+ *                     properties:
+ *                       token_bucket_memberships:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             tokens:
+ *                               allOf:
+ *                                 - $ref: '#/components/schemas/Token'
+ *                                 - type: object
+ *                                   properties:
+ *                                     token_prices:
+ *                                       $ref: '#/components/schemas/TokenPrice'
+ *       404:
+ *         $ref: '#/components/responses/TokenNotFound'
+ */
+// Get token bucket by ID
+router.get('/buckets/:id', async (req, res) => {
+try {
+    const bucket = await prisma.token_buckets.findUnique({
+    where: { id: parseInt(req.params.id) },
+    include: {
+        token_bucket_memberships: {
+        include: {
+            tokens: {
+            include: {
+                token_prices: true
+            }
+            }
+        }
+        }
+    }
+    });
+
+    if (!bucket) {
+    return res.status(404).json({ error: 'Bucket not found' });
+    }
+
+    res.json(bucket);
+} catch (error) {
+    logApi.error('Failed to fetch bucket:', error);
+    res.status(500).json({ error: 'Failed to fetch bucket' });
+}
 });
 
 /**
@@ -81,6 +218,7 @@ router.post('/', async (req, res) => {
  *       500:
  *         description: Failed to add tokens to bucket
  */
+// Add tokens to a bucket
 router.post('/:bucketId/tokens', async (req, res) => {
     const { bucketId } = req.params;
     const { tokenIds } = req.body;
@@ -134,6 +272,7 @@ router.post('/:bucketId/tokens', async (req, res) => {
  *       500:
  *         description: Failed to remove token from bucket
  */
+// Remove a token from a bucket
 router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
     try {
         const { bucketId, tokenId } = req.params;
@@ -163,6 +302,7 @@ router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
  *       500:
  *         description: Failed to fetch token buckets
  */
+// Get all token buckets (with tokens)
 router.get('/', async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -216,6 +356,7 @@ router.get('/', async (_req, res) => {
  *       500:
  *         description: Server error
  */
+// Update token bucket details
 router.patch('/:bucketId', async (req, res) => {
     const { bucketId } = req.params;
     const { name, description } = req.body;
@@ -261,6 +402,7 @@ router.patch('/:bucketId', async (req, res) => {
  *       500:
  *         description: Server error
  */
+// Delete token bucket
 router.delete('/:bucketId', async (req, res) => {
     const { bucketId } = req.params;
 

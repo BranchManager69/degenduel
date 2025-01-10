@@ -1,7 +1,7 @@
-import pg from 'pg';
 import dotenv from 'dotenv';
-import logger from '../utils/logger.js'; // unique
-import { initTables } from '../db/init-tables.js'; // unique
+import pg from 'pg';
+import { initTables } from '../db/recreation-and-seeding/init-tables.js';
+import { logApi } from '../utils/logger-suite/logger.js'; // New DD Logging System
 
 dotenv.config();
 
@@ -13,19 +13,19 @@ export const pool = new pg.Pool({
   port: parseInt(process.env.DB_PORT || '5432'),
 });
 
-pool.on('connect', () => logger.info('PostgreSQL connected successfully'));
-pool.on('error', (err) => logger.error('PostgreSQL connection error:', err));
+pool.on('connect', () => logApi.info('PostgreSQL connected successfully'));
+pool.on('error', (err) => logApi.error('PostgreSQL connection error:', err));
 
 /**
  * Initialize new PostgreSQL database and seed tables
  */
 export async function initPgDatabase() {
   try {
-    logger.info('Initializing PostgreSQL database...');
+    logApi.info('Initializing PostgreSQL database...');
     await initTables(); // Create tables and seed the database
-    logger.info('PostgreSQL database initialized successfully');
+    logApi.info('PostgreSQL database initialized successfully');
   } catch (error) {
-    logger.error('PostgreSQL initialization failed:', error);
+    logApi.error('PostgreSQL initialization failed:', error);
     throw error;
   }
 }
@@ -36,9 +36,9 @@ export async function initPgDatabase() {
 export async function closePgDatabase() {
   try {
     await pool.end();
-    logger.info('PostgreSQL database connection closed');
+    logApi.info('PostgreSQL database connection closed');
   } catch (error) {
-    logger.error('Error closing PostgreSQL database:', error);
+    logApi.error('Error closing PostgreSQL database:', error);
     throw error;
   }
 }
