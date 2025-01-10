@@ -1,5 +1,5 @@
 import { getDatabase } from '../../config/database.js';
-import logger from '../../utils/logger-suite/logger.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
 
 export class LeaderboardModel {
   static async getTopScores(limit = 100) {
@@ -12,7 +12,7 @@ export class LeaderboardModel {
         [Math.min(limit, 100)],
         (err, rows) => {
           if (err) {
-            logger.error('Failed to fetch leaderboard:', err);
+            logApi.error('Failed to fetch leaderboard:', err);
             reject(err);
             return;
           }
@@ -32,6 +32,7 @@ export class LeaderboardModel {
         [name, finalValue, returnPercentage, bestToken, bestTokenReturn, Date.now()],
         function(err) {
           if (err) {
+            logApi.error('Failed to add score:', err);
             reject(err);
             return;
           }

@@ -1,6 +1,7 @@
+// /archive/test-routes.js
 import express from 'express';
 import { pool } from '../config/pg-database.js';
-import logger from '../utils/logger-suite/logger.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 
@@ -11,6 +12,8 @@ const router = express.Router();
  *   description: Testing and development endpoints
  *   x-display-name: "⚠️ Test Routes"
  */
+
+/* Test Routes */
 
 /**
  * @swagger
@@ -36,6 +39,7 @@ const router = express.Router();
  *                   type: string
  *                   example: "1.0.0"
  */
+// Server Health check
 router.get('/health', async (req, res) => {
     try {
         await pool.query('SELECT 1');
@@ -45,7 +49,7 @@ router.get('/health', async (req, res) => {
             version: '1.0.0',
         });
     } catch (error) {
-        logger.error('Health check failed:', error);
+        logApi.error('Health check failed:', error);
         res.status(500).json({
             status: 'error',
             database: 'disconnected',
@@ -76,6 +80,7 @@ router.get('/health', async (req, res) => {
  *       200:
  *         description: Test user created successfully
  */
+// Create a single test user
 router.post('/users', async (req, res) => {
     try {
         const { wallet_address = '0xTestWallet123', nickname = 'TestUser1' } = req.body;
@@ -86,7 +91,7 @@ router.post('/users', async (req, res) => {
         `, [wallet_address, nickname, 1000]);
         res.json(result.rows[0]);
     } catch (error) {
-        logger.error('Create test user failed:', error);
+        logApi.error('Create test user failed:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -111,6 +116,7 @@ router.post('/users', async (req, res) => {
  *       200:
  *         description: Test users added successfully
  */
+// Bulk add test users
 router.post('/users/bulk', async (req, res) => {
     const { count = 10 } = req.body;
     const users = Array.from({ length: count }).map((_, i) => ({
@@ -129,7 +135,7 @@ router.post('/users/bulk', async (req, res) => {
         const result = await pool.query(query, values);
         res.json({ added: result.rowCount });
     } catch (error) {
-        logger.error('Bulk add test users failed:', error);
+        logApi.error('Bulk add test users failed:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -162,6 +168,7 @@ router.post('/users/bulk', async (req, res) => {
  *       200:
  *         description: User updated successfully
  */
+// Update test user
 router.put('/users/:wallet', async (req, res) => {
     const { wallet } = req.params;
     const { rank_score, settings, nickname } = req.body;
@@ -198,7 +205,7 @@ router.put('/users/:wallet', async (req, res) => {
         const result = await pool.query(query, values);
         res.json(result.rows[0]);
     } catch (error) {
-        logger.error('Update test user failed:', error);
+        logApi.error('Update test user failed:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -213,6 +220,7 @@ router.put('/users/:wallet', async (req, res) => {
  *       200:
  *         description: Test users deleted successfully
  */
+// Delete test users
 router.delete('/users', async (req, res) => {
     try {
         const result = await pool.query(
@@ -220,7 +228,7 @@ router.delete('/users', async (req, res) => {
         );
         res.json({ deleted: result.rowCount });
     } catch (error) {
-        logger.error('Delete test users failed:', error);
+        logApi.error('Delete test users failed:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -250,6 +258,7 @@ router.delete('/users', async (req, res) => {
  *       200:
  *         description: Settings updated successfully
  */
+// Update test user settings
 router.put('/users/:wallet/settings', async (req, res) => {
     const { wallet } = req.params;
     const { settings } = req.body;
@@ -262,7 +271,7 @@ router.put('/users/:wallet/settings', async (req, res) => {
         `, [JSON.stringify(settings), wallet]);
         res.json(result.rows[0]);
     } catch (error) {
-        logger.error('Update test user settings failed:', error);
+        logApi.error('Update test user settings failed:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -283,6 +292,7 @@ router.put('/users/:wallet/settings', async (req, res) => {
  *       200:
  *         description: User data reset successfully
  */
+// Reset test user data
 router.post('/users/:wallet/reset', async (req, res) => {
     const { wallet } = req.params;
 
@@ -295,7 +305,7 @@ router.post('/users/:wallet/reset', async (req, res) => {
         res.json({ wallet_address: wallet, reset: true });
     } catch (error) {
         await pool.query('ROLLBACK');
-        logger.error('Reset test user data failed:', error);
+        logApi.error('Reset test user data failed:', error);
         res.status(500).json({ error: error.message });
     }
 });

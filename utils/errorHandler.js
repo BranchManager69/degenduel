@@ -1,4 +1,4 @@
-import logger from './logger-suite/logger.js';
+import { logApi } from './logger-suite/logger.js';
 
 export class AppError extends Error {
   constructor(message, statusCode = 500) {
@@ -16,7 +16,7 @@ export const errorHandler = (err, req, res, next) => {
   err.status = err.status || 'error';
 
   if (process.env.NODE_ENV === 'development') {
-    logger.error('Error:', {
+    logApi.error('Error:', {
       status: err.status,
       error: err,
       message: err.message,
@@ -31,7 +31,7 @@ export const errorHandler = (err, req, res, next) => {
     });
   } else {
     // Production error handling
-    logger.error('Error:', err);
+    logApi.error('Error:', err);
 
     if (err.isOperational) {
       res.status(err.statusCode).json({
