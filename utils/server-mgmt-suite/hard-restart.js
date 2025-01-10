@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 import { execSync } from 'child_process';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { rmSync, mkdirSync, chmodSync, existsSync } from 'fs';
 import colors from 'colors';
-import logger from './utils/logger.js';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { logApi } from './utils/logger-suite/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, '..');
@@ -15,8 +14,8 @@ const execute = (command, errorMessage = '') => {
         return true;
     } catch (error) {
         if (errorMessage) {
-            logger.error(errorMessage);
-            logger.error(`Command failed: ${command}`);
+            logApi.error(errorMessage);
+            logApi.error(`Command failed: ${command}`);
         }
         return false;
     }

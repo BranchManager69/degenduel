@@ -1463,3 +1463,194 @@ YAMLSemanticError: Implicit map keys need to be on a single line at line 20, col
     at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
     at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+2025-01-10 00:24:34 -05:00: Here's the report: 
+
+
+ Error in routes/tokenBuckets.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-10 00:25:23 -05:00: TypeError: logger.error is not a function
+    at errorHandler (file:///home/websites/degenduel/utils/errorHandler.js:34:12)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:67:12)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+2025-01-10 00:25:23 -05:00: TypeError: logger.error is not a function
+    at errorHandler (file:///home/websites/degenduel/utils/errorHandler.js:34:12)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:67:12)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+2025-01-10 00:26:01 -05:00: TypeError: logger.error is not a function
+    at errorHandler (file:///home/websites/degenduel/utils/errorHandler.js:34:12)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:67:12)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+2025-01-10 00:26:01 -05:00: TypeError: logger.error is not a function
+    at errorHandler (file:///home/websites/degenduel/utils/errorHandler.js:34:12)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:67:12)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+2025-01-10 00:26:07 -05:00: TypeError: logger.error is not a function
+    at errorHandler (file:///home/websites/degenduel/utils/errorHandler.js:34:12)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+    at Layer.handle_error (/home/websites/degenduel/node_modules/express/lib/router/layer.js:67:12)
+    at trim_prefix (/home/websites/degenduel/node_modules/express/lib/router/index.js:326:13)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:346:12)
+2025-01-10 00:31:04 -05:00: Here's the report: 
+
+
+ Error in routes/tokenBuckets.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-10 00:31:20 -05:00: Here's the report: 
+
+
+ Error in routes/tokenBuckets.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+2025-01-10 00:31:34 -05:00: Here's the report: 
+
+
+ Error in routes/tokenBuckets.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+,Error in routes/tokens.js :
+YAMLSyntaxError: All collection items must start at the same column at line 20, column 19:
+
+                - type: object
+                  ^^^^^^^^^^^^…
+
+YAMLSemanticError: Nested mappings are not allowed in compact mappings at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+
+YAMLSemanticError: Implicit map keys need to be on a single line at line 20, column 25:
+
+                - type: object
+                        ^^^^^^…
+

@@ -1,6 +1,7 @@
 // /routes/prisma/admin.js
 import { Prisma, PrismaClient } from '@prisma/client';
 import { Router } from 'express';
+import { logApi } from '../../utils/logger-suite/logger.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -144,7 +145,7 @@ router.get('/activities', async (req, res) => {
       console.error('Detailed error information:', error);
     }
     
-    logger.error('Failed to fetch admin activities:', error);
+    logApi.error('Failed to fetch admin activities:', error);
     res.status(500).json({ error: 'Failed to fetch admin activities' });
   }
 });
@@ -167,7 +168,7 @@ router.get('/system-settings', async (req, res) => {
     const settings = await prisma.system_settings.findMany();
     res.json(settings);
   } catch (error) {
-    logger.error('Failed to fetch system settings:', error);
+    logApi.error('Failed to fetch system settings:', error);
     res.status(500).json({ error: 'Failed to fetch system settings' });
   }
 });
@@ -240,7 +241,7 @@ router.put('/system-settings/:key', async (req, res) => {
 
     res.json(setting);
   } catch (error) {
-    logger.error('Failed to update system setting:', error);
+    logApi.error('Failed to update system setting:', error);
     res.status(500).json({ error: 'Failed to update system setting' });
   }
 });
@@ -301,7 +302,7 @@ router.post('/users/:wallet/ban', async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    logger.error('Failed to ban user:', error);
+    logApi.error('Failed to ban user:', error);
     res.status(500).json({ error: 'Failed to ban user' });
   }
 });
@@ -363,7 +364,7 @@ router.post('/users/:wallet/balance', async (req, res) => {
   const { wallet } = req.params;
   const { amount } = req.body;
 
-  logger.info('Adjusting user balance', {
+  logApi.info('Adjusting user balance', {
     requestId,
     wallet_address: wallet,
     adjustment_amount: amount
@@ -419,7 +420,7 @@ router.post('/users/:wallet/balance', async (req, res) => {
       };
     });
 
-    logger.info('Successfully adjusted balance', {
+    logApi.info('Successfully adjusted balance', {
       requestId,
       wallet_address: wallet,
       ...result,
@@ -429,7 +430,7 @@ router.post('/users/:wallet/balance', async (req, res) => {
     res.json(result);
 
   } catch (error) {
-    logger.error('Failed to adjust balance', {
+    logApi.error('Failed to adjust balance', {
       requestId,
       error: {
         name: error.name,
