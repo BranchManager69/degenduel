@@ -2476,3 +2476,45 @@
   message: 'Error in join contest endpoint',
   timestamp: '2025-01-10T12:20:31.724Z'
 }
+{
+  requestId: 'bb60a005-9523-40e3-b00e-7c138cf86f5f',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 14,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T19:44:48.378Z'
+}
+{
+  requestId: '9af0294f-9228-4a6d-8584-7c3038eada6f',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 11,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T19:49:40.420Z'
+}
+{
+  requestId: '68c92fa3-fd35-4138-80fa-cfbf6c1462dc',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 13,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T19:55:38.742Z'
+}

@@ -50,7 +50,7 @@ router.get('/tokens', async (req, res) => {
 
     // Parse the JSON from data.degenduel.me
     const tokenDataJson = await response.json();
-    logApi.info('[dd-serv] Fetched token list:', tokenDataJson);
+    //logApi.info('[dd-serv] Fetched token list:', tokenDataJson);
 
     // Respond to the caller with the same JSON
     res.json(tokenDataJson);
