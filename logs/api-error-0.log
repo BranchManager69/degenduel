@@ -10232,3 +10232,411 @@ TypeError: logApi.withRequest is not a function
     at file:///home/websites/degenduel/config/swagger.js:46:17
     at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:01:04 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:03:01 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:19 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:19 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:19 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:19 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:20 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:20 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:20 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:21 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:21 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:21 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:22 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:22 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:22 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:22 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:23 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:23 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:23 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:23 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:24 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:24 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:25 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:25 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:25 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:25 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:26 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:26 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:26 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:27 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:27 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:27 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:51:28 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:51:28 -05:00: API Server error: Error: bind EADDRINUSE 0.0.0.0:3004
+    at listenOnPrimaryHandle (node:net:2018:18)
+    at rr (node:internal/cluster/child:163:12)
+    at Worker.<anonymous> (node:internal/cluster/child:113:7)
+    at process.onInternalMessage (node:internal/cluster/utils:49:5)
+    at process.emit (node:events:525:35)
+    at emit (node:internal/child_process:949:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+  errno: -98,
+  code: 'EADDRINUSE',
+  syscall: 'bind',
+  address: '0.0.0.0',
+  port: 3004
+}
+2025-01-10 14:52:01 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:52:47 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 14:54:29 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 15:16:03 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 15:22:33 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)

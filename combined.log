@@ -59254,3 +59254,5735 @@
   level: 'info',
   timestamp: '2025-01-10T18:58:35.295Z'
 }
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:04.290Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:04.860Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:04.872Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:04.907Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:04.912Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:04.912Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:48.374Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:48.385Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:48.419Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:01:48.425Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T19:03:01.153Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:03:01.834Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:03:01.847Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:03:01.904Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:03:01.911Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:03:01.913Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-10T19:44:29.160Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-10T19:44:29.164Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-10T19:44:29.164Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:44:29.288Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:44:34.404Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:44:34.468Z'
+}
+{
+  timestamp: '2025-01-10T19:44:39.571Z',
+  data: [
+    {
+      id: 105871,
+      symbol: 'ALCH',
+      name: 'Alchemist AI',
+      contractAddress: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:49:35.312Z',
+      updatedAt: '2025-01-10T19:44:18.090Z',
+      marketCap: '120303110',
+      price: '0.1415',
+      volume24h: '15221333.58',
+      changesJson: { h1: 0.0175, h6: 0.1172, m5: 0.0031, h24: 0.0692 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump.png?key=a88f75',
+      liquidity: { usd: 4791354.8, base: 16947711, quote: 12571 },
+      pairUrl: 'https://dexscreener.com/solana/fydf3vkqfbcvntsbi7l7lremrfpmxkbqqgagnpg1hxxd',
+      transactionsJson: {
+        h1: { buys: 228, sells: 310 },
+        h6: { buys: 2399, sells: 2965 },
+        m5: { buys: 21, sells: 4 },
+        h24: { buys: 9510, sells: 9161 }
+      },
+      baseToken: {
+        name: 'Alchemist AI',
+        symbol: 'ALCH',
+        address: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump/header.png?key=a88f75',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.alchemistai.app/', label: 'Website' },
+        { url: 'https://docs.alchemistai.app/docs', label: 'Docs' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 408982,
+          tokenId: 105871,
+          timeframe: 'm5',
+          percentage: '0.0031'
+        },
+        {
+          id: 408983,
+          tokenId: 105871,
+          timeframe: 'h1',
+          percentage: '0.0175'
+        },
+        {
+          id: 408984,
+          tokenId: 105871,
+          timeframe: 'h6',
+          percentage: '0.1172'
+        },
+        {
+          id: 408985,
+          tokenId: 105871,
+          timeframe: 'h24',
+          percentage: '0.0692'
+        }
+      ],
+      socials: [
+        {
+          id: 217901,
+          tokenId: 105871,
+          platform: 'twitter',
+          url: 'https://x.com/alchemistAIapp',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47672,
+      symbol: 'BULLY',
+      name: 'Dolos The Bully',
+      contractAddress: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:44:08.983Z',
+      updatedAt: '2025-01-10T19:44:18.102Z',
+      marketCap: '59721934',
+      price: '0.06217',
+      volume24h: '5962207.59',
+      changesJson: { h1: -0.0355, h6: 0.2356, m5: -0.0099, h24: 0.4295 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump.png?key=4512cd',
+      liquidity: { usd: 2524415.36, base: 20281207, quote: 6638.8221 },
+      pairUrl: 'https://dexscreener.com/solana/a88btp7eexypkgbwvfbymnm5nom2bks6s1o1f5u6gohb',
+      transactionsJson: {
+        h1: { buys: 236, sells: 118 },
+        h6: { buys: 1768, sells: 2224 },
+        m5: { buys: 3, sells: 12 },
+        h24: { buys: 6457, sells: 6268 }
+      },
+      baseToken: {
+        name: 'Dolos The Bully',
+        symbol: 'BULLY',
+        address: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump/header.png?key=4512cd',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://Dolosdiary.com', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185532,
+          tokenId: 47672,
+          timeframe: 'm5',
+          percentage: '-0.0099'
+        },
+        {
+          id: 185533,
+          tokenId: 47672,
+          timeframe: 'h1',
+          percentage: '-0.0355'
+        },
+        {
+          id: 185534,
+          tokenId: 47672,
+          timeframe: 'h6',
+          percentage: '0.2356'
+        },
+        {
+          id: 185535,
+          tokenId: 47672,
+          timeframe: 'h24',
+          percentage: '0.4295'
+        }
+      ],
+      socials: [
+        {
+          id: 102328,
+          tokenId: 47672,
+          platform: 'telegram',
+          url: 'https://t.me/dolosTheBully_portal',
+          count: null
+        },
+        {
+          id: 102327,
+          tokenId: 47672,
+          platform: 'twitter',
+          url: 'https://x.com/dolos_diary',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47698,
+      symbol: 'SOL',
+      name: 'Wrapped SOL',
+      contractAddress: 'So11111111111111111111111111111111111111112',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:46:12.321Z',
+      updatedAt: '2025-01-10T19:44:18.113Z',
+      marketCap: null,
+      price: '190.11',
+      volume24h: '228544699.52',
+      changesJson: { h1: 0.0024, h6: 0.0182, m5: -0.0007, h24: 0.0187 },
+      imageUrl: null,
+      liquidity: { usd: 24710206.42, base: 97365, quote: 6199338 },
+      pairUrl: 'https://dexscreener.com/solana/8slbnzoa1cfnvmjlpfp98zlanfsycfapfjkmbixnlwxj',
+      transactionsJson: {
+        h1: { buys: 635, sells: 614 },
+        h6: { buys: 5773, sells: 6015 },
+        m5: { buys: 18, sells: 29 },
+        h24: { buys: 15913, sells: 16131 }
+      },
+      baseToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      headerImage: null,
+      openGraphImage: null,
+      quoteToken: {
+        name: 'USD Coin',
+        symbol: 'USDC',
+        address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+      },
+      websites: null,
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185616,
+          tokenId: 47698,
+          timeframe: 'm5',
+          percentage: '-0.0007'
+        },
+        {
+          id: 185617,
+          tokenId: 47698,
+          timeframe: 'h1',
+          percentage: '0.0024'
+        },
+        {
+          id: 185618,
+          tokenId: 47698,
+          timeframe: 'h6',
+          percentage: '0.0182'
+        },
+        {
+          id: 185619,
+          tokenId: 47698,
+          timeframe: 'h24',
+          percentage: '0.0187'
+        }
+      ],
+      socials: []
+    },
+    {
+      id: 104324,
+      symbol: 'ZEREBRO',
+      name: 'zerebro',
+      contractAddress: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:16.867Z',
+      updatedAt: '2025-01-10T19:44:18.121Z',
+      marketCap: '320640805',
+      price: '0.3206',
+      volume24h: '15643822.61',
+      changesJson: { h1: 0.0038, h6: 0.0754, m5: 0.0003, h24: 0.0385 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn.png?key=2785d3',
+      liquidity: { usd: 7097546.62, base: 11053855, quote: 18666 },
+      pairUrl: 'https://dexscreener.com/solana/3sjnocnkkhwpvxygdtem8rccihsgc9jsfzuuazkbvrvp',
+      transactionsJson: {
+        h1: { buys: 168, sells: 179 },
+        h6: { buys: 1539, sells: 1326 },
+        m5: { buys: 3, sells: 9 },
+        h24: { buys: 6761, sells: 6636 }
+      },
+      baseToken: {
+        name: 'zerebro',
+        symbol: 'ZEREBRO',
+        address: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn/header.png?key=2785d3',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://zerebro.org/', label: 'Website' },
+        { url: 'https://warpcast.com/zerebro', label: 'warpcast' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403018,
+          tokenId: 104324,
+          timeframe: 'm5',
+          percentage: '0.0003'
+        },
+        {
+          id: 403019,
+          tokenId: 104324,
+          timeframe: 'h1',
+          percentage: '0.0038'
+        },
+        {
+          id: 403020,
+          tokenId: 104324,
+          timeframe: 'h6',
+          percentage: '0.0754'
+        },
+        {
+          id: 403021,
+          tokenId: 104324,
+          timeframe: 'h24',
+          percentage: '0.0385'
+        }
+      ],
+      socials: [
+        {
+          id: 214959,
+          tokenId: 104324,
+          platform: 'telegram',
+          url: 'https://t.me/zerebro_portal',
+          count: null
+        },
+        {
+          id: 214958,
+          tokenId: 104324,
+          platform: 'twitter',
+          url: 'https://x.com/0xzerebro',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104323,
+      symbol: 'zero',
+      name: 'ZERO',
+      contractAddress: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:05.537Z',
+      updatedAt: '2025-01-10T19:44:18.131Z',
+      marketCap: '81533',
+      price: '0.00009895',
+      volume24h: '4195.64',
+      changesJson: { h1: -0.0028, h6: 0.1093, h24: 0.2045 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump.png?key=8f2797',
+      liquidity: { usd: 54973.6, base: 278049513, quote: 144.3209 },
+      pairUrl: 'https://dexscreener.com/solana/bnsspdwrsuigbaiukc3pphp4sns5igdhlm2a9qacthky',
+      transactionsJson: {
+        h1: { buys: 1, sells: 1 },
+        h6: { buys: 11, sells: 7 },
+        m5: { buys: 0, sells: 0 },
+        h24: { buys: 24, sells: 34 }
+      },
+      baseToken: {
+        name: 'ZERO',
+        symbol: 'zero',
+        address: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/header.png?key=8f2797',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403136,
+          tokenId: 104323,
+          timeframe: 'm5',
+          percentage: '0.0041'
+        },
+        {
+          id: 403015,
+          tokenId: 104323,
+          timeframe: 'h1',
+          percentage: '-0.0028'
+        },
+        {
+          id: 403016,
+          tokenId: 104323,
+          timeframe: 'h6',
+          percentage: '0.1093'
+        },
+        {
+          id: 403017,
+          tokenId: 104323,
+          timeframe: 'h24',
+          percentage: '0.2045'
+        }
+      ],
+      socials: [
+        {
+          id: 214956,
+          tokenId: 104323,
+          platform: 'twitter',
+          url: 'https://x.com/zero_cto',
+          count: null
+        },
+        {
+          id: 214957,
+          tokenId: 104323,
+          platform: 'telegram',
+          url: 'https://t.me/ZeroCommunityCTO',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300479,
+      symbol: 'LLM',
+      name: 'Large Language Model',
+      contractAddress: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:38.066Z',
+      updatedAt: '2025-01-10T19:44:18.141Z',
+      marketCap: '107391858',
+      price: '0.1073',
+      volume24h: '63470411.41',
+      changesJson: { h1: 0.0744, h6: 0.1222, m5: 0.0161, h24: 0.2103 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump.png?key=7acaee',
+      liquidity: { usd: 2885567.42, base: 13417905, quote: 7589.9202 },
+      pairUrl: 'https://dexscreener.com/solana/g6xzu9m4yamow1ugfkcahuw5ufpurbk4kcewr9dp1kxj',
+      transactionsJson: {
+        h1: { buys: 669, sells: 849 },
+        h6: { buys: 9879, sells: 8990 },
+        m5: { buys: 47, sells: 56 },
+        h24: { buys: 45813, sells: 42744 }
+      },
+      baseToken: {
+        name: 'Large Language Model',
+        symbol: 'LLM',
+        address: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump/header.png?key=7acaee',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://linktr.ee/largelanguagemodel',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149141,
+          tokenId: 300479,
+          timeframe: 'm5',
+          percentage: '0.0161'
+        },
+        {
+          id: 1149142,
+          tokenId: 300479,
+          timeframe: 'h1',
+          percentage: '0.0744'
+        },
+        {
+          id: 1149143,
+          tokenId: 300479,
+          timeframe: 'h6',
+          percentage: '0.1222'
+        },
+        {
+          id: 1149144,
+          tokenId: 300479,
+          timeframe: 'h24',
+          percentage: '0.2103'
+        }
+      ],
+      socials: [
+        {
+          id: 588852,
+          tokenId: 300479,
+          platform: 'telegram',
+          url: 'https://t.me/largelanguagemodelsolchannel',
+          count: null
+        },
+        {
+          id: 588851,
+          tokenId: 300479,
+          platform: 'twitter',
+          url: 'https://x.com/ai160kg',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300441,
+      symbol: 'HYPER',
+      name: 'Hyperfy',
+      contractAddress: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:14:01.209Z',
+      updatedAt: '2025-01-10T19:44:18.152Z',
+      marketCap: '103905471',
+      price: '0.1039',
+      volume24h: '8341566.19',
+      changesJson: { h1: -0.0392, h6: 0.2331, m5: -0.0024, h24: 0.308 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8.png?key=1f2d0a',
+      liquidity: { usd: 1177817.09, base: 5667733, quote: 3093.8195 },
+      pairUrl: 'https://dexscreener.com/solana/cs94de2znqtyxcftfdfpsejkphbdsvzevkhloykmx7ge',
+      transactionsJson: {
+        h1: { buys: 209, sells: 132 },
+        h6: { buys: 2059, sells: 1846 },
+        m5: { buys: 8, sells: 11 },
+        h24: { buys: 8081, sells: 7189 }
+      },
+      baseToken: {
+        name: 'Hyperfy',
+        symbol: 'HYPER',
+        address: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8/header.png?key=1f2d0a',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://hyperfy.io/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149039,
+          tokenId: 300441,
+          timeframe: 'm5',
+          percentage: '-0.0024'
+        },
+        {
+          id: 1149040,
+          tokenId: 300441,
+          timeframe: 'h1',
+          percentage: '-0.0392'
+        },
+        {
+          id: 1149041,
+          tokenId: 300441,
+          timeframe: 'h6',
+          percentage: '0.2331'
+        },
+        {
+          id: 1149042,
+          tokenId: 300441,
+          timeframe: 'h24',
+          percentage: '0.308'
+        }
+      ],
+      socials: [
+        {
+          id: 588778,
+          tokenId: 300441,
+          platform: 'twitter',
+          url: 'https://x.com/hyperfy_io',
+          count: null
+        },
+        {
+          id: 588779,
+          tokenId: 300441,
+          platform: 'discord',
+          url: 'http://discord.gg/TGtyTEWB2X',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 168485,
+      symbol: 'PERSAI',
+      name: 'Persona',
+      contractAddress: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX',
+      chain: 'SOLANA',
+      createdAt: '2025-01-05T04:00:02.850Z',
+      updatedAt: '2025-01-10T19:44:18.197Z',
+      marketCap: '52137',
+      price: '0.00005215',
+      volume24h: '17916.99',
+      changesJson: { h1: 0.0525, h6: 0.2236, m5: 0.0003, h24: 0.4706 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX.png?key=70eae2',
+      liquidity: { usd: 42038.7, base: 402523187, quote: 110.5744 },
+      pairUrl: 'https://dexscreener.com/solana/fowf3hssemckhwdchse8etjns7byqm1mi3labnk25gw',
+      transactionsJson: {
+        h1: { buys: 10, sells: 10 },
+        h6: { buys: 42, sells: 44 },
+        m5: { buys: 0, sells: 1 },
+        h24: { buys: 203, sells: 185 }
+      },
+      baseToken: {
+        name: 'Persona',
+        symbol: 'PERSAI',
+        address: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX/header.png?key=70eae2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 648656,
+          tokenId: 168485,
+          timeframe: 'm5',
+          percentage: '0.0003'
+        },
+        {
+          id: 648657,
+          tokenId: 168485,
+          timeframe: 'h1',
+          percentage: '0.0525'
+        },
+        {
+          id: 648658,
+          tokenId: 168485,
+          timeframe: 'h6',
+          percentage: '0.2236'
+        },
+        {
+          id: 648659,
+          tokenId: 168485,
+          timeframe: 'h24',
+          percentage: '0.4706'
+        }
+      ],
+      socials: [
+        {
+          id: 336868,
+          tokenId: 168485,
+          platform: 'telegram',
+          url: 'https://t.me/personAIonly',
+          count: null
+        },
+        {
+          id: 336867,
+          tokenId: 168485,
+          platform: 'twitter',
+          url: 'https://x.com/personAIonly',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300495,
+      symbol: 'MLG',
+      name: '360noscope420blazeit',
+      contractAddress: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:16:13.319Z',
+      updatedAt: '2025-01-10T19:44:18.185Z',
+      marketCap: '87273128',
+      price: '0.08746',
+      volume24h: '27372399.3',
+      changesJson: { h1: 0.1088, h6: 0.0794, m5: 0.046, h24: -0.1277 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL.png?key=04f2c9',
+      liquidity: { usd: 2171360.18, base: 12427650, quote: 5697.1919 },
+      pairUrl: 'https://dexscreener.com/solana/f4hdxnulqjsbwcl5vweucpjueqop3gdteussqaxbeyw4',
+      transactionsJson: {
+        h1: { buys: 785, sells: 1059 },
+        h6: { buys: 5535, sells: 5051 },
+        m5: { buys: 90, sells: 363 },
+        h24: { buys: 21635, sells: 20295 }
+      },
+      baseToken: {
+        name: '360noscope420blazeit',
+        symbol: 'MLG',
+        address: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL/header.png?key=04f2c9',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.mlg.lol/', label: 'Website' },
+        { url: 'https://mlgedit.com/', label: 'Meme Maker' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149206,
+          tokenId: 300495,
+          timeframe: 'm5',
+          percentage: '0.046'
+        },
+        {
+          id: 1149207,
+          tokenId: 300495,
+          timeframe: 'h1',
+          percentage: '0.1088'
+        },
+        {
+          id: 1149208,
+          tokenId: 300495,
+          timeframe: 'h6',
+          percentage: '0.0794'
+        },
+        {
+          id: 1149209,
+          tokenId: 300495,
+          timeframe: 'h24',
+          percentage: '-0.1277'
+        }
+      ],
+      socials: [
+        {
+          id: 588882,
+          tokenId: 300495,
+          platform: 'discord',
+          url: 'https://discord.com/invite/munnopoly',
+          count: null
+        },
+        {
+          id: 588880,
+          tokenId: 300495,
+          platform: 'twitter',
+          url: 'https://x.com/MLGsolana420',
+          count: null
+        },
+        {
+          id: 588881,
+          tokenId: 300495,
+          platform: 'telegram',
+          url: 'https://t.me/MLGCTOPORTAL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47691,
+      symbol: 'degenai',
+      name: 'Degen Spartan AI',
+      contractAddress: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:45:39.648Z',
+      updatedAt: '2025-01-10T19:44:18.163Z',
+      marketCap: '59642216',
+      price: '0.05964',
+      volume24h: '5022236.17',
+      changesJson: { h1: 0.003, h6: 0.122, m5: 0.0035, h24: 0.2806 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump.png?key=5a4d29',
+      liquidity: { usd: 2468782.47, base: 20669668, quote: 6493.6476 },
+      pairUrl: 'https://dexscreener.com/solana/dlaoh9okkk4gdtxj2mkh3wjue7vbhmbjrukmcid1pszx',
+      transactionsJson: {
+        h1: { buys: 112, sells: 142 },
+        h6: { buys: 814, sells: 1088 },
+        m5: { buys: 11, sells: 18 },
+        h24: { buys: 5549, sells: 5954 }
+      },
+      baseToken: {
+        name: 'Degen Spartan AI',
+        symbol: 'degenai',
+        address: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump/header.png?key=5a4d29',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://ai16z.ai', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185584,
+          tokenId: 47691,
+          timeframe: 'm5',
+          percentage: '0.0035'
+        },
+        {
+          id: 185585,
+          tokenId: 47691,
+          timeframe: 'h1',
+          percentage: '0.003'
+        },
+        {
+          id: 185586,
+          tokenId: 47691,
+          timeframe: 'h6',
+          percentage: '0.122'
+        },
+        {
+          id: 185587,
+          tokenId: 47691,
+          timeframe: 'h24',
+          percentage: '0.2806'
+        }
+      ],
+      socials: [
+        {
+          id: 102370,
+          tokenId: 47691,
+          platform: 'discord',
+          url: 'https://discord.gg/EbzMcW3pWK',
+          count: null
+        },
+        {
+          id: 102368,
+          tokenId: 47691,
+          platform: 'twitter',
+          url: 'https://twitter.com/degenspartanai',
+          count: null
+        },
+        {
+          id: 102369,
+          tokenId: 47691,
+          platform: 'telegram',
+          url: 'https://t.me/degenspartanai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47716,
+      symbol: 'ai16z',
+      name: 'ai16z',
+      contractAddress: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:47:27.093Z',
+      updatedAt: '2025-01-10T19:44:18.174Z',
+      marketCap: '1601194982',
+      price: '1.45',
+      volume24h: '45315929.27',
+      changesJson: { h1: -0.003, h6: -0.0165, m5: -0.0018, h24: 0.0546 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC.png?key=b380cb',
+      liquidity: { usd: 8547291.76, base: 3205089, quote: 20414 },
+      pairUrl: 'https://dexscreener.com/solana/8sn9549p3zn6xpqrqpapn57xzkch6sjxlwuejcg2w4ji',
+      transactionsJson: {
+        h1: { buys: 189, sells: 299 },
+        h6: { buys: 2868, sells: 2562 },
+        m5: { buys: 5, sells: 42 },
+        h24: { buys: 12574, sells: 11719 }
+      },
+      baseToken: {
+        name: 'ai16z',
+        symbol: 'ai16z',
+        address: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC/header.png?key=b380cb',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://elizaos.ai/', label: 'Website' },
+        {
+          url: 'https://www.daos.fun/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+          label: 'Daos.fun'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185686,
+          tokenId: 47716,
+          timeframe: 'm5',
+          percentage: '-0.0018'
+        },
+        {
+          id: 185687,
+          tokenId: 47716,
+          timeframe: 'h1',
+          percentage: '-0.003'
+        },
+        {
+          id: 185688,
+          tokenId: 47716,
+          timeframe: 'h6',
+          percentage: '-0.0165'
+        },
+        {
+          id: 185689,
+          tokenId: 47716,
+          timeframe: 'h24',
+          percentage: '0.0546'
+        }
+      ],
+      socials: [
+        {
+          id: 102418,
+          tokenId: 47716,
+          platform: 'telegram',
+          url: 'https://t.me/ai16zcommunity',
+          count: null
+        },
+        {
+          id: 102419,
+          tokenId: 47716,
+          platform: 'discord',
+          url: 'https://discord.gg/ai16z',
+          count: null
+        },
+        {
+          id: 102417,
+          tokenId: 47716,
+          platform: 'twitter',
+          url: 'https://x.com/ai16zdao',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104502,
+      symbol: 'DUNA',
+      name: 'DUNA',
+      contractAddress: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:33:34.938Z',
+      updatedAt: '2025-01-10T19:44:18.209Z',
+      marketCap: '425469',
+      price: '0.0004254',
+      volume24h: '242533.07',
+      changesJson: { h1: 0.0626, h6: 0.1817, m5: 0.0285, h24: 0.2694 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump.png?key=744569',
+      liquidity: { usd: 149702.76, base: 175703161, quote: 394.1362 },
+      pairUrl: 'https://dexscreener.com/solana/czisgeuhnsrlzmfsc1jq7krz4ga1j1fncvmdkrjescua',
+      transactionsJson: {
+        h1: { buys: 46, sells: 52 },
+        h6: { buys: 255, sells: 264 },
+        m5: { buys: 3, sells: 4 },
+        h24: { buys: 794, sells: 719 }
+      },
+      baseToken: {
+        name: 'DUNA',
+        symbol: 'DUNA',
+        address: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump/header.png?key=744569',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://m.theblockbeats.info/en/news/51974',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403685,
+          tokenId: 104502,
+          timeframe: 'm5',
+          percentage: '0.0285'
+        },
+        {
+          id: 403686,
+          tokenId: 104502,
+          timeframe: 'h1',
+          percentage: '0.0626'
+        },
+        {
+          id: 403687,
+          tokenId: 104502,
+          timeframe: 'h6',
+          percentage: '0.1817'
+        },
+        {
+          id: 403688,
+          tokenId: 104502,
+          timeframe: 'h24',
+          percentage: '0.2694'
+        }
+      ],
+      socials: [
+        {
+          id: 215313,
+          tokenId: 104502,
+          platform: 'telegram',
+          url: 'https://t.me/dunaportal',
+          count: null
+        },
+        {
+          id: 215312,
+          tokenId: 104502,
+          platform: 'twitter',
+          url: 'https://x.com/i/communities/1874537471955927076',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300480,
+      symbol: 'Fartcoin ',
+      name: 'Fartcoin ',
+      contractAddress: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:54.075Z',
+      updatedAt: '2025-01-10T19:44:18.221Z',
+      marketCap: '872686488',
+      price: '0.8726',
+      volume24h: '27666982.39',
+      changesJson: { h1: -0.0056, h6: 0.0509, m5: 0.0066, h24: 0.102 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump.png?key=8180d2',
+      liquidity: { usd: 16637555.02, base: 9543955, quote: 43695 },
+      pairUrl: 'https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw',
+      transactionsJson: {
+        h1: { buys: 302, sells: 357 },
+        h6: { buys: 2189, sells: 2113 },
+        m5: { buys: 26, sells: 14 },
+        h24: { buys: 9987, sells: 11318 }
+      },
+      baseToken: {
+        name: 'Fartcoin ',
+        symbol: 'Fartcoin ',
+        address: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump/header.png?key=8180d2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149145,
+          tokenId: 300480,
+          timeframe: 'm5',
+          percentage: '0.0066'
+        },
+        {
+          id: 1149146,
+          tokenId: 300480,
+          timeframe: 'h1',
+          percentage: '-0.0056'
+        },
+        {
+          id: 1149147,
+          tokenId: 300480,
+          timeframe: 'h6',
+          percentage: '0.0509'
+        },
+        {
+          id: 1149148,
+          tokenId: 300480,
+          timeframe: 'h24',
+          percentage: '0.102'
+        }
+      ],
+      socials: [
+        {
+          id: 588853,
+          tokenId: 300480,
+          platform: 'twitter',
+          url: 'https://x.com/FartCoinOfSOL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300466,
+      symbol: 'TRUST',
+      name: 'Trust Protocol AI',
+      contractAddress: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:18.178Z',
+      updatedAt: '2025-01-10T19:44:18.232Z',
+      marketCap: '2061984',
+      price: '0.002147',
+      volume24h: '11392560.74',
+      changesJson: { h1: -0.179, h6: -0.2451, m5: -0.0584, h24: -0.309 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump.png?key=016d6e',
+      liquidity: { usd: 231168.85, base: 53881164, quote: 606.6729 },
+      pairUrl: 'https://dexscreener.com/solana/6gxvabfmlbupbf152wmuf9v8u5emfcdfn99wpsyz1jac',
+      transactionsJson: {
+        h1: { buys: 657, sells: 570 },
+        h6: { buys: 5123, sells: 4204 },
+        m5: { buys: 67, sells: 57 },
+        h24: { buys: 30257, sells: 25978 }
+      },
+      baseToken: {
+        name: 'Trust Protocol AI',
+        symbol: 'TRUST',
+        address: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump/header.png?key=016d6e',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://www.trustprotocol.app/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149137,
+          tokenId: 300466,
+          timeframe: 'm5',
+          percentage: '-0.0584'
+        },
+        {
+          id: 1149138,
+          tokenId: 300466,
+          timeframe: 'h1',
+          percentage: '-0.179'
+        },
+        {
+          id: 1149139,
+          tokenId: 300466,
+          timeframe: 'h6',
+          percentage: '-0.2451'
+        },
+        {
+          id: 1149140,
+          tokenId: 300466,
+          timeframe: 'h24',
+          percentage: '-0.309'
+        }
+      ],
+      socials: [
+        {
+          id: 588826,
+          tokenId: 300466,
+          platform: 'twitter',
+          url: 'http://x.com/trustprotocolai',
+          count: null
+        },
+        {
+          id: 588827,
+          tokenId: 300466,
+          platform: 'telegram',
+          url: 'http://t.me/trustprotocolai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 105610,
+      symbol: 'aether',
+      name: 'aether collective',
+      contractAddress: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:36:26.383Z',
+      updatedAt: '2025-01-10T19:44:18.244Z',
+      marketCap: '15098528',
+      price: '0.0151',
+      volume24h: '4949241.43',
+      changesJson: { h1: -0.0912, h6: -0.0134, m5: -0.0469, h24: 0.6707 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump.png?key=aa8dc2',
+      liquidity: { usd: 797908.26, base: 26437982, quote: 2094.2842 },
+      pairUrl: 'https://dexscreener.com/solana/c1iq2fynymmntnvd6cvdtdgxfz2sxqbydmpcun1v4nf9',
+      transactionsJson: {
+        h1: { buys: 262, sells: 144 },
+        h6: { buys: 1630, sells: 1700 },
+        m5: { buys: 26, sells: 18 },
+        h24: { buys: 8575, sells: 9325 }
+      },
+      baseToken: {
+        name: 'aether collective',
+        symbol: 'aether',
+        address: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump/header.png?key=aa8dc2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.aetheros.co/', label: 'Website' },
+        {
+          url: 'https://github.com/AetherFrameworkAI/aether-framework',
+          label: 'Github'
+        },
+        {
+          url: 'https://aether-framework.gitbook.io/aetherframework/faq',
+          label: 'Gitbook'
+        },
+        { url: 'https://www.iamjedi.org/', label: 'JEDI AI' },
+        {
+          url: 'https://terminal.iamjedi.org/',
+          label: 'JEDI Terminal'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 407960,
+          tokenId: 105610,
+          timeframe: 'm5',
+          percentage: '-0.0469'
+        },
+        {
+          id: 407961,
+          tokenId: 105610,
+          timeframe: 'h1',
+          percentage: '-0.0912'
+        },
+        {
+          id: 407962,
+          tokenId: 105610,
+          timeframe: 'h6',
+          percentage: '-0.0134'
+        },
+        {
+          id: 407963,
+          tokenId: 105610,
+          timeframe: 'h24',
+          percentage: '0.6707'
+        }
+      ],
+      socials: [
+        {
+          id: 217406,
+          tokenId: 105610,
+          platform: 'telegram',
+          url: 'https://t.me/aetherdotfun',
+          count: null
+        },
+        {
+          id: 217405,
+          tokenId: 105610,
+          platform: 'twitter',
+          url: 'https://x.com/aetherdotfun',
+          count: null
+        }
+      ]
+    }
+  ],
+  level: 'info',
+  message: '[dd-serv] Fetched token list:'
+}
+{
+  timestamp: '2025-01-10T19:44:39.669Z',
+  data: [
+    {
+      id: 105871,
+      symbol: 'ALCH',
+      name: 'Alchemist AI',
+      contractAddress: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:49:35.312Z',
+      updatedAt: '2025-01-10T19:44:18.090Z',
+      marketCap: '120303110',
+      price: '0.1415',
+      volume24h: '15221333.58',
+      changesJson: { h1: 0.0175, h6: 0.1172, m5: 0.0031, h24: 0.0692 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump.png?key=a88f75',
+      liquidity: { usd: 4791354.8, base: 16947711, quote: 12571 },
+      pairUrl: 'https://dexscreener.com/solana/fydf3vkqfbcvntsbi7l7lremrfpmxkbqqgagnpg1hxxd',
+      transactionsJson: {
+        h1: { buys: 228, sells: 310 },
+        h6: { buys: 2399, sells: 2965 },
+        m5: { buys: 21, sells: 4 },
+        h24: { buys: 9510, sells: 9161 }
+      },
+      baseToken: {
+        name: 'Alchemist AI',
+        symbol: 'ALCH',
+        address: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump/header.png?key=a88f75',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.alchemistai.app/', label: 'Website' },
+        { url: 'https://docs.alchemistai.app/docs', label: 'Docs' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 408982,
+          tokenId: 105871,
+          timeframe: 'm5',
+          percentage: '0.0031'
+        },
+        {
+          id: 408983,
+          tokenId: 105871,
+          timeframe: 'h1',
+          percentage: '0.0175'
+        },
+        {
+          id: 408984,
+          tokenId: 105871,
+          timeframe: 'h6',
+          percentage: '0.1172'
+        },
+        {
+          id: 408985,
+          tokenId: 105871,
+          timeframe: 'h24',
+          percentage: '0.0692'
+        }
+      ],
+      socials: [
+        {
+          id: 217901,
+          tokenId: 105871,
+          platform: 'twitter',
+          url: 'https://x.com/alchemistAIapp',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47672,
+      symbol: 'BULLY',
+      name: 'Dolos The Bully',
+      contractAddress: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:44:08.983Z',
+      updatedAt: '2025-01-10T19:44:18.102Z',
+      marketCap: '59721934',
+      price: '0.06217',
+      volume24h: '5962207.59',
+      changesJson: { h1: -0.0355, h6: 0.2356, m5: -0.0099, h24: 0.4295 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump.png?key=4512cd',
+      liquidity: { usd: 2524415.36, base: 20281207, quote: 6638.8221 },
+      pairUrl: 'https://dexscreener.com/solana/a88btp7eexypkgbwvfbymnm5nom2bks6s1o1f5u6gohb',
+      transactionsJson: {
+        h1: { buys: 236, sells: 118 },
+        h6: { buys: 1768, sells: 2224 },
+        m5: { buys: 3, sells: 12 },
+        h24: { buys: 6457, sells: 6268 }
+      },
+      baseToken: {
+        name: 'Dolos The Bully',
+        symbol: 'BULLY',
+        address: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump/header.png?key=4512cd',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://Dolosdiary.com', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185532,
+          tokenId: 47672,
+          timeframe: 'm5',
+          percentage: '-0.0099'
+        },
+        {
+          id: 185533,
+          tokenId: 47672,
+          timeframe: 'h1',
+          percentage: '-0.0355'
+        },
+        {
+          id: 185534,
+          tokenId: 47672,
+          timeframe: 'h6',
+          percentage: '0.2356'
+        },
+        {
+          id: 185535,
+          tokenId: 47672,
+          timeframe: 'h24',
+          percentage: '0.4295'
+        }
+      ],
+      socials: [
+        {
+          id: 102328,
+          tokenId: 47672,
+          platform: 'telegram',
+          url: 'https://t.me/dolosTheBully_portal',
+          count: null
+        },
+        {
+          id: 102327,
+          tokenId: 47672,
+          platform: 'twitter',
+          url: 'https://x.com/dolos_diary',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47698,
+      symbol: 'SOL',
+      name: 'Wrapped SOL',
+      contractAddress: 'So11111111111111111111111111111111111111112',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:46:12.321Z',
+      updatedAt: '2025-01-10T19:44:18.113Z',
+      marketCap: null,
+      price: '190.11',
+      volume24h: '228544699.52',
+      changesJson: { h1: 0.0024, h6: 0.0182, m5: -0.0007, h24: 0.0187 },
+      imageUrl: null,
+      liquidity: { usd: 24710206.42, base: 97365, quote: 6199338 },
+      pairUrl: 'https://dexscreener.com/solana/8slbnzoa1cfnvmjlpfp98zlanfsycfapfjkmbixnlwxj',
+      transactionsJson: {
+        h1: { buys: 635, sells: 614 },
+        h6: { buys: 5773, sells: 6015 },
+        m5: { buys: 18, sells: 29 },
+        h24: { buys: 15913, sells: 16131 }
+      },
+      baseToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      headerImage: null,
+      openGraphImage: null,
+      quoteToken: {
+        name: 'USD Coin',
+        symbol: 'USDC',
+        address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+      },
+      websites: null,
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185616,
+          tokenId: 47698,
+          timeframe: 'm5',
+          percentage: '-0.0007'
+        },
+        {
+          id: 185617,
+          tokenId: 47698,
+          timeframe: 'h1',
+          percentage: '0.0024'
+        },
+        {
+          id: 185618,
+          tokenId: 47698,
+          timeframe: 'h6',
+          percentage: '0.0182'
+        },
+        {
+          id: 185619,
+          tokenId: 47698,
+          timeframe: 'h24',
+          percentage: '0.0187'
+        }
+      ],
+      socials: []
+    },
+    {
+      id: 104324,
+      symbol: 'ZEREBRO',
+      name: 'zerebro',
+      contractAddress: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:16.867Z',
+      updatedAt: '2025-01-10T19:44:18.121Z',
+      marketCap: '320640805',
+      price: '0.3206',
+      volume24h: '15643822.61',
+      changesJson: { h1: 0.0038, h6: 0.0754, m5: 0.0003, h24: 0.0385 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn.png?key=2785d3',
+      liquidity: { usd: 7097546.62, base: 11053855, quote: 18666 },
+      pairUrl: 'https://dexscreener.com/solana/3sjnocnkkhwpvxygdtem8rccihsgc9jsfzuuazkbvrvp',
+      transactionsJson: {
+        h1: { buys: 168, sells: 179 },
+        h6: { buys: 1539, sells: 1326 },
+        m5: { buys: 3, sells: 9 },
+        h24: { buys: 6761, sells: 6636 }
+      },
+      baseToken: {
+        name: 'zerebro',
+        symbol: 'ZEREBRO',
+        address: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn/header.png?key=2785d3',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://zerebro.org/', label: 'Website' },
+        { url: 'https://warpcast.com/zerebro', label: 'warpcast' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403018,
+          tokenId: 104324,
+          timeframe: 'm5',
+          percentage: '0.0003'
+        },
+        {
+          id: 403019,
+          tokenId: 104324,
+          timeframe: 'h1',
+          percentage: '0.0038'
+        },
+        {
+          id: 403020,
+          tokenId: 104324,
+          timeframe: 'h6',
+          percentage: '0.0754'
+        },
+        {
+          id: 403021,
+          tokenId: 104324,
+          timeframe: 'h24',
+          percentage: '0.0385'
+        }
+      ],
+      socials: [
+        {
+          id: 214959,
+          tokenId: 104324,
+          platform: 'telegram',
+          url: 'https://t.me/zerebro_portal',
+          count: null
+        },
+        {
+          id: 214958,
+          tokenId: 104324,
+          platform: 'twitter',
+          url: 'https://x.com/0xzerebro',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104323,
+      symbol: 'zero',
+      name: 'ZERO',
+      contractAddress: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:05.537Z',
+      updatedAt: '2025-01-10T19:44:18.131Z',
+      marketCap: '81533',
+      price: '0.00009895',
+      volume24h: '4195.64',
+      changesJson: { h1: -0.0028, h6: 0.1093, h24: 0.2045 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump.png?key=8f2797',
+      liquidity: { usd: 54973.6, base: 278049513, quote: 144.3209 },
+      pairUrl: 'https://dexscreener.com/solana/bnsspdwrsuigbaiukc3pphp4sns5igdhlm2a9qacthky',
+      transactionsJson: {
+        h1: { buys: 1, sells: 1 },
+        h6: { buys: 11, sells: 7 },
+        m5: { buys: 0, sells: 0 },
+        h24: { buys: 24, sells: 34 }
+      },
+      baseToken: {
+        name: 'ZERO',
+        symbol: 'zero',
+        address: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/header.png?key=8f2797',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403136,
+          tokenId: 104323,
+          timeframe: 'm5',
+          percentage: '0.0041'
+        },
+        {
+          id: 403015,
+          tokenId: 104323,
+          timeframe: 'h1',
+          percentage: '-0.0028'
+        },
+        {
+          id: 403016,
+          tokenId: 104323,
+          timeframe: 'h6',
+          percentage: '0.1093'
+        },
+        {
+          id: 403017,
+          tokenId: 104323,
+          timeframe: 'h24',
+          percentage: '0.2045'
+        }
+      ],
+      socials: [
+        {
+          id: 214956,
+          tokenId: 104323,
+          platform: 'twitter',
+          url: 'https://x.com/zero_cto',
+          count: null
+        },
+        {
+          id: 214957,
+          tokenId: 104323,
+          platform: 'telegram',
+          url: 'https://t.me/ZeroCommunityCTO',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300479,
+      symbol: 'LLM',
+      name: 'Large Language Model',
+      contractAddress: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:38.066Z',
+      updatedAt: '2025-01-10T19:44:18.141Z',
+      marketCap: '107391858',
+      price: '0.1073',
+      volume24h: '63470411.41',
+      changesJson: { h1: 0.0744, h6: 0.1222, m5: 0.0161, h24: 0.2103 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump.png?key=7acaee',
+      liquidity: { usd: 2885567.42, base: 13417905, quote: 7589.9202 },
+      pairUrl: 'https://dexscreener.com/solana/g6xzu9m4yamow1ugfkcahuw5ufpurbk4kcewr9dp1kxj',
+      transactionsJson: {
+        h1: { buys: 669, sells: 849 },
+        h6: { buys: 9879, sells: 8990 },
+        m5: { buys: 47, sells: 56 },
+        h24: { buys: 45813, sells: 42744 }
+      },
+      baseToken: {
+        name: 'Large Language Model',
+        symbol: 'LLM',
+        address: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump/header.png?key=7acaee',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://linktr.ee/largelanguagemodel',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149141,
+          tokenId: 300479,
+          timeframe: 'm5',
+          percentage: '0.0161'
+        },
+        {
+          id: 1149142,
+          tokenId: 300479,
+          timeframe: 'h1',
+          percentage: '0.0744'
+        },
+        {
+          id: 1149143,
+          tokenId: 300479,
+          timeframe: 'h6',
+          percentage: '0.1222'
+        },
+        {
+          id: 1149144,
+          tokenId: 300479,
+          timeframe: 'h24',
+          percentage: '0.2103'
+        }
+      ],
+      socials: [
+        {
+          id: 588852,
+          tokenId: 300479,
+          platform: 'telegram',
+          url: 'https://t.me/largelanguagemodelsolchannel',
+          count: null
+        },
+        {
+          id: 588851,
+          tokenId: 300479,
+          platform: 'twitter',
+          url: 'https://x.com/ai160kg',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300441,
+      symbol: 'HYPER',
+      name: 'Hyperfy',
+      contractAddress: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:14:01.209Z',
+      updatedAt: '2025-01-10T19:44:18.152Z',
+      marketCap: '103905471',
+      price: '0.1039',
+      volume24h: '8341566.19',
+      changesJson: { h1: -0.0392, h6: 0.2331, m5: -0.0024, h24: 0.308 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8.png?key=1f2d0a',
+      liquidity: { usd: 1177817.09, base: 5667733, quote: 3093.8195 },
+      pairUrl: 'https://dexscreener.com/solana/cs94de2znqtyxcftfdfpsejkphbdsvzevkhloykmx7ge',
+      transactionsJson: {
+        h1: { buys: 209, sells: 132 },
+        h6: { buys: 2059, sells: 1846 },
+        m5: { buys: 8, sells: 11 },
+        h24: { buys: 8081, sells: 7189 }
+      },
+      baseToken: {
+        name: 'Hyperfy',
+        symbol: 'HYPER',
+        address: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8/header.png?key=1f2d0a',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://hyperfy.io/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149039,
+          tokenId: 300441,
+          timeframe: 'm5',
+          percentage: '-0.0024'
+        },
+        {
+          id: 1149040,
+          tokenId: 300441,
+          timeframe: 'h1',
+          percentage: '-0.0392'
+        },
+        {
+          id: 1149041,
+          tokenId: 300441,
+          timeframe: 'h6',
+          percentage: '0.2331'
+        },
+        {
+          id: 1149042,
+          tokenId: 300441,
+          timeframe: 'h24',
+          percentage: '0.308'
+        }
+      ],
+      socials: [
+        {
+          id: 588778,
+          tokenId: 300441,
+          platform: 'twitter',
+          url: 'https://x.com/hyperfy_io',
+          count: null
+        },
+        {
+          id: 588779,
+          tokenId: 300441,
+          platform: 'discord',
+          url: 'http://discord.gg/TGtyTEWB2X',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 168485,
+      symbol: 'PERSAI',
+      name: 'Persona',
+      contractAddress: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX',
+      chain: 'SOLANA',
+      createdAt: '2025-01-05T04:00:02.850Z',
+      updatedAt: '2025-01-10T19:44:18.197Z',
+      marketCap: '52137',
+      price: '0.00005215',
+      volume24h: '17916.99',
+      changesJson: { h1: 0.0525, h6: 0.2236, m5: 0.0003, h24: 0.4706 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX.png?key=70eae2',
+      liquidity: { usd: 42038.7, base: 402523187, quote: 110.5744 },
+      pairUrl: 'https://dexscreener.com/solana/fowf3hssemckhwdchse8etjns7byqm1mi3labnk25gw',
+      transactionsJson: {
+        h1: { buys: 10, sells: 10 },
+        h6: { buys: 42, sells: 44 },
+        m5: { buys: 0, sells: 1 },
+        h24: { buys: 203, sells: 185 }
+      },
+      baseToken: {
+        name: 'Persona',
+        symbol: 'PERSAI',
+        address: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX/header.png?key=70eae2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 648656,
+          tokenId: 168485,
+          timeframe: 'm5',
+          percentage: '0.0003'
+        },
+        {
+          id: 648657,
+          tokenId: 168485,
+          timeframe: 'h1',
+          percentage: '0.0525'
+        },
+        {
+          id: 648658,
+          tokenId: 168485,
+          timeframe: 'h6',
+          percentage: '0.2236'
+        },
+        {
+          id: 648659,
+          tokenId: 168485,
+          timeframe: 'h24',
+          percentage: '0.4706'
+        }
+      ],
+      socials: [
+        {
+          id: 336868,
+          tokenId: 168485,
+          platform: 'telegram',
+          url: 'https://t.me/personAIonly',
+          count: null
+        },
+        {
+          id: 336867,
+          tokenId: 168485,
+          platform: 'twitter',
+          url: 'https://x.com/personAIonly',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300495,
+      symbol: 'MLG',
+      name: '360noscope420blazeit',
+      contractAddress: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:16:13.319Z',
+      updatedAt: '2025-01-10T19:44:18.185Z',
+      marketCap: '87273128',
+      price: '0.08746',
+      volume24h: '27372399.3',
+      changesJson: { h1: 0.1088, h6: 0.0794, m5: 0.046, h24: -0.1277 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL.png?key=04f2c9',
+      liquidity: { usd: 2171360.18, base: 12427650, quote: 5697.1919 },
+      pairUrl: 'https://dexscreener.com/solana/f4hdxnulqjsbwcl5vweucpjueqop3gdteussqaxbeyw4',
+      transactionsJson: {
+        h1: { buys: 785, sells: 1059 },
+        h6: { buys: 5535, sells: 5051 },
+        m5: { buys: 90, sells: 363 },
+        h24: { buys: 21635, sells: 20295 }
+      },
+      baseToken: {
+        name: '360noscope420blazeit',
+        symbol: 'MLG',
+        address: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL/header.png?key=04f2c9',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.mlg.lol/', label: 'Website' },
+        { url: 'https://mlgedit.com/', label: 'Meme Maker' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149206,
+          tokenId: 300495,
+          timeframe: 'm5',
+          percentage: '0.046'
+        },
+        {
+          id: 1149207,
+          tokenId: 300495,
+          timeframe: 'h1',
+          percentage: '0.1088'
+        },
+        {
+          id: 1149208,
+          tokenId: 300495,
+          timeframe: 'h6',
+          percentage: '0.0794'
+        },
+        {
+          id: 1149209,
+          tokenId: 300495,
+          timeframe: 'h24',
+          percentage: '-0.1277'
+        }
+      ],
+      socials: [
+        {
+          id: 588882,
+          tokenId: 300495,
+          platform: 'discord',
+          url: 'https://discord.com/invite/munnopoly',
+          count: null
+        },
+        {
+          id: 588880,
+          tokenId: 300495,
+          platform: 'twitter',
+          url: 'https://x.com/MLGsolana420',
+          count: null
+        },
+        {
+          id: 588881,
+          tokenId: 300495,
+          platform: 'telegram',
+          url: 'https://t.me/MLGCTOPORTAL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47691,
+      symbol: 'degenai',
+      name: 'Degen Spartan AI',
+      contractAddress: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:45:39.648Z',
+      updatedAt: '2025-01-10T19:44:18.163Z',
+      marketCap: '59642216',
+      price: '0.05964',
+      volume24h: '5022236.17',
+      changesJson: { h1: 0.003, h6: 0.122, m5: 0.0035, h24: 0.2806 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump.png?key=5a4d29',
+      liquidity: { usd: 2468782.47, base: 20669668, quote: 6493.6476 },
+      pairUrl: 'https://dexscreener.com/solana/dlaoh9okkk4gdtxj2mkh3wjue7vbhmbjrukmcid1pszx',
+      transactionsJson: {
+        h1: { buys: 112, sells: 142 },
+        h6: { buys: 814, sells: 1088 },
+        m5: { buys: 11, sells: 18 },
+        h24: { buys: 5549, sells: 5954 }
+      },
+      baseToken: {
+        name: 'Degen Spartan AI',
+        symbol: 'degenai',
+        address: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump/header.png?key=5a4d29',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://ai16z.ai', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185584,
+          tokenId: 47691,
+          timeframe: 'm5',
+          percentage: '0.0035'
+        },
+        {
+          id: 185585,
+          tokenId: 47691,
+          timeframe: 'h1',
+          percentage: '0.003'
+        },
+        {
+          id: 185586,
+          tokenId: 47691,
+          timeframe: 'h6',
+          percentage: '0.122'
+        },
+        {
+          id: 185587,
+          tokenId: 47691,
+          timeframe: 'h24',
+          percentage: '0.2806'
+        }
+      ],
+      socials: [
+        {
+          id: 102370,
+          tokenId: 47691,
+          platform: 'discord',
+          url: 'https://discord.gg/EbzMcW3pWK',
+          count: null
+        },
+        {
+          id: 102368,
+          tokenId: 47691,
+          platform: 'twitter',
+          url: 'https://twitter.com/degenspartanai',
+          count: null
+        },
+        {
+          id: 102369,
+          tokenId: 47691,
+          platform: 'telegram',
+          url: 'https://t.me/degenspartanai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47716,
+      symbol: 'ai16z',
+      name: 'ai16z',
+      contractAddress: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:47:27.093Z',
+      updatedAt: '2025-01-10T19:44:18.174Z',
+      marketCap: '1601194982',
+      price: '1.45',
+      volume24h: '45315929.27',
+      changesJson: { h1: -0.003, h6: -0.0165, m5: -0.0018, h24: 0.0546 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC.png?key=b380cb',
+      liquidity: { usd: 8547291.76, base: 3205089, quote: 20414 },
+      pairUrl: 'https://dexscreener.com/solana/8sn9549p3zn6xpqrqpapn57xzkch6sjxlwuejcg2w4ji',
+      transactionsJson: {
+        h1: { buys: 189, sells: 299 },
+        h6: { buys: 2868, sells: 2562 },
+        m5: { buys: 5, sells: 42 },
+        h24: { buys: 12574, sells: 11719 }
+      },
+      baseToken: {
+        name: 'ai16z',
+        symbol: 'ai16z',
+        address: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC/header.png?key=b380cb',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://elizaos.ai/', label: 'Website' },
+        {
+          url: 'https://www.daos.fun/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+          label: 'Daos.fun'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185686,
+          tokenId: 47716,
+          timeframe: 'm5',
+          percentage: '-0.0018'
+        },
+        {
+          id: 185687,
+          tokenId: 47716,
+          timeframe: 'h1',
+          percentage: '-0.003'
+        },
+        {
+          id: 185688,
+          tokenId: 47716,
+          timeframe: 'h6',
+          percentage: '-0.0165'
+        },
+        {
+          id: 185689,
+          tokenId: 47716,
+          timeframe: 'h24',
+          percentage: '0.0546'
+        }
+      ],
+      socials: [
+        {
+          id: 102418,
+          tokenId: 47716,
+          platform: 'telegram',
+          url: 'https://t.me/ai16zcommunity',
+          count: null
+        },
+        {
+          id: 102419,
+          tokenId: 47716,
+          platform: 'discord',
+          url: 'https://discord.gg/ai16z',
+          count: null
+        },
+        {
+          id: 102417,
+          tokenId: 47716,
+          platform: 'twitter',
+          url: 'https://x.com/ai16zdao',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104502,
+      symbol: 'DUNA',
+      name: 'DUNA',
+      contractAddress: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:33:34.938Z',
+      updatedAt: '2025-01-10T19:44:18.209Z',
+      marketCap: '425469',
+      price: '0.0004254',
+      volume24h: '242533.07',
+      changesJson: { h1: 0.0626, h6: 0.1817, m5: 0.0285, h24: 0.2694 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump.png?key=744569',
+      liquidity: { usd: 149702.76, base: 175703161, quote: 394.1362 },
+      pairUrl: 'https://dexscreener.com/solana/czisgeuhnsrlzmfsc1jq7krz4ga1j1fncvmdkrjescua',
+      transactionsJson: {
+        h1: { buys: 46, sells: 52 },
+        h6: { buys: 255, sells: 264 },
+        m5: { buys: 3, sells: 4 },
+        h24: { buys: 794, sells: 719 }
+      },
+      baseToken: {
+        name: 'DUNA',
+        symbol: 'DUNA',
+        address: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump/header.png?key=744569',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://m.theblockbeats.info/en/news/51974',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403685,
+          tokenId: 104502,
+          timeframe: 'm5',
+          percentage: '0.0285'
+        },
+        {
+          id: 403686,
+          tokenId: 104502,
+          timeframe: 'h1',
+          percentage: '0.0626'
+        },
+        {
+          id: 403687,
+          tokenId: 104502,
+          timeframe: 'h6',
+          percentage: '0.1817'
+        },
+        {
+          id: 403688,
+          tokenId: 104502,
+          timeframe: 'h24',
+          percentage: '0.2694'
+        }
+      ],
+      socials: [
+        {
+          id: 215313,
+          tokenId: 104502,
+          platform: 'telegram',
+          url: 'https://t.me/dunaportal',
+          count: null
+        },
+        {
+          id: 215312,
+          tokenId: 104502,
+          platform: 'twitter',
+          url: 'https://x.com/i/communities/1874537471955927076',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300480,
+      symbol: 'Fartcoin ',
+      name: 'Fartcoin ',
+      contractAddress: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:54.075Z',
+      updatedAt: '2025-01-10T19:44:18.221Z',
+      marketCap: '872686488',
+      price: '0.8726',
+      volume24h: '27666982.39',
+      changesJson: { h1: -0.0056, h6: 0.0509, m5: 0.0066, h24: 0.102 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump.png?key=8180d2',
+      liquidity: { usd: 16637555.02, base: 9543955, quote: 43695 },
+      pairUrl: 'https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw',
+      transactionsJson: {
+        h1: { buys: 302, sells: 357 },
+        h6: { buys: 2189, sells: 2113 },
+        m5: { buys: 26, sells: 14 },
+        h24: { buys: 9987, sells: 11318 }
+      },
+      baseToken: {
+        name: 'Fartcoin ',
+        symbol: 'Fartcoin ',
+        address: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump/header.png?key=8180d2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149145,
+          tokenId: 300480,
+          timeframe: 'm5',
+          percentage: '0.0066'
+        },
+        {
+          id: 1149146,
+          tokenId: 300480,
+          timeframe: 'h1',
+          percentage: '-0.0056'
+        },
+        {
+          id: 1149147,
+          tokenId: 300480,
+          timeframe: 'h6',
+          percentage: '0.0509'
+        },
+        {
+          id: 1149148,
+          tokenId: 300480,
+          timeframe: 'h24',
+          percentage: '0.102'
+        }
+      ],
+      socials: [
+        {
+          id: 588853,
+          tokenId: 300480,
+          platform: 'twitter',
+          url: 'https://x.com/FartCoinOfSOL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300466,
+      symbol: 'TRUST',
+      name: 'Trust Protocol AI',
+      contractAddress: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:18.178Z',
+      updatedAt: '2025-01-10T19:44:18.232Z',
+      marketCap: '2061984',
+      price: '0.002147',
+      volume24h: '11392560.74',
+      changesJson: { h1: -0.179, h6: -0.2451, m5: -0.0584, h24: -0.309 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump.png?key=016d6e',
+      liquidity: { usd: 231168.85, base: 53881164, quote: 606.6729 },
+      pairUrl: 'https://dexscreener.com/solana/6gxvabfmlbupbf152wmuf9v8u5emfcdfn99wpsyz1jac',
+      transactionsJson: {
+        h1: { buys: 657, sells: 570 },
+        h6: { buys: 5123, sells: 4204 },
+        m5: { buys: 67, sells: 57 },
+        h24: { buys: 30257, sells: 25978 }
+      },
+      baseToken: {
+        name: 'Trust Protocol AI',
+        symbol: 'TRUST',
+        address: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump/header.png?key=016d6e',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://www.trustprotocol.app/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149137,
+          tokenId: 300466,
+          timeframe: 'm5',
+          percentage: '-0.0584'
+        },
+        {
+          id: 1149138,
+          tokenId: 300466,
+          timeframe: 'h1',
+          percentage: '-0.179'
+        },
+        {
+          id: 1149139,
+          tokenId: 300466,
+          timeframe: 'h6',
+          percentage: '-0.2451'
+        },
+        {
+          id: 1149140,
+          tokenId: 300466,
+          timeframe: 'h24',
+          percentage: '-0.309'
+        }
+      ],
+      socials: [
+        {
+          id: 588826,
+          tokenId: 300466,
+          platform: 'twitter',
+          url: 'http://x.com/trustprotocolai',
+          count: null
+        },
+        {
+          id: 588827,
+          tokenId: 300466,
+          platform: 'telegram',
+          url: 'http://t.me/trustprotocolai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 105610,
+      symbol: 'aether',
+      name: 'aether collective',
+      contractAddress: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:36:26.383Z',
+      updatedAt: '2025-01-10T19:44:18.244Z',
+      marketCap: '15098528',
+      price: '0.0151',
+      volume24h: '4949241.43',
+      changesJson: { h1: -0.0912, h6: -0.0134, m5: -0.0469, h24: 0.6707 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump.png?key=aa8dc2',
+      liquidity: { usd: 797908.26, base: 26437982, quote: 2094.2842 },
+      pairUrl: 'https://dexscreener.com/solana/c1iq2fynymmntnvd6cvdtdgxfz2sxqbydmpcun1v4nf9',
+      transactionsJson: {
+        h1: { buys: 262, sells: 144 },
+        h6: { buys: 1630, sells: 1700 },
+        m5: { buys: 26, sells: 18 },
+        h24: { buys: 8575, sells: 9325 }
+      },
+      baseToken: {
+        name: 'aether collective',
+        symbol: 'aether',
+        address: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump/header.png?key=aa8dc2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump?timestamp=1736538300000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.aetheros.co/', label: 'Website' },
+        {
+          url: 'https://github.com/AetherFrameworkAI/aether-framework',
+          label: 'Github'
+        },
+        {
+          url: 'https://aether-framework.gitbook.io/aetherframework/faq',
+          label: 'Gitbook'
+        },
+        { url: 'https://www.iamjedi.org/', label: 'JEDI AI' },
+        {
+          url: 'https://terminal.iamjedi.org/',
+          label: 'JEDI Terminal'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 407960,
+          tokenId: 105610,
+          timeframe: 'm5',
+          percentage: '-0.0469'
+        },
+        {
+          id: 407961,
+          tokenId: 105610,
+          timeframe: 'h1',
+          percentage: '-0.0912'
+        },
+        {
+          id: 407962,
+          tokenId: 105610,
+          timeframe: 'h6',
+          percentage: '-0.0134'
+        },
+        {
+          id: 407963,
+          tokenId: 105610,
+          timeframe: 'h24',
+          percentage: '0.6707'
+        }
+      ],
+      socials: [
+        {
+          id: 217406,
+          tokenId: 105610,
+          platform: 'telegram',
+          url: 'https://t.me/aetherdotfun',
+          count: null
+        },
+        {
+          id: 217405,
+          tokenId: 105610,
+          platform: 'twitter',
+          url: 'https://x.com/aetherdotfun',
+          count: null
+        }
+      ]
+    }
+  ],
+  level: 'info',
+  message: '[dd-serv] Fetched token list:'
+}
+{
+  requestId: 'bb60a005-9523-40e3-b00e-7c138cf86f5f',
+  contestId: 9,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T19:44:48.364Z'
+}
+{
+  requestId: 'bb60a005-9523-40e3-b00e-7c138cf86f5f',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 14,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T19:44:48.378Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-10T19:49:30.387Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-10T19:49:30.392Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-10T19:49:30.393Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:49:30.507Z'
+}
+{
+  timestamp: '2025-01-10T19:49:34.693Z',
+  data: [
+    {
+      id: 105871,
+      symbol: 'ALCH',
+      name: 'Alchemist AI',
+      contractAddress: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:49:35.312Z',
+      updatedAt: '2025-01-10T19:49:18.484Z',
+      marketCap: '120079294',
+      price: '0.1412',
+      volume24h: '15220251.56',
+      changesJson: { h1: 0.0185, h6: 0.1239, m5: -0.0023, h24: 0.0764 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump.png?key=a88f75',
+      liquidity: { usd: 4782526.49, base: 16947172, quote: 12571 },
+      pairUrl: 'https://dexscreener.com/solana/fydf3vkqfbcvntsbi7l7lremrfpmxkbqqgagnpg1hxxd',
+      transactionsJson: {
+        h1: { buys: 204, sells: 273 },
+        h6: { buys: 2349, sells: 2924 },
+        m5: { buys: 8, sells: 12 },
+        h24: { buys: 9484, sells: 9148 }
+      },
+      baseToken: {
+        name: 'Alchemist AI',
+        symbol: 'ALCH',
+        address: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump/header.png?key=a88f75',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.alchemistai.app/', label: 'Website' },
+        { url: 'https://docs.alchemistai.app/docs', label: 'Docs' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 408982,
+          tokenId: 105871,
+          timeframe: 'm5',
+          percentage: '-0.0023'
+        },
+        {
+          id: 408983,
+          tokenId: 105871,
+          timeframe: 'h1',
+          percentage: '0.0185'
+        },
+        {
+          id: 408984,
+          tokenId: 105871,
+          timeframe: 'h6',
+          percentage: '0.1239'
+        },
+        {
+          id: 408985,
+          tokenId: 105871,
+          timeframe: 'h24',
+          percentage: '0.0764'
+        }
+      ],
+      socials: [
+        {
+          id: 217901,
+          tokenId: 105871,
+          platform: 'twitter',
+          url: 'https://x.com/alchemistAIapp',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47672,
+      symbol: 'BULLY',
+      name: 'Dolos The Bully',
+      contractAddress: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:44:08.983Z',
+      updatedAt: '2025-01-10T19:49:18.495Z',
+      marketCap: '60238319',
+      price: '0.06271',
+      volume24h: '5979790.48',
+      changesJson: { h1: -0.0292, h6: 0.2205, m5: 0.0091, h24: 0.4543 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump.png?key=4512cd',
+      liquidity: { usd: 2532365.71, base: 20215556, quote: 6660.6905 },
+      pairUrl: 'https://dexscreener.com/solana/a88btp7eexypkgbwvfbymnm5nom2bks6s1o1f5u6gohb',
+      transactionsJson: {
+        h1: { buys: 224, sells: 127 },
+        h6: { buys: 1756, sells: 2221 },
+        m5: { buys: 17, sells: 21 },
+        h24: { buys: 6463, sells: 6276 }
+      },
+      baseToken: {
+        name: 'Dolos The Bully',
+        symbol: 'BULLY',
+        address: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump/header.png?key=4512cd',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://Dolosdiary.com', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185532,
+          tokenId: 47672,
+          timeframe: 'm5',
+          percentage: '0.0091'
+        },
+        {
+          id: 185533,
+          tokenId: 47672,
+          timeframe: 'h1',
+          percentage: '-0.0292'
+        },
+        {
+          id: 185534,
+          tokenId: 47672,
+          timeframe: 'h6',
+          percentage: '0.2205'
+        },
+        {
+          id: 185535,
+          tokenId: 47672,
+          timeframe: 'h24',
+          percentage: '0.4543'
+        }
+      ],
+      socials: [
+        {
+          id: 102328,
+          tokenId: 47672,
+          platform: 'telegram',
+          url: 'https://t.me/dolosTheBully_portal',
+          count: null
+        },
+        {
+          id: 102327,
+          tokenId: 47672,
+          platform: 'twitter',
+          url: 'https://x.com/dolos_diary',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47698,
+      symbol: 'SOL',
+      name: 'Wrapped SOL',
+      contractAddress: 'So11111111111111111111111111111111111111112',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:46:12.321Z',
+      updatedAt: '2025-01-10T19:49:18.523Z',
+      marketCap: null,
+      price: '189.96',
+      volume24h: '228390063.03',
+      changesJson: { h1: -0.0006, h6: 0.0177, m5: -0.002, h24: 0.0202 },
+      imageUrl: null,
+      liquidity: { usd: 24695595.66, base: 97818, quote: 6113466 },
+      pairUrl: 'https://dexscreener.com/solana/8slbnzoa1cfnvmjlpfp98zlanfsycfapfjkmbixnlwxj',
+      transactionsJson: {
+        h1: { buys: 603, sells: 632 },
+        h6: { buys: 5691, sells: 5903 },
+        m5: { buys: 27, sells: 48 },
+        h24: { buys: 15907, sells: 16125 }
+      },
+      baseToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      headerImage: null,
+      openGraphImage: null,
+      quoteToken: {
+        name: 'USD Coin',
+        symbol: 'USDC',
+        address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+      },
+      websites: null,
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185616,
+          tokenId: 47698,
+          timeframe: 'm5',
+          percentage: '-0.002'
+        },
+        {
+          id: 185617,
+          tokenId: 47698,
+          timeframe: 'h1',
+          percentage: '-0.0006'
+        },
+        {
+          id: 185618,
+          tokenId: 47698,
+          timeframe: 'h6',
+          percentage: '0.0177'
+        },
+        {
+          id: 185619,
+          tokenId: 47698,
+          timeframe: 'h24',
+          percentage: '0.0202'
+        }
+      ],
+      socials: []
+    },
+    {
+      id: 104324,
+      symbol: 'ZEREBRO',
+      name: 'zerebro',
+      contractAddress: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:16.867Z',
+      updatedAt: '2025-01-10T19:49:18.539Z',
+      marketCap: '318912281',
+      price: '0.3189',
+      volume24h: '15485200.51',
+      changesJson: { h1: -0.0014, h6: 0.0656, m5: -0.0025, h24: 0.0389 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn.png?key=2785d3',
+      liquidity: { usd: 7071342.58, base: 11074219, quote: 18632 },
+      pairUrl: 'https://dexscreener.com/solana/3sjnocnkkhwpvxygdtem8rccihsgc9jsfzuuazkbvrvp',
+      transactionsJson: {
+        h1: { buys: 169, sells: 175 },
+        h6: { buys: 1499, sells: 1308 },
+        m5: { buys: 9, sells: 3 },
+        h24: { buys: 6745, sells: 6550 }
+      },
+      baseToken: {
+        name: 'zerebro',
+        symbol: 'ZEREBRO',
+        address: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn/header.png?key=2785d3',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://zerebro.org/', label: 'Website' },
+        { url: 'https://warpcast.com/zerebro', label: 'warpcast' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403018,
+          tokenId: 104324,
+          timeframe: 'm5',
+          percentage: '-0.0025'
+        },
+        {
+          id: 403019,
+          tokenId: 104324,
+          timeframe: 'h1',
+          percentage: '-0.0014'
+        },
+        {
+          id: 403020,
+          tokenId: 104324,
+          timeframe: 'h6',
+          percentage: '0.0656'
+        },
+        {
+          id: 403021,
+          tokenId: 104324,
+          timeframe: 'h24',
+          percentage: '0.0389'
+        }
+      ],
+      socials: [
+        {
+          id: 214959,
+          tokenId: 104324,
+          platform: 'telegram',
+          url: 'https://t.me/zerebro_portal',
+          count: null
+        },
+        {
+          id: 214958,
+          tokenId: 104324,
+          platform: 'twitter',
+          url: 'https://x.com/0xzerebro',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104323,
+      symbol: 'zero',
+      name: 'ZERO',
+      contractAddress: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:05.537Z',
+      updatedAt: '2025-01-10T19:49:18.550Z',
+      marketCap: '81533',
+      price: '0.00009895',
+      volume24h: '4195.64',
+      changesJson: { h1: -0.0028, h6: 0.1093, h24: 0.2045 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump.png?key=8f2797',
+      liquidity: { usd: 54973.6, base: 278049513, quote: 144.3209 },
+      pairUrl: 'https://dexscreener.com/solana/bnsspdwrsuigbaiukc3pphp4sns5igdhlm2a9qacthky',
+      transactionsJson: {
+        h1: { buys: 1, sells: 1 },
+        h6: { buys: 11, sells: 7 },
+        m5: { buys: 0, sells: 0 },
+        h24: { buys: 24, sells: 34 }
+      },
+      baseToken: {
+        name: 'ZERO',
+        symbol: 'zero',
+        address: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/header.png?key=8f2797',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403136,
+          tokenId: 104323,
+          timeframe: 'm5',
+          percentage: '0.0041'
+        },
+        {
+          id: 403015,
+          tokenId: 104323,
+          timeframe: 'h1',
+          percentage: '-0.0028'
+        },
+        {
+          id: 403016,
+          tokenId: 104323,
+          timeframe: 'h6',
+          percentage: '0.1093'
+        },
+        {
+          id: 403017,
+          tokenId: 104323,
+          timeframe: 'h24',
+          percentage: '0.2045'
+        }
+      ],
+      socials: [
+        {
+          id: 214956,
+          tokenId: 104323,
+          platform: 'twitter',
+          url: 'https://x.com/zero_cto',
+          count: null
+        },
+        {
+          id: 214957,
+          tokenId: 104323,
+          platform: 'telegram',
+          url: 'https://t.me/ZeroCommunityCTO',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300479,
+      symbol: 'LLM',
+      name: 'Large Language Model',
+      contractAddress: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:38.066Z',
+      updatedAt: '2025-01-10T19:49:18.560Z',
+      marketCap: '104347591',
+      price: '0.1043',
+      volume24h: '63390905.03',
+      changesJson: { h1: 0.0283, h6: 0.0719, m5: -0.0337, h24: 0.2214 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump.png?key=7acaee',
+      liquidity: { usd: 2841931.97, base: 13634533, quote: 7470.2455 },
+      pairUrl: 'https://dexscreener.com/solana/g6xzu9m4yamow1ugfkcahuw5ufpurbk4kcewr9dp1kxj',
+      transactionsJson: {
+        h1: { buys: 660, sells: 814 },
+        h6: { buys: 9723, sells: 8862 },
+        m5: { buys: 54, sells: 47 },
+        h24: { buys: 45659, sells: 42657 }
+      },
+      baseToken: {
+        name: 'Large Language Model',
+        symbol: 'LLM',
+        address: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump/header.png?key=7acaee',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://linktr.ee/largelanguagemodel',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149141,
+          tokenId: 300479,
+          timeframe: 'm5',
+          percentage: '-0.0337'
+        },
+        {
+          id: 1149142,
+          tokenId: 300479,
+          timeframe: 'h1',
+          percentage: '0.0283'
+        },
+        {
+          id: 1149143,
+          tokenId: 300479,
+          timeframe: 'h6',
+          percentage: '0.0719'
+        },
+        {
+          id: 1149144,
+          tokenId: 300479,
+          timeframe: 'h24',
+          percentage: '0.2214'
+        }
+      ],
+      socials: [
+        {
+          id: 588851,
+          tokenId: 300479,
+          platform: 'twitter',
+          url: 'https://x.com/ai160kg',
+          count: null
+        },
+        {
+          id: 588852,
+          tokenId: 300479,
+          platform: 'telegram',
+          url: 'https://t.me/largelanguagemodelsolchannel',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300441,
+      symbol: 'HYPER',
+      name: 'Hyperfy',
+      contractAddress: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:14:01.209Z',
+      updatedAt: '2025-01-10T19:49:18.571Z',
+      marketCap: '106743746',
+      price: '0.1067',
+      volume24h: '8332804.73',
+      changesJson: { h1: -0.0086, h6: 0.2466, m5: 0.0154, h24: 0.3588 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8.png?key=1f2d0a',
+      liquidity: { usd: 1192682.94, base: 5586664, quote: 3139.1349 },
+      pairUrl: 'https://dexscreener.com/solana/cs94de2znqtyxcftfdfpsejkphbdsvzevkhloykmx7ge',
+      transactionsJson: {
+        h1: { buys: 212, sells: 156 },
+        h6: { buys: 1964, sells: 1822 },
+        m5: { buys: 6, sells: 23 },
+        h24: { buys: 8070, sells: 7162 }
+      },
+      baseToken: {
+        name: 'Hyperfy',
+        symbol: 'HYPER',
+        address: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8/header.png?key=1f2d0a',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://hyperfy.io/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149039,
+          tokenId: 300441,
+          timeframe: 'm5',
+          percentage: '0.0154'
+        },
+        {
+          id: 1149040,
+          tokenId: 300441,
+          timeframe: 'h1',
+          percentage: '-0.0086'
+        },
+        {
+          id: 1149041,
+          tokenId: 300441,
+          timeframe: 'h6',
+          percentage: '0.2466'
+        },
+        {
+          id: 1149042,
+          tokenId: 300441,
+          timeframe: 'h24',
+          percentage: '0.3588'
+        }
+      ],
+      socials: [
+        {
+          id: 588778,
+          tokenId: 300441,
+          platform: 'twitter',
+          url: 'https://x.com/hyperfy_io',
+          count: null
+        },
+        {
+          id: 588779,
+          tokenId: 300441,
+          platform: 'discord',
+          url: 'http://discord.gg/TGtyTEWB2X',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300495,
+      symbol: 'MLG',
+      name: '360noscope420blazeit',
+      contractAddress: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:16:13.319Z',
+      updatedAt: '2025-01-10T19:49:18.620Z',
+      marketCap: '91297443',
+      price: '0.0915',
+      volume24h: '27286666.85',
+      changesJson: { h1: 0.1683, h6: 0.1412, m5: 0.0467, h24: -0.1128 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL.png?key=04f2c9',
+      liquidity: { usd: 2218668.35, base: 12138941, quote: 5835.6034 },
+      pairUrl: 'https://dexscreener.com/solana/f4hdxnulqjsbwcl5vweucpjueqop3gdteussqaxbeyw4',
+      transactionsJson: {
+        h1: { buys: 782, sells: 1433 },
+        h6: { buys: 5501, sells: 5411 },
+        m5: { buys: 62, sells: 392 },
+        h24: { buys: 21584, sells: 20468 }
+      },
+      baseToken: {
+        name: '360noscope420blazeit',
+        symbol: 'MLG',
+        address: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL/header.png?key=04f2c9',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.mlg.lol/', label: 'Website' },
+        { url: 'https://mlgedit.com/', label: 'Meme Maker' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149206,
+          tokenId: 300495,
+          timeframe: 'm5',
+          percentage: '0.0467'
+        },
+        {
+          id: 1149207,
+          tokenId: 300495,
+          timeframe: 'h1',
+          percentage: '0.1683'
+        },
+        {
+          id: 1149208,
+          tokenId: 300495,
+          timeframe: 'h6',
+          percentage: '0.1412'
+        },
+        {
+          id: 1149209,
+          tokenId: 300495,
+          timeframe: 'h24',
+          percentage: '-0.1128'
+        }
+      ],
+      socials: [
+        {
+          id: 588882,
+          tokenId: 300495,
+          platform: 'discord',
+          url: 'https://discord.com/invite/munnopoly',
+          count: null
+        },
+        {
+          id: 588880,
+          tokenId: 300495,
+          platform: 'twitter',
+          url: 'https://x.com/MLGsolana420',
+          count: null
+        },
+        {
+          id: 588881,
+          tokenId: 300495,
+          platform: 'telegram',
+          url: 'https://t.me/MLGCTOPORTAL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 168485,
+      symbol: 'PERSAI',
+      name: 'Persona',
+      contractAddress: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX',
+      chain: 'SOLANA',
+      createdAt: '2025-01-05T04:00:02.850Z',
+      updatedAt: '2025-01-10T19:49:18.607Z',
+      marketCap: '52248',
+      price: '0.00005226',
+      volume24h: '17857.21',
+      changesJson: { h1: 0.0528, h6: 0.2262, m5: 0.0021, h24: 0.4723 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX.png?key=70eae2',
+      liquidity: { usd: 42019.33, base: 402451303, quote: 110.5942 },
+      pairUrl: 'https://dexscreener.com/solana/fowf3hssemckhwdchse8etjns7byqm1mi3labnk25gw',
+      transactionsJson: {
+        h1: { buys: 10, sells: 10 },
+        h6: { buys: 43, sells: 44 },
+        m5: { buys: 1, sells: 0 },
+        h24: { buys: 204, sells: 184 }
+      },
+      baseToken: {
+        name: 'Persona',
+        symbol: 'PERSAI',
+        address: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX/header.png?key=70eae2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 648656,
+          tokenId: 168485,
+          timeframe: 'm5',
+          percentage: '0.0021'
+        },
+        {
+          id: 648657,
+          tokenId: 168485,
+          timeframe: 'h1',
+          percentage: '0.0528'
+        },
+        {
+          id: 648658,
+          tokenId: 168485,
+          timeframe: 'h6',
+          percentage: '0.2262'
+        },
+        {
+          id: 648659,
+          tokenId: 168485,
+          timeframe: 'h24',
+          percentage: '0.4723'
+        }
+      ],
+      socials: [
+        {
+          id: 336868,
+          tokenId: 168485,
+          platform: 'telegram',
+          url: 'https://t.me/personAIonly',
+          count: null
+        },
+        {
+          id: 336867,
+          tokenId: 168485,
+          platform: 'twitter',
+          url: 'https://x.com/personAIonly',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47716,
+      symbol: 'ai16z',
+      name: 'ai16z',
+      contractAddress: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:47:27.093Z',
+      updatedAt: '2025-01-10T19:49:18.582Z',
+      marketCap: '1593152333',
+      price: '1.44',
+      volume24h: '44046599.42',
+      changesJson: { h1: -0.0206, h6: -0.02, m5: -0.0058, h24: 0.0701 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC.png?key=b380cb',
+      liquidity: { usd: 8520597.8, base: 3237043, quote: 20173 },
+      pairUrl: 'https://dexscreener.com/solana/8sn9549p3zn6xpqrqpapn57xzkch6sjxlwuejcg2w4ji',
+      transactionsJson: {
+        h1: { buys: 147, sells: 317 },
+        h6: { buys: 2815, sells: 2546 },
+        m5: { buys: 13, sells: 17 },
+        h24: { buys: 12386, sells: 11725 }
+      },
+      baseToken: {
+        name: 'ai16z',
+        symbol: 'ai16z',
+        address: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC/header.png?key=b380cb',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://elizaos.ai/', label: 'Website' },
+        {
+          url: 'https://www.daos.fun/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+          label: 'Daos.fun'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185686,
+          tokenId: 47716,
+          timeframe: 'm5',
+          percentage: '-0.0058'
+        },
+        {
+          id: 185687,
+          tokenId: 47716,
+          timeframe: 'h1',
+          percentage: '-0.0206'
+        },
+        {
+          id: 185688,
+          tokenId: 47716,
+          timeframe: 'h6',
+          percentage: '-0.02'
+        },
+        {
+          id: 185689,
+          tokenId: 47716,
+          timeframe: 'h24',
+          percentage: '0.0701'
+        }
+      ],
+      socials: [
+        {
+          id: 102418,
+          tokenId: 47716,
+          platform: 'telegram',
+          url: 'https://t.me/ai16zcommunity',
+          count: null
+        },
+        {
+          id: 102419,
+          tokenId: 47716,
+          platform: 'discord',
+          url: 'https://discord.gg/ai16z',
+          count: null
+        },
+        {
+          id: 102417,
+          tokenId: 47716,
+          platform: 'twitter',
+          url: 'https://x.com/ai16zdao',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47691,
+      symbol: 'degenai',
+      name: 'Degen Spartan AI',
+      contractAddress: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:45:39.648Z',
+      updatedAt: '2025-01-10T19:49:18.595Z',
+      marketCap: '59522957',
+      price: '0.05952',
+      volume24h: '5006960.96',
+      changesJson: { h1: 0.0026, h6: 0.1229, m5: -0.0063, h24: 0.2932 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump.png?key=5a4d29',
+      liquidity: { usd: 2463979.79, base: 20670854, quote: 6493.2772 },
+      pairUrl: 'https://dexscreener.com/solana/dlaoh9okkk4gdtxj2mkh3wjue7vbhmbjrukmcid1pszx',
+      transactionsJson: {
+        h1: { buys: 109, sells: 139 },
+        h6: { buys: 760, sells: 1070 },
+        m5: { buys: 3, sells: 9 },
+        h24: { buys: 5521, sells: 5951 }
+      },
+      baseToken: {
+        name: 'Degen Spartan AI',
+        symbol: 'degenai',
+        address: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump/header.png?key=5a4d29',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://ai16z.ai', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185584,
+          tokenId: 47691,
+          timeframe: 'm5',
+          percentage: '-0.0063'
+        },
+        {
+          id: 185585,
+          tokenId: 47691,
+          timeframe: 'h1',
+          percentage: '0.0026'
+        },
+        {
+          id: 185586,
+          tokenId: 47691,
+          timeframe: 'h6',
+          percentage: '0.1229'
+        },
+        {
+          id: 185587,
+          tokenId: 47691,
+          timeframe: 'h24',
+          percentage: '0.2932'
+        }
+      ],
+      socials: [
+        {
+          id: 102370,
+          tokenId: 47691,
+          platform: 'discord',
+          url: 'https://discord.gg/EbzMcW3pWK',
+          count: null
+        },
+        {
+          id: 102368,
+          tokenId: 47691,
+          platform: 'twitter',
+          url: 'https://twitter.com/degenspartanai',
+          count: null
+        },
+        {
+          id: 102369,
+          tokenId: 47691,
+          platform: 'telegram',
+          url: 'https://t.me/degenspartanai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104502,
+      symbol: 'DUNA',
+      name: 'DUNA',
+      contractAddress: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:33:34.938Z',
+      updatedAt: '2025-01-10T19:49:18.631Z',
+      marketCap: '421399',
+      price: '0.0004214',
+      volume24h: '245658.49',
+      changesJson: { h1: 0.0651, h6: 0.1697, m5: -0.0346, h24: 0.2602 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump.png?key=744569',
+      liquidity: { usd: 148922.25, base: 176490087, quote: 392.4194 },
+      pairUrl: 'https://dexscreener.com/solana/czisgeuhnsrlzmfsc1jq7krz4ga1j1fncvmdkrjescua',
+      transactionsJson: {
+        h1: { buys: 49, sells: 51 },
+        h6: { buys: 259, sells: 267 },
+        m5: { buys: 2, sells: 3 },
+        h24: { buys: 799, sells: 722 }
+      },
+      baseToken: {
+        name: 'DUNA',
+        symbol: 'DUNA',
+        address: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump/header.png?key=744569',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://m.theblockbeats.info/en/news/51974',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403685,
+          tokenId: 104502,
+          timeframe: 'm5',
+          percentage: '-0.0346'
+        },
+        {
+          id: 403686,
+          tokenId: 104502,
+          timeframe: 'h1',
+          percentage: '0.0651'
+        },
+        {
+          id: 403687,
+          tokenId: 104502,
+          timeframe: 'h6',
+          percentage: '0.1697'
+        },
+        {
+          id: 403688,
+          tokenId: 104502,
+          timeframe: 'h24',
+          percentage: '0.2602'
+        }
+      ],
+      socials: [
+        {
+          id: 215313,
+          tokenId: 104502,
+          platform: 'telegram',
+          url: 'https://t.me/dunaportal',
+          count: null
+        },
+        {
+          id: 215312,
+          tokenId: 104502,
+          platform: 'twitter',
+          url: 'https://x.com/i/communities/1874537471955927076',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300480,
+      symbol: 'Fartcoin ',
+      name: 'Fartcoin ',
+      contractAddress: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:54.075Z',
+      updatedAt: '2025-01-10T19:49:18.641Z',
+      marketCap: '874680784',
+      price: '0.8746',
+      volume24h: '27569344.78',
+      changesJson: { h1: -0.0008, h6: 0.0631, m5: 0.0013, h24: 0.1287 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump.png?key=8180d2',
+      liquidity: { usd: 16648786.79, base: 9505173, quote: 43874 },
+      pairUrl: 'https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw',
+      transactionsJson: {
+        h1: { buys: 324, sells: 339 },
+        h6: { buys: 2035, sells: 2061 },
+        m5: { buys: 30, sells: 12 },
+        h24: { buys: 9979, sells: 11251 }
+      },
+      baseToken: {
+        name: 'Fartcoin ',
+        symbol: 'Fartcoin ',
+        address: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump/header.png?key=8180d2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149146,
+          tokenId: 300480,
+          timeframe: 'h1',
+          percentage: '-0.0008'
+        },
+        {
+          id: 1149147,
+          tokenId: 300480,
+          timeframe: 'h6',
+          percentage: '0.0631'
+        },
+        {
+          id: 1149148,
+          tokenId: 300480,
+          timeframe: 'h24',
+          percentage: '0.1287'
+        },
+        {
+          id: 1149145,
+          tokenId: 300480,
+          timeframe: 'm5',
+          percentage: '0.0013'
+        }
+      ],
+      socials: [
+        {
+          id: 588853,
+          tokenId: 300480,
+          platform: 'twitter',
+          url: 'https://x.com/FartCoinOfSOL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300466,
+      symbol: 'TRUST',
+      name: 'Trust Protocol AI',
+      contractAddress: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:18.178Z',
+      updatedAt: '2025-01-10T19:49:18.652Z',
+      marketCap: '1985419',
+      price: '0.002067',
+      volume24h: '11240253.15',
+      changesJson: { h1: -0.1549, h6: -0.2806, m5: -0.0356, h24: -0.4022 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump.png?key=016d6e',
+      liquidity: { usd: 226625.33, base: 54873792, quote: 596.06233 },
+      pairUrl: 'https://dexscreener.com/solana/6gxvabfmlbupbf152wmuf9v8u5emfcdfn99wpsyz1jac',
+      transactionsJson: {
+        h1: { buys: 682, sells: 587 },
+        h6: { buys: 5129, sells: 4211 },
+        m5: { buys: 90, sells: 65 },
+        h24: { buys: 29947, sells: 25789 }
+      },
+      baseToken: {
+        name: 'Trust Protocol AI',
+        symbol: 'TRUST',
+        address: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump/header.png?key=016d6e',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://www.trustprotocol.app/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149137,
+          tokenId: 300466,
+          timeframe: 'm5',
+          percentage: '-0.0356'
+        },
+        {
+          id: 1149138,
+          tokenId: 300466,
+          timeframe: 'h1',
+          percentage: '-0.1549'
+        },
+        {
+          id: 1149139,
+          tokenId: 300466,
+          timeframe: 'h6',
+          percentage: '-0.2806'
+        },
+        {
+          id: 1149140,
+          tokenId: 300466,
+          timeframe: 'h24',
+          percentage: '-0.4022'
+        }
+      ],
+      socials: [
+        {
+          id: 588826,
+          tokenId: 300466,
+          platform: 'twitter',
+          url: 'http://x.com/trustprotocolai',
+          count: null
+        },
+        {
+          id: 588827,
+          tokenId: 300466,
+          platform: 'telegram',
+          url: 'http://t.me/trustprotocolai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 105610,
+      symbol: 'aether',
+      name: 'aether collective',
+      contractAddress: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:36:26.383Z',
+      updatedAt: '2025-01-10T19:49:18.663Z',
+      marketCap: '15245090',
+      price: '0.01524',
+      volume24h: '4953439.69',
+      changesJson: { h1: -0.0983, h6: 0.0363, m5: -0.0013, h24: 0.7199 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump.png?key=aa8dc2',
+      liquidity: { usd: 801058.92, base: 26237174, quote: 2110.5544 },
+      pairUrl: 'https://dexscreener.com/solana/c1iq2fynymmntnvd6cvdtdgxfz2sxqbydmpcun1v4nf9',
+      transactionsJson: {
+        h1: { buys: 279, sells: 156 },
+        h6: { buys: 1596, sells: 1696 },
+        m5: { buys: 30, sells: 14 },
+        h24: { buys: 8575, sells: 9322 }
+      },
+      baseToken: {
+        name: 'aether collective',
+        symbol: 'aether',
+        address: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump/header.png?key=aa8dc2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.aetheros.co/', label: 'Website' },
+        {
+          url: 'https://github.com/AetherFrameworkAI/aether-framework',
+          label: 'Github'
+        },
+        {
+          url: 'https://aether-framework.gitbook.io/aetherframework/faq',
+          label: 'Gitbook'
+        },
+        { url: 'https://www.iamjedi.org/', label: 'JEDI AI' },
+        {
+          url: 'https://terminal.iamjedi.org/',
+          label: 'JEDI Terminal'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 407960,
+          tokenId: 105610,
+          timeframe: 'm5',
+          percentage: '-0.0013'
+        },
+        {
+          id: 407961,
+          tokenId: 105610,
+          timeframe: 'h1',
+          percentage: '-0.0983'
+        },
+        {
+          id: 407962,
+          tokenId: 105610,
+          timeframe: 'h6',
+          percentage: '0.0363'
+        },
+        {
+          id: 407963,
+          tokenId: 105610,
+          timeframe: 'h24',
+          percentage: '0.7199'
+        }
+      ],
+      socials: [
+        {
+          id: 217406,
+          tokenId: 105610,
+          platform: 'telegram',
+          url: 'https://t.me/aetherdotfun',
+          count: null
+        },
+        {
+          id: 217405,
+          tokenId: 105610,
+          platform: 'twitter',
+          url: 'https://x.com/aetherdotfun',
+          count: null
+        }
+      ]
+    }
+  ],
+  level: 'info',
+  message: '[dd-serv] Fetched token list:'
+}
+{
+  timestamp: '2025-01-10T19:49:34.780Z',
+  data: [
+    {
+      id: 105871,
+      symbol: 'ALCH',
+      name: 'Alchemist AI',
+      contractAddress: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:49:35.312Z',
+      updatedAt: '2025-01-10T19:49:18.484Z',
+      marketCap: '120079294',
+      price: '0.1412',
+      volume24h: '15220251.56',
+      changesJson: { h1: 0.0185, h6: 0.1239, m5: -0.0023, h24: 0.0764 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump.png?key=a88f75',
+      liquidity: { usd: 4782526.49, base: 16947172, quote: 12571 },
+      pairUrl: 'https://dexscreener.com/solana/fydf3vkqfbcvntsbi7l7lremrfpmxkbqqgagnpg1hxxd',
+      transactionsJson: {
+        h1: { buys: 204, sells: 273 },
+        h6: { buys: 2349, sells: 2924 },
+        m5: { buys: 8, sells: 12 },
+        h24: { buys: 9484, sells: 9148 }
+      },
+      baseToken: {
+        name: 'Alchemist AI',
+        symbol: 'ALCH',
+        address: 'HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump/header.png?key=a88f75',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.alchemistai.app/', label: 'Website' },
+        { url: 'https://docs.alchemistai.app/docs', label: 'Docs' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 408982,
+          tokenId: 105871,
+          timeframe: 'm5',
+          percentage: '-0.0023'
+        },
+        {
+          id: 408983,
+          tokenId: 105871,
+          timeframe: 'h1',
+          percentage: '0.0185'
+        },
+        {
+          id: 408984,
+          tokenId: 105871,
+          timeframe: 'h6',
+          percentage: '0.1239'
+        },
+        {
+          id: 408985,
+          tokenId: 105871,
+          timeframe: 'h24',
+          percentage: '0.0764'
+        }
+      ],
+      socials: [
+        {
+          id: 217901,
+          tokenId: 105871,
+          platform: 'twitter',
+          url: 'https://x.com/alchemistAIapp',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47672,
+      symbol: 'BULLY',
+      name: 'Dolos The Bully',
+      contractAddress: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:44:08.983Z',
+      updatedAt: '2025-01-10T19:49:18.495Z',
+      marketCap: '60238319',
+      price: '0.06271',
+      volume24h: '5979790.48',
+      changesJson: { h1: -0.0292, h6: 0.2205, m5: 0.0091, h24: 0.4543 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump.png?key=4512cd',
+      liquidity: { usd: 2532365.71, base: 20215556, quote: 6660.6905 },
+      pairUrl: 'https://dexscreener.com/solana/a88btp7eexypkgbwvfbymnm5nom2bks6s1o1f5u6gohb',
+      transactionsJson: {
+        h1: { buys: 224, sells: 127 },
+        h6: { buys: 1756, sells: 2221 },
+        m5: { buys: 17, sells: 21 },
+        h24: { buys: 6463, sells: 6276 }
+      },
+      baseToken: {
+        name: 'Dolos The Bully',
+        symbol: 'BULLY',
+        address: '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump/header.png?key=4512cd',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://Dolosdiary.com', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185532,
+          tokenId: 47672,
+          timeframe: 'm5',
+          percentage: '0.0091'
+        },
+        {
+          id: 185533,
+          tokenId: 47672,
+          timeframe: 'h1',
+          percentage: '-0.0292'
+        },
+        {
+          id: 185534,
+          tokenId: 47672,
+          timeframe: 'h6',
+          percentage: '0.2205'
+        },
+        {
+          id: 185535,
+          tokenId: 47672,
+          timeframe: 'h24',
+          percentage: '0.4543'
+        }
+      ],
+      socials: [
+        {
+          id: 102328,
+          tokenId: 47672,
+          platform: 'telegram',
+          url: 'https://t.me/dolosTheBully_portal',
+          count: null
+        },
+        {
+          id: 102327,
+          tokenId: 47672,
+          platform: 'twitter',
+          url: 'https://x.com/dolos_diary',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47698,
+      symbol: 'SOL',
+      name: 'Wrapped SOL',
+      contractAddress: 'So11111111111111111111111111111111111111112',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:46:12.321Z',
+      updatedAt: '2025-01-10T19:49:18.523Z',
+      marketCap: null,
+      price: '189.96',
+      volume24h: '228390063.03',
+      changesJson: { h1: -0.0006, h6: 0.0177, m5: -0.002, h24: 0.0202 },
+      imageUrl: null,
+      liquidity: { usd: 24695595.66, base: 97818, quote: 6113466 },
+      pairUrl: 'https://dexscreener.com/solana/8slbnzoa1cfnvmjlpfp98zlanfsycfapfjkmbixnlwxj',
+      transactionsJson: {
+        h1: { buys: 603, sells: 632 },
+        h6: { buys: 5691, sells: 5903 },
+        m5: { buys: 27, sells: 48 },
+        h24: { buys: 15907, sells: 16125 }
+      },
+      baseToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      headerImage: null,
+      openGraphImage: null,
+      quoteToken: {
+        name: 'USD Coin',
+        symbol: 'USDC',
+        address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+      },
+      websites: null,
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185616,
+          tokenId: 47698,
+          timeframe: 'm5',
+          percentage: '-0.002'
+        },
+        {
+          id: 185617,
+          tokenId: 47698,
+          timeframe: 'h1',
+          percentage: '-0.0006'
+        },
+        {
+          id: 185618,
+          tokenId: 47698,
+          timeframe: 'h6',
+          percentage: '0.0177'
+        },
+        {
+          id: 185619,
+          tokenId: 47698,
+          timeframe: 'h24',
+          percentage: '0.0202'
+        }
+      ],
+      socials: []
+    },
+    {
+      id: 104324,
+      symbol: 'ZEREBRO',
+      name: 'zerebro',
+      contractAddress: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:16.867Z',
+      updatedAt: '2025-01-10T19:49:18.539Z',
+      marketCap: '318912281',
+      price: '0.3189',
+      volume24h: '15485200.51',
+      changesJson: { h1: -0.0014, h6: 0.0656, m5: -0.0025, h24: 0.0389 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn.png?key=2785d3',
+      liquidity: { usd: 7071342.58, base: 11074219, quote: 18632 },
+      pairUrl: 'https://dexscreener.com/solana/3sjnocnkkhwpvxygdtem8rccihsgc9jsfzuuazkbvrvp',
+      transactionsJson: {
+        h1: { buys: 169, sells: 175 },
+        h6: { buys: 1499, sells: 1308 },
+        m5: { buys: 9, sells: 3 },
+        h24: { buys: 6745, sells: 6550 }
+      },
+      baseToken: {
+        name: 'zerebro',
+        symbol: 'ZEREBRO',
+        address: '8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn/header.png?key=2785d3',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://zerebro.org/', label: 'Website' },
+        { url: 'https://warpcast.com/zerebro', label: 'warpcast' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403018,
+          tokenId: 104324,
+          timeframe: 'm5',
+          percentage: '-0.0025'
+        },
+        {
+          id: 403019,
+          tokenId: 104324,
+          timeframe: 'h1',
+          percentage: '-0.0014'
+        },
+        {
+          id: 403020,
+          tokenId: 104324,
+          timeframe: 'h6',
+          percentage: '0.0656'
+        },
+        {
+          id: 403021,
+          tokenId: 104324,
+          timeframe: 'h24',
+          percentage: '0.0389'
+        }
+      ],
+      socials: [
+        {
+          id: 214959,
+          tokenId: 104324,
+          platform: 'telegram',
+          url: 'https://t.me/zerebro_portal',
+          count: null
+        },
+        {
+          id: 214958,
+          tokenId: 104324,
+          platform: 'twitter',
+          url: 'https://x.com/0xzerebro',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104323,
+      symbol: 'zero',
+      name: 'ZERO',
+      contractAddress: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:21:05.537Z',
+      updatedAt: '2025-01-10T19:49:18.550Z',
+      marketCap: '81533',
+      price: '0.00009895',
+      volume24h: '4195.64',
+      changesJson: { h1: -0.0028, h6: 0.1093, h24: 0.2045 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump.png?key=8f2797',
+      liquidity: { usd: 54973.6, base: 278049513, quote: 144.3209 },
+      pairUrl: 'https://dexscreener.com/solana/bnsspdwrsuigbaiukc3pphp4sns5igdhlm2a9qacthky',
+      transactionsJson: {
+        h1: { buys: 1, sells: 1 },
+        h6: { buys: 11, sells: 7 },
+        m5: { buys: 0, sells: 0 },
+        h24: { buys: 24, sells: 34 }
+      },
+      baseToken: {
+        name: 'ZERO',
+        symbol: 'zero',
+        address: '3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/header.png?key=8f2797',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403136,
+          tokenId: 104323,
+          timeframe: 'm5',
+          percentage: '0.0041'
+        },
+        {
+          id: 403015,
+          tokenId: 104323,
+          timeframe: 'h1',
+          percentage: '-0.0028'
+        },
+        {
+          id: 403016,
+          tokenId: 104323,
+          timeframe: 'h6',
+          percentage: '0.1093'
+        },
+        {
+          id: 403017,
+          tokenId: 104323,
+          timeframe: 'h24',
+          percentage: '0.2045'
+        }
+      ],
+      socials: [
+        {
+          id: 214956,
+          tokenId: 104323,
+          platform: 'twitter',
+          url: 'https://x.com/zero_cto',
+          count: null
+        },
+        {
+          id: 214957,
+          tokenId: 104323,
+          platform: 'telegram',
+          url: 'https://t.me/ZeroCommunityCTO',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300479,
+      symbol: 'LLM',
+      name: 'Large Language Model',
+      contractAddress: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:38.066Z',
+      updatedAt: '2025-01-10T19:49:18.560Z',
+      marketCap: '104347591',
+      price: '0.1043',
+      volume24h: '63390905.03',
+      changesJson: { h1: 0.0283, h6: 0.0719, m5: -0.0337, h24: 0.2214 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump.png?key=7acaee',
+      liquidity: { usd: 2841931.97, base: 13634533, quote: 7470.2455 },
+      pairUrl: 'https://dexscreener.com/solana/g6xzu9m4yamow1ugfkcahuw5ufpurbk4kcewr9dp1kxj',
+      transactionsJson: {
+        h1: { buys: 660, sells: 814 },
+        h6: { buys: 9723, sells: 8862 },
+        m5: { buys: 54, sells: 47 },
+        h24: { buys: 45659, sells: 42657 }
+      },
+      baseToken: {
+        name: 'Large Language Model',
+        symbol: 'LLM',
+        address: '98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump/header.png?key=7acaee',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://linktr.ee/largelanguagemodel',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149141,
+          tokenId: 300479,
+          timeframe: 'm5',
+          percentage: '-0.0337'
+        },
+        {
+          id: 1149142,
+          tokenId: 300479,
+          timeframe: 'h1',
+          percentage: '0.0283'
+        },
+        {
+          id: 1149143,
+          tokenId: 300479,
+          timeframe: 'h6',
+          percentage: '0.0719'
+        },
+        {
+          id: 1149144,
+          tokenId: 300479,
+          timeframe: 'h24',
+          percentage: '0.2214'
+        }
+      ],
+      socials: [
+        {
+          id: 588851,
+          tokenId: 300479,
+          platform: 'twitter',
+          url: 'https://x.com/ai160kg',
+          count: null
+        },
+        {
+          id: 588852,
+          tokenId: 300479,
+          platform: 'telegram',
+          url: 'https://t.me/largelanguagemodelsolchannel',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300441,
+      symbol: 'HYPER',
+      name: 'Hyperfy',
+      contractAddress: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:14:01.209Z',
+      updatedAt: '2025-01-10T19:49:18.571Z',
+      marketCap: '106743746',
+      price: '0.1067',
+      volume24h: '8332804.73',
+      changesJson: { h1: -0.0086, h6: 0.2466, m5: 0.0154, h24: 0.3588 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8.png?key=1f2d0a',
+      liquidity: { usd: 1192682.94, base: 5586664, quote: 3139.1349 },
+      pairUrl: 'https://dexscreener.com/solana/cs94de2znqtyxcftfdfpsejkphbdsvzevkhloykmx7ge',
+      transactionsJson: {
+        h1: { buys: 212, sells: 156 },
+        h6: { buys: 1964, sells: 1822 },
+        m5: { buys: 6, sells: 23 },
+        h24: { buys: 8070, sells: 7162 }
+      },
+      baseToken: {
+        name: 'Hyperfy',
+        symbol: 'HYPER',
+        address: '8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8/header.png?key=1f2d0a',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://hyperfy.io/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149039,
+          tokenId: 300441,
+          timeframe: 'm5',
+          percentage: '0.0154'
+        },
+        {
+          id: 1149040,
+          tokenId: 300441,
+          timeframe: 'h1',
+          percentage: '-0.0086'
+        },
+        {
+          id: 1149041,
+          tokenId: 300441,
+          timeframe: 'h6',
+          percentage: '0.2466'
+        },
+        {
+          id: 1149042,
+          tokenId: 300441,
+          timeframe: 'h24',
+          percentage: '0.3588'
+        }
+      ],
+      socials: [
+        {
+          id: 588778,
+          tokenId: 300441,
+          platform: 'twitter',
+          url: 'https://x.com/hyperfy_io',
+          count: null
+        },
+        {
+          id: 588779,
+          tokenId: 300441,
+          platform: 'discord',
+          url: 'http://discord.gg/TGtyTEWB2X',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300495,
+      symbol: 'MLG',
+      name: '360noscope420blazeit',
+      contractAddress: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:16:13.319Z',
+      updatedAt: '2025-01-10T19:49:18.620Z',
+      marketCap: '91297443',
+      price: '0.0915',
+      volume24h: '27286666.85',
+      changesJson: { h1: 0.1683, h6: 0.1412, m5: 0.0467, h24: -0.1128 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL.png?key=04f2c9',
+      liquidity: { usd: 2218668.35, base: 12138941, quote: 5835.6034 },
+      pairUrl: 'https://dexscreener.com/solana/f4hdxnulqjsbwcl5vweucpjueqop3gdteussqaxbeyw4',
+      transactionsJson: {
+        h1: { buys: 782, sells: 1433 },
+        h6: { buys: 5501, sells: 5411 },
+        m5: { buys: 62, sells: 392 },
+        h24: { buys: 21584, sells: 20468 }
+      },
+      baseToken: {
+        name: '360noscope420blazeit',
+        symbol: 'MLG',
+        address: '7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL/header.png?key=04f2c9',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.mlg.lol/', label: 'Website' },
+        { url: 'https://mlgedit.com/', label: 'Meme Maker' }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149206,
+          tokenId: 300495,
+          timeframe: 'm5',
+          percentage: '0.0467'
+        },
+        {
+          id: 1149207,
+          tokenId: 300495,
+          timeframe: 'h1',
+          percentage: '0.1683'
+        },
+        {
+          id: 1149208,
+          tokenId: 300495,
+          timeframe: 'h6',
+          percentage: '0.1412'
+        },
+        {
+          id: 1149209,
+          tokenId: 300495,
+          timeframe: 'h24',
+          percentage: '-0.1128'
+        }
+      ],
+      socials: [
+        {
+          id: 588882,
+          tokenId: 300495,
+          platform: 'discord',
+          url: 'https://discord.com/invite/munnopoly',
+          count: null
+        },
+        {
+          id: 588880,
+          tokenId: 300495,
+          platform: 'twitter',
+          url: 'https://x.com/MLGsolana420',
+          count: null
+        },
+        {
+          id: 588881,
+          tokenId: 300495,
+          platform: 'telegram',
+          url: 'https://t.me/MLGCTOPORTAL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 168485,
+      symbol: 'PERSAI',
+      name: 'Persona',
+      contractAddress: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX',
+      chain: 'SOLANA',
+      createdAt: '2025-01-05T04:00:02.850Z',
+      updatedAt: '2025-01-10T19:49:18.607Z',
+      marketCap: '52248',
+      price: '0.00005226',
+      volume24h: '17857.21',
+      changesJson: { h1: 0.0528, h6: 0.2262, m5: 0.0021, h24: 0.4723 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX.png?key=70eae2',
+      liquidity: { usd: 42019.33, base: 402451303, quote: 110.5942 },
+      pairUrl: 'https://dexscreener.com/solana/fowf3hssemckhwdchse8etjns7byqm1mi3labnk25gw',
+      transactionsJson: {
+        h1: { buys: 10, sells: 10 },
+        h6: { buys: 43, sells: 44 },
+        m5: { buys: 1, sells: 0 },
+        h24: { buys: 204, sells: 184 }
+      },
+      baseToken: {
+        name: 'Persona',
+        symbol: 'PERSAI',
+        address: 'Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX/header.png?key=70eae2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Ae4G3HTJ4UhGsNdgZfxVNKHpLbrgpzX7XJzKU9LbGeNX?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 648656,
+          tokenId: 168485,
+          timeframe: 'm5',
+          percentage: '0.0021'
+        },
+        {
+          id: 648657,
+          tokenId: 168485,
+          timeframe: 'h1',
+          percentage: '0.0528'
+        },
+        {
+          id: 648658,
+          tokenId: 168485,
+          timeframe: 'h6',
+          percentage: '0.2262'
+        },
+        {
+          id: 648659,
+          tokenId: 168485,
+          timeframe: 'h24',
+          percentage: '0.4723'
+        }
+      ],
+      socials: [
+        {
+          id: 336868,
+          tokenId: 168485,
+          platform: 'telegram',
+          url: 'https://t.me/personAIonly',
+          count: null
+        },
+        {
+          id: 336867,
+          tokenId: 168485,
+          platform: 'twitter',
+          url: 'https://x.com/personAIonly',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47716,
+      symbol: 'ai16z',
+      name: 'ai16z',
+      contractAddress: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:47:27.093Z',
+      updatedAt: '2025-01-10T19:49:18.582Z',
+      marketCap: '1593152333',
+      price: '1.44',
+      volume24h: '44046599.42',
+      changesJson: { h1: -0.0206, h6: -0.02, m5: -0.0058, h24: 0.0701 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC.png?key=b380cb',
+      liquidity: { usd: 8520597.8, base: 3237043, quote: 20173 },
+      pairUrl: 'https://dexscreener.com/solana/8sn9549p3zn6xpqrqpapn57xzkch6sjxlwuejcg2w4ji',
+      transactionsJson: {
+        h1: { buys: 147, sells: 317 },
+        h6: { buys: 2815, sells: 2546 },
+        m5: { buys: 13, sells: 17 },
+        h24: { buys: 12386, sells: 11725 }
+      },
+      baseToken: {
+        name: 'ai16z',
+        symbol: 'ai16z',
+        address: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC/header.png?key=b380cb',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://elizaos.ai/', label: 'Website' },
+        {
+          url: 'https://www.daos.fun/HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC',
+          label: 'Daos.fun'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185686,
+          tokenId: 47716,
+          timeframe: 'm5',
+          percentage: '-0.0058'
+        },
+        {
+          id: 185687,
+          tokenId: 47716,
+          timeframe: 'h1',
+          percentage: '-0.0206'
+        },
+        {
+          id: 185688,
+          tokenId: 47716,
+          timeframe: 'h6',
+          percentage: '-0.02'
+        },
+        {
+          id: 185689,
+          tokenId: 47716,
+          timeframe: 'h24',
+          percentage: '0.0701'
+        }
+      ],
+      socials: [
+        {
+          id: 102418,
+          tokenId: 47716,
+          platform: 'telegram',
+          url: 'https://t.me/ai16zcommunity',
+          count: null
+        },
+        {
+          id: 102419,
+          tokenId: 47716,
+          platform: 'discord',
+          url: 'https://discord.gg/ai16z',
+          count: null
+        },
+        {
+          id: 102417,
+          tokenId: 47716,
+          platform: 'twitter',
+          url: 'https://x.com/ai16zdao',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 47691,
+      symbol: 'degenai',
+      name: 'Degen Spartan AI',
+      contractAddress: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump',
+      chain: 'SOLANA',
+      createdAt: '2024-12-31T02:45:39.648Z',
+      updatedAt: '2025-01-10T19:49:18.595Z',
+      marketCap: '59522957',
+      price: '0.05952',
+      volume24h: '5006960.96',
+      changesJson: { h1: 0.0026, h6: 0.1229, m5: -0.0063, h24: 0.2932 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump.png?key=5a4d29',
+      liquidity: { usd: 2463979.79, base: 20670854, quote: 6493.2772 },
+      pairUrl: 'https://dexscreener.com/solana/dlaoh9okkk4gdtxj2mkh3wjue7vbhmbjrukmcid1pszx',
+      transactionsJson: {
+        h1: { buys: 109, sells: 139 },
+        h6: { buys: 760, sells: 1070 },
+        m5: { buys: 3, sells: 9 },
+        h24: { buys: 5521, sells: 5951 }
+      },
+      baseToken: {
+        name: 'Degen Spartan AI',
+        symbol: 'degenai',
+        address: 'Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump/header.png?key=5a4d29',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://ai16z.ai', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 185584,
+          tokenId: 47691,
+          timeframe: 'm5',
+          percentage: '-0.0063'
+        },
+        {
+          id: 185585,
+          tokenId: 47691,
+          timeframe: 'h1',
+          percentage: '0.0026'
+        },
+        {
+          id: 185586,
+          tokenId: 47691,
+          timeframe: 'h6',
+          percentage: '0.1229'
+        },
+        {
+          id: 185587,
+          tokenId: 47691,
+          timeframe: 'h24',
+          percentage: '0.2932'
+        }
+      ],
+      socials: [
+        {
+          id: 102370,
+          tokenId: 47691,
+          platform: 'discord',
+          url: 'https://discord.gg/EbzMcW3pWK',
+          count: null
+        },
+        {
+          id: 102368,
+          tokenId: 47691,
+          platform: 'twitter',
+          url: 'https://twitter.com/degenspartanai',
+          count: null
+        },
+        {
+          id: 102369,
+          tokenId: 47691,
+          platform: 'telegram',
+          url: 'https://t.me/degenspartanai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 104502,
+      symbol: 'DUNA',
+      name: 'DUNA',
+      contractAddress: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T22:33:34.938Z',
+      updatedAt: '2025-01-10T19:49:18.631Z',
+      marketCap: '421399',
+      price: '0.0004214',
+      volume24h: '245658.49',
+      changesJson: { h1: 0.0651, h6: 0.1697, m5: -0.0346, h24: 0.2602 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump.png?key=744569',
+      liquidity: { usd: 148922.25, base: 176490087, quote: 392.4194 },
+      pairUrl: 'https://dexscreener.com/solana/czisgeuhnsrlzmfsc1jq7krz4ga1j1fncvmdkrjescua',
+      transactionsJson: {
+        h1: { buys: 49, sells: 51 },
+        h6: { buys: 259, sells: 267 },
+        m5: { buys: 2, sells: 3 },
+        h24: { buys: 799, sells: 722 }
+      },
+      baseToken: {
+        name: 'DUNA',
+        symbol: 'DUNA',
+        address: '9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump/header.png?key=744569',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://m.theblockbeats.info/en/news/51974',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 403685,
+          tokenId: 104502,
+          timeframe: 'm5',
+          percentage: '-0.0346'
+        },
+        {
+          id: 403686,
+          tokenId: 104502,
+          timeframe: 'h1',
+          percentage: '0.0651'
+        },
+        {
+          id: 403687,
+          tokenId: 104502,
+          timeframe: 'h6',
+          percentage: '0.1697'
+        },
+        {
+          id: 403688,
+          tokenId: 104502,
+          timeframe: 'h24',
+          percentage: '0.2602'
+        }
+      ],
+      socials: [
+        {
+          id: 215313,
+          tokenId: 104502,
+          platform: 'telegram',
+          url: 'https://t.me/dunaportal',
+          count: null
+        },
+        {
+          id: 215312,
+          tokenId: 104502,
+          platform: 'twitter',
+          url: 'https://x.com/i/communities/1874537471955927076',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300480,
+      symbol: 'Fartcoin ',
+      name: 'Fartcoin ',
+      contractAddress: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:54.075Z',
+      updatedAt: '2025-01-10T19:49:18.641Z',
+      marketCap: '874680784',
+      price: '0.8746',
+      volume24h: '27569344.78',
+      changesJson: { h1: -0.0008, h6: 0.0631, m5: 0.0013, h24: 0.1287 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump.png?key=8180d2',
+      liquidity: { usd: 16648786.79, base: 9505173, quote: 43874 },
+      pairUrl: 'https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw',
+      transactionsJson: {
+        h1: { buys: 324, sells: 339 },
+        h6: { buys: 2035, sells: 2061 },
+        m5: { buys: 30, sells: 12 },
+        h24: { buys: 9979, sells: 11251 }
+      },
+      baseToken: {
+        name: 'Fartcoin ',
+        symbol: 'Fartcoin ',
+        address: '9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump/header.png?key=8180d2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        {
+          url: 'https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt',
+          label: 'Website'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149146,
+          tokenId: 300480,
+          timeframe: 'h1',
+          percentage: '-0.0008'
+        },
+        {
+          id: 1149147,
+          tokenId: 300480,
+          timeframe: 'h6',
+          percentage: '0.0631'
+        },
+        {
+          id: 1149148,
+          tokenId: 300480,
+          timeframe: 'h24',
+          percentage: '0.1287'
+        },
+        {
+          id: 1149145,
+          tokenId: 300480,
+          timeframe: 'm5',
+          percentage: '0.0013'
+        }
+      ],
+      socials: [
+        {
+          id: 588853,
+          tokenId: 300480,
+          platform: 'twitter',
+          url: 'https://x.com/FartCoinOfSOL',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 300466,
+      symbol: 'TRUST',
+      name: 'Trust Protocol AI',
+      contractAddress: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-09T08:15:18.178Z',
+      updatedAt: '2025-01-10T19:49:18.652Z',
+      marketCap: '1985419',
+      price: '0.002067',
+      volume24h: '11240253.15',
+      changesJson: { h1: -0.1549, h6: -0.2806, m5: -0.0356, h24: -0.4022 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump.png?key=016d6e',
+      liquidity: { usd: 226625.33, base: 54873792, quote: 596.06233 },
+      pairUrl: 'https://dexscreener.com/solana/6gxvabfmlbupbf152wmuf9v8u5emfcdfn99wpsyz1jac',
+      transactionsJson: {
+        h1: { buys: 682, sells: 587 },
+        h6: { buys: 5129, sells: 4211 },
+        m5: { buys: 90, sells: 65 },
+        h24: { buys: 29947, sells: 25789 }
+      },
+      baseToken: {
+        name: 'Trust Protocol AI',
+        symbol: 'TRUST',
+        address: 'u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump/header.png?key=016d6e',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/u29pRsBVi7vPmCYsaYmtJEghPZFiWUK545QZh56pump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [ { url: 'https://www.trustprotocol.app/', label: 'Website' } ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 1149137,
+          tokenId: 300466,
+          timeframe: 'm5',
+          percentage: '-0.0356'
+        },
+        {
+          id: 1149138,
+          tokenId: 300466,
+          timeframe: 'h1',
+          percentage: '-0.1549'
+        },
+        {
+          id: 1149139,
+          tokenId: 300466,
+          timeframe: 'h6',
+          percentage: '-0.2806'
+        },
+        {
+          id: 1149140,
+          tokenId: 300466,
+          timeframe: 'h24',
+          percentage: '-0.4022'
+        }
+      ],
+      socials: [
+        {
+          id: 588826,
+          tokenId: 300466,
+          platform: 'twitter',
+          url: 'http://x.com/trustprotocolai',
+          count: null
+        },
+        {
+          id: 588827,
+          tokenId: 300466,
+          platform: 'telegram',
+          url: 'http://t.me/trustprotocolai',
+          count: null
+        }
+      ]
+    },
+    {
+      id: 105610,
+      symbol: 'aether',
+      name: 'aether collective',
+      contractAddress: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump',
+      chain: 'SOLANA',
+      createdAt: '2025-01-02T23:36:26.383Z',
+      updatedAt: '2025-01-10T19:49:18.663Z',
+      marketCap: '15245090',
+      price: '0.01524',
+      volume24h: '4953439.69',
+      changesJson: { h1: -0.0983, h6: 0.0363, m5: -0.0013, h24: 0.7199 },
+      imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump.png?key=aa8dc2',
+      liquidity: { usd: 801058.92, base: 26237174, quote: 2110.5544 },
+      pairUrl: 'https://dexscreener.com/solana/c1iq2fynymmntnvd6cvdtdgxfz2sxqbydmpcun1v4nf9',
+      transactionsJson: {
+        h1: { buys: 279, sells: 156 },
+        h6: { buys: 1596, sells: 1696 },
+        m5: { buys: 30, sells: 14 },
+        h24: { buys: 8575, sells: 9322 }
+      },
+      baseToken: {
+        name: 'aether collective',
+        symbol: 'aether',
+        address: 'BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump'
+      },
+      headerImage: 'https://dd.dexscreener.com/ds-data/tokens/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump/header.png?key=aa8dc2',
+      openGraphImage: 'https://cdn.dexscreener.com/token-images/og/solana/BEP6KhDwv7K211JtZnszNcztHBffSCgRjUuNhucopump?timestamp=1736538600000',
+      quoteToken: {
+        name: 'Wrapped SOL',
+        symbol: 'SOL',
+        address: 'So11111111111111111111111111111111111111112'
+      },
+      websites: [
+        { url: 'https://www.aetheros.co/', label: 'Website' },
+        {
+          url: 'https://github.com/AetherFrameworkAI/aether-framework',
+          label: 'Github'
+        },
+        {
+          url: 'https://aether-framework.gitbook.io/aetherframework/faq',
+          label: 'Gitbook'
+        },
+        { url: 'https://www.iamjedi.org/', label: 'JEDI AI' },
+        {
+          url: 'https://terminal.iamjedi.org/',
+          label: 'JEDI Terminal'
+        }
+      ],
+      coingeckoId: null,
+      priceChanges: [
+        {
+          id: 407960,
+          tokenId: 105610,
+          timeframe: 'm5',
+          percentage: '-0.0013'
+        },
+        {
+          id: 407961,
+          tokenId: 105610,
+          timeframe: 'h1',
+          percentage: '-0.0983'
+        },
+        {
+          id: 407962,
+          tokenId: 105610,
+          timeframe: 'h6',
+          percentage: '0.0363'
+        },
+        {
+          id: 407963,
+          tokenId: 105610,
+          timeframe: 'h24',
+          percentage: '0.7199'
+        }
+      ],
+      socials: [
+        {
+          id: 217406,
+          tokenId: 105610,
+          platform: 'telegram',
+          url: 'https://t.me/aetherdotfun',
+          count: null
+        },
+        {
+          id: 217405,
+          tokenId: 105610,
+          platform: 'twitter',
+          url: 'https://x.com/aetherdotfun',
+          count: null
+        }
+      ]
+    }
+  ],
+  level: 'info',
+  message: '[dd-serv] Fetched token list:'
+}
+{
+  requestId: '9af0294f-9228-4a6d-8584-7c3038eada6f',
+  contestId: 9,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T19:49:40.409Z'
+}
+{
+  requestId: '9af0294f-9228-4a6d-8584-7c3038eada6f',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 11,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T19:49:40.420Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:18.466Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.130Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.142Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.187Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.194Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.194Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.787Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.805Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.855Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.861Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:19.862Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:20.405Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:20.417Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:20.455Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:20.460Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:20.461Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:20.986Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:20.995Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:21.034Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:21.040Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:21.040Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:21.560Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:21.570Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:21.610Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:21.616Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:21.617Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.157Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.167Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.209Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.214Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.215Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.738Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.748Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.783Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.789Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:22.790Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.329Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.339Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.385Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.391Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.392Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.926Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.940Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.982Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.988Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:23.989Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:24.524Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:24.535Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:24.573Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:24.579Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:24.579Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.133Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.144Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.192Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.198Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.199Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.774Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.785Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.824Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.830Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:25.830Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:26.352Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:26.364Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:26.408Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:26.413Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:26.413Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:26.967Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:26.978Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:27.022Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:27.029Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:27.030Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:27.563Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:27.575Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:27.611Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:27.616Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:27.617Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:28.157Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:28.166Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:28.204Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:28.209Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:51:28.209Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:01.839Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:01.852Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:01.922Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:01.935Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:01.936Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:47.174Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:47.838Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:47.850Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:47.895Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:47.902Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:52:47.902Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T19:54:29.372Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T19:54:30.058Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T19:54:30.070Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:54:30.117Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T19:54:30.124Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T19:54:30.125Z'
+}
+{
+  requestId: '68c92fa3-fd35-4138-80fa-cfbf6c1462dc',
+  contestId: 9,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T19:55:38.729Z'
+}
+{
+  requestId: '68c92fa3-fd35-4138-80fa-cfbf6c1462dc',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 13,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T19:55:38.742Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-10T19:55:53.041Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-10T19:55:53.046Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-10T19:55:53.046Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:55:53.246Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:55:55.020Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:55:55.083Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:55:58.533Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:55:58.602Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:59:19.494Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:59:19.577Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:59:22.764Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T19:59:22.873Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T20:16:02.657Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T20:16:03.334Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T20:16:03.346Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T20:16:03.386Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T20:16:03.394Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T20:16:03.395Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T20:22:32.967Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T20:22:33.596Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T20:22:33.606Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T20:22:33.651Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T20:22:33.656Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T20:22:33.657Z'
+}
