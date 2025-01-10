@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { watchLogs } from './utils/logViewer.js';
-import paths from '../config/paths.js';
 import fs from 'fs';
+import paths from '../../../config/paths.js';
+import { watchLogs } from './utils/logViewer.js';
 
 const args = process.argv.slice(2);
 const type = args[0] || 'all';

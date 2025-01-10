@@ -1,7 +1,5 @@
-// /api/dd-serv/tokens.js
+// /routes/dd-serv/tokens.js
 import express from 'express';
-//import { PrismaClient } from '@prisma/client';
-import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
@@ -11,6 +9,8 @@ const router = express.Router();
  *   name: DD-Serv
  *   description: API endpoints for accessing token and market data from the DegenDuel Data Server
  */
+
+/* DD-Serv Tokens Routes */
 
 /**
  * @swagger
@@ -33,7 +33,7 @@ const router = express.Router();
  *                   items:
  *                     type: object
  */
-// Get list of tokens
+// Get OFFICIAL DD-Serv list of tokens
 router.get('/tokens', async (req, res) => {
   try {
     // Fetch from Server B’s public endpoint
@@ -72,7 +72,7 @@ router.get('/tokens', async (req, res) => {
  *         required: true
  *         description: The address of the token
  */
-// Get price history of a token
+// Get OFFICIAL DD-Serv price history of a token
 router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
   const { tokenAddress } = req.params;
   try {

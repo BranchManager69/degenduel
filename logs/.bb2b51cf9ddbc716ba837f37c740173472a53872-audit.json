@@ -6,39 +6,9 @@
     "auditLog": "/home/websites/degenduel/logs/.bb2b51cf9ddbc716ba837f37c740173472a53872-audit.json",
     "files": [
         {
-            "date": 1735288132763,
-            "name": "/home/websites/degenduel/logs/api-2024-12-27.log",
-            "hash": "e50bb7ed4898b8ff8fcdd4f282725116b8f1b0358dd9693dbaa909e3e22ff5d7"
-        },
-        {
-            "date": 1735404394701,
-            "name": "/home/websites/degenduel/logs/api-2024-12-28.log",
-            "hash": "f7215b7b9fcacef2efc580876ceeb145e36af216f3e6e0ad3039338cefac7bbc"
-        },
-        {
-            "date": 1735798600677,
-            "name": "/home/websites/degenduel/logs/api-2025-01-02.log",
-            "hash": "3579a26193c23a2b01813279455b92c30785a257c657d8b3b13327e73a4c766c"
-        },
-        {
-            "date": 1735973476758,
-            "name": "/home/websites/degenduel/logs/api-2025-01-04.log",
-            "hash": "00c09a696e40058022b4d145e7e92ecf564d29a9689c3e3633f1918f733aabc8"
-        },
-        {
-            "date": 1736087169803,
-            "name": "/home/websites/degenduel/logs/api-2025-01-05.log",
-            "hash": "e4d2a03e758a3c2f8b62b6b696c4460f9862d7d5a66f90845c9d6f67728b1593"
-        },
-        {
-            "date": 1736320584217,
-            "name": "/home/websites/degenduel/logs/api-2025-01-08.log",
-            "hash": "b519dd4a3c7dacb33279126d733dbf11a1a75166b78d55063993bdfa1a5d14b4"
-        },
-        {
-            "date": 1736399042249,
-            "name": "/home/websites/degenduel/logs/api-2025-01-09.log",
-            "hash": "717ebd3a9ba21788357384a6c7a7616d29eb79bbf70053dccd2c5b535fc4c5c2"
+            "date": 1736485928633,
+            "name": "/home/websites/degenduel/logs/api-2025-01-10.log",
+            "hash": "83f980fa610520d51c3541ec86cfda6fd1671f7b0117286921f8f4a94ea60ccc"
         }
     ],
     "hashType": "sha256"

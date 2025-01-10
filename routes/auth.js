@@ -1,12 +1,12 @@
 import express from 'express';
-import { pool } from '../config/pg-database.js';
-import logger from '../utils/logger.js';
-import { config } from '../config/config.js';
-////import { sign } from 'jsonwebtoken';
 import pkg from 'jsonwebtoken';
+import { config } from '../config/config.js';
+import { pool } from '../config/pg-database.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 const { sign } = pkg;
 
 const router = express.Router();
+
 
 /**
  * @swagger
@@ -14,6 +14,8 @@ const router = express.Router();
  *   name: Authentication
  *   description: API endpoints for user authentication
  */
+
+/* Auth Routes */
 
 /**
  * @swagger
@@ -49,6 +51,7 @@ const router = express.Router();
  *       500:
  *         description: Server error during verification
  */
+// Verify wallet signature and establish a session
 router.post('/verify-wallet', async (req, res) => {
   try {
     const { wallet, signature, message } = req.body;
@@ -79,12 +82,12 @@ router.post('/verify-wallet', async (req, res) => {
     res.cookie('session', token, {
       httpOnly: true,      // Prevents JavaScript access
       secure: true,        // Only sent over HTTPS
-      sameSite: 'strict', // Protects against CSRF
+      sameSite: 'strict',  // Protects against CSRF
       maxAge: 24 * 60 * 60 * 1000  // 24 hours in milliseconds
     });
 
     // Log the successful authentication
-    logger.info('Wallet authenticated successfully', {
+    logApi.info('Wallet authenticated successfully', {
       wallet,
       requestId: req.id
     });
@@ -98,7 +101,7 @@ router.post('/verify-wallet', async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Wallet verification failed:', {
+    logApi.error('Wallet verification failed:', {
       error,
       requestId: req.id
     });
@@ -148,6 +151,7 @@ router.post('/verify-wallet', async (req, res) => {
  *                   type: string
  *                   format: date-time
  */
+// Connect wallet and create/update user
 router.post('/connect', async (req, res) => {
   try {
     const { wallet_address, nickname } = req.body;
@@ -182,14 +186,14 @@ router.post('/connect', async (req, res) => {
     });
 
     // Log the connection
-    logger.info('Wallet connected successfully', {
+    logApi.info('Wallet connected successfully', {
       wallet: wallet_address,
       requestId: req.id
     });
 
     res.json(result.rows[0]);
   } catch (error) {
-    logger.error('Auth connect failed:', error);
+    logApi.error('Auth connect failed:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -218,6 +222,7 @@ router.post('/connect', async (req, res) => {
  *       500:
  *         description: Server error during disconnection
  */
+// Disconnect wallet
 router.post('/disconnect', async (req, res) => {
   try {
     const { wallet } = req.body;
@@ -232,7 +237,7 @@ router.post('/disconnect', async (req, res) => {
     
     res.json({ success: true });
   } catch (error) {
-    logger.error('Wallet disconnect failed:', error);
+    logApi.error('Wallet disconnect failed:', error);
     res.status(500).json({ error: error.message });
   }
 });

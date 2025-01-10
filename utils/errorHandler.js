@@ -1,4 +1,4 @@
-import logger from './logger.js';
+import logger from './logger-suite/logger.js';
 
 export class AppError extends Error {
   constructor(message, statusCode = 500) {

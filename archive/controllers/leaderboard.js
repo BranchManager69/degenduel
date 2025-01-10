@@ -1,5 +1,5 @@
+import logger from '../../utils/logger-suite/logger.js';
 import { LeaderboardModel } from '../models/leaderboard.js';
-import logger from '../utils/logger.js';
 
 export async function getLeaderboard(req, res) {
   try {

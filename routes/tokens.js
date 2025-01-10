@@ -1,6 +1,6 @@
-import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import logger from '../utils/logger.js';
+import express from 'express';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -103,6 +103,9 @@ const prisma = new PrismaClient();
  *                 example: "Token not found"
  */
 
+
+/* Tokens Routes */
+
 /**
  * @swagger
  * /api/tokens:
@@ -147,6 +150,7 @@ const prisma = new PrismaClient();
  *                             token_buckets:
  *                               $ref: '#/components/schemas/TokenBucket'
  */
+// Get all tokens (with optional filters)
 router.get('/', async (req, res) => {
   try {
     const { active, bucket, search } = req.query;
@@ -185,7 +189,7 @@ router.get('/', async (req, res) => {
 
     res.json(tokens);
   } catch (error) {
-    logger.error('Failed to fetch tokens:', error);
+    logApi.error('Failed to fetch tokens:', error);
     res.status(500).json({ error: 'Failed to fetch tokens' });
   }
 });
@@ -225,6 +229,7 @@ router.get('/', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/TokenNotFound'
  */
+// Get token by ID
 router.get('/:id', async (req, res) => {
   try {
     const token = await prisma.tokens.findUnique({
@@ -245,132 +250,8 @@ router.get('/:id', async (req, res) => {
 
     res.json(token);
   } catch (error) {
-    logger.error('Failed to fetch token:', error);
+    logApi.error('Failed to fetch token:', error);
     res.status(500).json({ error: 'Failed to fetch token' });
-  }
-});
-
-/**
- * @swagger
- * /api/tokens/buckets:
- *   get:
- *     summary: Get all token buckets
- *     tags: [Tokens]
- *     responses:
- *       200:
- *         description: List of token buckets
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 allOf:
- *                   - $ref: '#/components/schemas/TokenBucket'
- *                   - type: object
- *                     properties:
- *                       token_bucket_memberships:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             tokens:
- *                               type: object
- *                               properties:
- *                                 id:
- *                                   type: integer
- *                                 symbol:
- *                                   type: string
- *                                 name:
- *                                   type: string
- */
-router.get('/buckets', async (req, res) => {
-  try {
-    const buckets = await prisma.token_buckets.findMany({
-      include: {
-        token_bucket_memberships: {
-          include: {
-            tokens: {
-              select: {
-                id: true,
-                symbol: true,
-                name: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    res.json(buckets);
-  } catch (error) {
-    logger.error('Failed to fetch token buckets:', error);
-    res.status(500).json({ error: 'Failed to fetch token buckets' });
-  }
-});
-
-/**
- * @swagger
- * /api/tokens/buckets/{id}:
- *   get:
- *     summary: Get token bucket by ID
- *     tags: [Tokens]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Bucket ID
- *     responses:
- *       200:
- *         description: Token bucket details
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/TokenBucket'
- *                 - type: object
- *                     properties:
- *                       token_bucket_memberships:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             tokens:
- *                               allOf:
- *                                 - $ref: '#/components/schemas/Token'
- *                                 - type: object
- *                                   properties:
- *                                     token_prices:
- *                                       $ref: '#/components/schemas/TokenPrice'
- *       404:
- *         $ref: '#/components/responses/TokenNotFound'
- */
-router.get('/buckets/:id', async (req, res) => {
-  try {
-    const bucket = await prisma.token_buckets.findUnique({
-      where: { id: parseInt(req.params.id) },
-      include: {
-        token_bucket_memberships: {
-          include: {
-            tokens: {
-              include: {
-                token_prices: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    if (!bucket) {
-      return res.status(404).json({ error: 'Bucket not found' });
-    }
-
-    res.json(bucket);
-  } catch (error) {
-    logger.error('Failed to fetch bucket:', error);
-    res.status(500).json({ error: 'Failed to fetch bucket' });
   }
 });
 
@@ -400,6 +281,7 @@ router.get('/buckets/:id', async (req, res) => {
  *                           name:
  *                             type: string
  */
+// Get current prices for all tokens
 router.get('/prices', async (req, res) => {
   try {
     const prices = await prisma.token_prices.findMany({
@@ -415,7 +297,7 @@ router.get('/prices', async (req, res) => {
 
     res.json(prices);
   } catch (error) {
-    logger.error('Failed to fetch token prices:', error);
+    logApi.error('Failed to fetch token prices:', error);
     res.status(500).json({ error: 'Failed to fetch token prices' });
   }
 });
@@ -459,6 +341,7 @@ router.get('/prices', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/TokenNotFound'
  */
+// Get price history for a specific token
 router.get('/prices/:tokenId', async (req, res) => {
   try {
     const price = await prisma.token_prices.findUnique({
@@ -482,7 +365,7 @@ router.get('/prices/:tokenId', async (req, res) => {
 
     res.json(price);
   } catch (error) {
-    logger.error('Failed to fetch token price:', error);
+    logApi.error('Failed to fetch token price:', error);
     res.status(500).json({ error: 'Failed to fetch token price' });
   }
 });

@@ -1,92 +1,79 @@
 // /index.js
 import cookieParser from 'cookie-parser';
-// import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import { closeDatabase, initDatabase } from './config/database.js'; // SQLite for leaderboard
 import { configureMiddleware } from './config/middleware.js';
 import { closePgDatabase, initPgDatabase, pool } from './config/pg-database.js';
-import setupSwagger from './config/swagger.js'; // ES6 default import
-import authRoutes from './routes/auth.js';
-import contestRoutes from './routes/contests.js';
-import leaderboardRoutes from './routes/leaderboard.js'; // almost forgot this one!
-import superadminRoutes from './routes/superadmin.js';
-import testRoutes from './routes/test-routes.js'; // NEWEST v4
-import tokenBucketRoutes from './routes/tokenBuckets.js'; // new
-import tokenRoutes from './routes/tokens.js'; // new
-import tradeRoutes from './routes/trades.js';
-import userRoutes from './routes/users.js';
+import setupSwagger from './config/swagger.js';
 import { errorHandler } from './utils/errorHandler.js';
-import logger from './utils/logger.js'; // fixed
+import { logApi } from './utils/logger-suite/logger.js';
 dotenv.config();
 
+
+// ------------------------------------------------------------------------------------------------
 
 /* DegenDuel API Server */
 
 const app = express();
-const port = process.env.API_PORT || 3003; // Main port
-////const logsPort = process.env.LOGS_PORT || 3334; // Log streaming port
+const port = process.env.API_PORT || 3003; // DegenDuel API port (main)
+const logsPort = process.env.LOGS_PORT || 3334; // Logs streaming port (stub)
 
-// CORS settings
-// const allowedOrigins = [
-//   'http://localhost:3000', 
-//   'http://localhost:3001',
-//   'http://localhost:3002',
-//   'http://localhost:3003', 
-//   'http://localhost:3004', 
-//   'https://degenduel.me', 
-//   'https://data.degenduel.me', 
-//   'https://branch.bet', 
-//   'https://app.branch.bet',
-// ];
-// const corsOptions = {
-//   origin: (origin, callback) => {
-//     if (allowedOrigins.includes(origin) || !origin) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   credentials: true,
-//   allowedHeaders: ['Authorization', 'Content-Type', 'X-Requested-With', 'Cache-Control', 'X-Wallet-Address'],
-// };
-// app.use(cors(corsOptions));
-
-// Use cookies
+// Cookies setup
 app.use(cookieParser());
 
-// Log startup configuration
-console.log('Starting API server with config:', {
-  port,
-  nodeEnv: process.env.NODE_ENV,
-  dbHost: process.env.DB_HOST,
-  dbName: process.env.DB_NAME,
-  dbUser: process.env.DB_USER,
-  hasDbPassword: !!process.env.DB_PASS
-});
-
-// Set up Swagger before other routes
+// Swagger setup
 setupSwagger(app);
 
-// Configure middleware
+// Middleware setup
 configureMiddleware(app);
 
-// Default route
+// Log startup configuration (optional)
+/*
+ Log startup configuration
+  console.log('Starting API server with config:', {
+   port,
+   nodeEnv: process.env.NODE_ENV,
+   dbHost: process.env.DB_HOST,
+   dbName: process.env.DB_NAME,
+   dbUser: process.env.DB_USER,
+   hasDbPassword: !!process.env.DB_PASS
+ });
+*/
+
+
+// ------------------------------------------------------------------------------------------------
+
+/* Routes Setup */
+
+// Default API route (https://degenduel.com/api)
 app.get('/', (req, res) => {
   res.send(`
     Welcome to the DegenDuel API!
   `);
 });
 
-// Prisma routes
+// Prisma-enabled routes
 import prismaAdminRoutes from './routes/prisma/admin.js';
 import prismaBalanceRoutes from './routes/prisma/balance.js';
 import prismaStatsRoutes from './routes/prisma/stats.js';
+app.use('/api/balance', prismaBalanceRoutes);
+app.use('/api/stats', prismaStatsRoutes);
+app.use('/api/admin', prismaAdminRoutes);
 
-// New DD-Serv routes
+// DD-Serv-enabled routes
 import ddServRoutes from './routes/dd-serv/tokens.js';
+app.use('/api/dd-serv', ddServRoutes);
 
 // Core API routes
+import testRoutes from './archive/test-routes.js';
+import authRoutes from './routes/auth.js';
+import contestRoutes from './routes/contests.js';
+import leaderboardRoutes from './routes/leaderboard.js';
+import tokenBucketRoutes from './routes/tokenBuckets.js';
+import tokenRoutes from './routes/tokens.js';
+import tradeRoutes from './routes/trades.js';
+import userRoutes from './routes/users.js';
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/contests', contestRoutes);
@@ -95,20 +82,12 @@ app.use('/api/tokens', tokenRoutes); // new
 app.use('/api/token-buckets', tokenBucketRoutes); // new
 app.use('/api/leaderboard', leaderboardRoutes); // almost forgot this one!
 app.use('/api/test', testRoutes); // NEWEST; tests v4
-////app.use('/api/stats', statsRoutes);
-
-// (testing) New Prisma routes
-app.use('/api/balance', prismaBalanceRoutes);
-app.use('/api/stats', prismaStatsRoutes);
-app.use('/api/admin', prismaAdminRoutes);
-
-// (testing) New DD-Serv routes
-app.use('/api/dd-serv', ddServRoutes);
 
 // Superadmin routes
+import superadminRoutes from './routes/superadmin.js';
 app.use('/api/superadmin', superadminRoutes);
 
-// Server health route
+// Server health route (ad hoc route)
 app.get('/api/health', async (req, res) => {
   try {
     // Test PostgreSQL connection
@@ -123,7 +102,7 @@ app.get('/api/health', async (req, res) => {
       uptime: Math.floor(process.uptime())
     });
   } catch (error) {
-    logger.error('Health check failed:', error);
+    logApi.error('Health check failed:', error);
     res.status(500).json({ 
       status: 'error',
       error: error.message,
@@ -132,38 +111,37 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Error handling
+// Error handling setup
 app.use(errorHandler);
 
-// Startup sequence occurs before startServer()
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-// Visual startup sequence
+// Lite visual sequence
 async function displayStartupSequence() {
-  console.log('\n  ✨ DEGENDUEL API INITIALIZING ✨\n');
+  console.log('\t   ⚔️   DegenDuel API  \t\t|  ALMOST THERE...');
 }
 
 // Main
 async function startServer() {
   try {
-      console.log(`\n      🎮  Starting DegenDuel API...`);
-
+      console.log('\n');
+      console.log(`\t   🤺  DegenDuel API  \t\t|  INITIALIZING...`);
       await Promise.all([
           initDatabase().catch(err => {
-              console.error('SQLite initialization failed:', err);
+              console.error('Aborting DegenDuel API; failed to connect to SQLite:', err);
               throw err;
           }),
           initPgDatabase().catch(err => {
-              console.error('PostgreSQL initialization failed:', err);
+              console.error('Aborting DegenDuel API; failed to connect to PostgreSQL:', err);
               throw err;
           })
       ]);
 
+      // Visual startup sequence
       await displayStartupSequence();
 
-      // Main API server on port 3003
+      // Main API server listening on all interfaces
       const apiServer = app.listen(port, '0.0.0.0', () => {
-          console.log(`    🎮  DegenDuel API ready on port ${port}`);
+          console.log(`\t   🎯  DegenDuel API  \t\t|  READY!`);
+          console.log(`\t     '--------------> Port ${port}`);
       });
 
       apiServer.on('error', (error) => {
@@ -219,7 +197,7 @@ async function shutdown() {
     ]);
     process.exit(0);
   } catch (error) {
-    logger.error('Error during shutdown:', error);
+    logApi.error('Error during shutdown:', error);
     process.exit(1);
   }
 }
@@ -241,4 +219,6 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
+
+// Start the server
 startServer();

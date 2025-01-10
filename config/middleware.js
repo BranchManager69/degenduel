@@ -1,24 +1,9 @@
 // /config/middleware.js
 import cors from 'cors';
-////import helmet from 'helmet';
 import express from 'express';
-import logger from '../utils/logger.js'; // unique
+import logger from '../utils/logger-suite/logger.js';
 
 export function configureMiddleware(app) {
-  // Security headers
-  ////app.use(helmet());
-
-  // CORS configuration
-  /* 
-  const corsOptions = {
-    origin: process.env.NODE_ENV === 'production'
-      ? CORS_CONFIG.ALLOWED_ORIGINS.production
-      : CORS_CONFIG.ALLOWED_ORIGINS.development,
-    methods: CORS_CONFIG.METHODS,
-    allowedHeaders: CORS_CONFIG.ALLOWED_HEADERS,
-    maxAge: CORS_CONFIG.MAX_AGE
-  }; 
-  */
   const allowedOrigins = [
     'http://localhost:3000', 
     'http://localhost:3001',
@@ -58,4 +43,12 @@ export function configureMiddleware(app) {
       next();
     });
   }
+  // Request logging in production
+  if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+      logger.info(`${req.method} ${req.url}`);
+      next();
+    });
+  }
+
 }

@@ -1,4 +1,11 @@
-import { pool } from "../config/pg-database.js";
+import { pool } from "../../config/pg-database.js";
+
+/* 
+ * 
+ * Worthlessly outdated
+ * 
+ * 
+ */
 
 export async function createOrUpdateUser(walletAddress, nickname) {
   const result = await pool.query(`

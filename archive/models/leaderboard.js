@@ -1,5 +1,5 @@
-import { getDatabase } from '../config/database.js';
-import logger from '../utils/logger.js';
+import { getDatabase } from '../../config/database.js';
+import logger from '../../utils/logger-suite/logger.js';
 
 export class LeaderboardModel {
   static async getTopScores(limit = 100) {

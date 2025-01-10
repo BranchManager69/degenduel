@@ -1,6 +1,7 @@
+// /routes/leaderboard.js
 import express from 'express';
-import { getLeaderboard, addScore } from '../controllers/leaderboard.js';
-import { validateScore, validateGetLeaderboard } from '../middleware/validation.js';
+import { addScore, getLeaderboard } from '../archive/controllers/leaderboard.js';
+import { validateGetLeaderboard, validateScore } from '../middleware/leaderboardValidation.js';
 
 const router = express.Router();
 

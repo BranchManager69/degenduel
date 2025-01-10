@@ -24,7 +24,7 @@ build/
 *.tsbuildinfo
 
 # Generated documentation
-docs/
+###docs/
 
 # Temporary editor/project files
 .vscode/
@@ -41,18 +41,26 @@ scripts/
 tests/
 
 # Generated assets
-*.png
-*.jpg
-*.svg
-*.ico
+#*.png
+#*.jpg
+#*.svg
+#*.ico
 
 # Ignore migrations (optional)
-migrations/
+###migrations/
 
 # All hidden files (e.g., temporary or config files)
 .*
+
+# Safeguard against stupidity
+.env
 
 # Exceptions to allow specific files
 !.gitignore
 !.README.md
 !.env.example
+!config/config.js
+!config/swagger.json
+!config/swagger.yaml
+!config/swagger.yml
+!config/swagger.json

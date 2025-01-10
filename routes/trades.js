@@ -1,6 +1,7 @@
+// /routes/trades.js
 import express from 'express';
 import { pool } from '../config/pg-database.js';
-import logger from '../utils/logger.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 
@@ -10,6 +11,8 @@ const router = express.Router();
  *   name: Trades
  *   description: API endpoints for managing contest trades
  */
+
+/* Trades Routes */
 
 /**
  * @swagger
@@ -77,6 +80,7 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
+// Submit a new trade for a contest
 router.post('/:contestId', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -113,7 +117,7 @@ router.post('/:contestId', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
-    logger.error('Submit trade failed:', error);
+    logApi.error('Submit trade failed:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();
@@ -173,6 +177,7 @@ router.post('/:contestId', async (req, res) => {
  *       500:
  *         description: Server error
  */
+// Get user's trades for a specific contest
 router.get('/:contestId', async (req, res) => {
   const { contestId } = req.params;
   const { wallet } = req.query;
@@ -197,7 +202,7 @@ router.get('/:contestId', async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    logger.error('Get trades failed:', error);
+    logApi.error('Get trades failed:', error);
     res.status(500).json({ error: error.message });
   }
 });
