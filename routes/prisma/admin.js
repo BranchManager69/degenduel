@@ -8,10 +8,9 @@ const prisma = new PrismaClient();
 
 /*
  *
- * I am not sure if even a single one of these endpoints actually works
+ * I am not sure if even a single one of these endpoints actually works. Yet.
  * 
  */
-
 
 /**
  * @swagger
@@ -46,266 +45,6 @@ const prisma = new PrismaClient();
  */
 
 /* Admin Activity Logs */
-
-/**
- * @swagger
- * /api/admin/activities:
- *   get:
- *     summary: Get admin activity logs
- *     tags: [Admin]
- *     security:
- *       - adminAuth: []
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 50
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
- *       - in: query
- *         name: action
- *         schema:
- *           type: string
- *         description: Filter by action type
- *     responses:
- *       200:
- *         description: List of admin activities
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 activities:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/AdminLog'
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     total:
- *                       type: integer
- *                     limit:
- *                       type: integer
- *                     offset:
- *                       type: integer
- */
-// Get admin activity logs
-router.get('/activities', async (req, res) => {
-  console.log('>>>query received>>> | /api/admin/activities');
-  
-  const debugMode = true; // Simple debug flag to toggle on/off
-
-  try {
-    const { limit = 50, offset = 0, action } = req.query;
-    
-    // Debug logging if enabled
-    if (debugMode) {
-      console.log('Query parameters:', { limit, offset, action });
-    }
-  
-    // Mock implementation that mimics Prisma's structure
-    const mockData = [
-      { id: 1, action: 'login', created_at: new Date() },
-      { id: 2, action: 'update', created_at: new Date() },
-      // Add more mock entries as needed
-    ];
-  
-    const where = action ? { action } : {};
-  
-    // Simulate Prisma's findMany and count methods
-    const activities = mockData
-      .filter(item => !action || item.action === action)
-      .sort((a, b) => b.created_at - a.created_at)
-      .slice(parseInt(offset), parseInt(offset) + parseInt(limit));
-  
-    const total = mockData.filter(item => !action || item.action === action).length;
-  
-    // Debug logging if enabled
-    if (debugMode) {
-      console.log('Filtered activities:', activities);
-      console.log('Total count:', total);
-    }
-  
-    console.log('<<<response<<< | /api/admin/activities');
-    res.json({
-      activities,
-      pagination: {
-        total,
-        limit: parseInt(limit),
-        offset: parseInt(offset)
-      }
-    });
-  } catch (error) {
-    // Maintain original error handling
-    if (debugMode) {
-      console.error('Detailed error information:', error);
-    }
-    
-    logApi.error('Failed to fetch admin activities:', error);
-    res.status(500).json({ error: 'Failed to fetch admin activities' });
-  }
-});
-
-/**
- * @swagger
- * /api/admin/system-settings:
- *   get:
- *     summary: Get all system settings
- *     tags: [Admin]
- *     security:
- *       - adminAuth: []
- *     responses:
- *       200:
- *         description: System settings
- */
-// Get all system settings
-router.get('/system-settings', async (req, res) => {
-  try {
-    const settings = await prisma.system_settings.findMany();
-    res.json(settings);
-  } catch (error) {
-    logApi.error('Failed to fetch system settings:', error);
-    res.status(500).json({ error: 'Failed to fetch system settings' });
-  }
-});
-
-/**
- * @swagger
- * /api/admin/system-settings/{key}:
- *   put:
- *     summary: Update a system setting
- *     tags: [Admin]
- *     security:
- *       - adminAuth: []
- *     parameters:
- *       - in: path
- *         name: key
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               value:
- *                 type: object
- *               description:
- *                 type: string
- *     responses:
- *       200:
- *         description: Setting updated successfully
- */
-// Update a system setting
-router.put('/system-settings/:key', async (req, res) => {
-  try {
-    const { key } = req.params;
-    const { value, description } = req.body;
-    const adminAddress = req.headers['x-admin-address'];
-
-    const setting = await prisma.system_settings.upsert({
-      where: { key },
-      update: {
-        value,
-        description,
-        updated_by: adminAddress,
-        updated_at: new Date()
-      },
-      create: {
-        key,
-        value,
-        description,
-        updated_by: adminAddress
-      }
-    });
-
-    // Log the admin action
-    await prisma.admin_logs.create({
-      data: {
-        admin_address: adminAddress,
-        action: 'UPDATE_SYSTEM_SETTING',
-        details: {
-          key,
-          old_value: setting.value,
-          new_value: value
-        },
-        ip_address: req.ip
-      }
-    });
-
-    res.json(setting);
-  } catch (error) {
-    logApi.error('Failed to update system setting:', error);
-    res.status(500).json({ error: 'Failed to update system setting' });
-  }
-});
-
-/**
- * @swagger
- * /api/admin/users/{wallet}/ban:
- *   post:
- *     summary: Ban a user
- *     tags: [Admin]
- *     security:
- *       - adminAuth: []
- *     parameters:
- *       - in: path
- *         name: wallet
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               reason:
- *                 type: string
- *     responses:
- *       200:
- *         description: User banned successfully
- */
-// Ban a user
-router.post('/users/:wallet/ban', async (req, res) => {
-  try {
-    const { wallet } = req.params;
-    const { reason } = req.body;
-    const adminAddress = req.headers['x-admin-address'];
-
-    const user = await prisma.users.update({
-      where: { wallet_address: wallet },
-      data: {
-        is_banned: true,
-        ban_reason: reason
-      }
-    });
-
-    await prisma.admin_logs.create({
-      data: {
-        admin_address: adminAddress,
-        action: 'BAN_USER',
-        details: {
-          wallet_address: wallet,
-          reason
-        },
-        ip_address: req.ip
-      }
-    });
-
-    res.json(user);
-  } catch (error) {
-    logApi.error('Failed to ban user:', error);
-    res.status(500).json({ error: 'Failed to ban user' });
-  }
-});
 
 /**
  * @swagger
@@ -357,7 +96,9 @@ router.post('/users/:wallet/ban', async (req, res) => {
  *       403:
  *         description: Not authorized
  */
-// Adjust a user's points balance (This is a duplicate in nature of a /routes/prisma/balance.js endpoint)
+// Adjust a user's points balance (this is duplicate of a /routes/prisma/balance.js endpoint?)
+//   example: POST https://degenduel.me/api/admin/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance
+//      body: { "amount": 100 }
 router.post('/users/:wallet/balance', async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -456,5 +197,274 @@ router.post('/users/:wallet/balance', async (req, res) => {
     });
   }
 });
+
+// -----------------------------------------------------------
+
+/**
+ * @swagger
+ * /api/admin/activities:
+ *   get:
+ *     summary: Get admin activity logs
+ *     tags: [Admin]
+ *     security:
+ *       - adminAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *       - in: query
+ *         name: action
+ *         schema:
+ *           type: string
+ *         description: Filter by action type
+ *     responses:
+ *       200:
+ *         description: List of admin activities
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 activities:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/AdminLog'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     offset:
+ *                       type: integer
+ */
+// Get admin activity logs
+//   example: GET https://degenduel.me/api/admin/activities?limit=50&offset=0&action=login
+router.get('/activities', async (req, res) => {
+  console.log('>>>query received>>> | /api/admin/activities');
+  
+  const debugMode = true; // Simple debug flag to toggle on/off
+
+  try {
+    const { limit = 50, offset = 0, action } = req.query;
+    
+    // Debug logging if enabled
+    if (debugMode) {
+      console.log('Query parameters:', { limit, offset, action });
+    }
+  
+    // Mock implementation that mimics Prisma's structure
+    const mockData = [
+      { id: 1, action: 'login', created_at: new Date() },
+      { id: 2, action: 'update', created_at: new Date() },
+      // Add more mock entries as needed
+    ];
+  
+    const where = action ? { action } : {};
+  
+    // Simulate Prisma's findMany and count methods
+    const activities = mockData
+      .filter(item => !action || item.action === action)
+      .sort((a, b) => b.created_at - a.created_at)
+      .slice(parseInt(offset), parseInt(offset) + parseInt(limit));
+  
+    const total = mockData.filter(item => !action || item.action === action).length;
+  
+    // Debug logging if enabled
+    if (debugMode) {
+      console.log('Filtered activities:', activities);
+      console.log('Total count:', total);
+    }
+  
+    console.log('<<<response<<< | /api/admin/activities');
+    res.json({
+      activities,
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
+  } catch (error) {
+    // Maintain original error handling
+    if (debugMode) {
+      console.error('Detailed error information:', error);
+    }
+    
+    logApi.error('Failed to fetch admin activities:', error);
+    res.status(500).json({ error: 'Failed to fetch admin activities' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/system-settings:
+ *   get:
+ *     summary: Get all system settings
+ *     tags: [Admin]
+ *     security:
+ *       - adminAuth: []
+ *     responses:
+ *       200:
+ *         description: System settings
+ */
+// Get all system settings
+//   example: GET https://degenduel.me/api/admin/system-settings
+router.get('/system-settings', async (req, res) => {
+  try {
+    const settings = await prisma.system_settings.findMany();
+    res.json(settings);
+  } catch (error) {
+    logApi.error('Failed to fetch system settings:', error);
+    res.status(500).json({ error: 'Failed to fetch system settings' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/system-settings/{key}:
+ *   put:
+ *     summary: Update a system setting
+ *     tags: [Admin]
+ *     security:
+ *       - adminAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               value:
+ *                 type: object
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Setting updated successfully
+ */
+// Update a system setting
+//   example: PUT https://degenduel.me/api/admin/system-settings/max_daily_login_bonus
+//      body: { "value": 100, "description": "Maximum daily login bonus" }
+router.put('/system-settings/:key', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { value, description } = req.body;
+    const adminAddress = req.headers['x-admin-address'];
+
+    const setting = await prisma.system_settings.upsert({
+      where: { key },
+      update: {
+        value,
+        description,
+        updated_by: adminAddress,
+        updated_at: new Date()
+      },
+      create: {
+        key,
+        value,
+        description,
+        updated_by: adminAddress
+      }
+    });
+
+    // Log the admin action
+    await prisma.admin_logs.create({
+      data: {
+        admin_address: adminAddress,
+        action: 'UPDATE_SYSTEM_SETTING',
+        details: {
+          key,
+          old_value: setting.value,
+          new_value: value
+        },
+        ip_address: req.ip
+      }
+    });
+
+    res.json(setting);
+  } catch (error) {
+    logApi.error('Failed to update system setting:', error);
+    res.status(500).json({ error: 'Failed to update system setting' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/users/{wallet}/ban:
+ *   post:
+ *     summary: Ban a user
+ *     tags: [Admin]
+ *     security:
+ *       - adminAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User banned successfully
+ */
+// Ban a user
+//   example: POST https://degenduel.me/api/admin/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/ban
+//      body: { "reason": "Spamming" }
+router.post('/users/:wallet/ban', async (req, res) => {
+  try {
+    const { wallet } = req.params;
+    const { reason } = req.body;
+    const adminAddress = req.headers['x-admin-address'];
+
+    const user = await prisma.users.update({
+      where: { wallet_address: wallet },
+      data: {
+        is_banned: true,
+        ban_reason: reason
+      }
+    });
+
+    await prisma.admin_logs.create({
+      data: {
+        admin_address: adminAddress,
+        action: 'BAN_USER',
+        details: {
+          wallet_address: wallet,
+          reason
+        },
+        ip_address: req.ip
+      }
+    });
+
+    res.json(user);
+  } catch (error) {
+    logApi.error('Failed to ban user:', error);
+    res.status(500).json({ error: 'Failed to ban user' });
+  }
+});
+
 
 export default router; 

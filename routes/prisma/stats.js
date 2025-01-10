@@ -6,7 +6,6 @@ import { logApi } from '../../utils/logger-suite/logger.js'; // New DD Logging S
 const router = Router();
 const prisma = new PrismaClient();
 
-
 /**
  * @swagger
  * tags:
@@ -61,6 +60,7 @@ const prisma = new PrismaClient();
  *                         type: integer
  */
 // Get platform stats
+//   example: GET https://degenduel.me/api/stats/platform
 router.get('/platform', async (req, res) => {
     const log = logApi.withRequest(req);
     
@@ -284,6 +284,7 @@ router.get('/platform', async (req, res) => {
  *                         format: date-time
  */
 // Get stats of a wallet
+//   example: GET https://degenduel.me/api/stats/wallet/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/wallet/:address', async (req, res) => {
   const log = logApi.withRequest(req);
   const { address } = req.params;

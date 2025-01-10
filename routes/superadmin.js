@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
  */
 
 // Middleware to verify Superadmin token
+//   example: POST https://degenduel.me/api/superadmin/generate-tree
 const verifySuperadminToken = (req, res, next) => {
     const token = req.headers['x-superadmin-token'];
     if (!token) return res.status(401).send('Access Denied');
@@ -28,6 +29,7 @@ const verifySuperadminToken = (req, res, next) => {
 const router = express.Router();
 
 // Generate project tree endpoint
+//   example: POST https://degenduel.me/api/superadmin/generate-tree
 router.post('/generate-tree', verifySuperadminToken, (req, res) => {
     exec('/home/websites/degenduel/scripts/tree.sh', (error, stdout, stderr) => {
         if (error) {

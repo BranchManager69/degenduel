@@ -5371,3 +5371,131 @@ Invalid `prisma.contests.findUnique()` invocation:
 
 Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:50:51.266Z"}
 2025-01-10 04:50:59 -05:00: [32minfo[39m: GET /api/admin/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance {"timestamp":"2025-01-10T09:50:59.792Z"}
+2025-01-10 04:55:51 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T09:55:51.087Z"}
+2025-01-10 04:55:51 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T09:55:51.146Z"}
+2025-01-10 04:55:51 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T09:55:51.227Z"}
+2025-01-10 04:55:51 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T09:55:51.252Z","totalUsers":3,"userCount":3}
+2025-01-10 04:55:51 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T09:55:51.319Z"}
+2025-01-10 04:55:51 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T09:55:51.334Z"}
+2025-01-10 05:00:52 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T10:00:52.238Z"}
+2025-01-10 05:00:52 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T10:00:52.307Z"}
+2025-01-10 05:00:52 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T10:00:52.369Z"}
+2025-01-10 05:00:52 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T10:00:52.386Z","totalUsers":3,"userCount":3}
+2025-01-10 05:00:52 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T10:00:52.450Z"}
+2025-01-10 05:00:52 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T10:00:52.464Z"}
+2025-01-10 05:05:52 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T10:05:52.049Z"}
+2025-01-10 05:05:52 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T10:05:52.113Z"}
+2025-01-10 05:05:52 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T10:05:52.182Z"}
+2025-01-10 05:05:52 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T10:05:52.185Z","totalUsers":3,"userCount":3}
+2025-01-10 05:05:52 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T10:05:52.246Z"}
+2025-01-10 05:05:52 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T10:05:52.248Z"}
+2025-01-10 05:10:52 -05:00: [32minfo[39m: GET /api/admin/stats/platform {"timestamp":"2025-01-10T10:10:52.036Z"}
+2025-01-10 05:10:52 -05:00: [32minfo[39m: GET /api/admin/stats/activity {"timestamp":"2025-01-10T10:10:52.101Z"}
+2025-01-10 05:10:52 -05:00: [32minfo[39m: GET /api/users {"timestamp":"2025-01-10T10:10:52.182Z"}
+2025-01-10 05:10:52 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T10:10:52.204Z","totalUsers":3,"userCount":3}
+2025-01-10 05:10:52 -05:00: [32minfo[39m: GET /api/contests/all {"timestamp":"2025-01-10T10:10:52.273Z"}
+2025-01-10 05:10:52 -05:00: [31merror[39m: Failed to fetch contest: 
+Invalid `prisma.contests.findUnique()` invocation:
+
+{
+  where: {
++   id: Int
+  },
+  include: {
+    contest_participants: {
+      include: {
+        users: {
+          select: {
+            nickname: true,
+            wallet_address: true
+          }
+        }
+      }
+    },
+    contest_portfolios: {
+      include: {
+        tokens: true
+      }
+    }
+  }
+}
+
+Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidationError","stack":"PrismaClientValidationError: \nInvalid `prisma.contests.findUnique()` invocation:\n\n{\n  where: {\n+   id: Int\n  },\n  include: {\n    contest_participants: {\n      include: {\n        users: {\n          select: {\n            nickname: true,\n            wallet_address: true\n          }\n        }\n      }\n    },\n    contest_portfolios: {\n      include: {\n        tokens: true\n      }\n    }\n  }\n}\n\nArgument `id` is missing.\n    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n    at async file:///home/websites/degenduel/routes/contests.js:270:21","timestamp":"2025-01-10T10:10:52.286Z"}

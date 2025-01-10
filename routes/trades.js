@@ -81,6 +81,7 @@ const router = express.Router();
  *         description: Server error
  */
 // Submit a new trade for a contest
+//   example: POST https://degenduel.me/api/trades/1
 router.post('/:contestId', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -178,6 +179,7 @@ router.post('/:contestId', async (req, res) => {
  *         description: Server error
  */
 // Get user's trades for a specific contest
+//   example: GET https://degenduel.me/api/trades/1?wallet=BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:contestId', async (req, res) => {
   const { contestId } = req.params;
   const { wallet } = req.query;

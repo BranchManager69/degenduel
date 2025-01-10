@@ -35,6 +35,7 @@ const router = express.Router();
  *                     type: object
  */
 // Get OFFICIAL DD-Serv list of tokens
+//   example: GET https://degenduel.me/api/dd-serv/tokens
 router.get('/tokens', async (req, res) => {
   try {
     // Fetch from Server B’s public endpoint
@@ -74,6 +75,7 @@ router.get('/tokens', async (req, res) => {
  *         description: The address of the token
  */
 // Get OFFICIAL DD-Serv price history of a token
+//   example: GET https://degenduel.me/api/dd-serv/tokens/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/price-history
 router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
   const { tokenAddress } = req.params;
   try {

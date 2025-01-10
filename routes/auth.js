@@ -8,7 +8,6 @@ const { sign } = pkg;
 
 const router = express.Router();
 
-
 /**
  * @swagger
  * tags:
@@ -53,6 +52,8 @@ const router = express.Router();
  *         description: Server error during verification
  */
 // Verify wallet signature and establish a session
+// example: POST https://degenduel.me/api/auth/verify-wallet
+//    body: { "wallet": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "signature": "0x69696969", "message": "Hello, BM!" }
 router.post('/verify-wallet', async (req, res) => {
   logApi.info('Starting wallet verification', {
     requestId: req.id,
@@ -171,7 +172,9 @@ router.post('/verify-wallet', async (req, res) => {
  *                   type: string
  *                   format: date-time
  */
-// Connect wallet and create/update user
+// Connect wallet and create/update user (??)
+//   example: POST https://degenduel.me/api/auth/connect
+//      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "nickname": "BM" }
 router.post('/connect', async (req, res) => {
   logApi.info('Starting wallet connection', {
     requestId: req.id,
@@ -269,7 +272,9 @@ router.post('/connect', async (req, res) => {
  *       500:
  *         description: Server error during disconnection
  */
-// Disconnect wallet
+// Disconnect wallet (??)
+//   example: POST https://degenduel.me/api/auth/disconnect
+//      body: { "wallet": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
 router.post('/disconnect', async (req, res) => {
   logApi.info('Starting wallet disconnection', {
     requestId: req.id,

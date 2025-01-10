@@ -103,7 +103,6 @@ const prisma = new PrismaClient();
  *                 example: "Token not found"
  */
 
-
 /* Tokens Routes */
 
 /**
@@ -151,6 +150,7 @@ const prisma = new PrismaClient();
  *                               $ref: '#/components/schemas/TokenBucket'
  */
 // Get all tokens (with optional filters)
+//   example: GET https://degenduel.me/api/tokens?active=true&bucket=1&search=ETH
 router.get('/', async (req, res) => {
   try {
     const { active, bucket, search } = req.query;
@@ -230,6 +230,7 @@ router.get('/', async (req, res) => {
  *         $ref: '#/components/responses/TokenNotFound'
  */
 // Get token by ID
+//   example: GET https://degenduel.me/api/tokens/1
 router.get('/:id', async (req, res) => {
   try {
     const token = await prisma.tokens.findUnique({
@@ -282,6 +283,7 @@ router.get('/:id', async (req, res) => {
  *                             type: string
  */
 // Get current prices for all tokens
+//   example: GET https://degenduel.me/api/tokens/prices
 router.get('/prices', async (req, res) => {
   try {
     const prices = await prisma.token_prices.findMany({
@@ -342,6 +344,7 @@ router.get('/prices', async (req, res) => {
  *         $ref: '#/components/responses/TokenNotFound'
  */
 // Get price history for a specific token
+//   example: GET https://degenduel.me/api/tokens/prices/1
 router.get('/prices/:tokenId', async (req, res) => {
   try {
     const price = await prisma.token_prices.findUnique({

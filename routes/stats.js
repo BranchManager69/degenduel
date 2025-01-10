@@ -17,7 +17,6 @@ const router = express.Router();
  *   description: API endpoints for user statistics and achievements
  */
 
-
 /* Stats Routes */
 
 /**
@@ -57,6 +56,7 @@ const router = express.Router();
  *         description: Server error
  */
 // Get user's overall statistics
+//   example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:wallet', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -142,6 +142,7 @@ router.get('/:wallet', async (req, res) => {
  *         description: Server error
  */
 // Get user's contest history
+//   example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/history?limit=10&offset=0
 router.get('/:wallet/history', async (req, res) => {
 try {
       const result = await pool.query(`
@@ -205,6 +206,7 @@ try {
  *         description: Server error
  */
 // Get user's achievements
+//   example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/achievements
 router.get('/:wallet/achievements', async (req, res) => {
     try {
       const result = await pool.query(`

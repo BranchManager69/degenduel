@@ -21,7 +21,7 @@ const ADMIN_WALLET_ADDRESSES = process.env.ADMIN_WALLET_ADDRESSES; // TODO: Move
  *   description: User point balance endpoints
  */
 
-/* 'Points' Balance Routes */
+/* Points Balance Routes */
 
 /**
  * @swagger
@@ -62,6 +62,7 @@ const ADMIN_WALLET_ADDRESSES = process.env.ADMIN_WALLET_ADDRESSES; // TODO: Move
  *                   example: "User not found"
  */
 // Get a user's point balance by wallet address
+//   example: GET https://degenduel.me/api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:wallet', async (req, res) => {
   const log = logApi.withRequest(req);
   const { wallet } = req.params;
@@ -162,8 +163,10 @@ router.get('/:wallet', async (req, res) => {
  *       403:
  *         description: Not authorized
  */
-// NOT WORKING???
-// Adjust a user's point balance by wallet address (Admin only)
+// (NOT WORKING??)
+// Increment/decrement a user's point balance by wallet address (Admin only)
+//   example: POST https://degenduel.me/api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance
+//      body: { "amount": 100 }
 router.post('/:wallet/balance', async (req, res) => {
   const log = logApi.withRequest(req);
   const { wallet } = req.params;
