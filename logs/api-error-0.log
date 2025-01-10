@@ -9916,3 +9916,175 @@ TypeError: logApi.withRequest is not a function
     at file:///home/websites/degenduel/config/swagger.js:46:17
     at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 05:13:57 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 05:26:38 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 05:31:02 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 05:35:00 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 05:41:45 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 05:50:05 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 06:52:19 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: logApi.withRequest is not a function
+    at file:///home/websites/degenduel/routes/prisma/balance.js:67:22
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:365:14)
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:421:3)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+2025-01-10 06:53:26 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: logApi.withRequest is not a function
+    at file:///home/websites/degenduel/routes/prisma/balance.js:67:22
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:365:14)
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:421:3)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+2025-01-10 06:53:32 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: logApi.withRequest is not a function
+    at file:///home/websites/degenduel/routes/prisma/balance.js:67:22
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:365:14)
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:421:3)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+2025-01-10 06:55:04 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: logApi.withRequest is not a function
+    at file:///home/websites/degenduel/routes/prisma/balance.js:67:22
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:365:14)
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:421:3)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+2025-01-10 06:55:25 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 06:58:03 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-10 07:14:58 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+TypeError: logApi.withRequest is not a function
+    at file:///home/websites/degenduel/routes/prisma/balance.js:67:22
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
+    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:365:14)
+    at param (/home/websites/degenduel/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/home/websites/degenduel/node_modules/express/lib/router/index.js:421:3)
+    at next (/home/websites/degenduel/node_modules/express/lib/router/index.js:280:10)
+2025-01-10 07:16:54 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
