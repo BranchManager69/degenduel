@@ -38,6 +38,7 @@ const createUserSchema = z.object({
  *         description: List of users
  */
 // Get all users
+//   example: GET https://degenduel.me/api/users
 router.get('/', async (req, res) => {
   const logContext = { 
     path: 'GET /api/users',
@@ -152,6 +153,7 @@ router.get('/', async (req, res) => {
  *         description: User not found
  */
 // Get user profile by wallet address
+//   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:wallet', async (req, res) => {
   const logContext = {
     path: 'GET /api/users/:wallet',
@@ -264,6 +266,8 @@ router.get('/:wallet', async (req, res) => {
  *                   example: "Wallet address already exists"
  */
 // Create new user
+//   example: POST https://degenduel.me/api/users
+//   body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "nickname": "xXx420Sn1perx" }
 router.post('/', async (req, res) => {
   const logContext = {
     path: 'POST /api/users',
@@ -380,6 +384,7 @@ router.post('/', async (req, res) => {
  *         $ref: '#/components/responses/UserNotFound'
  */
 // Update user profile by wallet address
+//   example: PUT https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.put('/:wallet', async (req, res) => {
   try {
     const { nickname, settings } = req.body;
@@ -426,6 +431,7 @@ router.put('/:wallet', async (req, res) => {
  *         $ref: '#/components/responses/UserNotFound'
  */
 // Get user achievements by wallet address
+//   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/achievements
 router.get('/:wallet/achievements', async (req, res) => {
   try {
     const achievements = await prisma.user_achievements.findMany({
@@ -487,6 +493,7 @@ router.get('/:wallet/achievements', async (req, res) => {
  *         $ref: '#/components/responses/UserNotFound'
  */
 // Get detailed user statistics by wallet address
+//   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/stats
 router.get('/:wallet/stats', async (req, res) => {
   try {
     const [stats, tokenStats] = await Promise.all([

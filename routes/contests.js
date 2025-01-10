@@ -114,7 +114,6 @@ const { PrismaClientKnownRequestError } = pkg;
  *                 example: Contest not found
  */
 
-
 /* Contests Routes */
 
 /**
@@ -177,6 +176,7 @@ const { PrismaClientKnownRequestError } = pkg;
  *                   type: string
  */
 // Get all contests with optional filters
+//   example: GET https://degenduel.me/api/contests?status=active&limit=10&offset=0
 router.get('/', async (req, res) => {
   try {
     const { status, limit = 10, offset = 0, wallet_address } = req.query;
@@ -265,6 +265,7 @@ router.get('/', async (req, res) => {
  *         $ref: '#/components/responses/ContestNotFound'
  */
 // Get contest by ID with full details
+//   example: GET https://degenduel.me/api/contests/1
 router.get('/:id', async (req, res) => {
   try {
     const contest = await prisma.contests.findUnique({
@@ -407,6 +408,8 @@ router.get('/:id', async (req, res) => {
  *                   type: string
  */
 // Create a new contest
+//   example: POST https://degenduel.me/api/contests
+//      body: { "name": "Weekly Trading Contest", "contest_code": "WTC-2024-01", "entry_fee": "1000000", "start_time": "2025-01-01T00:00:00Z", "end_time": "2025-01-07T23:59:59Z", "min_participants": 10, "max_participants": 100, "allowed_buckets": [1, 2, 3] }
 router.post('/', async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -680,6 +683,8 @@ router.post('/', async (req, res) => {
  *         $ref: '#/components/responses/ContestNotFound'
  */
 // Join a contest
+//   example: POST https://degenduel.me/api/contests/1/join
+//      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
 router.post('/:id/join', async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -913,6 +918,8 @@ router.post('/:id/join', async (req, res) => {
  *         description: Contest updated successfully
  */
 // Update contest details
+//   example: PUT https://degenduel.me/api/contests/1
+//      body: { "name": "Weekly Trading Contest", "contest_code": "WTC-2024-01", "entry_fee": "1000000", "start_time": "2025-01-01T00:00:00Z", "end_time": "2025-01-07T23:59:59Z", "min_participants": 10, "max_participants": 100, "allowed_buckets": [1, 2, 3] }
 router.put('/:id', async (req, res) => {
   const requestId = crypto.randomUUID();
   const contestId = parseInt(req.params.id);
@@ -1120,6 +1127,7 @@ router.put('/:id', async (req, res) => {
  *         $ref: '#/components/responses/ContestNotFound'
  */
 // Start a contest
+//   example: POST https://degenduel.me/api/contests/1/start
 router.post('/:id/start', async (req, res) => {
   try {
     const contest = await prisma.contests.findUnique({
@@ -1205,6 +1213,7 @@ router.post('/:id/start', async (req, res) => {
  *         $ref: '#/components/responses/ContestNotFound'
  */
 // End a contest and calculate winners
+//   example: POST https://degenduel.me/api/contests/1/end
 router.post('/:id/end', async (req, res) => {
   try {
     const result = await prisma.$transaction(async (prisma) => {
@@ -1304,6 +1313,7 @@ router.post('/:id/end', async (req, res) => {
  *         $ref: '#/components/responses/ContestNotFound'
  */
 // Get contest leaderboard
+//   example: GET https://degenduel.me/api/contests/1/leaderboard
 router.get('/:id/leaderboard', async (req, res) => {
   try {
     const leaderboard = await prisma.contest_participants.findMany({
@@ -1395,6 +1405,8 @@ router.get('/:id/leaderboard', async (req, res) => {
  *         $ref: '#/components/responses/ContestNotFound'
  */
 // Submit or update contest portfolio
+//   example: POST https://degenduel.me/api/contests/1/portfolio
+//      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "tokens": [{"token_id": 1, "weight": 50}, {"token_id": 2, "weight": 50}] }
 router.post('/:id/portfolio', async (req, res) => {
   const { wallet_address, tokens } = req.body;
   const contestId = parseInt(req.params.id);
@@ -1492,6 +1504,7 @@ router.post('/:id/portfolio', async (req, res) => {
  *                   example: "Portfolio not found"
  */
 // Get user's contest portfolio
+//   example: GET https://degenduel.me/api/contests/1/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:id/portfolio/:wallet', async (req, res) => {
   try {
     const portfolio = await prisma.contest_portfolios.findMany({
@@ -1522,6 +1535,7 @@ router.get('/:id/portfolio/:wallet', async (req, res) => {
 */
 
 // Custom error class for contest-related errors
+//   example: throw new ContestError('Contest not found', 404);
 class ContestError extends Error {
   constructor(message, statusCode = 400, details = null) {
     super(message);
