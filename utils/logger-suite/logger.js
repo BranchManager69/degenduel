@@ -1,3 +1,4 @@
+// /utils/logger-suite/logger.js
 // Compatibility layer for existing imports
 import { logAPI } from './index.js';
 // Export everything from the new system
