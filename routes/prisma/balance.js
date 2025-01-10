@@ -1,13 +1,27 @@
+// /routes/prisma/balance.js - Centralized logging for DegenDuel backend services.
 import { Prisma, PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import { Router } from 'express';
-import logger from '../../utils/logger.js';
+import { logApi } from '../../utils/logger-suite/logger.js'; // New DD Logging System
 dotenv.config()
 
 const router = Router();
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
-const SUPERADMIN_WALLET_ADDRESS = process.env.SUPERADMIN_WALLET_ADDRESS
+// Superadmin wallet address
+const SUPERADMIN_WALLET_ADDRESS = process.env.SUPERADMIN_WALLET_ADDRESS; // TODO: Move to config/constants.js
+// Admin wallet addresses
+const ADMIN_WALLET_ADDRESSES = process.env.ADMIN_WALLET_ADDRESSES; // TODO: Move to config/constants.js
+
+
+/**
+ * @swagger
+ * tags:
+ *   name: Balance
+ *   description: User point balance endpoints
+ */
+
+/* 'Points' Balance Routes */
 
 /**
  * @swagger
@@ -47,15 +61,12 @@ const SUPERADMIN_WALLET_ADDRESS = process.env.SUPERADMIN_WALLET_ADDRESS
  *                   type: string
  *                   example: "User not found"
  */
+// Get a user's point balance by wallet address
 router.get('/:wallet', async (req, res) => {
-  const requestId = crypto.randomUUID();
-  const startTime = Date.now();
+  const log = logApi.withRequest(req);
   const { wallet } = req.params;
 
-  logger.info('Fetching user balance', {
-    requestId,
-    wallet_address: wallet
-  });
+  log.info('Fetching user balance', { wallet_address: wallet });
 
   try {
     const user = await prisma.users.findUnique({
@@ -63,10 +74,7 @@ router.get('/:wallet', async (req, res) => {
     });
 
     if (!user) {
-      logger.warn('User not found', {
-        requestId,
-        wallet_address: wallet
-      });
+      log.warn('User not found', { wallet_address: wallet });
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -74,12 +82,10 @@ router.get('/:wallet', async (req, res) => {
     const exactUSDC = balance.dividedBy(1000000);
     const formattedBalance = exactUSDC.toFixed(2);
 
-    logger.info('Successfully fetched user balance', {
-      requestId,
+    log.info('Balance fetched successfully', {
       wallet_address: wallet,
       balance: balance.toString(),
-      exact_usdc: exactUSDC.toString(),
-      formatted_balance: formattedBalance
+      exact_usdc: exactUSDC.toString()
     });
 
     res.json({
@@ -90,17 +96,13 @@ router.get('/:wallet', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching user balance:', error); // TODO: remove
-    logger.error('Failed to fetch user balance', {
-      requestId,
+    log.error('Failed to fetch balance', {
       error: {
         name: error.name,
         message: error.message,
-        code: error?.code,
-        meta: error?.meta
+        code: error?.code
       },
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      duration: Date.now() - startTime
+      wallet_address: wallet
     });
 
     res.status(500).json({
@@ -160,29 +162,47 @@ router.get('/:wallet', async (req, res) => {
  *       403:
  *         description: Not authorized
  */
+// Adjust a user's point balance by wallet address (Admin only)
 router.post('/:wallet/balance', async (req, res) => {
-  const requestId = crypto.randomUUID();
-  const startTime = Date.now();
+  const log = logApi.withRequest(req);
   const { wallet } = req.params;
   const { amount } = req.body;
+  const adminAddress = req.headers['x-admin-address'];
 
-  logger.info('Adjusting user balance', {
-    requestId,
+  // Add validation logging
+  if (!adminAddress) {
+    log.warn('Unauthorized balance adjustment attempt by non-admin', {
+      wallet_address: wallet,
+      ip_address: req.ip
+    });
+    return res.status(403).json({ error: 'Admin authorization required' });
+  }
+
+  if (!amount || isNaN(amount)) {
+      log.warn('Invalid amount in balance adjustment request', {
+      wallet_address: wallet,
+      admin_address: adminAddress,
+      invalid_amount: amount
+    });
+    return res.status(400).json({ error: 'Valid amount required' });
+  }
+
+  log.info('Balance adjustment requested', {
     wallet_address: wallet,
-    adjustment_amount: amount
+    adjustment_amount: amount,
+    admin_address: adminAddress
   });
 
   try {
-    // Verify admin authorization here
-    // TODO: Implement proper admin check
-    
     const result = await prisma.$transaction(async (prisma) => {
-      // Find user
       const user = await prisma.users.findUnique({
         where: { wallet_address: wallet }
       });
 
       if (!user) {
+        log.warn('Balance adjustment failed - User not found', {
+          wallet_address: wallet
+        });
         throw new Error('User not found');
       }
 
@@ -190,12 +210,16 @@ router.post('/:wallet/balance', async (req, res) => {
       const adjustment = new Prisma.Decimal(amount);
       const newBalance = previousBalance.plus(adjustment);
 
-      // Prevent negative balance
       if (newBalance.lessThan(0)) {
+        log.warn('Balance adjustment failed - Insufficient funds', {
+          wallet_address: wallet,
+          previous_balance: previousBalance.toString(),
+          attempted_adjustment: adjustment.toString()
+        });
         throw new Error('Insufficient balance for deduction');
       }
 
-      // Update user balance
+      // Update the user's balance
       const updatedUser = await prisma.users.update({
         where: { wallet_address: wallet },
         data: { 
@@ -203,8 +227,14 @@ router.post('/:wallet/balance', async (req, res) => {
           updated_at: new Date()
         }
       });
+      log.info('Balance adjusted successfully', {
+        wallet_address: wallet,
+        previous_balance: previousBalance.toString(),
+        adjustment: adjustment.toString(),
+        new_balance: newBalance.toString()
+      });
 
-      // Log the adjustment
+      // Log the transaction
       await prisma.admin_logs.create({
         data: {
           admin_address: req.headers['x-admin-address'] || 'SYSTEM',
@@ -219,6 +249,14 @@ router.post('/:wallet/balance', async (req, res) => {
         }
       });
 
+      log.info('Balance adjusted successfully', {
+        wallet_address: wallet,
+        previous_balance: previousBalance.toString(),
+        adjustment: adjustment.toString(),
+        new_balance: newBalance.toString(),
+        admin_address: req.headers['x-admin-address']
+      });
+
       return {
         previous_balance: previousBalance.toString(),
         new_balance: newBalance.toString(),
@@ -226,26 +264,17 @@ router.post('/:wallet/balance', async (req, res) => {
       };
     });
 
-    logger.info('Successfully adjusted balance', {
-      requestId,
-      wallet_address: wallet,
-      ...result,
-      duration: Date.now() - startTime
-    });
-
     res.json(result);
 
   } catch (error) {
-    logger.error('Failed to adjust balance', {
-      requestId,
+    log.error('Balance adjustment failed', {
       error: {
         name: error.name,
         message: error.message,
-        code: error?.code,
-        meta: error?.meta
+        code: error?.code
       },
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      duration: Date.now() - startTime
+      wallet_address: wallet,
+      attempted_adjustment: amount
     });
 
     if (error.message === 'User not found') {
@@ -262,6 +291,15 @@ router.post('/:wallet/balance', async (req, res) => {
     });
   }
 });
+
+
+
+
+// -----------------------------------------------------------
+
+
+
+
 
 /**
  * @swagger
@@ -305,6 +343,7 @@ router.post('/:wallet/balance', async (req, res) => {
  *                   description: Error message
  *                   example: "An error occurred while querying the database."
  */
+
 /*
 router.get('/', async (req, res) => {
   console.log('>>>query received>>> | by wallet address:', SUPERADMIN_WALLET_ADDRESS);
@@ -324,6 +363,7 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'An error occurred while querying the database.' });
   }
 });
+*/
 
 
 /**
@@ -343,6 +383,7 @@ router.get('/', async (req, res) => {
  *               type: string
  *               example: "This is /api/daddy/mommy"
  */
+
 /*
 router.get('/mommy', (req, res) => {
   res.send('This is /api/daddy/mommy');

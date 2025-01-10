@@ -1,9 +1,16 @@
+// /routes/prisma/admin.js
 import { Prisma, PrismaClient } from '@prisma/client';
 import { Router } from 'express';
-import logger from '../../utils/logger.js';
 
 const router = Router();
 const prisma = new PrismaClient();
+
+/*
+ *
+ * I am not sure if even a single one of these endpoints actually works
+ * 
+ */
+
 
 /**
  * @swagger
@@ -37,6 +44,7 @@ const prisma = new PrismaClient();
  *       name: X-Admin-Token
  */
 
+/* Admin Activity Logs */
 
 /**
  * @swagger
@@ -84,6 +92,7 @@ const prisma = new PrismaClient();
  *                     offset:
  *                       type: integer
  */
+// Get admin activity logs
 router.get('/activities', async (req, res) => {
   console.log('>>>query received>>> | /api/admin/activities');
   
@@ -152,6 +161,7 @@ router.get('/activities', async (req, res) => {
  *       200:
  *         description: System settings
  */
+// Get all system settings
 router.get('/system-settings', async (req, res) => {
   try {
     const settings = await prisma.system_settings.findMany();
@@ -191,6 +201,7 @@ router.get('/system-settings', async (req, res) => {
  *       200:
  *         description: Setting updated successfully
  */
+// Update a system setting
 router.put('/system-settings/:key', async (req, res) => {
   try {
     const { key } = req.params;
@@ -261,6 +272,7 @@ router.put('/system-settings/:key', async (req, res) => {
  *       200:
  *         description: User banned successfully
  */
+// Ban a user
 router.post('/users/:wallet/ban', async (req, res) => {
   try {
     const { wallet } = req.params;
@@ -344,6 +356,7 @@ router.post('/users/:wallet/ban', async (req, res) => {
  *       403:
  *         description: Not authorized
  */
+// Adjust a user's points balance (This is a duplicate in nature of a /routes/prisma/balance.js endpoint)
 router.post('/users/:wallet/balance', async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
