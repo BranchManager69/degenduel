@@ -14,7 +14,7 @@ dotenv.config();
 /* DegenDuel API Server */
 
 const app = express();
-const port = process.env.API_PORT || 3003; // DegenDuel API port (main)
+const port = process.env.API_PORT || 3004; // DegenDuel API port (main)
 const logsPort = process.env.LOGS_PORT || 3334; // Logs streaming port (stub)
 
 // Cookies setup
