@@ -1,7 +1,7 @@
 // /middleware/auth.js
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
-import { logApi } from '../utils/logger-suite';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 // (I cannot find where, if anywhere, this is being used)
 export const requireAuth = (req, res, next) => {

@@ -2,7 +2,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import { Router } from 'express';
-import { logApi } from '../../utils/logger-suite'; // New DD Logging System
+import { logApi } from '../../utils/logger-suite/logger.js'; // New DD Logging System
 dotenv.config()
 
 const router = Router();

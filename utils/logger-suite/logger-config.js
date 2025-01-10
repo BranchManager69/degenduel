@@ -1,3 +1,4 @@
+// /utils/logger-suite/logger-config.js
 export const LOG_CONFIG = {
   rotation: {
     maxSize: process.env.LOG_MAX_SIZE || '20m',

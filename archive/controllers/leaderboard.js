@@ -1,4 +1,4 @@
-import { logApi } from '../../utils/logger-suite';
+import { logApi } from '../../utils/logger-suite/logger.js';
 import { LeaderboardModel } from '../models/leaderboard.js';
 
 export async function getLeaderboard(req, res) {

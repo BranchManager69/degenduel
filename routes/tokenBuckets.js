@@ -1,7 +1,7 @@
 // /routes/tokenBuckets.js
 import express from 'express';
 import { pool } from '../config/pg-database.js';
-import { logApi } from '../utils/logger-suite';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 

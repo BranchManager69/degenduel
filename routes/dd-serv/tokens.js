@@ -1,6 +1,6 @@
 // /routes/dd-serv/tokens.js
 import express from 'express';
-import { logApi } from '../../utils/logger-suite';
+import { logApi } from '../../utils/logger-suite/logger.js';
 
 const router = express.Router();
 

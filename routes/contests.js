@@ -1,7 +1,7 @@
 // /routes/contests.js
 import pkg from '@prisma/client';
 import express from 'express';
-import { logApi } from '../utils/logger-suite';
+import { logApi } from '../utils/logger-suite/logger.js';
 const { Prisma, PrismaClient } = pkg;
 
 const router = express.Router();

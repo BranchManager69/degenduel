@@ -1,7 +1,7 @@
 // /routes/prisma/admin.js
 import { Prisma, PrismaClient } from '@prisma/client';
 import { Router } from 'express';
-import { logApi } from '../../utils/logger-suite';
+import { logApi } from '../../utils/logger-suite/logger.js';
 
 const router = Router();
 const prisma = new PrismaClient();
