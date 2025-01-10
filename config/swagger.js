@@ -32,6 +32,9 @@ const swaggerDefinition = {
 const options = {
   definition: swaggerDefinition,
   apis: [
+    './src/routes/*.js',
+    './src/routes/dd-serv/*.js',
+    './src/routes/prisma/*.js',
     './routes/*.js',
     './routes/dd-serv/*.js',
     './routes/prisma/*.js'
@@ -57,11 +60,24 @@ function setupSwagger(app) {
   const swaggerUiOptions = {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: '⚔️ | DegenDuel API',
-    customfavIcon: '/favicon.ico'
+    customfavIcon: '/favicon.ico',
+    explorer: true,
+    swaggerOptions: {
+      displayRequestDuration: true,
+      persistAuthorization: true
+    }
   };
+
+  app.get('/api-docs-json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
   console.log('Swagger docs available at /api-docs');
+  
+  const routes = Object.keys(swaggerSpec.paths || {});
+  console.log('Detected API routes:', routes.length ? routes : 'None found');
 }
 
 export default setupSwagger;
