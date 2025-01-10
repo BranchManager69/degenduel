@@ -1,0 +1,42 @@
+{
+  requestId: '7d06c448-f6d3-48bc-a129-384c8fc5cfb4',
+  error: {
+    name: 'ContestError',
+    message: 'Contest is full',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 9,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T08:17:47.442Z'
+}
+{
+  requestId: 'c8e1c43d-d2da-4ec0-988b-f738d5fd21f8',
+  error: {
+    name: 'ContestError',
+    message: 'Contest is full',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 9,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T08:19:34.982Z'
+}
+{
+  requestId: 'c77c9e3d-d2c6-48ce-980c-53d5d7ca93f0',
+  error: {
+    name: 'ContestError',
+    message: 'Contest is full',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 11,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T08:19:56.108Z'
+}

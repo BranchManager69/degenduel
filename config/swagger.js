@@ -38,7 +38,20 @@ const options = {
   ]
 };
 
-const swaggerSpec = swaggerJsDoc(options);
+let swaggerSpec;
+try {
+  swaggerSpec = swaggerJsDoc(options);
+} catch (error) {
+  console.error('Failed to initialize Swagger:', error);
+  swaggerSpec = {
+    openapi: '3.0.0',
+    info: {
+      title: 'DegenDuel API',
+      version: '1.0.0',
+    },
+    paths: {}
+  };
+}
 
 function setupSwagger(app) {
   const swaggerUiOptions = {
