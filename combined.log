@@ -67410,3 +67410,255 @@
   level: 'info',
   timestamp: '2025-01-11T08:23:01.015Z'
 }
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T08:25:55.141Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:25:58.536Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-out-0.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:26:12.538Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Ferror.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:26:14.329Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Fcombined.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:26:15.100Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:26:16.833Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:27:00.611Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T08:27:58.650Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T08:28:55.434Z'
+}
+{
+  requestId: undefined,
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T08:29:10.508Z'
+}
+{
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T08:29:10.511Z'
+}
+{
+  requestId: undefined,
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T08:29:10.512Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T08:29:10.590Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T08:29:12.983Z'
+}
+{
+  requestId: '20047d05-da93-42ac-8178-387091816be9',
+  contestId: 9,
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T08:30:31.035Z'
+}
+{
+  requestId: '20047d05-da93-42ac-8178-387091816be9',
+  error: {
+    name: 'ContestError',
+    message: "You've already got a spot reserved at this table.",
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 13,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T08:30:31.048Z'
+}
+{
+  requestId: '99d6fc4a-d036-457c-ae26-24080286e7d6',
+  contestId: 17,
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T08:30:44.858Z'
+}
+{
+  requestId: '99d6fc4a-d036-457c-ae26-24080286e7d6',
+  contestId: 17,
+  userBalance: '100',
+  entryFee: '0.25',
+  level: 'info',
+  message: 'Balance validation',
+  timestamp: '2025-01-11T08:30:44.868Z'
+}
+{
+  requestId: '99d6fc4a-d036-457c-ae26-24080286e7d6',
+  contestId: 17,
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  participationId: undefined,
+  level: 'info',
+  message: 'Successfully joined contest',
+  timestamp: '2025-01-11T08:30:44.890Z'
+}
+{
+  requestId: '0fe34a63-6797-41d4-8fee-8bef7def5a8e',
+  contestId: 17,
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T08:31:01.695Z'
+}
+{
+  requestId: '0fe34a63-6797-41d4-8fee-8bef7def5a8e',
+  error: {
+    name: 'ContestError',
+    message: "You've already got a spot reserved at this table.",
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 14,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T08:31:01.710Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T08:31:15.343Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T08:31:17.292Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T08:32:04.184Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T08:32:04.915Z'
+}
+{
+  requestId: '11a4f6a2-d503-40cd-a78c-10d652c7bfe3',
+  contestId: 17,
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T08:35:51.531Z'
+}
+{
+  requestId: '11a4f6a2-d503-40cd-a78c-10d652c7bfe3',
+  error: {
+    name: 'ContestError',
+    message: "You've already got a spot reserved at this table.",
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 64,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T08:35:51.595Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T08:47:18.125Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:47:20.496Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:47:21.924Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T08:54:31.526Z'
+}
