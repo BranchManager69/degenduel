@@ -66685,3 +66685,728 @@
   message: 'Successfully fetched users',
   timestamp: '2025-01-11T04:15:14.256Z'
 }
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T05:06:45.355Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T05:22:53.780Z'
+}
+{
+  requestId: undefined,
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T05:27:57.349Z'
+}
+{
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T05:27:57.358Z'
+}
+{
+  requestId: undefined,
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T05:27:57.359Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T05:27:57.454Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T05:28:06.309Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T05:28:06.310Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T05:28:06.311Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T05:28:06.394Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T05:28:57.782Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:10.345Z'
+}
+{
+  message: 'Database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:10.347Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:11.130Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:11.141Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:11.228Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:11.239Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:11.240Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:20.084Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:20.743Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:20.754Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:20.797Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:20.803Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:40:20.804Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T05:42:45.066Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T05:42:45.076Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:42:45.117Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T05:42:45.123Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:42:45.124Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T05:43:02.641Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T05:43:02.652Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:43:02.688Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T05:43:02.694Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:43:02.694Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T05:46:34.975Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T05:46:35.570Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T05:46:35.581Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:46:35.616Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T05:46:35.621Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:46:35.621Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T05:54:13.843Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T05:54:14.459Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T05:54:14.467Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:54:14.513Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T05:54:14.518Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T05:54:14.519Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T06:25:16.420Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T06:27:08.920Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T06:27:14.311Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T06:27:14.969Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T06:27:14.977Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T06:27:15.023Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T06:27:15.030Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T06:27:15.031Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T06:27:23.065Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T06:28:12.400Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T06:29:02.977Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T06:29:02.980Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T06:29:02.980Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T06:29:03.112Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T06:29:06.068Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T06:29:06.143Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T06:46:38.721Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T06:46:39.366Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T06:46:39.379Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T06:46:39.424Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T06:46:39.430Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T06:46:39.431Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T06:52:52.395Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T06:52:53.014Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T06:52:53.025Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T06:52:53.061Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T06:52:53.067Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T06:52:53.068Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T07:27:58.823Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T07:40:25.225Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T07:40:25.846Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T07:40:25.856Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:40:25.901Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T07:40:25.906Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:40:25.907Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T07:44:42.906Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T07:44:43.521Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T07:44:43.531Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:44:43.572Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T07:44:43.577Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:44:43.578Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T07:48:41.387Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T07:48:41.961Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T07:48:41.970Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:48:42.004Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T07:48:42.009Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:48:42.009Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T07:55:46.293Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T07:55:46.303Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:55:46.343Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T07:55:46.349Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T07:56:42.006Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T07:56:42.612Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T07:56:42.622Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:56:42.662Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T07:56:42.667Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T07:56:42.668Z'
+}
+{
+  level: 'warn',
+  message: 'x-superadmin-token',
+  timestamp: '2025-01-11T07:57:00.725Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T08:06:12.461Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T08:06:13.064Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T08:06:13.075Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T08:06:13.113Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T08:06:13.119Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T08:06:13.119Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T08:12:11.998Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T08:12:12.628Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T08:12:12.639Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T08:12:12.677Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T08:12:12.683Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T08:12:12.684Z'
+}
+{
+  message: 'New superadmin token generated',
+  level: 'info',
+  timestamp: '2025-01-11T08:12:27.843Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T08:14:36.540Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T08:14:37.173Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T08:14:37.184Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T08:14:37.223Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T08:14:37.229Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T08:14:37.229Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=/home/branchmanager/websites/degenduel/combined.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:15:41.437Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-11T08:22:16.370Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-11T08:22:16.995Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-11T08:22:17.007Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-11T08:22:17.053Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-11T08:22:17.058Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-11T08:22:17.059Z'
+}
+{
+  message: 'Superadmin access granted for request to /api/superadmin/logs?file=/home/branchmanager/websites/degenduel/combined.log',
+  level: 'info',
+  timestamp: '2025-01-11T08:23:01.015Z'
+}
