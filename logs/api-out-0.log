@@ -9329,3 +9329,265 @@ Argument `id` is missing. {"clientVersion":"6.1.0","name":"PrismaClientValidatio
 2025-01-10 15:22:33 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
 2025-01-10 15:22:33 -05:00: 	   🎯  DegenDuel API  		|  READY!
 2025-01-10 15:22:33 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 15:34:28 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"a76acfa2-5a1c-481f-be01-fc2665ab8e2c","timestamp":"2025-01-10T20:34:28.521Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 15:34:28 -05:00: [31merror[39m: Error in join contest endpoint {"duration":17,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"a76acfa2-5a1c-481f-be01-fc2665ab8e2c","timestamp":"2025-01-10T20:34:28.538Z"}
+2025-01-10 15:51:13 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T20:51:13.769Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 15:51:13 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T20:51:13.834Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 15:52:12 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T20:52:12.127Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 15:52:12 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T20:52:12.203Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:10:26 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"85264b2e-c7c0-434f-90f0-66407ea51060","timestamp":"2025-01-10T21:10:26.343Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:10:26 -05:00: [31merror[39m: Error in join contest endpoint {"duration":9,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"85264b2e-c7c0-434f-90f0-66407ea51060","timestamp":"2025-01-10T21:10:26.352Z"}
+2025-01-10 16:18:02 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T21:18:02.559Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:18:03 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T21:18:03.153Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:18:03 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T21:18:03.635Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:26:28 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-10T21:26:28.150Z"}
+2025-01-10 16:26:28 -05:00: Swagger docs available at /api-docs
+2025-01-10 16:26:28 -05:00: Detected API routes: None found
+2025-01-10 16:26:28 -05:00: 
+
+2025-01-10 16:26:28 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 16:26:28 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T21:26:28.757Z"}
+2025-01-10 16:26:28 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T21:26:28.767Z"}
+2025-01-10 16:26:28 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T21:26:28.815Z"}
+2025-01-10 16:26:28 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T21:26:28.822Z"}
+2025-01-10 16:26:28 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T21:26:28.823Z"}
+2025-01-10 16:26:28 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 16:26:28 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 16:26:28 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 16:31:46 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T21:31:46.841Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:31:58 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-10T21:31:58.906Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:31:58 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-10T21:31:58.910Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:31:58 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-10T21:31:58.910Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 16:31:58 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T21:31:58.976Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:07:07 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-10T22:07:07.998Z"}
+2025-01-10 17:07:08 -05:00: Swagger docs available at /api-docs
+2025-01-10 17:07:08 -05:00: Detected API routes: None found
+2025-01-10 17:07:08 -05:00: 
+
+2025-01-10 17:07:08 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 17:07:08 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T22:07:08.623Z"}
+2025-01-10 17:07:08 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T22:07:08.635Z"}
+2025-01-10 17:07:08 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T22:07:08.681Z"}
+2025-01-10 17:07:08 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T22:07:08.686Z"}
+2025-01-10 17:07:08 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T22:07:08.687Z"}
+2025-01-10 17:07:08 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 17:07:08 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 17:07:08 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 17:08:02 -05:00: [32minfo[39m: Attempting to join contest {"contestId":10,"requestId":"06970d50-acf1-44b8-bd69-57a63664d8ed","timestamp":"2025-01-10T22:08:02.937Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:08:02 -05:00: [31merror[39m: Error in join contest endpoint {"duration":20,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"06970d50-acf1-44b8-bd69-57a63664d8ed","timestamp":"2025-01-10T22:08:02.956Z"}
+2025-01-10 17:08:15 -05:00: [32minfo[39m: Attempting to join contest {"contestId":18,"requestId":"96c7a008-64b3-4080-9eef-70df45eb83d7","timestamp":"2025-01-10T22:08:15.707Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:08:15 -05:00: [31merror[39m: Error in join contest endpoint {"duration":17,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"96c7a008-64b3-4080-9eef-70df45eb83d7","timestamp":"2025-01-10T22:08:15.724Z"}
+2025-01-10 17:10:37 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:10:37.532Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:10:37 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:10:37.546Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:15:06 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:15:06.690Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:15:06 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:15:06.697Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:17:38 -05:00: Swagger docs available at /api-docs
+2025-01-10 17:17:38 -05:00: Detected API routes: None found
+2025-01-10 17:17:38 -05:00: 
+
+2025-01-10 17:17:38 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 17:17:38 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T22:17:38.016Z"}
+2025-01-10 17:17:38 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T22:17:38.026Z"}
+2025-01-10 17:17:38 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T22:17:38.064Z"}
+2025-01-10 17:17:38 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T22:17:38.070Z"}
+2025-01-10 17:17:38 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T22:17:38.071Z"}
+2025-01-10 17:17:38 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 17:17:38 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 17:17:38 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 17:19:34 -05:00: Swagger docs available at /api-docs
+2025-01-10 17:19:34 -05:00: Detected API routes: None found
+2025-01-10 17:19:34 -05:00: 
+
+2025-01-10 17:19:34 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 17:19:34 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T22:19:34.324Z"}
+2025-01-10 17:19:34 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T22:19:34.335Z"}
+2025-01-10 17:19:34 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T22:19:34.374Z"}
+2025-01-10 17:19:34 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T22:19:34.378Z"}
+2025-01-10 17:19:34 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T22:19:34.378Z"}
+2025-01-10 17:19:34 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 17:19:34 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 17:19:34 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 17:19:39 -05:00: Swagger docs available at /api-docs
+2025-01-10 17:19:39 -05:00: Detected API routes: None found
+2025-01-10 17:19:39 -05:00: 
+
+2025-01-10 17:19:39 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 17:19:39 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T22:19:39.426Z"}
+2025-01-10 17:19:39 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T22:19:39.439Z"}
+2025-01-10 17:19:39 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T22:19:39.477Z"}
+2025-01-10 17:19:39 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T22:19:39.482Z"}
+2025-01-10 17:19:39 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T22:19:39.483Z"}
+2025-01-10 17:19:39 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 17:19:39 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 17:19:39 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 17:20:14 -05:00: Swagger docs available at /api-docs
+2025-01-10 17:20:14 -05:00: Detected API routes: None found
+2025-01-10 17:20:14 -05:00: 
+
+2025-01-10 17:20:14 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 17:20:14 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T22:20:14.182Z"}
+2025-01-10 17:20:14 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T22:20:14.194Z"}
+2025-01-10 17:20:14 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T22:20:14.233Z"}
+2025-01-10 17:20:14 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T22:20:14.240Z"}
+2025-01-10 17:20:14 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T22:20:14.240Z"}
+2025-01-10 17:20:14 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 17:20:14 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 17:20:14 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 17:28:18 -05:00: Swagger docs available at /api-docs
+2025-01-10 17:28:18 -05:00: Detected API routes: None found
+2025-01-10 17:28:18 -05:00: 
+
+2025-01-10 17:28:18 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-10 17:28:18 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-10T22:28:18.616Z"}
+2025-01-10 17:28:18 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-10T22:28:18.626Z"}
+2025-01-10 17:28:18 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-10T22:28:18.662Z"}
+2025-01-10 17:28:18 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-10T22:28:18.668Z"}
+2025-01-10 17:28:18 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-10T22:28:18.669Z"}
+2025-01-10 17:28:18 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-10 17:28:18 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-10 17:28:18 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-10 17:30:09 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:30:09.369Z","totalUsers":3,"userCount":3}
+2025-01-10 17:30:09 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:30:09.373Z","totalUsers":3,"userCount":3}
+2025-01-10 17:30:19 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:30:19.041Z","totalUsers":3,"userCount":3}
+2025-01-10 17:30:19 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:30:19.043Z","totalUsers":3,"userCount":3}
+2025-01-10 17:31:43 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:31:43.548Z","totalUsers":3,"userCount":3}
+2025-01-10 17:31:43 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:31:43.555Z","totalUsers":3,"userCount":3}
+2025-01-10 17:31:49 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:31:49.658Z","totalUsers":3,"userCount":3}
+2025-01-10 17:31:49 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:31:49.661Z","totalUsers":3,"userCount":3}
+2025-01-10 17:34:20 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:34:20.346Z","totalUsers":3,"userCount":3}
+2025-01-10 17:34:20 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:34:20.347Z","totalUsers":3,"userCount":3}
+2025-01-10 17:34:20 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:34:20.870Z","totalUsers":3,"userCount":3}
+2025-01-10 17:34:20 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:34:20.874Z","totalUsers":3,"userCount":3}
+2025-01-10 17:36:58 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:36:58.628Z","totalUsers":3,"userCount":3}
+2025-01-10 17:36:58 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:36:58.629Z","totalUsers":3,"userCount":3}
+2025-01-10 17:38:30 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:38:30.917Z","totalUsers":3,"userCount":3}
+2025-01-10 17:38:30 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:38:30.922Z","totalUsers":3,"userCount":3}
+2025-01-10 17:41:16 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:41:16.683Z","totalUsers":3,"userCount":3}
+2025-01-10 17:41:16 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:41:16.685Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:02 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:02.579Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:02 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:02.581Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:09 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:09.710Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:09 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:09.714Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:14 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:14.216Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:14 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:14.217Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:20 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:20.258Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:20 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:20.259Z","totalUsers":3,"userCount":3}
+2025-01-10 17:44:55 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:44:55.778Z","totalUsers":3,"userCount":3}
+2025-01-10 17:45:15 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:45:15.539Z","totalUsers":3,"userCount":3}
+2025-01-10 17:48:19 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:48:19.842Z","totalUsers":3,"userCount":3}
+2025-01-10 17:48:19 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:48:19.844Z","totalUsers":3,"userCount":3}
+2025-01-10 17:54:01 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"8d26dc9c-5eda-4fce-bc5e-eebdd8e6db9e","timestamp":"2025-01-10T22:54:01.041Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:54:01 -05:00: [31merror[39m: Error in join contest endpoint {"duration":15,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"8d26dc9c-5eda-4fce-bc5e-eebdd8e6db9e","timestamp":"2025-01-10T22:54:01.056Z"}
+2025-01-10 17:54:18 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-10T22:54:18.706Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:54:18 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-10T22:54:18.710Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:54:18 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-10T22:54:18.710Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:54:18 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:54:18.849Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:56:20 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:56:20.139Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:56:31 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:56:31.296Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:56:31 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:56:31.316Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:56:33 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:56:33.211Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:56:33 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-10T22:56:33.213Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:56:48 -05:00: [32minfo[39m: Attempting to join contest {"contestId":11,"requestId":"981c7d43-d98f-4873-9e3d-1e1fbb741ec3","timestamp":"2025-01-10T22:56:48.187Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 17:56:48 -05:00: [31merror[39m: Error in join contest endpoint {"duration":14,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"981c7d43-d98f-4873-9e3d-1e1fbb741ec3","timestamp":"2025-01-10T22:56:48.201Z"}
+2025-01-10 17:57:59 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:57:59.963Z","totalUsers":3,"userCount":3}
+2025-01-10 17:58:00 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:58:00.020Z","totalUsers":3,"userCount":3}
+2025-01-10 17:58:04 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:58:04.326Z","totalUsers":3,"userCount":3}
+2025-01-10 17:58:04 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T22:58:04.332Z","totalUsers":3,"userCount":3}
+2025-01-10 18:09:37 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:09:37.207Z","totalUsers":3,"userCount":3}
+2025-01-10 18:09:37 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:09:37.282Z","totalUsers":3,"userCount":3}
+2025-01-10 18:09:48 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:09:48.102Z","totalUsers":3,"userCount":3}
+2025-01-10 18:09:48 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:09:48.104Z","totalUsers":3,"userCount":3}
+2025-01-10 18:11:20 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:11:20.701Z","totalUsers":3,"userCount":3}
+2025-01-10 18:11:20 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:11:20.780Z","totalUsers":3,"userCount":3}
+2025-01-10 18:11:38 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:11:38.749Z","totalUsers":3,"userCount":3}
+2025-01-10 18:11:38 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:11:38.807Z","totalUsers":3,"userCount":3}
+2025-01-10 18:11:41 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:11:41.421Z","totalUsers":3,"userCount":3}
+2025-01-10 18:11:41 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:11:41.427Z","totalUsers":3,"userCount":3}
+2025-01-10 18:16:17 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:16:17.049Z","totalUsers":3,"userCount":3}
+2025-01-10 18:16:17 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:16:17.051Z","totalUsers":3,"userCount":3}
+2025-01-10 18:22:46 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:22:46.350Z","totalUsers":3,"userCount":3}
+2025-01-10 18:22:46 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:22:46.571Z","totalUsers":3,"userCount":3}
+2025-01-10 18:34:50 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:34:50.357Z","totalUsers":3,"userCount":3}
+2025-01-10 18:34:50 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-10T23:34:50.641Z","totalUsers":3,"userCount":3}
+2025-01-10 20:42:31 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T01:42:31.368Z","totalUsers":3,"userCount":3}
+2025-01-10 20:42:31 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T01:42:31.373Z","totalUsers":3,"userCount":3}
+2025-01-10 20:42:52 -05:00: [32minfo[39m: Attempting to join contest {"contestId":11,"requestId":"c6f230a6-649d-454c-828f-14069e4fbcba","timestamp":"2025-01-11T01:42:52.345Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 20:42:52 -05:00: [31merror[39m: Error in join contest endpoint {"duration":17,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"c6f230a6-649d-454c-828f-14069e4fbcba","timestamp":"2025-01-11T01:42:52.362Z"}
+2025-01-10 20:42:52 -05:00: [32minfo[39m: Attempting to join contest {"contestId":11,"requestId":"d7a78a2a-4998-4ff7-a4db-5408e843ff07","timestamp":"2025-01-11T01:42:52.502Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 20:42:52 -05:00: [31merror[39m: Error in join contest endpoint {"duration":6,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"d7a78a2a-4998-4ff7-a4db-5408e843ff07","timestamp":"2025-01-11T01:42:52.508Z"}
+2025-01-10 20:42:53 -05:00: [32minfo[39m: Attempting to join contest {"contestId":11,"requestId":"044eae2f-a351-40a4-82c6-0570d6fe3b46","timestamp":"2025-01-11T01:42:53.322Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 20:42:53 -05:00: [31merror[39m: Error in join contest endpoint {"duration":6,"error":{"message":"Sorry, there are no more open seats at this table.","name":"ContestError"},"requestId":"044eae2f-a351-40a4-82c6-0570d6fe3b46","timestamp":"2025-01-11T01:42:53.328Z"}
+2025-01-10 21:20:37 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:20:37.071Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:20:47 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"41146b3f-66d4-46c3-bd22-dbc59b22a182","timestamp":"2025-01-11T02:20:47.215Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:20:47 -05:00: [32minfo[39m: Balance validation {"contestId":9,"entryFee":"0.1","requestId":"41146b3f-66d4-46c3-bd22-dbc59b22a182","timestamp":"2025-01-11T02:20:47.227Z","userBalance":"999999"}
+2025-01-10 21:20:47 -05:00: [32minfo[39m: Successfully joined contest {"contestId":9,"requestId":"41146b3f-66d4-46c3-bd22-dbc59b22a182","timestamp":"2025-01-11T02:20:47.244Z","wallet_address":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:21:58 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T02:21:58.594Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:21:58 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T02:21:58.601Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:21:58 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T02:21:58.601Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:21:58 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:21:58.725Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:22:06 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T02:22:06.968Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
+2025-01-10 21:22:06 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T02:22:06.970Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
+2025-01-10 21:22:06 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T02:22:06.970Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
+2025-01-10 21:22:07 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:22:07.062Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
+2025-01-10 21:22:56 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"f8bd02aa-13ad-490d-9741-416a13f6a57d","timestamp":"2025-01-11T02:22:56.175Z","wallet_address":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
+2025-01-10 21:22:56 -05:00: [32minfo[39m: Balance validation {"contestId":9,"entryFee":"0.1","requestId":"f8bd02aa-13ad-490d-9741-416a13f6a57d","timestamp":"2025-01-11T02:22:56.182Z","userBalance":"100"}
+2025-01-10 21:22:56 -05:00: [32minfo[39m: Successfully joined contest {"contestId":9,"requestId":"f8bd02aa-13ad-490d-9741-416a13f6a57d","timestamp":"2025-01-11T02:22:56.187Z","wallet_address":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
+2025-01-10 21:23:34 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"c7b3abd6-9fe5-4ad8-9092-78d85b4dc746","timestamp":"2025-01-11T02:23:34.559Z","wallet_address":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
+2025-01-10 21:23:34 -05:00: [31merror[39m: Error in join contest endpoint {"duration":9,"error":{"message":"You've already got a spot reserved at this table.","name":"ContestError"},"requestId":"c7b3abd6-9fe5-4ad8-9092-78d85b4dc746","timestamp":"2025-01-11T02:23:34.568Z"}
+2025-01-10 21:23:48 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T02:23:48.127Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:23:48 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T02:23:48.131Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:23:48 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T02:23:48.131Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:23:48 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:23:48.199Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:24:21 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"14bc066c-1fc1-4f77-9433-5d03853422dc","timestamp":"2025-01-11T02:24:21.581Z","wallet_address":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:24:21 -05:00: [32minfo[39m: Balance validation {"contestId":9,"entryFee":"0.1","requestId":"14bc066c-1fc1-4f77-9433-5d03853422dc","timestamp":"2025-01-11T02:24:21.596Z","userBalance":"80"}
+2025-01-10 21:24:21 -05:00: [32minfo[39m: Successfully joined contest {"contestId":9,"requestId":"14bc066c-1fc1-4f77-9433-5d03853422dc","timestamp":"2025-01-11T02:24:21.604Z","wallet_address":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:24:43 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T02:24:43.128Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:24:43 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T02:24:43.131Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:24:43 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T02:24:43.131Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:24:43 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:24:43.201Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:24:44 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T02:24:44.518Z","totalUsers":3,"userCount":3}
+2025-01-10 21:24:44 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T02:24:44.520Z","totalUsers":3,"userCount":3}
+2025-01-10 21:24:59 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T02:24:59.117Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:24:59 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T02:24:59.118Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:24:59 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T02:24:59.118Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:24:59 -05:00: [32minfo[39m: User not found {"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:24:59.179Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:24:59 -05:00: [31merror[39m: Error in GET /users/:wallet handler User not found {"error":{"message":"User not found","status":404},"path":"GET /api/users/:wallet","status":404,"timestamp":"2025-01-11T02:24:59.180Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:24:59 -05:00: [32minfo[39m: Successfully created new user {"body":{"nickname":"degen_6uJUNzQL","wallet_address":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"},"path":"POST /api/users","timestamp":"2025-01-11T02:24:59.287Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:25:01 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":false,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:25:01.749Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:25:01 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":false,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:25:01.758Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:25:03 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":false,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:25:03.714Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:25:03 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":false,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:25:03.715Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:25:45 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"33d253d1-c795-4638-a213-3016c9217ff9","timestamp":"2025-01-11T02:25:45.605Z","wallet_address":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:25:45 -05:00: [32minfo[39m: Balance validation {"contestId":9,"entryFee":"0.1","requestId":"33d253d1-c795-4638-a213-3016c9217ff9","timestamp":"2025-01-11T02:25:45.627Z","userBalance":"0"}
+2025-01-10 21:25:45 -05:00: [31merror[39m: Error in join contest endpoint {"duration":24,"error":{"message":"Insufficient balance!\nRequired: 0.00 points. Available: 0.00 points.","name":"ContestError"},"requestId":"33d253d1-c795-4638-a213-3016c9217ff9","timestamp":"2025-01-11T02:25:45.629Z"}
+2025-01-10 21:28:14 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"8e1a81f2-44b2-4137-bdce-1e785ab97223","timestamp":"2025-01-11T02:28:14.359Z","wallet_address":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:28:14 -05:00: [32minfo[39m: Balance validation {"contestId":9,"entryFee":"0.1","requestId":"8e1a81f2-44b2-4137-bdce-1e785ab97223","timestamp":"2025-01-11T02:28:14.367Z","userBalance":"555"}
+2025-01-10 21:28:14 -05:00: [32minfo[39m: Successfully joined contest {"contestId":9,"requestId":"8e1a81f2-44b2-4137-bdce-1e785ab97223","timestamp":"2025-01-11T02:28:14.376Z","wallet_address":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-10 21:57:00 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T02:57:00.165Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:57:00 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T02:57:00.169Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:57:00 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T02:57:00.169Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:57:00 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:57:00.259Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 21:57:02 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T02:57:02.182Z","totalUsers":4,"userCount":4}
+2025-01-10 21:57:02 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T02:57:02.189Z","totalUsers":4,"userCount":4}
+2025-01-10 21:57:29 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T02:57:29.530Z","totalUsers":4,"userCount":4}
+2025-01-10 21:57:29 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T02:57:29.541Z","totalUsers":4,"userCount":4}
+2025-01-10 21:57:30 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:57:30.398Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:57:30 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T02:57:30.400Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 21:57:32 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T02:57:32.530Z","totalUsers":4,"userCount":4}
+2025-01-10 21:57:32 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T02:57:32.550Z","totalUsers":4,"userCount":4}
+2025-01-10 22:01:51 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T03:01:51.218Z","totalUsers":4,"userCount":4}
+2025-01-10 22:01:51 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T03:01:51.296Z","totalUsers":4,"userCount":4}
+2025-01-10 22:01:52 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T03:01:52.646Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 22:01:52 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T03:01:52.709Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 22:01:55 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T03:01:55.643Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 22:01:55 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T03:01:55.703Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 22:01:59 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T03:01:59.693Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 22:01:59 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T03:01:59.762Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-10 22:02:05 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T03:02:05.548Z","totalUsers":4,"userCount":4}
+2025-01-10 22:02:05 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T03:02:05.656Z","totalUsers":4,"userCount":4}
+2025-01-10 22:08:23 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T03:08:23.212Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 22:08:23 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T03:08:23.215Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
+2025-01-10 22:08:23 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T03:08:23.938Z","totalUsers":4,"userCount":4}
+2025-01-10 22:08:23 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T03:08:23.956Z","totalUsers":4,"userCount":4}
+2025-01-10 23:15:14 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T04:15:14.249Z","totalUsers":4,"userCount":4}
+2025-01-10 23:15:14 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T04:15:14.256Z","totalUsers":4,"userCount":4}
