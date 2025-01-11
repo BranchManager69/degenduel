@@ -64986,3 +64986,1702 @@
   level: 'info',
   timestamp: '2025-01-10T20:22:33.657Z'
 }
+{
+  requestId: 'a76acfa2-5a1c-481f-be01-fc2665ab8e2c',
+  contestId: 9,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T20:34:28.521Z'
+}
+{
+  requestId: 'a76acfa2-5a1c-481f-be01-fc2665ab8e2c',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 17,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T20:34:28.538Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T20:51:13.769Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T20:51:13.834Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T20:52:12.127Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T20:52:12.203Z'
+}
+{
+  requestId: '85264b2e-c7c0-434f-90f0-66407ea51060',
+  contestId: 9,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T21:10:26.343Z'
+}
+{
+  requestId: '85264b2e-c7c0-434f-90f0-66407ea51060',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 9,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T21:10:26.352Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T21:18:02.559Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T21:18:03.153Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T21:18:03.635Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T21:26:28.150Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T21:26:28.757Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T21:26:28.767Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T21:26:28.815Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T21:26:28.822Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T21:26:28.823Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T21:31:46.841Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-10T21:31:58.906Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-10T21:31:58.910Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-10T21:31:58.910Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T21:31:58.976Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-10T22:07:07.998Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T22:07:08.623Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T22:07:08.635Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:07:08.681Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T22:07:08.686Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:07:08.687Z'
+}
+{
+  requestId: '06970d50-acf1-44b8-bd69-57a63664d8ed',
+  contestId: 10,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T22:08:02.937Z'
+}
+{
+  requestId: '06970d50-acf1-44b8-bd69-57a63664d8ed',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 20,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T22:08:02.956Z'
+}
+{
+  requestId: '96c7a008-64b3-4080-9eef-70df45eb83d7',
+  contestId: 18,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T22:08:15.707Z'
+}
+{
+  requestId: '96c7a008-64b3-4080-9eef-70df45eb83d7',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 17,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T22:08:15.724Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:10:37.532Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:10:37.546Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:15:06.690Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:15:06.697Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T22:17:38.016Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T22:17:38.026Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:17:38.064Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T22:17:38.070Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:17:38.071Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:34.324Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:34.335Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:34.374Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:34.378Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:34.378Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:39.426Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:39.439Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:39.477Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:39.482Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:19:39.483Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T22:20:14.182Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T22:20:14.194Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:20:14.233Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T22:20:14.240Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:20:14.240Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-10T22:28:18.616Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-10T22:28:18.626Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:28:18.662Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-10T22:28:18.668Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-10T22:28:18.669Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:30:09.369Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:30:09.373Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:30:19.041Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:30:19.043Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:31:43.548Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:31:43.555Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:31:49.658Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:31:49.661Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:34:20.346Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:34:20.347Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:34:20.870Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:34:20.874Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:36:58.628Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:36:58.629Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:38:30.917Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:38:30.922Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:41:16.683Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:41:16.685Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:02.579Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:02.581Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:09.710Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:09.714Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:14.216Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:14.217Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:20.258Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:20.259Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:44:55.778Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:45:15.539Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:48:19.842Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:48:19.844Z'
+}
+{
+  requestId: '8d26dc9c-5eda-4fce-bc5e-eebdd8e6db9e',
+  contestId: 9,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T22:54:01.041Z'
+}
+{
+  requestId: '8d26dc9c-5eda-4fce-bc5e-eebdd8e6db9e',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 15,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T22:54:01.056Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-10T22:54:18.706Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-10T22:54:18.710Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-10T22:54:18.710Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:54:18.849Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:56:20.139Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:56:31.296Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:56:31.316Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:56:33.211Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-10T22:56:33.213Z'
+}
+{
+  requestId: '981c7d43-d98f-4873-9e3d-1e1fbb741ec3',
+  contestId: 11,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-10T22:56:48.187Z'
+}
+{
+  requestId: '981c7d43-d98f-4873-9e3d-1e1fbb741ec3',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 14,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T22:56:48.201Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:57:59.963Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:58:00.020Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:58:04.326Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T22:58:04.332Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:09:37.207Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:09:37.282Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:09:48.102Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:09:48.104Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:11:20.701Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:11:20.780Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:11:38.749Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:11:38.807Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:11:41.421Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:11:41.427Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:16:17.049Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:16:17.051Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:22:46.350Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:22:46.571Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:34:50.357Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-10T23:34:50.641Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T01:42:31.368Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T01:42:31.373Z'
+}
+{
+  requestId: 'c6f230a6-649d-454c-828f-14069e4fbcba',
+  contestId: 11,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T01:42:52.345Z'
+}
+{
+  requestId: 'c6f230a6-649d-454c-828f-14069e4fbcba',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 17,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T01:42:52.362Z'
+}
+{
+  requestId: 'd7a78a2a-4998-4ff7-a4db-5408e843ff07',
+  contestId: 11,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T01:42:52.502Z'
+}
+{
+  requestId: 'd7a78a2a-4998-4ff7-a4db-5408e843ff07',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 6,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T01:42:52.508Z'
+}
+{
+  requestId: '044eae2f-a351-40a4-82c6-0570d6fe3b46',
+  contestId: 11,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T01:42:53.322Z'
+}
+{
+  requestId: '044eae2f-a351-40a4-82c6-0570d6fe3b46',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 6,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T01:42:53.328Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:20:37.071Z'
+}
+{
+  requestId: '41146b3f-66d4-46c3-bd22-dbc59b22a182',
+  contestId: 9,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T02:20:47.215Z'
+}
+{
+  requestId: '41146b3f-66d4-46c3-bd22-dbc59b22a182',
+  contestId: 9,
+  userBalance: '999999',
+  entryFee: '0.1',
+  level: 'info',
+  message: 'Balance validation',
+  timestamp: '2025-01-11T02:20:47.227Z'
+}
+{
+  requestId: '41146b3f-66d4-46c3-bd22-dbc59b22a182',
+  contestId: 9,
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  participationId: undefined,
+  level: 'info',
+  message: 'Successfully joined contest',
+  timestamp: '2025-01-11T02:20:47.244Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T02:21:58.594Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T02:21:58.601Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T02:21:58.601Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:21:58.725Z'
+}
+{
+  requestId: undefined,
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T02:22:06.968Z'
+}
+{
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T02:22:06.970Z'
+}
+{
+  requestId: undefined,
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T02:22:06.970Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:22:07.062Z'
+}
+{
+  requestId: 'f8bd02aa-13ad-490d-9741-416a13f6a57d',
+  contestId: 9,
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T02:22:56.175Z'
+}
+{
+  requestId: 'f8bd02aa-13ad-490d-9741-416a13f6a57d',
+  contestId: 9,
+  userBalance: '100',
+  entryFee: '0.1',
+  level: 'info',
+  message: 'Balance validation',
+  timestamp: '2025-01-11T02:22:56.182Z'
+}
+{
+  requestId: 'f8bd02aa-13ad-490d-9741-416a13f6a57d',
+  contestId: 9,
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  participationId: undefined,
+  level: 'info',
+  message: 'Successfully joined contest',
+  timestamp: '2025-01-11T02:22:56.187Z'
+}
+{
+  requestId: 'c7b3abd6-9fe5-4ad8-9092-78d85b4dc746',
+  contestId: 9,
+  wallet_address: '5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T02:23:34.559Z'
+}
+{
+  requestId: 'c7b3abd6-9fe5-4ad8-9092-78d85b4dc746',
+  error: {
+    name: 'ContestError',
+    message: "You've already got a spot reserved at this table.",
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 9,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T02:23:34.568Z'
+}
+{
+  requestId: undefined,
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T02:23:48.127Z'
+}
+{
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T02:23:48.131Z'
+}
+{
+  requestId: undefined,
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T02:23:48.131Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:23:48.199Z'
+}
+{
+  requestId: '14bc066c-1fc1-4f77-9433-5d03853422dc',
+  contestId: 9,
+  wallet_address: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T02:24:21.581Z'
+}
+{
+  requestId: '14bc066c-1fc1-4f77-9433-5d03853422dc',
+  contestId: 9,
+  userBalance: '80',
+  entryFee: '0.1',
+  level: 'info',
+  message: 'Balance validation',
+  timestamp: '2025-01-11T02:24:21.596Z'
+}
+{
+  requestId: '14bc066c-1fc1-4f77-9433-5d03853422dc',
+  contestId: 9,
+  wallet_address: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  participationId: undefined,
+  level: 'info',
+  message: 'Successfully joined contest',
+  timestamp: '2025-01-11T02:24:21.604Z'
+}
+{
+  requestId: undefined,
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T02:24:43.128Z'
+}
+{
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T02:24:43.131Z'
+}
+{
+  requestId: undefined,
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T02:24:43.131Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:24:43.201Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T02:24:44.518Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 3,
+  totalUsers: 3,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T02:24:44.520Z'
+}
+{
+  requestId: undefined,
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T02:24:59.117Z'
+}
+{
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T02:24:59.118Z'
+}
+{
+  requestId: undefined,
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T02:24:59.118Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  level: 'info',
+  message: 'User not found',
+  timestamp: '2025-01-11T02:24:59.179Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  status: 404,
+  message: 'Error in GET /users/:wallet handler User not found',
+  error: { status: 404, message: 'User not found' },
+  level: 'error',
+  timestamp: '2025-01-11T02:24:59.180Z'
+}
+{
+  path: 'POST /api/users',
+  body: {
+    wallet_address: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+    nickname: 'degen_6uJUNzQL'
+  },
+  userId: undefined,
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  level: 'info',
+  message: 'Successfully created new user',
+  timestamp: '2025-01-11T02:24:59.287Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  userId: undefined,
+  hasContests: false,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:25:01.749Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  userId: undefined,
+  hasContests: false,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:25:01.758Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  userId: undefined,
+  hasContests: false,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:25:03.714Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  userId: undefined,
+  hasContests: false,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:25:03.715Z'
+}
+{
+  requestId: '33d253d1-c795-4638-a213-3016c9217ff9',
+  contestId: 9,
+  wallet_address: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T02:25:45.605Z'
+}
+{
+  requestId: '33d253d1-c795-4638-a213-3016c9217ff9',
+  contestId: 9,
+  userBalance: '0',
+  entryFee: '0.1',
+  level: 'info',
+  message: 'Balance validation',
+  timestamp: '2025-01-11T02:25:45.627Z'
+}
+{
+  requestId: '33d253d1-c795-4638-a213-3016c9217ff9',
+  error: {
+    name: 'ContestError',
+    message: 'Insufficient balance!\nRequired: 0.00 points. Available: 0.00 points.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 24,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T02:25:45.629Z'
+}
+{
+  requestId: '8e1a81f2-44b2-4137-bdce-1e785ab97223',
+  contestId: 9,
+  wallet_address: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  level: 'info',
+  message: 'Attempting to join contest',
+  timestamp: '2025-01-11T02:28:14.359Z'
+}
+{
+  requestId: '8e1a81f2-44b2-4137-bdce-1e785ab97223',
+  contestId: 9,
+  userBalance: '555',
+  entryFee: '0.1',
+  level: 'info',
+  message: 'Balance validation',
+  timestamp: '2025-01-11T02:28:14.367Z'
+}
+{
+  requestId: '8e1a81f2-44b2-4137-bdce-1e785ab97223',
+  contestId: 9,
+  wallet_address: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  participationId: undefined,
+  level: 'info',
+  message: 'Successfully joined contest',
+  timestamp: '2025-01-11T02:28:14.376Z'
+}
+{
+  requestId: undefined,
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-11T02:57:00.165Z'
+}
+{
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  requestId: undefined,
+  level: 'info',
+  message: 'Wallet authenticated successfully',
+  timestamp: '2025-01-11T02:57:00.169Z'
+}
+{
+  requestId: undefined,
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  level: 'info',
+  message: 'Wallet authentication complete',
+  timestamp: '2025-01-11T02:57:00.169Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:57:00.259Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T02:57:02.182Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T02:57:02.189Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T02:57:29.530Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T02:57:29.541Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:57:30.398Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T02:57:30.400Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T02:57:32.530Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T02:57:32.550Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T03:01:51.218Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T03:01:51.296Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T03:01:52.646Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T03:01:52.709Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T03:01:55.643Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T03:01:55.703Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T03:01:59.693Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T03:01:59.762Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T03:02:05.548Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T03:02:05.656Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T03:08:23.212Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-11T03:08:23.215Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T03:08:23.938Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T03:08:23.956Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T04:15:14.249Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-11T04:15:14.256Z'
+}

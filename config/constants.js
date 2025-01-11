@@ -16,7 +16,8 @@ export const DB_CONFIG = {
       'Authorization',
       'x-superadmin-token',
       'Cache-Control',
-      'x-requested-with'
+      'x-requested-with',
+      'X-Request-ID'
     ]
   };
   

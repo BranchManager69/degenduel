@@ -2518,3 +2518,166 @@
   message: 'Error in join contest endpoint',
   timestamp: '2025-01-10T19:55:38.742Z'
 }
+{
+  requestId: 'a76acfa2-5a1c-481f-be01-fc2665ab8e2c',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 17,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T20:34:28.538Z'
+}
+{
+  requestId: '85264b2e-c7c0-434f-90f0-66407ea51060',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 9,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T21:10:26.352Z'
+}
+{
+  requestId: '06970d50-acf1-44b8-bd69-57a63664d8ed',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 20,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T22:08:02.956Z'
+}
+{
+  requestId: '96c7a008-64b3-4080-9eef-70df45eb83d7',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 17,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T22:08:15.724Z'
+}
+{
+  requestId: '8d26dc9c-5eda-4fce-bc5e-eebdd8e6db9e',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 15,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T22:54:01.056Z'
+}
+{
+  requestId: '981c7d43-d98f-4873-9e3d-1e1fbb741ec3',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 14,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-10T22:56:48.201Z'
+}
+{
+  requestId: 'c6f230a6-649d-454c-828f-14069e4fbcba',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 17,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T01:42:52.362Z'
+}
+{
+  requestId: 'd7a78a2a-4998-4ff7-a4db-5408e843ff07',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 6,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T01:42:52.508Z'
+}
+{
+  requestId: '044eae2f-a351-40a4-82c6-0570d6fe3b46',
+  error: {
+    name: 'ContestError',
+    message: 'Sorry, there are no more open seats at this table.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 6,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T01:42:53.328Z'
+}
+{
+  requestId: 'c7b3abd6-9fe5-4ad8-9092-78d85b4dc746',
+  error: {
+    name: 'ContestError',
+    message: "You've already got a spot reserved at this table.",
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 9,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T02:23:34.568Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS',
+  status: 404,
+  message: 'Error in GET /users/:wallet handler User not found',
+  error: { status: 404, message: 'User not found' },
+  level: 'error',
+  timestamp: '2025-01-11T02:24:59.180Z'
+}
+{
+  requestId: '33d253d1-c795-4638-a213-3016c9217ff9',
+  error: {
+    name: 'ContestError',
+    message: 'Insufficient balance!\nRequired: 0.00 points. Available: 0.00 points.',
+    code: undefined,
+    meta: undefined
+  },
+  stack: undefined,
+  duration: 24,
+  level: 'error',
+  message: 'Error in join contest endpoint',
+  timestamp: '2025-01-11T02:25:45.629Z'
+}
