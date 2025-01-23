@@ -10,10 +10,17 @@ export function configureMiddleware(app) {
     'http://localhost:3001',
     'http://localhost:3002',
     'http://localhost:3003', 
-    'http://localhost:3004', 
+    'http://localhost:3004',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:5177',
     'https://degenduel.me', 
     'https://data.degenduel.me', 
+    'https://game.degenduel.me',
     'https://dev.degenduel.me',
+    'https://manager.degenduel.me',
     'https://branch.bet', 
     'https://app.branch.bet',
   ];
@@ -24,7 +31,7 @@ export function configureMiddleware(app) {
       if (!origin) return callback(null, true);
       
       if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        const msg = 'Nah... The DegenDuel CORS policy don\'t be allowing no access from your wack ass origin. You best be headin home now, boy...';
         return callback(new Error(msg), false);
       }
       return callback(null, true);
