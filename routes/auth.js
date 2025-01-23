@@ -53,7 +53,7 @@ const router = express.Router();
  */
 // Verify wallet signature and establish a session
 // example: POST https://degenduel.me/api/auth/verify-wallet
-//    body: { "wallet": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "signature": "0x69696969", "message": "Hello, BM!" }
+//    body: { "wallet": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "signature": "[actual wallet signature here]", "message": "Welcome to DegenDuel." }
 router.post('/verify-wallet', async (req, res) => {
   logApi.info('Starting wallet verification', {
     requestId: req.id,
@@ -63,23 +63,25 @@ router.post('/verify-wallet', async (req, res) => {
   try {
     const { wallet, signature, message } = req.body;
     
-    logApi.debug('Received verification request', {
+    logApi.debug('📨 Received verification request', {
       requestId: req.id,
       wallet,
       messageLength: message?.length
     });
 
-    // TODO: Add actual signature verification
-    const verified = true; // Replace with actual verification
+    /* TODO: Add actual signature verification */
+    const verified = true;
 
     if (!verified) {
+      // Signing failed
       return res.status(401).json({ 
         error: 'Invalid signature',
         code: 'INVALID_SIGNATURE'
       });
     }
 
-    logApi.debug('Creating session token', { requestId: req.id });
+    // Create JWT for user's session (24 hours)
+    logApi.debug('🔐 Creating session token', { requestId: req.id });
     const token = sign(
       { 
         wallet,
@@ -93,33 +95,46 @@ router.post('/verify-wallet', async (req, res) => {
 
     // Set the session cookie
     res.cookie('session', token, {
-      httpOnly: true,      // Prevents JavaScript access
-      secure: true,        // Only sent over HTTPS
-      sameSite: 'strict',  // Protects against CSRF
-      maxAge: 24 * 60 * 60 * 1000  // 24 hours in milliseconds
+      httpOnly: true,               // Prevents JavaScript access
+      secure: true,                 // Only sent over HTTPS
+      sameSite: 'lax',              // Protects against CSRF
+      maxAge: 24 * 60 * 60 * 1000   // 24 hours in milliseconds
     });
 
+    // Return the session token and user data
+    res.json({ 
+      verified: true,                 // Wallet signature verified
+      token: token,                   // Session token
+      user: {
+        wallet_address: wallet,       // Wallet address
+        //nickname: 'Branch Manager'  // User's chosen nickname
+      }
+    });
+    
     // Log the successful authentication
-    logApi.info('Wallet authenticated successfully', {
+    logApi.info(`🔐 Authenticated*\n\tWaiting for session cookie...`, {
       wallet,
       requestId: req.id
     });
 
-    logApi.info('Wallet authentication complete', {
-      requestId: req.id,
-      wallet
-    });
-
+    // Return the session token and user data
     res.json({ 
-      verified: true,
-      // Optionally include any user data needed by the frontend
+      verified: true,                 // Wallet signature verified
+      token: token,                   // Session token
       user: {
-        wallet_address: wallet
+        wallet_address: wallet,       // Wallet address
       }
     });
 
+    // Log the successful authentication
+    logApi.info(`🔐 Successfully authenticated!\n\tWelcome, ${wallet}.`, {
+      wallet,
+      requestId: req.id
+    });
+
   } catch (error) {
-    logApi.error('Wallet verification failed', {
+    // Auth failed at wallet verification
+    logApi.error('🚫 Wallet verification failed', {
       error: {
         message: error.message,
         stack: error.stack
@@ -127,6 +142,7 @@ router.post('/verify-wallet', async (req, res) => {
       requestId: req.id
     });
 
+    // Return error message
     res.status(500).json({ 
       error: 'Authentication failed',
       code: 'AUTH_ERROR'
@@ -176,7 +192,7 @@ router.post('/verify-wallet', async (req, res) => {
 //   example: POST https://degenduel.me/api/auth/connect
 //      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "nickname": "BM" }
 router.post('/connect', async (req, res) => {
-  logApi.info('Starting wallet connection', {
+  logApi.info('🔐 Starting wallet connection', {
     requestId: req.id,
     wallet: req.body.wallet_address
   });
@@ -184,7 +200,7 @@ router.post('/connect', async (req, res) => {
   try {
     const { wallet_address, nickname } = req.body;
     
-    logApi.debug('Attempting database operation', {
+    logApi.debug('🔐 Attempting database operation', {
       requestId: req.id,
       wallet: wallet_address
     });
@@ -197,12 +213,13 @@ router.post('/connect', async (req, res) => {
       RETURNING *
     `, [wallet_address, nickname]);
 
-    logApi.debug('Database operation complete', {
+    logApi.debug('🔐 Database operation complete', {
       requestId: req.id,
       success: !!result.rows[0]
     });
 
     // Create a fresh session token
+    logApi.debug(`🔐 Creating session token for ${wallet_address}`, { requestId: req.id });
     const token = sign(
       { 
         wallet: wallet_address,
@@ -218,24 +235,31 @@ router.post('/connect', async (req, res) => {
     res.cookie('session', token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000
     });
 
+    // // Return the session token and user data
+    // res.json({ 
+    //   token: token,
+    //   user: {
+    //     wallet_address: wallet_address,
+    //     //nickname: 'Branch Manager'
+    //   }
+    // });
+
     // Log the connection
-    logApi.info('Wallet connected successfully', {
+    logApi.info(`🔐 Wallet connected!`, {
       wallet: wallet_address,
       requestId: req.id
     });
 
-    logApi.info('Wallet connection complete', {
-      requestId: req.id,
-      wallet: wallet_address
-    });
-
+    // Return the user data
     res.json(result.rows[0]);
+
+  
   } catch (error) {
-    logApi.error('Auth connect failed', {
+    logApi.error('🚫 Auth connect failed', {
       error: {
         message: error.message,
         stack: error.stack,
@@ -244,7 +268,12 @@ router.post('/connect', async (req, res) => {
       requestId: req.id,
       wallet: req.body.wallet_address
     });
-    res.status(500).json({ error: error.message });
+
+    // Return error message
+    res.status(500).json({
+      error: error.message,
+      code: error.code
+    });
   }
 });
 
@@ -276,7 +305,7 @@ router.post('/connect', async (req, res) => {
 //   example: POST https://degenduel.me/api/auth/disconnect
 //      body: { "wallet": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
 router.post('/disconnect', async (req, res) => {
-  logApi.info('Starting wallet disconnection', {
+  logApi.info('🔐 Starting wallet disconnection', {
     requestId: req.id,
     wallet: req.body.wallet
   });
@@ -284,7 +313,7 @@ router.post('/disconnect', async (req, res) => {
   try {
     const { wallet } = req.body;
     
-    logApi.debug('Attempting database update', {
+    logApi.debug('🔐 Attempting database update', {
       requestId: req.id,
       wallet
     });
@@ -295,21 +324,21 @@ router.post('/disconnect', async (req, res) => {
       WHERE wallet_address = $1
     `, [wallet]);
 
-    logApi.debug('Database update complete', {
+    logApi.debug('🔐 Database update complete', {
       requestId: req.id,
       wallet
     });
 
     res.clearCookie('session');
     
-    logApi.info('Wallet disconnection complete', {
+    logApi.info('🔐 Wallet disconnection complete', {
       requestId: req.id,
       wallet
     });
 
     res.json({ success: true });
   } catch (error) {
-    logApi.error('Wallet disconnect failed', {
+    logApi.error('🚫 Wallet disconnect failed', {
       error: {
         message: error.message,
         stack: error.stack,
@@ -318,7 +347,12 @@ router.post('/disconnect', async (req, res) => {
       requestId: req.id,
       wallet: req.body.wallet
     });
-    res.status(500).json({ error: error.message });
+
+    // Return error message
+    res.status(500).json({
+      error: error.message,
+      code: error.code
+    });
   }
 });
 
