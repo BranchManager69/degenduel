@@ -1,295 +1,54 @@
-2025-01-11 00:06:45 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T05:06:45.355Z","totalUsers":4,"userCount":4}
-2025-01-11 00:22:53 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T05:22:53.780Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 00:27:57 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T05:27:57.349Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
-2025-01-11 00:27:57 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T05:27:57.358Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
-2025-01-11 00:27:57 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T05:27:57.359Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
-2025-01-11 00:27:57 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T05:27:57.454Z","wallet":"DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK"}
-2025-01-11 00:28:06 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T05:28:06.309Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 00:28:06 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T05:28:06.310Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 00:28:06 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T05:28:06.311Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 00:28:06 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T05:28:06.394Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 00:28:57 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T05:28:57.782Z","totalUsers":4,"userCount":4}
-2025-01-11 00:40:10 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T05:40:10.345Z"}
-2025-01-11 00:40:10 -05:00: [32minfo[39m: Database connection closed {"timestamp":"2025-01-11T05:40:10.347Z"}
-2025-01-11 00:40:11 -05:00: Swagger docs available at /api-docs
-2025-01-11 00:40:11 -05:00: Detected API routes: None found
-2025-01-11 00:40:11 -05:00: 
+2025-01-23 00:00:09 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-23T05:00:09.563Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-23 00:00:10 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-23T05:00:10.441Z","totalUsers":4,"userCount":4}
+2025-01-23 00:01:16 -05:00: [32minfo[39m: Creating new contest {"data":{"contest_code":"B-6911","end_time":"2025-01-23T02:00","name":"B","start_time":"2025-01-23T01:00"},"requestId":"47275c53-8a79-47fd-9971-9f799abef19d","timestamp":"2025-01-23T05:01:16.484Z"}
+2025-01-23 00:01:16 -05:00: [32minfo[39m: Contest created successfully {"data":{"contest_code":"B-6911","contest_id":25},"duration":6,"requestId":"47275c53-8a79-47fd-9971-9f799abef19d","timestamp":"2025-01-23T05:01:16.491Z"}
+2025-01-23 00:42:57 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-23T05:42:57.151Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-23 00:43:30 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-23T05:43:30.243Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-23 00:43:31 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-23T05:43:31.407Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-23 00:43:32 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-23T05:43:32.711Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-23 00:43:33 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-23T05:43:33.739Z","totalUsers":4,"userCount":4}
+2025-01-23 00:44:13 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-23T05:44:13.278Z","totalUsers":4,"userCount":4}
+2025-01-23 00:44:17 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-23T05:44:17.022Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-23 00:44:17 -05:00: Swagger docs available at /api-docs
+2025-01-23 00:44:17 -05:00: Detected API routes: None found
+2025-01-23 00:44:17 -05:00: 
 
-2025-01-11 00:40:11 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 00:40:11 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T05:40:11.130Z"}
-2025-01-11 00:40:11 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T05:40:11.141Z"}
-2025-01-11 00:40:11 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T05:40:11.228Z"}
-2025-01-11 00:40:11 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T05:40:11.239Z"}
-2025-01-11 00:40:11 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T05:40:11.240Z"}
-2025-01-11 00:40:11 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 00:40:11 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 00:40:11 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 00:40:20 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T05:40:20.084Z"}
-2025-01-11 00:40:20 -05:00: Swagger docs available at /api-docs
-2025-01-11 00:40:20 -05:00: Detected API routes: None found
-2025-01-11 00:40:20 -05:00: 
+2025-01-23 00:44:17 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-23 00:44:17 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-23T05:44:17.575Z"}
+2025-01-23 00:44:17 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-23T05:44:17.588Z"}
+2025-01-23 00:44:17 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-23T05:44:17.627Z"}
+2025-01-23 00:44:17 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-23T05:44:17.632Z"}
+2025-01-23 00:44:17 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-23T05:44:17.633Z"}
+2025-01-23 00:44:17 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-23 00:44:17 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-23 00:44:17 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-23 00:44:18 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-23T05:44:18.223Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-23 00:44:20 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-23T05:44:20.177Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-23 00:44:43 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-23T05:44:43.523Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-23 00:44:44 -05:00: Swagger docs available at /api-docs
+2025-01-23 00:44:44 -05:00: Detected API routes: None found
+2025-01-23 00:44:44 -05:00: 
 
-2025-01-11 00:40:20 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 00:40:20 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T05:40:20.743Z"}
-2025-01-11 00:40:20 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T05:40:20.754Z"}
-2025-01-11 00:40:20 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T05:40:20.797Z"}
-2025-01-11 00:40:20 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T05:40:20.803Z"}
-2025-01-11 00:40:20 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T05:40:20.804Z"}
-2025-01-11 00:40:20 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 00:40:20 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 00:40:20 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 00:42:45 -05:00: Swagger docs available at /api-docs
-2025-01-11 00:42:45 -05:00: Detected API routes: None found
-2025-01-11 00:42:45 -05:00: 
+2025-01-23 00:44:44 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-23 00:44:44 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-23T05:44:44.082Z"}
+2025-01-23 00:44:44 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-23T05:44:44.092Z"}
+2025-01-23 00:44:44 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-23T05:44:44.134Z"}
+2025-01-23 00:44:44 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-23T05:44:44.140Z"}
+2025-01-23 00:44:44 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-23T05:44:44.140Z"}
+2025-01-23 00:44:44 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-23 00:44:44 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-23 00:44:44 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-23 00:44:55 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-23T05:44:55.323Z","wallet":"6uJUNzQLRj4e462p3gMwukgsCLiXxJUhSY9NBySYgSCS"}
+2025-01-23 00:44:55 -05:00: Swagger docs available at /api-docs
+2025-01-23 00:44:55 -05:00: Detected API routes: None found
+2025-01-23 00:44:55 -05:00: 
 
-2025-01-11 00:42:45 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 00:42:45 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T05:42:45.066Z"}
-2025-01-11 00:42:45 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T05:42:45.076Z"}
-2025-01-11 00:42:45 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T05:42:45.117Z"}
-2025-01-11 00:42:45 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T05:42:45.123Z"}
-2025-01-11 00:42:45 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T05:42:45.124Z"}
-2025-01-11 00:42:45 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 00:42:45 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 00:42:45 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 00:43:02 -05:00: Swagger docs available at /api-docs
-2025-01-11 00:43:02 -05:00: Detected API routes: None found
-2025-01-11 00:43:02 -05:00: 
-
-2025-01-11 00:43:02 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 00:43:02 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T05:43:02.641Z"}
-2025-01-11 00:43:02 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T05:43:02.652Z"}
-2025-01-11 00:43:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T05:43:02.688Z"}
-2025-01-11 00:43:02 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T05:43:02.694Z"}
-2025-01-11 00:43:02 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T05:43:02.694Z"}
-2025-01-11 00:43:02 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 00:43:02 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 00:43:02 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 00:46:34 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T05:46:34.975Z"}
-2025-01-11 00:46:35 -05:00: Swagger docs available at /api-docs
-2025-01-11 00:46:35 -05:00: Detected API routes: None found
-2025-01-11 00:46:35 -05:00: 
-
-2025-01-11 00:46:35 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 00:46:35 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T05:46:35.570Z"}
-2025-01-11 00:46:35 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T05:46:35.581Z"}
-2025-01-11 00:46:35 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T05:46:35.616Z"}
-2025-01-11 00:46:35 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T05:46:35.621Z"}
-2025-01-11 00:46:35 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T05:46:35.621Z"}
-2025-01-11 00:46:35 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 00:46:35 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 00:46:35 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 00:54:13 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T05:54:13.843Z"}
-2025-01-11 00:54:14 -05:00: Swagger docs available at /api-docs
-2025-01-11 00:54:14 -05:00: Detected API routes: None found
-2025-01-11 00:54:14 -05:00: 
-
-2025-01-11 00:54:14 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 00:54:14 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T05:54:14.459Z"}
-2025-01-11 00:54:14 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T05:54:14.467Z"}
-2025-01-11 00:54:14 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T05:54:14.513Z"}
-2025-01-11 00:54:14 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T05:54:14.518Z"}
-2025-01-11 00:54:14 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T05:54:14.519Z"}
-2025-01-11 00:54:14 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 00:54:14 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 00:54:14 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 01:25:16 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T06:25:16.420Z","totalUsers":4,"userCount":4}
-2025-01-11 01:27:08 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T06:27:08.920Z","totalUsers":4,"userCount":4}
-2025-01-11 01:27:14 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T06:27:14.311Z"}
-2025-01-11 01:27:14 -05:00: Swagger docs available at /api-docs
-2025-01-11 01:27:14 -05:00: Detected API routes: None found
-2025-01-11 01:27:14 -05:00: 
-
-2025-01-11 01:27:14 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 01:27:14 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T06:27:14.969Z"}
-2025-01-11 01:27:14 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T06:27:14.977Z"}
-2025-01-11 01:27:15 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T06:27:15.023Z"}
-2025-01-11 01:27:15 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T06:27:15.030Z"}
-2025-01-11 01:27:15 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T06:27:15.031Z"}
-2025-01-11 01:27:15 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 01:27:15 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 01:27:15 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 01:27:23 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T06:27:23.065Z","totalUsers":4,"userCount":4}
-2025-01-11 01:28:12 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T06:28:12.400Z","totalUsers":4,"userCount":4}
-2025-01-11 01:29:02 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T06:29:02.977Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 01:29:02 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T06:29:02.980Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 01:29:02 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T06:29:02.980Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 01:29:03 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T06:29:03.112Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 01:29:06 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T06:29:06.068Z","totalUsers":4,"userCount":4}
-2025-01-11 01:29:06 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T06:29:06.143Z","totalUsers":4,"userCount":4}
-2025-01-11 01:46:38 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T06:46:38.721Z"}
-2025-01-11 01:46:39 -05:00: Swagger docs available at /api-docs
-2025-01-11 01:46:39 -05:00: Detected API routes: None found
-2025-01-11 01:46:39 -05:00: 
-
-2025-01-11 01:46:39 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 01:46:39 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T06:46:39.366Z"}
-2025-01-11 01:46:39 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T06:46:39.379Z"}
-2025-01-11 01:46:39 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T06:46:39.424Z"}
-2025-01-11 01:46:39 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T06:46:39.430Z"}
-2025-01-11 01:46:39 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T06:46:39.431Z"}
-2025-01-11 01:46:39 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 01:46:39 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 01:46:39 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 01:52:52 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T06:52:52.395Z"}
-2025-01-11 01:52:53 -05:00: Swagger docs available at /api-docs
-2025-01-11 01:52:53 -05:00: Detected API routes: None found
-2025-01-11 01:52:53 -05:00: 
-
-2025-01-11 01:52:53 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 01:52:53 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T06:52:53.014Z"}
-2025-01-11 01:52:53 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T06:52:53.025Z"}
-2025-01-11 01:52:53 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T06:52:53.061Z"}
-2025-01-11 01:52:53 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T06:52:53.067Z"}
-2025-01-11 01:52:53 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T06:52:53.068Z"}
-2025-01-11 01:52:53 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 01:52:53 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 01:52:53 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 02:27:58 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T07:27:58.823Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 02:40:25 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T07:40:25.225Z"}
-2025-01-11 02:40:25 -05:00: Swagger docs available at /api-docs
-2025-01-11 02:40:25 -05:00: Detected API routes: None found
-2025-01-11 02:40:25 -05:00: 
-
-2025-01-11 02:40:25 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 02:40:25 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T07:40:25.846Z"}
-2025-01-11 02:40:25 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T07:40:25.856Z"}
-2025-01-11 02:40:25 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T07:40:25.901Z"}
-2025-01-11 02:40:25 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T07:40:25.906Z"}
-2025-01-11 02:40:25 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T07:40:25.907Z"}
-2025-01-11 02:40:25 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 02:40:25 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 02:40:25 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 02:44:42 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T07:44:42.906Z"}
-2025-01-11 02:44:43 -05:00: Swagger docs available at /api-docs
-2025-01-11 02:44:43 -05:00: Detected API routes: None found
-2025-01-11 02:44:43 -05:00: 
-
-2025-01-11 02:44:43 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 02:44:43 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T07:44:43.521Z"}
-2025-01-11 02:44:43 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T07:44:43.531Z"}
-2025-01-11 02:44:43 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T07:44:43.572Z"}
-2025-01-11 02:44:43 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T07:44:43.577Z"}
-2025-01-11 02:44:43 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T07:44:43.578Z"}
-2025-01-11 02:44:43 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 02:44:43 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 02:44:43 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 02:48:41 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T07:48:41.387Z"}
-2025-01-11 02:48:41 -05:00: Swagger docs available at /api-docs
-2025-01-11 02:48:41 -05:00: Detected API routes: None found
-2025-01-11 02:48:41 -05:00: 
-
-2025-01-11 02:48:41 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 02:48:41 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T07:48:41.961Z"}
-2025-01-11 02:48:41 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T07:48:41.970Z"}
-2025-01-11 02:48:42 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T07:48:42.004Z"}
-2025-01-11 02:48:42 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T07:48:42.009Z"}
-2025-01-11 02:48:42 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T07:48:42.009Z"}
-2025-01-11 02:48:42 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 02:48:42 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 02:48:42 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 02:56:42 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T07:56:42.006Z"}
-2025-01-11 02:56:42 -05:00: Swagger docs available at /api-docs
-2025-01-11 02:56:42 -05:00: Detected API routes: None found
-2025-01-11 02:56:42 -05:00: 
-
-2025-01-11 02:56:42 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 02:56:42 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T07:56:42.612Z"}
-2025-01-11 02:56:42 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T07:56:42.622Z"}
-2025-01-11 02:56:42 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T07:56:42.662Z"}
-2025-01-11 02:56:42 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T07:56:42.667Z"}
-2025-01-11 02:56:42 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T07:56:42.668Z"}
-2025-01-11 02:56:42 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 02:56:42 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 02:56:42 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 02:57:00 -05:00: x-superadmin-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc1N1cGVyYWRtaW4iOnRydWUsImNyZWF0ZWRBdCI6IjIwMjUtMDEtMTFUMDU6NTg6MDQuMDU1WiIsImlhdCI6MTczNjU3NTA4NCwiZXhwIjoxNzY4MTMyNjg0fQ.HQNnW1Djs8cHbXSD_1Yi570v0y0w_FeJZ3VE9OTjQ5k
-2025-01-11 02:57:00 -05:00: [33mwarn[39m: x-superadmin-token {"timestamp":"2025-01-11T07:57:00.725Z"}
-2025-01-11 03:06:12 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T08:06:12.461Z"}
-2025-01-11 03:06:13 -05:00: Swagger docs available at /api-docs
-2025-01-11 03:06:13 -05:00: Detected API routes: None found
-2025-01-11 03:06:13 -05:00: 
-
-2025-01-11 03:06:13 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 03:06:13 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T08:06:13.064Z"}
-2025-01-11 03:06:13 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T08:06:13.075Z"}
-2025-01-11 03:06:13 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T08:06:13.113Z"}
-2025-01-11 03:06:13 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T08:06:13.119Z"}
-2025-01-11 03:06:13 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T08:06:13.119Z"}
-2025-01-11 03:06:13 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 03:06:13 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 03:06:13 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 03:12:11 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T08:12:11.998Z"}
-2025-01-11 03:12:12 -05:00: Swagger docs available at /api-docs
-2025-01-11 03:12:12 -05:00: Detected API routes: None found
-2025-01-11 03:12:12 -05:00: 
-
-2025-01-11 03:12:12 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 03:12:12 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T08:12:12.628Z"}
-2025-01-11 03:12:12 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T08:12:12.639Z"}
-2025-01-11 03:12:12 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T08:12:12.677Z"}
-2025-01-11 03:12:12 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T08:12:12.683Z"}
-2025-01-11 03:12:12 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T08:12:12.684Z"}
-2025-01-11 03:12:12 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 03:12:12 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 03:12:12 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 03:12:27 -05:00: [32minfo[39m: New superadmin token generated {"timestamp":"2025-01-11T08:12:27.843Z"}
-2025-01-11 03:14:36 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T08:14:36.540Z"}
-2025-01-11 03:14:37 -05:00: Swagger docs available at /api-docs
-2025-01-11 03:14:37 -05:00: Detected API routes: None found
-2025-01-11 03:14:37 -05:00: 
-
-2025-01-11 03:14:37 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 03:14:37 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T08:14:37.173Z"}
-2025-01-11 03:14:37 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T08:14:37.184Z"}
-2025-01-11 03:14:37 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T08:14:37.223Z"}
-2025-01-11 03:14:37 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T08:14:37.229Z"}
-2025-01-11 03:14:37 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T08:14:37.229Z"}
-2025-01-11 03:14:37 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 03:14:37 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 03:14:37 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 03:15:41 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=/home/branchmanager/websites/degenduel/combined.log {"timestamp":"2025-01-11T08:15:41.437Z"}
-2025-01-11 03:22:16 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-11T08:22:16.370Z"}
-2025-01-11 03:22:16 -05:00: Swagger docs available at /api-docs
-2025-01-11 03:22:16 -05:00: Detected API routes: None found
-2025-01-11 03:22:16 -05:00: 
-
-2025-01-11 03:22:16 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
-2025-01-11 03:22:16 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-11T08:22:16.995Z"}
-2025-01-11 03:22:17 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-11T08:22:17.007Z"}
-2025-01-11 03:22:17 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-11T08:22:17.053Z"}
-2025-01-11 03:22:17 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-11T08:22:17.058Z"}
-2025-01-11 03:22:17 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-11T08:22:17.059Z"}
-2025-01-11 03:22:17 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
-2025-01-11 03:22:17 -05:00: 	   🎯  DegenDuel API  		|  READY!
-2025-01-11 03:22:17 -05:00: 	     '--------------> Port 3003 (all interfaces)
-2025-01-11 03:23:01 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=/home/branchmanager/websites/degenduel/combined.log {"timestamp":"2025-01-11T08:23:01.015Z"}
-2025-01-11 03:25:55 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T08:25:55.141Z","totalUsers":4,"userCount":4}
-2025-01-11 03:25:58 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log {"timestamp":"2025-01-11T08:25:58.536Z"}
-2025-01-11 03:26:12 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-out-0.log {"timestamp":"2025-01-11T08:26:12.538Z"}
-2025-01-11 03:26:14 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Ferror.log {"timestamp":"2025-01-11T08:26:14.329Z"}
-2025-01-11 03:26:15 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Fcombined.log {"timestamp":"2025-01-11T08:26:15.100Z"}
-2025-01-11 03:26:16 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log {"timestamp":"2025-01-11T08:26:16.833Z"}
-2025-01-11 03:27:00 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log {"timestamp":"2025-01-11T08:27:00.611Z"}
-2025-01-11 03:27:58 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T08:27:58.650Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 03:28:55 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T08:28:55.434Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:29:10 -05:00: [32minfo[39m: Starting wallet verification {"timestamp":"2025-01-11T08:29:10.508Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:29:10 -05:00: [32minfo[39m: Wallet authenticated successfully {"timestamp":"2025-01-11T08:29:10.511Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:29:10 -05:00: [32minfo[39m: Wallet authentication complete {"timestamp":"2025-01-11T08:29:10.512Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:29:10 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T08:29:10.590Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:29:12 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T08:29:12.983Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:30:31 -05:00: [32minfo[39m: Attempting to join contest {"contestId":9,"requestId":"20047d05-da93-42ac-8178-387091816be9","timestamp":"2025-01-11T08:30:31.035Z","wallet_address":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:30:31 -05:00: [31merror[39m: Error in join contest endpoint {"duration":13,"error":{"message":"You've already got a spot reserved at this table.","name":"ContestError"},"requestId":"20047d05-da93-42ac-8178-387091816be9","timestamp":"2025-01-11T08:30:31.048Z"}
-2025-01-11 03:30:44 -05:00: [32minfo[39m: Attempting to join contest {"contestId":17,"requestId":"99d6fc4a-d036-457c-ae26-24080286e7d6","timestamp":"2025-01-11T08:30:44.858Z","wallet_address":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:30:44 -05:00: [32minfo[39m: Balance validation {"contestId":17,"entryFee":"0.25","requestId":"99d6fc4a-d036-457c-ae26-24080286e7d6","timestamp":"2025-01-11T08:30:44.868Z","userBalance":"100"}
-2025-01-11 03:30:44 -05:00: [32minfo[39m: Successfully joined contest {"contestId":17,"requestId":"99d6fc4a-d036-457c-ae26-24080286e7d6","timestamp":"2025-01-11T08:30:44.890Z","wallet_address":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:31:01 -05:00: [32minfo[39m: Attempting to join contest {"contestId":17,"requestId":"0fe34a63-6797-41d4-8fee-8bef7def5a8e","timestamp":"2025-01-11T08:31:01.695Z","wallet_address":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:31:01 -05:00: [31merror[39m: Error in join contest endpoint {"duration":14,"error":{"message":"You've already got a spot reserved at this table.","name":"ContestError"},"requestId":"0fe34a63-6797-41d4-8fee-8bef7def5a8e","timestamp":"2025-01-11T08:31:01.710Z"}
-2025-01-11 03:31:15 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T08:31:15.343Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:31:17 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T08:31:17.292Z","wallet":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:32:04 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-11T08:32:04.184Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
-2025-01-11 03:32:04 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T08:32:04.915Z","totalUsers":4,"userCount":4}
-2025-01-11 03:35:51 -05:00: [32minfo[39m: Attempting to join contest {"contestId":17,"requestId":"11a4f6a2-d503-40cd-a78c-10d652c7bfe3","timestamp":"2025-01-11T08:35:51.531Z","wallet_address":"5RbsCTp7Z3ZBs6LRg8cvtZkF1FtAt4GndEtdsWQCzVy8"}
-2025-01-11 03:35:51 -05:00: [31merror[39m: Error in join contest endpoint {"duration":64,"error":{"message":"You've already got a spot reserved at this table.","name":"ContestError"},"requestId":"11a4f6a2-d503-40cd-a78c-10d652c7bfe3","timestamp":"2025-01-11T08:35:51.595Z"}
-2025-01-11 03:47:18 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T08:47:18.125Z","totalUsers":4,"userCount":4}
-2025-01-11 03:47:20 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log {"timestamp":"2025-01-11T08:47:20.496Z"}
-2025-01-11 03:47:21 -05:00: [32minfo[39m: Superadmin access granted for request to /api/superadmin/logs?file=%2Fhome%2Fbranchmanager%2Fwebsites%2Fdegenduel%2Flogs%2Fapi-error-0.log {"timestamp":"2025-01-11T08:47:21.924Z"}
-2025-01-11 03:54:31 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-11T08:54:31.526Z","totalUsers":4,"userCount":4}
+2025-01-23 00:44:55 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-23 00:44:55 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-23T05:44:55.862Z"}
+2025-01-23 00:44:55 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-23T05:44:55.873Z"}
+2025-01-23 00:44:55 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-23T05:44:55.914Z"}
+2025-01-23 00:44:55 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-23T05:44:55.920Z"}
+2025-01-23 00:44:55 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-23T05:44:55.920Z"}
+2025-01-23 00:44:55 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-23 00:44:55 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-23 00:44:55 -05:00: 	     '--------------> Port 3003 (all interfaces)
