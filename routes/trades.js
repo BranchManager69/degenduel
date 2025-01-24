@@ -1,6 +1,7 @@
 // /routes/trades.js
 import express from 'express';
 import { pool } from '../config/pg-database.js';
+import { requireAuth } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
@@ -80,9 +81,10 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-// Submit a new trade for a contest
-//   example: POST https://degenduel.me/api/trades/1
-router.post('/:contestId', async (req, res) => {
+// Submit a new trade for a contest (AUTHENTICATED)
+//      headers: { "Authorization": "Bearer <JWT>" }
+//      example: POST https://degenduel.me/api/trades/1
+router.post('/:contestId', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -178,8 +180,8 @@ router.post('/:contestId', async (req, res) => {
  *       500:
  *         description: Server error
  */
-// Get user's trades for a specific contest
-//   example: GET https://degenduel.me/api/trades/1?wallet=BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+// Get user's trades for a specific contest (NO AUTH REQUIRED)
+//      example: GET https://degenduel.me/api/trades/1?wallet=BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:contestId', async (req, res) => {
   const { contestId } = req.params;
   const { wallet } = req.query;

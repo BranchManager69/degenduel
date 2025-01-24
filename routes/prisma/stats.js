@@ -1,6 +1,7 @@
 // /routes/prisma/stats.js - Centralized logging for DegenDuel backend services.
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
+import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js'; // New DD Logging System
 
 const router = Router();
@@ -59,9 +60,10 @@ const prisma = new PrismaClient();
  *                       useCount:
  *                         type: integer
  */
-// Get platform stats
+// Get platform stats (SUPERADMIN ONLY)
 //   example: GET https://degenduel.me/api/stats/platform
-router.get('/platform', async (req, res) => {
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.get('/platform', requireAuth, requireSuperAdmin, async (req, res) => {
     const log = logApi.withRequest(req);
     
     log.info('Fetching platform statistics');
@@ -283,7 +285,7 @@ router.get('/platform', async (req, res) => {
  *                         type: string
  *                         format: date-time
  */
-// Get stats of a wallet
+// Get stats of a wallet (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/stats/wallet/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/wallet/:address', async (req, res) => {
   const log = logApi.withRequest(req);
