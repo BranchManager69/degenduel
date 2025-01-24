@@ -137,7 +137,8 @@ router.get('/', validateGetLeaderboard, getLeaderboard);
  *         description: Server error
  */
 //   example: POST https://degenduel.me/api/leaderboard
-//   body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "score": 100, "contest_id": "1" }
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "score": 100, "contest_id": "1" }
 router.post('/', validateScore, addScore);
 
 /**
@@ -381,8 +382,9 @@ router.get('/history', async (req, res) => {
  *       500:
  *         description: Server error
  */
-//   example: PATCH https://degenduel.me/api/leaderboard/adjust
-//   body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "adjustment": 100 }
+//   example: POST https://degenduel.me/api/leaderboard/adjust
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "adjustment": 100 }
 router.patch('/adjust', async (req, res) => {
     const { wallet_address, adjustment } = req.body;
 
