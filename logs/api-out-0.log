@@ -205,3 +205,18 @@
 2025-01-24 07:13:13 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
 2025-01-24 07:13:13 -05:00: 	   🎯  DegenDuel API  		|  READY!
 2025-01-24 07:13:13 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-24 07:26:31 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T12:26:31.764Z"}
+2025-01-24 07:26:39 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"user","timestamp":"2025-01-24T12:26:39.607Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 07:26:43 -05:00: [32minfo[39m: Successfully fetched user profile {"hasContests":true,"path":"GET /api/users/:wallet","timestamp":"2025-01-24T12:26:43.432Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.694Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.700Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.705Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.708Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.711Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.717Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.721Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.724Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T12:26:46.729Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.732Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T12:26:46.736Z"}
+2025-01-24 07:26:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T12:26:46.739Z"}
