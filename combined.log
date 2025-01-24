@@ -74988,3 +74988,666 @@
   level: 'info',
   timestamp: '2025-01-23T05:44:55.920Z'
 }
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:12.741Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:13.359Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:13.372Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:13.410Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:13.415Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:13.416Z'
+}
+{
+  requestId: undefined,
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-23T05:46:38.227Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:38.723Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:38.735Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:38.953Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:38.958Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-23T05:46:38.959Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-23T05:46:40.063Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-23T05:46:43.020Z'
+}
+{
+  requestId: 'fd2b814b-40dd-43d0-b8a0-ba67cde48aaf',
+  message: 'Creating new contest',
+  data: {
+    contest_code: 'DD2-4071',
+    name: 'Degen Dustup 2025',
+    start_time: '2025-01-23T00:00',
+    end_time: '2025-01-23T12:00',
+    min_participants: 2,
+    max_participants: 20
+  },
+  level: 'info',
+  timestamp: '2025-01-23T05:47:33.523Z'
+}
+{
+  requestId: 'fd2b814b-40dd-43d0-b8a0-ba67cde48aaf',
+  message: 'Invalid start time - must be in future',
+  data: {
+    start_time: '2025-01-23T00:00',
+    current_time: 2025-01-23T05:47:33.524Z
+  },
+  duration: 1,
+  level: 'warn',
+  timestamp: '2025-01-23T05:47:33.524Z'
+}
+{
+  requestId: 'e65547cb-e6ea-4fb6-a4dc-1051711111e9',
+  message: 'Creating new contest',
+  data: {
+    contest_code: 'DD2-7428',
+    name: 'Degen Dustup 2025',
+    start_time: '2025-01-23T05:00',
+    end_time: '2025-01-23T12:00',
+    min_participants: 2,
+    max_participants: 20
+  },
+  level: 'info',
+  timestamp: '2025-01-23T05:47:46.890Z'
+}
+{
+  requestId: 'e65547cb-e6ea-4fb6-a4dc-1051711111e9',
+  message: 'Contest created successfully',
+  data: { contest_id: 26, contest_code: 'DD2-7428' },
+  duration: 7,
+  level: 'info',
+  timestamp: '2025-01-23T05:47:46.897Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-23T09:14:38.338Z'
+}
+{
+  requestId: 'a0d6c337-4108-4ac4-bb75-69daa6698ca9',
+  message: 'Creating new contest',
+  data: {
+    contest_code: 'TOOERS',
+    name: 'Tooters',
+    start_time: '2025-01-24T00:00:00Z',
+    end_time: '2025-01-25T23:59:59Z',
+    min_participants: 31,
+    max_participants: 69
+  },
+  level: 'info',
+  timestamp: '2025-01-24T03:30:17.268Z'
+}
+{
+  requestId: 'a0d6c337-4108-4ac4-bb75-69daa6698ca9',
+  message: 'Invalid start time - must be in future',
+  data: {
+    start_time: '2025-01-24T00:00:00Z',
+    current_time: 2025-01-24T03:30:17.291Z
+  },
+  duration: 25,
+  level: 'warn',
+  timestamp: '2025-01-24T03:30:17.291Z'
+}
+{
+  requestId: '241d8c86-45e0-4637-9e3b-5119356aaede',
+  message: 'Creating new contest',
+  data: {
+    contest_code: 'TOOERS',
+    name: 'Tooters',
+    start_time: '2025-01-24T02:00:00Z',
+    end_time: '2025-01-25T23:59:59Z',
+    min_participants: 31,
+    max_participants: 69
+  },
+  level: 'info',
+  timestamp: '2025-01-24T03:30:48.961Z'
+}
+{
+  requestId: '241d8c86-45e0-4637-9e3b-5119356aaede',
+  message: 'Invalid start time - must be in future',
+  data: {
+    start_time: '2025-01-24T02:00:00Z',
+    current_time: 2025-01-24T03:30:48.962Z
+  },
+  duration: 1,
+  level: 'warn',
+  timestamp: '2025-01-24T03:30:48.962Z'
+}
+{
+  requestId: '451f2960-6fcb-4b10-a2a6-a60758f41fc9',
+  message: 'Creating new contest',
+  data: {
+    contest_code: 'TOOERS',
+    name: 'Tooters',
+    start_time: '2025-01-24T02:40:00Z',
+    end_time: '2025-01-25T23:59:59Z',
+    min_participants: 31,
+    max_participants: 69
+  },
+  level: 'info',
+  timestamp: '2025-01-24T03:31:05.426Z'
+}
+{
+  requestId: '451f2960-6fcb-4b10-a2a6-a60758f41fc9',
+  message: 'Invalid start time - must be in future',
+  data: {
+    start_time: '2025-01-24T02:40:00Z',
+    current_time: 2025-01-24T03:31:05.426Z
+  },
+  duration: 0,
+  level: 'warn',
+  timestamp: '2025-01-24T03:31:05.426Z'
+}
+{
+  requestId: '906a97d1-4337-4227-a225-c610bee444d7',
+  message: 'Creating new contest',
+  data: {
+    contest_code: 'TOOERS',
+    name: 'Tooters',
+    start_time: '2025-01-24T03:40:00Z',
+    end_time: '2025-01-25T23:59:59Z',
+    min_participants: 31,
+    max_participants: 69
+  },
+  level: 'info',
+  timestamp: '2025-01-24T03:31:10.514Z'
+}
+{
+  requestId: '906a97d1-4337-4227-a225-c610bee444d7',
+  message: 'Contest created successfully',
+  data: { contest_id: 27, contest_code: 'TOOERS' },
+  duration: 40,
+  level: 'info',
+  timestamp: '2025-01-24T03:31:10.554Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:00:43.698Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:01:59.338Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:22:09.986Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:22:10.055Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:22:10.118Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:22:10.180Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:22:28.905Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:22:28.967Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:22:29.045Z'
+}
+{
+  path: 'GET /api/users',
+  query: {},
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:22:29.104Z'
+}
+{
+  path: 'GET /api/users',
+  query: { page: '1', pageSize: '10' },
+  userCount: 4,
+  totalUsers: 4,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-24T04:32:15.527Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-24T04:32:31.718Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-24T05:52:37.511Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-24T06:55:19.680Z'
+}
+{
+  message: 'Database connection closed',
+  level: 'info',
+  timestamp: '2025-01-24T06:55:19.694Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-24T09:00:51.593Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-24T09:00:51.607Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T09:00:51.757Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-24T09:00:51.786Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-24T09:00:51.787Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-24T09:01:30.013Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-24T09:17:03.146Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-24T09:17:03.912Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-24T09:17:03.925Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T09:17:03.971Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-24T09:17:03.977Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-24T09:17:03.978Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-24T09:18:27.205Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-24T09:18:27.849Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-24T09:18:27.861Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T09:18:27.910Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-24T09:18:27.917Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-24T09:18:27.919Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-24T10:08:04.393Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-24T10:37:30.293Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-24T10:37:30.308Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T10:37:30.344Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-24T10:37:30.349Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-24T10:37:30.350Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-24T10:38:23.982Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-24T10:40:26.817Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting wallet verification',
+  timestamp: '2025-01-24T10:44:55.664Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-24T11:01:25.870Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-24T11:01:26.681Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-24T11:01:26.693Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:01:26.738Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-24T11:01:26.744Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:01:26.745Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Starting real wallet verification',
+  timestamp: '2025-01-24T11:02:08.806Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:02:08.886Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'user',
+  level: 'info',
+  message: 'Wallet BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp verified successfully',
+  timestamp: '2025-01-24T11:02:08.909Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-24T11:02:09.071Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:47.217Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:47.970Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:47.981Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:48.025Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:48.033Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:48.033Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.105Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.117Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.124Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.134Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.140Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.146Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.147Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.151Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.152Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.153Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.156Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.157Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.159Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T11:16:56.160Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'user',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-24T11:17:05.206Z'
+}

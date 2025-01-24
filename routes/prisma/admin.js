@@ -1,6 +1,7 @@
 // /routes/prisma/admin.js
 import { Prisma, PrismaClient } from '@prisma/client';
 import { Router } from 'express';
+import { requireAdmin, requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 
 const router = Router();
@@ -98,8 +99,9 @@ const prisma = new PrismaClient();
  */
 // Adjust a user's points balance (this is duplicate of a /routes/prisma/balance.js endpoint?)
 //   example: POST https://degenduel.me/api/admin/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance
+//      headers: { "Authorization": "Bearer <JWT>" }
 //      body: { "amount": 100 }
-router.post('/users/:wallet/balance', async (req, res) => {
+router.post('/users/:wallet/balance', requireAuth, requireAdmin, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
   const { wallet } = req.params;
@@ -246,9 +248,10 @@ router.post('/users/:wallet/balance', async (req, res) => {
  *                     offset:
  *                       type: integer
  */
-// Get admin activity logs
-//   example: GET https://degenduel.me/api/admin/activities?limit=50&offset=0&action=login
-router.get('/activities', async (req, res) => {
+// Get admin activity logs (SUPERADMIN ONLY)
+//      example: GET https://degenduel.me/api/admin/activities?limit=50&offset=0&action=login
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.get('/activities', requireAuth, requireSuperAdmin, async (req, res) => {
   console.log('>>>query received>>> | /api/admin/activities');
   
   const debugMode = true; // Simple debug flag to toggle on/off
@@ -316,9 +319,10 @@ router.get('/activities', async (req, res) => {
  *       200:
  *         description: System settings
  */
-// Get all system settings
+// Get all system settings (ADMIN ONLY)
 //   example: GET https://degenduel.me/api/admin/system-settings
-router.get('/system-settings', async (req, res) => {
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.get('/system-settings', requireAuth, requireAdmin, async (req, res) => {
   try {
     const settings = await prisma.system_settings.findMany();
     res.json(settings);
@@ -357,10 +361,11 @@ router.get('/system-settings', async (req, res) => {
  *       200:
  *         description: Setting updated successfully
  */
-// Update a system setting
+// Update a system setting (SUPERADMIN ONLY)
 //   example: PUT https://degenduel.me/api/admin/system-settings/max_daily_login_bonus
+//      headers: { "Authorization": "Bearer <JWT>" }
 //      body: { "value": 100, "description": "Maximum daily login bonus" }
-router.put('/system-settings/:key', async (req, res) => {
+router.put('/system-settings/:key', requireAuth, requireSuperAdmin, async (req, res) => {
   try {
     const { key } = req.params;
     const { value, description } = req.body;
@@ -430,10 +435,11 @@ router.put('/system-settings/:key', async (req, res) => {
  *       200:
  *         description: User banned successfully
  */
-// Ban a user
+// Ban a user (ADMIN ONLY)
 //   example: POST https://degenduel.me/api/admin/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/ban
+//      headers: { "Authorization": "Bearer <JWT>" }
 //      body: { "reason": "Spamming" }
-router.post('/users/:wallet/ban', async (req, res) => {
+router.post('/users/:wallet/ban', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { wallet } = req.params;
     const { reason } = req.body;
