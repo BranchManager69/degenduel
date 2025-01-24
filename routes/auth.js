@@ -162,4 +162,10 @@ router.post('/disconnect', async (req, res) => {
   }
 });
 
+//   example: POST https://degenduel.me/api/auth/logout
+//      headers: { "Cookie": "session=<jwt>" }
+
+//   example: GET https://degenduel.me/api/auth/session
+//      headers: { "Cookie": "session=<jwt>" }
+
 export default router;

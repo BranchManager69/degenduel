@@ -154,7 +154,8 @@ router.get('/', async (req, res) => {
  *         description: User not found
  */
 // Get user profile by wallet address (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+//   example: GET https://degenduel.me/api/users/{wallet}
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet', async (req, res) => {
   const logContext = {
     path: 'GET /api/users/:wallet',
@@ -385,8 +386,10 @@ router.post('/', async (req, res) => {
  *         $ref: '#/components/responses/UserNotFound'
  */
 // Update user profile by wallet address (AUTHENTICATED)
-//   headers: { "Authorization": "Bearer <JWT>" }
-//   example: PUT https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+//   headers: { "Cookie": "session=<jwt>" }
+//   example: PUT https://degenduel.me/api/users/{wallet}
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "nickname": "xXx420Sn1perx" }
 router.put('/:wallet', requireAuth, async (req, res) => {
   try {
     const { nickname, settings } = req.body;
@@ -433,7 +436,8 @@ router.put('/:wallet', requireAuth, async (req, res) => {
  *         $ref: '#/components/responses/UserNotFound'
  */
 // Get user achievements by wallet address (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/achievements
+//   example: GET https://degenduel.me/api/users/{wallet}/achievements
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet/achievements', async (req, res) => {
   try {
     const achievements = await prisma.user_achievements.findMany({
@@ -495,7 +499,8 @@ router.get('/:wallet/achievements', async (req, res) => {
  *         $ref: '#/components/responses/UserNotFound'
  */
 // Get detailed user statistics by wallet address (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/stats
+//   example: GET https://degenduel.me/api/users/{wallet}/stats
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet/stats', async (req, res) => {
   try {
     const [stats, tokenStats] = await Promise.all([
