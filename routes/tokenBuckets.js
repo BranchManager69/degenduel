@@ -1,12 +1,12 @@
 // /routes/tokenBuckets.js
 import express from 'express';
 import { pool } from '../config/pg-database.js';
+import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
 
 /*
- *
  *  THIS IS AN *OLD* ENDPOINT
  *  WE SHOULD BRING IT UP TO DATE
  */
@@ -45,9 +45,9 @@ const router = express.Router();
  *       500:
  *         description: Failed to create token bucket
  */
-// Create a new token bucket
-//   example: POST https://degenduel.me/api/token-buckets
-router.post('/', async (req, res) => {
+// Create a new token bucket (ADMIN ONLY)
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
   const { name, description } = req.body;
   try {
     const result = await pool.query(
@@ -93,8 +93,8 @@ router.post('/', async (req, res) => {
  *                                 name:
  *                                   type: string
  */
-// Get all token buckets
-//   example: GET https://degenduel.me/api/token-buckets/buckets
+// Get all token buckets (NO AUTH REQUIRED)
+//      example: GET https://degenduel.me/api/token-buckets/buckets
 router.get('/buckets', async (req, res) => {
     try {
       const buckets = await prisma.token_buckets.findMany({
@@ -158,8 +158,8 @@ router.get('/buckets', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/TokenNotFound'
  */
-// Get token bucket by ID
-//   example: GET https://degenduel.me/api/token-buckets/1
+// Get token bucket by ID (NO AUTH REQUIRED)
+//      example: GET https://degenduel.me/api/token-buckets/1
 router.get('/buckets/:id', async (req, res) => {
 try {
     const bucket = await prisma.token_buckets.findUnique({
@@ -221,9 +221,10 @@ try {
  *       500:
  *         description: Failed to add tokens to bucket
  */
-// Add tokens to a bucket
-//   example: POST https://degenduel.me/api/token-buckets/1/tokens
-//      body: { "tokenIds": [1, 2, 3] }
+// Add tokens to a bucket (SUPERADMIN ONLY)
+//      example: POST https://degenduel.me/api/token-buckets/1/tokens
+//      headers: { "Authorization": "Bearer <JWT>" }
+//      body: { "tokenIds": [1, 2, 3, 4, 5, 6, 7, 8, 9] }
 router.post('/:bucketId/tokens', async (req, res) => {
     const { bucketId } = req.params;
     const { tokenIds } = req.body;
@@ -277,8 +278,9 @@ router.post('/:bucketId/tokens', async (req, res) => {
  *       500:
  *         description: Failed to remove token from bucket
  */
-// Remove a token from a bucket
-//   example: DELETE https://degenduel.me/api/token-buckets/1/tokens/1
+// Remove a token from a bucket (SUPERADMIN ONLY)
+//      headers: { "Authorization": "Bearer <JWT>" }
+//      example: DELETE https://degenduel.me/api/token-buckets/1/tokens/1
 router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
     try {
         const { bucketId, tokenId } = req.params;
@@ -308,8 +310,8 @@ router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
  *       500:
  *         description: Failed to fetch token buckets
  */
-// Get all token buckets (with tokens)
-//   example: GET https://degenduel.me/api/token-buckets
+// Get all token buckets with their tokens (NO AUTH REQUIRED)
+//      example: GET https://degenduel.me/api/token-buckets
 router.get('/', async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -363,30 +365,31 @@ router.get('/', async (_req, res) => {
  *       500:
  *         description: Server error
  */
-// Update token bucket details
-//   example: PUT https://degenduel.me/api/token-buckets/1
-router.patch('/:bucketId', async (req, res) => {
-    const { bucketId } = req.params;
-    const { name, description } = req.body;
+// Update token bucket details (SUPERADMIN ONLY)  
+//      headers: { "Authorization": "Bearer <JWT>" }
+//      example: PUT https://degenduel.me/api/token-buckets/1
+router.patch('/:bucketId', requireAuth, requireSuperAdmin, async (req, res) => {
+  const { bucketId } = req.params;
+  const { name, description } = req.body;
 
-    try {
-        const result = await pool.query(
-            `UPDATE token_buckets SET 
-                name = COALESCE($1, name), 
-                description = COALESCE($2, description) 
-            WHERE id = $3 RETURNING *;`,
-            [name, description, bucketId]
-        );
+  try {
+      const result = await pool.query(
+          `UPDATE token_buckets SET 
+              name = COALESCE($1, name), 
+              description = COALESCE($2, description) 
+          WHERE id = $3 RETURNING *;`,
+          [name, description, bucketId]
+      );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Token bucket not found.' });
-        }
+      if (result.rows.length === 0) {
+          return res.status(404).json({ error: 'Token bucket not found.' });
+      }
 
-        res.json({ success: true, updated: result.rows[0] });
-    } catch (error) {
-        console.error('Error updating token bucket:', error);
-        res.status(500).json({ error: 'Failed to update token bucket.' });
-    }
+      res.json({ success: true, updated: result.rows[0] });
+  } catch (error) {
+      console.error('Error updating token bucket:', error);
+      res.status(500).json({ error: 'Failed to update token bucket.' });
+  }
 });
 
 /**
@@ -410,9 +413,10 @@ router.patch('/:bucketId', async (req, res) => {
  *       500:
  *         description: Server error
  */
-// Delete token bucket
-//   example: DELETE https://degenduel.me/api/token-buckets/1
-router.delete('/:bucketId', async (req, res) => {
+// Delete token bucket (SUPERADMIN ONLY)
+//      headers: { "Authorization": "Bearer <JWT>" }
+//      example: DELETE https://degenduel.me/api/token-buckets/1
+router.delete('/:bucketId', requireAuth, requireSuperAdmin, async (req, res) => {
     const { bucketId } = req.params;
 
     try {
