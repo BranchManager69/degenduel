@@ -98,8 +98,8 @@ const prisma = new PrismaClient();
  *         description: Not authorized
  */
 // Adjust a user's points balance (this is duplicate of a /routes/prisma/balance.js endpoint?)
-//   example: POST https://degenduel.me/api/admin/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance
-//      headers: { "Authorization": "Bearer <JWT>" }
+//   example: POST https://degenduel.me/api/admin/users/{wallet}/balance
+//      headers: { "Cookie": "session=<jwt>" }
 //      body: { "amount": 100 }
 router.post('/users/:wallet/balance', requireAuth, requireAdmin, async (req, res) => {
   const requestId = crypto.randomUUID();
@@ -436,8 +436,8 @@ router.put('/system-settings/:key', requireAuth, requireSuperAdmin, async (req, 
  *         description: User banned successfully
  */
 // Ban a user (ADMIN ONLY)
-//   example: POST https://degenduel.me/api/admin/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/ban
-//      headers: { "Authorization": "Bearer <JWT>" }
+//   example: POST https://degenduel.me/api/admin/users/{wallet}/ban
+//      headers: { "Cookie": "session=<jwt>" }
 //      body: { "reason": "Spamming" }
 router.post('/users/:wallet/ban', requireAuth, requireAdmin, async (req, res) => {
   try {

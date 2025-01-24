@@ -181,7 +181,8 @@ router.post('/:contestId', requireAuth, async (req, res) => {
  *         description: Server error
  */
 // Get user's trades for a specific contest (NO AUTH REQUIRED)
-//      example: GET https://degenduel.me/api/trades/1?wallet=BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+//      example: GET https://degenduel.me/api/trades/{contest_id}
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:contestId', async (req, res) => {
   const { contestId } = req.params;
   const { wallet } = req.query;

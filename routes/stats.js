@@ -57,7 +57,8 @@ const router = express.Router();
  *         description: Server error
  */
 // Get user's overall statistics (NO AUTH REQUIRED)
-//      example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+//      example: GET https://degenduel.me/api/stats/{wallet}
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -143,7 +144,8 @@ router.get('/:wallet', async (req, res) => {
  *         description: Server error
  */
 // Get user's contest history (NO AUTH REQUIRED)
-//      example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/history?limit=10&offset=0
+//      example: GET https://degenduel.me/api/stats/{wallet}/history
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet/history', async (req, res) => {
 try {
       const result = await pool.query(`
@@ -207,7 +209,8 @@ try {
  *         description: Server error
  */
 // Get user's achievements (NO AUTH REQUIRED)
-//      example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/achievements
+//      example: GET https://degenduel.me/api/stats/{wallet}/achievements
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet/achievements', async (req, res) => {
     try {
       const result = await pool.query(`

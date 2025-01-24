@@ -63,7 +63,8 @@ const ADMIN_WALLET_ADDRESSES = process.env.ADMIN_WALLET_ADDRESSES; // TODO: Move
  *                   example: "User not found"
  */
 // Get a user's point balance by wallet address (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+//   example: GET https://degenduel.me/api/balance/{wallet}
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet', async (req, res) => {
   const { wallet } = req.params;
 
@@ -174,8 +175,8 @@ router.get('/:wallet', async (req, res) => {
  *         description: Not authorized
  */
 // Increment/decrement a user's point balance by wallet address (SUPERADMIN ONLY)
-//   example: POST https://degenduel.me/api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance
-//      headers: { "Authorization": "Bearer <JWT>" }
+//   example: POST https://degenduel.me/api/balance/{wallet}/balance
+//      headers: { "Cookie": "session=<jwt>" }
 //      body: { "amount": 100 }
 router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res) => {
   const { wallet } = req.params;
@@ -364,7 +365,7 @@ router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res)
  */
 // Query superadmin users by wallet address (SUPERADMIN ONLY)
 //   example: GET https://degenduel.me/api/daddy
-//      headers: { "Authorization": "Bearer <JWT>" }  
+//      headers: { "Cookie": "session=<jwt>" }  
 router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
   console.log('>>>query received>>> | by wallet address:', SUPERADMIN_WALLET_ADDRESS);
   
@@ -403,7 +404,7 @@ router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
  */
 // Sample endpoint to demonstrate Swagger documentation (ADMIN ONLY)
 //   example: GET https://degenduel.me/api/daddy/mommy
-//      headers: { "Authorization": "Bearer <JWT>" }
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/mommy', requireAuth, requireAdmin, (req, res) => {
   res.send('This is /api/daddy/mommy');
 });

@@ -151,7 +151,8 @@ const prisma = new PrismaClient();
  *                               $ref: '#/components/schemas/TokenBucket'
  */
 // Get all tokens (with optional filters)
-//   example: GET https://degenduel.me/api/tokens?active=true&bucket=1&search=ETH
+//   example: GET https://degenduel.me/api/tokens
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/', async (req, res) => {
   try {
     const { active, bucket, search } = req.query;
@@ -231,7 +232,8 @@ router.get('/', async (req, res) => {
  *         $ref: '#/components/responses/TokenNotFound'
  */
 // Get token by ID
-//   example: GET https://degenduel.me/api/tokens/1
+//   example: GET https://degenduel.me/api/tokens/{token_id}
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:id', async (req, res) => {
   try {
     const token = await prisma.tokens.findUnique({
@@ -372,6 +374,20 @@ router.get('/prices/:tokenId', async (req, res) => {
     logApi.error('Failed to fetch token price:', error);
     res.status(500).json({ error: 'Failed to fetch token price' });
   }
+});
+
+//   example: POST https://degenduel.me/api/tokens
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "symbol": "BTC", "name": "Bitcoin", "bucket_id": 1 }
+router.post('/', async (req, res) => {
+  // Implementation of POST request
+});
+
+//   example: PUT https://degenduel.me/api/tokens/{token_id}
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "symbol": "BTC", "name": "Bitcoin", "bucket_id": 1 }
+router.put('/:id', async (req, res) => {
+  // Implementation of PUT request
 });
 
 export default router;

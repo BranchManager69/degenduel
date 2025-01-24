@@ -286,7 +286,8 @@ router.get('/platform', requireAuth, requireSuperAdmin, async (req, res) => {
  *                         format: date-time
  */
 // Get stats of a wallet (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/stats/wallet/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+//   example: GET https://degenduel.me/api/stats/{wallet}
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/wallet/:address', async (req, res) => {
   const log = logApi.withRequest(req);
   const { address } = req.params;
@@ -397,5 +398,10 @@ router.get('/wallet/:address', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch wallet statistics' });
   }
 });
+
+//   example: GET https://degenduel.me/api/stats/{wallet}/history
+//      headers: { "Cookie": "session=<jwt>" }
+//   example: GET https://degenduel.me/api/stats/{wallet}/achievements
+//      headers: { "Cookie": "session=<jwt>" }
 
 export default router; 

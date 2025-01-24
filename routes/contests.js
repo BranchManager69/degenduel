@@ -1,4 +1,3 @@
-
 import pkg from '@prisma/client';
 import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
@@ -685,9 +684,8 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
  *         $ref: '#/components/responses/ContestNotFound'
  */
 // Join a wallet into a contest (AUTHENTICATED)
-//   example: POST https://degenduel.me/api/contests/1/join
-//      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
-//      headers: { "Authorization": "Bearer <JWT>" }
+//   example: POST https://degenduel.me/api/contests/{contest_id}/join
+//      headers: { "Cookie": "session=<jwt>" }
 router.post('/:id/join', requireAuth, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -1445,9 +1443,9 @@ router.get('/:id/leaderboard', async (req, res) => {
  *         $ref: '#/components/responses/ContestNotFound'
  */
 // Submit or update contest portfolio (AUTHENTICATED)
-//   example: POST https://degenduel.me/api/contests/1/portfolio
-//      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "tokens": [{"token_id": 1, "weight": 50}, {"token_id": 2, "weight": 50}] }
-//      headers: { "Authorization": "Bearer <JWT>" }
+//   example: POST https://degenduel.me/api/contests/{contest_id}/portfolio
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "tokens": [{"token_id": 1, "weight": 50}, {"token_id": 2, "weight": 50}] }
 router.post('/:id/portfolio', requireAuth, async (req, res) => {
   const { wallet_address, tokens } = req.body;
   const contestId = parseInt(req.params.id);
@@ -1545,8 +1543,8 @@ router.post('/:id/portfolio', requireAuth, async (req, res) => {
  *                   example: "Portfolio not found"
  */
 // Get user's contest portfolio (AUTHENTICATED)
-//   example: GET https://degenduel.me/api/contests/1/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
-//      headers: { "Authorization": "Bearer <JWT>" }
+//   example: GET https://degenduel.me/api/contests/{contest_id}/portfolio
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:id/portfolio/:wallet', requireAuth, async (req, res) => {
   try {
     const portfolio = await prisma.contest_portfolios.findMany({
