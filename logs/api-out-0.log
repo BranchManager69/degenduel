@@ -107,3 +107,67 @@
 2025-01-24 06:16:56 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:16:56.159Z"}
 2025-01-24 06:16:56 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:16:56.160Z"}
 2025-01-24 06:17:05 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"user","timestamp":"2025-01-24T11:17:05.206Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.951Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.952Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.954Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.955Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.956Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.957Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.959Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.959Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.959Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.962Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.964Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.966Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.967Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.968Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.972Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.972Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:46.973Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.974Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.975Z"}
+2025-01-24 06:23:46 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:46.975Z"}
+2025-01-24 06:23:52 -05:00: [32minfo[39m: Successfully fetched users {"path":"GET /api/users","query":{},"timestamp":"2025-01-24T11:23:52.014Z","totalUsers":4,"userCount":4}
+2025-01-24 06:23:59 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:23:59.593Z"}
+2025-01-24 06:23:59 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:23:59.594Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.790Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.792Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.795Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.797Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.799Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.802Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.803Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.805Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.806Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.806Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.808Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.808Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.809Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.812Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.812Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.812Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.814Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.816Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:24:19.818Z"}
+2025-01-24 06:24:19 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:24:19.820Z"}
+2025-01-24 06:24:26 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"user","timestamp":"2025-01-24T11:24:26.368Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.883Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.886Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.887Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.889Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.890Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.890Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.893Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.894Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.894Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.894Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.899Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.899Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.901Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.902Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.902Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-24T11:26:33.903Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.903Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.904Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.904Z"}
+2025-01-24 06:26:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user) {"timestamp":"2025-01-24T11:26:33.906Z"}
