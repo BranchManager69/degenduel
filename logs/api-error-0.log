@@ -1,16 +1,46 @@
 You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
-Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
-    at ServerResponse.setHeader (node:_http_outgoing:699:11)
-    at ServerResponse.header (/home/websites/degenduel/node_modules/express/lib/response.js:794:10)
-    at ServerResponse.send (/home/websites/degenduel/node_modules/express/lib/response.js:174:12)
-    at ServerResponse.json (/home/websites/degenduel/node_modules/express/lib/response.js:278:15)
-    at file:///home/websites/degenduel/routes/auth.js:146:21
-    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
-    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15
-2025-01-23 00:44:17 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/websites/degenduel/routes/nonce-store.js' imported from /home/websites/degenduel/routes/auth.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:688:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:612:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:595:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:248:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:136:49)
+You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+file:///home/websites/degenduel/index.js:74
+import nonceRoutes from './routes/nonce-store.js';
+       ^^^^^^^^^^^
+SyntaxError: The requested module './routes/nonce-store.js' does not provide an export named 'default'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:181:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:264:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-24 04:00:51 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-24 04:17:03 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-24 04:18:27 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-24 05:08:04 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
     at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
     at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
     at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
@@ -19,18 +49,11 @@ Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the cli
     at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
 You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
-Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
-    at ServerResponse.setHeader (node:_http_outgoing:699:11)
-    at ServerResponse.header (/home/websites/degenduel/node_modules/express/lib/response.js:794:10)
-    at ServerResponse.send (/home/websites/degenduel/node_modules/express/lib/response.js:174:12)
-    at ServerResponse.json (/home/websites/degenduel/node_modules/express/lib/response.js:278:15)
-    at file:///home/websites/degenduel/routes/auth.js:146:21
-    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
-    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15
-2025-01-23 00:44:43 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+ReferenceError: requireAuth is not defined
+    at file:///home/websites/degenduel/routes/contests.js:414:18
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-24 05:37:30 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
     at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
     at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
     at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
@@ -38,19 +61,7 @@ Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the cli
     at file:///home/websites/degenduel/config/swagger.js:46:17
     at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
-You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
-Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
-    at ServerResponse.setHeader (node:_http_outgoing:699:11)
-    at ServerResponse.header (/home/websites/degenduel/node_modules/express/lib/response.js:794:10)
-    at ServerResponse.send (/home/websites/degenduel/node_modules/express/lib/response.js:174:12)
-    at ServerResponse.json (/home/websites/degenduel/node_modules/express/lib/response.js:278:15)
-    at file:///home/websites/degenduel/routes/auth.js:146:21
-    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)
-    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15
-2025-01-23 00:44:55 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+2025-01-24 06:01:26 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
     at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
     at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
     at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
@@ -58,3 +69,15 @@ Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the cli
     at file:///home/websites/degenduel/config/swagger.js:46:17
     at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-24 06:01:26 -05:00: (node:933174) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+2025-01-24 06:16:47 -05:00: Failed to initialize Swagger: TypeError: Cannot read properties of null (reading 'indexOf')
+    at Object.parse (/home/websites/degenduel/node_modules/yaml/dist/parse-3997f544.js:1874:11)
+    at Object.parseDocument (/home/websites/degenduel/node_modules/yaml/dist/index.js:41:24)
+    at build (/home/websites/degenduel/node_modules/swagger-jsdoc/src/specification.js:229:45)
+    at module.exports (/home/websites/degenduel/node_modules/swagger-jsdoc/src/lib.js:32:10)
+    at file:///home/websites/degenduel/config/swagger.js:46:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:552:26)
+2025-01-24 06:16:47 -05:00: (node:934415) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)

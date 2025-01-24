@@ -4,6 +4,7 @@ import express from 'express';
 import fs from 'fs/promises';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
+import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import logApi from '../utils/logger-suite/logger.js';
 
 const LOG_FILES = [
@@ -13,10 +14,13 @@ const LOG_FILES = [
   '/home/branchmanager/websites/degenduel/combined.log',
 ];
 
-// Middleware to verify Superadmin token
+// Middleware to verify Superadmin token (SUPERADMIN ONLY)
+//      headers: { "Authorization": "Bearer <JWT>" }
 const verifySuperadminToken = (req, res, next) => {
+    // Get the token from the request headers
     const token = req.headers['x-superadmin-token'];
-    
+
+    // If no token is provided, return an error
     if (!token) {
         logApi.warn('Superadmin access attempted without token');
         return res.status(401).json({
@@ -27,9 +31,9 @@ const verifySuperadminToken = (req, res, next) => {
 
     try {
         // Use the same secret that was used to generate the token
-        ////const verified = jwt.verify(token, config.jwt.secret);
         const verified_superadmin = jwt.verify(token, config.jwt.superadmin_secret);
         
+        // If the token is not a superadmin token, return an error
         if (!verified_superadmin.isSuperadmin) {
             logApi.warn('Non-superadmin token used for superadmin access');
             return res.status(403).json({
@@ -53,8 +57,9 @@ const verifySuperadminToken = (req, res, next) => {
 // Router
 const router = express.Router();
 
-// Generate superadmin token endpoint
-router.post('/generate-superadmin-token', async (req, res) => {
+// Generate superadmin token endpoint (SUPERADMIN ONLY)
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.post('/generate-superadmin-token', requireAuth, requireSuperAdmin, async (req, res) => {
     const { secretKey } = req.body;
     
     // Use a simple check for now
@@ -84,8 +89,9 @@ router.post('/generate-superadmin-token', async (req, res) => {
     }
 });
 
-// Novelty generate-tree endpoint
-router.post('/generate-tree', verifySuperadminToken, (req, res) => {
+// Novelty generate-tree endpoint (SUPERADMIN ONLY)
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.post('/generate-tree', requireAuth, requireSuperAdmin, (req, res) => {
     exec('/home/websites/degenduel/scripts/tree.sh', (error, stdout, stderr) => {
         if (error) {
             return res.status(500).json({ error: error.message });
@@ -98,8 +104,9 @@ router.post('/generate-tree', verifySuperadminToken, (req, res) => {
     });
 });
 
-// New logs endpoint
-router.get('/logs', verifySuperadminToken, async (req, res) => {
+// New logs endpoint (SUPERADMIN ONLY)
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.get('/logs', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
         const filePath = req.query.file || '';
         

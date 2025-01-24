@@ -1,0 +1,29 @@
+// src/routes/nonce-store.js (simple example)
+const nonces = new Map(); 
+// Key: wallet address (string), Value: { nonce: string, expiresAt: number }
+
+// TTL for nonces, e.g. 5 minutes
+const NONCE_EXPIRY_MS = 5 * 60 * 1000;
+
+export const generateNonce = (wallet) => {
+  const nonce = crypto.randomBytes(16).toString('hex');
+  nonces.set(wallet, {
+    nonce,
+    expiresAt: Date.now() + NONCE_EXPIRY_MS,
+  });
+  return nonce;
+};
+
+export const getNonce = (wallet) => {
+  const record = nonces.get(wallet);
+  if (!record) return null;
+  if (Date.now() > record.expiresAt) {
+    nonces.delete(wallet);
+    return null;
+  }
+  return record.nonce;
+};
+
+export const clearNonce = (wallet) => {
+  nonces.delete(wallet);
+};

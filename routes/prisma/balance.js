@@ -2,6 +2,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import { Router } from 'express';
+import { requireAdmin, requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js'; // New DD Logging System
 dotenv.config()
 
@@ -61,7 +62,7 @@ const ADMIN_WALLET_ADDRESSES = process.env.ADMIN_WALLET_ADDRESSES; // TODO: Move
  *                   type: string
  *                   example: "User not found"
  */
-// Get a user's point balance by wallet address
+// Get a user's point balance by wallet address (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:wallet', async (req, res) => {
   const { wallet } = req.params;
@@ -172,11 +173,11 @@ router.get('/:wallet', async (req, res) => {
  *       403:
  *         description: Not authorized
  */
-// (NOT WORKING??)
-// Increment/decrement a user's point balance by wallet address (Admin only)
+// Increment/decrement a user's point balance by wallet address (SUPERADMIN ONLY)
 //   example: POST https://degenduel.me/api/balance/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance
+//      headers: { "Authorization": "Bearer <JWT>" }
 //      body: { "amount": 100 }
-router.post('/:wallet/balance', async (req, res) => {
+router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res) => {
   const { wallet } = req.params;
   const { amount } = req.body;
   const adminAddress = req.headers['x-admin-address'];
@@ -317,9 +318,7 @@ router.post('/:wallet/balance', async (req, res) => {
   }
 });
 
-
 // -----------------------------------------------------------
-
 
 /**
  * @swagger
@@ -363,9 +362,10 @@ router.post('/:wallet/balance', async (req, res) => {
  *                   description: Error message
  *                   example: "An error occurred while querying the database."
  */
-
-/*
-router.get('/', async (req, res) => {
+// Query superadmin users by wallet address (SUPERADMIN ONLY)
+//   example: GET https://degenduel.me/api/daddy
+//      headers: { "Authorization": "Bearer <JWT>" }  
+router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
   console.log('>>>query received>>> | by wallet address:', SUPERADMIN_WALLET_ADDRESS);
   
   try {
@@ -383,8 +383,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'An error occurred while querying the database.' });
   }
 });
-*/
-
 
 /**
  * @swagger
@@ -403,11 +401,11 @@ router.get('/', async (req, res) => {
  *               type: string
  *               example: "This is /api/daddy/mommy"
  */
-
-/*
-router.get('/mommy', (req, res) => {
+// Sample endpoint to demonstrate Swagger documentation (ADMIN ONLY)
+//   example: GET https://degenduel.me/api/daddy/mommy
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.get('/mommy', requireAuth, requireAdmin, (req, res) => {
   res.send('This is /api/daddy/mommy');
 });
-*/
 
 export default router;

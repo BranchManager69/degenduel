@@ -7180,3 +7180,23 @@
   message: '🚫 Wallet verification failed',
   timestamp: '2025-01-23T05:44:55.333Z'
 }
+{
+  error: {
+    message: 'Cannot set headers after they are sent to the client',
+    stack: 'Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client\n' +
+      '    at ServerResponse.setHeader (node:_http_outgoing:699:11)\n' +
+      '    at ServerResponse.header (/home/websites/degenduel/node_modules/express/lib/response.js:794:10)\n' +
+      '    at ServerResponse.send (/home/websites/degenduel/node_modules/express/lib/response.js:174:12)\n' +
+      '    at ServerResponse.json (/home/websites/degenduel/node_modules/express/lib/response.js:278:15)\n' +
+      '    at file:///home/websites/degenduel/routes/auth.js:121:9\n' +
+      '    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)\n' +
+      '    at next (/home/websites/degenduel/node_modules/express/lib/router/route.js:149:13)\n' +
+      '    at Route.dispatch (/home/websites/degenduel/node_modules/express/lib/router/route.js:119:3)\n' +
+      '    at Layer.handle [as handle_request] (/home/websites/degenduel/node_modules/express/lib/router/layer.js:95:5)\n' +
+      '    at /home/websites/degenduel/node_modules/express/lib/router/index.js:284:15'
+  },
+  requestId: undefined,
+  level: 'error',
+  message: '🚫 Wallet verification failed',
+  timestamp: '2025-01-23T05:46:38.231Z'
+}

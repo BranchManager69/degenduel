@@ -62,7 +62,6 @@ router.get('/tokens', async (req, res) => {
   }
 });
 
-
 /**
  * @swagger
  * /api/dd-serv/tokens/list:
@@ -87,6 +86,8 @@ router.get('/tokens', async (req, res) => {
  *               items:
  *                 type: object
  */
+// Get (official DD-Serv?*) list of tokens with configurable detail level (NO AUTH REQUIRED)
+//   example: GET https://degenduel.me/api/dd-serv/tokens/list?detail=simple
 router.get('/tokens/list', async (req, res) => {
   try {
     const { detail = 'simple' } = req.query;
@@ -176,7 +177,7 @@ router.get('/tokens/list', async (req, res) => {
  *         required: true
  *         description: The address of the token
  */
-// Get OFFICIAL DD-Serv price history of a token
+// Get OFFICIAL DD-Serv price history of a token (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/dd-serv/tokens/3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump/price-history
 router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
   const { tokenAddress } = req.params;
@@ -216,6 +217,9 @@ router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
  *             schema:
  *               type: object
  */
+// Get (official DD-Serv?*) price history for multiple tokens (NO AUTH REQUIRED)
+//   example: POST https://degenduel.me/api/dd-serv/tokens/bulk-price-history
+//   body: { "addresses": ["3c5mzP5u2QJHnc3GYifvjAYy7sxXq32fu3bwiUAepump", "sol11111111111111111111111111111111111111112"] }
 router.post('/tokens/bulk-price-history', async (req, res) => {
   const { addresses } = req.body;
   

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import express from 'express';
 import { z } from 'zod';
+import { requireAuth } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
@@ -37,7 +38,7 @@ const createUserSchema = z.object({
  *       200:
  *         description: List of users
  */
-// Get all users
+// Get all users (NO AUTH REQUIRED*)
 //   example: GET https://degenduel.me/api/users
 router.get('/', async (req, res) => {
   const logContext = { 
@@ -152,7 +153,7 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: User not found
  */
-// Get user profile by wallet address
+// Get user profile by wallet address (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:wallet', async (req, res) => {
   const logContext = {
@@ -265,7 +266,7 @@ router.get('/:wallet', async (req, res) => {
  *                   type: string
  *                   example: "Wallet address already exists"
  */
-// Create new user
+// Create new user (NO AUTH REQUIRED)
 //   example: POST https://degenduel.me/api/users
 //   body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "nickname": "xXx420Sn1perx" }
 router.post('/', async (req, res) => {
@@ -383,9 +384,10 @@ router.post('/', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
  */
-// Update user profile by wallet address
+// Update user profile by wallet address (AUTHENTICATED)
+//   headers: { "Authorization": "Bearer <JWT>" }
 //   example: PUT https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
-router.put('/:wallet', async (req, res) => {
+router.put('/:wallet', requireAuth, async (req, res) => {
   try {
     const { nickname, settings } = req.body;
 
@@ -430,7 +432,7 @@ router.put('/:wallet', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
  */
-// Get user achievements by wallet address
+// Get user achievements by wallet address (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/achievements
 router.get('/:wallet/achievements', async (req, res) => {
   try {
@@ -492,7 +494,7 @@ router.get('/:wallet/achievements', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
  */
-// Get detailed user statistics by wallet address
+// Get detailed user statistics by wallet address (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/users/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/stats
 router.get('/:wallet/stats', async (req, res) => {
   try {

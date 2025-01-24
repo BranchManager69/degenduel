@@ -1,6 +1,7 @@
-// /routes/contests.js
+
 import pkg from '@prisma/client';
 import express from 'express';
+import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 const { Prisma, PrismaClient } = pkg;
 
@@ -175,7 +176,7 @@ const { PrismaClientKnownRequestError } = pkg;
  *                 error:
  *                   type: string
  */
-// Get all contests with optional filters
+// Get all contests with optional filters (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/contests?status=active&limit=10&offset=0
 router.get('/', async (req, res) => {
   try {
@@ -264,7 +265,7 @@ router.get('/', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// Get contest by ID with full details
+// Get contest by ID with full details (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/contests/1
 router.get('/:id', async (req, res) => {
   try {
@@ -407,10 +408,11 @@ router.get('/:id', async (req, res) => {
  *                 message:
  *                   type: string
  */
-// Create a new contest
+// Create a new contest (ADMIN ONLY)
 //   example: POST https://degenduel.me/api/contests
-//      body: { "name": "Weekly Trading Contest", "contest_code": "WTC-2024-01", "entry_fee": "1000000", "start_time": "2025-01-01T00:00:00Z", "end_time": "2025-01-07T23:59:59Z", "min_participants": 10, "max_participants": 100, "allowed_buckets": [1, 2, 3] }
-router.post('/', async (req, res) => {
+//     body: { "name": "Weekly Trading Contest", "contest_code": "WTC-2024-01", "entry_fee": "1000000", "start_time": "2025-01-01T00:00:00Z", "end_time": "2025-01-07T23:59:59Z", "min_participants": 10, "max_participants": 100, "allowed_buckets": [1, 2, 3] }
+//     headers: { "Authorization": "Bearer <JWT>" }
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
 
@@ -682,10 +684,11 @@ router.post('/', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// Join a wallet into acontest
+// Join a wallet into a contest (AUTHENTICATED)
 //   example: POST https://degenduel.me/api/contests/1/join
 //      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
-router.post('/:id/join', async (req, res) => {
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.post('/:id/join', requireAuth, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
   const { wallet_address } = req.body;
@@ -917,10 +920,11 @@ router.post('/:id/join', async (req, res) => {
  *       200:
  *         description: Contest updated successfully
  */
-// Update the details of a contest
+// Update the details of a contest (SUPERADMIN ONLY)
 //   example: PUT https://degenduel.me/api/contests/10
 //      body: { "name": "World Trade Center Rememberance Contest", "contest_code": "WTC-2001-911", "entry_fee": "0.911", "start_time": "2025-02-01T00:00:00Z", "end_time": "2025-02-07T23:59:59Z", "min_participants": 3, "max_participants": 100, "allowed_buckets": [1, 2, 3, 4, 5, 6, 7, 8, 9] }
-router.put('/:id', async (req, res) => {
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
   const requestId = crypto.randomUUID();
   const contestId = parseInt(req.params.id);
 
@@ -1126,10 +1130,11 @@ router.put('/:id', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// "Start" a contest (<< doesn't actually start it; starts are timed. this just sets the status to active).
+// "Start" a contest (<< doesn't actually start it; starts are timed. this just sets the status to active). (ADMIN ONLY)
 //   example: POST https://degenduel.me/api/contests/1/start
 //      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
-router.post('/:id/start', async (req, res) => {
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.post('/:id/start', requireAuth, requireAdmin, async (req, res) => {
   try {
     const contest = await prisma.contests.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -1213,10 +1218,11 @@ router.post('/:id/start', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// End a contest and calculate winners  (<< doesn't actually end it; ends are timed. this just sets the status to completed).
+// End a contest and calculate winners  (<< doesn't actually end it; ends are timed. this just sets the status to completed). (ADMIN ONLY)
 //   example: POST https://degenduel.me/api/contests/1/end
 //      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
-router.post('/:id/end', async (req, res) => {
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
   try {
     const result = await prisma.$transaction(async (prisma) => {
       const contest = await prisma.contests.findUnique({
@@ -1316,7 +1322,6 @@ router.post('/:id/end', async (req, res) => {
  */
 /* 
  *  Get a contest's "leaderboard"(*)
-//   example: GET https://degenduel.me/api/contests/1/leaderboard
  *    This is a misnomer. 
  *      It's not actually the contest's leaderboard.
  *      It's just the list of participants sorted by the User's 'balance' 
@@ -1342,11 +1347,13 @@ router.post('/:id/end', async (req, res) => {
  * 
  * 
  * 
+ *   ^ ALL OF THE ABOVE IS ANCIENT CODE; LEADERBOARD IS PROBABLY BROKEN!
  * 
  * 
  * 
  * 
  */
+// Get a contest's "leaderboard"(*) (NO AUTH REQUIRED)
 router.get('/:id/leaderboard', async (req, res) => {
   try {
     const leaderboard = await prisma.contest_participants.findMany({
@@ -1437,10 +1444,11 @@ router.get('/:id/leaderboard', async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// Submit or update contest portfolio
+// Submit or update contest portfolio (AUTHENTICATED)
 //   example: POST https://degenduel.me/api/contests/1/portfolio
 //      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp", "tokens": [{"token_id": 1, "weight": 50}, {"token_id": 2, "weight": 50}] }
-router.post('/:id/portfolio', async (req, res) => {
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.post('/:id/portfolio', requireAuth, async (req, res) => {
   const { wallet_address, tokens } = req.body;
   const contestId = parseInt(req.params.id);
 
@@ -1536,9 +1544,10 @@ router.post('/:id/portfolio', async (req, res) => {
  *                   type: string
  *                   example: "Portfolio not found"
  */
-// Get user's contest portfolio
+// Get user's contest portfolio (AUTHENTICATED)
 //   example: GET https://degenduel.me/api/contests/1/portfolio/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
-router.get('/:id/portfolio/:wallet', async (req, res) => {
+//      headers: { "Authorization": "Bearer <JWT>" }
+router.get('/:id/portfolio/:wallet', requireAuth, async (req, res) => {
   try {
     const portfolio = await prisma.contest_portfolios.findMany({
       where: {

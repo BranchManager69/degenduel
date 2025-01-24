@@ -1,6 +1,7 @@
 import express from 'express';
 import { pool } from '../config/pg-database.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+//import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -55,8 +56,8 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-// Get user's overall statistics
-//   example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
+// Get user's overall statistics (NO AUTH REQUIRED)
+//      example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/:wallet', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -141,8 +142,8 @@ router.get('/:wallet', async (req, res) => {
  *       500:
  *         description: Server error
  */
-// Get user's contest history
-//   example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/history?limit=10&offset=0
+// Get user's contest history (NO AUTH REQUIRED)
+//      example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/history?limit=10&offset=0
 router.get('/:wallet/history', async (req, res) => {
 try {
       const result = await pool.query(`
@@ -205,8 +206,8 @@ try {
  *       500:
  *         description: Server error
  */
-// Get user's achievements
-//   example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/achievements
+// Get user's achievements (NO AUTH REQUIRED)
+//      example: GET https://degenduel.me/api/stats/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/achievements
 router.get('/:wallet/achievements', async (req, res) => {
     try {
       const result = await pool.query(`
