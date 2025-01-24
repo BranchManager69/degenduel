@@ -76107,3 +76107,84 @@
   level: 'info',
   timestamp: '2025-01-24T12:13:13.495Z'
 }
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:31.764Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'user',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-24T12:26:39.607Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-24T12:26:43.432Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.694Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.700Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.705Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.708Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.711Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.717Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.721Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.724Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.729Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.732Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.736Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=user)',
+  level: 'info',
+  timestamp: '2025-01-24T12:26:46.739Z'
+}
