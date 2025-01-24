@@ -94,7 +94,8 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
  *                                   type: string
  */
 // Get all token buckets (NO AUTH REQUIRED)
-//      example: GET https://degenduel.me/api/token-buckets/buckets
+//      example: GET https://degenduel.me/api/buckets
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/buckets', async (req, res) => {
     try {
       const buckets = await prisma.token_buckets.findMany({
@@ -159,7 +160,8 @@ router.get('/buckets', async (req, res) => {
  *         $ref: '#/components/responses/TokenNotFound'
  */
 // Get token bucket by ID (NO AUTH REQUIRED)
-//      example: GET https://degenduel.me/api/token-buckets/1
+//      example: GET https://degenduel.me/api/buckets/{bucket_id}
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/buckets/:id', async (req, res) => {
 try {
     const bucket = await prisma.token_buckets.findUnique({
@@ -222,9 +224,9 @@ try {
  *         description: Failed to add tokens to bucket
  */
 // Add tokens to a bucket (SUPERADMIN ONLY)
-//      example: POST https://degenduel.me/api/token-buckets/1/tokens
-//      headers: { "Authorization": "Bearer <JWT>" }
-//      body: { "tokenIds": [1, 2, 3, 4, 5, 6, 7, 8, 9] }
+//      example: POST https://degenduel.me/api/buckets
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "name": "Top 10 Market Cap", "description": "Top 10 cryptocurrencies by market capitalization" }
 router.post('/:bucketId/tokens', async (req, res) => {
     const { bucketId } = req.params;
     const { tokenIds } = req.body;
@@ -280,7 +282,7 @@ router.post('/:bucketId/tokens', async (req, res) => {
  */
 // Remove a token from a bucket (SUPERADMIN ONLY)
 //      headers: { "Authorization": "Bearer <JWT>" }
-//      example: DELETE https://degenduel.me/api/token-buckets/1/tokens/1
+//      example: DELETE https://degenduel.me/api/buckets/1/tokens/1
 router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
     try {
         const { bucketId, tokenId } = req.params;
@@ -311,7 +313,8 @@ router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
  *         description: Failed to fetch token buckets
  */
 // Get all token buckets with their tokens (NO AUTH REQUIRED)
-//      example: GET https://degenduel.me/api/token-buckets
+//      example: GET https://degenduel.me/api/buckets
+//      headers: { "Cookie": "session=<jwt>" }
 router.get('/', async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -366,8 +369,9 @@ router.get('/', async (_req, res) => {
  *         description: Server error
  */
 // Update token bucket details (SUPERADMIN ONLY)  
-//      headers: { "Authorization": "Bearer <JWT>" }
-//      example: PUT https://degenduel.me/api/token-buckets/1
+//      example: PUT https://degenduel.me/api/buckets/{bucket_id}
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "name": "Top 10 Market Cap", "description": "Top 10 cryptocurrencies by market capitalization" }
 router.patch('/:bucketId', requireAuth, requireSuperAdmin, async (req, res) => {
   const { bucketId } = req.params;
   const { name, description } = req.body;
@@ -415,7 +419,7 @@ router.patch('/:bucketId', requireAuth, requireSuperAdmin, async (req, res) => {
  */
 // Delete token bucket (SUPERADMIN ONLY)
 //      headers: { "Authorization": "Bearer <JWT>" }
-//      example: DELETE https://degenduel.me/api/token-buckets/1
+//      example: DELETE https://degenduel.me/api/buckets/1
 router.delete('/:bucketId', requireAuth, requireSuperAdmin, async (req, res) => {
     const { bucketId } = req.params;
 
