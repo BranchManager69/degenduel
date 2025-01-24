@@ -1,7 +1,7 @@
 // config/middleware.js
 import cors from 'cors';
 import express from 'express';
-import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
+import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from './config.js';
 
@@ -72,9 +72,19 @@ export function configureMiddleware(app) {
   });
 
   // Protect superadmin-only client routes
-  app.use(['/amm-sim', '/api-playground'], requireAuth, requireSuperAdmin, (req, res, next) => {
+  app.use(['/amm-sim', '/api-playground', '/superadmin-dashboard'], requireAuth, requireSuperAdmin, (req, res, next) => {
     // For client-side routes, we want to serve the main index.html
     // This allows the client-side router to handle the route
+    next();
+  });
+
+  // Protect admin-only client routes
+  app.use(['/admin-dashboard'], requireAuth, requireAdmin, (req, res, next) => {
+    next();
+  });
+
+  // Protect authenticated-only client routes
+  app.use(['/profile'], requireAuth, (req, res, next) => {
     next();
   });
 
