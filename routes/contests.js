@@ -122,6 +122,8 @@ const { PrismaClientKnownRequestError } = pkg;
  *   get:
  *     summary: Get all contests with optional filters
  *     tags: [Contests]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -236,6 +238,8 @@ router.get('/', async (req, res) => {
  *   get:
  *     summary: Get contest by ID with full details
  *     tags: [Contests]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -249,20 +253,11 @@ router.get('/', async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Contest'
- *                 - type: object
- *                   properties:
- *                     contest_participants:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/ContestParticipant'
- *                     contest_portfolios:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Portfolio'
+ *               $ref: '#/components/schemas/Contest'
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
+ *       500:
+ *         description: Server error
  */
 // Get contest by ID with full details (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/contests/1
