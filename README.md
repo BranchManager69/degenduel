@@ -253,6 +253,168 @@ npm run restart   # Restart services
    - Session management
    - Connection pooling
 
+## 🔐 Authentication System
+
+### Overview
+DegenDuel implements a secure, role-based authentication system combining Phantom Wallet verification with session-based authentication:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Phantom
+    participant API
+    participant Database
+
+    User->>Frontend: Connect Wallet
+    Frontend->>API: Request Challenge
+    API->>Database: Generate Nonce
+    API->>Frontend: Return Nonce
+    Frontend->>Phantom: Sign Message
+    Phantom->>Frontend: Return Signature
+    Frontend->>API: Verify Wallet
+    API->>Database: Validate & Store User
+    API->>Frontend: Set Session Cookie
+```
+
+### Authentication Flow
+
+1. **Challenge Request**
+   ```http
+   GET /api/auth/challenge?wallet=<wallet_address>
+   ```
+   - Generates unique nonce for wallet
+   - Stores nonce in database with expiration
+   - Returns nonce to client
+
+2. **Wallet Verification**
+   ```http
+   POST /api/auth/verify-wallet
+   {
+     "wallet": "address",
+     "signature": [64-byte array],
+     "message": "DegenDuel Authentication\nWallet: <wallet>\nNonce: <nonce>"
+   }
+   ```
+   - Validates nonce existence and expiration
+   - Verifies signature using Solana Web3.js
+   - Creates/updates user in database
+   - Issues JWT session token
+
+3. **Session Management**
+   - HTTP-only cookie named 'session'
+   - Environment-aware configuration:
+     ```javascript
+     // Development
+     {
+       httpOnly: true,
+       sameSite: 'lax',
+       maxAge: 24 * 60 * 60 * 1000  // 24 hours
+     }
+     
+     // Production
+     {
+       httpOnly: true,
+       secure: true,
+       sameSite: 'lax',
+       domain: '.degenduel.me',
+       maxAge: 24 * 60 * 60 * 1000
+     }
+     ```
+
+### Role-Based Access Control
+
+1. **User Roles**
+   - `user`: Basic authenticated user
+   - `admin`: Administrative privileges
+   - `superadmin`: Full system access
+
+2. **Protected Routes**
+   ```javascript
+   // User Authentication
+   app.use('/api/profile', requireAuth);
+   
+   // Admin Access
+   app.use('/api/admin', requireAuth, requireAdmin);
+   
+   // Superadmin Access
+   app.use('/api/superadmin', requireAuth, requireSuperAdmin);
+   ```
+
+3. **Middleware Chain**
+   - `requireAuth`: Validates session token
+   - `requireAdmin`: Ensures admin/superadmin role
+   - `requireSuperAdmin`: Ensures superadmin role
+
+### Security Features
+
+1. **Session Security**
+   - JWT with 24-hour expiration
+   - HTTP-only cookies prevent XSS
+   - Secure flag in production
+   - Domain-specific cookies
+
+2. **Wallet Security**
+   - Nonce-based challenge-response
+   - One-time use nonces
+   - Signature verification using nacl
+   - Wallet address validation
+
+3. **Database Security**
+   - Prepared statements prevent SQL injection
+   - Role information stored securely
+   - Last login tracking
+   - Session invalidation on logout
+
+### Environment Detection
+
+The system automatically detects the environment and adjusts security settings:
+
+```javascript
+const environment = origin.includes('localhost') || 
+                   origin.includes('127.0.0.1') ? 
+                   'development' : 'production';
+```
+
+### API Endpoints
+
+1. **Authentication**
+   - `GET /api/auth/challenge`: Request authentication challenge
+   - `POST /api/auth/verify-wallet`: Verify wallet and establish session
+   - `POST /api/auth/disconnect`: Disconnect wallet
+   - `POST /api/auth/logout`: End session
+   - `GET /api/auth/session`: Check session status
+
+2. **Session Validation**
+   ```http
+   GET /api/auth/session
+   Headers: { "Cookie": "session=<jwt>" }
+   ```
+
+### Error Handling
+
+1. **Authentication Errors**
+   - Invalid signature
+   - Expired nonce
+   - Invalid wallet address
+   - Session expiration
+   - Insufficient permissions
+
+2. **Environment-Specific Responses**
+   ```javascript
+   // Development
+   {
+     error: 'Authentication failed',
+     message: error.message,
+     stack: error.stack
+   }
+   
+   // Production
+   {
+     error: 'Authentication failed'
+   }
+   ```
+
 ## 🤝 Contributing
 
 1. Fork the repository
