@@ -183,7 +183,7 @@ router.get('/platform', requireAuth, requireSuperAdmin, async (req, res) => {
                     }
                 },
                 take: 10,
-                include: {
+                select: {
                     tokens: {
                         select: {
                             symbol: true
@@ -231,68 +231,47 @@ router.get('/platform', requireAuth, requireSuperAdmin, async (req, res) => {
 
 /**
  * @swagger
- * /api/stats/wallet/{address}:
+ * /api/stats/{wallet}:
  *   get:
- *     summary: Get detailed statistics for a specific wallet
+ *     summary: Get user's overall statistics
  *     tags: [Statistics]
  *     parameters:
  *       - in: path
- *         name: address
+ *         name: wallet
  *         required: true
  *         schema:
  *           type: string
- *         description: Wallet address to get statistics for
+ *         description: User's wallet address
  *     responses:
  *       200:
- *         description: Wallet statistics
+ *         description: User's statistics
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 contestStats:
- *                   type: object
- *                   properties:
- *                     totalParticipated:
- *                       type: integer
- *                     winRate:
- *                       type: number
- *                     avgRank:
- *                       type: number
- *                     totalEarnings:
- *                       type: string
- *                 tokenPerformance:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       symbol:
- *                         type: string
- *                       avgProfit:
- *                         type: number
- *                       useCount:
- *                         type: integer
- *                 recentActivity:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       type:
- *                         type: string
- *                       amount:
- *                         type: string
- *                       timestamp:
- *                         type: string
- *                         format: date-time
+ *                 wallet_address:
+ *                   type: string
+ *                 nickname:
+ *                   type: string
+ *                 total_contests:
+ *                   type: integer
+ *                   description: Total number of contests participated in
+ *                 total_wins:
+ *                   type: integer
+ *                   description: Total number of contests won
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
  */
-// Get stats of a wallet (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/stats/{wallet}
+// Get user's overall statistics (NO AUTH REQUIRED)
+//      example: GET https://degenduel.me/api/stats/{wallet}
 //      headers: { "Cookie": "session=<jwt>" }
-router.get('/wallet/:address', async (req, res) => {
-  const log = logApi.withRequest(req);
-  const { address } = req.params;
+router.get('/:wallet', async (req, res) => {
+  const { wallet } = req.params;
   
-  log.info('Fetching wallet statistics', { wallet_address: address });
+  logApi.info('Fetching wallet statistics', { wallet_address: wallet });
 
   try {
     const [
@@ -312,35 +291,50 @@ router.get('/wallet/:address', async (req, res) => {
           prize_amount: true
         },
         where: {
-          wallet_address: address
+          wallet_address: wallet
         }
       }),
 
       // Token performance
-      prisma.contest_token_performance.groupBy({
-        by: ['token_id'],
+      prisma.contest_token_performance.findMany({
         where: {
-          wallet_address: address
+          wallet_address: wallet
         },
-        _avg: {
-          profit_loss: true
-        },
-        _count: {
-          token_id: true
-        },
-        include: {
+        select: {
+          token_id: true,
+          profit_loss: true,
           tokens: {
             select: {
               symbol: true
             }
           }
         }
+      }).then(performances => {
+        // Group and aggregate the data
+        const tokenStats = Object.values(performances.reduce((acc, perf) => {
+          const tokenId = perf.token_id;
+          if (!acc[tokenId]) {
+            acc[tokenId] = {
+              symbol: perf.tokens.symbol,
+              avgProfit: 0,
+              useCount: 0,
+              totalProfit: 0
+            };
+          }
+          acc[tokenId].useCount++;
+          acc[tokenId].totalProfit += perf.profit_loss || 0;
+          return acc;
+        }, {})).map(stat => ({
+          ...stat,
+          avgProfit: stat.totalProfit / stat.useCount
+        }));
+        return tokenStats;
       }),
 
       // Recent activity
       prisma.transactions.findMany({
         where: {
-          wallet_address: address
+          wallet_address: wallet
         },
         orderBy: {
           created_at: 'desc'
@@ -352,7 +346,7 @@ router.get('/wallet/:address', async (req, res) => {
     // Calculate win rate
     const totalWins = await prisma.contest_participants.count({
       where: {
-        wallet_address: address,
+        wallet_address: wallet,
         final_rank: 1
       }
     });
@@ -364,11 +358,7 @@ router.get('/wallet/:address', async (req, res) => {
         avgRank: contestStats._avg.final_rank || 0,
         totalEarnings: contestStats._sum.prize_amount?.toString() || "0"
       },
-      tokenPerformance: tokenStats.map(stat => ({
-        symbol: stat.tokens.symbol,
-        avgProfit: stat._avg.profit_loss || 0,
-        useCount: stat._count.token_id
-      })),
+      tokenPerformance: tokenStats,
       recentActivity: recentActivity.map(activity => ({
         type: activity.type,
         amount: activity.amount.toString(),
@@ -376,8 +366,8 @@ router.get('/wallet/:address', async (req, res) => {
       }))
     };
 
-    log.info('Wallet statistics fetched successfully', {
-      wallet_address: address,
+    logApi.info('Wallet statistics fetched successfully', {
+      wallet_address: wallet,
       stats_summary: {
         total_participated: response.contestStats.totalParticipated,
         win_rate: response.contestStats.winRate,
@@ -387,15 +377,221 @@ router.get('/wallet/:address', async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    log.error('Failed to fetch wallet statistics', {
+    logApi.error('Failed to fetch wallet statistics', {
       error: {
         name: error.name,
         message: error.message,
         code: error?.code
       },
-      wallet_address: address
+      wallet_address: wallet
     });
     res.status(500).json({ error: 'Failed to fetch wallet statistics' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/stats/{wallet}/history:
+ *   get:
+ *     summary: Get user's trading history
+ *     tags: [Statistics]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of records to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of records to skip
+ */
+router.get('/:wallet/history', async (req, res) => {
+  const { wallet } = req.params;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = parseInt(req.query.offset) || 0;
+  
+  try {
+    const history = await prisma.contest_participants.findMany({
+      where: {
+        wallet_address: wallet
+      },
+      select: {
+        contests: {
+          select: {
+            id: true,
+            name: true,
+            start_time: true,
+            end_time: true
+          }
+        },
+        initial_balance: true,
+        current_balance: true,
+        final_rank: true
+      },
+      orderBy: {
+        joined_at: 'desc'
+      },
+      skip: offset,
+      take: limit
+    });
+
+    const formattedHistory = history.map(entry => {
+      // Calculate portfolio return
+      const initial = parseFloat(entry.initial_balance?.toString() || "0");
+      const current = parseFloat(entry.current_balance?.toString() || "0");
+      const portfolioReturn = initial > 0 ? ((current - initial) / initial * 100).toFixed(2) : "0.00";
+
+      return {
+        contest_id: entry.contests.id,
+        contest_name: entry.contests.name,
+        start_time: entry.contests.start_time ? new Date(entry.contests.start_time).toISOString() : null,
+        end_time: entry.contests.end_time ? new Date(entry.contests.end_time).toISOString() : null,
+        portfolio_return: `${portfolioReturn}%`,
+        rank: entry.final_rank || "N/A"
+      };
+    });
+
+    res.json(formattedHistory);
+  } catch (error) {
+    logApi.error('Failed to fetch history', {
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code
+      },
+      wallet_address: wallet
+    });
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/stats/{wallet}/achievements:
+ *   get:
+ *     summary: Get user's achievements
+ *     tags: [Statistics]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ */
+router.get('/:wallet/achievements', async (req, res) => {
+  const { wallet } = req.params;
+  
+  try {
+    // Get contest participation count
+    const participationCount = await prisma.contest_participants.count({
+      where: {
+        wallet_address: wallet
+      }
+    });
+
+    if (participationCount === 0) {
+      return res.json({
+        message: "No achievements yet - participate in contests to earn achievements!",
+        data: []
+      });
+    }
+
+    // Get first contest entry
+    const firstContest = await prisma.contest_participants.findFirst({
+      where: {
+        wallet_address: wallet
+      },
+      orderBy: {
+        joined_at: 'asc'
+      },
+      select: {
+        joined_at: true
+      }
+    });
+
+    const achievements = [];
+
+    // First contest achievement
+    if (firstContest) {
+      achievements.push({
+        achievement: 'first_contest',
+        achieved_at: firstContest.joined_at,
+        display_name: 'First Contest Entry'
+      });
+    }
+
+    // Multiple contests achievements
+    if (participationCount >= 3) {
+      const threeContestsAchievement = await prisma.contest_participants.findFirst({
+        where: {
+          wallet_address: wallet
+        },
+        orderBy: {
+          joined_at: 'desc'
+        },
+        skip: 2,  // Get the 3rd most recent
+        select: {
+          joined_at: true
+        }
+      });
+
+      if (threeContestsAchievement) {
+        achievements.push({
+          achievement: 'three_contests',
+          achieved_at: threeContestsAchievement.joined_at,
+          display_name: 'Participated in 3 Contests'
+        });
+      }
+    }
+
+    if (participationCount >= 5) {
+      const fiveContestsAchievement = await prisma.contest_participants.findFirst({
+        where: {
+          wallet_address: wallet
+        },
+        orderBy: {
+          joined_at: 'desc'
+        },
+        skip: 4,  // Get the 5th most recent
+        select: {
+          joined_at: true
+        }
+      });
+
+      if (fiveContestsAchievement) {
+        achievements.push({
+          achievement: 'five_contests',
+          achieved_at: fiveContestsAchievement.joined_at,
+          display_name: 'Participated in 5 Contests'
+        });
+      }
+    }
+
+    res.json({
+      message: achievements.length > 0 ? "Achievements retrieved successfully" : "No achievements unlocked yet",
+      data: achievements
+    });
+  } catch (error) {
+    logApi.error('Failed to fetch achievements', {
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code
+      },
+      wallet_address: wallet
+    });
+    res.status(500).json({ error: 'Failed to fetch achievements' });
   }
 });
 

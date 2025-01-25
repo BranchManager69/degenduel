@@ -9112,3 +9112,2472 @@
     '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
   timestamp: '2025-01-25T06:38:42.737Z'
 }
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:39:12.637Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:39:12.637Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:39:12.640Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:39:42.637Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:39:42.637Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:39:42.641Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:18.638Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:18.638Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:40:18.640Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:21.637Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:21.637Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:40:21.938Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:35.036Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:35.036Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:40:35.040Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:35.236Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:35.236Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:40:35.239Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:40:42.737Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:53.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:40:53.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:40:53.240Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:41:23.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:41:23.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:41:23.339Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:41:27.836Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:41:53.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:41:53.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:41:53.240Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:42:33.237Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:43:19.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:43:19.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:43:19.241Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:256:22',
+  timestamp: '2025-01-25T06:44:44.037Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:45:39.337Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:45:39.337Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:256:22',
+  timestamp: '2025-01-25T06:45:39.342Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:256:22',
+  timestamp: '2025-01-25T06:46:27.135Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:46:39.238Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:46:39.238Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:256:22',
+  timestamp: '2025-01-25T06:46:39.242Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:47:39.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:47:39.237Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:256:22',
+  timestamp: '2025-01-25T06:47:39.242Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Invalid value for argument `status`. Expected contest_status.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:285:22',
+  timestamp: '2025-01-25T06:56:11.145Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "completed"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc",\n' +
+    '        ~~~~~~~~~~\n' +
+    '?       contest_id?: SortOrder,\n' +
+    '?       wallet_address?: SortOrder,\n' +
+    '?       initial_balance?: SortOrder | SortOrderInput,\n' +
+    '?       current_balance?: SortOrder | SortOrderInput,\n' +
+    '?       rank?: SortOrder | SortOrderInput,\n' +
+    '?       joined_at?: SortOrder | SortOrderInput,\n' +
+    '?       entry_transaction_id?: SortOrder | SortOrderInput,\n' +
+    '?       entry_time?: SortOrder | SortOrderInput,\n' +
+    '?       final_rank?: SortOrder | SortOrderInput,\n' +
+    '?       prize_amount?: SortOrder | SortOrderInput,\n' +
+    '?       prize_paid_at?: SortOrder | SortOrderInput,\n' +
+    '?       prize_transaction_id?: SortOrder | SortOrderInput,\n' +
+    '?       contests?: contestsOrderByWithRelationInput,\n' +
+    '?       transactions_contest_participants_entry_transaction_idTotransactions?: transactionsOrderByWithRelationInput,\n' +
+    '?       transactions_contest_participants_prize_transaction_idTotransactions?: transactionsOrderByWithRelationInput,\n' +
+    '?       users?: usersOrderByWithRelationInput\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `created_at`. Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "completed"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {}\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc",\n' +
+    '        ~~~~~~~~~~\n' +
+    '?       contest_id?: SortOrder,\n' +
+    '?       wallet_address?: SortOrder,\n' +
+    '?       initial_balance?: SortOrder | SortOrderInput,\n' +
+    '?       current_balance?: SortOrder | SortOrderInput,\n' +
+    '?       rank?: SortOrder | SortOrderInput,\n' +
+    '?       joined_at?: SortOrder | SortOrderInput,\n' +
+    '?       entry_transaction_id?: SortOrder | SortOrderInput,\n' +
+    '?       entry_time?: SortOrder | SortOrderInput,\n' +
+    '?       final_rank?: SortOrder | SortOrderInput,\n' +
+    '?       prize_amount?: SortOrder | SortOrderInput,\n' +
+    '?       prize_paid_at?: SortOrder | SortOrderInput,\n' +
+    '?       prize_transaction_id?: SortOrder | SortOrderInput,\n' +
+    '?       contests?: contestsOrderByWithRelationInput,\n' +
+    '?       transactions_contest_participants_entry_transaction_idTotransactions?: transactionsOrderByWithRelationInput,\n' +
+    '?       transactions_contest_participants_prize_transaction_idTotransactions?: transactionsOrderByWithRelationInput,\n' +
+    '?       users?: usersOrderByWithRelationInput\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `created_at`. Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:285:22',
+  timestamp: '2025-01-25T06:57:05.348Z'
+}
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "completed"\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc",\n' +
+    '        ~~~~~~~~~~\n' +
+    '?       contest_id?: SortOrder,\n' +
+    '?       wallet_address?: SortOrder,\n' +
+    '?       initial_balance?: SortOrder | SortOrderInput,\n' +
+    '?       current_balance?: SortOrder | SortOrderInput,\n' +
+    '?       rank?: SortOrder | SortOrderInput,\n' +
+    '?       joined_at?: SortOrder | SortOrderInput,\n' +
+    '?       entry_transaction_id?: SortOrder | SortOrderInput,\n' +
+    '?       entry_time?: SortOrder | SortOrderInput,\n' +
+    '?       final_rank?: SortOrder | SortOrderInput,\n' +
+    '?       prize_amount?: SortOrder | SortOrderInput,\n' +
+    '?       prize_paid_at?: SortOrder | SortOrderInput,\n' +
+    '?       prize_transaction_id?: SortOrder | SortOrderInput,\n' +
+    '?       contests?: contestsOrderByWithRelationInput,\n' +
+    '?       transactions_contest_participants_entry_transaction_idTotransactions?: transactionsOrderByWithRelationInput,\n' +
+    '?       transactions_contest_participants_prize_transaction_idTotransactions?: transactionsOrderByWithRelationInput,\n' +
+    '?       users?: usersOrderByWithRelationInput\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `created_at`. Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    user_stats: {\n' +
+    '      select: {\n' +
+    '        contests_entered: true,\n' +
+    '        contests_won: true,\n' +
+    '        total_prize_money: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contests: {\n' +
+    '              status: "completed"\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc",\n' +
+    '        ~~~~~~~~~~\n' +
+    '?       contest_id?: SortOrder,\n' +
+    '?       wallet_address?: SortOrder,\n' +
+    '?       initial_balance?: SortOrder | SortOrderInput,\n' +
+    '?       current_balance?: SortOrder | SortOrderInput,\n' +
+    '?       rank?: SortOrder | SortOrderInput,\n' +
+    '?       joined_at?: SortOrder | SortOrderInput,\n' +
+    '?       entry_transaction_id?: SortOrder | SortOrderInput,\n' +
+    '?       entry_time?: SortOrder | SortOrderInput,\n' +
+    '?       final_rank?: SortOrder | SortOrderInput,\n' +
+    '?       prize_amount?: SortOrder | SortOrderInput,\n' +
+    '?       prize_paid_at?: SortOrder | SortOrderInput,\n' +
+    '?       prize_transaction_id?: SortOrder | SortOrderInput,\n' +
+    '?       contests?: contestsOrderByWithRelationInput,\n' +
+    '?       transactions_contest_participants_entry_transaction_idTotransactions?: transactionsOrderByWithRelationInput,\n' +
+    '?       transactions_contest_participants_prize_transaction_idTotransactions?: transactionsOrderByWithRelationInput,\n' +
+    '?       users?: usersOrderByWithRelationInput\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    user_stats: {\n' +
+    '      contests_entered: {\n' +
+    '        gt: 0\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    user_stats: {\n' +
+    '      total_prize_money: "desc"\n' +
+    '    }\n' +
+    '  },\n' +
+    '  take: 5,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `created_at`. Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:285:22',
+  timestamp: '2025-01-25T06:59:29.341Z'
+}
+{
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.contest_token_performance.groupBy()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  select: {\n' +
+      '  ~~~~~~\n' +
+      '    _avg: {\n' +
+      '      select: {\n' +
+      '        profit_loss: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '    _count: {\n' +
+      '      select: {\n' +
+      '        token_id: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '    token_id: true\n' +
+      '  },\n' +
+      '  by: [\n' +
+      '    "token_id"\n' +
+      '  ],\n' +
+      '  where: {\n' +
+      '    wallet_address: "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"\n' +
+      '  },\n' +
+      '  include: {\n' +
+      '  ~~~~~~~\n' +
+      '    tokens: {\n' +
+      '      select: {\n' +
+      '        symbol: true\n' +
+      '      }\n' +
+      '    }\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Please either use `include` or `select`, but not both at the same time.',
+    code: undefined
+  },
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'error',
+  message: 'Failed to fetch wallet statistics',
+  timestamp: '2025-01-25T18:52:32.070Z'
+}
+{
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.contest_token_performance.groupBy()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  select: {\n' +
+      '    tokens: {\n' +
+      '    ~~~~~~\n' +
+      '      select: {\n' +
+      '        symbol: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '    token_id: true,\n' +
+      '?   contest_id?: true,\n' +
+      '?   wallet_address?: true,\n' +
+      '?   profit_loss?: true,\n' +
+      '?   timestamp?: true,\n' +
+      '?   _count?: true,\n' +
+      '?   _avg?: true,\n' +
+      '?   _sum?: true,\n' +
+      '?   _min?: true,\n' +
+      '?   _max?: true\n' +
+      '  },\n' +
+      '  by: [\n' +
+      '    "token_id"\n' +
+      '  ],\n' +
+      '  where: {\n' +
+      '    wallet_address: "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `tokens` for select statement on model `Contest_token_performanceGroupByOutputType`. Available options are marked with ?.',
+    code: undefined
+  },
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'error',
+  message: 'Failed to fetch wallet statistics',
+  timestamp: '2025-01-25T18:53:09.765Z'
+}
+{
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.contest_participants.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    wallet_address: "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp",\n' +
+      '    contests: {\n' +
+      '      NOT: {\n' +
+      '        OR: [\n' +
+      '          {\n' +
+      '            start_time: null\n' +
+      '          },\n' +
+      '          {\n' +
+      '            end_time: null\n' +
+      '          },\n' +
+      '          {\n' +
+      '            name: null\n' +
+      '          }\n' +
+      '        ]\n' +
+      '      }\n' +
+      '    }\n' +
+      '  },\n' +
+      '  select: {\n' +
+      '    contests: {\n' +
+      '      select: {\n' +
+      '        id: true,\n' +
+      '        name: true,\n' +
+      '        start_time: true,\n' +
+      '        end_time: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '    initial_balance: true,\n' +
+      '    current_balance: true,\n' +
+      '    final_rank: true\n' +
+      '  },\n' +
+      '  orderBy: {\n' +
+      '    joined_at: "desc"\n' +
+      '  },\n' +
+      '  skip: 0,\n' +
+      '  take: 10\n' +
+      '}\n' +
+      '\n' +
+      'Argument `name` is missing.',
+    code: undefined
+  },
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'error',
+  message: 'Failed to fetch history',
+  timestamp: '2025-01-25T19:18:18.558Z'
+}
