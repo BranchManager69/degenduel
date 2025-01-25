@@ -269,6 +269,7 @@ model users {
   total_wins         Int?        @default(0)
   total_earnings     Decimal?    @default(0) @db.Decimal(20, 0)
   rank_score         Int?        @default(1000)
+  highest_rank_score Int?        @default(1000)
   settings           Json?       @default("{}")
   balance            Decimal?    @default(0) @db.Decimal(20, 0)
   is_banned          Boolean?    @default(false)
@@ -288,6 +289,7 @@ model users {
   transactions              transactions[]
 
   @@index([balance], map: "idx_users_balance")
+  @@index([rank_score], map: "idx_users_rank")
 }
 
 model contest_wallets {
