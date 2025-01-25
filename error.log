@@ -11590,3 +11590,12 @@
   level: 'error',
   timestamp: '2025-01-25T20:32:37.186Z'
 }
+{
+  level: 'error',
+  message: 'Failed to end contest: Contest is not active',
+  stack: 'Error: Contest is not active\n' +
+    '    at file:///home/websites/degenduel/routes/contests.js:1189:15\n' +
+    '    at async Proxy._transactionWithCallback (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:7983)\n' +
+    '    at async file:///home/websites/degenduel/routes/contests.js:1174:20',
+  timestamp: '2025-01-25T23:01:32.642Z'
+}

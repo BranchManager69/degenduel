@@ -111236,3 +111236,880 @@
   message: 'Wallet statistics fetched successfully',
   timestamp: '2025-01-25T22:40:04.448Z'
 }
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:33.609Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.071Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.074Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.076Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.081Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.082Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.083Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.084Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.165Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.167Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.169Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.169Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:42:45.171Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:45:07.429Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:45:37.384Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:46:07.395Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:46:37.389Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:47:07.382Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:47:37.374Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:48:07.378Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:48:29.455Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'ra', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T22:48:35.307Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:48:57.998Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T22:49:04.345Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'bra', limit: '5' },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T22:49:04.752Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:49:27.978Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:49:57.988Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:50:27.970Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:50:57.975Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:51:27.968Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:51:57.966Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:52:27.972Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:52:57.969Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:53:27.963Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:53:57.965Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:54:21.254Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:54:51.396Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T22:54:51.405Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:55:21.420Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:55:51.380Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T22:55:51.389Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:56:21.393Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T22:56:21.399Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:56:51.393Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T22:56:51.400Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:57:21.385Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T22:57:21.392Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:57:33.781Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T22:57:39.691Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T22:57:41.456Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T22:57:41.957Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:58:03.844Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T22:58:06.856Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T22:58:08.566Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T22:58:18.858Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:58:33.770Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T22:58:33.777Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T22:58:48.147Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'wa', limit: '5' },
+  matchCount: 0,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T22:59:29.674Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:00:58.852Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:00:58.861Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:24.948Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:28.831Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:32.637Z'
+}
+{
+  level: 'error',
+  message: 'Failed to end contest: Contest is not active',
+  stack: 'Error: Contest is not active\n' +
+    '    at file:///home/websites/degenduel/routes/contests.js:1189:15\n' +
+    '    at async Proxy._transactionWithCallback (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:7983)\n' +
+    '    at async file:///home/websites/degenduel/routes/contests.js:1174:20',
+  timestamp: '2025-01-25T23:01:32.642Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:37.084Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:41.950Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.071Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.078Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.083Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.089Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.090Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.092Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.092Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.160Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.160Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.162Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.164Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:01:51.165Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:02:05.712Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:02:11.603Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:02:14.235Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:02:25.563Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:02:44.208Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:03:14.206Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:03:44.203Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:04:14.222Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:04:44.222Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:05:14.216Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:05:44.208Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:06:14.209Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:06:44.210Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:07:14.194Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:07:44.203Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:08:14.189Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:08:44.193Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:09:14.190Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:09:44.189Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:10:14.188Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:10:44.207Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:11:14.186Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:11:44.187Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:12:14.196Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:12:44.190Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:13:14.181Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:13:44.178Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:14:04.935Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:14:35.115Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:14:35.124Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:15:05.060Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:15:05.067Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:15:19.632Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:15:49.635Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:15:49.643Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:16:19.636Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:16:49.629Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:16:49.638Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:17:19.642Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:17:19.647Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:17:49.660Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:17:49.671Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:18:19.629Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:18:19.635Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:18:24.992Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:18:54.985Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:18:54.992Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:19:08.867Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:19:24.981Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:19:54.990Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:20:24.990Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:20:54.989Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:21:24.986Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:21:54.988Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:21:54.998Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:22:24.974Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:22:47.854Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:22:54.997Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:23:24.979Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:23:55.010Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:23:55.018Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:24:16.284Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:24:25.033Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:24:54.973Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:24:54.981Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:25:25.143Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:25:25.149Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:25:55.091Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:25:55.100Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:26:24.977Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:26:24.984Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:26:54.985Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:26:54.991Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:27:16.243Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:27:24.975Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:27:55.099Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:27:55.112Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:28:24.968Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:28:24.973Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:28:54.965Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:28:54.971Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:29:24.959Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:29:24.965Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:29:55.087Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:29:55.095Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:29:58.567Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:30:29.095Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:30:29.105Z'
+}
