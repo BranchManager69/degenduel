@@ -231,10 +231,11 @@ router.get('/global', async (req, res) => {
 router.get('/contests/performance', async (req, res) => {
   try {
     const { limit, offset, timeframe } = getLeaderboardSchema.parse(req.query);
+    logApi.info('Contest performance request params:', { limit, offset, timeframe });
 
     // Calculate date range based on timeframe
     const dateFilter = timeframe === 'all' ? {} : {
-      created_at: {
+      joined_at: {
         gte: new Date(
           timeframe === 'week'
             ? Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -242,46 +243,97 @@ router.get('/contests/performance', async (req, res) => {
         )
       }
     };
+    logApi.info('Date filter:', dateFilter);
 
     // Get total count for percentile calculation
     const total = await prisma.users.count({
       where: {
-        total_contests: { gt: 0 }
+        user_stats: {
+          contests_entered: { gt: 0 }
+        }
+      }
+    });
+    logApi.info('Total users with contests:', total);
+
+    // Get users with their contest performance
+    logApi.info('Fetching user rankings with query:', {
+      select: {
+        wallet_address: true,
+        nickname: true,
+        user_stats: {
+          select: {
+            contests_entered: true,
+            contests_won: true,
+            total_prize_money: true
+          }
+        },
+        contest_participants: {
+          where: {
+            AND: [
+              {
+                contests: {
+                  status: 'completed'
+                }
+              },
+              ...(Object.keys(dateFilter).length > 0 ? [dateFilter] : [])
+            ]
+          }
+        }
       }
     });
 
-    // Get users with their contest performance
     const rankings = await prisma.users.findMany({
       select: {
         wallet_address: true,
         nickname: true,
-        total_contests: true,
-        total_earnings: true,
+        user_stats: {
+          select: {
+            contests_entered: true,
+            contests_won: true,
+            total_prize_money: true
+          }
+        },
         contest_participants: {
           where: {
             AND: [
-              { contest: { status: 'COMPLETED' } },
-              dateFilter
+              {
+                contests: {
+                  status: 'completed'
+                }
+              },
+              ...(Object.keys(dateFilter).length > 0 ? [dateFilter] : [])
             ]
           },
           select: {
             final_rank: true,
-            created_at: true
+            joined_at: true,
+            prize_amount: true,
+            contests: {
+              select: {
+                name: true,
+                prize_pool: true
+              }
+            }
           },
           orderBy: {
-            created_at: 'asc'
+            joined_at: 'desc'  // Show most recent contests first
           }
         }
       },
       where: {
-        total_contests: { gt: 0 }
+        user_stats: {
+          contests_entered: { gt: 0 }
+        }
       },
       orderBy: {
-        total_earnings: 'desc'
+        user_stats: {
+          total_prize_money: 'desc'
+        }
       },
       take: limit,
       skip: offset
     });
+    logApi.info('Retrieved rankings:', { count: rankings.length });
 
     // Calculate enhanced metrics and format data
     const rankedUsers = rankings.map((user, index) => {
@@ -293,6 +345,11 @@ router.get('/contests/performance', async (req, res) => {
       let longestStreak = 0;
       let currentStreakCount = 0;
       const positions = user.contest_participants.map(p => p.final_rank);
+      logApi.debug('User contest positions:', { 
+        wallet: user.wallet_address, 
+        positions,
+        participantCount: user.contest_participants.length 
+      });
       
       positions.forEach(rank => {
         if (rank === 1) {
@@ -313,17 +370,18 @@ router.get('/contests/performance', async (req, res) => {
         rank: currentRank,
         wallet_address: user.wallet_address,
         nickname: user.nickname,
-        contests_won: contestsWon,
-        total_contests: user.total_contests,
-        win_rate: user.total_contests ? (contestsWon / user.total_contests) * 100 : 0,
+        contests_won: user.user_stats?.contests_won || 0,
+        total_contests: user.user_stats?.contests_entered || 0,
+        win_rate: user.user_stats?.contests_entered ? (user.user_stats.contests_won / user.user_stats.contests_entered) * 100 : 0,
         longest_win_streak: longestStreak,
         current_win_streak: currentStreak,
         avg_position: avgPosition ? Math.round(avgPosition * 100) / 100 : null,
         percentile: Math.round(percentile * 100) / 100,
-        trend: calculateTrend(currentRank, currentRank + 1), // Simplified trend
-        total_earnings: user.total_earnings?.toString() || '0'
+        trend: calculateTrend(currentRank, currentRank + 1),
+        total_earnings: user.user_stats?.total_prize_money?.toString() || '0'
       };
     });
+    logApi.info('Processed rankings:', { count: rankedUsers.length });
 
     res.json({
       total,
