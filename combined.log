@@ -106371,3 +106371,200 @@
   message: 'Wallet statistics fetched successfully',
   timestamp: '2025-01-25T19:21:20.751Z'
 }
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T19:22:51.251Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T19:22:51.252Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Fetching wallet statistics',
+  timestamp: '2025-01-25T19:22:51.375Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  stats_summary: { total_participated: 5, win_rate: 0, total_earnings: '0' },
+  level: 'info',
+  message: 'Wallet statistics fetched successfully',
+  timestamp: '2025-01-25T19:22:51.378Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:22:56.214Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:03.032Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.727Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.734Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.736Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.741Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.742Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.742Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.743Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.811Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.813Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.816Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.818Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:04.819Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.542Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.543Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.544Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.551Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.552Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.553Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.554Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.673Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.674Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.676Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.677Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:07.679Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T19:23:08.992Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T19:23:08.996Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Fetching wallet statistics',
+  timestamp: '2025-01-25T19:23:09.068Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  stats_summary: { total_participated: 5, win_rate: 0, total_earnings: '0' },
+  level: 'info',
+  message: 'Wallet statistics fetched successfully',
+  timestamp: '2025-01-25T19:23:09.072Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:23:13.772Z'
+}
