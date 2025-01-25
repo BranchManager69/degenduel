@@ -90142,3 +90142,8 @@
     '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
   timestamp: '2025-01-25T06:38:11.642Z'
 }
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T06:38:18.942Z'
+}
