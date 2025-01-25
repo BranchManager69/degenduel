@@ -90147,3 +90147,107 @@
   level: 'info',
   timestamp: '2025-01-25T06:38:18.942Z'
 }
+{
+  name: 'PrismaClientValidationError',
+  clientVersion: '6.1.0',
+  level: 'error',
+  message: 'Failed to fetch contest performance rankings: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:38:42.638Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.',
+  stack: 'PrismaClientValidationError: \n' +
+    'Invalid `prisma.users.findMany()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  select: {\n' +
+    '    wallet_address: true,\n' +
+    '    nickname: true,\n' +
+    '    total_contests: true,\n' +
+    '    total_earnings: true,\n' +
+    '    contest_participants: {\n' +
+    '      where: {\n' +
+    '        AND: [\n' +
+    '          {\n' +
+    '            contest: {\n' +
+    '              status: "COMPLETED"\n' +
+    '            }\n' +
+    '          },\n' +
+    '          {\n' +
+    '            created_at: {\n' +
+    '              gte: new Date("2024-12-26T06:38:42.638Z")\n' +
+    '            }\n' +
+    '          }\n' +
+    '        ]\n' +
+    '      },\n' +
+    '      select: {\n' +
+    '        final_rank: true,\n' +
+    '        created_at: true\n' +
+    '      },\n' +
+    '      orderBy: {\n' +
+    '        created_at: "asc"\n' +
+    '      }\n' +
+    '    }\n' +
+    '  },\n' +
+    '  where: {\n' +
+    '    total_contests: {\n' +
+    '      gt: 0\n' +
+    '    }\n' +
+    '  },\n' +
+    '  orderBy: {\n' +
+    '    total_earnings: "desc"\n' +
+    '  },\n' +
+    '  take: 10,\n' +
+    '  skip: 0\n' +
+    '}\n' +
+    '\n' +
+    'Unknown argument `contest`. Did you mean `contests`? Available options are marked with ?.\n' +
+    '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+    '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+    '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+    '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+    '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+    '    at async file:///home/websites/degenduel/routes/prisma/leaderboard.js:254:22',
+  timestamp: '2025-01-25T06:38:42.737Z'
+}
