@@ -11,7 +11,41 @@ import { clearNonce, generateNonce, getNonceRecord } from './dbNonceStore.js';
 const router = express.Router();
 const { sign } = jwt;
 
-// ------------------ GET /challenge ------------------
+/**
+ * @swagger
+ * tags:
+ *   name: Authentication
+ *   description: User authentication endpoints
+ */
+
+/**
+ * @swagger
+ * /api/auth/challenge:
+ *   get:
+ *     summary: Get a challenge nonce for wallet authentication
+ *     tags: [Authentication]
+ *     parameters:
+ *       - in: query
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Wallet address to generate nonce for
+ *     responses:
+ *       200:
+ *         description: Challenge nonce generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 nonce:
+ *                   type: string
+ *       400:
+ *         description: Missing wallet address
+ *       500:
+ *         description: Internal server error
+ */
 // Example: GET /api/auth/challenge?wallet=<WALLET_ADDR>
 router.get('/challenge', async (req, res) => {
   try {
@@ -29,7 +63,62 @@ router.get('/challenge', async (req, res) => {
   }
 });
 
-// ------------------ POST /verify-wallet ------------------
+/**
+ * @swagger
+ * /api/auth/verify-wallet:
+ *   post:
+ *     summary: Verify wallet signature and authenticate user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - wallet
+ *               - signature
+ *               - message
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: Wallet address
+ *               signature:
+ *                 type: array
+ *                 items:
+ *                   type: number
+ *                 description: 64-byte signature array
+ *               message:
+ *                 type: string
+ *                 description: Message that was signed
+ *     responses:
+ *       200:
+ *         description: Wallet verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 verified:
+ *                   type: boolean
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     wallet_address:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     nickname:
+ *                       type: string
+ *       400:
+ *         description: Invalid request parameters
+ *       401:
+ *         description: Invalid signature or nonce
+ *       500:
+ *         description: Internal server error
+ */
 // The front-end will send: { wallet, signature: Array(64), message: "...theNonceHere..." }
 router.post('/verify-wallet', async (req, res) => {
   try {
@@ -138,7 +227,39 @@ router.post('/verify-wallet', async (req, res) => {
   }
 });
 
-// ------------------ POST /disconnect ------------------
+/**
+ * @swagger
+ * /api/auth/disconnect:
+ *   post:
+ *     summary: Disconnect wallet and clear session
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - wallet
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: Wallet address to disconnect
+ *     responses:
+ *       200:
+ *         description: Wallet disconnected successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       400:
+ *         description: Missing wallet address
+ *       500:
+ *         description: Internal server error
+ */
 router.post('/disconnect', async (req, res) => {
   try {
     const { wallet } = req.body;
@@ -162,9 +283,35 @@ router.post('/disconnect', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user and clear session
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ */
 //   example: POST https://degenduel.me/api/auth/logout
 //      headers: { "Cookie": "session=<jwt>" }
 
+/**
+ * @swagger
+ * /api/auth/session:
+ *   get:
+ *     summary: Check current session status
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Session is valid
+ *       401:
+ *         description: No valid session
+ */
 //   example: GET https://degenduel.me/api/auth/session
 //      headers: { "Cookie": "session=<jwt>" }
 
