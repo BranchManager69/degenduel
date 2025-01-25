@@ -1,16 +1,11 @@
-// /routes/prisma/admin.js
+// /routes/prisma/activity.js
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
 
 const router = Router();
 const prisma = new PrismaClient();
-
-/*
- * DEPRECATED: This file is being phased out in favor of more specific route files.
- * The activity logging functionality has been moved to /routes/prisma/activity.js
- * The balance adjustment functionality has been moved to /routes/prisma/balance.js
- */
 
 /**
  * @swagger
@@ -49,7 +44,7 @@ const prisma = new PrismaClient();
  * @swagger
  * /api/admin/activities:
  *   get:
- *     summary: Get admin activity logs (requires superadmin role) [DEPRECATED - use /api/activities instead]
+ *     summary: Get admin activity logs (requires superadmin role)
  *     tags: [Admin]
  *     security:
  *       - sessionAuth: []
@@ -111,46 +106,38 @@ const prisma = new PrismaClient();
  *                   type: string
  *                   example: "Not authorized"
  */
-// Get admin activity logs (SUPERADMIN ONLY)
-//      example: GET https://degenduel.me/api/admin/activities?limit=50&offset=0&action=login
-//      headers: { "Authorization": "Bearer <JWT>" }
 router.get('/activities', requireAuth, requireSuperAdmin, async (req, res) => {
-  console.log('>>>query received>>> | /api/admin/activities');
-  
-  const debugMode = true; // Simple debug flag to toggle on/off
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  const { limit = 50, offset = 0, action } = req.query;
+
+  logApi.info('Fetching admin activities', {
+    requestId,
+    query: { limit, offset, action }
+  });
 
   try {
-    const { limit = 50, offset = 0, action } = req.query;
-    
-    // Debug logging if enabled
-    if (debugMode) {
-      console.log('Query parameters:', { limit, offset, action });
-    }
-  
-    // Mock implementation that mimics Prisma's structure
-    const mockData = [
-      { id: 1, action: 'login', created_at: new Date() },
-      { id: 2, action: 'update', created_at: new Date() },
-      // Add more mock entries as needed
-    ];
-  
+    // Build where clause based on filters
     const where = action ? { action } : {};
-  
-    // Simulate Prisma's findMany and count methods
-    const activities = mockData
-      .filter(item => !action || item.action === action)
-      .sort((a, b) => b.created_at - a.created_at)
-      .slice(parseInt(offset), parseInt(offset) + parseInt(limit));
-  
-    const total = mockData.filter(item => !action || item.action === action).length;
-  
-    // Debug logging if enabled
-    if (debugMode) {
-      console.log('Filtered activities:', activities);
-      console.log('Total count:', total);
-    }
-  
-    console.log('<<<response<<< | /api/admin/activities');
+
+    // Fetch activities with pagination
+    const [activities, total] = await Promise.all([
+      prisma.admin_logs.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        take: parseInt(limit),
+        skip: parseInt(offset)
+      }),
+      prisma.admin_logs.count({ where })
+    ]);
+
+    logApi.info('Successfully fetched admin activities', {
+      requestId,
+      activity_count: activities.length,
+      total_count: total,
+      duration: Date.now() - startTime
+    });
+
     res.json({
       activities,
       pagination: {
@@ -159,10 +146,25 @@ router.get('/activities', requireAuth, requireSuperAdmin, async (req, res) => {
         offset: parseInt(offset)
       }
     });
+
   } catch (error) {
-    console.error('Error fetching admin activities:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    logApi.error('Failed to fetch admin activities', {
+      requestId,
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code,
+        meta: error?.meta,
+        stack: req.environment === 'development' ? error.stack : undefined
+      },
+      duration: Date.now() - startTime
+    });
+
+    res.status(500).json({
+      error: 'Failed to fetch admin activities',
+      message: req.environment === 'development' ? error.message : undefined
+    });
   }
 });
 
-export default router;
+export default router; 

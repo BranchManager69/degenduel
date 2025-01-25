@@ -20,6 +20,14 @@ const ADMIN_WALLET_ADDRESSES = process.env.ADMIN_WALLET_ADDRESSES; // TODO: Move
  * tags:
  *   name: Balance
  *   description: User point balance endpoints
+ * 
+ * components:
+ *   securitySchemes:
+ *     sessionAuth:
+ *       type: http
+ *       scheme: cookie
+ *       bearerFormat: JWT
+ *       description: Session cookie containing JWT for authentication
  */
 
 /* Points Balance Routes */
@@ -128,10 +136,10 @@ router.get('/:wallet', async (req, res) => {
  * @swagger
  * /api/balance/{wallet}/balance:
  *   post:
- *     summary: Adjust user's balance (Admin only)
+ *     summary: Adjust user's balance (requires superadmin role)
  *     tags: [Balance]
  *     security:
- *       - adminAuth: []
+ *       - sessionAuth: []
  *     parameters:
  *       - in: path
  *         name: wallet
@@ -169,10 +177,36 @@ router.get('/:wallet', async (req, res) => {
  *                 adjustment:
  *                   type: string
  *                   example: "1000000"
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Not authenticated"
+ *       403:
+ *         description: Not authorized (requires superadmin role)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Not authorized"
  *       404:
  *         description: User not found
- *       403:
- *         description: Not authorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "User not found"
  */
 // Increment/decrement a user's point balance by wallet address (SUPERADMIN ONLY)
 //   example: POST https://degenduel.me/api/balance/{wallet}/balance
@@ -181,88 +215,64 @@ router.get('/:wallet', async (req, res) => {
 router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res) => {
   const { wallet } = req.params;
   const { amount } = req.body;
-  const adminAddress = req.headers['x-admin-address'];
-
-  // Add validation logging
-  if (!adminAddress) {
-    logApi.warn('Unauthorized balance adjustment attempt by non-admin', {
-      wallet_address: wallet,
-      ip_address: req.ip
-    });
-    return res.status(403).json({ error: 'Admin authorization required' });
-  }
-
+  
+  // Validate amount
   if (!amount || isNaN(amount)) {
-      logApi.warn('Invalid amount in balance adjustment request', {
+    logApi.warn('Invalid amount in balance adjustment request', {
       wallet_address: wallet,
-      admin_address: adminAddress,
       invalid_amount: amount,
       path: req.path,
       method: req.method
     });
-    return res.status(400).json({ error: 'Valid amount required' });
+    return res.status(400).json({ error: 'Invalid amount provided' });
   }
 
-  logApi.info('Adjusting user balance', {
-    wallet_address: wallet,
-    adjustment_amount: amount,
-    request: {
-      path: req.path,
-      method: req.method,
-      ip: req.ip,
-      headers: req.headers
-    }
-  });
-
   try {
-    const result = await prisma.$transaction(async (prisma) => {
-      const user = await prisma.users.findUnique({
-        where: { wallet_address: wallet }
+    // Get user's current balance
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: wallet }
+    });
+
+    if (!user) {
+      logApi.warn('User not found for balance adjustment', {
+        wallet_address: wallet,
+        path: req.path,
+        method: req.method
       });
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-      if (!user) {
-        logApi.warn('Balance adjustment failed - User not found', {
-          wallet_address: wallet,
-          path: req.path,
-          method: req.method
-        });
-        throw new Error('User not found');
-      }
+    const previousBalance = new Prisma.Decimal(user.balance || '0');
+    const adjustment = new Prisma.Decimal(amount);
+    const newBalance = previousBalance.plus(adjustment);
 
-      const previousBalance = new Prisma.Decimal(user.balance || '0');
-      const adjustment = new Prisma.Decimal(amount);
-      const newBalance = previousBalance.plus(adjustment);
+    // Prevent negative balance
+    if (newBalance.lessThan(0)) {
+      logApi.warn('Insufficient balance for deduction', {
+        wallet_address: wallet,
+        current_balance: previousBalance.toString(),
+        requested_deduction: adjustment.toString(),
+        path: req.path,
+        method: req.method
+      });
+      return res.status(400).json({ error: 'Insufficient balance for deduction' });
+    }
 
-      if (newBalance.lessThan(0)) {
-        logApi.warn('Balance adjustment failed - Insufficient funds', {
-          wallet_address: wallet,
-          previous_balance: previousBalance.toString(),
-          attempted_adjustment: adjustment.toString(),
-          path: req.path,
-          method: req.method
-        });
-        throw new Error('Insufficient balance for deduction');
-      }
-
-      // Update the user's balance
-      const updatedUser = await prisma.users.update({
+    // Update balance and log the adjustment in a transaction
+    const result = await prisma.$transaction(async (prisma) => {
+      // Update user balance
+      await prisma.users.update({
         where: { wallet_address: wallet },
-        data: { 
+        data: {
           balance: newBalance.toString(),
           updated_at: new Date()
         }
       });
-      logApi.info('Balance adjusted successfully', {
-        wallet_address: wallet,
-        previous_balance: previousBalance.toString(),
-        adjustment: adjustment.toString(),
-        new_balance: newBalance.toString()
-      });
 
-      // Log the transaction
+      // Log the adjustment
       await prisma.admin_logs.create({
         data: {
-          admin_address: req.headers['x-admin-address'] || 'SYSTEM',
+          admin_address: req.user.wallet_address, // Use authenticated user from session
           action: 'ADJUST_BALANCE',
           details: {
             wallet_address: wallet,
@@ -274,14 +284,6 @@ router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res)
         }
       });
 
-      logApi.info('Balance adjusted successfully', {
-        wallet_address: wallet,
-        previous_balance: previousBalance.toString(),
-        adjustment: adjustment.toString(),
-        new_balance: newBalance.toString(),
-        admin_address: req.headers['x-admin-address']
-      });
-
       return {
         previous_balance: previousBalance.toString(),
         new_balance: newBalance.toString(),
@@ -289,31 +291,32 @@ router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res)
       };
     });
 
-    res.json(result);
-
-  } catch (error) {
-    logApi.error('Balance adjustment failed', {
-      error: {
-        name: error.name,
-        message: error.message,
-        code: error?.code
-      },
+    logApi.info('Successfully adjusted balance', {
       wallet_address: wallet,
-      attempted_adjustment: amount,
+      admin_address: req.user.wallet_address,
+      ...result,
       path: req.path,
       method: req.method
     });
 
-    if (error.message === 'User not found') {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    res.json(result);
 
-    if (error.message === 'Insufficient balance for deduction') {
-      return res.status(400).json({ error: 'Insufficient balance for deduction' });
-    }
+  } catch (error) {
+    logApi.error('Failed to adjust balance', {
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code,
+        meta: error?.meta,
+        stack: req.environment === 'development' ? error.stack : undefined
+      },
+      wallet_address: wallet,
+      path: req.path,
+      method: req.method
+    });
 
     res.status(500).json({
-      error: 'Failed to process balance operation',
+      error: 'Failed to adjust balance',
       message: req.environment === 'development' ? error.message : undefined
     });
   }
