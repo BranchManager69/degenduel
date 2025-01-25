@@ -106709,3 +106709,589 @@
   message: 'Wallet statistics fetched successfully',
   timestamp: '2025-01-25T19:39:47.718Z'
 }
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:42:16.893Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:43:16.760Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T19:45:24.739Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T19:45:25.373Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T19:45:25.382Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T19:45:25.385Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:45:25.423Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T19:45:25.427Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:45:25.427Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T19:46:04.458Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T19:46:05.157Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T19:46:05.165Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T19:46:05.168Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:46:05.212Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T19:46:05.216Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:46:05.216Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:47:47.789Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T19:47:48.405Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T19:47:48.414Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T19:47:48.418Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:47:48.464Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T19:47:48.469Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:47:48.470Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:09.127Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:09.797Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T19:49:09.807Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:09.810Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:09.848Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:09.852Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:09.853Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:16.891Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:24.040Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T19:49:35.883Z'
+}
+{
+  requestId: 'f8bc33ac-1d83-45e9-a229-b48937100d1a',
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  adjustment_amount: 100,
+  level: 'info',
+  message: 'Adjusting user balance',
+  timestamp: '2025-01-25T19:49:35.884Z'
+}
+{
+  requestId: 'f8bc33ac-1d83-45e9-a229-b48937100d1a',
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  previous_balance: '993029',
+  new_balance: '993129',
+  adjustment: '100',
+  duration: 77,
+  level: 'info',
+  message: 'Successfully adjusted balance',
+  timestamp: '2025-01-25T19:49:35.961Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:51:16.874Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:56:16.884Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:59:16.740Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:00:16.731Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T20:00:44.557Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T20:00:45.242Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T20:00:45.253Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T20:00:45.259Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:00:45.305Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T20:00:45.310Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:00:45.311Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:01:03.647Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:01:27.213Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:01:30.435Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:01:57.199Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:02:16.750Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:02:27.193Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:02:57.195Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:03:27.336Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:03:57.313Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T20:04:24.670Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T20:04:25.328Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T20:04:25.335Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T20:04:25.339Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:04:25.382Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T20:04:25.387Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:04:25.387Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:04:27.319Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:04:56.403Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:05:07.566Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:05:09.778Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:05:12.752Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:05:16.713Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:05:21.417Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:05:34.828Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:06:04.794Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:06:34.795Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:07:04.794Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:07:34.791Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:08:04.794Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:08:34.796Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:09:04.785Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:09:34.787Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:10:04.788Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:10:34.787Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:11:04.786Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:11:34.786Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:12:04.771Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:12:34.783Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:13:04.791Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:13:34.769Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:14:04.898Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:14:34.788Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:04.774Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:14.296Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:14.961Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T20:15:14.970Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:14.977Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:15.030Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:15.036Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:15.037Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:34.771Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:15:46.865Z'
+}
+{
+  path: 'GET /api/users',
+  query: { search: 'br', limit: '5' },
+  userCount: 5,
+  totalUsers: 24,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-25T20:15:55.685Z'
+}
+{
+  path: 'GET /api/users',
+  query: { search: 'BBr', limit: '5' },
+  userCount: 5,
+  totalUsers: 24,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-25T20:16:03.044Z'
+}
+{
+  path: 'GET /api/users',
+  query: { search: 'Br', limit: '5' },
+  userCount: 5,
+  totalUsers: 24,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-25T20:16:03.771Z'
+}
+{
+  path: 'GET /api/users',
+  query: { search: 'ass', limit: '5' },
+  userCount: 5,
+  totalUsers: 24,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-25T20:16:14.576Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:16:17.289Z'
+}
+{
+  path: 'GET /api/users',
+  query: { search: 'ass', limit: '5' },
+  userCount: 5,
+  totalUsers: 24,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-25T20:16:18.790Z'
+}
+{
+  path: 'GET /api/users',
+  query: { search: '0x8bd5d1e94a135dab78cbf1b59aabf6f70dde9db8', limit: '5' },
+  userCount: 5,
+  totalUsers: 24,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-25T20:16:23.316Z'
+}
+{
+  path: 'GET /api/users',
+  query: { search: '76', limit: '5' },
+  userCount: 5,
+  totalUsers: 24,
+  level: 'info',
+  message: 'Successfully fetched users',
+  timestamp: '2025-01-25T20:16:32.729Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T20:16:43.374Z'
+}

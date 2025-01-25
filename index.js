@@ -59,7 +59,7 @@ import prismaBalanceRoutes from './routes/prisma/balance.js';
 import prismaStatsRoutes from './routes/prisma/stats.js';
 app.use('/api/balance', prismaBalanceRoutes);
 app.use('/api/stats', prismaStatsRoutes);
-app.use('/api', prismaAdminRoutes);
+app.use('/api/admin', prismaAdminRoutes);
 
 // DD-Serv-enabled routes
 import ddServRoutes from './routes/dd-serv/tokens.js';
