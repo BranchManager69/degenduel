@@ -106568,3 +106568,144 @@
   level: 'info',
   timestamp: '2025-01-25T19:23:13.772Z'
 }
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T19:29:46.179Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T19:29:46.820Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T19:29:46.831Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T19:29:46.834Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:29:46.880Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T19:29:46.885Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:29:46.885Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T19:31:16.043Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T19:31:16.667Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T19:31:16.676Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T19:31:16.679Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:31:16.718Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T19:31:16.723Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:31:16.724Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T19:34:39.230Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T19:34:39.240Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Fetching wallet statistics',
+  timestamp: '2025-01-25T19:34:39.304Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  stats_summary: { total_participated: 5, win_rate: 0, total_earnings: '0' },
+  level: 'info',
+  message: 'Wallet statistics fetched successfully',
+  timestamp: '2025-01-25T19:34:39.328Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T19:38:16.772Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T19:39:47.528Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T19:39:47.531Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Fetching wallet statistics',
+  timestamp: '2025-01-25T19:39:47.694Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  stats_summary: { total_participated: 5, win_rate: 0, total_earnings: '0' },
+  level: 'info',
+  message: 'Wallet statistics fetched successfully',
+  timestamp: '2025-01-25T19:39:47.718Z'
+}
