@@ -118,8 +118,8 @@ router.get('/:wallet', async (req, res) => {
     });
 
     res.status(500).json({
-      error: 'Failed to fetch user balance',
-      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: 'Failed to process balance operation',
+      message: req.environment === 'development' ? error.message : undefined
     });
   }
 });
@@ -313,8 +313,8 @@ router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res)
     }
 
     res.status(500).json({
-      error: 'Failed to adjust balance',
-      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: 'Failed to process balance operation',
+      message: req.environment === 'development' ? error.message : undefined
     });
   }
 });

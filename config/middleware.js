@@ -59,10 +59,12 @@ export function configureMiddleware(app) {
 
   // Additional CORS headers for preflight requests
   app.use((req, res, next) => {
+    // Add environment info to the request object
+    const origin = req.headers.origin;
+    req.environment = config.getEnvironment(origin);
+    
     res.header('Access-Control-Allow-Credentials', 'true');
     
-    // Get origin from request
-    const origin = req.headers.origin;
     if (origin && allowedOrigins.includes(origin)) {
       res.header('Access-Control-Allow-Origin', origin);
     }
@@ -102,8 +104,9 @@ export function configureMiddleware(app) {
   if (config.debug_mode === 'true') {
     app.use((req, res, next) => {
       logApi.info(`${req.method} ${req.url}`, {
+        environment: req.environment,
         origin: req.headers.origin,
-      ip: req.ip,
+        ip: req.ip,
         userAgent: req.headers['user-agent']
       });
       next();
