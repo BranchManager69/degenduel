@@ -22,31 +22,32 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/token-buckets:
+ * /api/buckets:
  *   post:
  *     summary: Create a new token bucket
  *     tags: [Token Buckets]
+ *     security:
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 description: Bucket name
- *               description:
- *                 type: string
- *                 description: Bucket description
+ *             $ref: '#/components/schemas/TokenBucket'
  *     responses:
  *       201:
  *         description: Token bucket created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TokenBucket'
  *       500:
  *         description: Failed to create token bucket
  */
 // Create a new token bucket (ADMIN ONLY)
-//      headers: { "Authorization": "Bearer <JWT>" }
+//      example: POST https://degenduel.me/api/buckets
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "name": "Top 10 Market Cap", "description": "Top 10 cryptocurrencies by market capitalization" }
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
   const { name, description } = req.body;
   try {
@@ -62,71 +63,54 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
 /**
  * @swagger
- * /api/tokens/buckets:
+ * /api/buckets:
  *   get:
- *     summary: Get all token buckets
- *     tags: [Tokens]
+ *     summary: Get all token buckets and their tokens
+ *     tags: [Token Buckets]
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: List of token buckets
+ *         description: List of token buckets with tokens
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 allOf:
- *                   - $ref: '#/components/schemas/TokenBucket'
- *                   - type: object
- *                     properties:
- *                       token_bucket_memberships:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             tokens:
- *                               type: object
- *                               properties:
- *                                 id:
- *                                   type: integer
- *                                 symbol:
- *                                   type: string
- *                                 name:
- *                                   type: string
+ *                 $ref: '#/components/schemas/TokenBucket'
+ *       500:
+ *         description: Failed to fetch token buckets
  */
-// Get all token buckets (NO AUTH REQUIRED)
+// Get all token buckets with their tokens (NO AUTH REQUIRED)
 //      example: GET https://degenduel.me/api/buckets
 //      headers: { "Cookie": "session=<jwt>" }
-router.get('/buckets', async (req, res) => {
-    try {
-      const buckets = await prisma.token_buckets.findMany({
-        include: {
-          token_bucket_memberships: {
-            include: {
-              tokens: {
-                select: {
-                  id: true,
-                  symbol: true,
-                  name: true
-                }
-              }
-            }
-          }
-        }
-      });
-  
-      res.json(buckets);
-    } catch (error) {
-      logApi.error('Failed to fetch token buckets:', error);
-      res.status(500).json({ error: 'Failed to fetch token buckets' });
-    }
-  });
-  
+router.get('/', async (_req, res) => {
+  try {
+    const result = await pool.query(`
+        SELECT 
+            tb.id AS bucket_id, 
+            tb.name, 
+            tb.description, 
+            COALESCE(array_agg(t.symbol), '{}') AS tokens
+        FROM token_buckets tb
+        LEFT JOIN token_bucket_memberships tbm ON tb.id = tbm.bucket_id
+        LEFT JOIN tokens t ON tbm.token_id = t.id AND t.is_active = true
+        GROUP BY tb.id;
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch token buckets.' });
+  }
+});
+
 /**
  * @swagger
- * /api/tokens/buckets/{id}:
+ * /api/buckets/{id}:
  *   get:
  *     summary: Get token bucket by ID
- *     tags: [Tokens]
+ *     tags: [Token Buckets]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -140,54 +124,41 @@ router.get('/buckets', async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/TokenBucket'
- *                 - type: object
- *                     properties:
- *                       token_bucket_memberships:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             tokens:
- *                               allOf:
- *                                 - $ref: '#/components/schemas/Token'
- *                                 - type: object
- *                                   properties:
- *                                     token_prices:
- *                                       $ref: '#/components/schemas/TokenPrice'
+ *               $ref: '#/components/schemas/TokenBucket'
  *       404:
- *         $ref: '#/components/responses/TokenNotFound'
+ *         description: Token bucket not found
+ *       500:
+ *         description: Failed to fetch token bucket
  */
 // Get token bucket by ID (NO AUTH REQUIRED)
 //      example: GET https://degenduel.me/api/buckets/{bucket_id}
 //      headers: { "Cookie": "session=<jwt>" }
-router.get('/buckets/:id', async (req, res) => {
-try {
+router.get('/:id', async (req, res) => {
+  try {
     const bucket = await prisma.token_buckets.findUnique({
-    where: { id: parseInt(req.params.id) },
-    include: {
+      where: { id: parseInt(req.params.id) },
+      include: {
         token_bucket_memberships: {
-        include: {
+          include: {
             tokens: {
-            include: {
+              include: {
                 token_prices: true
+              }
             }
-            }
+          }
         }
-        }
-    }
+      }
     });
 
     if (!bucket) {
-    return res.status(404).json({ error: 'Bucket not found' });
+      return res.status(404).json({ error: 'Bucket not found' });
     }
 
     res.json(bucket);
-} catch (error) {
+  } catch (error) {
     logApi.error('Failed to fetch bucket:', error);
     res.status(500).json({ error: 'Failed to fetch bucket' });
-}
+  }
 });
 
 /**
@@ -298,40 +269,6 @@ router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
         console.error('Error removing token from bucket:', err); // Log for debugging
         res.status(500).json({ error: 'Failed to remove token from bucket' });
     }
-});
-
-/**
- * @swagger
- * /api/token-buckets:
- *   get:
- *     summary: Get all token buckets and their tokens
- *     tags: [Token Buckets]
- *     responses:
- *       200:
- *         description: List of token buckets with tokens
- *       500:
- *         description: Failed to fetch token buckets
- */
-// Get all token buckets with their tokens (NO AUTH REQUIRED)
-//      example: GET https://degenduel.me/api/buckets
-//      headers: { "Cookie": "session=<jwt>" }
-router.get('/', async (_req, res) => {
-  try {
-    const result = await pool.query(`
-        SELECT 
-            tb.id AS bucket_id, 
-            tb.name, 
-            tb.description, 
-            COALESCE(array_agg(t.symbol), '{}') AS tokens
-        FROM token_buckets tb
-        LEFT JOIN token_bucket_memberships tbm ON tb.id = tbm.bucket_id
-        LEFT JOIN tokens t ON tbm.token_id = t.id AND t.is_active = true
-        GROUP BY tb.id;
-    `);
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch token buckets.' });
-  }
 });
 
 /**
