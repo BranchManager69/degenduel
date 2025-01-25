@@ -2,6 +2,7 @@
 import dotenv from 'dotenv';
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import { responses, schemas } from './swagger-schemas.js';
 
 dotenv.config();
 
@@ -14,43 +15,67 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: process.env.API_URL || 'https://degenduel.me',
+      url: process.env.API_URL || 'https://degenduel.me/api',
       description: 'Production server'
     },
     {
-      url: 'http://localhost:3003',
+      url: 'http://localhost:3003/api',
       description: 'Development server'
     }
   ],
   components: {
-    schemas: {},
-    responses: {},
-    securitySchemes: {}
+    schemas,
+    responses,
+    securitySchemes: {
+      cookieAuth: {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'session'
+      }
+    }
   }
 };
 
+// Start with just one route file for testing
 const options = {
   definition: swaggerDefinition,
   apis: [
-    './src/routes/*.js',
-    './src/routes/dd-serv/*.js',
-    './src/routes/prisma/*.js',
-    './routes/*.js',
-    './routes/dd-serv/*.js',
-    './routes/prisma/*.js'
+    './routes/tokenBuckets.js', // Token bucket routes
+    './routes/auth.js',         // Auth routes
+    './routes/users.js'         // User routes
   ]
 };
 
 let swaggerSpec;
 try {
+  console.log('Initializing Swagger with single route file...');
   swaggerSpec = swaggerJsDoc(options);
+  
+  if (!swaggerSpec.paths || Object.keys(swaggerSpec.paths).length === 0) {
+    console.warn('No routes detected from tokenBuckets.js');
+    console.log('Schemas loaded:', Object.keys(swaggerSpec.components?.schemas || {}));
+    console.log('Security schemes:', Object.keys(swaggerSpec.components?.securitySchemes || {}));
+  } else {
+    console.log('Successfully loaded routes:', Object.keys(swaggerSpec.paths));
+    console.log('Available operations:', Object.keys(swaggerSpec.paths).map(path => {
+      const operations = swaggerSpec.paths[path];
+      return `${path}: ${Object.keys(operations).join(', ')}`;
+    }));
+  }
 } catch (error) {
   console.error('Failed to initialize Swagger:', error);
+  if (error.mark) {
+    // YAML parsing error details
+    console.error('YAML Error Details:');
+    console.error(`Line ${error.mark.line}, Column ${error.mark.column}`);
+    console.error(`Near: ${error.mark.snippet}`);
+  }
   swaggerSpec = {
     openapi: '3.0.0',
     info: {
       title: 'DegenDuel API',
       version: '1.0.0',
+      description: 'API documentation unavailable due to initialization error'
     },
     paths: {}
   };
@@ -75,9 +100,6 @@ function setupSwagger(app) {
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
   console.log('Swagger docs available at /api-docs');
-  
-  const routes = Object.keys(swaggerSpec.paths || {});
-  console.log('Detected API routes:', routes.length ? routes : 'None found');
 }
 
 export default setupSwagger;

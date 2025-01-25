@@ -1,6 +1,11 @@
 import { body, query, validationResult } from 'express-validator';
 import { VALIDATION } from '../config/constants.js';
 
+/*
+I believe that this might be the oldest code in the entire 
+codebase and probably not used anymore but I am not sure 
+*/
+
 const { NAME, LEADERBOARD } = VALIDATION;
 
 export const validateScore = [
