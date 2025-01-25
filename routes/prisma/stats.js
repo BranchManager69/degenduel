@@ -383,7 +383,9 @@ router.get('/:wallet', async (req, res) => {
         message: error.message,
         code: error?.code
       },
-      wallet_address: wallet
+      wallet_address: wallet,
+      path: req.path,
+      method: req.method
     });
     res.status(500).json({ error: 'Failed to fetch wallet statistics' });
   }
@@ -393,7 +395,7 @@ router.get('/:wallet', async (req, res) => {
  * @swagger
  * /api/stats/{wallet}/history:
  *   get:
- *     summary: Get user's trading history
+ *     summary: Get user's contest history
  *     tags: [Statistics]
  *     parameters:
  *       - in: path
@@ -414,18 +416,24 @@ router.get('/:wallet', async (req, res) => {
  *           type: integer
  *           default: 0
  *         description: Number of records to skip
+ *     responses:
+ *       200:
+ *         description: User's contest history
  */
 router.get('/:wallet/history', async (req, res) => {
   const { wallet } = req.params;
   const limit = parseInt(req.query.limit) || 10;
   const offset = parseInt(req.query.offset) || 0;
-  
+
   try {
     const history = await prisma.contest_participants.findMany({
       where: {
         wallet_address: wallet
       },
       select: {
+        initial_balance: true,
+        current_balance: true,
+        rank: true,
         contests: {
           select: {
             id: true,
@@ -433,16 +441,13 @@ router.get('/:wallet/history', async (req, res) => {
             start_time: true,
             end_time: true
           }
-        },
-        initial_balance: true,
-        current_balance: true,
-        final_rank: true
+        }
       },
       orderBy: {
         joined_at: 'desc'
       },
-      skip: offset,
-      take: limit
+      take: limit,
+      skip: offset
     });
 
     const formattedHistory = history.map(entry => {
@@ -454,24 +459,26 @@ router.get('/:wallet/history', async (req, res) => {
       return {
         contest_id: entry.contests.id,
         contest_name: entry.contests.name,
-        start_time: entry.contests.start_time ? new Date(entry.contests.start_time).toISOString() : null,
-        end_time: entry.contests.end_time ? new Date(entry.contests.end_time).toISOString() : null,
+        start_time: entry.contests.start_time,
+        end_time: entry.contests.end_time,
         portfolio_return: `${portfolioReturn}%`,
-        rank: entry.final_rank || "N/A"
+        rank: entry.rank || "-"
       };
     });
 
     res.json(formattedHistory);
   } catch (error) {
-    logApi.error('Failed to fetch history', {
+    logApi.error('Failed to fetch contest history', {
       error: {
         name: error.name,
         message: error.message,
         code: error?.code
       },
-      wallet_address: wallet
+      wallet_address: wallet,
+      path: req.path,
+      method: req.method
     });
-    res.status(500).json({ error: 'Failed to fetch history' });
+    res.status(500).json({ error: 'Failed to fetch contest history' });
   }
 });
 
@@ -488,27 +495,30 @@ router.get('/:wallet/history', async (req, res) => {
  *         schema:
  *           type: string
  *         description: User's wallet address
+ *     responses:
+ *       200:
+ *         description: User's achievements
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   achievement:
+ *                     type: string
+ *                   achieved_at:
+ *                     type: string
+ *                     format: date-time
+ *                   display_name:
+ *                     type: string
  */
 router.get('/:wallet/achievements', async (req, res) => {
   const { wallet } = req.params;
   
   try {
-    // Get contest participation count
-    const participationCount = await prisma.contest_participants.count({
-      where: {
-        wallet_address: wallet
-      }
-    });
-
-    if (participationCount === 0) {
-      return res.json({
-        message: "No achievements yet - participate in contests to earn achievements!",
-        data: []
-      });
-    }
-
-    // Get first contest entry
-    const firstContest = await prisma.contest_participants.findFirst({
+    // Get all contest participations for the user
+    const participations = await prisma.contest_participants.findMany({
       where: {
         wallet_address: wallet
       },
@@ -522,66 +532,36 @@ router.get('/:wallet/achievements', async (req, res) => {
 
     const achievements = [];
 
-    // First contest achievement
-    if (firstContest) {
+    // First Contest Achievement
+    if (participations.length > 0) {
       achievements.push({
         achievement: 'first_contest',
-        achieved_at: firstContest.joined_at,
+        achieved_at: participations[0].joined_at,
         display_name: 'First Contest Entry'
       });
     }
 
-    // Multiple contests achievements
-    if (participationCount >= 3) {
-      const threeContestsAchievement = await prisma.contest_participants.findFirst({
-        where: {
-          wallet_address: wallet
-        },
-        orderBy: {
-          joined_at: 'desc'
-        },
-        skip: 2,  // Get the 3rd most recent
-        select: {
-          joined_at: true
-        }
+    // Multiple Contests Achievements
+    if (participations.length >= 3) {
+      achievements.push({
+        achievement: 'three_contests',
+        achieved_at: participations[2].joined_at,
+        display_name: 'Participated in 3 Contests'
       });
-
-      if (threeContestsAchievement) {
-        achievements.push({
-          achievement: 'three_contests',
-          achieved_at: threeContestsAchievement.joined_at,
-          display_name: 'Participated in 3 Contests'
-        });
-      }
     }
 
-    if (participationCount >= 5) {
-      const fiveContestsAchievement = await prisma.contest_participants.findFirst({
-        where: {
-          wallet_address: wallet
-        },
-        orderBy: {
-          joined_at: 'desc'
-        },
-        skip: 4,  // Get the 5th most recent
-        select: {
-          joined_at: true
-        }
+    if (participations.length >= 5) {
+      achievements.push({
+        achievement: 'five_contests',
+        achieved_at: participations[4].joined_at,
+        display_name: 'Participated in 5 Contests'
       });
-
-      if (fiveContestsAchievement) {
-        achievements.push({
-          achievement: 'five_contests',
-          achieved_at: fiveContestsAchievement.joined_at,
-          display_name: 'Participated in 5 Contests'
-        });
-      }
     }
 
-    res.json({
-      message: achievements.length > 0 ? "Achievements retrieved successfully" : "No achievements unlocked yet",
-      data: achievements
-    });
+    // Sort achievements by achieved_at date
+    achievements.sort((a, b) => b.achieved_at - a.achieved_at);
+
+    res.json(achievements);
   } catch (error) {
     logApi.error('Failed to fetch achievements', {
       error: {
@@ -589,7 +569,9 @@ router.get('/:wallet/achievements', async (req, res) => {
         message: error.message,
         code: error?.code
       },
-      wallet_address: wallet
+      wallet_address: wallet,
+      path: req.path,
+      method: req.method
     });
     res.status(500).json({ error: 'Failed to fetch achievements' });
   }
