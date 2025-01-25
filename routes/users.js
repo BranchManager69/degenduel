@@ -67,6 +67,110 @@ const createUserSchema = z.object({
 
 /**
  * @swagger
+ * /api/users/search:
+ *   get:
+ *     summary: Search users by wallet address or nickname
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Search query (minimum 2 characters)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 5
+ *         description: Maximum number of users to return
+ *     responses:
+ *       200:
+ *         description: List of matching users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid search query
+ *       500:
+ *         description: Server error
+ */
+// Search users by wallet address or nickname (NO AUTH REQUIRED)
+//   example: GET https://degenduel.me/api/users/search?search=test&limit=5
+router.get('/search', async (req, res) => {
+  const logContext = {
+    path: 'GET /api/users/search',
+    query: req.query
+  };
+
+  try {
+    const { search, limit = 5 } = req.query;
+
+    if (!search || search.length < 2) {
+      logApi.warn('Invalid search query - too short', logContext);
+      return res.status(400).json({ error: 'Search query must be at least 2 characters' });
+    }
+
+    logApi.debug('Searching users', { ...logContext, search, limit });
+
+    const users = await prisma.users.findMany({
+      where: {
+        OR: [
+          {
+            wallet_address: {
+              contains: search,
+              mode: 'insensitive'
+            }
+          },
+          {
+            nickname: {
+              contains: search,
+              mode: 'insensitive'
+            }
+          }
+        ]
+      },
+      take: parseInt(limit),
+      select: {
+        wallet_address: true,
+        nickname: true,
+        total_contests: true,
+        total_wins: true,
+        total_earnings: true,
+        rank_score: true,
+        created_at: true,
+        last_login: true
+      }
+    });
+
+    logApi.info('Successfully searched users', {
+      ...logContext,
+      matchCount: users.length
+    });
+
+    res.json({ users });
+  } catch (error) {
+    logApi.error('Error searching users', {
+      ...logContext,
+      error: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error
+    });
+
+    res.status(500).json({ error: 'Failed to search users' });
+  }
+});
+
+/**
+ * @swagger
  * /api/users:
  *   get:
  *     summary: Get all users with pagination and sorting

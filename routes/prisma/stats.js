@@ -64,15 +64,18 @@ const prisma = new PrismaClient();
 //   example: GET https://degenduel.me/api/stats/platform
 //      headers: { "Authorization": "Bearer <JWT>" }
 router.get('/platform', requireAuth, requireSuperAdmin, async (req, res) => {
-    const log = logApi.withRequest(req);
+    const logContext = {
+        path: 'GET /api/stats/platform',
+        query: req.query
+    };
     
-    log.info('Fetching platform statistics');
+    logApi.info('Fetching platform statistics', logContext);
     const debugMode = true;
 
     try {
         if (debugMode) {
             // Mock data generation...
-            log.debug('Using mock data for platform statistics');
+            logApi.debug('Using mock data for platform statistics', logContext);
             
             const mockUserCount = 5000;
 
@@ -131,7 +134,7 @@ router.get('/platform', requireAuth, requireSuperAdmin, async (req, res) => {
                 }))
             };
 
-            log.info('Mock platform statistics generated successfully', { stats: mockStats });
+            logApi.info('Mock platform statistics generated successfully', { stats: mockStats });
             return res.json(mockStats);
         }
 
@@ -213,11 +216,11 @@ router.get('/platform', requireAuth, requireSuperAdmin, async (req, res) => {
             }))
         };
 
-        log.info('Platform statistics fetched successfully', { stats });
+        logApi.info('Platform statistics fetched successfully', { stats });
         res.json(stats);
 
     } catch (error) {
-        log.error('Failed to fetch platform statistics', {
+        logApi.error('Failed to fetch platform statistics', {
             error: {
                 name: error.name,
                 message: error.message,
