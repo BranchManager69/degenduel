@@ -378,3 +378,7 @@ Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/websites/degenduel/confi
 (Use `node --trace-deprecation ...` to show where the warning was created)
 2025-01-24 21:10:46 -05:00: (node:1001578) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
+2025-01-24 22:57:46 -05:00: (node:1011726) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+2025-01-24 23:52:49 -05:00: (node:1022327) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)

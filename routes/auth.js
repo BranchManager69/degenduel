@@ -203,13 +203,19 @@ router.post('/verify-wallet', async (req, res) => {
     );
 
     // 7) Set cookie
-    res.cookie('session', token, {
+    const cookieOptions = {
       httpOnly: true,
-      secure: true,
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
-      domain: '.degenduel.me'
-    });
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    };
+
+    // Add production-only settings
+    if (req.environment === 'production') {
+      cookieOptions.secure = true;
+      cookieOptions.domain = '.degenduel.me';
+    }
+
+    res.cookie('session', token, cookieOptions);
 
     logApi.info(`Wallet verified successfully: ${wallet}`, { wallet, role: row.role });
     return res.json({

@@ -130,7 +130,7 @@ router.get('/', async (req, res) => {
 
     res.status(status).json({ 
       error: message,
-      details: process.env.NODE_ENV === 'development' ? error.details : undefined
+      details: req.environment === 'development' ? error.details : undefined
     });
   }
 });
@@ -218,7 +218,7 @@ router.get('/:wallet', async (req, res) => {
 
     res.status(status).json({ 
       error: message,
-      details: process.env.NODE_ENV === 'development' ? error.details : undefined
+      details: req.environment === 'development' ? error.details : undefined
     });
   }
 });
@@ -345,7 +345,7 @@ router.post('/', async (req, res) => {
 
     res.status(status).json({ 
       error: message,
-      details: process.env.NODE_ENV === 'development' ? error.details : undefined
+      details: req.environment === 'development' ? error.details : undefined
     });
   }
 });
@@ -405,8 +405,19 @@ router.put('/:wallet', requireAuth, async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    logApi.error('Failed to update user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+    logApi.error('Failed to update user:', {
+      error: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: req.environment === 'development' ? error.stack : undefined
+      } : error,
+      wallet: req.params.wallet
+    });
+
+    res.status(500).json({ 
+      error: 'Failed to update user',
+      message: req.environment === 'development' ? error.message : undefined
+    });
   }
 });
 

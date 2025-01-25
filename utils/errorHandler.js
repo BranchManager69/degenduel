@@ -1,4 +1,4 @@
-import { logApi } from './logger-suite/logger.js';
+import { config } from '../config/config.js';
 
 export class AppError extends Error {
   constructor(message, statusCode = 500) {
@@ -11,39 +11,22 @@ export class AppError extends Error {
   }
 }
 
-export const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
+export const errorHandler = (error, req, res, next) => {
+  const status = error.status || 500;
+  const message = error.message || 'Internal server error';
 
-  if (process.env.NODE_ENV === 'development') {
-    logApi.error('Error:', {
-      status: err.status,
-      error: err,
-      message: err.message,
-      stack: err.stack
-    });
+  // Get environment from request
+  const currentEnv = req.environment || config.getEnvironment(req.headers.origin);
 
-    res.status(err.statusCode).json({
-      status: err.status,
-      error: err,
-      message: err.message,
-      stack: err.stack
-    });
-  } else {
-    // Production error handling
-    logApi.error('Error:', err);
+  // Add stack trace and details only in development
+  const errorResponse = {
+    error: message,
+    status,
+    ...(currentEnv === 'development' && {
+      stack: error.stack,
+      details: error.details
+    })
+  };
 
-    if (err.isOperational) {
-      res.status(err.statusCode).json({
-        status: err.status,
-        message: err.message
-      });
-    } else {
-      // Programming or unknown errors
-      res.status(500).json({
-        status: 'error',
-        message: 'Something went wrong'
-      });
-    }
-  }
+  res.status(status).json(errorResponse);
 };

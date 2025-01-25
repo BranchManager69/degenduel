@@ -2453,3 +2453,1007 @@
 2025-01-24 21:10:47 -05:00: 	   🎯  DegenDuel API  		|  READY!
 2025-01-24 21:10:47 -05:00: 	     '--------------> Port 3003 (all interfaces)
 2025-01-24 21:11:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:11:19.531Z"}
+2025-01-24 21:12:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:12:19.531Z"}
+2025-01-24 21:13:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:13:19.334Z"}
+2025-01-24 21:14:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:14:19.538Z"}
+2025-01-24 21:15:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:15:19.539Z"}
+2025-01-24 21:16:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:16:19.540Z"}
+2025-01-24 21:17:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:17:19.542Z"}
+2025-01-24 21:18:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:18:19.543Z"}
+2025-01-24 21:19:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:19:19.545Z"}
+2025-01-24 21:20:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:20:19.746Z"}
+2025-01-24 21:21:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:21:19.744Z"}
+2025-01-24 21:22:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:22:19.449Z"}
+2025-01-24 21:23:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:23:19.551Z"}
+2025-01-24 21:24:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:24:19.550Z"}
+2025-01-24 21:25:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:25:19.550Z"}
+2025-01-24 21:26:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:26:19.746Z"}
+2025-01-24 21:27:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:27:19.549Z"}
+2025-01-24 21:28:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:28:19.446Z"}
+2025-01-24 21:29:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:29:19.252Z"}
+2025-01-24 21:30:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:30:19.348Z"}
+2025-01-24 21:31:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:31:19.346Z"}
+2025-01-24 21:32:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:32:19.548Z"}
+2025-01-24 21:33:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:33:19.455Z"}
+2025-01-24 21:34:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:34:19.545Z"}
+2025-01-24 21:35:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:35:19.545Z"}
+2025-01-24 21:36:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:36:19.547Z"}
+2025-01-24 21:37:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:37:19.446Z"}
+2025-01-24 21:38:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:38:19.453Z"}
+2025-01-24 21:39:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:39:19.547Z"}
+2025-01-24 21:40:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:40:19.542Z"}
+2025-01-24 21:46:27 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T02:46:27.545Z"}
+2025-01-24 22:10:22 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:10:22.856Z"}
+2025-01-24 22:18:14 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:18:14.555Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.055Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.059Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.155Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.255Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.259Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:18:23.454Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:18:23.455Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.456Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:18:23.458Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:18:23.458Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.554Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.555Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.557Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:18:23.557Z"}
+2025-01-24 22:18:23 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:18:23.656Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.254Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.257Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.355Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.356Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.456Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.457Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.458Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.555Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.556Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.557Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.655Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.656Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.657Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.857Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.956Z"}
+2025-01-24 22:18:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:18:31.957Z"}
+2025-01-24 22:36:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:36:19.265Z"}
+2025-01-24 22:37:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:37:19.360Z"}
+2025-01-24 22:38:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:38:19.362Z"}
+2025-01-24 22:39:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:39:19.360Z"}
+2025-01-24 22:40:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:40:19.459Z"}
+2025-01-24 22:41:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:41:19.460Z"}
+2025-01-24 22:42:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:42:19.266Z"}
+2025-01-24 22:43:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:43:19.459Z"}
+2025-01-24 22:44:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:44:19.460Z"}
+2025-01-24 22:45:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:45:19.458Z"}
+2025-01-24 22:46:07 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:46:07.557Z"}
+2025-01-24 22:47:11 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:11.560Z"}
+2025-01-24 22:47:11 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:11.661Z"}
+2025-01-24 22:47:11 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:11.859Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:12.058Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:12.160Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:12.258Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:47:12.559Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:47:12.659Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:47:12.662Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:12.759Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:12.761Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:47:12.761Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:12.761Z"}
+2025-01-24 22:47:12 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:12.860Z"}
+2025-01-24 22:47:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:25.457Z"}
+2025-01-24 22:47:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:25.462Z"}
+2025-01-24 22:47:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:25.660Z"}
+2025-01-24 22:47:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:25.759Z"}
+2025-01-24 22:47:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:25.782Z"}
+2025-01-24 22:47:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:25.859Z"}
+2025-01-24 22:47:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:26.159Z"}
+2025-01-24 22:47:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:47:26.163Z"}
+2025-01-24 22:47:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:26.457Z"}
+2025-01-24 22:47:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:47:26.459Z"}
+2025-01-24 22:47:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:47:26.657Z"}
+2025-01-24 22:47:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:26.660Z"}
+2025-01-24 22:47:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:47:26.661Z"}
+2025-01-24 22:47:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:47:26.860Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.558Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.558Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.560Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.658Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.659Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.659Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.758Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.759Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.760Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.859Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.959Z"}
+2025-01-24 22:47:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:47.960Z"}
+2025-01-24 22:47:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:48.061Z"}
+2025-01-24 22:47:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:48.158Z"}
+2025-01-24 22:47:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:48.159Z"}
+2025-01-24 22:47:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:48.258Z"}
+2025-01-24 22:47:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:48.259Z"}
+2025-01-24 22:47:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:48.360Z"}
+2025-01-24 22:47:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:48.361Z"}
+2025-01-24 22:47:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:47:48.362Z"}
+2025-01-24 22:50:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:50:19.561Z"}
+2025-01-24 22:51:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:51:19.559Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.658Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.658Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.661Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.662Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.663Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.664Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.665Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.760Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.761Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.763Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.776Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.857Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.858Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.859Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.859Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.861Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.862Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.863Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:00.957Z"}
+2025-01-24 22:52:00 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:00.959Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.657Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.659Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.659Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.757Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.758Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.759Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.857Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.858Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.859Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.958Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.959Z"}
+2025-01-24 22:52:21 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:21.960Z"}
+2025-01-24 22:52:22 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:22.168Z"}
+2025-01-24 22:52:22 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:22.170Z"}
+2025-01-24 22:52:22 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:22.170Z"}
+2025-01-24 22:52:22 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:22.258Z"}
+2025-01-24 22:52:22 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:22.259Z"}
+2025-01-24 22:52:22 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:22.260Z"}
+2025-01-24 22:52:22 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:22.359Z"}
+2025-01-24 22:52:22 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:52:22.360Z"}
+2025-01-24 22:52:29 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T03:52:29.162Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 22:52:42 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:42.560Z"}
+2025-01-24 22:52:42 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:42.659Z"}
+2025-01-24 22:52:42 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:42.662Z"}
+2025-01-24 22:52:42 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:42.857Z"}
+2025-01-24 22:52:42 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:42.957Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:43.059Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:43.060Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:43.062Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:43.062Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:43.257Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:43.258Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:43.258Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:43.259Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:43.260Z"}
+2025-01-24 22:52:43 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:43.261Z"}
+2025-01-24 22:52:54 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:54.859Z"}
+2025-01-24 22:52:54 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:54.862Z"}
+2025-01-24 22:52:54 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:54.960Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:55.058Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:55.157Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:55.161Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:55.165Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:55.259Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:55.260Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:55.357Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:55.358Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:55.358Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:55.360Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:52:55.361Z"}
+2025-01-24 22:52:55 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T03:52:55.362Z"}
+2025-01-24 22:53:04 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T03:53:04.661Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.057Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.062Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.157Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.158Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.258Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.358Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.359Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.359Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.457Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.458Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.459Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.557Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.558Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.559Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.658Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.660Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.660Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.661Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.758Z"}
+2025-01-24 22:53:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:17.857Z"}
+2025-01-24 22:53:24 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T03:53:24.361Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 22:53:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:31.757Z"}
+2025-01-24 22:53:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:31.857Z"}
+2025-01-24 22:53:31 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:31.957Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.057Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.258Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.357Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.360Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.458Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.459Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.460Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.461Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.462Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.462Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.558Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.559Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.559Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.657Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.658Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.659Z"}
+2025-01-24 22:53:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:53:32.659Z"}
+2025-01-24 22:54:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:54:19.158Z"}
+2025-01-24 22:55:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:55:19.362Z"}
+2025-01-24 22:56:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:56:19.365Z"}
+2025-01-24 22:57:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:57:19.267Z"}
+2025-01-24 22:57:37 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-25T03:57:37.367Z"}
+2025-01-24 22:57:44 -05:00: Initializing Swagger with single route file...
+2025-01-24 22:57:44 -05:00: Successfully loaded routes: [
+  '/api/buckets',
+  '/api/buckets/{id}',
+  '/api/token-buckets/{bucketId}/tokens',
+  '/api/token-buckets/{bucketId}/tokens/{tokenId}',
+  '/api/token-buckets/{bucketId}',
+  '/api/auth/challenge',
+  '/api/auth/verify-wallet',
+  '/api/auth/disconnect',
+  '/api/auth/logout',
+  '/api/auth/session',
+  '/api/users',
+  '/api/users/{wallet}',
+  '/api/users/{wallet}/achievements',
+  '/api/users/{wallet}/stats'
+]
+2025-01-24 22:57:44 -05:00: Available operations: [
+  '/api/buckets: post, get',
+  '/api/buckets/{id}: get',
+  '/api/token-buckets/{bucketId}/tokens: post',
+  '/api/token-buckets/{bucketId}/tokens/{tokenId}: delete',
+  '/api/token-buckets/{bucketId}: patch, delete',
+  '/api/auth/challenge: get',
+  '/api/auth/verify-wallet: post',
+  '/api/auth/disconnect: post',
+  '/api/auth/logout: post',
+  '/api/auth/session: get',
+  '/api/users: get, post',
+  '/api/users/{wallet}: get, put',
+  '/api/users/{wallet}/achievements: get',
+  '/api/users/{wallet}/stats: get'
+]
+2025-01-24 22:57:46 -05:00: Swagger docs available at /api-docs
+2025-01-24 22:57:46 -05:00: 
+
+2025-01-24 22:57:46 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-24 22:57:46 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-25T03:57:46.364Z"}
+2025-01-24 22:57:46 -05:00: [32minfo[39m: Starting DegenDuel API... {"port":"3003","timestamp":"2025-01-25T03:57:46.468Z"}
+2025-01-24 22:57:46 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-25T03:57:46.567Z"}
+2025-01-24 22:57:47 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:57:47.064Z"}
+2025-01-24 22:57:47 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-25T03:57:47.070Z"}
+2025-01-24 22:57:47 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-25T03:57:47.071Z"}
+2025-01-24 22:57:47 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-24 22:57:47 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-24 22:57:47 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-24 22:58:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:58:19.368Z"}
+2025-01-24 22:58:38 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:58:38.169Z"}
+2025-01-24 22:58:41 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T03:58:41.271Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.067Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.069Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.166Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.168Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.169Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.248Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.266Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.266Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.366Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.368Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.369Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.466Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.467Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.566Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.666Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.668Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.668Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.670Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.767Z"}
+2025-01-24 22:58:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T03:58:51.769Z"}
+2025-01-24 22:59:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T03:59:19.366Z"}
+2025-01-24 23:00:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:00:19.366Z"}
+2025-01-24 23:01:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:01:19.372Z"}
+2025-01-24 23:01:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:50.869Z"}
+2025-01-24 23:01:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:50.969Z"}
+2025-01-24 23:01:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:50.970Z"}
+2025-01-24 23:01:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:50.971Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.070Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.072Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.073Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.169Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.269Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.669Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.769Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.772Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.773Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.773Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.869Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.870Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.871Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.871Z"}
+2025-01-24 23:01:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:01:51.872Z"}
+2025-01-24 23:02:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:02:19.369Z"}
+2025-01-24 23:03:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:03:19.374Z"}
+2025-01-24 23:03:30 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:03:30.773Z"}
+2025-01-24 23:03:34 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T04:03:34.274Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.572Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.574Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.575Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.771Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.773Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.773Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.870Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.873Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.873Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.935Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.970Z"}
+2025-01-24 23:03:47 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:47.972Z"}
+2025-01-24 23:03:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:48.073Z"}
+2025-01-24 23:03:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:48.074Z"}
+2025-01-24 23:03:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:48.075Z"}
+2025-01-24 23:03:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:48.171Z"}
+2025-01-24 23:03:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:48.271Z"}
+2025-01-24 23:03:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:48.372Z"}
+2025-01-24 23:03:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:48.374Z"}
+2025-01-24 23:03:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:03:48.472Z"}
+2025-01-24 23:04:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:04:19.371Z"}
+2025-01-24 23:05:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:05:19.274Z"}
+2025-01-24 23:06:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:06:19.273Z"}
+2025-01-24 23:06:52 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:52.872Z"}
+2025-01-24 23:06:52 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:52.972Z"}
+2025-01-24 23:06:52 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:52.974Z"}
+2025-01-24 23:06:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:53.072Z"}
+2025-01-24 23:06:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:53.073Z"}
+2025-01-24 23:06:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:53.173Z"}
+2025-01-24 23:06:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:53.174Z"}
+2025-01-24 23:06:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:53.575Z"}
+2025-01-24 23:06:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:53.576Z"}
+2025-01-24 23:06:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:06:53.672Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.273Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.374Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.376Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.473Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.574Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.575Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.879Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.972Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.974Z"}
+2025-01-24 23:07:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:01.977Z"}
+2025-01-24 23:07:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:17.772Z"}
+2025-01-24 23:07:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:17.872Z"}
+2025-01-24 23:07:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:17.874Z"}
+2025-01-24 23:07:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:17.973Z"}
+2025-01-24 23:07:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:17.974Z"}
+2025-01-24 23:07:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:17.976Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.073Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.074Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.074Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.173Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.174Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.174Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.373Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.374Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.375Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.575Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.576Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.673Z"}
+2025-01-24 23:07:18 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:07:18.674Z"}
+2025-01-24 23:07:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:07:19.372Z"}
+2025-01-24 23:08:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:08:19.174Z"}
+2025-01-24 23:09:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:09:19.372Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.074Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.075Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.274Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.275Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.374Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.376Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.676Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.677Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.777Z"}
+2025-01-24 23:09:20 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:20.874Z"}
+2025-01-24 23:09:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:53.174Z"}
+2025-01-24 23:09:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:53.176Z"}
+2025-01-24 23:09:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:53.374Z"}
+2025-01-24 23:09:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:53.474Z"}
+2025-01-24 23:09:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:53.776Z"}
+2025-01-24 23:09:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:53.778Z"}
+2025-01-24 23:09:54 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:54.173Z"}
+2025-01-24 23:09:54 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:54.175Z"}
+2025-01-24 23:09:54 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:54.276Z"}
+2025-01-24 23:09:54 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:09:54.277Z"}
+2025-01-24 23:10:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:10:19.278Z"}
+2025-01-24 23:10:25 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:25.976Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.074Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.075Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.175Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.176Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.276Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.277Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.676Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.677Z"}
+2025-01-24 23:10:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:26.678Z"}
+2025-01-24 23:10:36 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:36.978Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.074Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.176Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.274Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.275Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.374Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.676Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.776Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.777Z"}
+2025-01-24 23:10:37 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:10:37.777Z"}
+2025-01-24 23:11:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:11:19.182Z"}
+2025-01-24 23:12:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:12:19.276Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.575Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.576Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.676Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.775Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.875Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.876Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.878Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.975Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.976Z"}
+2025-01-24 23:12:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:23.977Z"}
+2025-01-24 23:12:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:24.175Z"}
+2025-01-24 23:12:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:24.277Z"}
+2025-01-24 23:12:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:24.278Z"}
+2025-01-24 23:12:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:24.375Z"}
+2025-01-24 23:12:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:24.376Z"}
+2025-01-24 23:12:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:24.376Z"}
+2025-01-24 23:12:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:12:24.475Z"}
+2025-01-24 23:13:05 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:05.777Z"}
+2025-01-24 23:13:05 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:05.878Z"}
+2025-01-24 23:13:05 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:05.975Z"}
+2025-01-24 23:13:06 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:06.079Z"}
+2025-01-24 23:13:06 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:06.174Z"}
+2025-01-24 23:13:06 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:06.175Z"}
+2025-01-24 23:13:06 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:06.477Z"}
+2025-01-24 23:13:06 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:06.478Z"}
+2025-01-24 23:13:06 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:06.674Z"}
+2025-01-24 23:13:06 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:06.675Z"}
+2025-01-24 23:13:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:13:19.276Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.176Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.177Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.178Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.275Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.277Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.277Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.375Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.376Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.377Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.476Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.477Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.478Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.576Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.577Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.578Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.676Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.677Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.779Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.875Z"}
+2025-01-24 23:13:39 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:13:39.876Z"}
+2025-01-24 23:13:57 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:13:57.177Z"}
+2025-01-24 23:13:59 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T04:13:59.481Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 23:14:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:14:19.377Z"}
+2025-01-24 23:15:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:08.675Z"}
+2025-01-24 23:15:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:08.678Z"}
+2025-01-24 23:15:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:08.682Z"}
+2025-01-24 23:15:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:08.780Z"}
+2025-01-24 23:15:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:08.876Z"}
+2025-01-24 23:15:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:08.877Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.080Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.082Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.083Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.188Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.276Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.277Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.283Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.375Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.377Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.381Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.382Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.481Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.680Z"}
+2025-01-24 23:15:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:15:09.682Z"}
+2025-01-24 23:15:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:15:19.183Z"}
+2025-01-24 23:16:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:16:19.377Z"}
+2025-01-24 23:16:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:23.876Z"}
+2025-01-24 23:16:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:23.877Z"}
+2025-01-24 23:16:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:23.976Z"}
+2025-01-24 23:16:23 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:23.978Z"}
+2025-01-24 23:16:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:24.076Z"}
+2025-01-24 23:16:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:24.077Z"}
+2025-01-24 23:16:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:24.478Z"}
+2025-01-24 23:16:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:24.579Z"}
+2025-01-24 23:16:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:24.580Z"}
+2025-01-24 23:16:24 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:24.580Z"}
+2025-01-24 23:16:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:53.476Z"}
+2025-01-24 23:16:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:53.477Z"}
+2025-01-24 23:16:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:53.676Z"}
+2025-01-24 23:16:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:53.677Z"}
+2025-01-24 23:16:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:53.776Z"}
+2025-01-24 23:16:53 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:53.777Z"}
+2025-01-24 23:16:54 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:54.178Z"}
+2025-01-24 23:16:54 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:54.180Z"}
+2025-01-24 23:16:54 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:54.181Z"}
+2025-01-24 23:16:54 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:16:54.277Z"}
+2025-01-24 23:17:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:08.976Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.076Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.077Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.175Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.277Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.278Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.476Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.477Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.677Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.678Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.680Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.680Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.777Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.777Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.778Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.778Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.779Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.781Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.876Z"}
+2025-01-24 23:17:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:17:09.877Z"}
+2025-01-24 23:17:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:17:19.280Z"}
+2025-01-24 23:18:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:00.477Z"}
+2025-01-24 23:18:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:00.479Z"}
+2025-01-24 23:18:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:00.576Z"}
+2025-01-24 23:18:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:00.578Z"}
+2025-01-24 23:18:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:00.677Z"}
+2025-01-24 23:18:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:00.678Z"}
+2025-01-24 23:18:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:00.777Z"}
+2025-01-24 23:18:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:00.779Z"}
+2025-01-24 23:18:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:01.178Z"}
+2025-01-24 23:18:01 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:01.281Z"}
+2025-01-24 23:18:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:18:19.280Z"}
+2025-01-24 23:18:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:26.577Z"}
+2025-01-24 23:18:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:26.578Z"}
+2025-01-24 23:18:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:26.677Z"}
+2025-01-24 23:18:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:26.678Z"}
+2025-01-24 23:18:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:26.777Z"}
+2025-01-24 23:18:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:26.877Z"}
+2025-01-24 23:18:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:27.179Z"}
+2025-01-24 23:18:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:27.181Z"}
+2025-01-24 23:18:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:27.276Z"}
+2025-01-24 23:18:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:27.278Z"}
+2025-01-24 23:18:34 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:34.477Z"}
+2025-01-24 23:18:34 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:34.578Z"}
+2025-01-24 23:18:34 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:34.782Z"}
+2025-01-24 23:18:34 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:34.977Z"}
+2025-01-24 23:18:35 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:35.077Z"}
+2025-01-24 23:18:35 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:35.078Z"}
+2025-01-24 23:18:35 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:35.179Z"}
+2025-01-24 23:18:35 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:35.180Z"}
+2025-01-24 23:18:35 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:35.276Z"}
+2025-01-24 23:18:35 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:18:35.278Z"}
+2025-01-24 23:19:05 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:19:05.579Z"}
+2025-01-24 23:19:08 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T04:19:08.878Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 23:19:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:19:19.277Z"}
+2025-01-24 23:19:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:50.777Z"}
+2025-01-24 23:19:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:50.779Z"}
+2025-01-24 23:19:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:50.877Z"}
+2025-01-24 23:19:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:50.878Z"}
+2025-01-24 23:19:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:50.879Z"}
+2025-01-24 23:19:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:50.977Z"}
+2025-01-24 23:19:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:50.978Z"}
+2025-01-24 23:19:50 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:50.979Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.077Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.177Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.178Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.377Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.378Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.379Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.380Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.477Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.478Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.479Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.481Z"}
+2025-01-24 23:19:51 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:19:51.677Z"}
+2025-01-24 23:20:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:20:19.376Z"}
+2025-01-24 23:20:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:48.477Z"}
+2025-01-24 23:20:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:48.478Z"}
+2025-01-24 23:20:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:48.577Z"}
+2025-01-24 23:20:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:48.579Z"}
+2025-01-24 23:20:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:48.677Z"}
+2025-01-24 23:20:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:48.678Z"}
+2025-01-24 23:20:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:48.777Z"}
+2025-01-24 23:20:48 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:48.778Z"}
+2025-01-24 23:20:49 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:49.178Z"}
+2025-01-24 23:20:49 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:20:49.180Z"}
+2025-01-24 23:21:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:15.977Z"}
+2025-01-24 23:21:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:15.979Z"}
+2025-01-24 23:21:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:16.078Z"}
+2025-01-24 23:21:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:16.079Z"}
+2025-01-24 23:21:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:16.177Z"}
+2025-01-24 23:21:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:16.178Z"}
+2025-01-24 23:21:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:16.278Z"}
+2025-01-24 23:21:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:16.580Z"}
+2025-01-24 23:21:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:16.582Z"}
+2025-01-24 23:21:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:21:16.677Z"}
+2025-01-24 23:21:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:21:19.578Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.485Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.489Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.580Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.582Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.586Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.682Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.778Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.779Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.781Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.781Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.782Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.782Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.783Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.880Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.881Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.882Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:02.882Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.884Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.979Z"}
+2025-01-24 23:22:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:02.980Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:15.579Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:15.679Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:15.777Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:15.780Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:15.786Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:15.881Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:15.881Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:15.883Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:15.978Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:15.979Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:15.979Z"}
+2025-01-24 23:22:15 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:15.982Z"}
+2025-01-24 23:22:16 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:16.077Z"}
+2025-01-24 23:22:16 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:22:16.080Z"}
+2025-01-24 23:22:16 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:22:16.082Z"}
+2025-01-24 23:23:12 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T04:23:12.087Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 23:23:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:25.880Z"}
+2025-01-24 23:23:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:25.883Z"}
+2025-01-24 23:23:25 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:25.982Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:26.080Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:26.177Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:23:26.180Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:23:26.278Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:26.279Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:26.283Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:23:26.377Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:26.381Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:23:26.477Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:23:26.478Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:26.479Z"}
+2025-01-24 23:23:26 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:23:26.480Z"}
+2025-01-24 23:27:48 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T04:27:48.280Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.679Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.681Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.681Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.778Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.779Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.780Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.879Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.880Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.880Z"}
+2025-01-24 23:27:57 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:57.979Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.078Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.079Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.178Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.179Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.278Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.379Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.382Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.481Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.482Z"}
+2025-01-24 23:27:58 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:27:58.778Z"}
+2025-01-24 23:29:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:29:19.186Z"}
+2025-01-24 23:30:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:30:19.279Z"}
+2025-01-24 23:31:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:31:19.180Z"}
+2025-01-24 23:32:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:32:19.278Z"}
+2025-01-24 23:33:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:33:19.279Z"}
+2025-01-24 23:34:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:34:19.275Z"}
+2025-01-24 23:35:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:35:19.278Z"}
+2025-01-24 23:36:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:36:19.277Z"}
+2025-01-24 23:37:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:37:19.178Z"}
+2025-01-24 23:38:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:38:19.277Z"}
+2025-01-24 23:39:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:39:19.083Z"}
+2025-01-24 23:39:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:32.875Z"}
+2025-01-24 23:39:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:32.877Z"}
+2025-01-24 23:39:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:32.975Z"}
+2025-01-24 23:39:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:32.977Z"}
+2025-01-24 23:39:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:33.078Z"}
+2025-01-24 23:39:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:33.175Z"}
+2025-01-24 23:39:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:33.478Z"}
+2025-01-24 23:39:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:33.479Z"}
+2025-01-24 23:39:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:33.576Z"}
+2025-01-24 23:39:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:33.576Z"}
+2025-01-24 23:39:41 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:41.676Z"}
+2025-01-24 23:39:41 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:41.678Z"}
+2025-01-24 23:39:41 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:41.776Z"}
+2025-01-24 23:39:41 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:41.777Z"}
+2025-01-24 23:39:41 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:41.977Z"}
+2025-01-24 23:39:41 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:41.978Z"}
+2025-01-24 23:39:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:42.477Z"}
+2025-01-24 23:39:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:42.478Z"}
+2025-01-24 23:39:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:42.578Z"}
+2025-01-24 23:39:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:42.579Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.276Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.277Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.376Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.376Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.377Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.476Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.477Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.478Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.576Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.577Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.577Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.776Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.777Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.778Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.875Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.877Z"}
+2025-01-24 23:39:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:55.877Z"}
+2025-01-24 23:39:56 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:39:56.034Z"}
+2025-01-24 23:40:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:40:19.184Z"}
+2025-01-24 23:41:14 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:14.275Z"}
+2025-01-24 23:41:14 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:14.277Z"}
+2025-01-24 23:41:14 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:14.376Z"}
+2025-01-24 23:41:14 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:14.481Z"}
+2025-01-24 23:41:14 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:14.576Z"}
+2025-01-24 23:41:14 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:14.777Z"}
+2025-01-24 23:41:14 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:14.779Z"}
+2025-01-24 23:41:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:15.078Z"}
+2025-01-24 23:41:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:15.080Z"}
+2025-01-24 23:41:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:15.080Z"}
+2025-01-24 23:41:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:41:19.377Z"}
+2025-01-24 23:41:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:26.576Z"}
+2025-01-24 23:41:26 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:26.775Z"}
+2025-01-24 23:41:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:27.378Z"}
+2025-01-24 23:41:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:27.475Z"}
+2025-01-24 23:41:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:27.477Z"}
+2025-01-24 23:41:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:27.579Z"}
+2025-01-24 23:41:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:27.580Z"}
+2025-01-24 23:41:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:27.580Z"}
+2025-01-24 23:41:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:27.580Z"}
+2025-01-24 23:41:27 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:27.675Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.375Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.377Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.475Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.476Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.576Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.577Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.676Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.677Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.803Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.804Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.878Z"}
+2025-01-24 23:41:42 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:42.975Z"}
+2025-01-24 23:41:43 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:43.077Z"}
+2025-01-24 23:41:43 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:43.078Z"}
+2025-01-24 23:41:43 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:41:43.079Z"}
+2025-01-24 23:42:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:42:19.375Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.078Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.176Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.276Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.277Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.375Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.576Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.577Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.778Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.779Z"}
+2025-01-24 23:42:46 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:46.779Z"}
+2025-01-24 23:42:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:55.577Z"}
+2025-01-24 23:42:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:55.675Z"}
+2025-01-24 23:42:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:55.775Z"}
+2025-01-24 23:42:55 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:55.777Z"}
+2025-01-24 23:42:56 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:56.277Z"}
+2025-01-24 23:42:56 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:56.375Z"}
+2025-01-24 23:42:56 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:56.376Z"}
+2025-01-24 23:42:56 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:56.377Z"}
+2025-01-24 23:42:56 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:56.378Z"}
+2025-01-24 23:42:56 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:42:56.379Z"}
+2025-01-24 23:43:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:08.775Z"}
+2025-01-24 23:43:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:08.876Z"}
+2025-01-24 23:43:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:08.877Z"}
+2025-01-24 23:43:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:08.975Z"}
+2025-01-24 23:43:08 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:08.976Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.076Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.077Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.078Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.176Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.177Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.178Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.275Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.276Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.377Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.378Z"}
+2025-01-24 23:43:09 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:43:09.379Z"}
+2025-01-24 23:43:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:43:19.176Z"}
+2025-01-24 23:44:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:15.577Z"}
+2025-01-24 23:44:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:15.578Z"}
+2025-01-24 23:44:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:15.675Z"}
+2025-01-24 23:44:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:15.676Z"}
+2025-01-24 23:44:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:15.775Z"}
+2025-01-24 23:44:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:15.876Z"}
+2025-01-24 23:44:15 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:15.877Z"}
+2025-01-24 23:44:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:16.277Z"}
+2025-01-24 23:44:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:16.279Z"}
+2025-01-24 23:44:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:44:16.280Z"}
+2025-01-24 23:44:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:44:19.178Z"}
+2025-01-24 23:45:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:45:19.176Z"}
+2025-01-24 23:46:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:46:19.182Z"}
+2025-01-24 23:46:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:32.876Z"}
+2025-01-24 23:46:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:32.877Z"}
+2025-01-24 23:46:32 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:32.975Z"}
+2025-01-24 23:46:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:33.075Z"}
+2025-01-24 23:46:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:33.175Z"}
+2025-01-24 23:46:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:33.576Z"}
+2025-01-24 23:46:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:33.576Z"}
+2025-01-24 23:46:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:33.578Z"}
+2025-01-24 23:46:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:33.578Z"}
+2025-01-24 23:46:33 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:46:33.579Z"}
+2025-01-24 23:47:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:47:19.177Z"}
+2025-01-24 23:48:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:48:19.177Z"}
+2025-01-24 23:49:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:16.976Z"}
+2025-01-24 23:49:16 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:16.982Z"}
+2025-01-24 23:49:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:17.175Z"}
+2025-01-24 23:49:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:17.176Z"}
+2025-01-24 23:49:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:17.275Z"}
+2025-01-24 23:49:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:17.378Z"}
+2025-01-24 23:49:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:17.379Z"}
+2025-01-24 23:49:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:17.677Z"}
+2025-01-24 23:49:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:17.776Z"}
+2025-01-24 23:49:17 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:49:17.777Z"}
+2025-01-24 23:49:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:49:19.179Z"}
+2025-01-24 23:50:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:50:19.275Z"}
+2025-01-24 23:51:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:51:19.180Z"}
+2025-01-24 23:51:59 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:51:59.775Z"}
+2025-01-24 23:51:59 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:51:59.877Z"}
+2025-01-24 23:51:59 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:51:59.976Z"}
+2025-01-24 23:52:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:52:00.076Z"}
+2025-01-24 23:52:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:52:00.577Z"}
+2025-01-24 23:52:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:52:00.677Z"}
+2025-01-24 23:52:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:52:00.678Z"}
+2025-01-24 23:52:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:52:00.679Z"}
+2025-01-24 23:52:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:52:00.680Z"}
+2025-01-24 23:52:00 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:52:00.680Z"}
+2025-01-24 23:52:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:52:19.178Z"}
+2025-01-24 23:52:39 -05:00: [32minfo[39m: PostgreSQL database connection closed {"timestamp":"2025-01-25T04:52:39.579Z"}
+2025-01-24 23:52:46 -05:00: Initializing Swagger with single route file...
+2025-01-24 23:52:47 -05:00: Successfully loaded routes: [
+  '/api/buckets',
+  '/api/buckets/{id}',
+  '/api/token-buckets/{bucketId}/tokens',
+  '/api/token-buckets/{bucketId}/tokens/{tokenId}',
+  '/api/token-buckets/{bucketId}',
+  '/api/auth/challenge',
+  '/api/auth/verify-wallet',
+  '/api/auth/disconnect',
+  '/api/auth/logout',
+  '/api/auth/session',
+  '/api/users',
+  '/api/users/{wallet}',
+  '/api/users/{wallet}/achievements',
+  '/api/users/{wallet}/stats'
+]
+2025-01-24 23:52:47 -05:00: Available operations: [
+  '/api/buckets: post, get',
+  '/api/buckets/{id}: get',
+  '/api/token-buckets/{bucketId}/tokens: post',
+  '/api/token-buckets/{bucketId}/tokens/{tokenId}: delete',
+  '/api/token-buckets/{bucketId}: patch, delete',
+  '/api/auth/challenge: get',
+  '/api/auth/verify-wallet: post',
+  '/api/auth/disconnect: post',
+  '/api/auth/logout: post',
+  '/api/auth/session: get',
+  '/api/users: get, post',
+  '/api/users/{wallet}: get, put',
+  '/api/users/{wallet}/achievements: get',
+  '/api/users/{wallet}/stats: get'
+]
+2025-01-24 23:52:49 -05:00: Swagger docs available at /api-docs
+2025-01-24 23:52:49 -05:00: 
+
+2025-01-24 23:52:49 -05:00: 	   🤺  DegenDuel API  		|  INITIALIZING...
+2025-01-24 23:52:49 -05:00: [32minfo[39m: Initializing PostgreSQL database... {"timestamp":"2025-01-25T04:52:49.478Z"}
+2025-01-24 23:52:49 -05:00: [32minfo[39m: Starting DegenDuel API... {"port":"3003","timestamp":"2025-01-25T04:52:49.580Z"}
+2025-01-24 23:52:49 -05:00: [32minfo[39m: Database initialized successfully at /home/websites/degenduel/data/leaderboard.db {"timestamp":"2025-01-25T04:52:49.679Z"}
+2025-01-24 23:52:50 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:52:50.177Z"}
+2025-01-24 23:52:50 -05:00: [32minfo[39m: Database schema already exists, skipping initialization {"timestamp":"2025-01-25T04:52:50.183Z"}
+2025-01-24 23:52:50 -05:00: [32minfo[39m: PostgreSQL database initialized successfully {"timestamp":"2025-01-25T04:52:50.183Z"}
+2025-01-24 23:52:50 -05:00: 	   ⚔️   DegenDuel API  		|  ALMOST THERE...
+2025-01-24 23:52:50 -05:00: 	   🎯  DegenDuel API  		|  READY!
+2025-01-24 23:52:50 -05:00: 	     '--------------> Port 3003 (all interfaces)
+2025-01-24 23:53:02 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:53:02.477Z"}
+2025-01-24 23:53:02 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:53:02.479Z"}
+2025-01-24 23:53:02 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:53:02.575Z"}
+2025-01-24 23:53:02 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:53:02.578Z"}
+2025-01-24 23:53:02 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:53:02.676Z"}
+2025-01-24 23:53:02 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:53:02.776Z"}
+2025-01-24 23:53:02 -05:00: [33mwarn[39m: No session token provided {"timestamp":"2025-01-25T04:53:02.777Z"}
+2025-01-24 23:53:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:53:19.179Z"}
+2025-01-24 23:53:31 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:53:31.481Z"}
+2025-01-24 23:53:34 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T04:53:34.578Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}
+2025-01-24 23:54:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:02.676Z"}
+2025-01-24 23:54:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:02.681Z"}
+2025-01-24 23:54:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:02.776Z"}
+2025-01-24 23:54:02 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:02.785Z"}
+2025-01-24 23:54:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:02.879Z"}
+2025-01-24 23:54:02 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:02.880Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.080Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.081Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.177Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:03.180Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.181Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.278Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.279Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.381Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.381Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.381Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.478Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.479Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:03.580Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.776Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.777Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.777Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.778Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:03.879Z"}
+2025-01-24 23:54:03 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:03.977Z"}
+2025-01-24 23:54:19 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:19.174Z"}
+2025-01-24 23:54:32 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:32.982Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.077Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:33.083Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:33.175Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.177Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.177Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.178Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.378Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.380Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.475Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.681Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.775Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.874Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.881Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.881Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.882Z"}
+2025-01-24 23:54:33 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:33.979Z"}
+2025-01-24 23:54:34 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:34.078Z"}
+2025-01-24 23:54:34 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:34.176Z"}
+2025-01-24 23:54:34 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:34.276Z"}
+2025-01-24 23:54:34 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:34.276Z"}
+2025-01-24 23:54:34 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:34.280Z"}
+2025-01-24 23:54:34 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:54:34.376Z"}
+2025-01-24 23:54:34 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:54:34.475Z"}
+2025-01-24 23:55:07 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:55:07.377Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:10.578Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:10.581Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:10.678Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:10.777Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:10.876Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:55:10.975Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:55:10.976Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:55:10.976Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:55:10.977Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:10.977Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:10.978Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:10.979Z"}
+2025-01-24 23:55:10 -05:00: [32minfo[39m: PostgreSQL connected successfully {"timestamp":"2025-01-25T04:55:10.979Z"}
+2025-01-24 23:55:11 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:11.075Z"}
+2025-01-24 23:55:11 -05:00: [32minfo[39m: User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin) {"timestamp":"2025-01-25T04:55:11.078Z"}
+2025-01-24 23:55:29 -05:00: [32minfo[39m: Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp {"role":"superadmin","timestamp":"2025-01-25T04:55:29.575Z","wallet":"BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"}

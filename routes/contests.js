@@ -597,38 +597,17 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
     res.status(201).json(contest);
   } catch (error) {
-    logApi.error({
-      requestId,
-      message: 'Failed to create contest',
-      error: {
+    logApi.error('Error in contest creation:', {
+      error: error instanceof Error ? {
         name: error.name,
         message: error.message,
-        code: error.code,
-        meta: error.meta
-      },
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      duration: Date.now() - startTime
+        stack: req.environment === 'development' ? error.stack : undefined
+      } : error
     });
-    
-    // Handle specific database errors
-    if (error.code === 'P2002') {
-      return res.status(409).json({
-        error: 'Contest code already exists',
-        field: error.meta?.target?.[0]
-      });
-    }
-
-    // Handle other specific Prisma errors
-    if (error.name === 'PrismaClientValidationError') {
-      return res.status(400).json({
-        error: 'Invalid data format',
-        details: error.message
-      });
-    }
 
     res.status(500).json({
       error: 'Failed to create contest',
-      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: req.environment === 'development' ? error.message : undefined
     });
   }
 });
@@ -847,9 +826,9 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         name: error.name,
         message: error.message,
         code: error?.code,
-        meta: error?.meta
+        meta: error?.meta,
+        stack: req.environment === 'development' ? error.stack : undefined
       },
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       duration: Date.now() - startTime
     });
 
@@ -863,13 +842,13 @@ router.post('/:id/join', requireAuth, async (req, res) => {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return res.status(400).json({
         error: 'Database operation failed',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: req.environment === 'development' ? error.message : undefined
       });
     }
 
     res.status(500).json({
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
+      message: req.environment === 'development' ? error.message : 'An unexpected error occurred'
     });
   }
 });
@@ -1040,52 +1019,27 @@ router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
           name: prismaError.name,
           message: prismaError.message,
           code: prismaError.code,
-          meta: prismaError.meta
+          meta: prismaError.meta,
+          stack: req.environment === 'development' ? prismaError.stack : undefined
         },
-        query: prismaError.query,
-        stack: process.env.NODE_ENV === 'development' ? prismaError.stack : undefined
+        query: prismaError.query
       });
       throw prismaError;
     }
 
   } catch (error) {
-    logApi.error('Contest update failed:', {
-      requestId,
-      error: {
+    logApi.error('Error in contest update:', {
+      error: error instanceof Error ? {
         name: error.name,
         message: error.message,
-        code: error.code,
-        meta: error.meta
-      },
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      body: JSON.stringify(req.body)
+        stack: req.environment === 'development' ? error.stack : undefined
+      } : error
     });
-
-    if (error instanceof ContestError) {
-      return res.status(error.statusCode).json({
-        error: error.message,
-        ...(error.details && { details: error.details })
-      });
-    }
-
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return res.status(400).json({
-        error: 'Database operation failed',
-        details: process.env.NODE_ENV === 'development' ? {
-          code: error.code,
-          meta: error.meta,
-          message: error.message
-        } : undefined
-      });
-    }
 
     res.status(500).json({
       error: 'Failed to update contest',
-      details: process.env.NODE_ENV === 'development' ? {
-        message: error.message,
-        code: error.code,
-        meta: error.meta
-      } : undefined
+      details: req.environment === 'development' ? error.message : undefined,
+      message: req.environment === 'development' ? error.message : 'An unexpected error occurred'
     });
   }
 });

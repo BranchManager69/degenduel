@@ -36,7 +36,6 @@ configureMiddleware(app);
 /*
   console.log('Starting API server with config:', {
    port,
-   nodeEnv: process.env.NODE_ENV,
    dbHost: process.env.DB_HOST,
    dbName: process.env.DB_NAME,
    dbUser: process.env.DB_USER,
@@ -224,3 +223,9 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Start the server
 startServer();
+
+// Log startup info
+logApi.info('Starting DegenDuel API...', {
+  port: port,
+  debug_mode: process.env.DEBUG_MODE
+});

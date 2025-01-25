@@ -290,3 +290,26 @@ git push origin feature/your-feature
 </div>
 
 # Winter is coming.
+
+# Environment Configuration
+
+The API determines the environment based on the request origin:
+- Development environment: Requests from `localhost` or `127.0.0.1`
+- Production environment: All other origins
+
+This is configured in `config/config.js`:
+```javascript
+getEnvironment: (origin) => {
+  if (!origin) return 'production'; // Default to production for direct API calls
+  return origin.includes('localhost') || origin.includes('127.0.0.1') 
+    ? 'development' 
+    : 'production';
+}
+```
+
+## Environment Variables
+Required environment variables:
+```bash
+PORT=3003                    # API server port
+DD_API_DEBUG_MODE=false     # Enable/disable debug logging
+```

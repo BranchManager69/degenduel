@@ -82745,3 +82745,4649 @@
   level: 'info',
   timestamp: '2025-01-25T02:11:19.531Z'
 }
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:12:19.531Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:13:19.334Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:14:19.538Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:15:19.539Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:16:19.540Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:17:19.542Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:18:19.543Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:19:19.545Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:20:19.746Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:21:19.744Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:22:19.449Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:23:19.551Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:24:19.550Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:25:19.550Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:26:19.746Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:27:19.549Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:28:19.446Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:29:19.252Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:30:19.348Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:31:19.346Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:32:19.548Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:33:19.455Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:34:19.545Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:35:19.545Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:36:19.547Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:37:19.446Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:38:19.453Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:39:19.547Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:40:19.542Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T02:46:27.545Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:10:22.856Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:14.555Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.055Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.059Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.155Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.255Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.259Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.454Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.455Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.456Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.458Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.458Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.554Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.555Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.557Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.557Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:18:23.656Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.254Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.257Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.355Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.356Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.456Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.457Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.458Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.555Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.556Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.557Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.655Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.656Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.657Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.857Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.956Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:18:31.957Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:36:19.265Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:37:19.360Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:38:19.362Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:39:19.360Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:40:19.459Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:41:19.460Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:42:19.266Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:43:19.459Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:44:19.460Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:45:19.458Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:46:07.557Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:11.560Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:11.661Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:11.859Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.058Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.160Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.258Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.559Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.659Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.662Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.759Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.761Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.761Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.761Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:12.860Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:25.457Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:25.462Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:25.660Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:25.759Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:25.782Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:25.859Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:26.159Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:26.163Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:26.457Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:26.459Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:26.657Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:26.660Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:26.661Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:47:26.860Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.558Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.558Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.560Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.658Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.659Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.659Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.758Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.759Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.760Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.859Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.959Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:47.960Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:48.061Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:48.158Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:48.159Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:48.258Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:48.259Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:48.360Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:48.361Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:47:48.362Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:50:19.561Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:51:19.559Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.658Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.658Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.661Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.662Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.663Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.664Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.665Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.760Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.761Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.763Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.776Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.857Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.858Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.859Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.859Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.861Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.862Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.863Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.957Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:00.959Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.657Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.659Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.659Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.757Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.758Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.759Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.857Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.858Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.859Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.958Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.959Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:21.960Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:22.168Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:22.170Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:22.170Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:22.258Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:22.259Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:22.260Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:22.359Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:52:22.360Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T03:52:29.162Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:42.560Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:42.659Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:42.662Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:42.857Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:42.957Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.059Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.060Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.062Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.062Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.257Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.258Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.258Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.259Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.260Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:43.261Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:54.859Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:54.862Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:54.960Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.058Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.157Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.161Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.165Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.259Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.260Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.357Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.358Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.358Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.360Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.361Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T03:52:55.362Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T03:53:04.661Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.057Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.062Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.157Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.158Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.258Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.358Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.359Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.359Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.457Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.458Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.459Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.557Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.558Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.559Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.658Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.660Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.660Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.661Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.758Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:17.857Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T03:53:24.361Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:31.757Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:31.857Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:31.957Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.057Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.258Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.357Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.360Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.458Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.459Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.460Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.461Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.462Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.462Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.558Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.559Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.559Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.657Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.658Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.659Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:53:32.659Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:54:19.158Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:55:19.362Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:56:19.365Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:57:19.267Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T03:57:37.367Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T03:57:46.364Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T03:57:46.468Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T03:57:46.567Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:57:47.064Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T03:57:47.070Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:57:47.071Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:58:19.368Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:58:38.169Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T03:58:41.271Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.067Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.069Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.166Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.168Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.169Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.248Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.266Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.266Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.366Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.368Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.369Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.466Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.467Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.566Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.666Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.668Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.668Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.670Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.767Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T03:58:51.769Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T03:59:19.366Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:00:19.366Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:01:19.372Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:50.869Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:50.969Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:50.970Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:50.971Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.070Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.072Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.073Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.169Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.269Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.669Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.769Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.772Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.773Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.773Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.869Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.870Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.871Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.871Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:01:51.872Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:02:19.369Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:03:19.374Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:03:30.773Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T04:03:34.274Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.572Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.574Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.575Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.771Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.773Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.773Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.870Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.873Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.873Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.935Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.970Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:47.972Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:48.073Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:48.074Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:48.075Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:48.171Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:48.271Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:48.372Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:48.374Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:03:48.472Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:04:19.371Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:05:19.274Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:06:19.273Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:52.872Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:52.972Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:52.974Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:53.072Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:53.073Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:53.173Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:53.174Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:53.575Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:53.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:06:53.672Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.273Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.374Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.473Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.574Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.575Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.879Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.972Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.974Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:01.977Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:17.772Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:17.872Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:17.874Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:17.973Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:17.974Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:17.976Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.073Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.074Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.074Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.173Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.174Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.174Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.373Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.374Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.375Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.575Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.673Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:07:18.674Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:07:19.372Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:08:19.174Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:09:19.372Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.074Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.075Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.274Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.275Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.374Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:20.874Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:53.174Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:53.176Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:53.374Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:53.474Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:53.776Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:53.778Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:54.173Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:54.175Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:54.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:09:54.277Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:10:19.278Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:25.976Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.074Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.075Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.175Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.176Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:26.678Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:36.978Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.074Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.176Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.274Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.275Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.374Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.776Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:10:37.777Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:11:19.182Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:12:19.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.575Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.775Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.875Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.876Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.878Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.975Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.976Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:23.977Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:24.175Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:24.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:24.278Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:24.375Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:24.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:24.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:12:24.475Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:05.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:05.878Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:05.975Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:06.079Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:06.174Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:06.175Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:06.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:06.478Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:06.674Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:06.675Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:13:19.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.176Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.177Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.178Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.275Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.375Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.476Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.478Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.779Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.875Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:13:39.876Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:13:57.177Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T04:13:59.481Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:14:19.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:08.675Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:08.678Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:08.682Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:08.780Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:08.876Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:08.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.080Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.082Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.083Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.188Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.283Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.375Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.381Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.382Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.481Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.680Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:15:09.682Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:15:19.183Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:16:19.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:23.876Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:23.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:23.976Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:23.978Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:24.076Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:24.077Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:24.478Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:24.579Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:24.580Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:24.580Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:53.476Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:53.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:53.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:53.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:53.776Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:53.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:54.178Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:54.180Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:54.181Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:16:54.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:08.976Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.076Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.077Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.175Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.278Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.476Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.678Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.680Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.680Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.778Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.778Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.779Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.781Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.876Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:17:09.877Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:17:19.280Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:00.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:00.479Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:00.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:00.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:00.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:00.678Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:00.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:00.779Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:01.178Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:01.281Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:18:19.280Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:26.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:26.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:26.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:26.678Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:26.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:26.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:27.179Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:27.181Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:27.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:27.278Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:34.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:34.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:34.782Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:34.977Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:35.077Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:35.078Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:35.179Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:35.180Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:35.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:18:35.278Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:19:05.579Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T04:19:08.878Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:19:19.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:50.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:50.779Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:50.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:50.878Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:50.879Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:50.977Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:50.978Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:50.979Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.077Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.177Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.178Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.378Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.379Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.380Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.478Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.479Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.481Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:19:51.677Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:20:19.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:48.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:48.478Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:48.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:48.579Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:48.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:48.678Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:48.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:48.778Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:49.178Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:20:49.180Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:15.977Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:15.979Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:16.078Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:16.079Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:16.177Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:16.178Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:16.278Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:16.580Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:16.582Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:21:16.677Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:21:19.578Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.485Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.489Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.580Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.582Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.586Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.682Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.778Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.779Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.781Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.781Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.782Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.782Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.783Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.880Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.881Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.882Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.882Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.884Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.979Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:02.980Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.579Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.679Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.777Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.780Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.786Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.881Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.881Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.883Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.978Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.979Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.979Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:15.982Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:16.077Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:16.080Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:22:16.082Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T04:23:12.087Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:25.880Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:25.883Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:25.982Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.080Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.177Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.180Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.278Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.279Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.283Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.377Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.381Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.477Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.478Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.479Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:23:26.480Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T04:27:48.280Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.679Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.681Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.681Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.778Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.779Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.780Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.879Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.880Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.880Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:57.979Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.078Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.079Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.178Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.179Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.278Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.379Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.382Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.481Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.482Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:27:58.778Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:29:19.186Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:30:19.279Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:31:19.180Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:32:19.278Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:33:19.279Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:34:19.275Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:35:19.278Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:36:19.277Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:37:19.178Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:38:19.277Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:39:19.083Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:32.875Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:32.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:32.975Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:32.977Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:33.078Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:33.175Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:33.478Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:33.479Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:33.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:33.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:41.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:41.678Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:41.776Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:41.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:41.977Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:41.978Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:42.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:42.478Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:42.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:42.579Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.476Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.478Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.776Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.778Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.875Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:55.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:39:56.034Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:40:19.184Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:14.275Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:14.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:14.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:14.481Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:14.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:14.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:14.779Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:15.078Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:15.080Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:15.080Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:41:19.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:26.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:26.775Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:27.378Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:27.475Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:27.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:27.579Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:27.580Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:27.580Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:27.580Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:27.675Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.375Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.475Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.476Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.803Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.804Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.878Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:42.975Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:43.077Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:43.078Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:41:43.079Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:42:19.375Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.078Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.176Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.375Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.778Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.779Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:46.779Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:55.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:55.675Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:55.775Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:55.777Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:56.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:56.375Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:56.376Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:56.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:56.378Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:42:56.379Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:08.775Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:08.876Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:08.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:08.975Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:08.976Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.076Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.077Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.078Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.176Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.177Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.178Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.275Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.276Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.377Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.378Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:43:09.379Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:43:19.176Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:15.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:15.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:15.675Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:15.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:15.775Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:15.876Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:15.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:16.277Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:16.279Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:44:16.280Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:44:19.178Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:45:19.176Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:46:19.182Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:32.876Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:32.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:32.975Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:33.075Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:33.175Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:33.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:33.576Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:33.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:33.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:46:33.579Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:47:19.177Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:48:19.177Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:16.976Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:16.982Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:17.175Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:17.176Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:17.275Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:17.378Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:17.379Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:17.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:17.776Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:49:17.777Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:49:19.179Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:50:19.275Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:51:19.180Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:51:59.775Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:51:59.877Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:51:59.976Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:52:00.076Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:52:00.577Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:52:00.677Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:52:00.678Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:52:00.679Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:52:00.680Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:52:00.680Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:52:19.178Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-25T04:52:39.579Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-25T04:52:49.478Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-25T04:52:49.580Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-25T04:52:49.679Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:52:50.177Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-25T04:52:50.183Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:52:50.183Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:53:02.477Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:53:02.479Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:53:02.575Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:53:02.578Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:53:02.676Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:53:02.776Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-25T04:53:02.777Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:53:19.179Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:53:31.481Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T04:53:34.578Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:02.676Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:02.681Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:02.776Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:02.785Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:02.879Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:02.880Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.080Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.081Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.177Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.180Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.181Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.278Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.279Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.381Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.381Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.381Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.478Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.479Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.580Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.776Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.777Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.777Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.778Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.879Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:03.977Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:19.174Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:32.982Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.077Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.083Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.175Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.177Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.177Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.178Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.378Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.380Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.475Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.681Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.775Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.874Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.881Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.881Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.882Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:33.979Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:34.078Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:34.176Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:34.276Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:34.276Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:34.280Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:34.376Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:54:34.475Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:07.377Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.578Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.581Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.678Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.777Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.876Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.975Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.976Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.976Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.977Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.977Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.978Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.979Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:10.979Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:11.075Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T04:55:11.078Z'
+}
+{
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  role: 'superadmin',
+  level: 'info',
+  message: 'Wallet verified successfully: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  timestamp: '2025-01-25T04:55:29.575Z'
+}
