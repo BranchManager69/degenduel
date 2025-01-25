@@ -26,17 +26,115 @@ const createUserSchema = z.object({
  *   description: API endpoints for user management
  */
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         wallet_address:
+ *           type: string
+ *           description: User's wallet address
+ *         nickname:
+ *           type: string
+ *           description: User's chosen nickname
+ *         total_contests:
+ *           type: integer
+ *           description: Total number of contests participated in
+ *         total_wins:
+ *           type: integer
+ *           description: Total number of contests won
+ *         total_earnings:
+ *           type: number
+ *           format: float
+ *           description: Total earnings from contests
+ *         rank_score:
+ *           type: number
+ *           format: float
+ *           description: User's ranking score
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *           description: Account creation timestamp
+ *         last_login:
+ *           type: string
+ *           format: date-time
+ *           description: Last login timestamp
+ */
+
 /* Users Routes */
 
 /**
  * @swagger
  * /api/users:
  *   get:
- *     summary: Get all users
+ *     summary: Get all users with pagination and sorting
  *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Maximum number of users to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of users to skip
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [rank_score, total_earnings, total_contests]
+ *         description: Field to sort by (descending order)
  *     responses:
  *       200:
- *         description: List of users
+ *         description: List of users with pagination info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 total:
+ *                   type: integer
+ *                   description: Total number of users
+ *                 limit:
+ *                   type: integer
+ *                   description: Number of users per page
+ *                 offset:
+ *                   type: integer
+ *                   description: Number of users skipped
+ *       400:
+ *         description: Invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid query parameters
+ *                 details:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Database error while fetching users
  */
 // Get all users (NO AUTH REQUIRED*)
 //   example: GET https://degenduel.me/api/users
@@ -147,11 +245,73 @@ router.get('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *         description: Wallet address of the user
  *     responses:
  *       200:
- *         description: User profile data
+ *         description: User profile data with recent contests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 wallet_address:
+ *                   type: string
+ *                 nickname:
+ *                   type: string
+ *                 total_contests:
+ *                   type: integer
+ *                 total_wins:
+ *                   type: integer
+ *                 total_earnings:
+ *                   type: number
+ *                   format: float
+ *                 rank_score:
+ *                   type: number
+ *                   format: float
+ *                 created_at:
+ *                   type: string
+ *                   format: date-time
+ *                 last_login:
+ *                   type: string
+ *                   format: date-time
+ *                 contest_participants:
+ *                   type: array
+ *                   description: Last 5 contests participated in
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       joined_at:
+ *                         type: string
+ *                         format: date-time
+ *                       contests:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           name:
+ *                             type: string
+ *                           status:
+ *                             type: string
  *       404:
  *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Database error while fetching user
  */
 // Get user profile by wallet address (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/users/{wallet}
@@ -240,24 +400,21 @@ router.get('/:wallet', async (req, res) => {
  *             properties:
  *               wallet_address:
  *                 type: string
- *                 example: "0x1234..."
+ *                 description: User's wallet address
  *               nickname:
  *                 type: string
- *                 example: "CryptoTrader123"
+ *                 minLength: 3
+ *                 maxLength: 50
+ *                 description: Optional nickname for the user
  *     responses:
  *       201:
  *         description: User created successfully
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/User'
- *                 - type: object
- *                   properties:
- *                     user_stats:
- *                       $ref: '#/components/schemas/UserStats'
+ *               $ref: '#/components/schemas/User'
  *       400:
- *         description: Invalid request
+ *         description: Invalid input data
  *         content:
  *           application/json:
  *             schema:
@@ -265,7 +422,31 @@ router.get('/:wallet', async (req, res) => {
  *               properties:
  *                 error:
  *                   type: string
- *                   example: "Wallet address already exists"
+ *                   example: Invalid input data
+ *                 details:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       409:
+ *         description: User already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: User already exists
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Database error while creating user
  */
 // Create new user (NO AUTH REQUIRED)
 //   example: POST https://degenduel.me/api/users
@@ -355,14 +536,17 @@ router.post('/', async (req, res) => {
  * /api/users/{wallet}:
  *   put:
  *     summary: Update user profile
+ *     description: Update a user's profile information. Requires authentication and the authenticated user must match the wallet address being updated.
  *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: wallet
  *         required: true
  *         schema:
  *           type: string
- *         description: User's wallet address
+ *         description: User's wallet address to update
  *     requestBody:
  *       required: true
  *       content:
@@ -372,8 +556,12 @@ router.post('/', async (req, res) => {
  *             properties:
  *               nickname:
  *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 50
+ *                 description: New nickname for the user
  *               settings:
  *                 type: object
+ *                 description: User preferences and settings
  *                 example: { "notifications": true, "theme": "dark" }
  *     responses:
  *       200:
@@ -382,8 +570,55 @@ router.post('/', async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid input data
+ *                 details:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Authentication required
+ *       403:
+ *         description: Not authorized to update this user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Not authorized to update this user
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to update user
+ *                 message:
+ *                   type: string
+ *                   description: Detailed error message (only in development)
  */
 // Update user profile by wallet address (AUTHENTICATED)
 //   headers: { "Cookie": "session=<jwt>" }
@@ -426,6 +661,7 @@ router.put('/:wallet', requireAuth, async (req, res) => {
  * /api/users/{wallet}/achievements:
  *   get:
  *     summary: Get user achievements
+ *     description: Retrieve all achievements for a specific user, ordered by achievement date (descending)
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -433,18 +669,37 @@ router.put('/:wallet', requireAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: User's wallet address
+ *         description: User's wallet address to fetch achievements for
  *     responses:
  *       200:
- *         description: User achievements
+ *         description: List of user achievements
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/UserAchievement'
+ *               example:
+ *                 - id: 1
+ *                   wallet_address: "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"
+ *                   achievement_id: "first_win"
+ *                   achieved_at: "2024-02-20T15:30:00Z"
+ *                   metadata: { "contest_id": 123, "prize": 100 }
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to fetch achievements
+ *                 message:
+ *                   type: string
+ *                   description: Detailed error message (only in development)
  */
 // Get user achievements by wallet address (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/users/{wallet}/achievements
@@ -468,6 +723,7 @@ router.get('/:wallet/achievements', async (req, res) => {
  * /api/users/{wallet}/stats:
  *   get:
  *     summary: Get detailed user statistics
+ *     description: Retrieve comprehensive statistics for a user, including general stats and token-specific performance metrics
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -475,10 +731,10 @@ router.get('/:wallet/achievements', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: User's wallet address
+ *         description: User's wallet address to fetch statistics for
  *     responses:
  *       200:
- *         description: User statistics
+ *         description: Detailed user statistics including general stats and token-specific performance
  *         content:
  *           application/json:
  *             schema:
@@ -486,28 +742,66 @@ router.get('/:wallet/achievements', async (req, res) => {
  *               properties:
  *                 general:
  *                   $ref: '#/components/schemas/UserStats'
+ *                   description: Overall user statistics
  *                 tokens:
  *                   type: array
+ *                   description: Performance statistics for each token the user has traded
  *                   items:
  *                     type: object
  *                     properties:
  *                       token_address:
  *                         type: string
+ *                         description: The unique address of the token
  *                       times_picked:
  *                         type: integer
+ *                         description: Number of times this token was selected in contests
  *                       wins_with_token:
  *                         type: integer
+ *                         description: Number of contests won using this token
  *                       avg_score_with_token:
  *                         type: string
+ *                         description: Average performance score with this token
  *                       tokens:
  *                         type: object
+ *                         description: Token metadata
  *                         properties:
  *                           symbol:
  *                             type: string
+ *                             description: Token symbol (e.g., "BTC")
  *                           name:
  *                             type: string
+ *                             description: Token name (e.g., "Bitcoin")
+ *               example:
+ *                 general:
+ *                   total_contests: 50
+ *                   total_wins: 20
+ *                   total_earnings: "1000.50"
+ *                   rank_score: 85.5
+ *                   created_at: "2024-01-01T00:00:00Z"
+ *                   updated_at: "2024-02-20T15:30:00Z"
+ *                 tokens:
+ *                   - token_address: "So11111111111111111111111111111111111111112"
+ *                     times_picked: 30
+ *                     wins_with_token: 12
+ *                     avg_score_with_token: "75.5"
+ *                     tokens:
+ *                       symbol: "SOL"
+ *                       name: "Solana"
  *       404:
  *         $ref: '#/components/responses/UserNotFound'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to fetch user stats
+ *                 message:
+ *                   type: string
+ *                   description: Detailed error message (only in development)
  */
 // Get detailed user statistics by wallet address (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/users/{wallet}/stats
