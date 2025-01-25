@@ -179,9 +179,9 @@ router.post('/users/:wallet/balance', requireAuth, requireAdmin, async (req, res
         name: error.name,
         message: error.message,
         code: error?.code,
-        meta: error?.meta
+        meta: error?.meta,
+        stack: req.environment === 'development' ? error.stack : undefined
       },
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       duration: Date.now() - startTime
     });
 
@@ -195,7 +195,7 @@ router.post('/users/:wallet/balance', requireAuth, requireAdmin, async (req, res
 
     res.status(500).json({
       error: 'Failed to adjust balance',
-      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: req.environment === 'development' ? error.message : undefined
     });
   }
 });
