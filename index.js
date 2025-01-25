@@ -69,7 +69,7 @@ app.use('/api/dd-serv', ddServRoutes);
 import testRoutes from './archive/test-routes.js';
 import authRoutes from './routes/auth.js';
 import contestRoutes from './routes/contests.js';
-import leaderboardRoutes from './routes/leaderboard.js';
+import leaderboardRoutes from './routes/prisma/leaderboard.js';
 import tokenBucketRoutes from './routes/tokenBuckets.js';
 import tokenRoutes from './routes/tokens.js';
 import tradeRoutes from './routes/trades.js';
@@ -80,7 +80,7 @@ app.use('/api/contests', contestRoutes);
 app.use('/api/trades', tradeRoutes);
 app.use('/api/tokens', tokenRoutes); // new
 app.use('/api/token-buckets', tokenBucketRoutes); // new
-app.use('/api/leaderboard', leaderboardRoutes); // almost forgot this one!
+app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/test', testRoutes); // NEWEST; tests v4
 
 // Superadmin routes

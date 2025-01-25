@@ -285,6 +285,179 @@ router.get('/prices/:tokenId', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/tokens:
+ *   post:
+ *     summary: Create a new token
+ *     description: Create a new token with optional bucket assignment. Requires superadmin role.
+ *     tags: [Tokens]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - symbol
+ *               - name
+ *             properties:
+ *               symbol:
+ *                 type: string
+ *                 description: Token symbol (e.g., "BTC")
+ *               name:
+ *                 type: string
+ *                 description: Token name (e.g., "Bitcoin")
+ *               bucket_id:
+ *                 type: integer
+ *                 description: Optional bucket ID to assign the token to
+ *               is_active:
+ *                 type: boolean
+ *                 default: true
+ *                 description: Whether the token is active and available for trading
+ *     responses:
+ *       201:
+ *         description: Token created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Token'
+ *       400:
+ *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid input data
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Authentication required
+ *       403:
+ *         description: Not authorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Superadmin role required
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to create token
+ */
+
+/**
+ * @swagger
+ * /api/tokens/{id}:
+ *   put:
+ *     summary: Update a token
+ *     description: Update an existing token's details. Requires superadmin role.
+ *     tags: [Tokens]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Token ID to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               symbol:
+ *                 type: string
+ *                 description: Token symbol (e.g., "BTC")
+ *               name:
+ *                 type: string
+ *                 description: Token name (e.g., "Bitcoin")
+ *               is_active:
+ *                 type: boolean
+ *                 description: Whether the token is active and available for trading
+ *               market_cap:
+ *                 type: string
+ *                 description: Token's market capitalization
+ *               volume_24h:
+ *                 type: string
+ *                 description: 24-hour trading volume
+ *               change_24h:
+ *                 type: string
+ *                 description: 24-hour price change percentage
+ *     responses:
+ *       200:
+ *         description: Token updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Token'
+ *       400:
+ *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid input data
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Authentication required
+ *       403:
+ *         description: Not authorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Superadmin role required
+ *       404:
+ *         $ref: '#/components/responses/TokenNotFound'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to update token
+ */
+
 //   example: POST https://degenduel.me/api/tokens
 //      headers: { "Cookie": "session=<jwt>" }
 //      body: { "symbol": "BTC", "name": "Bitcoin", "bucket_id": 1 }
