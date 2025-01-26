@@ -1,6 +1,6 @@
 // /routes/trades.js
 import express from 'express';
-import { pool } from '../config/pg-database.js';
+import prisma from '../config/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
@@ -85,10 +85,7 @@ const router = express.Router();
 //      headers: { "Authorization": "Bearer <JWT>" }
 //      example: POST https://degenduel.me/api/trades/1
 router.post('/:contestId', requireAuth, async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    
     const { wallet, token_id, type, amount } = req.body;
 
     // Validate trade parameters
@@ -97,33 +94,33 @@ router.post('/:contestId', requireAuth, async (req, res) => {
     }
 
     // Verify contest is active
-    const contestCheck = await client.query(`
-      SELECT * FROM contests 
-      WHERE id = $1 
-        AND start_time <= CURRENT_TIMESTAMP 
-        AND end_time > CURRENT_TIMESTAMP
-    `, [req.params.contestId]);
+    const contest = await prisma.contests.findFirst({
+      where: {
+        id: req.params.contestId,
+        start_time: { lte: new Date() },
+        end_time: { gt: new Date() }
+      }
+    });
     
-    if (contestCheck.rows.length === 0) {
+    if (!contest) {
       throw new Error('Contest not active.');
     }
 
     // Record trade
-    const result = await client.query(`
-      INSERT INTO contest_token_performance 
-        (contest_id, wallet_address, token_id, trade_type, amount)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `, [req.params.contestId, wallet, token_id, type, amount]);
+    const result = await prisma.contest_token_performance.create({
+      data: {
+        contest_id: req.params.contestId,
+        wallet_address: wallet,
+        token_id: token_id,
+        trade_type: type,
+        amount: amount
+      }
+    });
     
-    await client.query('COMMIT');
-    res.json(result.rows[0]);
+    res.json(result);
   } catch (error) {
-    await client.query('ROLLBACK');
     logApi.error('Submit trade failed:', error);
     res.status(500).json({ error: error.message });
-  } finally {
-    client.release();
   }
 });
 
@@ -192,20 +189,42 @@ router.get('/:contestId', async (req, res) => {
       return res.status(400).json({ error: 'Wallet address is required.' });
     }
 
-    const result = await pool.query(`
-      SELECT 
-        ctp.*,
-        t.symbol,
-        t.name,
-        tp.price AS token_price
-      FROM contest_token_performance ctp
-      JOIN tokens t ON ctp.token_id = t.id
-      LEFT JOIN token_prices tp ON t.id = tp.token_id
-      WHERE contest_id = $1 AND wallet_address = $2
-      ORDER BY ctp.created_at DESC
-    `, [contestId, wallet]);
+    const trades = await prisma.contest_token_performance.findMany({
+      where: {
+        contest_id: contestId,
+        wallet_address: wallet
+      },
+      include: {
+        token: {
+          select: {
+            symbol: true,
+            name: true,
+            token_prices: {
+              select: {
+                price: true
+              },
+              take: 1,
+              orderBy: {
+                created_at: 'desc'
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
 
-    res.json(result.rows);
+    // Format the response to match the previous structure
+    const formattedTrades = trades.map(trade => ({
+      ...trade,
+      symbol: trade.token.symbol,
+      name: trade.token.name,
+      token_price: trade.token.token_prices[0]?.price || null
+    }));
+
+    res.json(formattedTrades);
   } catch (error) {
     logApi.error('Get trades failed:', error);
     res.status(500).json({ error: error.message });

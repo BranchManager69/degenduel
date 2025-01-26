@@ -1,5 +1,5 @@
 import express from 'express';
-import { pool } from '../config/pg-database.js';
+import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 //import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 
@@ -61,28 +61,38 @@ const router = express.Router();
 //      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet', async (req, res) => {
     try {
-        const result = await pool.query(`
-        WITH user_stats AS (
-            SELECT 
-            wallet_address,
-            COUNT(DISTINCT contest_id) as total_contests,
-            SUM(CASE WHEN rank = 1 THEN 1 ELSE 0 END) as total_wins
-            FROM contest_participants
-            GROUP BY wallet_address
-        )
-        SELECT 
-            u.*,
-            COALESCE(us.total_contests, 0) as total_contests,
-            COALESCE(us.total_wins, 0) as total_wins
-        FROM users u
-        LEFT JOIN user_stats us ON u.wallet_address = us.wallet_address
-        WHERE u.wallet_address = $1
-        `, [req.params.wallet]);
+        // Get user and their contest participation stats
+        const user = await prisma.users.findUnique({
+            where: {
+                wallet_address: req.params.wallet
+            },
+            include: {
+                contest_participants: {
+                    select: {
+                        contest_id: true,
+                        rank: true
+                    }
+                }
+            }
+        });
 
-        if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
         }
-        res.json(result.rows[0]);
+
+        // Calculate stats
+        const total_contests = user.contest_participants.length;
+        const total_wins = user.contest_participants.filter(p => p.rank === 1).length;
+
+        // Format response
+        const response = {
+            ...user,
+            total_contests,
+            total_wins,
+            contest_participants: undefined // Remove the raw data
+        };
+
+        res.json(response);
     } catch (error) {
         logApi.error('Get stats failed:', error);
         res.status(500).json({ error: error.message });
@@ -147,28 +157,38 @@ router.get('/:wallet', async (req, res) => {
 //      example: GET https://degenduel.me/api/stats/{wallet}/history
 //      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet/history', async (req, res) => {
-try {
-      const result = await pool.query(`
-        SELECT 
-          c.id as contest_id,
-          c.name as contest_name,
-          c.start_time,
-          c.end_time,
-          cp.initial_balance,
-          cp.current_balance,
-          cp.rank
-        FROM contests c
-        JOIN contest_participants cp ON c.id = cp.contest_id
-        WHERE cp.wallet_address = $1
-        ORDER BY c.end_time DESC
-        LIMIT $2
-        OFFSET $3
-      `, [req.params.wallet, req.query.limit || 10, req.query.offset || 0]);
-      
-      res.json(result.rows);
+    try {
+        const history = await prisma.contest_participants.findMany({
+            where: {
+                wallet_address: req.params.wallet
+            },
+            include: {
+                contest: true
+            },
+            orderBy: {
+                contest: {
+                    end_time: 'desc'
+                }
+            },
+            take: parseInt(req.query.limit) || 10,
+            skip: parseInt(req.query.offset) || 0
+        });
+
+        // Format response
+        const response = history.map(entry => ({
+            contest_id: entry.contest_id,
+            contest_name: entry.contest.name,
+            start_time: entry.contest.start_time,
+            end_time: entry.contest.end_time,
+            initial_balance: entry.initial_balance,
+            current_balance: entry.current_balance,
+            rank: entry.rank
+        }));
+
+        res.json(response);
     } catch (error) {
-      logApi.error('Get history failed:', error);
-      res.status(500).json({ error: error.message });
+        logApi.error('Get history failed:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -213,47 +233,51 @@ try {
 //      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet/achievements', async (req, res) => {
     try {
-      const result = await pool.query(`
-        WITH user_achievements AS (
-          -- First Contest Achievement
-          SELECT 
-            cp.wallet_address,
-            'first_contest' as achievement,
-            MIN(cp.joined_at) as achieved_at
-          FROM contest_participants cp
-          GROUP BY cp.wallet_address
-  
-          UNION ALL
-  
-          -- Multiple Contests Achievement
-          SELECT 
-            cp.wallet_address,
-            CASE 
-              WHEN COUNT(*) >= 5 THEN 'five_contests'
-              WHEN COUNT(*) >= 3 THEN 'three_contests'
-            END as achievement,
-            MAX(cp.joined_at) as achieved_at
-          FROM contest_participants cp
-          GROUP BY cp.wallet_address
-          HAVING COUNT(*) >= 3
-        )
-        SELECT 
-          ua.achievement,
-          ua.achieved_at,
-          CASE ua.achievement
-            WHEN 'first_contest' THEN 'First Contest Entry'
-            WHEN 'three_contests' THEN 'Participated in 3 Contests'
-            WHEN 'five_contests' THEN 'Participated in 5 Contests'
-          END as display_name
-        FROM user_achievements ua
-        WHERE wallet_address = $1
-        ORDER BY ua.achieved_at DESC
-      `, [req.params.wallet]);
-      
-      res.json(result.rows);
+        // Get all contest participations for the user
+        const participations = await prisma.contest_participants.findMany({
+            where: {
+                wallet_address: req.params.wallet
+            },
+            orderBy: {
+                joined_at: 'asc'
+            },
+            select: {
+                joined_at: true
+            }
+        });
+
+        const achievements = [];
+
+        if (participations.length > 0) {
+            // First contest achievement
+            achievements.push({
+                achievement: 'first_contest',
+                achieved_at: participations[0].joined_at,
+                display_name: 'First Contest Entry'
+            });
+
+            // Multiple contests achievements
+            if (participations.length >= 3) {
+                achievements.push({
+                    achievement: 'three_contests',
+                    achieved_at: participations[2].joined_at,
+                    display_name: 'Participated in 3 Contests'
+                });
+            }
+
+            if (participations.length >= 5) {
+                achievements.push({
+                    achievement: 'five_contests',
+                    achieved_at: participations[4].joined_at,
+                    display_name: 'Participated in 5 Contests'
+                });
+            }
+        }
+
+        res.json(achievements);
     } catch (error) {
-      logApi.error('Get achievements failed:', error);
-      res.status(500).json({ error: error.message });
+        logApi.error('Get achievements failed:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
