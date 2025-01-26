@@ -1,20 +1,8 @@
-import dotenv from 'dotenv';
-import pg from 'pg';
-import { initTables } from '../db/recreation-and-seeding/init-tables.js';
-import { logApi } from '../utils/logger-suite/logger.js'; // New DD Logging System
+import { logApi } from '../utils/logger-suite/logger.js';
+import prisma from './prisma.js';
 
-dotenv.config();
-
-export const pool = new pg.Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASS,
-  port: parseInt(process.env.DB_PORT || '5432'),
-});
-
-pool.on('connect', () => logApi.info('PostgreSQL connected successfully'));
-pool.on('error', (err) => logApi.error('PostgreSQL connection error:', err));
+// Export prisma client as pool for compatibility
+export const pool = prisma;
 
 /**
  * Initialize new PostgreSQL database and seed tables
@@ -22,7 +10,7 @@ pool.on('error', (err) => logApi.error('PostgreSQL connection error:', err));
 export async function initPgDatabase() {
   try {
     logApi.info('Initializing PostgreSQL database...');
-    await initTables(); // Create tables and seed the database
+    await prisma.$connect();
     logApi.info('PostgreSQL database initialized successfully');
   } catch (error) {
     logApi.error('PostgreSQL initialization failed:', error);
@@ -35,10 +23,16 @@ export async function initPgDatabase() {
  */
 export async function closePgDatabase() {
   try {
-    await pool.end();
-    logApi.info('PostgreSQL database connection closed');
+    await prisma.$disconnect();
+    logApi.info('PostgreSQL connection closed');
   } catch (error) {
-    logApi.error('Error closing PostgreSQL database:', error);
+    logApi.error('Failed to close PostgreSQL connection:', error);
     throw error;
   }
 }
+
+export default {
+  pool,
+  initPgDatabase,
+  closePgDatabase
+};
