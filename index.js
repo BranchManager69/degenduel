@@ -4,10 +4,11 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { closeDatabase, initDatabase } from './config/database.js'; // SQLite for leaderboard
 import { configureMiddleware } from './config/middleware.js';
-import { closePgDatabase, initPgDatabase, pool } from './config/pg-database.js';
+import { closePgDatabase, initPgDatabase } from './config/pg-database.js';
 import setupSwagger from './config/swagger.js';
 import { errorHandler } from './utils/errorHandler.js';
 import { logApi } from './utils/logger-suite/logger.js';
+import prisma from './config/prisma.js';
 dotenv.config();
 
 
@@ -72,14 +73,16 @@ import contestRoutes from './routes/contests.js';
 import leaderboardRoutes from './routes/prisma/leaderboard.js';
 import tokenBucketRoutes from './routes/tokenBuckets.js';
 import tokenRoutes from './routes/tokens.js';
+import v2TokenRoutes from './routes/v2/tokens.js';
 import tradeRoutes from './routes/trades.js';
 import userRoutes from './routes/users.js';
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/trades', tradeRoutes);
-app.use('/api/tokens', tokenRoutes); // new
-app.use('/api/token-buckets', tokenBucketRoutes); // new
+app.use('/api/tokens', tokenRoutes); // v1 tokens
+app.use('/api/v2/tokens', v2TokenRoutes); // v2 tokens
+app.use('/api/token-buckets', tokenBucketRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/test', testRoutes); // NEWEST; tests v4
 
@@ -90,14 +93,14 @@ app.use('/api/superadmin', superadminRoutes);
 // Server health route (ad hoc route)
 app.get('/api/health', async (req, res) => {
   try {
-    // Test PostgreSQL connection
-    const pgResult = await pool.query('SELECT 1 as connected');
+    // Test PostgreSQL connection using Prisma
+    await prisma.$queryRaw`SELECT 1 as connected`;
     
     res.status(200).json({ 
       status: 'ok',
       timestamp: new Date().toISOString(),
       databases: {
-        postgresql: pgResult.rows[0].connected === 1 ? 'connected' : 'error'
+        postgresql: 'connected'
       },
       uptime: Math.floor(process.uptime())
     });
@@ -195,7 +198,8 @@ async function shutdown() {
   try {
     await Promise.all([
       closeDatabase(),    // SQLite
-      closePgDatabase()   // PostgreSQL
+      closePgDatabase(),  // PostgreSQL
+      prisma.$disconnect() // Disconnect Prisma
     ]);
     process.exit(0);
   } catch (error) {
