@@ -112113,3 +112113,3494 @@
   level: 'info',
   timestamp: '2025-01-25T23:30:29.105Z'
 }
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:30:58.569Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:30:58.576Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:31:28.565Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:31:28.570Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:31:58.557Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:31:58.563Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:32:28.554Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:32:28.560Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:32:58.569Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:32:58.576Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:33:28.579Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:33:28.588Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:33:58.551Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:33:58.557Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:34:13.416Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:34:43.724Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:35:13.419Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:35:13.427Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:35:43.424Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:35:43.430Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:36:13.431Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:36:13.436Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:36:43.420Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:36:43.427Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:36:57.081Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:37:44.836Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:38:14.932Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:38:16.220Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:38:44.916Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:39:14.919Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:39:16.207Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:39:45.360Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T23:39:45.554Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T23:39:48.759Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T23:39:50.046Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T23:39:50.754Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:40:15.328Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:40:21.240Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:40:30.381Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:40:53.288Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:41:00.395Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:41:00.403Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:41:14.949Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:41:16.222Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:41:16.224Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:41:16.224Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:41:30.390Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:42:00.500Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:42:16.216Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:42:16.219Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:42:30.498Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:43:00.501Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:43:00.510Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:43:16.209Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:43:16.277Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:43:30.385Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:44:00.385Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:44:00.394Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:44:16.199Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:44:16.201Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:44:30.376Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:45:00.381Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:45:16.202Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:45:16.204Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:45:30.492Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:45:30.502Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:46:00.389Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:46:00.400Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:46:16.214Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:46:16.220Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:46:30.374Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:46:38.951Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:46:45.233Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:46:54.588Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:47:15.234Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:47:16.226Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:47:16.234Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:47:45.274Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:47:45.280Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:48:15.239Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:48:16.195Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:48:45.237Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:49:15.239Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:49:15.246Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:49:16.173Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:49:45.230Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:49:45.237Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:50:15.228Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:50:15.237Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:50:16.178Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:50:45.227Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:51:15.230Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:51:15.239Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:51:16.201Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:51:45.348Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:51:45.355Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:52:08.446Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:52:16.193Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:52:16.195Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:52:38.544Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:52:41.147Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:53:11.269Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:53:11.276Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:53:16.186Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:53:41.150Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:53:41.161Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:54:11.210Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:54:16.276Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:54:16.277Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:54:41.148Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:55:11.255Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:55:16.170Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:55:41.260Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:55:41.268Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:56:11.261Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:56:11.267Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:56:16.198Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:56:41.139Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:56:41.147Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:57:11.139Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:57:11.146Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:57:16.168Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:57:41.144Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:57:41.151Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:58:11.137Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:58:11.145Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:58:16.165Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:58:41.143Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:58:41.151Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:59:11.132Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:59:11.137Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:59:16.176Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T23:59:27.309Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-25T23:59:28.938Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-25T23:59:32.328Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-25T23:59:41.123Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-25T23:59:41.132Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:00:11.250Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:00:11.281Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:00:16.189Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:00:41.137Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:00:41.150Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:01:11.127Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:01:11.136Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:01:16.149Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:01:41.264Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:01:41.273Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:01:42.447Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:01:54.458Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:01:55.893Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:01:59.027Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:02:01.898Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:02:06.497Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:02:10.952Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:02:12.470Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:02:13.052Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:03:16.185Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:03:16.192Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:03:45.633Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:03:45.635Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:03:47.658Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:03:52.391Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:03:55.467Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:03:56.207Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:04:17.666Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:04:17.673Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:04:47.660Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:04:47.668Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:05:17.664Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:05:17.671Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:05:47.657Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:06:17.661Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:06:17.667Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:06:47.702Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:07:16.176Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:07:17.653Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:07:47.659Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:07:47.667Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:08:16.146Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:08:17.655Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:08:47.663Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:08:47.671Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:16.159Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:17.652Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:33.787Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:34.461Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:09:34.470Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:34.474Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:34.518Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:34.522Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:34.523Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:47.675Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:09:47.687Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:10:17.644Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:10:17.654Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:10:47.835Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:10:47.848Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:11:16.139Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:11:17.652Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:11:47.666Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:12:17.644Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:12:17.652Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:12:47.645Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:12:47.653Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:13:16.137Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:13:17.772Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:13:47.643Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:14:15.659Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:14:16.151Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    current_balance: true,\n' +
+      '    ~~~~~~~~~~~~~~~\n' +
+      '    total_deposits: true,\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_trades: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        total_trades: true,\n' +
+      '        total_volume: true,\n' +
+      '        total_pnl: true,\n' +
+      '        best_trade_pnl: true,\n' +
+      '        worst_trade_pnl: true,\n' +
+      '        avg_trade_duration: true,\n' +
+      '        favorite_token: true,\n' +
+      '        best_token: true,\n' +
+      '        worst_token: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   balance?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `current_balance` for select statement on model `users`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    current_balance: true,\n' +
+      '    ~~~~~~~~~~~~~~~\n' +
+      '    total_deposits: true,\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_trades: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        total_trades: true,\n' +
+      '        total_volume: true,\n' +
+      '        total_pnl: true,\n' +
+      '        best_trade_pnl: true,\n' +
+      '        worst_trade_pnl: true,\n' +
+      '        avg_trade_duration: true,\n' +
+      '        favorite_token: true,\n' +
+      '        best_token: true,\n' +
+      '        worst_token: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   balance?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `current_balance` for select statement on model `users`. Available options are marked with ?.\n' +
+      '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+      '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+      '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+      '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+      '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+      '    at async file:///home/websites/degenduel/routes/users.js:122:19'
+  },
+  level: 'error',
+  message: 'Error searching users',
+  timestamp: '2025-01-26T00:14:28.570Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:14:46.168Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:15:15.723Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:15:15.732Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:15:45.637Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:15:45.645Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:16:15.628Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:16:15.633Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:16:45.628Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:16:45.637Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:17:15.622Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:17:15.629Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:17:45.636Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:17:45.644Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:18:15.629Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:18:44.553Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    current_balance: true,\n' +
+      '    ~~~~~~~~~~~~~~~\n' +
+      '    total_deposits: true,\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_trades: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        total_trades: true,\n' +
+      '        total_volume: true,\n' +
+      '        total_pnl: true,\n' +
+      '        best_trade_pnl: true,\n' +
+      '        worst_trade_pnl: true,\n' +
+      '        avg_trade_duration: true,\n' +
+      '        favorite_token: true,\n' +
+      '        best_token: true,\n' +
+      '        worst_token: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   balance?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `current_balance` for select statement on model `users`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    current_balance: true,\n' +
+      '    ~~~~~~~~~~~~~~~\n' +
+      '    total_deposits: true,\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_trades: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        total_trades: true,\n' +
+      '        total_volume: true,\n' +
+      '        total_pnl: true,\n' +
+      '        best_trade_pnl: true,\n' +
+      '        worst_trade_pnl: true,\n' +
+      '        avg_trade_duration: true,\n' +
+      '        favorite_token: true,\n' +
+      '        best_token: true,\n' +
+      '        worst_token: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   balance?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `current_balance` for select statement on model `users`. Available options are marked with ?.\n' +
+      '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+      '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+      '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+      '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+      '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+      '    at async file:///home/websites/degenduel/routes/users.js:122:19'
+  },
+  level: 'error',
+  message: 'Error searching users',
+  timestamp: '2025-01-26T00:18:47.506Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:19:15.119Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:19:15.127Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:19:44.516Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:19:44.524Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:14.512Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:44.799Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:44.808Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:46.746Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:47.430Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:20:47.440Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:47.443Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:47.481Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:47.485Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:20:47.486Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:21:14.507Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:21:14.516Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:21:44.499Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:21:44.506Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:22:14.503Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:22:14.510Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:22:16.712Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    balance: true,\n' +
+      '    total_deposits: true,\n' +
+      '    ~~~~~~~~~~~~~~\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        contests_entered: true,\n' +
+      '        contests_won: true,\n' +
+      '        total_prize_money: true,\n' +
+      '        best_score: true,\n' +
+      '        avg_score: true,\n' +
+      '        last_updated: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `total_deposits` for select statement on model `users`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    balance: true,\n' +
+      '    total_deposits: true,\n' +
+      '    ~~~~~~~~~~~~~~\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        contests_entered: true,\n' +
+      '        contests_won: true,\n' +
+      '        total_prize_money: true,\n' +
+      '        best_score: true,\n' +
+      '        avg_score: true,\n' +
+      '        last_updated: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `total_deposits` for select statement on model `users`. Available options are marked with ?.\n' +
+      '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+      '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+      '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+      '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+      '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+      '    at async file:///home/websites/degenduel/routes/users.js:194:19'
+  },
+  level: 'error',
+  message: 'Error searching users',
+  timestamp: '2025-01-26T00:22:20.539Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:22:28.501Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    balance: true,\n' +
+      '    total_deposits: true,\n' +
+      '    ~~~~~~~~~~~~~~\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        contests_entered: true,\n' +
+      '        contests_won: true,\n' +
+      '        total_prize_money: true,\n' +
+      '        best_score: true,\n' +
+      '        avg_score: true,\n' +
+      '        last_updated: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `total_deposits` for select statement on model `users`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    balance: true,\n' +
+      '    total_deposits: true,\n' +
+      '    ~~~~~~~~~~~~~~\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        contests_entered: true,\n' +
+      '        contests_won: true,\n' +
+      '        total_prize_money: true,\n' +
+      '        best_score: true,\n' +
+      '        avg_score: true,\n' +
+      '        last_updated: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `total_deposits` for select statement on model `users`. Available options are marked with ?.\n' +
+      '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+      '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+      '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+      '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+      '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+      '    at async file:///home/websites/degenduel/routes/users.js:194:19'
+  },
+  level: 'error',
+  message: 'Error searching users',
+  timestamp: '2025-01-26T00:22:31.608Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:22:58.594Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:22:58.606Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:16.128Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:28.577Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:28.584Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:56.558Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:57.253Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:23:57.263Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:57.267Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:57.315Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:57.319Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:57.319Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:58.453Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:23:58.463Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:24:05.015Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:24:16.245Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:24:28.460Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:24:28.467Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:24:58.456Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:24:58.463Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:25:16.147Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:25:18.978Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:25:20.406Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:25:23.646Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  previous_balance: '1001',
+  new_balance: '1002',
+  adjustment: '1',
+  path: '/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance',
+  method: 'POST',
+  level: 'info',
+  message: 'Successfully adjusted balance',
+  timestamp: '2025-01-26T00:25:23.694Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:25:27.442Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  previous_balance: '1002',
+  new_balance: '1001',
+  adjustment: '-1',
+  path: '/BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp/balance',
+  method: 'POST',
+  level: 'info',
+  message: 'Successfully adjusted balance',
+  timestamp: '2025-01-26T00:25:27.448Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:25:31.518Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:25:32.963Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:25:33.869Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:25:46.228Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:25:46.237Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:26:16.107Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:26:16.135Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:26:46.147Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:26:46.156Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:27:16.122Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:27:16.137Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:27:46.259Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:27:46.270Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:28:16.232Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:28:16.234Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:28:46.136Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:28:46.146Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:29:16.128Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:29:46.135Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:29:46.142Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:30:16.263Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:30:16.265Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:30:46.412Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:30:46.414Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:31:16.127Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:31:46.130Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:31:46.146Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:32:16.129Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:32:16.134Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:32:46.127Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:32:46.137Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:33:16.139Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:33:46.125Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:34:16.122Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:34:16.129Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:34:46.276Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:34:46.285Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:35:16.119Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:35:16.120Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:35:46.111Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:36:16.092Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:36:16.124Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:36:46.117Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:36:46.125Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:37:16.123Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:37:16.139Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:37:24.919Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:43:34.019Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:43:34.029Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:43:34.034Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:43:34.079Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:43:34.084Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:43:34.085Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:43:46.044Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:43:46.052Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:44:15.997Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:44:16.008Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:44:46.163Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:44:46.171Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:44:59.594Z'
+}
+{
+  message: 'Database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:44:59.595Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:00.277Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:45:00.286Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:00.288Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:00.345Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:00.351Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:00.351Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:16.002Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:40.858Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:41.526Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:45:41.536Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:41.540Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:41.585Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:41.590Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:41.590Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:46.013Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:45:46.029Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-26T00:45:50.978Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:46:16.010Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:46:16.021Z'
+}
+{
+  message: 'No session token provided',
+  level: 'warn',
+  timestamp: '2025-01-26T00:46:29.590Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:46:43.918Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'de', limit: '5' },
+  matchCount: 5,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:46:47.611Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: '0x3a4cfbf3a6bf30eefb98bc3ede8e43741b5febd3', limit: '5' },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:46:51.610Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '0x3a4cfbf3a6bf30eefb98bc3ede8e43741b5febd3',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:46:53.621Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:47:01.662Z'
+}
+{
+  requestId: 'ca71ec0a-9421-4c6b-b24e-d858cfb8d2a1',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  target_wallet: '0x3a4cfbf3a6bf30eefb98bc3ede8e43741b5febd3',
+  level: 'info',
+  message: 'Attempting to ban user',
+  timestamp: '2025-01-26T00:47:01.663Z'
+}
+{
+  requestId: 'ca71ec0a-9421-4c6b-b24e-d858cfb8d2a1',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  target_wallet: '0x3a4cfbf3a6bf30eefb98bc3ede8e43741b5febd3',
+  duration: 138,
+  level: 'info',
+  message: 'Successfully banned user',
+  timestamp: '2025-01-26T00:47:01.801Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '0x3a4cfbf3a6bf30eefb98bc3ede8e43741b5febd3',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:47:01.888Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:47:14.379Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:47:16.152Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:47:43.925Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:47:43.931Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:48:14.029Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:48:14.036Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:48:44.049Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:48:44.055Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:49:13.924Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:49:13.934Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:49:43.944Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:49:43.955Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:13.902Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:13.912Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:33.864Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:34.551Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:50:34.561Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:34.568Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:34.609Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:34.614Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:34.615Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:43.938Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:50:43.949Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:51:13.910Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:51:13.920Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:51:43.906Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:51:43.915Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:52:13.903Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:52:43.901Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:52:43.911Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:53:13.888Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:53:13.896Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:53:43.897Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:53:43.905Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:53:59.241Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:53:59.951Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:53:59.959Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:53:59.962Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:54:00.004Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:54:00.009Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:54:00.010Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:54:14.425Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:54:14.437Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:54:43.893Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:54:43.904Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:55:13.950Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:55:13.958Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:55:43.886Z'
+}
+{
+  message: 'PostgreSQL database connection closed',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:06.248Z'
+}
+{
+  message: 'Initializing PostgreSQL database...',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:06.998Z'
+}
+{
+  port: '3003',
+  debug_mode: undefined,
+  level: 'info',
+  message: 'Starting DegenDuel API...',
+  timestamp: '2025-01-26T00:56:07.008Z'
+}
+{
+  message: 'Database initialized successfully at /home/websites/degenduel/data/leaderboard.db',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:07.012Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:07.061Z'
+}
+{
+  message: 'Database schema already exists, skipping initialization',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:07.068Z'
+}
+{
+  message: 'PostgreSQL database initialized successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:07.069Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:13.898Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:13.909Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:43.885Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:43.896Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:53.234Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:56:56.519Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  matchCount: 2,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:57:03.732Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: {
+    search: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+    limit: '5'
+  },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:57:05.135Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:57:06.266Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:57:27.180Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'fh', limit: '5' },
+  matchCount: 0,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:57:30.101Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'fa', limit: '5' },
+  matchCount: 5,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:57:32.082Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308', limit: '5' },
+  matchCount: 1,
+  level: 'info',
+  message: 'Successfully searched users',
+  timestamp: '2025-01-26T00:57:34.227Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:57:35.029Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:57:42.087Z'
+}
+{
+  requestId: '6be2f708-37ed-4b60-9365-b365d1480139',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  target_wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  level: 'info',
+  message: 'Attempting to ban user',
+  timestamp: '2025-01-26T00:57:42.088Z'
+}
+{
+  requestId: '6be2f708-37ed-4b60-9365-b365d1480139',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  target_wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  duration: 51,
+  level: 'info',
+  message: 'Successfully banned user',
+  timestamp: '2025-01-26T00:57:42.139Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:57:42.231Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:57:48.008Z'
+}
+{
+  requestId: 'da7861d7-3903-4427-a8d3-655eee1a7854',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  target_wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  level: 'info',
+  message: 'Attempting to unban user',
+  timestamp: '2025-01-26T00:57:48.009Z'
+}
+{
+  requestId: 'da7861d7-3903-4427-a8d3-655eee1a7854',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  target_wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  duration: 9,
+  level: 'info',
+  message: 'Successfully unbanned user',
+  timestamp: '2025-01-26T00:57:48.018Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:57:48.109Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:57:53.600Z'
+}
+{
+  requestId: 'ae494e03-470b-4492-a439-f3b9e17e21ab',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  target_wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  level: 'info',
+  message: 'Attempting to ban user',
+  timestamp: '2025-01-26T00:57:53.600Z'
+}
+{
+  requestId: 'ae494e03-470b-4492-a439-f3b9e17e21ab',
+  admin_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  target_wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  duration: 6,
+  level: 'info',
+  message: 'Successfully banned user',
+  timestamp: '2025-01-26T00:57:53.606Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: '0x355f7faf2c0f1c5b0b1eae33b40ba14f15b9a308',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:57:53.686Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:57:56.529Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:57:56.538Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.593Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.599Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.600Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.603Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.612Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.614Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.685Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.693Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.696Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.697Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:00.698Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:03.323Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:08.074Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:16.178Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:58:38.029Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:08.025Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:38.034Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:59:48.422Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T00:59:48.485Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Fetching wallet statistics',
+  timestamp: '2025-01-26T00:59:48.549Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  stats_summary: { total_participated: 5, win_rate: 0, total_earnings: '0' },
+  level: 'info',
+  message: 'Wallet statistics fetched successfully',
+  timestamp: '2025-01-26T00:59:48.612Z'
+}
+{
+  limit: 10,
+  offset: 0,
+  timeframe: 'month',
+  level: 'info',
+  message: 'Contest performance request params:',
+  timestamp: '2025-01-26T00:59:57.754Z'
+}
+{
+  joined_at: { gte: 2024-12-27T00:59:57.754Z },
+  level: 'info',
+  message: 'Date filter:',
+  timestamp: '2025-01-26T00:59:57.754Z'
+}
+{
+  level: 'info',
+  message: 'Total users with contests:',
+  timestamp: '2025-01-26T00:59:57.757Z'
+}
+{
+  select: {
+    wallet_address: true,
+    nickname: true,
+    user_stats: {
+      select: {
+        contests_entered: true,
+        contests_won: true,
+        total_prize_money: true
+      }
+    },
+    contest_participants: {
+      where: {
+        AND: [
+          { contests: { status: 'completed' } },
+          { joined_at: { gte: 2024-12-27T00:59:57.754Z } }
+        ]
+      }
+    }
+  },
+  level: 'info',
+  message: 'Fetching user rankings with query:',
+  timestamp: '2025-01-26T00:59:57.757Z'
+}
+{
+  count: 10,
+  level: 'info',
+  message: 'Retrieved rankings:',
+  timestamp: '2025-01-26T00:59:57.765Z'
+}
+{
+  count: 10,
+  level: 'info',
+  message: 'Processed rankings:',
+  timestamp: '2025-01-26T00:59:57.766Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.870Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.874Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.876Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.883Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.885Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.886Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.887Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.962Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.965Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.969Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.969Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T00:59:59.971Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T01:00:04.072Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T01:00:04.148Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Fetching wallet statistics',
+  timestamp: '2025-01-26T01:00:04.260Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  stats_summary: { total_participated: 5, win_rate: 0, total_earnings: '0' },
+  level: 'info',
+  message: 'Wallet statistics fetched successfully',
+  timestamp: '2025-01-26T01:00:04.283Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T01:00:50.835Z'
+}
+{
+  path: 'GET /api/users/:wallet',
+  wallet: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  userId: undefined,
+  hasContests: true,
+  level: 'info',
+  message: 'Successfully fetched user profile',
+  timestamp: '2025-01-26T01:00:50.930Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  level: 'info',
+  message: 'Fetching wallet statistics',
+  timestamp: '2025-01-26T01:00:51.002Z'
+}
+{
+  wallet_address: 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
+  stats_summary: { total_participated: 5, win_rate: 0, total_earnings: '0' },
+  level: 'info',
+  message: 'Wallet statistics fetched successfully',
+  timestamp: '2025-01-26T01:00:51.012Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:00:54.847Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:01:24.947Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:01:44.175Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:01:55.099Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:02:24.947Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:02:54.934Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:03:24.923Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:03:54.918Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:04:24.812Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:04:54.799Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:05:24.889Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:05:54.803Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T01:06:16.048Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:06:24.805Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:06:54.798Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:07:24.793Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:07:54.789Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T01:08:16.045Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:08:24.792Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:08:54.793Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:09:24.785Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:09:54.787Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T01:10:16.050Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:10:24.789Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:10:54.786Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:11:21.980Z'
+}
+{
+  message: 'User authenticated: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (role=superadmin)',
+  level: 'info',
+  timestamp: '2025-01-26T01:11:52.314Z'
+}
+{
+  message: 'PostgreSQL connected successfully',
+  level: 'info',
+  timestamp: '2025-01-26T01:11:52.324Z'
+}

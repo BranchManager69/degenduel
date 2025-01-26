@@ -1,7 +1,8 @@
 // /routes/prisma/admin.js
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
-import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
+import { requireAdmin, requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -162,6 +163,313 @@ router.get('/activities', requireAuth, requireSuperAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error fetching admin activities:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/users/{wallet}/ban:
+ *   post:
+ *     summary: Ban a user (requires admin role)
+ *     tags: [Admin]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Wallet address of the user to ban
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reason
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Reason for banning the user
+ *     responses:
+ *       200:
+ *         description: User successfully banned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User banned successfully"
+ *                 wallet_address:
+ *                   type: string
+ *                   example: "0x123..."
+ *       400:
+ *         description: Invalid request (missing reason or invalid wallet)
+ *       403:
+ *         description: Not authorized or cannot ban admin/superadmin
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// Ban a user by wallet address (ADMIN ONLY)
+//   example: POST https://degenduel.me/api/admin/users/{wallet}/ban
+//      headers: { "Cookie": "session=<jwt>" }
+//      body: { "reason": "Violated terms of service" }
+router.post('/users/:wallet/ban', requireAuth, requireAdmin, async (req, res) => {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  const { wallet } = req.params;
+  const { reason } = req.body;
+
+  logApi.info('Attempting to ban user', {
+    requestId,
+    admin_address: req.user.wallet_address,
+    target_wallet: wallet
+  });
+
+  if (!reason) {
+    logApi.warn('Ban reason not provided', {
+      requestId,
+      admin_address: req.user.wallet_address,
+      target_wallet: wallet
+    });
+    return res.status(400).json({ error: 'Ban reason is required' });
+  }
+
+  try {
+    // Get user's current status
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: wallet },
+      select: {
+        wallet_address: true,
+        role: true,
+        is_banned: true
+      }
+    });
+
+    if (!user) {
+      logApi.warn('User not found for ban action', {
+        requestId,
+        target_wallet: wallet
+      });
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Prevent banning admins and superadmins
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      logApi.warn('Attempted to ban admin/superadmin user', {
+        requestId,
+        admin_address: req.user.wallet_address,
+        target_wallet: wallet,
+        target_role: user.role
+      });
+      return res.status(403).json({ error: 'Cannot ban admin or superadmin users' });
+    }
+
+    // Update user and log action in a transaction
+    await prisma.$transaction(async (prisma) => {
+      // Update user's ban status
+      await prisma.users.update({
+        where: { wallet_address: wallet },
+        data: {
+          is_banned: true,
+          ban_reason: reason,
+          updated_at: new Date()
+        }
+      });
+
+      // Log the ban action
+      await prisma.admin_logs.create({
+        data: {
+          admin_address: req.user.wallet_address,
+          action: 'BAN_USER',
+          details: {
+            wallet_address: wallet,
+            reason: reason,
+            timestamp: new Date().toISOString()
+          },
+          ip_address: req.ip,
+          user_agent: req.get('user-agent')
+        }
+      });
+    });
+
+    logApi.info('Successfully banned user', {
+      requestId,
+      admin_address: req.user.wallet_address,
+      target_wallet: wallet,
+      duration: Date.now() - startTime
+    });
+
+    res.json({
+      message: 'User banned successfully',
+      wallet_address: wallet
+    });
+
+  } catch (error) {
+    logApi.error('Failed to ban user', {
+      requestId,
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code,
+        meta: error?.meta,
+        stack: req.environment === 'development' ? error.stack : undefined
+      },
+      admin_address: req.user.wallet_address,
+      target_wallet: wallet,
+      duration: Date.now() - startTime
+    });
+
+    res.status(500).json({
+      error: 'Failed to ban user',
+      message: req.environment === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/users/{wallet}/unban:
+ *   post:
+ *     summary: Unban a user (requires admin role)
+ *     tags: [Admin]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Wallet address of the user to unban
+ *     responses:
+ *       200:
+ *         description: User successfully unbanned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User unbanned successfully"
+ *                 wallet_address:
+ *                   type: string
+ *                   example: "0x123..."
+ *       400:
+ *         description: Invalid request (invalid wallet)
+ *       403:
+ *         description: Not authorized
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// Unban a user by wallet address (ADMIN ONLY)
+//   example: POST https://degenduel.me/api/admin/users/{wallet}/unban
+//      headers: { "Cookie": "session=<jwt>" }
+router.post('/users/:wallet/unban', requireAuth, requireAdmin, async (req, res) => {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  const { wallet } = req.params;
+
+  logApi.info('Attempting to unban user', {
+    requestId,
+    admin_address: req.user.wallet_address,
+    target_wallet: wallet
+  });
+
+  try {
+    // Get user's current status
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: wallet },
+      select: {
+        wallet_address: true,
+        is_banned: true
+      }
+    });
+
+    if (!user) {
+      logApi.warn('User not found for unban action', {
+        requestId,
+        target_wallet: wallet
+      });
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.is_banned) {
+      logApi.warn('Attempted to unban user that is not banned', {
+        requestId,
+        admin_address: req.user.wallet_address,
+        target_wallet: wallet
+      });
+      return res.status(400).json({ error: 'User is not banned' });
+    }
+
+    // Update user and log action in a transaction
+    await prisma.$transaction(async (prisma) => {
+      // Update user's ban status
+      await prisma.users.update({
+        where: { wallet_address: wallet },
+        data: {
+          is_banned: false,
+          ban_reason: null,
+          updated_at: new Date()
+        }
+      });
+
+      // Log the unban action
+      await prisma.admin_logs.create({
+        data: {
+          admin_address: req.user.wallet_address,
+          action: 'UNBAN_USER',
+          details: {
+            wallet_address: wallet,
+            timestamp: new Date().toISOString()
+          },
+          ip_address: req.ip,
+          user_agent: req.get('user-agent')
+        }
+      });
+    });
+
+    logApi.info('Successfully unbanned user', {
+      requestId,
+      admin_address: req.user.wallet_address,
+      target_wallet: wallet,
+      duration: Date.now() - startTime
+    });
+
+    res.json({
+      message: 'User unbanned successfully',
+      wallet_address: wallet
+    });
+
+  } catch (error) {
+    logApi.error('Failed to unban user', {
+      requestId,
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code,
+        meta: error?.meta,
+        stack: req.environment === 'development' ? error.stack : undefined
+      },
+      admin_address: req.user.wallet_address,
+      target_wallet: wallet,
+      duration: Date.now() - startTime
+    });
+
+    res.status(500).json({
+      error: 'Failed to unban user',
+      message: req.environment === 'development' ? error.message : undefined
+    });
   }
 });
 

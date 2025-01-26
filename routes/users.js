@@ -39,6 +39,29 @@ const createUserSchema = z.object({
  *         nickname:
  *           type: string
  *           description: User's chosen nickname
+ *         role:
+ *           type: string
+ *           enum: [user, admin, superadmin]
+ *           description: User's role in the system
+ *         is_banned:
+ *           type: boolean
+ *           description: Whether the user is banned
+ *         ban_reason:
+ *           type: string
+ *           nullable: true
+ *           description: Reason for user's ban if applicable
+ *         current_balance:
+ *           type: number
+ *           format: decimal
+ *           description: User's current balance
+ *         total_deposits:
+ *           type: number
+ *           format: decimal
+ *           description: Total amount deposited by user
+ *         total_withdrawals:
+ *           type: number
+ *           format: decimal
+ *           description: Total amount withdrawn by user
  *         total_contests:
  *           type: integer
  *           description: Total number of contests participated in
@@ -47,8 +70,22 @@ const createUserSchema = z.object({
  *           description: Total number of contests won
  *         total_earnings:
  *           type: number
- *           format: float
+ *           format: decimal
  *           description: Total earnings from contests
+ *         win_rate:
+ *           type: number
+ *           format: float
+ *           description: Percentage of contests won
+ *         avg_position:
+ *           type: number
+ *           format: float
+ *           description: Average finishing position in contests
+ *         longest_win_streak:
+ *           type: integer
+ *           description: Longest consecutive contest wins
+ *         current_win_streak:
+ *           type: integer
+ *           description: Current consecutive contest wins
  *         rank_score:
  *           type: number
  *           format: float
@@ -61,6 +98,41 @@ const createUserSchema = z.object({
  *           type: string
  *           format: date-time
  *           description: Last login timestamp
+ *         user_stats:
+ *           type: object
+ *           properties:
+ *             total_trades:
+ *               type: integer
+ *               description: Total number of trades made
+ *             total_volume:
+ *               type: number
+ *               format: decimal
+ *               description: Total trading volume
+ *             total_pnl:
+ *               type: number
+ *               format: decimal
+ *               description: Total profit/loss from trading
+ *             best_trade_pnl:
+ *               type: number
+ *               format: decimal
+ *               description: Highest profit from a single trade
+ *             worst_trade_pnl:
+ *               type: number
+ *               format: decimal
+ *               description: Biggest loss from a single trade
+ *             avg_trade_duration:
+ *               type: number
+ *               format: float
+ *               description: Average duration of trades in seconds
+ *             favorite_token:
+ *               type: string
+ *               description: Most frequently traded token
+ *             best_token:
+ *               type: string
+ *               description: Token with highest profit
+ *             worst_token:
+ *               type: string
+ *               description: Token with biggest loss
  */
 
 /* Users Routes */
@@ -140,12 +212,26 @@ router.get('/search', async (req, res) => {
       select: {
         wallet_address: true,
         nickname: true,
+        role: true,
+        is_banned: true,
+        ban_reason: true,
+        balance: true,
         total_contests: true,
         total_wins: true,
         total_earnings: true,
         rank_score: true,
         created_at: true,
-        last_login: true
+        last_login: true,
+        user_stats: {
+          select: {
+            contests_entered: true,
+            contests_won: true,
+            total_prize_money: true,
+            best_score: true,
+            avg_score: true,
+            last_updated: true
+          }
+        }
       }
     });
 
