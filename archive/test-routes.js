@@ -1,6 +1,6 @@
 // /archive/test-routes.js
 import express from 'express';
-import { pool } from '../config/pg-database.js';
+import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
 const router = express.Router();
@@ -42,7 +42,7 @@ const router = express.Router();
 // Server Health check
 router.get('/health', async (req, res) => {
     try {
-        await pool.query('SELECT 1');
+        await prisma.$queryRaw`SELECT 1`;
         res.json({
             status: 'ok',
             database: 'connected',
@@ -84,12 +84,14 @@ router.get('/health', async (req, res) => {
 router.post('/users', async (req, res) => {
     try {
         const { wallet_address = '0xTestWallet123', nickname = 'TestUser1' } = req.body;
-        const result = await pool.query(`
-            INSERT INTO users (wallet_address, nickname, rank_score)
-            VALUES ($1, $2, $3)
-            RETURNING *
-        `, [wallet_address, nickname, 1000]);
-        res.json(result.rows[0]);
+        const result = await prisma.users.create({
+            data: {
+                wallet_address,
+                nickname,
+                rank_score: 1000
+            }
+        });
+        res.json(result);
     } catch (error) {
         logApi.error('Create test user failed:', error);
         res.status(500).json({ error: error.message });
@@ -126,14 +128,11 @@ router.post('/users/bulk', async (req, res) => {
     }));
 
     try {
-        const query = `
-            INSERT INTO users (wallet_address, nickname, rank_score)
-            VALUES ${users.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(', ')}
-            ON CONFLICT (wallet_address) DO NOTHING
-        `;
-        const values = users.flatMap(u => [u.wallet_address, u.nickname, u.rank_score]);
-        const result = await pool.query(query, values);
-        res.json({ added: result.rowCount });
+        const result = await prisma.users.createMany({
+            data: users,
+            skipDuplicates: true
+        });
+        res.json({ added: result.count });
     } catch (error) {
         logApi.error('Bulk add test users failed:', error);
         res.status(500).json({ error: error.message });
@@ -174,36 +173,30 @@ router.put('/users/:wallet', async (req, res) => {
     const { rank_score, settings, nickname } = req.body;
     
     try {
-        let updateFields = [];
-        let values = [wallet];
-        let valueIndex = 2;
-
+        const updateData = {};
+        
         if (rank_score !== undefined) {
-            updateFields.push(`rank_score = rank_score + $${valueIndex}`);
-            values.push(rank_score);
-            valueIndex++;
+            const user = await prisma.users.findUnique({
+                where: { wallet_address: wallet },
+                select: { rank_score: true }
+            });
+            updateData.rank_score = (user?.rank_score || 0) + rank_score;
         }
         if (settings) {
-            updateFields.push(`settings = settings || $${valueIndex}::jsonb`);
-            values.push(JSON.stringify(settings));
-            valueIndex++;
+            updateData.settings = settings;
         }
         if (nickname) {
-            updateFields.push(`nickname = $${valueIndex}`);
-            values.push(nickname);
-            valueIndex++;
+            updateData.nickname = nickname;
         }
-
-        const query = `
-            UPDATE users 
-            SET ${updateFields.join(', ')},
-                last_login = CURRENT_TIMESTAMP
-            WHERE wallet_address = $1
-            RETURNING *
-        `;
         
-        const result = await pool.query(query, values);
-        res.json(result.rows[0]);
+        updateData.last_login = new Date();
+
+        const result = await prisma.users.update({
+            where: { wallet_address: wallet },
+            data: updateData
+        });
+        
+        res.json(result);
     } catch (error) {
         logApi.error('Update test user failed:', error);
         res.status(500).json({ error: error.message });
@@ -223,10 +216,15 @@ router.put('/users/:wallet', async (req, res) => {
 // Delete test users
 router.delete('/users', async (req, res) => {
     try {
-        const result = await pool.query(
-            `DELETE FROM users WHERE nickname LIKE 'test_%' OR wallet_address LIKE 'TeSt%TeSt'`
-        );
-        res.json({ deleted: result.rowCount });
+        const result = await prisma.users.deleteMany({
+            where: {
+                OR: [
+                    { nickname: { startsWith: 'test_' } },
+                    { wallet_address: { startsWith: 'TeSt', endsWith: 'TeSt' } }
+                ]
+            }
+        });
+        res.json({ deleted: result.count });
     } catch (error) {
         logApi.error('Delete test users failed:', error);
         res.status(500).json({ error: error.message });
@@ -263,13 +261,13 @@ router.put('/users/:wallet/settings', async (req, res) => {
     const { wallet } = req.params;
     const { settings } = req.body;
     try {
-        const result = await pool.query(`
-            UPDATE users
-            SET settings = settings || $1::jsonb
-            WHERE wallet_address = $2
-            RETURNING *
-        `, [JSON.stringify(settings), wallet]);
-        res.json(result.rows[0]);
+        const result = await prisma.users.update({
+            where: { wallet_address: wallet },
+            data: {
+                settings: settings
+            }
+        });
+        res.json(result);
     } catch (error) {
         logApi.error('Update test user settings failed:', error);
         res.status(500).json({ error: error.message });
@@ -297,14 +295,17 @@ router.post('/users/:wallet/reset', async (req, res) => {
     const { wallet } = req.params;
 
     try {
-        await pool.query('BEGIN');
-        await pool.query(`DELETE FROM contest_participants WHERE wallet_address = $1`, [wallet]);
-        await pool.query(`DELETE FROM contest_token_performance WHERE wallet_address = $1`, [wallet]);
-        await pool.query(`DELETE FROM contest_token_prices WHERE wallet_address = $1`, [wallet]);
-        await pool.query('COMMIT');
+        await prisma.contest_participants.deleteMany({
+            where: { wallet_address: wallet }
+        });
+        await prisma.contest_token_performance.deleteMany({
+            where: { wallet_address: wallet }
+        });
+        await prisma.contest_token_prices.deleteMany({
+            where: { wallet_address: wallet }
+        });
         res.json({ wallet_address: wallet, reset: true });
     } catch (error) {
-        await pool.query('ROLLBACK');
         logApi.error('Reset test user data failed:', error);
         res.status(500).json({ error: error.message });
     }

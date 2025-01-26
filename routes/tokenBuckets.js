@@ -1,8 +1,8 @@
 // /routes/tokenBuckets.js
 import express from 'express';
-import { pool } from '../config/pg-database.js';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+import prisma from '../config/prisma.js';
 
 const router = express.Router();
 
@@ -51,12 +51,23 @@ const router = express.Router();
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
   const { name, description } = req.body;
   try {
-    const result = await pool.query(
-      `INSERT INTO token_buckets (name, description) VALUES ($1, $2) RETURNING *`,
-      [name, description]
-    );
-    res.status(201).json(result.rows[0]);
+    logApi.info('Creating token bucket:', { name, description });
+    
+    // Generate a unique bucket code
+    const bucketCode = `BUCKET_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`.toUpperCase();
+    
+    const bucket = await prisma.token_buckets.create({
+      data: {
+        name,
+        description,
+        bucket_code: bucketCode
+      }
+    });
+    
+    logApi.info('Token bucket created:', { id: bucket.id, bucketCode });
+    res.status(201).json(bucket);
   } catch (error) {
+    logApi.error('Failed to create token bucket:', error);
     res.status(500).json({ error: 'Failed to create token bucket.' });
   }
 });
@@ -86,19 +97,32 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 //      headers: { "Cookie": "session=<jwt>" }
 router.get('/', async (_req, res) => {
   try {
-    const result = await pool.query(`
-        SELECT 
-            tb.id AS bucket_id, 
-            tb.name, 
-            tb.description, 
-            COALESCE(array_agg(t.symbol), '{}') AS tokens
-        FROM token_buckets tb
-        LEFT JOIN token_bucket_memberships tbm ON tb.id = tbm.bucket_id
-        LEFT JOIN tokens t ON tbm.token_id = t.id AND t.is_active = true
-        GROUP BY tb.id;
-    `);
-    res.json(result.rows);
+    logApi.info('Fetching token buckets...');
+    const buckets = await prisma.token_buckets.findMany({
+      include: {
+        token_bucket_memberships: {
+          include: {
+            tokens: {
+              where: {
+                is_active: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const formattedBuckets = buckets.map(bucket => ({
+      bucket_id: bucket.id,
+      name: bucket.name,
+      description: bucket.description,
+      tokens: bucket.token_bucket_memberships.map(membership => membership.tokens.symbol).filter(Boolean)
+    }));
+
+    logApi.info('Token buckets fetched:', { count: buckets.length });
+    res.json(formattedBuckets);
   } catch (error) {
+    logApi.error('Failed to fetch token buckets:', error);
     res.status(500).json({ error: 'Failed to fetch token buckets.' });
   }
 });
@@ -135,12 +159,19 @@ router.get('/', async (_req, res) => {
 //      headers: { "Cookie": "session=<jwt>" }
 router.get('/:id', async (req, res) => {
   try {
+    logApi.info('Fetching bucket by ID:', { id: req.params.id });
+    
     const bucket = await prisma.token_buckets.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where: {
+        id: parseInt(req.params.id)
+      },
       include: {
         token_bucket_memberships: {
           include: {
             tokens: {
+              where: {
+                is_active: true
+              },
               include: {
                 token_prices: true
               }
@@ -151,10 +182,26 @@ router.get('/:id', async (req, res) => {
     });
 
     if (!bucket) {
+      logApi.warn('Bucket not found:', { id: req.params.id });
       return res.status(404).json({ error: 'Bucket not found' });
     }
 
-    res.json(bucket);
+    const formattedBucket = {
+      bucket_id: bucket.id,
+      name: bucket.name,
+      description: bucket.description,
+      bucket_code: bucket.bucket_code,
+      created_at: bucket.created_at,
+      tokens: bucket.token_bucket_memberships.map(membership => ({
+        id: membership.tokens.id,
+        symbol: membership.tokens.symbol,
+        name: membership.tokens.name,
+        price: membership.tokens.token_prices?.price
+      })).filter(Boolean)
+    };
+
+    logApi.info('Bucket fetched successfully:', { id: req.params.id });
+    res.json(formattedBucket);
   } catch (error) {
     logApi.error('Failed to fetch bucket:', error);
     res.status(500).json({ error: 'Failed to fetch bucket' });
@@ -198,30 +245,51 @@ router.get('/:id', async (req, res) => {
 //      example: POST https://degenduel.me/api/buckets
 //      headers: { "Cookie": "session=<jwt>" }
 //      body: { "name": "Top 10 Market Cap", "description": "Top 10 cryptocurrencies by market capitalization" }
-router.post('/:bucketId/tokens', async (req, res) => {
-    const { bucketId } = req.params;
-    const { tokenIds } = req.body;
+router.post('/:bucketId/tokens', requireAuth, requireSuperAdmin, async (req, res) => {
+  const { bucketId } = req.params;
+  const { tokenIds } = req.body;
 
-    try {
-        const validTokens = await pool.query(
-            `SELECT id FROM tokens WHERE id = ANY($1)`,
-            [tokenIds]
-        );
-        const validTokenIds = validTokens.rows.map(row => row.id);
-
-        if (validTokenIds.length === 0) {
-            return res.status(400).json({ error: 'No valid tokens provided.' });
+  try {
+    const validTokens = await prisma.tokens.findMany({
+      where: {
+        id: {
+          in: tokenIds
         }
+      },
+      select: {
+        id: true
+      }
+    });
 
-        const values = validTokenIds.map((id) => `(${bucketId}, ${id})`).join(',');
-        const result = await pool.query(
-            `INSERT INTO token_bucket_memberships (bucket_id, token_id) VALUES ${values} ON CONFLICT DO NOTHING`
-        );
-        res.json({ success: true, added: result.rowCount });
-    } catch (error) {
-        console.error('Error adding tokens to bucket:', error); // Debugging log
-        res.status(500).json({ error: 'Failed to add tokens to bucket.' });
+    const validTokenIds = validTokens.map(token => token.id);
+
+    if (validTokenIds.length === 0) {
+      return res.status(400).json({ error: 'No valid tokens provided.' });
     }
+
+    const result = await prisma.$transaction(
+      validTokenIds.map(tokenId => 
+        prisma.token_bucket_memberships.upsert({
+          where: {
+            bucket_id_token_id: {
+              bucket_id: parseInt(bucketId),
+              token_id: tokenId
+            }
+          },
+          create: {
+            bucket_id: parseInt(bucketId),
+            token_id: tokenId
+          },
+          update: {}
+        })
+      )
+    );
+
+    res.json({ success: true, added: result.length });
+  } catch (error) {
+    logApi.error('Error adding tokens to bucket:', error);
+    res.status(500).json({ error: 'Failed to add tokens to bucket.' });
+  }
 });
 
 /**
@@ -257,11 +325,15 @@ router.post('/:bucketId/tokens', async (req, res) => {
 router.delete('/:bucketId/tokens/:tokenId', async (req, res) => {
     try {
         const { bucketId, tokenId } = req.params;
-        const result = await pool.query(
-            `DELETE FROM token_bucket_memberships WHERE bucket_id = $1 AND token_id = $2`,
-            [bucketId, tokenId]
-        );
-        if (result.rowCount === 0) {
+        const result = await prisma.token_bucket_memberships.delete({
+            where: {
+                bucket_id_token_id: {
+                    bucket_id: parseInt(bucketId),
+                    token_id: parseInt(tokenId)
+                }
+            }
+        });
+        if (result.count === 0) {
             return res.status(404).json({ error: 'Token not found in bucket' });
         }
         res.json({ success: true, removed: tokenId });
@@ -314,19 +386,21 @@ router.patch('/:bucketId', requireAuth, requireSuperAdmin, async (req, res) => {
   const { name, description } = req.body;
 
   try {
-      const result = await pool.query(
-          `UPDATE token_buckets SET 
-              name = COALESCE($1, name), 
-              description = COALESCE($2, description) 
-          WHERE id = $3 RETURNING *;`,
-          [name, description, bucketId]
-      );
+      const result = await prisma.token_buckets.update({
+          where: {
+              id: parseInt(bucketId)
+          },
+          data: {
+              name: name,
+              description: description
+          }
+      });
 
-      if (result.rows.length === 0) {
+      if (result.count === 0) {
           return res.status(404).json({ error: 'Token bucket not found.' });
       }
 
-      res.json({ success: true, updated: result.rows[0] });
+      res.json({ success: true, updated: result });
   } catch (error) {
       console.error('Error updating token bucket:', error);
       res.status(500).json({ error: 'Failed to update token bucket.' });
@@ -361,16 +435,17 @@ router.delete('/:bucketId', requireAuth, requireSuperAdmin, async (req, res) => 
     const { bucketId } = req.params;
 
     try {
-        const result = await pool.query(
-            `DELETE FROM token_buckets WHERE id = $1 RETURNING *;`,
-            [bucketId]
-        );
+        const result = await prisma.token_buckets.delete({
+            where: {
+                id: parseInt(bucketId)
+            }
+        });
 
-        if (result.rows.length === 0) {
+        if (result.count === 0) {
             return res.status(404).json({ error: 'Token bucket not found.' });
         }
 
-        res.json({ success: true, deleted: result.rows[0] });
+        res.json({ success: true, deleted: result });
     } catch (error) {
         console.error('Error deleting token bucket:', error);
         res.status(500).json({ error: 'Failed to delete token bucket.' });

@@ -271,11 +271,15 @@ router.get('/contests/performance', async (req, res) => {
           where: {
             AND: [
               {
-                contests: {
-                  status: 'completed'
+                contest: {
+                  status: 'COMPLETED'
                 }
               },
-              ...(Object.keys(dateFilter).length > 0 ? [dateFilter] : [])
+              {
+                created_at: {
+                  gte: new Date('2024-12-26T06:43:19.237Z')
+                }
+              }
             ]
           }
         }
@@ -297,11 +301,15 @@ router.get('/contests/performance', async (req, res) => {
           where: {
             AND: [
               {
-                contests: {
-                  status: 'completed'
+                contest: {
+                  status: 'COMPLETED'
                 }
               },
-              ...(Object.keys(dateFilter).length > 0 ? [dateFilter] : [])
+              {
+                created_at: {
+                  gte: new Date('2024-12-26T06:43:19.237Z')
+                }
+              }
             ]
           },
           select: {

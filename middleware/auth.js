@@ -1,51 +1,45 @@
 // src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
-import { pool } from '../config/pg-database.js';
+import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
 // For authenticated endpoints
 export const requireAuth = async (req, res, next) => {
   try {
     const token = req.cookies.session;
+    logApi.info('Session token:', { token: !!token });
+    
     if (!token) {
-      logApi.warn('No session token provided');
-      return res.status(401).json({ 
-        error: 'Cookie authentication required',
-        code: 'AUTH_REQUIRED'
-      });
+      return res.status(401).json({ error: 'No session token provided' });
     }
 
-    // 1) Verify JWT
     const decoded = jwt.verify(token, config.jwt.secret);
-    const walletAddress = decoded.wallet;
+    logApi.info('Decoded token:', { decoded });
 
-    // 2) Fetch user from DB to get the *latest* role
-    const { rows } = await pool.query(
-      'SELECT wallet_address, role FROM users WHERE wallet_address = $1',
-      [walletAddress]
-    );
-    if (rows.length === 0) {
-      logApi.warn(`No user found in DB for wallet=${walletAddress}`);
+    const walletAddress = decoded.wallet_address;
+    if (!walletAddress) {
+      return res.status(401).json({ error: 'Invalid session token' });
+    }
+
+    // Get user from database
+    const user = await prisma.users.findUnique({
+      where: {
+        wallet_address: walletAddress
+      }
+    });
+    logApi.info('User query result:', { user });
+
+    if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    const dbUser = rows[0];
-
-    // 3) Attach user info to req
-    req.user = {
-      wallet_address: dbUser.wallet_address,
-      role: dbUser.role
-    };
-
-    logApi.info(`User authenticated: ${req.user.wallet_address} (role=${req.user.role})`);
+    // Attach user info to request
+    req.user = user;
     next();
   } catch (error) {
-    logApi.error(`User authentication failed: ${error.message}`);
-    return res.status(401).json({
-      error: 'Invalid or expired session',
-      code: 'INVALID_SESSION'
-    });
+    logApi.error('Auth middleware error:', error);
+    return res.status(401).json({ error: 'Invalid session token' });
   }
 };
 

@@ -4,6 +4,8 @@ import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from './config.js';
+import helmet from 'helmet';
+import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
 
 export function configureMiddleware(app) {
   const allowedOrigins = [
@@ -32,6 +34,28 @@ export function configureMiddleware(app) {
     'https://branch.bet', 
     'https://app.branch.bet',
   ];
+
+  // Basic middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  // Environment middleware (must be before auth routes)
+  app.use(environmentMiddleware);
+
+  // Security middleware
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", 'wss://degenduel.me', 'wss://api.degenduel.me', 'https://degenduel.me', 'https://api.degenduel.me', 'https://localhost:3003', 'https://localhost:3004'],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        fontSrc: ["'self'"],
+        frameAncestors: ["'none'"]
+      }
+    }
+  }));
 
   app.use(cors({
     origin: function(origin, callback) {
@@ -96,9 +120,6 @@ export function configureMiddleware(app) {
   app.use(['/profile'], requireAuth, (req, res, next) => {
     next();
   });
-
-  // Body parsing
-  app.use(express.json());
 
   // Unified logging for both development and production
   if (config.debug_mode === 'true') {

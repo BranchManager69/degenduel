@@ -1,5 +1,34 @@
 // /utils/logger-suite/logger.js
 import winston from 'winston';
+import 'winston-daily-rotate-file';
+import path from 'path';
+
+// Define log directory
+const LOG_DIR = path.join(process.cwd(), 'logs');
+
+// Create transports
+const dailyRotateFileTransport = new winston.transports.DailyRotateFile({
+  filename: path.join(LOG_DIR, 'api-%DATE%.log'),
+  datePattern: 'YYYY-MM-DD',
+  maxSize: '20m',
+  maxFiles: '14d',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  )
+});
+
+const errorRotateFileTransport = new winston.transports.DailyRotateFile({
+  filename: path.join(LOG_DIR, 'error-%DATE%.log'),
+  datePattern: 'YYYY-MM-DD',
+  maxSize: '20m',
+  maxFiles: '14d',
+  level: 'error',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  )
+});
 
 // Create the logger
 const logApi = winston.createLogger({
@@ -16,13 +45,8 @@ const logApi = winston.createLogger({
         winston.format.simple()
       )
     }),
-    new winston.transports.File({ 
-      filename: 'error.log', 
-      level: 'error' 
-    }),
-    new winston.transports.File({ 
-      filename: 'combined.log' 
-    })
+    dailyRotateFileTransport,
+    errorRotateFileTransport
   ]
 });
 
