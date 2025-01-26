@@ -11599,3 +11599,631 @@
     '    at async file:///home/websites/degenduel/routes/contests.js:1174:20',
   timestamp: '2025-01-25T23:01:32.642Z'
 }
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    current_balance: true,\n' +
+      '    ~~~~~~~~~~~~~~~\n' +
+      '    total_deposits: true,\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_trades: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        total_trades: true,\n' +
+      '        total_volume: true,\n' +
+      '        total_pnl: true,\n' +
+      '        best_trade_pnl: true,\n' +
+      '        worst_trade_pnl: true,\n' +
+      '        avg_trade_duration: true,\n' +
+      '        favorite_token: true,\n' +
+      '        best_token: true,\n' +
+      '        worst_token: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   balance?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `current_balance` for select statement on model `users`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    current_balance: true,\n' +
+      '    ~~~~~~~~~~~~~~~\n' +
+      '    total_deposits: true,\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_trades: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        total_trades: true,\n' +
+      '        total_volume: true,\n' +
+      '        total_pnl: true,\n' +
+      '        best_trade_pnl: true,\n' +
+      '        worst_trade_pnl: true,\n' +
+      '        avg_trade_duration: true,\n' +
+      '        favorite_token: true,\n' +
+      '        best_token: true,\n' +
+      '        worst_token: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   balance?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `current_balance` for select statement on model `users`. Available options are marked with ?.\n' +
+      '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+      '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+      '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+      '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+      '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+      '    at async file:///home/websites/degenduel/routes/users.js:122:19'
+  },
+  level: 'error',
+  message: 'Error searching users',
+  timestamp: '2025-01-26T00:14:28.570Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    current_balance: true,\n' +
+      '    ~~~~~~~~~~~~~~~\n' +
+      '    total_deposits: true,\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_trades: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        total_trades: true,\n' +
+      '        total_volume: true,\n' +
+      '        total_pnl: true,\n' +
+      '        best_trade_pnl: true,\n' +
+      '        worst_trade_pnl: true,\n' +
+      '        avg_trade_duration: true,\n' +
+      '        favorite_token: true,\n' +
+      '        best_token: true,\n' +
+      '        worst_token: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   balance?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `current_balance` for select statement on model `users`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    current_balance: true,\n' +
+      '    ~~~~~~~~~~~~~~~\n' +
+      '    total_deposits: true,\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_trades: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        total_trades: true,\n' +
+      '        total_volume: true,\n' +
+      '        total_pnl: true,\n' +
+      '        best_trade_pnl: true,\n' +
+      '        worst_trade_pnl: true,\n' +
+      '        avg_trade_duration: true,\n' +
+      '        favorite_token: true,\n' +
+      '        best_token: true,\n' +
+      '        worst_token: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   balance?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `current_balance` for select statement on model `users`. Available options are marked with ?.\n' +
+      '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+      '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+      '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+      '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+      '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+      '    at async file:///home/websites/degenduel/routes/users.js:122:19'
+  },
+  level: 'error',
+  message: 'Error searching users',
+  timestamp: '2025-01-26T00:18:47.506Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    balance: true,\n' +
+      '    total_deposits: true,\n' +
+      '    ~~~~~~~~~~~~~~\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        contests_entered: true,\n' +
+      '        contests_won: true,\n' +
+      '        total_prize_money: true,\n' +
+      '        best_score: true,\n' +
+      '        avg_score: true,\n' +
+      '        last_updated: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `total_deposits` for select statement on model `users`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    balance: true,\n' +
+      '    total_deposits: true,\n' +
+      '    ~~~~~~~~~~~~~~\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        contests_entered: true,\n' +
+      '        contests_won: true,\n' +
+      '        total_prize_money: true,\n' +
+      '        best_score: true,\n' +
+      '        avg_score: true,\n' +
+      '        last_updated: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `total_deposits` for select statement on model `users`. Available options are marked with ?.\n' +
+      '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+      '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+      '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+      '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+      '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+      '    at async file:///home/websites/degenduel/routes/users.js:194:19'
+  },
+  level: 'error',
+  message: 'Error searching users',
+  timestamp: '2025-01-26T00:22:20.539Z'
+}
+{
+  path: 'GET /api/users/search',
+  query: { search: 'br', limit: '5' },
+  error: {
+    name: 'PrismaClientValidationError',
+    message: '\n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    balance: true,\n' +
+      '    total_deposits: true,\n' +
+      '    ~~~~~~~~~~~~~~\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        contests_entered: true,\n' +
+      '        contests_won: true,\n' +
+      '        total_prize_money: true,\n' +
+      '        best_score: true,\n' +
+      '        avg_score: true,\n' +
+      '        last_updated: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `total_deposits` for select statement on model `users`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.users.findMany()` invocation:\n' +
+      '\n' +
+      '{\n' +
+      '  where: {\n' +
+      '    OR: [\n' +
+      '      {\n' +
+      '        wallet_address: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      },\n' +
+      '      {\n' +
+      '        nickname: {\n' +
+      '          contains: "br",\n' +
+      '          mode: "insensitive"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  take: 5,\n' +
+      '  select: {\n' +
+      '    wallet_address: true,\n' +
+      '    nickname: true,\n' +
+      '    role: true,\n' +
+      '    is_banned: true,\n' +
+      '    ban_reason: true,\n' +
+      '    balance: true,\n' +
+      '    total_deposits: true,\n' +
+      '    ~~~~~~~~~~~~~~\n' +
+      '    total_withdrawals: true,\n' +
+      '    total_contests: true,\n' +
+      '    total_wins: true,\n' +
+      '    total_earnings: true,\n' +
+      '    win_rate: true,\n' +
+      '    avg_position: true,\n' +
+      '    longest_win_streak: true,\n' +
+      '    current_win_streak: true,\n' +
+      '    rank_score: true,\n' +
+      '    created_at: true,\n' +
+      '    last_login: true,\n' +
+      '    user_stats: {\n' +
+      '      select: {\n' +
+      '        contests_entered: true,\n' +
+      '        contests_won: true,\n' +
+      '        total_prize_money: true,\n' +
+      '        best_score: true,\n' +
+      '        avg_score: true,\n' +
+      '        last_updated: true\n' +
+      '      }\n' +
+      '    },\n' +
+      '?   settings?: true,\n' +
+      '?   last_deposit_at?: true,\n' +
+      '?   last_withdrawal_at?: true,\n' +
+      '?   kyc_status?: true,\n' +
+      '?   risk_level?: true,\n' +
+      '?   updated_at?: true,\n' +
+      '?   contest_participants?: true,\n' +
+      '?   contest_portfolios?: true,\n' +
+      '?   contest_token_performance?: true,\n' +
+      '?   contest_token_prices?: true,\n' +
+      '?   influences?: true,\n' +
+      '?   transactions?: true,\n' +
+      '?   _count?: true\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'Unknown field `total_deposits` for select statement on model `users`. Available options are marked with ?.\n' +
+      '    at wn (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:29:1363)\n' +
+      '    at qn.handleRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6958)\n' +
+      '    at qn.handleAndLogRequestError (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6640)\n' +
+      '    at qn.request (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:121:6347)\n' +
+      '    at async l (/home/websites/degenduel/node_modules/@prisma/client/runtime/library.js:130:9616)\n' +
+      '    at async file:///home/websites/degenduel/routes/users.js:194:19'
+  },
+  level: 'error',
+  message: 'Error searching users',
+  timestamp: '2025-01-26T00:22:31.608Z'
+}
