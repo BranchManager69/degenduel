@@ -2,6 +2,7 @@ import pkg from '@prisma/client';
 import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+import { createContestWallet } from '../utils/solana-wallet.js';
 const { Prisma, PrismaClient } = pkg;
 
 const router = express.Router();
@@ -519,20 +520,16 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
           throw new Error('Invalid number format');
         }
 
-        // Use the cleaned string directly without Number conversion
         parsedEntryFee = cleanedFee;
       } else if (typeof entry_fee === 'number') {
-        // Handle number input
         if (!Number.isFinite(entry_fee)) {
           throw new Error('Invalid number');
         }
-        // Convert to string with full precision
         parsedEntryFee = entry_fee.toString();
       } else {
         throw new Error('Invalid entry fee type');
       }
 
-      // Validate the value is non-negative using Prisma.Decimal for precise comparison
       if (new Decimal(parsedEntryFee).isNegative()) {
         logApi.warn({
           requestId,
@@ -570,40 +567,83 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    const contest = await prisma.contests.create({
-      data: {
-        name,
-        contest_code,
-        description,
-        entry_fee: new Decimal(parsedEntryFee),
-        start_time: startDate,
-        end_time: endDate,
-        min_participants,
-        max_participants,
-        allowed_buckets,
-        status: 'pending'
-      }
+    // Create contest and wallet in a transaction
+    const result = await prisma.$transaction(async (prisma) => {
+      // 1. Create contest first
+      const contest = await prisma.contests.create({
+        data: {
+          name,
+          contest_code,
+          description,
+          entry_fee: new Decimal(parsedEntryFee),
+          start_time: startDate,
+          end_time: endDate,
+          min_participants,
+          max_participants,
+          allowed_buckets,
+          status: 'pending'
+        }
+      });
+
+      logApi.info({
+        requestId,
+        message: 'Contest created, generating wallet',
+        data: {
+          contest_id: contest.id,
+          contest_code: contest.contest_code
+        }
+      });
+
+      // 2. Create Solana wallet
+      const { publicKey, encryptedPrivateKey } = await createContestWallet();
+      
+      // 3. Create wallet record
+      const contestWallet = await prisma.contest_wallets.create({
+        data: {
+          contest_id: contest.id,
+          wallet_address: publicKey,
+          private_key: encryptedPrivateKey,
+          balance: '0'
+        }
+      });
+
+      logApi.info({
+        requestId,
+        message: 'Contest wallet created successfully',
+        data: {
+          contest_id: contest.id,
+          wallet_address: publicKey
+        }
+      });
+
+      // Return contest with wallet info
+      return {
+        ...contest,
+        wallet_address: contestWallet.wallet_address
+      };
     });
 
-    logApi.info({
-      requestId,
-      message: 'Contest created successfully',
-      data: {
-        contest_id: contest.id,
-        contest_code: contest.contest_code
-      },
-      duration: Date.now() - startTime
-    });
-
-    res.status(201).json(contest);
+    res.status(201).json(result);
   } catch (error) {
     logApi.error('Error in contest creation:', {
+      requestId,
       error: error instanceof Error ? {
         name: error.name,
         message: error.message,
+        code: error.code,
         stack: req.environment === 'development' ? error.stack : undefined
-      } : error
+      } : error,
+      duration: Date.now() - startTime
     });
+
+    // Handle specific wallet errors
+    if (error.name === 'WalletError') {
+      return res.status(500).json({
+        error: 'Failed to create contest wallet',
+        code: error.code,
+        message: error.message
+      });
+    }
 
     res.status(500).json({
       error: 'Failed to create contest',

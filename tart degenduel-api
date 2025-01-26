@@ -1,0 +1,18 @@
+                                          Table "public.contest_wallets"
+     Column     |            Type             | Collation | Nullable |                   Default                   
+----------------+-----------------------------+-----------+----------+---------------------------------------------
+ id             | integer                     |           | not null | nextval('contest_wallets_id_seq'::regclass)
+ contest_id     | integer                     |           | not null | 
+ wallet_address | character varying           |           | not null | 
+ private_key    | character varying           |           | not null | 
+ balance        | numeric(20,0)               |           | not null | 
+ created_at     | timestamp(6) with time zone |           | not null | CURRENT_TIMESTAMP
+ updated_at     | timestamp(6) with time zone |           |          | 
+ last_sync      | timestamp(6) with time zone |           |          | 
+Indexes:
+    "contest_wallets_pkey" PRIMARY KEY, btree (id)
+    "contest_wallets_contest_id_key" UNIQUE, btree (contest_id)
+    "contest_wallets_wallet_address_idx" btree (wallet_address)
+Foreign-key constraints:
+    "contest_wallets_contest_id_fkey" FOREIGN KEY (contest_id) REFERENCES contests(id)
+

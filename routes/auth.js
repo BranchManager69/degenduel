@@ -4,9 +4,9 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import nacl from 'tweetnacl';
 import { config } from '../config/config.js';
-import { pool } from '../config/pg-database.js';
+import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
-import { clearNonce, generateNonce, getNonceRecord } from './dbNonceStore.js';
+import { clearNonce, generateNonce, getNonceRecord } from '../utils/dbNonceStore.js';
 
 const router = express.Router();
 const { sign } = jwt;
@@ -49,16 +49,27 @@ const { sign } = jwt;
 // Example: GET /api/auth/challenge?wallet=<WALLET_ADDR>
 router.get('/challenge', async (req, res) => {
   try {
+    logApi.info('Challenge request received', { wallet: req.query.wallet });
+    
     const { wallet } = req.query;
     if (!wallet) {
+      logApi.warn('Missing wallet address in challenge request');
       return res.status(400).json({ error: 'Missing wallet address' });
     }
 
+    logApi.info('Attempting to generate nonce', { wallet });
     // Generate nonce & store in DB
     const nonce = await generateNonce(wallet);
+    logApi.info('Nonce generated successfully', { wallet, nonce });
+    
     return res.json({ nonce });
   } catch (error) {
-    logApi.error('Failed to generate nonce', { error });
+    logApi.error('Failed to generate nonce', { 
+      error: error.message,
+      stack: error.stack,
+      wallet: req.query.wallet,
+      details: error
+    });
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -146,11 +157,7 @@ router.post('/verify-wallet', async (req, res) => {
     }
 
     // 2) Check that the message from the front end actually includes the nonce
-    // For instance, the message might be:
-    // "DegenDuel Authentication\nWallet: <wallet>\nNonce: <theNonce>\nTimestamp: <someTimestamp>"
     const lines = message.split('\n').map((l) => l.trim());
-    // lines[2] might be "Nonce: abc123..."
-    // We'll parse out the line that starts with "Nonce:"
     const nonceLine = lines.find((l) => l.startsWith('Nonce:'));
     if (!nonceLine) {
       return res.status(400).json({ error: 'Message missing nonce line' });
@@ -182,21 +189,24 @@ router.post('/verify-wallet', async (req, res) => {
 
     // 5) Upsert user in DB
     const nowIso = new Date().toISOString();
-    const upsertQuery = `
-      INSERT INTO users (wallet_address, created_at, last_login, role)
-      VALUES ($1, $2, $2, 'user')
-      ON CONFLICT (wallet_address)
-      DO UPDATE SET last_login = EXCLUDED.last_login
-      RETURNING wallet_address, nickname, role
-    `;
-    const result = await pool.query(upsertQuery, [wallet, nowIso]);
-    const row = result.rows[0];
+    const user = await prisma.users.upsert({
+      where: { wallet_address: wallet },
+      create: {
+        wallet_address: wallet,
+        created_at: nowIso,
+        last_login: nowIso,
+        role: 'user'
+      },
+      update: {
+        last_login: nowIso
+      }
+    });
 
     // 6) Create JWT
     const token = sign(
       {
-        wallet: row.wallet_address,
-        role: row.role
+        wallet_address: user.wallet_address,
+        role: user.role
       },
       config.jwt.secret,
       { expiresIn: '24h' }
@@ -205,26 +215,26 @@ router.post('/verify-wallet', async (req, res) => {
     // 7) Set cookie
     const cookieOptions = {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'none',
+      secure: true,
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     };
 
     // Add production-only settings
     if (req.environment === 'production') {
-      cookieOptions.secure = true;
       cookieOptions.domain = '.degenduel.me';
     }
 
     res.cookie('session', token, cookieOptions);
 
-    logApi.info(`Wallet verified successfully: ${wallet}`, { wallet, role: row.role });
+    logApi.info(`Wallet verified successfully: ${wallet}`, { wallet, role: user.role });
     return res.json({
       verified: true,
       token,
       user: {
-        wallet_address: row.wallet_address,
-        role: row.role,
-        nickname: row.nickname
+        wallet_address: user.wallet_address,
+        role: user.role,
+        nickname: user.nickname
       }
     });
   } catch (error) {
@@ -273,10 +283,10 @@ router.post('/disconnect', async (req, res) => {
       return res.status(400).json({ error: 'Missing wallet' });
     }
 
-    await pool.query(
-      'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE wallet_address = $1',
-      [wallet]
-    );
+    await prisma.users.update({
+      where: { wallet_address: wallet },
+      data: { last_login: new Date() }
+    });
 
     // Clear the cookie
     res.clearCookie('session', { domain: '.degenduel.me' });
