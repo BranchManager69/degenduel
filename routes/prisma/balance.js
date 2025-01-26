@@ -58,7 +58,7 @@ const ADMIN_WALLET_ADDRESSES = process.env.ADMIN_WALLET_ADDRESSES; // TODO: Move
  *                   description: User's balance in base units
  *                 formatted_balance:
  *                   type: string
- *                   description: User's balance formatted in USDC
+ *                   description: User's balance formatted in SOL
  *       404:
  *         description: User not found
  *         content:
@@ -97,20 +97,20 @@ router.get('/:wallet', async (req, res) => {
     }
 
     const balance = new Prisma.Decimal(user.balance || '0');
-    const exactUSDC = balance.dividedBy(1000000);
-    const formattedBalance = exactUSDC.toFixed(2);
+    const exactSOL = balance.dividedBy(1000000000);  // 9 decimals for lamports to SOL
+    const formattedBalance = exactSOL.toFixed(2);
 
     logApi.info('Balance fetched successfully', {
       wallet_address: wallet,
       balance: balance.toString(),
-      exact_usdc: exactUSDC.toString()
+      exact_sol: exactSOL.toString()
     });
 
     res.json({
       balance: balance.toString(),
-      exact_usdc: exactUSDC.toString(),
-      formatted_balance: `${formattedBalance} USDC`,
-      decimals: 6
+      exact_sol: exactSOL.toString(),
+      formatted_balance: `${formattedBalance} SOL`,
+      decimals: 9
     });
 
   } catch (error) {
