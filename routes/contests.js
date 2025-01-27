@@ -1541,8 +1541,24 @@ router.get('/:id/portfolio/:wallet', requireAuth, async (req, res) => {
         contest_id: parseInt(req.params.id),
         wallet_address: req.params.wallet
       },
-      include: {
-        tokens: true
+      select: {
+        contest_id: true,
+        wallet_address: true,
+        token_id: true,
+        weight: true,
+        created_at: true,
+        tokens: {
+          select: {
+            address: true,
+            symbol: true,
+            name: true,
+            decimals: true,
+            is_active: true,
+            market_cap: true,
+            change_24h: true,
+            volume_24h: true
+          }
+        }
       }
     });
 
