@@ -58,24 +58,28 @@ app.get('/', (req, res) => {
 import prismaAdminRoutes from './routes/prisma/admin.js';
 import prismaBalanceRoutes from './routes/prisma/balance.js';
 import prismaStatsRoutes from './routes/prisma/stats.js';
+import leaderboardRoutes from './routes/prisma/leaderboard.js';
+import prismaActivityRoutes from './routes/prisma/activity.js';
 app.use('/api/balance', prismaBalanceRoutes);
 app.use('/api/stats', prismaStatsRoutes);
 app.use('/api/admin', prismaAdminRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/activity', prismaActivityRoutes);
 
 // DD-Serv-enabled routes
 import ddServRoutes from './routes/dd-serv/tokens.js';
 app.use('/api/dd-serv', ddServRoutes);
 
 // Core API routes
-import testRoutes from './archive/test-routes.js';
+import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
 import contestRoutes from './routes/contests.js';
-import leaderboardRoutes from './routes/prisma/leaderboard.js';
 import tokenBucketRoutes from './routes/tokenBuckets.js';
 import tokenRoutes from './routes/tokens.js';
 import v2TokenRoutes from './routes/v2/tokens.js';
 import tradeRoutes from './routes/trades.js';
-import userRoutes from './routes/users.js';
+import superadminRoutes from './routes/superadmin.js';
+import testRoutes from './archive/test-routes.js';
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/contests', contestRoutes);
@@ -83,12 +87,8 @@ app.use('/api/trades', tradeRoutes);
 app.use('/api/tokens', tokenRoutes); // v1 tokens
 app.use('/api/v2/tokens', v2TokenRoutes); // v2 tokens
 app.use('/api/token-buckets', tokenBucketRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/test', testRoutes); // NEWEST; tests v4
-
-// Superadmin routes
-import superadminRoutes from './routes/superadmin.js';
 app.use('/api/superadmin', superadminRoutes);
+app.use('/api/test', testRoutes); // NEWEST; tests v4
 
 // Server health route (ad hoc route)
 app.get('/api/health', async (req, res) => {

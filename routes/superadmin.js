@@ -5,6 +5,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import logApi from '../utils/logger-suite/logger.js';
+import prisma from '../config/prisma.js';
+import { getContestWallet } from '../utils/solana-wallet.js';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 
@@ -83,6 +85,38 @@ router.post('/generate-tree', requireAuth, requireSuperAdmin, (req, res) => {
             timestamp: new Date().toISOString()
         });
     });
+});
+
+// Get contest wallet private key (SUPERADMIN ONLY)
+router.get('/contests/:id/wallet', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const contestId = parseInt(req.params.id);
+        
+        // Get contest wallet
+        const contestWallet = await prisma.contest_wallets.findUnique({
+            where: { contest_id: contestId }
+        });
+
+        if (!contestWallet) {
+            return res.status(404).json({ error: 'Contest wallet not found' });
+        }
+
+        // Get wallet instance (this decrypts the private key)
+        const wallet = await getContestWallet(contestWallet.private_key, contestWallet.wallet_address);
+        
+        // Return private key in hex format
+        res.json({
+            contest_id: contestId,
+            wallet_address: contestWallet.wallet_address,
+            private_key: Buffer.from(wallet.secretKey).toString('hex')
+        });
+    } catch (error) {
+        logApi.error('Error getting contest wallet:', error);
+        res.status(500).json({ 
+            error: 'Failed to get contest wallet',
+            details: error.message 
+        });
+    }
 });
 
 export default router;
