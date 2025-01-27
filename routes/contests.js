@@ -3,6 +3,9 @@ import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { createContestWallet } from '../utils/solana-wallet.js';
+import { verifyTransaction } from '../utils/solana-connection.js';
+import { colors } from '../utils/colors.js';
+
 const { Prisma, PrismaClient } = pkg;
 
 const router = express.Router();
@@ -281,7 +284,8 @@ router.get('/:id', async (req, res) => {
           include: {
             tokens: true
           }
-        }
+        },
+        contest_wallets: true
       }
     });
 
@@ -289,7 +293,15 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Contest not found' });
     }
 
-    res.json(contest);
+    // Flatten the wallet address into the contest object
+    const response = {
+      ...contest,
+      wallet_address: contest.contest_wallets?.wallet_address || null,
+      // Remove the nested contest_wallets object
+      contest_wallets: undefined
+    };
+
+    res.json(response);
   } catch (error) {
     logApi.error('Failed to fetch contest:', error);
     res.status(500).json({ error: 'Failed to fetch contest' });
@@ -673,10 +685,14 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
  *             type: object
  *             required:
  *               - wallet_address
+ *               - transaction_signature
  *             properties:
  *               wallet_address:
  *                 type: string
  *                 example: "0x1234..."
+ *               transaction_signature:
+ *                 type: string
+ *                 example: "..."
  *     responses:
  *       200:
  *         description: Successfully joined contest
@@ -700,22 +716,24 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 // Join a wallet into a contest (AUTHENTICATED)
 //   example: POST https://degenduel.me/api/contests/{contest_id}/join
 //      headers: { "Cookie": "session=<jwt>" }
+//      body: { "wallet_address": "...", "transaction_signature": "..." }
 router.post('/:id/join', requireAuth, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
-  const { wallet_address } = req.body;
+  const { wallet_address, transaction_signature } = req.body;
   const contestId = parseInt(req.params.id);
 
-  logApi.info('Attempting to join contest', {
+  logApi.info(`🎮 ${colors.neon}New contest join request${colors.reset}`, {
     requestId,
     contestId,
     wallet_address,
+    transaction_signature
   });
 
   try {
     // Input validation
     if (!wallet_address) {
-      logApi.warn('Missing wallet address in join contest request', {
+      logApi.warn(`⚠️ ${colors.yellow}Missing wallet address${colors.reset}`, {
         requestId
       });
       return res.status(400).json({ 
@@ -724,8 +742,18 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       });
     }
 
+    if (!transaction_signature) {
+      logApi.warn(`⚠️ ${colors.yellow}Missing transaction signature${colors.reset}`, {
+        requestId
+      });
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: 'transaction_signature is required'
+      });
+    }
+
     if (isNaN(contestId)) {
-      logApi.warn('Invalid contest ID format', {
+      logApi.warn(`⚠️ ${colors.yellow}Invalid contest ID format${colors.reset}`, {
         requestId,
         contestId: req.params.id
       });
@@ -737,7 +765,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
 
     const result = await prisma.$transaction(async (prisma) => {
       // Check if contest exists and is joinable
-      logApi.debug('Fetching contest details', {
+      logApi.debug(`🔍 ${colors.cyan}Fetching contest details${colors.reset}`, {
         requestId,
         contestId
       });
@@ -747,13 +775,26 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         include: {
           _count: {
             select: { contest_participants: true }
-          }
+          },
+          contest_wallets: true
         }
       });
 
       if (!contest) {
+        logApi.warn(`❌ ${colors.red}Contest not found${colors.reset}`, {
+          requestId,
+          contestId
+        });
         throw new ContestError('Contest not found', 404);
       }
+
+      logApi.debug(`📊 ${colors.cyan}Contest found${colors.reset}`, {
+        requestId,
+        contestId,
+        status: contest.status,
+        currentParticipants: contest._count.contest_participants,
+        maxParticipants: contest.max_participants
+      });
 
       // Check if user is already participating
       const existingParticipation = await prisma.contest_participants.findUnique({
@@ -766,70 +807,145 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       });
 
       if (existingParticipation) {
+        logApi.warn(`👥 ${colors.yellow}User already participating${colors.reset}`, {
+          requestId,
+          contestId,
+          wallet_address
+        });
         throw new ContestError(`You've already got a spot reserved at this table.`, 409);
       }
 
-      // Check if user exists
-      const user = await prisma.users.findUnique({
-        where: { wallet_address }
+      // Check if transaction signature was already used
+      const existingTx = await prisma.blockchain_transactions.findUnique({
+        where: { signature: transaction_signature }
       });
 
-      if (!user) {
-        throw new ContestError('You\'ve gotta login it to win it, buddy...', 404);
+      if (existingTx) {
+        logApi.warn(`🔄 ${colors.yellow}Transaction signature already used${colors.reset}`, {
+          requestId,
+          signature: transaction_signature
+        });
+        throw new ContestError('Transaction signature already used', 400);
       }
 
-      // Validate contest status #TODO: remove this
+      // Validate contest status
       if (contest.status !== 'pending') {
+        logApi.warn(`🚫 ${colors.red}Invalid contest status${colors.reset}`, {
+          requestId,
+          contestId,
+          status: contest.status
+        });
         throw new ContestError('Hey, this table isn\'t supposed to be open right now. How did you get here?', 400, {
           status: contest.status
         });
       }
 
-      // Check participant limits #TODO: fix this (max_participants is not being set properly initially via CreateContestModal)
+      // Check participant limits
       if (contest._count.contest_participants >= (contest.max_participants || 0)) {
+        logApi.warn(`👥 ${colors.yellow}Contest is full${colors.reset}`, {
+          requestId,
+          contestId,
+          currentParticipants: contest._count.contest_participants,
+          maxParticipants: contest.max_participants
+        });
         throw new ContestError('Sorry, there are no more open seats at this table.', 400, {
           currentParticipants: contest._count.contest_participants,
           maxParticipants: contest.max_participants
         });
       }
 
-      // Convert and validate balances
-      const userBalance = new Decimal(user.balance || '0');
+      // Verify Solana transaction
       const entryFee = new Decimal(contest.entry_fee || '0');
-
-      logApi.info('Balance validation', {
+      logApi.info(`💰 ${colors.cyan}Verifying transaction${colors.reset}`, {
         requestId,
-        contestId,
-        userBalance: userBalance.toString(),
+        signature: transaction_signature,
         entryFee: entryFee.toString()
       });
 
-      if (userBalance.lessThan(entryFee)) {
-        const requiredFormatted = entryFee.dividedBy(1000000).toFixed(2);
-        const availableFormatted = userBalance.dividedBy(1000000).toFixed(2);
-        
-        throw new ContestError(
-          `Insufficient balance!\nRequired: ${requiredFormatted} points. Available: ${availableFormatted} points.`,
-          400,
-          {
-            required: entryFee.toString(),
-            available: userBalance.toString(),
-            difference: entryFee.minus(userBalance).toString()
-          }
-        );
+      const verificationResult = await verifyTransaction(transaction_signature, {
+        expectedAmount: entryFee.dividedBy(LAMPORTS_PER_SOL).toNumber(),
+        expectedSender: wallet_address,
+        expectedReceiver: contest.contest_wallets.wallet_address
+      });
+
+      if (!verificationResult.verified) {
+        logApi.warn(`❌ ${colors.red}Transaction verification failed${colors.reset}`, {
+          requestId,
+          error: verificationResult.error
+        });
+        throw new ContestError(`Transaction verification failed: ${verificationResult.error}`, 400);
       }
 
+      logApi.info(`✅ ${colors.green}Transaction verified${colors.reset}`, {
+        requestId,
+        signature: transaction_signature,
+        slot: verificationResult.slot
+      });
+
+      // Create blockchain transaction record
+      logApi.debug(`📝 ${colors.cyan}Creating blockchain transaction record${colors.reset}`, {
+        requestId
+      });
+
+      const blockchainTx = await prisma.blockchain_transactions.create({
+        data: {
+          tx_hash: transaction_signature,
+          wallet_from: wallet_address,
+          wallet_to: contest.contest_wallets.wallet_address,
+          amount: entryFee,
+          token_type: 'SOL',
+          chain: 'SOLANA',
+          status: 'completed',
+          type: 'CONTEST_ENTRY',
+          contest_id: contestId,
+          signature: transaction_signature,
+          confirmed_at: new Date(),
+          slot: verificationResult.slot
+        }
+      });
+
+      // Create transaction record
+      logApi.debug(`📝 ${colors.cyan}Creating transaction record${colors.reset}`, {
+        requestId
+      });
+
+      const transaction = await prisma.transactions.create({
+        data: {
+          wallet_address,
+          type: 'CONTEST_ENTRY',
+          amount: entryFee,
+          balance_before: new Decimal(0),
+          balance_after: new Decimal(0),
+          contest_id: contestId,
+          description: `Contest entry fee for ${contest.name}`,
+          status: 'completed',
+          metadata: {
+            blockchain_tx_id: blockchainTx.id,
+            contest_code: contest.contest_code
+          }
+        }
+      });
+
       // Create participation record
+      logApi.debug(`👤 ${colors.cyan}Creating participation record${colors.reset}`, {
+        requestId
+      });
+
       const participation = await prisma.contest_participants.create({
         data: {
           contest_id: contestId,
           wallet_address,
           initial_balance: new Decimal(10000000),
-          current_balance: new Decimal(10000000)
+          current_balance: new Decimal(10000000),
+          entry_transaction_id: transaction.id
         }
       });
 
       // Update contest participant count
+      logApi.debug(`📊 ${colors.cyan}Updating contest participant count${colors.reset}`, {
+        requestId
+      });
+
       await prisma.contests.update({
         where: { id: contestId },
         data: {
@@ -839,28 +955,33 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         }
       });
 
-      // Deduct entry fee
-      await prisma.users.update({
-        where: { wallet_address },
-        data: {
-          balance: userBalance.minus(entryFee).toString()
-        }
-      });
-
-      logApi.info('Successfully joined contest', {
+      logApi.info(`🎉 ${colors.green}Successfully joined contest${colors.reset}`, {
         requestId,
         contestId,
         wallet_address,
-        participationId: participation.id
+        participationId: participation.id,
+        transactionId: transaction.id,
+        blockchainTxId: blockchainTx.id,
+        slot: verificationResult.slot,
+        duration: Date.now() - startTime
       });
 
-      return participation;
+      return {
+        participation,
+        transaction: {
+          id: transaction.id,
+          blockchain_tx_id: blockchainTx.id,
+          signature: transaction_signature,
+          slot: verificationResult.slot
+        }
+      };
     });
 
     res.json(result);
 
   } catch (error) {
-    logApi.error('Error in join contest endpoint', {
+    const duration = Date.now() - startTime;
+    logApi.error(`💥 ${colors.red}Error in join contest endpoint${colors.reset}`, {
       requestId,
       error: {
         name: error.name,
@@ -869,7 +990,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         meta: error?.meta,
         stack: req.environment === 'development' ? error.stack : undefined
       },
-      duration: Date.now() - startTime
+      duration
     });
 
     if (error instanceof ContestError) {
