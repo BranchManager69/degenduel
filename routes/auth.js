@@ -7,6 +7,7 @@ import { config } from '../config/config.js';
 import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { clearNonce, generateNonce, getNonceRecord } from '../utils/dbNonceStore.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 const { sign } = jwt;
@@ -328,7 +329,47 @@ router.post('/disconnect', async (req, res) => {
  *       401:
  *         description: No valid session
  */
-//   example: GET https://degenduel.me/api/auth/session
-//      headers: { "Cookie": "session=<jwt>" }
+router.get('/session', async (req, res) => {
+  try {
+    logApi.info('Session check request received', {
+      headers: req.headers,
+      cookies: req.cookies,
+      origin: req.headers.origin
+    });
+
+    const token = req.cookies.session;
+    if (!token) {
+      logApi.warn('No session token provided');
+      return res.status(401).json({ error: 'No session token provided' });
+    }
+
+    const decoded = jwt.verify(token, config.jwt.secret);
+    logApi.info('Token decoded successfully', { decoded });
+
+    const user = await prisma.users.findUnique({
+      where: {
+        wallet_address: decoded.wallet_address
+      }
+    });
+
+    if (!user) {
+      logApi.warn('User not found for session token');
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    logApi.info('Session check successful', { user: user.wallet_address });
+    res.json({
+      authenticated: true,
+      user: {
+        wallet_address: user.wallet_address,
+        role: user.role,
+        nickname: user.nickname
+      }
+    });
+  } catch (error) {
+    logApi.error('Session check failed:', error);
+    res.status(401).json({ error: 'Invalid session token' });
+  }
+});
 
 export default router;
