@@ -39,89 +39,136 @@ export function configureMiddleware(app) {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Environment middleware (must be before auth routes)
+  // Environment middleware
   app.use(environmentMiddleware);
 
-  // Security middleware
+  // Simple CORS middleware for all routes
+  app.use((req, res, next) => {
+    const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, '');
+    
+    // Detailed request logging
+    logApi.info('🔍 CORS Request Details:', {
+      origin,
+      referer: req.headers.referer,
+      method: req.method,
+      path: req.path,
+      headers: req.headers,
+      url: req.url,
+      originalUrl: req.originalUrl,
+      timestamp: new Date().toISOString()
+    });
+
+    // Log origin check
+    if (!origin) {
+      logApi.warn('⚠️ No origin or referer in request');
+    } else {
+      logApi.info(`🔎 Checking origin: ${origin}`);
+      logApi.info(`📋 Allowed origins:`, allowedOrigins);
+      logApi.info(`✓ Is origin allowed? ${allowedOrigins.includes(origin)}`);
+    }
+
+    // Always set CORS headers for game.degenduel.me
+    const gameOrigin = 'https://game.degenduel.me';
+    if (req.headers.origin === gameOrigin || req.headers.referer?.startsWith(gameOrigin)) {
+      logApi.info('📝 Setting CORS headers for game domain');
+      res.setHeader('Access-Control-Allow-Origin', gameOrigin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Max-Age', '86400');
+    }
+    // Also set headers for other allowed origins
+    else if (origin && allowedOrigins.includes(origin)) {
+      logApi.info('📝 Setting CORS headers for allowed origin:', origin);
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Max-Age', '86400');
+    } else {
+      logApi.warn('❌ Origin not allowed:', origin);
+    }
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+      logApi.info('👉 Handling OPTIONS preflight request');
+      return res.status(204).end();
+    }
+
+    next();
+  });
+
+  // Security middleware - after CORS
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", 'wss://degenduel.me', 'wss://api.degenduel.me', 'https://degenduel.me', 'https://api.degenduel.me', 'https://localhost:3003', 'https://localhost:3004'],
+        connectSrc: [
+          "'self'", 
+          'wss://degenduel.me', 
+          'wss://api.degenduel.me', 
+          'wss://game.degenduel.me',
+          'wss://manager.degenduel.me',
+          'wss://wallets.degenduel.me',
+          'wss://branch.bet',
+          'wss://app.branch.bet',
+          'wss://data.degenduel.me',
+          'wss://dev.degenduel.me',
+          'https://degenduel.me', 
+          'https://api.degenduel.me', 
+          'https://game.degenduel.me',
+          'https://manager.degenduel.me',
+          'https://wallets.degenduel.me',
+          'https://branch.bet',
+          'https://app.branch.bet',
+          'https://data.degenduel.me',
+          'https://dev.degenduel.me',
+          'https://localhost:3003', 
+          'https://localhost:3004',
+          'https://localhost:3005',
+          'https://localhost:3006',
+          'https://localhost:3007',
+          'https://localhost:3008',
+          'https://localhost:3009',
+          'https://localhost:3010',
+          'https://localhost:5173',
+          'https://localhost:5174',
+          'https://localhost:5175',
+          'https://localhost:5176',
+          'https://localhost:5177'
+        ],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'blob:'],
         fontSrc: ["'self'"],
         frameAncestors: ["'none'"]
       }
-    }
-  }));
-
-  app.use(cors({
-    origin: function(origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = 'Nah... The DegenDuel CORS policy don\'t be allowing no access from your wack ass origin. You best be headin home now, boy...';
-        return callback(new Error(msg), false);
-      }
-      return callback(null, true);
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Authorization',
-      'Content-Type',
-      'X-Requested-With',
-      'Cache-Control',
-      'X-Wallet-Address'
-    ],
-    exposedHeaders: ['Content-Length', 'X-Wallet-Address'],
-    maxAge: 86400,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
   }));
 
-  // Additional CORS headers for preflight requests
+  // Environment info
   app.use((req, res, next) => {
-    // Add environment info to the request object
-    const origin = req.headers.origin;
-    req.environment = config.getEnvironment(origin);
-    
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
-    if (origin && allowedOrigins.includes(origin)) {
-      res.header('Access-Control-Allow-Origin', origin);
-    }
-
-    if (req.method === 'OPTIONS') {
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.header(
-        'Access-Control-Allow-Headers',
-        'Authorization, Content-Type, X-Requested-With, Cache-Control, X-Wallet-Address'
-      );
-      return res.status(200).json({});
-    }
+    req.environment = config.getEnvironment(req.headers.origin);
     next();
   });
 
-  // Protect superadmin-only client routes
+  // Protected routes
   app.use(['/amm-sim', '/api-playground', '/superadmin-dashboard'], requireAuth, requireSuperAdmin, (req, res, next) => {
-    // For client-side routes, we want to serve the main index.html
-    // This allows the client-side router to handle the route
     next();
   });
 
-  // Protect admin-only client routes
   app.use(['/admin-dashboard'], requireAuth, requireAdmin, (req, res, next) => {
     next();
   });
 
-  // Protect authenticated-only client routes
   app.use(['/profile'], requireAuth, (req, res, next) => {
     next();
   });
 
-  // Unified logging for both development and production
+  // Debug logging
   if (config.debug_mode === 'true') {
     app.use((req, res, next) => {
       logApi.info(`${req.method} ${req.url}`, {
@@ -132,7 +179,5 @@ export function configureMiddleware(app) {
       });
       next();
     });
-  } else {
-    //console.log('Debug mode is disabled');
   }
 }
