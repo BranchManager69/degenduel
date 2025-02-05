@@ -1,4 +1,5 @@
-// src/routes/auth.js
+// routes/auth.js
+
 import { PublicKey } from '@solana/web3.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';

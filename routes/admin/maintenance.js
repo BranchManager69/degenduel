@@ -1,3 +1,5 @@
+// /routes/admin/maintenance.js
+
 import express from 'express';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import prisma from '../../config/prisma.js';
