@@ -1,3 +1,5 @@
+// /routes/contests.js
+
 import pkg from '@prisma/client';
 import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';

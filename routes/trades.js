@@ -1,4 +1,5 @@
 // /routes/trades.js
+
 import express from 'express';
 import prisma from '../config/prisma.js';
 import { requireAuth } from '../middleware/auth.js';

@@ -1,4 +1,5 @@
-// /routes/prisma/balance.js - Centralized logging for DegenDuel backend services.
+// /routes/prisma/balance.js
+
 import { Prisma, PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import { Router } from 'express';
@@ -324,6 +325,8 @@ router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res)
 
 // -----------------------------------------------------------
 
+/* Everything below this line should be like basically deleted LOL*/
+
 /**
  * @swagger
  * /api/daddy:
@@ -366,7 +369,7 @@ router.post('/:wallet/balance', requireAuth, requireSuperAdmin, async (req, res)
  *                   description: Error message
  *                   example: "An error occurred while querying the database."
  */
-// Query superadmin users by wallet address (SUPERADMIN ONLY)
+// Query to get all superadmin users by wallet address (SUPERADMIN ONLY)
 //   example: GET https://degenduel.me/api/daddy
 //      headers: { "Cookie": "session=<jwt>" }  
 router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
