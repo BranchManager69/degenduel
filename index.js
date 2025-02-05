@@ -11,7 +11,7 @@ import { errorHandler } from './utils/errorHandler.js';
 import { logApi } from './utils/logger-suite/logger.js';
 import prisma from './config/prisma.js';
 import maintenanceCheck from './middleware/maintenanceMiddleware.js';
-import { startSync, stopSync } from './services/tokenSync.js';
+import { startSync, stopSync } from './services/tokenSyncService.js';
 dotenv.config();
 
 
