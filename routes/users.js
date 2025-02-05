@@ -5,9 +5,13 @@ import express from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+import { VALIDATION } from '../config/constants.js';
+import { validateNicknameRules, generateDefaultUsername } from '../utils/username-generator/username-generator.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+const { NAME } = VALIDATION;
 
 // Zod input validation schemas
 const getUsersQuerySchema = z.object({
@@ -15,11 +19,45 @@ const getUsersQuerySchema = z.object({
   offset: z.string().transform(val => parseInt(val)).default('0'),
   sort: z.enum(['rank_score', 'total_earnings', 'total_contests']).optional()
 });
+
+// Nickname validation schema - reusable for both create and update
+const nicknameSchema = z.string()
+  .min(NAME.MIN_LENGTH, `Nickname must be at least ${NAME.MIN_LENGTH} characters`)
+  .max(NAME.MAX_LENGTH, `Nickname cannot exceed ${NAME.MAX_LENGTH} characters`)
+  .regex(NAME.PATTERN, 'Nickname can only contain letters, numbers, and underscores')
+  .transform(val => val.trim())
+  .refine(
+    (val) => validateNicknameRules(val).isValid,
+    (val) => ({ message: validateNicknameRules(val).error })
+  );
+
 const createUserSchema = z.object({
-  wallet_address: z.string(), // TODO: Add validation for wallet_address
-  nickname: z.string().min(3).max(50).optional() // TODO: Add validation for nickname
+  wallet_address: z.string(),
+  nickname: nicknameSchema.optional()
 });
 
+const updateUserSchema = z.object({
+  nickname: nicknameSchema,
+  settings: z.record(z.any()).optional()
+});
+
+// Helper function to check nickname uniqueness
+async function isNicknameUnique(nickname, excludeWallet = null) {
+  const existingUser = await prisma.users.findFirst({
+    where: {
+      nickname: {
+        equals: nickname,
+        mode: 'insensitive'  // Case insensitive check
+      },
+      ...(excludeWallet && {
+        NOT: {
+          wallet_address: excludeWallet
+        }
+      })
+    }
+  });
+  return !existingUser;
+}
 
 /**
  * @swagger
@@ -650,6 +688,32 @@ router.post('/', async (req, res) => {
   };
 
   try {
+    // Generate default nickname if none provided
+    if (!req.body.nickname) {
+      let defaultNickname;
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      // Keep trying until we find a unique default nickname
+      do {
+        defaultNickname = generateDefaultUsername();
+        // eslint-disable-next-line no-await-in-loop
+        const isUnique = await isNicknameUnique(defaultNickname);
+        if (isUnique) {
+          req.body.nickname = defaultNickname;
+          break;
+        }
+        attempts++;
+      } while (attempts < maxAttempts);
+
+      if (attempts >= maxAttempts) {
+        throw { 
+          status: 500, 
+          message: 'Failed to generate unique default nickname' 
+        };
+      }
+    }
+
     // Validate request body
     const validatedData = await createUserSchema.parseAsync(req.body)
       .catch(error => {
@@ -818,32 +882,65 @@ router.post('/', async (req, res) => {
 //      headers: { "Cookie": "session=<jwt>" }
 //      body: { "nickname": "xXx420Sn1perx" }
 router.put('/:wallet', requireAuth, async (req, res) => {
+  const logContext = {
+    path: 'PUT /api/users/:wallet',
+    wallet: req.params.wallet,
+    body: req.body
+  };
+
   try {
-    const { nickname, settings } = req.body;
+    // Validate request body
+    const validatedData = await updateUserSchema.parseAsync(req.body)
+      .catch(error => {
+        logApi.warn('Invalid request body', { ...logContext, error });
+        throw { status: 400, message: 'Invalid request body', details: error.errors };
+      });
+
+    // If nickname is being updated, check uniqueness
+    if (validatedData.nickname) {
+      const isUnique = await isNicknameUnique(validatedData.nickname, req.params.wallet);
+      if (!isUnique) {
+        logApi.warn('Nickname already taken', { 
+          ...logContext, 
+          nickname: validatedData.nickname 
+        });
+        return res.status(400).json({ 
+          error: 'Nickname already taken',
+          field: 'nickname'
+        });
+      }
+    }
 
     const user = await prisma.users.update({
       where: { wallet_address: req.params.wallet },
       data: {
-        nickname,
-        settings: settings ? { ...settings } : undefined,
+        ...validatedData,
         updated_at: new Date()
       }
     });
 
+    logApi.info('Successfully updated user', {
+      ...logContext,
+      userId: user.id
+    });
+
     res.json(user);
   } catch (error) {
+    const status = error.status || 500;
+    const message = error.message || 'Failed to update user';
+
     logApi.error('Failed to update user:', {
+      ...logContext,
       error: error instanceof Error ? {
         name: error.name,
         message: error.message,
-        stack: req.environment === 'development' ? error.stack : undefined
-      } : error,
-      wallet: req.params.wallet
+        stack: error.stack
+      } : error
     });
 
-    res.status(500).json({ 
-      error: 'Failed to update user',
-      message: req.environment === 'development' ? error.message : undefined
+    res.status(status).json({ 
+      error: message,
+      details: req.environment === 'development' ? error.details : undefined
     });
   }
 });
