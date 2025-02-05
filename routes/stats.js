@@ -1,15 +1,11 @@
+// /routes/stats.js
+
 import express from 'express';
 import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 //import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
-
-/*
- *
- *  NEEDS TO BE UPDATED TO USE PRISMA!
- *
- */
 
 /**
  * @swagger

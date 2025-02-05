@@ -1,4 +1,5 @@
 // /routes/prisma/activity.js
+
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
