@@ -73,25 +73,49 @@ export const verifyTransaction = async (signature, {
       // Calculate amount transferred
       const senderChange = preBalances[senderIndex] - postBalances[senderIndex];
       const receiverChange = postBalances[receiverIndex] - preBalances[receiverIndex];
+      const receiverBalanceBefore = preBalances[receiverIndex] / LAMPORTS_PER_SOL;
+      const receiverBalanceAfter = postBalances[receiverIndex] / LAMPORTS_PER_SOL;
 
       // Convert expected amount to lamports
       const expectedLamports = Math.round(expectedAmount * LAMPORTS_PER_SOL);
 
-      logApi.debug(`💰 ${colors.cyan}Checking transfer amount${colors.reset}`, {
-        expectedLamports,
-        senderChange,
-        receiverChange,
-        difference: Math.abs(receiverChange - expectedLamports)
-      });
+      // Check if this is the first transaction (wallet initialization)
+      const isFirstTransaction = preBalances[receiverIndex] === 0;
+      
+      // Get minimum rent exemption if this is the first transaction
+      let rentExemption = 0;
+      if (isFirstTransaction) {
+        try {
+          rentExemption = await connection.getMinimumBalanceForRentExemption(0);
+          logApi.debug(`📊 ${colors.cyan}First transaction - rent exemption required${colors.reset}`, {
+            rentExemption,
+            expectedTotal: expectedLamports + rentExemption
+          });
+        } catch (error) {
+          logApi.warn(`⚠️ ${colors.yellow}Failed to get rent exemption amount${colors.reset}`, {
+            error: error.message
+          });
+          // Default to known common value if we can't get it dynamically
+          rentExemption = 890880;
+        }
+      }
 
-      // Verify amount (allowing for fees)
-      const isAmountCorrect = Math.abs(receiverChange - expectedLamports) < 5000; // Allow 0.000005 SOL difference for fees
+      // For first transactions, we expect the amount plus rent exemption
+      const expectedTotal = expectedLamports + rentExemption;
+      
+      // Verify amount with appropriate tolerance
+      // Use a smaller tolerance (5000 lamports) for regular transactions
+      // Use a larger tolerance (50000 lamports) for first transactions with rent exemption
+      const tolerance = isFirstTransaction ? 50000 : 5000;
+      const isAmountCorrect = Math.abs(receiverChange - expectedTotal) < tolerance;
 
       if (!isAmountCorrect) {
         logApi.warn(`❌ ${colors.red}Invalid transfer amount${colors.reset}`, {
-          expected: expectedLamports,
+          expected: expectedTotal,
           received: receiverChange,
-          difference: Math.abs(receiverChange - expectedLamports)
+          difference: Math.abs(receiverChange - expectedTotal),
+          isFirstTransaction,
+          rentExemption
         });
         throw new Error('Invalid transfer amount');
       }
@@ -100,13 +124,22 @@ export const verifyTransaction = async (signature, {
         signature,
         slot: tx.slot,
         amount: expectedAmount,
-        fee: senderChange - receiverChange
+        fee: senderChange - receiverChange,
+        receiverBalanceBefore: receiverBalanceBefore.toString(),
+        receiverBalanceAfter: receiverBalanceAfter.toString(),
+        isFirstTransaction,
+        rentExemption: isFirstTransaction ? rentExemption : 0
       });
 
-      // Return success with slot number
+      // Return success with slot number and balance info
       return {
         verified: true,
-        slot: tx.slot
+        slot: tx.slot,
+        amount: expectedAmount,
+        receiverBalanceBefore: receiverBalanceBefore.toString(),
+        receiverBalanceAfter: receiverBalanceAfter.toString(),
+        isFirstTransaction,
+        rentExemption: isFirstTransaction ? rentExemption : 0
       };
     }
 
@@ -133,5 +166,4 @@ export const verifyTransaction = async (signature, {
 export default {
   connection,
   verifyTransaction
-}; 
-
+};

@@ -1,5 +1,11 @@
 // services/tokenSync.js
 
+/*
+ * This service is responsible for fetching and updating token prices and metadata.
+ * It stays up to date by constantly fetching from the DegenDuel Market Data API.
+ * 
+ */
+
 import prisma from '../config/prisma.js';
 import axios from 'axios';
 import { Decimal } from '@prisma/client/runtime/library';
