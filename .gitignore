@@ -57,6 +57,7 @@ tests/
 
 # Archive files
 archive/
+archive/**
 
 # Exceptions to allow specific files
 !.gitignore
