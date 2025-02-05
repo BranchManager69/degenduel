@@ -1,4 +1,5 @@
-// /routes/prisma/stats.js - Centralized logging for DegenDuel backend services.
+// /routes/prisma/stats.js
+
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
