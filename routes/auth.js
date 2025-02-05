@@ -51,27 +51,29 @@ const { sign } = jwt;
 // Example: GET /api/auth/challenge?wallet=<WALLET_ADDR>
 router.get('/challenge', async (req, res) => {
   try {
-    logApi.info('Challenge request received', { wallet: req.query.wallet });
+    // Debug mode
+    if (config.debug_mode) { logApi.info('Challenge request received', { wallet: req.query.wallet }); }
     
     const { wallet } = req.query;
     if (!wallet) {
-      logApi.warn('Missing wallet address in challenge request');
+      if (config.debug_mode) { logApi.warn('Missing wallet address in challenge request'); }
       return res.status(400).json({ error: 'Missing wallet address' });
     }
 
-    logApi.info('Attempting to generate nonce', { wallet });
+    if (config.debug_mode) { logApi.info('Attempting to generate nonce', { wallet }); } 
     // Generate nonce & store in DB
     const nonce = await generateNonce(wallet);
-    logApi.info('Nonce generated successfully', { wallet, nonce });
-    
+    if (config.debug_mode) { logApi.info('Nonce generated successfully', { wallet, nonce }); }
     return res.json({ nonce });
   } catch (error) {
-    logApi.error('Failed to generate nonce', { 
-      error: error.message,
-      stack: error.stack,
-      wallet: req.query.wallet,
-      details: error
-    });
+    if (config.debug_mode) { 
+      logApi.error('Failed to generate nonce', { 
+        error: error.message,
+        stack: error.stack,
+        wallet: req.query.wallet,
+        details: error
+      });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -229,7 +231,7 @@ router.post('/verify-wallet', async (req, res) => {
 
     res.cookie('session', token, cookieOptions);
 
-    logApi.info(`Wallet verified successfully: ${wallet}`, { wallet, role: user.role });
+    if (config.debug_mode) { logApi.info(`Wallet verified successfully: ${wallet}`, { wallet, role: user.role }); } 
     return res.json({
       verified: true,
       token,
@@ -240,7 +242,7 @@ router.post('/verify-wallet', async (req, res) => {
       }
     });
   } catch (error) {
-    logApi.error('Wallet verification failed', { error });
+    if (config.debug_mode) { logApi.error('Wallet verification failed', { error }); }
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -282,6 +284,7 @@ router.post('/disconnect', async (req, res) => {
   try {
     const { wallet } = req.body;
     if (!wallet) {
+      logApi.warn('Missing wallet address in disconnect request');
       return res.status(400).json({ error: 'Missing wallet' });
     }
 
@@ -293,10 +296,10 @@ router.post('/disconnect', async (req, res) => {
     // Clear the cookie
     res.clearCookie('session', { domain: '.degenduel.me' });
 
-    logApi.info(`Wallet ${wallet} disconnected`);
+    if (config.debug_mode) { logApi.info(`Wallet ${wallet} disconnected`); }
     res.json({ success: true });
   } catch (error) {
-    logApi.error('Wallet disconnect failed', { error });
+    if (config.debug_mode) { logApi.error('Wallet disconnect failed', { error }); }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -317,9 +320,11 @@ router.post('/disconnect', async (req, res) => {
 //      headers: { "Cookie": "session=<jwt>" }
 router.post('/logout', requireAuth, async (req, res) => {
   try {
-    logApi.info('Logout request received', {
-      user: req.user.wallet_address
-    });
+    if (config.debug_mode) {
+      logApi.info('Logout request received', {
+        user: req.user.wallet_address
+      });
+    }
 
     // Update last login time
     await prisma.users.update({
@@ -335,9 +340,11 @@ router.post('/logout', requireAuth, async (req, res) => {
       domain: req.environment === 'production' ? '.degenduel.me' : undefined
     });
 
-    logApi.info('User logged out successfully', {
-      user: req.user.wallet_address
-    });
+    if (config.debug_mode) {
+      logApi.info('User logged out successfully', {
+        user: req.user.wallet_address
+      });
+    }
     res.json({ success: true });
   } catch (error) {
     logApi.error('Logout failed:', error);
@@ -361,33 +368,47 @@ router.post('/logout', requireAuth, async (req, res) => {
  */
 router.get('/session', async (req, res) => {
   try {
-    logApi.info('Session check request received', {
-      headers: req.headers,
-      cookies: req.cookies,
-      origin: req.headers.origin
-    });
+    // Debug mode
+    if (config.debug_mode) {
+      logApi.info('Session check request received', {
+        headers: req.headers,
+        cookies: req.cookies,
+        origin: req.headers.origin
+      });
+    }
 
+    // 0) Get session token
     const token = req.cookies.session;
     if (!token) {
-      logApi.warn('No session token provided');
+      if (config.debug_mode) {
+        logApi.warn('No session token provided');
+      }
       return res.status(401).json({ error: 'No session token provided' });
     }
 
+    // 1) Validate token
     const decoded = jwt.verify(token, config.jwt.secret);
-    logApi.info('Token decoded successfully', { decoded });
+    if (config.debug_mode) {
+      logApi.info('Token validated successfully', { decoded });
+    }
 
+    // 2) Find user in DB
     const user = await prisma.users.findUnique({
       where: {
         wallet_address: decoded.wallet_address
       }
     });
 
+    // 3) Check if user exists
     if (!user) {
-      logApi.warn('User not found for session token');
+      if (config.debug_mode) {
+        logApi.warn('User not found for session token');
+      }
       return res.status(401).json({ error: 'User not found' });
     }
 
-    logApi.info('Session check successful', { user: user.wallet_address });
+    // 4) Return user session info
+    if (config.debug_mode) { logApi.info('Session check successful', { user: user.wallet_address }); }
     res.json({
       authenticated: true,
       user: {
@@ -396,8 +417,9 @@ router.get('/session', async (req, res) => {
         nickname: user.nickname
       }
     });
+
   } catch (error) {
-    logApi.error('Session check failed:', error);
+    if (config.debug_mode) { logApi.error('Session check failed:', error); }
     res.status(401).json({ error: 'Invalid session token' });
   }
 });
