@@ -804,32 +804,6 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
     // Set response timeout
     req.setTimeout(TIMEOUTS.TOTAL_REQUEST);
 
-    // Check for existing successful operation with this idempotency key
-    try {
-      const existingOperation = await prisma.operation_logs.findUnique({
-        where: { 
-          idempotency_key_operation: {
-            idempotency_key,
-            operation: 'CONTEST_ENTRY'
-          }
-        }
-      });
-
-      if (existingOperation?.status === 'completed') {
-        logApi.info(`♻️ ${colors.cyan}Returning cached result for idempotent request${colors.reset}`, {
-          requestId,
-          idempotency_key
-        });
-        return res.json(JSON.parse(existingOperation.result));
-      }
-    } catch (dbError) {
-      logApi.error('Failed to check operation logs:', {
-        error: dbError,
-        requestId
-      });
-      // Continue with the request even if operation log check fails
-    }
-
     // Input validation
     if (!wallet_address || !transaction_signature || !portfolio?.tokens) {
       logApi.warn(`⚠️ ${colors.yellow}Missing required fields${colors.reset}`, {
@@ -978,20 +952,45 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
 
         metrics.solana_verification_time = Date.now() - verificationStartTime;
 
-        if (!verificationResult.verified) {
-          throw new ContestError(`Transaction verification failed: ${verificationResult.error}`, 400, {
-            code: ContestErrorCodes.INVALID_TRANSACTION,
-            details: verificationResult.error
-          });
-        }
-
-        // Database operations with timing
+        // Initialize database operations start time
         const dbStartTime = Date.now();
 
-        // Create all records within transaction
-        const [blockchainTx, transaction, participation, portfolioEntries] = await Promise.all([
+        // Create transaction record if verification was successful
+        if (verificationResult.verified) {
+          const transactionRecord = await prisma.transactions.create({
+            data: {
+              wallet_address,
+              type: 'CONTEST_ENTRY',
+              amount: verificationResult.amount.toString(),
+              balance_before: verificationResult.receiverBalanceBefore,
+              balance_after: verificationResult.receiverBalanceAfter,
+              contest_id: contestId,
+              description: `Contest entry fee for ${contest.name}`,
+              status: 'completed',
+              metadata: {
+                contest_code: contest.contest_code,
+                solana_signature: transaction_signature,
+                solana_slot: verificationResult.slot,
+                portfolio_tokens: portfolio.tokens.map(t => ({
+                  address: t.contractAddress,
+                  weight: t.weight
+                })),
+                verification: {
+                  blockchain_verified: true,
+                  blockchain_verified_at: new Date().toISOString(),
+                  admin_audited: false,
+                  admin_audit_at: null,
+                  admin_auditor: null,
+                  audit_notes: null,
+                  audit_status: 'unaudited'
+                },
+                rent_exemption: verificationResult.isFirstTransaction ? verificationResult.rentExemption : null
+              }
+            }
+          });
+
           // Create blockchain transaction record
-          prisma.blockchain_transactions.create({
+          const blockchainTx = await prisma.blockchain_transactions.create({
             data: {
               tx_hash: transaction_signature,
               signature: transaction_signature,
@@ -1006,39 +1005,32 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
               confirmed_at: new Date(),
               slot: verificationResult.slot
             }
-          }),
+          });
 
-          // Create transaction record
-          prisma.transactions.create({
+          // Update transaction with blockchain_tx_id
+          await prisma.transactions.update({
+            where: { id: transactionRecord.id },
             data: {
-              wallet_address,
-              type: 'CONTEST_ENTRY',
-              amount: new Decimal(contest.entry_fee || '0'),
-              balance_before: new Decimal(0),
-              balance_after: new Decimal(0),
-              contest_id: contestId,
-              description: `Contest entry fee for ${contest.name}`,
-              status: 'completed',
               metadata: {
-                blockchain_tx_id: null, // Will update after blockchain_tx creation
-                contest_code: contest.contest_code
+                ...transactionRecord.metadata,
+                blockchain_tx_id: blockchainTx.id
               }
             }
-          }),
+          });
 
           // Create participation record
-          prisma.contest_participants.create({
+          const participation = await prisma.contest_participants.create({
             data: {
               contest_id: contestId,
               wallet_address,
               initial_balance: new Decimal(10000000),
               current_balance: new Decimal(10000000),
-              entry_transaction_id: null // Will update after transaction creation
+              entry_transaction_id: transactionRecord.id
             }
-          }),
+          });
 
           // Create portfolio entries
-          Promise.all(
+          const portfolioEntries = await Promise.all(
             portfolio.tokens.map(token => 
               prisma.contest_portfolios.create({
                 data: {
@@ -1061,69 +1053,40 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
                 }
               })
             )
-          )
-        ]);
+          );
 
-        // Update references
-        await Promise.all([
-          prisma.transactions.update({
-            where: { id: transaction.id },
+          // Update contest participant count
+          await prisma.contests.update({
+            where: { id: contestId },
             data: {
-              metadata: {
-                ...transaction.metadata,
-                blockchain_tx_id: blockchainTx.id
+              participant_count: {
+                increment: 1
               }
             }
-          }),
-          prisma.contest_participants.update({
-            where: { id: participation.id },
-            data: {
-              entry_transaction_id: transaction.id
+          });
+
+          metrics.database_operations_time = Date.now() - dbStartTime;
+
+          // Return the result
+          return {
+            participation,
+            portfolio: portfolioEntries,
+            transaction: {
+              id: transactionRecord.id,
+              blockchain_tx_id: blockchainTx.id,
+              signature: transaction_signature,
+              slot: verificationResult.slot,
+              status: transactionRecord.status,
+              rent_exemption: verificationResult.isFirstTransaction ? verificationResult.rentExemption : null
             }
-          })
-        ]);
-
-        // Update contest participant count
-        await prisma.contests.update({
-          where: { id: contestId },
-          data: {
-            participant_count: {
-              increment: 1
-            }
-          }
-        });
-
-        metrics.database_operations_time = Date.now() - dbStartTime;
-
-        // Log successful operation
-        await prisma.operation_logs.create({
-          data: {
-            idempotency_key,
-            operation: 'CONTEST_ENTRY',
-            status: 'completed',
-            result: JSON.stringify({
-              participation,
-              portfolio: portfolioEntries,
-              transaction: {
-                id: transaction.id,
-                blockchain_tx_id: blockchainTx.id,
-                signature: transaction_signature,
-                slot: verificationResult.slot
-              }
-            })
-          }
-        });
-
-        return {
-          participation,
-          portfolio: portfolioEntries,
-          transaction: {
-            id: transaction.id,
-            blockchain_tx_id: blockchainTx.id,
-            signature: transaction_signature,
-            slot: verificationResult.slot
-          }
-        };
+          };
+        } else {
+          // Transaction verification failed
+          throw new ContestError(`Transaction verification failed: ${verificationResult.error}`, 400, {
+            code: ContestErrorCodes.INVALID_TRANSACTION,
+            details: verificationResult.error
+          });
+        }
       }, {
         timeout: TIMEOUTS.DATABASE_OPERATIONS
       });
@@ -1177,31 +1140,6 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
       metrics,
       duration
     });
-
-    // Log failed operation
-    try {
-      if (idempotency_key && prisma?.operation_logs) {
-        await prisma.operation_logs.create({
-          data: {
-            idempotency_key,
-            operation: 'CONTEST_ENTRY',
-            status: 'failed',
-            error: JSON.stringify({
-              message: error.message,
-              code: error.code,
-              meta: error.meta,
-              stack: error.stack
-            })
-          }
-        });
-      }
-    } catch (logError) {
-      logApi.error('Failed to log operation failure:', {
-        error: logError,
-        originalError: error,
-        stack: logError.stack
-      });
-    }
 
     // Enhanced error responses
     if (error instanceof ContestError) {
@@ -1491,15 +1429,30 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         data: {
           wallet_address,
           type: 'CONTEST_ENTRY',
-          amount: entryFee,
-          balance_before: new Decimal(0),
-          balance_after: new Decimal(0),
+          amount: verificationResult.amount.toString(),
+          balance_before: verificationResult.receiverBalanceBefore,
+          balance_after: verificationResult.receiverBalanceAfter,
           contest_id: contestId,
           description: `Contest entry fee for ${contest.name}`,
           status: 'completed',
           metadata: {
             blockchain_tx_id: blockchainTx.id,
-            contest_code: contest.contest_code
+            contest_code: contest.contest_code,
+            solana_signature: transaction_signature,
+            solana_slot: verificationResult.slot,
+            portfolio_tokens: portfolio.tokens.map(t => ({
+              address: t.contractAddress,
+              weight: t.weight
+            })),
+            verification: {
+              blockchain_verified: true,
+              blockchain_verified_at: new Date().toISOString(),
+              admin_audited: false,
+              admin_audit_at: null,
+              admin_auditor: null,
+              audit_notes: null,
+              audit_status: 'unaudited'
+            }
           }
         }
       });
@@ -2030,6 +1983,8 @@ router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
  *     and a Participant should be a property of a Contest;
  *     and a Contest should be a property of a Contest_Series;
  *     and a Contest_Series should be a property of a Contest_Series_Season (...)
+ * 
+ * 
  * 
  * 
  * 
