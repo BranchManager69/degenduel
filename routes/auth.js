@@ -314,6 +314,35 @@ router.post('/disconnect', async (req, res) => {
  */
 //   example: POST https://degenduel.me/api/auth/logout
 //      headers: { "Cookie": "session=<jwt>" }
+router.post('/logout', requireAuth, async (req, res) => {
+  try {
+    logApi.info('Logout request received', {
+      user: req.user.wallet_address
+    });
+
+    // Update last login time
+    await prisma.users.update({
+      where: { wallet_address: req.user.wallet_address },
+      data: { last_login: new Date() }
+    });
+
+    // Clear the cookie
+    res.clearCookie('session', {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+      domain: req.environment === 'production' ? '.degenduel.me' : undefined
+    });
+
+    logApi.info('User logged out successfully', {
+      user: req.user.wallet_address
+    });
+    res.json({ success: true });
+  } catch (error) {
+    logApi.error('Logout failed:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 /**
  * @swagger
