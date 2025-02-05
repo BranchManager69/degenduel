@@ -18,7 +18,16 @@ export const maintenanceCheck = async (req, res, next) => {
         }
 
         // 2. Check if path is in the whitelist (e.g., auth endpoints)
-        const whitelistedPaths = ['/api/auth', '/api/admin', '/api/superadmin'];
+        const whitelistedPaths = [
+            '/api/auth/session',      // Allow session checks
+            '/api/auth/challenge',    // Allow getting login challenge
+            '/api/auth/verify-wallet', // Allow wallet verification
+            '/api/auth',              // General auth endpoints
+            '/api/admin',             // Admin routes
+            '/api/superadmin',        // Superadmin routes
+            '/api/health'             // Health check
+        ];
+        
         if (whitelistedPaths.some(path => req.path.startsWith(path))) {
             logApi.debug('Whitelisted path bypassing maintenance check', {
                 path: req.path
