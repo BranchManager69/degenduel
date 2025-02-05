@@ -1,5 +1,5 @@
 // config/middleware.js
-import cors from 'cors';
+
 import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
@@ -7,7 +7,17 @@ import { config } from './config.js';
 import helmet from 'helmet';
 import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
 
-export function configureMiddleware(app) {
+// Game origin
+const gameOrigin = config.api_urls.game;
+
+// Middleware debug mode // TODO: temp hard override
+////const MIDDLEWARE_DEBUG_MODE = config.debug_modes.middleware;
+const MIDDLEWARE_DEBUG_MODE = false;
+
+// Master middleware config
+export function configureMiddleware(app) {  
+
+  // Allowed origins (CORS)
   const allowedOrigins = [
     'http://localhost:3000', 
     'http://localhost:3001',
@@ -38,11 +48,9 @@ export function configureMiddleware(app) {
   // Basic middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-
   // Environment middleware
   app.use(environmentMiddleware);
-
-  // Simple CORS middleware for all routes
+  // CORS middleware for all routes
   app.use((req, res, next) => {
     let origin = req.headers.origin;
     
@@ -63,30 +71,36 @@ export function configureMiddleware(app) {
     }
     
     // Detailed request logging
-    logApi.info('🔍 CORS Request Details:', {
-      origin,
-      referer: req.headers.referer,
-      method: req.method,
-      path: req.path,
-      headers: req.headers,
-      url: req.url,
-      originalUrl: req.originalUrl,
-      timestamp: new Date().toISOString()
-    });
-
-    // Log origin check
-    if (!origin) {
-      logApi.warn('⚠️ No origin or referer in request');
-    } else {
-      logApi.info(`🔎 Checking origin: ${origin}`);
-      logApi.info(`📋 Allowed origins:`, allowedOrigins);
-      logApi.info(`✓ Is origin allowed? ${allowedOrigins.includes(origin)}`);
+    if (MIDDLEWARE_DEBUG_MODE) {
+      logApi.info('🔍 CORS Request Details:', {
+        origin,
+        referer: req.headers.referer,
+        method: req.method,
+        path: req.path,
+        headers: req.headers,
+        url: req.url,
+        originalUrl: req.originalUrl,
+        timestamp: new Date().toISOString()
+      });
     }
 
-    // Always set CORS headers for game.degenduel.me
-    const gameOrigin = 'https://game.degenduel.me';
+    // Log origin check
+    if (MIDDLEWARE_DEBUG_MODE) {
+      if (!origin) {
+        logApi.warn('⚠️⚠️ No origin or referer in request');
+      } else {
+        logApi.info(`🔎🔎 Checking origin: ${origin}`);
+        logApi.info(`📋📋 Allowed origins:`, allowedOrigins);
+        logApi.info(`✓✓ Is origin allowed? ${allowedOrigins.includes(origin)}`);
+      }
+    }
+
+    // game.degenduel.me
     if (origin === gameOrigin || origin?.startsWith(gameOrigin)) {
-      logApi.info('📝 Setting CORS headers for game domain');
+      if (MIDDLEWARE_DEBUG_MODE) {
+        logApi.info(`📝 Setting CORS headers for ${gameOrigin}`);
+      }
+      // Set special CORS headers for game.degenduel.me
       res.setHeader('Access-Control-Allow-Origin', gameOrigin);
       res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
@@ -95,19 +109,23 @@ export function configureMiddleware(app) {
     }
     // Also set headers for other allowed origins
     else if (origin && allowedOrigins.includes(origin)) {
-      logApi.info('📝 Setting CORS headers for allowed origin:', origin);
+      if (MIDDLEWARE_DEBUG_MODE) {
+        logApi.info(`📝 Setting CORS headers for ${origin}`);
+      }
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Max-Age', '86400');
     } else {
-      logApi.warn('❌ Origin not allowed:', origin);
+      logApi.warn(`❌ Origin not allowed: ${origin}`);
     }
 
     // Handle preflight
     if (req.method === 'OPTIONS') {
-      logApi.info('👉 Handling OPTIONS preflight request');
+      if (MIDDLEWARE_DEBUG_MODE) {
+        logApi.info('👉 Handling OPTIONS preflight request');
+      }
       return res.status(204).end();
     }
 
@@ -131,6 +149,7 @@ export function configureMiddleware(app) {
           'wss://data.degenduel.me',
           'wss://dev.degenduel.me',
           'https://degenduel.me', 
+          'https://admin.degenduel.me',
           'https://api.degenduel.me', 
           'https://game.degenduel.me',
           'https://manager.degenduel.me',
@@ -171,28 +190,34 @@ export function configureMiddleware(app) {
     next();
   });
 
-  // Protected routes
+  /* Protected Routes */
+
+  // Superadmin auth required
   app.use(['/amm-sim', '/api-playground', '/superadmin-dashboard'], requireAuth, requireSuperAdmin, (req, res, next) => {
     next();
   });
 
+  // Admin auth required
   app.use(['/admin-dashboard'], requireAuth, requireAdmin, (req, res, next) => {
     next();
   });
 
+  // User auth required
   app.use(['/profile'], requireAuth, (req, res, next) => {
     next();
   });
 
-  // Debug logging
+  // Log requests
   if (config.debug_mode === 'true') {
     app.use((req, res, next) => {
-      logApi.info(`${req.method} ${req.url}`, {
-        environment: req.environment,
-        origin: req.headers.origin,
-        ip: req.ip,
-        userAgent: req.headers['user-agent']
-      });
+      if (MIDDLEWARE_DEBUG_MODE) {
+        logApi.info(`${req.method} ${req.url}`, {
+          environment: req.environment,
+          origin: req.headers.origin,
+          ip: req.ip,
+          userAgent: req.headers['user-agent']
+        });
+      }
       next();
     });
   }
