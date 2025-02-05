@@ -1,4 +1,5 @@
 // /index.js
+
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -10,6 +11,7 @@ import { errorHandler } from './utils/errorHandler.js';
 import { logApi } from './utils/logger-suite/logger.js';
 import prisma from './config/prisma.js';
 import maintenanceCheck from './middleware/maintenanceMiddleware.js';
+import { startSync, stopSync } from './services/tokenSync.js';
 dotenv.config();
 
 
@@ -17,10 +19,6 @@ dotenv.config();
 
 const app = express();
 
-/*
- *
- *
- */
 
 const port = process.env.API_PORT || 3003; // DegenDuel API port (main)
 ////const logsPort = process.env.LOGS_PORT || 3334; // Logs streaming port (stub)
@@ -34,24 +32,13 @@ setupSwagger(app);
 // Middleware setup
 configureMiddleware(app);
 
-// Log startup configuration (optional)
-/*
-  console.log('Starting API server with config:', {
-   port,
-   dbHost: process.env.DB_HOST,
-   dbName: process.env.DB_NAME,
-   dbUser: process.env.DB_USER,
-   hasDbPassword: !!process.env.DB_PASS
- });
-*/
-
 
 /* Routes Setup */
 
 // Default API route (https://degenduel.com/api)
 app.get('/', (req, res) => {
   res.send(`
-    Welcome to the DegenDuel API!
+    Welcome to the DegenDuel API! You probably should not be here.
   `);
 });
 
@@ -129,11 +116,6 @@ app.get('/api/health', async (req, res) => {
 // Error handling setup
 app.use(errorHandler);
 
-// Lite visual sequence
-//async function displayStartupSequence() {
-//  console.log('\t   ⚔️   DegenDuel API  \t\t|  ALMOST THERE...');
-//}
-
 // Main
 async function startServer() {
   try {
@@ -141,28 +123,31 @@ async function startServer() {
       console.log(`\t   🤺  DegenDuel API  \t\t|  INITIALIZING...`);
       await Promise.all([
           initDatabase().catch(err => {
-              console.error('Aborting DegenDuel API; failed to connect to SQLite:', err);
+              logApi.error('Aborting DegenDuel API; failed to connect to SQLite:', err);
               throw err;
           }),
           initPgDatabase().catch(err => {
-              console.error('Aborting DegenDuel API; failed to connect to PostgreSQL:', err);
+              logApi.error('Aborting DegenDuel API; failed to connect to PostgreSQL:', err);
               throw err;
           })
       ]);
 
-      // Visual startup sequence
-      //await displayStartupSequence();
+      // Start token sync service
+      try {
+        await startSync();
+        logApi.info('💫  Token Sync Service started');
+      } catch (error) {
+        logApi.error('Failed to start token sync service:', error);
+        // Continue server startup even if sync service fails
+      }
 
-      //// Main API server listening on all interfaces
-      ////const apiServer = app.listen(port, '0.0.0.0', () => {
       // Main API server listening only on localhost
       const apiServer = app.listen(port, '0.0.0.0', () => {
-          console.log(`\t   ⚔️  DegenDuel API  \t\t|  READY!`);
-          console.log(`\t             '--------------> Port ${port} (all interfaces)`);
+          logApi.info(`⚔️  DegenDuel API  ========  Server READY on port ${port}!`);
       });
 
       apiServer.on('error', (error) => {
-          console.error('API Server error:', error);
+          logApi.error('API Server error:', error);
           process.exit(1);
       });
 
@@ -200,7 +185,7 @@ async function startServer() {
       */
 
   } catch (error) {
-      console.error(`    ⛔  Failed to start server:`, error);
+      logApi.error(`⛔  Failed to start server:`, error);
       process.exit(1);
   }
 }
@@ -208,6 +193,9 @@ async function startServer() {
 // Handle graceful shutdown
 async function shutdown() {
   try {
+    // Stop token sync service
+    stopSync();
+    
     await Promise.all([
       closeDatabase(),    // SQLite
       closePgDatabase(),  // PostgreSQL
