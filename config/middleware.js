@@ -44,7 +44,23 @@ export function configureMiddleware(app) {
 
   // Simple CORS middleware for all routes
   app.use((req, res, next) => {
-    const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, '');
+    let origin = req.headers.origin;
+    
+    // If no origin but has referer, extract origin from referer
+    if (!origin && req.headers.referer) {
+      try {
+        const url = new URL(req.headers.referer);
+        origin = url.origin;
+      } catch (error) {
+        logApi.warn('⚠️ Invalid referer URL:', req.headers.referer);
+      }
+    }
+
+    // If still no origin, try to extract from host header
+    if (!origin && req.headers.host) {
+      const protocol = req.secure ? 'https' : 'http';
+      origin = `${protocol}://${req.headers.host}`;
+    }
     
     // Detailed request logging
     logApi.info('🔍 CORS Request Details:', {
@@ -69,7 +85,7 @@ export function configureMiddleware(app) {
 
     // Always set CORS headers for game.degenduel.me
     const gameOrigin = 'https://game.degenduel.me';
-    if (req.headers.origin === gameOrigin || req.headers.referer?.startsWith(gameOrigin)) {
+    if (origin === gameOrigin || origin?.startsWith(gameOrigin)) {
       logApi.info('📝 Setting CORS headers for game domain');
       res.setHeader('Access-Control-Allow-Origin', gameOrigin);
       res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
