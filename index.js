@@ -72,9 +72,11 @@ import v2TokenRoutes from './routes/v2/tokens.js';
 import tradeRoutes from './routes/trades.js';
 import superadminRoutes from './routes/superadmin.js';
 import testRoutes from './archive/test-routes.js';
+import statusRoutes from './routes/status.js';
 
-// 1. First mount auth routes (no maintenance check needed)
+// 1. First mount public routes (no maintenance check needed)
 app.use('/api/auth', authRoutes);
+app.use('/api/status', statusRoutes);
 
 // 2. Mount admin routes (no maintenance check needed)
 app.use('/api/admin', prismaAdminRoutes);
