@@ -1,4 +1,5 @@
 // /routes/superadmin.js
+
 import { exec } from 'child_process';
 import express from 'express';
 import fs from 'fs/promises';
@@ -73,20 +74,6 @@ router.get('/logs/:filename', requireAuth, requireSuperAdmin, async (req, res) =
     }
 });
 
-// Novelty generate-tree endpoint (SUPERADMIN ONLY)
-router.post('/generate-tree', requireAuth, requireSuperAdmin, (req, res) => {
-    exec('/home/websites/degenduel/scripts/tree.sh', (error, stdout, stderr) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-        res.json({ 
-            message: 'Project tree generated successfully',
-            output: stdout,
-            timestamp: new Date().toISOString()
-        });
-    });
-});
-
 // Get contest wallet private key (SUPERADMIN ONLY)
 router.get('/contests/:id/wallet', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
@@ -117,6 +104,20 @@ router.get('/contests/:id/wallet', requireAuth, requireSuperAdmin, async (req, r
             details: error.message 
         });
     }
+});
+
+// Novelty generate-tree endpoint (SUPERADMIN ONLY)
+router.post('/generate-tree', requireAuth, requireSuperAdmin, (req, res) => {
+    exec('/home/websites/degenduel/scripts/tree.sh', (error, stdout, stderr) => {
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+        res.json({ 
+            message: 'Project tree generated successfully',
+            output: stdout,
+            timestamp: new Date().toISOString()
+        });
+    });
 });
 
 export default router;
