@@ -93,7 +93,7 @@ app.use('/api/activity', maintenanceCheck, prismaActivityRoutes);
 // DD-Serv-enabled routes
 app.use('/api/dd-serv', maintenanceCheck, ddServRoutes);
 
-// Protected routes
+// Protected routes (inaccessible when in maintenance mode)
 app.use('/api/users', maintenanceCheck, userRoutes);
 app.use('/api/contests', maintenanceCheck, contestRoutes);
 app.use('/api/trades', maintenanceCheck, tradeRoutes);
@@ -130,9 +130,9 @@ app.get('/api/health', async (req, res) => {
 app.use(errorHandler);
 
 // Lite visual sequence
-async function displayStartupSequence() {
-  console.log('\t   ⚔️   DegenDuel API  \t\t|  ALMOST THERE...');
-}
+//async function displayStartupSequence() {
+//  console.log('\t   ⚔️   DegenDuel API  \t\t|  ALMOST THERE...');
+//}
 
 // Main
 async function startServer() {
@@ -151,14 +151,14 @@ async function startServer() {
       ]);
 
       // Visual startup sequence
-      await displayStartupSequence();
+      //await displayStartupSequence();
 
       //// Main API server listening on all interfaces
       ////const apiServer = app.listen(port, '0.0.0.0', () => {
       // Main API server listening only on localhost
       const apiServer = app.listen(port, '0.0.0.0', () => {
-          console.log(`\t   🎯  DegenDuel API  \t\t|  READY!`);
-          console.log(`\t     '--------------> Port ${port} (all interfaces)`);
+          console.log(`\t   ⚔️  DegenDuel API  \t\t|  READY!`);
+          console.log(`\t             '--------------> Port ${port} (all interfaces)`);
       });
 
       apiServer.on('error', (error) => {

@@ -8,15 +8,15 @@ import { createContestWallet } from '../utils/solana-wallet.js';
 import { verifyTransaction } from '../utils/solana-connection.js';
 import { colors } from '../utils/colors.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import prisma from '../config/prisma.js';
 
-const { Prisma, PrismaClient } = pkg;
+const { Prisma } = pkg;
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // For Decimal type and error handling
-const { Decimal } = pkg.Prisma;
-const { PrismaClientKnownRequestError } = pkg;
+const { Decimal } = Prisma;
+const { PrismaClientKnownRequestError } = Prisma;
 
 /**
  * @swagger
@@ -669,6 +669,581 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
 /**
  * @swagger
+ * /api/contests/{id}/enter:
+ *   post:
+ *     summary: Enter a contest with initial portfolio in a single atomic transaction
+ *     tags: [Contests]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Contest ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - wallet_address
+ *               - transaction_signature
+ *               - portfolio
+ *             properties:
+ *               wallet_address:
+ *                 type: string
+ *                 example: "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"
+ *               transaction_signature:
+ *                 type: string
+ *                 example: "5KtP3EMKPGYyQ..."
+ *               portfolio:
+ *                 type: object
+ *                 required:
+ *                   - tokens
+ *                 properties:
+ *                   tokens:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       required:
+ *                         - token_id
+ *                         - weight
+ *                       properties:
+ *                         token_id:
+ *                           type: integer
+ *                           example: 1
+ *                         weight:
+ *                           type: integer
+ *                           minimum: 0
+ *                           maximum: 100
+ *                           example: 50
+ *     responses:
+ *       200:
+ *         description: Successfully entered contest with portfolio
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 participation:
+ *                   $ref: '#/components/schemas/ContestParticipant'
+ *                 portfolio:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Portfolio'
+ *                 transaction:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     blockchain_tx_id:
+ *                       type: string
+ *                     signature:
+ *                       type: string
+ *                     slot:
+ *                       type: number
+ *       400:
+ *         description: Invalid request or portfolio validation failed
+ *       404:
+ *         description: Contest not found
+ *       409:
+ *         description: Already participating or transaction used
+ *       500:
+ *         description: Server error
+ */
+// Standard error codes for contest operations
+const ContestErrorCodes = {
+  CONTEST_FULL: 'CONTEST_FULL',
+  INVALID_PORTFOLIO: 'INVALID_PORTFOLIO',
+  ALREADY_ENTERED: 'ALREADY_ENTERED',
+  INVALID_TRANSACTION: 'INVALID_TRANSACTION',
+  CONTEST_STARTED: 'CONTEST_STARTED',
+  CONTEST_CANCELLED: 'CONTEST_CANCELLED',
+  TOKEN_INVALID: 'TOKEN_INVALID',
+  TIMEOUT: 'TIMEOUT',
+  SYSTEM_ERROR: 'SYSTEM_ERROR'
+};
+
+// Timeout settings (in milliseconds)
+const TIMEOUTS = {
+  SOLANA_VERIFICATION: 30000,  // 30 seconds
+  DATABASE_OPERATIONS: 10000,   // 10 seconds
+  TOTAL_REQUEST: 45000         // 45 seconds
+};
+
+router.post('/:id/enter', requireAuth, async (req, res) => {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  const { wallet_address, transaction_signature, portfolio, idempotency_key = transaction_signature } = req.body;
+  const contestId = parseInt(req.params.id);
+
+  // Initialize metrics
+  const metrics = {
+    solana_verification_time: 0,
+    database_operations_time: 0,
+    total_time: 0
+  };
+
+  try {
+    // Log the full request details
+    logApi.info(`🎮 ${colors.neon}Contest entry request details${colors.reset}`, {
+      requestId,
+      body: {
+        wallet_address,
+        transaction_signature,
+        portfolio,
+        idempotency_key
+      },
+      params: {
+        contestId
+      },
+      headers: req.headers
+    });
+
+    // Set response timeout
+    req.setTimeout(TIMEOUTS.TOTAL_REQUEST);
+
+    // Check for existing successful operation with this idempotency key
+    try {
+      const existingOperation = await prisma.operation_logs.findUnique({
+        where: { 
+          idempotency_key_operation: {
+            idempotency_key,
+            operation: 'CONTEST_ENTRY'
+          }
+        }
+      });
+
+      if (existingOperation?.status === 'completed') {
+        logApi.info(`♻️ ${colors.cyan}Returning cached result for idempotent request${colors.reset}`, {
+          requestId,
+          idempotency_key
+        });
+        return res.json(JSON.parse(existingOperation.result));
+      }
+    } catch (dbError) {
+      logApi.error('Failed to check operation logs:', {
+        error: dbError,
+        requestId
+      });
+      // Continue with the request even if operation log check fails
+    }
+
+    // Input validation
+    if (!wallet_address || !transaction_signature || !portfolio?.tokens) {
+      logApi.warn(`⚠️ ${colors.yellow}Missing required fields${colors.reset}`, {
+        requestId,
+        wallet_address: !!wallet_address,
+        transaction_signature: !!transaction_signature,
+        portfolio: !!portfolio?.tokens
+      });
+      throw new ContestError('Invalid request: missing required fields', 400, {
+        code: ContestErrorCodes.INVALID_PORTFOLIO,
+        fields: {
+          wallet_address: !wallet_address,
+          transaction_signature: !transaction_signature,
+          portfolio: !portfolio?.tokens
+        }
+      });
+    }
+
+    // Verify all tokens exist before proceeding
+    const tokenAddresses = portfolio.tokens.map(t => t.contractAddress);
+    const existingTokens = await prisma.tokens.findMany({
+      where: {
+        address: {
+          in: tokenAddresses
+        }
+      },
+      select: {
+        address: true
+      }
+    });
+
+    const foundAddresses = new Set(existingTokens.map(t => t.address));
+    const missingTokens = tokenAddresses.filter(addr => !foundAddresses.has(addr));
+    
+    if (missingTokens.length > 0) {
+      throw new ContestError('One or more tokens not found', 400, {
+        code: ContestErrorCodes.TOKEN_INVALID,
+        missingTokens
+      });
+    }
+
+    // Validate portfolio weights sum to 100%
+    const totalWeight = portfolio.tokens.reduce((sum, token) => sum + token.weight, 0);
+    if (totalWeight !== 100) {
+      logApi.warn(`⚠️ ${colors.yellow}Invalid portfolio weights${colors.reset}`, {
+        requestId,
+        totalWeight
+      });
+      throw new ContestError('Portfolio weights must sum to 100%', 400, {
+        code: ContestErrorCodes.INVALID_PORTFOLIO,
+        totalWeight
+      });
+    }
+
+    try {
+      const result = await prisma.$transaction(async (prisma) => {
+        // Get contest with participant count
+        const contest = await prisma.contests.findUnique({
+          where: { id: contestId },
+          include: {
+            _count: {
+              select: { contest_participants: true }
+            },
+            contest_wallets: true
+          }
+        });
+
+        if (!contest) {
+          throw new ContestError('Contest not found', 404);
+        }
+
+        // Verify all tokens exist before proceeding
+        const tokenAddresses = portfolio.tokens.map(t => t.contractAddress);
+        const existingTokens = await prisma.tokens.findMany({
+          where: {
+            address: {
+              in: tokenAddresses
+            }
+          },
+          select: {
+            address: true
+          }
+        });
+
+        const foundAddresses = new Set(existingTokens.map(t => t.address));
+        const missingTokens = tokenAddresses.filter(addr => !foundAddresses.has(addr));
+        
+        if (missingTokens.length > 0) {
+          throw new ContestError('One or more tokens not found', 400, {
+            code: ContestErrorCodes.TOKEN_INVALID,
+            missingTokens
+          });
+        }
+
+        // Contest state validations
+        if (contest.status === 'cancelled') {
+          throw new ContestError('Contest has been cancelled', 400, {
+            code: ContestErrorCodes.CONTEST_CANCELLED
+          });
+        }
+
+        if (contest.status !== 'pending') {
+          throw new ContestError('Contest has already started', 400, {
+            code: ContestErrorCodes.CONTEST_STARTED
+          });
+        }
+
+        if (contest._count.contest_participants >= (contest.max_participants || 0)) {
+          throw new ContestError('Contest is full', 400, {
+            code: ContestErrorCodes.CONTEST_FULL,
+            currentParticipants: contest._count.contest_participants,
+            maxParticipants: contest.max_participants
+          });
+        }
+
+        // Check for existing participation
+        const existingParticipation = await prisma.contest_participants.findUnique({
+          where: {
+            contest_id_wallet_address: {
+              contest_id: contestId,
+              wallet_address
+            }
+          }
+        });
+
+        if (existingParticipation) {
+          throw new ContestError('Already participating in this contest', 409, {
+            code: ContestErrorCodes.ALREADY_ENTERED
+          });
+        }
+
+        // Verify Solana transaction with timeout
+        const verificationStartTime = Date.now();
+        const verificationPromise = verifyTransaction(transaction_signature, {
+          expectedAmount: new Decimal(contest.entry_fee || '0').toNumber(),
+          expectedSender: wallet_address,
+          expectedReceiver: contest.contest_wallets.wallet_address
+        });
+
+        const verificationResult = await Promise.race([
+          verificationPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Solana verification timeout')), TIMEOUTS.SOLANA_VERIFICATION)
+          )
+        ]);
+
+        metrics.solana_verification_time = Date.now() - verificationStartTime;
+
+        if (!verificationResult.verified) {
+          throw new ContestError(`Transaction verification failed: ${verificationResult.error}`, 400, {
+            code: ContestErrorCodes.INVALID_TRANSACTION,
+            details: verificationResult.error
+          });
+        }
+
+        // Database operations with timing
+        const dbStartTime = Date.now();
+
+        // Create all records within transaction
+        const [blockchainTx, transaction, participation, portfolioEntries] = await Promise.all([
+          // Create blockchain transaction record
+          prisma.blockchain_transactions.create({
+            data: {
+              tx_hash: transaction_signature,
+              signature: transaction_signature,
+              wallet_from: wallet_address,
+              wallet_to: contest.contest_wallets.wallet_address,
+              amount: new Decimal(contest.entry_fee || '0'),
+              token_type: 'SOL',
+              chain: 'SOLANA',
+              status: 'completed',
+              type: 'CONTEST_ENTRY',
+              contest_id: contestId,
+              confirmed_at: new Date(),
+              slot: verificationResult.slot
+            }
+          }),
+
+          // Create transaction record
+          prisma.transactions.create({
+            data: {
+              wallet_address,
+              type: 'CONTEST_ENTRY',
+              amount: new Decimal(contest.entry_fee || '0'),
+              balance_before: new Decimal(0),
+              balance_after: new Decimal(0),
+              contest_id: contestId,
+              description: `Contest entry fee for ${contest.name}`,
+              status: 'completed',
+              metadata: {
+                blockchain_tx_id: null, // Will update after blockchain_tx creation
+                contest_code: contest.contest_code
+              }
+            }
+          }),
+
+          // Create participation record
+          prisma.contest_participants.create({
+            data: {
+              contest_id: contestId,
+              wallet_address,
+              initial_balance: new Decimal(10000000),
+              current_balance: new Decimal(10000000),
+              entry_transaction_id: null // Will update after transaction creation
+            }
+          }),
+
+          // Create portfolio entries
+          Promise.all(
+            portfolio.tokens.map(token => 
+              prisma.contest_portfolios.create({
+                data: {
+                  weight: token.weight,
+                  contests: {
+                    connect: {
+                      id: contestId
+                    }
+                  },
+                  tokens: {
+                    connect: {
+                      address: token.contractAddress
+                    }
+                  },
+                  users: {
+                    connect: {
+                      wallet_address
+                    }
+                  }
+                }
+              })
+            )
+          )
+        ]);
+
+        // Update references
+        await Promise.all([
+          prisma.transactions.update({
+            where: { id: transaction.id },
+            data: {
+              metadata: {
+                ...transaction.metadata,
+                blockchain_tx_id: blockchainTx.id
+              }
+            }
+          }),
+          prisma.contest_participants.update({
+            where: { id: participation.id },
+            data: {
+              entry_transaction_id: transaction.id
+            }
+          })
+        ]);
+
+        // Update contest participant count
+        await prisma.contests.update({
+          where: { id: contestId },
+          data: {
+            participant_count: {
+              increment: 1
+            }
+          }
+        });
+
+        metrics.database_operations_time = Date.now() - dbStartTime;
+
+        // Log successful operation
+        await prisma.operation_logs.create({
+          data: {
+            idempotency_key,
+            operation: 'CONTEST_ENTRY',
+            status: 'completed',
+            result: JSON.stringify({
+              participation,
+              portfolio: portfolioEntries,
+              transaction: {
+                id: transaction.id,
+                blockchain_tx_id: blockchainTx.id,
+                signature: transaction_signature,
+                slot: verificationResult.slot
+              }
+            })
+          }
+        });
+
+        return {
+          participation,
+          portfolio: portfolioEntries,
+          transaction: {
+            id: transaction.id,
+            blockchain_tx_id: blockchainTx.id,
+            signature: transaction_signature,
+            slot: verificationResult.slot
+          }
+        };
+      }, {
+        timeout: TIMEOUTS.DATABASE_OPERATIONS
+      });
+
+      metrics.total_time = Date.now() - startTime;
+
+      // Log success metrics
+      logApi.info(`🎉 ${colors.green}Successfully entered contest with portfolio${colors.reset}`, {
+        requestId,
+        contestId,
+        wallet_address,
+        metrics,
+        duration: metrics.total_time
+      });
+
+      res.json(result);
+    } catch (dbError) {
+      // Handle database-specific errors
+      logApi.error(`💥 ${colors.red}Database error in contest entry${colors.reset}`, {
+        requestId,
+        error: {
+          name: dbError.name,
+          message: dbError.message,
+          code: dbError?.code,
+          meta: dbError?.meta,
+          stack: dbError.stack
+        }
+      });
+      throw dbError; // Let the outer catch block handle the response
+    }
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    metrics.total_time = duration;
+
+    // Enhanced error logging
+    logApi.error(`💥 ${colors.red}Error in contest entry endpoint${colors.reset}`, {
+      requestId,
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error?.code,
+        meta: error?.meta,
+        stack: error.stack,
+        cause: error.cause
+      },
+      request: {
+        body: req.body,
+        params: req.params,
+        query: req.query
+      },
+      metrics,
+      duration
+    });
+
+    // Log failed operation
+    try {
+      if (idempotency_key && prisma?.operation_logs) {
+        await prisma.operation_logs.create({
+          data: {
+            idempotency_key,
+            operation: 'CONTEST_ENTRY',
+            status: 'failed',
+            error: JSON.stringify({
+              message: error.message,
+              code: error.code,
+              meta: error.meta,
+              stack: error.stack
+            })
+          }
+        });
+      }
+    } catch (logError) {
+      logApi.error('Failed to log operation failure:', {
+        error: logError,
+        originalError: error,
+        stack: logError.stack
+      });
+    }
+
+    // Enhanced error responses
+    if (error instanceof ContestError) {
+      return res.status(error.statusCode).json({
+        error: error.message,
+        code: error.details?.code || ContestErrorCodes.SYSTEM_ERROR,
+        details: error.details
+      });
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      return res.status(400).json({
+        error: 'Database operation failed',
+        code: ContestErrorCodes.SYSTEM_ERROR,
+        details: error.message,
+        meta: error.meta
+      });
+    }
+
+    if (error.message === 'Solana verification timeout') {
+      return res.status(408).json({
+        error: 'Transaction verification timed out',
+        code: ContestErrorCodes.TIMEOUT,
+        details: 'Please try again or contact support if the issue persists'
+      });
+    }
+
+    // Generic error response with more details in development
+    res.status(500).json({
+      error: 'Internal server error',
+      code: ContestErrorCodes.SYSTEM_ERROR,
+      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred',
+      ...(process.env.NODE_ENV === 'development' && {
+        stack: error.stack,
+        details: error.message
+      })
+    });
+  }
+});
+
+/**
+ * @swagger
  * /api/contests/{id}/join:
  *   post:
  *     summary: Join a contest
@@ -991,7 +1566,8 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         message: error.message,
         code: error?.code,
         meta: error?.meta,
-        stack: req.environment === 'development' ? error.stack : undefined
+        stack: error.stack,
+        cause: error.cause
       },
       duration
     });
@@ -1006,13 +1582,14 @@ router.post('/:id/join', requireAuth, async (req, res) => {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return res.status(400).json({
         error: 'Database operation failed',
-        details: req.environment === 'development' ? error.message : undefined
+        details: error.message,
+        meta: error.meta
       });
     }
 
     res.status(500).json({
       error: 'Internal server error',
-      message: req.environment === 'development' ? error.message : 'An unexpected error occurred'
+      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
     });
   }
 });
@@ -1184,7 +1761,7 @@ router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
           message: prismaError.message,
           code: prismaError.code,
           meta: prismaError.meta,
-          stack: req.environment === 'development' ? prismaError.stack : undefined
+          stack: prismaError.stack
         },
         query: prismaError.query
       });
@@ -1196,14 +1773,14 @@ router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
       error: error instanceof Error ? {
         name: error.name,
         message: error.message,
-        stack: req.environment === 'development' ? error.stack : undefined
+        stack: error.stack
       } : error
     });
 
     res.status(500).json({
       error: 'Failed to update contest',
-      details: req.environment === 'development' ? error.message : undefined,
-      message: req.environment === 'development' ? error.message : 'An unexpected error occurred'
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
     });
   }
 });
@@ -1458,6 +2035,8 @@ router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
  * 
  * 
  * 
+ * 
+ * 
  *   ^ ALL OF THE ABOVE IS ANCIENT CODE; LEADERBOARD IS PROBABLY BROKEN!
  * 
  * 
@@ -1600,7 +2179,7 @@ router.post('/:id/portfolio', requireAuth, async (req, res) => {
               },
               tokens: {
                 connect: {
-                  id: token.token_id
+                  address: token.contractAddress
                 }
               },
               users: {
