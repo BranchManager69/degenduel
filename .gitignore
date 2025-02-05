@@ -55,8 +55,8 @@ tests/
 # Safeguard against stupidity
 .env
 
+# Archive files
 archive/
-
 
 # Exceptions to allow specific files
 !.gitignore
