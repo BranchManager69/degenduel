@@ -24,9 +24,9 @@ export const DB_CONFIG = {
   // usernames
   export const VALIDATION = {
     NAME: {
-      MIN_LENGTH: 1,
+      MIN_LENGTH: 4,
       MAX_LENGTH: 15,
-      PATTERN: /^[a-zA-Z0-9_-]+$/
+      PATTERN: /^[a-zA-Z0-9_]+$/
     },
     LEADERBOARD: {
       MIN_LIMIT: 1,
