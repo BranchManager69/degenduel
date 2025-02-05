@@ -9,6 +9,7 @@ import setupSwagger from './config/swagger.js';
 import { errorHandler } from './utils/errorHandler.js';
 import { logApi } from './utils/logger-suite/logger.js';
 import prisma from './config/prisma.js';
+import maintenanceCheck from './middleware/maintenanceMiddleware.js';
 dotenv.config();
 
 
@@ -54,23 +55,14 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Prisma-enabled routes
+// Import routes
 import prismaAdminRoutes from './routes/prisma/admin.js';
 import prismaBalanceRoutes from './routes/prisma/balance.js';
 import prismaStatsRoutes from './routes/prisma/stats.js';
 import leaderboardRoutes from './routes/prisma/leaderboard.js';
 import prismaActivityRoutes from './routes/prisma/activity.js';
-app.use('/api/balance', prismaBalanceRoutes);
-app.use('/api/stats', prismaStatsRoutes);
-app.use('/api/admin', prismaAdminRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/activity', prismaActivityRoutes);
-
-// DD-Serv-enabled routes
+import maintenanceRoutes from './routes/admin/maintenance.js';
 import ddServRoutes from './routes/dd-serv/tokens.js';
-app.use('/api/dd-serv', ddServRoutes);
-
-// Core API routes
 import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
 import contestRoutes from './routes/contests.js';
@@ -80,22 +72,40 @@ import v2TokenRoutes from './routes/v2/tokens.js';
 import tradeRoutes from './routes/trades.js';
 import superadminRoutes from './routes/superadmin.js';
 import testRoutes from './archive/test-routes.js';
-app.use('/api/users', userRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/contests', contestRoutes);
-app.use('/api/trades', tradeRoutes);
-app.use('/api/tokens', tokenRoutes); // v1 tokens
-app.use('/api/v2/tokens', v2TokenRoutes); // v2 tokens
-app.use('/api/token-buckets', tokenBucketRoutes);
-app.use('/api/superadmin', superadminRoutes);
-app.use('/api/test', testRoutes); // NEWEST; tests v4
 
-// Server health route (ad hoc route)
+// 1. First mount auth routes (no maintenance check needed)
+app.use('/api/auth', authRoutes);
+
+// 2. Mount admin routes (no maintenance check needed)
+app.use('/api/admin', prismaAdminRoutes);
+app.use('/api/admin/maintenance', maintenanceRoutes);
+app.use('/api/superadmin', superadminRoutes);
+
+// 3. Apply maintenance check to all other routes
+// Prisma-enabled routes
+app.use('/api/balance', maintenanceCheck, prismaBalanceRoutes);
+app.use('/api/stats', maintenanceCheck, prismaStatsRoutes);
+app.use('/api/leaderboard', maintenanceCheck, leaderboardRoutes);
+app.use('/api/activity', maintenanceCheck, prismaActivityRoutes);
+
+// DD-Serv-enabled routes
+app.use('/api/dd-serv', maintenanceCheck, ddServRoutes);
+
+// Protected routes
+app.use('/api/users', maintenanceCheck, userRoutes);
+app.use('/api/contests', maintenanceCheck, contestRoutes);
+app.use('/api/trades', maintenanceCheck, tradeRoutes);
+app.use('/api/tokens', maintenanceCheck, tokenRoutes); // v1 tokens
+app.use('/api/v2/tokens', maintenanceCheck, v2TokenRoutes); // v2 tokens
+app.use('/api/token-buckets', maintenanceCheck, tokenBucketRoutes);
+
+// Test routes (no maintenance check needed)
+app.use('/api/test', testRoutes);
+
+// Server health route (no maintenance check needed)
 app.get('/api/health', async (req, res) => {
   try {
-    // Test PostgreSQL connection using Prisma
     await prisma.$queryRaw`SELECT 1 as connected`;
-    
     res.status(200).json({ 
       status: 'ok',
       timestamp: new Date().toISOString(),
