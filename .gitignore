@@ -55,6 +55,9 @@ tests/
 # Safeguard against stupidity
 .env
 
+archive/
+
+
 # Exceptions to allow specific files
 !.gitignore
 !.README.md

@@ -5,6 +5,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { createContestWallet } from '../utils/solana-wallet.js';
 import { verifyTransaction } from '../utils/solana-connection.js';
 import { colors } from '../utils/colors.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 const { Prisma, PrismaClient } = pkg;
 
@@ -817,13 +818,13 @@ router.post('/:id/join', requireAuth, async (req, res) => {
 
       // Check if transaction signature was already used
       const existingTx = await prisma.blockchain_transactions.findUnique({
-        where: { signature: transaction_signature }
+        where: { tx_hash: transaction_signature }
       });
 
       if (existingTx) {
         logApi.warn(`🔄 ${colors.yellow}Transaction signature already used${colors.reset}`, {
           requestId,
-          signature: transaction_signature
+          tx_hash: transaction_signature
         });
         throw new ContestError('Transaction signature already used', 400);
       }
@@ -863,7 +864,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       });
 
       const verificationResult = await verifyTransaction(transaction_signature, {
-        expectedAmount: entryFee.dividedBy(LAMPORTS_PER_SOL).toNumber(),
+        expectedAmount: entryFee.toNumber(),
         expectedSender: wallet_address,
         expectedReceiver: contest.contest_wallets.wallet_address
       });
@@ -890,6 +891,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       const blockchainTx = await prisma.blockchain_transactions.create({
         data: {
           tx_hash: transaction_signature,
+          signature: transaction_signature,
           wallet_from: wallet_address,
           wallet_to: contest.contest_wallets.wallet_address,
           amount: entryFee,
@@ -898,7 +900,6 @@ router.post('/:id/join', requireAuth, async (req, res) => {
           status: 'completed',
           type: 'CONTEST_ENTRY',
           contest_id: contestId,
-          signature: transaction_signature,
           confirmed_at: new Date(),
           slot: verificationResult.slot
         }
@@ -1584,15 +1585,27 @@ router.post('/:id/portfolio', requireAuth, async (req, res) => {
         }
       });
 
-      // Create new portfolio entries
+      // Create new portfolio entries with proper relations
       const portfolioEntries = await Promise.all(
         tokens.map(token => 
           prisma.contest_portfolios.create({
             data: {
-              contest_id: contestId,
-              wallet_address,
-              token_id: token.token_id,
-              weight: token.weight
+              weight: token.weight,
+              contests: {
+                connect: {
+                  id: contestId
+                }
+              },
+              tokens: {
+                connect: {
+                  id: token.token_id
+                }
+              },
+              users: {
+                connect: {
+                  wallet_address
+                }
+              }
             }
           })
         )
