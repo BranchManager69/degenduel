@@ -56,7 +56,7 @@ export const DB_CONFIG = {
     },
     URLS: {
       MAX_LENGTH: 255,
-      ALLOWED_PROTOCOLS: ['http:', 'https:']
+      ALLOWED_PROTOCOLS: ['https:']
     },
     SYMBOL: {
       MAX_LENGTH: 10,

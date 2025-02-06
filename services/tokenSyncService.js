@@ -16,6 +16,24 @@ import { TOKEN_VALIDATION } from '../config/constants.js';
 // Validation utilities
 function validateUrl(url) {
   if (!url) return null;
+  
+  // If url is an object, try to get the URL string from it
+  if (typeof url === 'object') {
+    if (url.href) {
+      url = url.href;
+    } else if (url.url) {
+      url = url.url;
+    } else {
+      logApi.warn(`Invalid URL object format:`, url);
+      return null;
+    }
+  }
+
+  if (typeof url !== 'string') {
+    logApi.warn(`Invalid URL type: ${typeof url}`);
+    return null;
+  }
+
   try {
     const parsedUrl = new URL(url);
     if (!TOKEN_VALIDATION.URLS.ALLOWED_PROTOCOLS.includes(parsedUrl.protocol)) {
@@ -27,8 +45,8 @@ function validateUrl(url) {
       return null;
     }
     return url;
-  } catch {
-    logApi.warn(`Invalid URL: ${url}`);
+  } catch (error) {
+    logApi.warn(`Invalid URL: ${url}`, { error: error.message });
     return null;
   }
 }
@@ -42,12 +60,25 @@ function validateDescription(desc) {
 }
 
 function validateSymbol(symbol) {
-  if (!TOKEN_VALIDATION.SYMBOL.PATTERN.test(symbol)) {
-    logApi.warn(`Invalid symbol format: ${symbol}`);
-    // Convert to uppercase and remove invalid characters
-    symbol = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!symbol) return null;
+  
+  // Clean up the symbol
+  let cleanSymbol = symbol.trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9-_.]/g, ''); // Allow hyphens, dots, and underscores
+  
+  // If the symbol is now empty after cleaning, log a warning
+  if (!cleanSymbol) {
+    logApi.warn(`Symbol became empty after cleaning: ${symbol}`);
+    return symbol.substring(0, TOKEN_VALIDATION.SYMBOL.MAX_LENGTH);
   }
-  return symbol.substring(0, TOKEN_VALIDATION.SYMBOL.MAX_LENGTH);
+  
+  // If it doesn't match the strict pattern, log a warning but don't fail
+  if (!TOKEN_VALIDATION.SYMBOL.PATTERN.test(cleanSymbol)) {
+    logApi.warn(`Non-standard symbol format (accepted): ${symbol} -> ${cleanSymbol}`);
+  }
+  
+  return cleanSymbol.substring(0, TOKEN_VALIDATION.SYMBOL.MAX_LENGTH);
 }
 
 function validateName(name) {
@@ -278,26 +309,7 @@ async function updatePrices() {
 }
 
 async function updateMetadata(fullData) {
-  const startTime = Date.now();
   logApi.info(`Starting metadata update for ${fullData.length} tokens...`);
-
-  // Reset per-run stats
-  syncStats.totalProcessed = fullData.length;
-  syncStats.validationFailures = {
-    urls: 0,
-    descriptions: 0,
-    symbols: 0,
-    names: 0,
-    addresses: 0
-  };
-  syncStats.metadataCompleteness = {
-    hasImage: 0,
-    hasDescription: 0,
-    hasTwitter: 0,
-    hasTelegram: 0,
-    hasDiscord: 0,
-    hasWebsite: 0
-  };
 
   let created = 0;
   let updated = 0;
@@ -307,13 +319,16 @@ async function updateMetadata(fullData) {
   await prisma.$transaction(async (tx) => {
     for (const token of fullData) {
       try {
-        // Track metadata completeness
-        if (token.imageUrl) syncStats.metadataCompleteness.hasImage++;
-        if (token.description) syncStats.metadataCompleteness.hasDescription++;
-        if (token.socials?.twitter) syncStats.metadataCompleteness.hasTwitter++;
-        if (token.socials?.telegram) syncStats.metadataCompleteness.hasTelegram++;
-        if (token.socials?.discord) syncStats.metadataCompleteness.hasDiscord++;
-        if (token.websites?.length > 0) syncStats.metadataCompleteness.hasWebsite++;
+        // Skip tokens with missing required fields
+        if (!token?.contractAddress || !token?.symbol || !token?.name) {
+          logApi.warn('Skipping token with missing required fields:', {
+            address: token?.contractAddress,
+            symbol: token?.symbol,
+            name: token?.name
+          });
+          validationFailures++;
+          continue;
+        }
 
         // Validate all fields
         const validatedData = {
@@ -337,24 +352,12 @@ async function updateMetadata(fullData) {
           where: { address: token.contractAddress }
         });
 
-        // Check which fields have actually changed
-        const updates = {};
-        for (const [key, value] of Object.entries(validatedData)) {
-          if (existingToken[key] !== value) {
-            updates[key] = value;
-          }
-        }
-
         if (existingToken) {
-          if (Object.keys(updates).length > 0) {
-            await tx.tokens.update({
-              where: { id: existingToken.id },
-              data: updates
-            });
-            updated++;
-          } else {
-            unchanged++;
-          }
+          await tx.tokens.update({
+            where: { id: existingToken.id },
+            data: validatedData
+          });
+          updated++;
         } else {
           await tx.tokens.create({
             data: validatedData
@@ -363,76 +366,31 @@ async function updateMetadata(fullData) {
         }
       } catch (error) {
         validationFailures++;
-        syncStats.updates.failed++;
         logApi.error('Failed to process token:', {
-          address: token.contractAddress,
+          token: token?.contractAddress,
           error: error.message
         });
       }
     }
   });
 
-  // Update sync statistics
-  const duration = Date.now() - startTime;
-  syncStats.performance.lastSyncDuration = duration;
-  syncStats.performance.syncCount++;
-  syncStats.performance.averageSyncDuration = 
-    (syncStats.performance.averageSyncDuration * (syncStats.performance.syncCount - 1) + duration) 
-    / syncStats.performance.syncCount;
+  // Update our cache with the latest token list
+  lastKnownTokens = new Map(
+    fullData.filter(token => token?.contractAddress && token?.name && token?.symbol)
+      .map(token => [
+        token.contractAddress,
+        { name: token.name, symbol: token.symbol }
+      ])
+  );
 
-  syncStats.history.lastSync = new Date();
-  if (validationFailures === 0) {
-    syncStats.history.lastSuccessfulSync = new Date();
-    syncStats.history.consecutiveFailures = 0;
-  } else {
-    syncStats.history.failedSyncs++;
-    syncStats.history.consecutiveFailures++;
-  }
-
-  syncStats.updates.created = created;
-  syncStats.updates.updated = updated;
-  syncStats.updates.unchanged = unchanged;
-  syncStats.updates.failed = validationFailures;
-  syncStats.updates.totalSince.created += created;
-  syncStats.updates.totalSince.updated += updated;
-  syncStats.updates.totalSince.failed += validationFailures;
-
-  syncStats.successRate = ((fullData.length - validationFailures) / fullData.length) * 100;
-
-  // Calculate metadata completeness percentages
-  const completenessStats = {};
-  for (const [key, value] of Object.entries(syncStats.metadataCompleteness)) {
-    completenessStats[key] = ((value / fullData.length) * 100).toFixed(2) + '%';
-  }
-
-  // Log detailed sync results
   logApi.info('Metadata update completed', {
     totalTokens: fullData.length,
     created,
     updated,
     unchanged,
     validationFailures,
-    validationStats: syncStats.validationFailures,
-    completenessStats,
-    performance: {
-      duration: `${duration}ms`,
-      avgDuration: `${syncStats.performance.averageSyncDuration.toFixed(0)}ms`
-    },
-    successRate: syncStats.successRate.toFixed(2) + '%'
+    successRate: ((fullData.length - validationFailures) / fullData.length * 100).toFixed(2) + '%'
   });
-
-  // Update our cache with the latest token list
-  lastKnownTokens = new Map(
-    fullData.map(token => [
-      token.contractAddress,
-      {
-        name: token.name,
-        symbol: token.symbol,
-        imageUrl: token.imageUrl,
-        description: token.description
-      }
-    ])
-  );
 }
 
 async function startSync() {
