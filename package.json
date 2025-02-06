@@ -51,6 +51,7 @@
     "date-fns": "^3.3.1",
     "dotenv": "^16.4.7",
     "express": "^4.18.3",
+    "express-rate-limit": "^7.5.0",
     "express-validator": "^7.0.1",
     "figlet": "^1.8.0",
     "gradient-string": "^3.0.0",

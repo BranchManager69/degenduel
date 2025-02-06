@@ -1,170 +1,194 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { fileURLToPath } from 'url';
+import fetch from 'node-fetch';
+import { TOKEN_BUCKET_THRESHOLDS, TOKEN_VALIDATION } from '../../config/constants.js';
 
 const prisma = new PrismaClient();
 
+// Token data interface
+interface TokenData {
+  contractAddress: string;
+  symbol: string;
+  name: string;
+  marketCap: string | null;
+  price: string | null;
+  volume24h: string | null;
+  change_h24: number | null;
+  liquidity_usd: number | null;
+  imageUrl?: string;
+  socials?: {
+    twitter?: string;
+    telegram?: string;
+    discord?: string;
+  };
+  websites?: string[];
+  description?: string;
+}
+
+// Validation functions
+function validateUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsedUrl = new URL(url);
+    if (!TOKEN_VALIDATION.URLS.ALLOWED_PROTOCOLS.includes(parsedUrl.protocol)) {
+      console.warn(`Invalid protocol for URL: ${url}`);
+      return null;
+    }
+    if (url.length > TOKEN_VALIDATION.URLS.MAX_LENGTH) {
+      console.warn(`URL too long: ${url}`);
+      return null;
+    }
+    return url;
+  } catch {
+    console.warn(`Invalid URL: ${url}`);
+    return null;
+  }
+}
+
+function validateDescription(desc: string | undefined): string | null {
+  if (!desc) return null;
+  const trimmed = desc.trim();
+  return trimmed.length > TOKEN_VALIDATION.DESCRIPTION.MAX_LENGTH 
+    ? trimmed.substring(0, TOKEN_VALIDATION.DESCRIPTION.MAX_LENGTH - 3) + '...' 
+    : trimmed;
+}
+
+function validateSymbol(symbol: string): string {
+  if (!TOKEN_VALIDATION.SYMBOL.PATTERN.test(symbol)) {
+    console.warn(`Invalid symbol format: ${symbol}`);
+    // Convert to uppercase and remove invalid characters
+    symbol = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+  return symbol.substring(0, TOKEN_VALIDATION.SYMBOL.MAX_LENGTH);
+}
+
+function validateName(name: string): string {
+  const trimmed = name.trim();
+  return trimmed.length > TOKEN_VALIDATION.NAME.MAX_LENGTH 
+    ? trimmed.substring(0, TOKEN_VALIDATION.NAME.MAX_LENGTH) 
+    : trimmed;
+}
+
+function validateAddress(address: string): string {
+  if (!TOKEN_VALIDATION.ADDRESS.SOLANA_PATTERN.test(address)) {
+    console.warn(`Invalid Solana address format: ${address}`);
+  }
+  return address;
+}
+
+async function fetchTokenData(): Promise<TokenData[]> {
+  try {
+    const response = await fetch('https://degenduel.me/api/dd-serv/tokens/list?detail=full');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch token data:', error);
+    throw error;
+  }
+}
+
 export async function seedTokens() {
   console.log('Seeding tokens and buckets...');
+
+  // Fetch real token data
+  const tokenData = await fetchTokenData();
 
   // Create token buckets first
   const buckets = await Promise.all([
     prisma.token_buckets.create({
       data: {
         name: 'Large Cap',
-        description: 'Top market cap tokens',
+        description: 'Top market cap tokens (>$1B)',
         bucket_code: 'LARGE_CAP'
       }
     }),
     prisma.token_buckets.create({
       data: {
         name: 'Mid Cap',
-        description: 'Medium market cap tokens',
+        description: 'Medium market cap tokens ($100M-$1B)',
         bucket_code: 'MID_CAP'
       }
     }),
     prisma.token_buckets.create({
       data: {
         name: 'Small Cap',
-        description: 'Small market cap tokens',
+        description: 'Small market cap tokens (<$100M)',
         bucket_code: 'SMALL_CAP'
       }
     }),
     prisma.token_buckets.create({
       data: {
-        name: 'DeFi',
-        description: 'Decentralized Finance tokens',
-        bucket_code: 'DEFI'
+        name: 'High Volume',
+        description: 'High 24h trading volume tokens',
+        bucket_code: 'HIGH_VOLUME'
       }
     }),
     prisma.token_buckets.create({
       data: {
-        name: 'Gaming',
-        description: 'Gaming and Metaverse tokens',
-        bucket_code: 'GAMING'
+        name: 'High Liquidity',
+        description: 'Tokens with high liquidity',
+        bucket_code: 'HIGH_LIQUIDITY'
       }
     })
   ]);
 
-  // Create tokens with realistic data
-  const tokens = await Promise.all([
-    // Large Cap Tokens
-    prisma.tokens.create({
+  // Helper function to determine bucket assignments using centralized thresholds
+  function getBucketIds(token: TokenData) {
+    const bucketIds = [];
+    const marketCap = Number(token.marketCap) || 0;
+    const volume24h = Number(token.volume24h) || 0;
+    const liquidityUsd = Number(token.liquidity_usd) || 0;
+
+    // Market cap buckets
+    if (marketCap >= TOKEN_BUCKET_THRESHOLDS.MARKET_CAP.LARGE_CAP) bucketIds.push(buckets[0].id);
+    else if (marketCap >= TOKEN_BUCKET_THRESHOLDS.MARKET_CAP.MID_CAP) bucketIds.push(buckets[1].id);
+    else bucketIds.push(buckets[2].id);
+
+    // Volume bucket
+    if (volume24h >= TOKEN_BUCKET_THRESHOLDS.VOLUME.HIGH_VOLUME) bucketIds.push(buckets[3].id);
+
+    // Liquidity bucket
+    if (liquidityUsd >= TOKEN_BUCKET_THRESHOLDS.LIQUIDITY.HIGH_LIQUIDITY) bucketIds.push(buckets[4].id);
+
+    return bucketIds;
+  }
+
+  // Create tokens with real data
+  const tokens = await Promise.all(tokenData.map(async (token) => {
+    const bucketIds = getBucketIds(token);
+    
+    return prisma.tokens.create({
       data: {
-        address: 'So11111111111111111111111111111111111111112',
-        symbol: 'SOL',
-        name: 'Solana',
-        decimals: 9,
+        address: validateAddress(token.contractAddress),
+        symbol: validateSymbol(token.symbol),
+        name: validateName(token.name),
+        decimals: 9, // Default for Solana tokens
         is_active: true,
-        market_cap: new Decimal('28614450000'),
-        change_24h: new Decimal('2.45'),
-        volume_24h: new Decimal('1234567890'),
+        market_cap: token.marketCap ? new Decimal(token.marketCap) : null,
+        change_24h: token.change_h24 ? new Decimal(token.change_h24 * 100) : null,
+        volume_24h: token.volume24h ? new Decimal(token.volume24h) : null,
+        image_url: validateUrl(token.imageUrl),
+        description: validateDescription(token.description),
+        twitter_url: validateUrl(token.socials?.twitter),
+        telegram_url: validateUrl(token.socials?.telegram),
+        discord_url: validateUrl(token.socials?.discord),
+        website_url: validateUrl(token.websites?.[0]),
         token_bucket_memberships: {
-          create: {
-            bucket_id: buckets[0].id // Large Cap
-          }
+          create: bucketIds.map(bucketId => ({
+            bucket_id: bucketId
+          }))
         },
         token_prices: {
           create: {
-            price: new Decimal('104.23')
+            price: new Decimal(token.price || '0')
           }
         }
       }
-    }),
-    prisma.tokens.create({
-      data: {
-        address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs',
-        symbol: 'RAY',
-        name: 'Raydium',
-        decimals: 6,
-        is_active: true,
-        market_cap: new Decimal('456789000'),
-        change_24h: new Decimal('-1.23'),
-        volume_24h: new Decimal('98765432'),
-        token_bucket_memberships: {
-          create: [
-            { bucket_id: buckets[1].id }, // Mid Cap
-            { bucket_id: buckets[3].id }  // DeFi
-          ]
-        },
-        token_prices: {
-          create: {
-            price: new Decimal('2.45')
-          }
-        }
-      }
-    }),
-    prisma.tokens.create({
-      data: {
-        address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        symbol: 'USDC',
-        name: 'USD Coin',
-        decimals: 6,
-        is_active: true,
-        market_cap: new Decimal('45678900000'),
-        change_24h: new Decimal('0.01'),
-        volume_24h: new Decimal('987654321'),
-        token_bucket_memberships: {
-          create: {
-            bucket_id: buckets[0].id // Large Cap
-          }
-        },
-        token_prices: {
-          create: {
-            price: new Decimal('1.00')
-          }
-        }
-      }
-    }),
-    // Gaming Token
-    prisma.tokens.create({
-      data: {
-        address: 'SAMUmmSvrE8yqtcG94oyP1Zu2P9t8PSRSV52sG6cqwV',
-        symbol: 'SAMU',
-        name: 'Samurai',
-        decimals: 9,
-        is_active: true,
-        market_cap: new Decimal('12345678'),
-        change_24h: new Decimal('5.67'),
-        volume_24h: new Decimal('1234567'),
-        token_bucket_memberships: {
-          create: [
-            { bucket_id: buckets[2].id }, // Small Cap
-            { bucket_id: buckets[4].id }  // Gaming
-          ]
-        },
-        token_prices: {
-          create: {
-            price: new Decimal('0.0123')
-          }
-        }
-      }
-    }),
-    // DeFi Token
-    prisma.tokens.create({
-      data: {
-        address: 'MERt85fc5boKw3BW1eYdxonEuJNvXbiMbs6hvheau5K',
-        symbol: 'MER',
-        name: 'Mercurial',
-        decimals: 6,
-        is_active: true,
-        market_cap: new Decimal('23456789'),
-        change_24h: new Decimal('-3.45'),
-        volume_24h: new Decimal('2345678'),
-        token_bucket_memberships: {
-          create: [
-            { bucket_id: buckets[2].id }, // Small Cap
-            { bucket_id: buckets[3].id }  // DeFi
-          ]
-        },
-        token_prices: {
-          create: {
-            price: new Decimal('0.145')
-          }
-        }
-      }
-    })
-  ]);
+    });
+  }));
 
   console.log(`Seeded ${buckets.length} token buckets`);
   console.log(`Seeded ${tokens.length} tokens`);
