@@ -27,7 +27,7 @@ FaucetManager.setConfig({
 async function getTestFaucetWallet() {
   // First check if we already have a test faucet wallet
   const existingFaucet = await prisma.seed_wallets.findFirst({
-    where: { identifier: 'test-faucet' }
+    where: { purpose: 'Seed wallet for test-faucet' }
   });
 
   if (existingFaucet) {
