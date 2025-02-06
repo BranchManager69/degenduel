@@ -190,7 +190,28 @@ export async function seedUsers() {
       experience_points: 100000,
       total_achievement_points: 5000,
       rank_score: 2500,
-      highest_rank_score: 2800
+      highest_rank_score: 2800,
+      is_banned: false,
+      kyc_status: 'VERIFIED',
+      risk_level: 0,
+      user_stats: {
+        upsert: {
+          create: {
+            contests_entered: 50,
+            contests_won: 20,
+            total_prize_money: new Decimal('5000'),
+            best_score: new Decimal('95.5'),
+            avg_score: new Decimal('82.3')
+          },
+          update: {
+            contests_entered: 50,
+            contests_won: 20,
+            total_prize_money: new Decimal('5000'),
+            best_score: new Decimal('95.5'),
+            avg_score: new Decimal('82.3')
+          }
+        }
+      }
     },
     create: {
       wallet_address: WalletGenerator.generateWallet('superadmin').publicKey,
@@ -201,6 +222,9 @@ export async function seedUsers() {
       total_achievement_points: 5000,
       rank_score: 2500,
       highest_rank_score: 2800,
+      is_banned: false,
+      kyc_status: 'VERIFIED',
+      risk_level: 0,
       user_stats: {
         create: {
           contests_entered: 50,
@@ -215,6 +239,11 @@ export async function seedUsers() {
 
   const totalUsers = users.length + 1; // +1 for superadmin
   console.log(`Seeded ${totalUsers} users`);
+  console.log('Created superadmin account:', {
+    nickname: superAdmin.nickname,
+    role: superAdmin.role,
+    wallet: superAdmin.wallet_address
+  });
   
   return [...users, superAdmin];
 }

@@ -474,6 +474,87 @@ router.get('/', async (req, res) => {
 
 /**
  * @swagger
+ * /api/users/check-nickname:
+ *   get:
+ *     summary: Check nickname availability
+ *     description: Check if a nickname is available for use
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: nickname
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The nickname to check
+ *     responses:
+ *       200:
+ *         description: Nickname availability status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 available:
+ *                   type: boolean
+ *                   description: Whether the nickname is available
+ *       400:
+ *         description: Invalid nickname format
+ *       500:
+ *         description: Internal server error
+ */
+// Nickname availability check endpoint (no auth required)
+router.get('/check-nickname', nicknameCheckLimiter, async (req, res) => {
+    const startTime = Date.now();
+    const { nickname } = req.query;
+
+    try {
+        // Validate nickname format
+        const validation = validateNickname(nickname);
+        if (!validation.isValid) {
+            logApi.warn('Invalid nickname check attempt', {
+                nickname,
+                error: validation.error,
+                ip: req.ip
+            });
+            return res.status(400).json({
+                error: validation.error
+            });
+        }
+
+        // Check database for existing nickname (case insensitive)
+        const existingUser = await prisma.users.findFirst({
+            where: {
+                nickname: {
+                    equals: nickname,
+                    mode: 'insensitive'
+                }
+            }
+        });
+
+        // Add artificial delay if needed (minimum 100ms)
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime < 100) {
+            await new Promise(resolve => setTimeout(resolve, 100 - elapsedTime));
+        }
+
+        return res.json({
+            available: !existingUser
+        });
+
+    } catch (error) {
+        logApi.error('Error checking nickname availability:', {
+            nickname,
+            error: error.message,
+            ip: req.ip
+        });
+        return res.status(500).json({
+            error: 'Internal server error'
+        });
+    }
+});
+
+/**
+ * @swagger
  * /api/users/{wallet}:
  *   get:
  *     summary: Get user profile by wallet address
@@ -1126,57 +1207,6 @@ router.get('/:wallet/stats', async (req, res) => {
     logApi.error('Failed to fetch user stats:', error);
     res.status(500).json({ error: 'Failed to fetch user stats' });
   }
-});
-
-// Nickname availability check endpoint (no auth required)
-router.get('/check-nickname', nicknameCheckLimiter, async (req, res) => {
-    const startTime = Date.now();
-    const { nickname } = req.query;
-
-    try {
-        // Validate nickname format
-        const validation = validateNickname(nickname);
-        if (!validation.isValid) {
-            logApi.warn('Invalid nickname check attempt', {
-                nickname,
-                error: validation.error,
-                ip: req.ip
-            });
-            return res.status(400).json({
-                error: validation.error
-            });
-        }
-
-        // Check database for existing nickname (case insensitive)
-        const existingUser = await prisma.users.findFirst({
-            where: {
-                nickname: {
-                    equals: nickname,
-                    mode: 'insensitive'
-                }
-            }
-        });
-
-        // Add artificial delay if needed (minimum 100ms)
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime < 100) {
-            await new Promise(resolve => setTimeout(resolve, 100 - elapsedTime));
-        }
-
-        return res.json({
-            available: !existingUser
-        });
-
-    } catch (error) {
-        logApi.error('Error checking nickname availability:', {
-            nickname,
-            error: error.message,
-            ip: req.ip
-        });
-        return res.status(500).json({
-            error: 'Internal server error'
-        });
-    }
 });
 
 export default router;
