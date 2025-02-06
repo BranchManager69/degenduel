@@ -14,9 +14,9 @@ export async function seedContestParticipants() {
   const users = await prisma.users.findMany({
     where: {
       role: {
-        in: ['user', 'superadmin', 'admin', 'moderator', 'bot']
+        in: ['user', 'superadmin', 'admin']
       },
-      is_banned: false
+      isBanned: false // Explicitly exclude banned users
     }
   });
 
@@ -39,11 +39,11 @@ export async function seedContestParticipants() {
               wallet_address: user.wallet_address,
               type: 'CONTEST_ENTRY',
               amount: contest.entry_fee || new Decimal('0'),
-              balance_before: user.balance || new Decimal('0'),
-              balance_after: (user.balance || new Decimal('0')).minus(contest.entry_fee || new Decimal('0')),
               contest_id: contest.id,
               description: `Entry fee for contest ${contest.name}`,
-              status: 'completed'
+              status: 'completed',
+              balance_before: new Decimal('0'),
+              balance_after: new Decimal('0')
             }
           });
 
@@ -58,11 +58,11 @@ export async function seedContestParticipants() {
                 wallet_address: user.wallet_address,
                 type: 'PRIZE_PAYOUT',
                 amount: prizeAmount,
-                balance_before: user.balance || new Decimal('0'),
-                balance_after: (user.balance || new Decimal('0')).plus(prizeAmount),
                 contest_id: contest.id,
                 description: `Prize payout for ${finalRank}${finalRank === 1 ? 'st' : finalRank === 2 ? 'nd' : 'rd'} place in contest ${contest.name}`,
-                status: 'completed'
+                status: 'completed',
+                balance_before: new Decimal('0'),
+                balance_after: new Decimal('0')
               }
             });
           }
@@ -72,8 +72,6 @@ export async function seedContestParticipants() {
             data: {
               contest_id: contest.id,
               wallet_address: user.wallet_address,
-              initial_balance: new Decimal('1000000'),
-              current_balance: new Decimal('1000000'),
               rank: Math.floor(Math.random() * participantCount) + 1,
               entry_transaction_id: entryTransaction.id,
               final_rank: contest.status === 'completed' ? finalRank : null,
