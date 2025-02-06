@@ -7,14 +7,21 @@ import path from 'path';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import logApi from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import { getContestWallet } from '../utils/solana-wallet.js';
 import { PrismaClient } from '@prisma/client';
+import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { WalletGenerator } from '../utils/solana-suite/wallet-generator.js';
+import { FaucetManager } from '../utils/solana-suite/faucet-manager.js';
+import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
+import bs58 from 'bs58';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 
 // Router
 const router = express.Router();
 const prismaClient = new PrismaClient();
+
+// Solana connection
+const connection = new Connection(process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com', 'confirmed');
 
 // Middleware to ensure superadmin role
 const requireSuperAdminMiddleware = (req, res, next) => {
@@ -145,17 +152,26 @@ const phaseDefinitions = {
                 prismaClient.contest_token_prices.deleteMany(),
                 prismaClient.contest_wallets.deleteMany(),
                 prismaClient.contests.deleteMany(),
-                prismaClient.user_stats.deleteMany(),
-                prismaClient.users.deleteMany(),
+                prismaClient.user_stats.deleteMany({
+                    where: {
+                        user: {
+                            role: { not: 'superadmin' }
+                        }
+                    }
+                }),
+                prismaClient.users.deleteMany({
+                    where: {
+                        role: { not: 'superadmin' }
+                    }
+                }),
                 prismaClient.tokens.deleteMany(),
                 prismaClient.token_buckets.deleteMany(),
                 prismaClient.achievement_tier_requirements.deleteMany(),
                 prismaClient.achievement_tiers.deleteMany(),
                 prismaClient.achievement_categories.deleteMany(),
-                prismaClient.user_levels.deleteMany(),
-                prismaClient.level_rewards.deleteMany()
+                prismaClient.user_levels.deleteMany()
             ]);
-            return 'Database cleared successfully';
+            return 'Database cleared successfully (preserved superadmin account)';
         },
         rollback: async () => {
             // No rollback for clear - it's already deleted
@@ -471,6 +487,158 @@ router.post('/reseed-database/:phase', requireAuth, requireSuperAdmin, async (re
         return res.status(500).json({
             error: `Failed to execute phase ${req.params.phase}`,
             details: error.message
+        });
+    }
+});
+
+// Get faucet balance (SUPERADMIN ONLY)
+router.get('/faucet/balance', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const balance = await FaucetManager.checkBalance();
+        res.json({ 
+            balance,
+            config: FaucetManager.config
+        });
+    } catch (error) {
+        logApi.error('Error checking faucet balance:', error);
+        res.status(500).json({ 
+            error: 'Failed to check faucet balance',
+            details: error.message 
+        });
+    }
+});
+
+// Configure faucet settings (SUPERADMIN ONLY)
+router.post('/faucet/config', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { defaultAmount, minFaucetBalance, maxTestUsers } = req.body;
+        FaucetManager.setConfig({
+            defaultAmount: parseFloat(defaultAmount),
+            minFaucetBalance: parseFloat(minFaucetBalance),
+            maxTestUsers: parseInt(maxTestUsers)
+        });
+        res.json({ 
+            message: 'Faucet configuration updated',
+            config: FaucetManager.config
+        });
+    } catch (error) {
+        logApi.error('Error updating faucet config:', error);
+        res.status(500).json({ 
+            error: 'Failed to update faucet configuration',
+            details: error.message 
+        });
+    }
+});
+
+// Recover SOL from test wallets (SUPERADMIN ONLY)
+router.post('/faucet/recover', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        await FaucetManager.recoverFromTestWallets();
+        res.json({ 
+            message: 'Recovery process completed successfully'
+        });
+    } catch (error) {
+        logApi.error('Error recovering from test wallets:', error);
+        res.status(500).json({ 
+            error: 'Failed to recover from test wallets',
+            details: error.message 
+        });
+    }
+});
+
+// Nuclear recover SOL from test wallets - leaves minimal balance (SUPERADMIN ONLY)
+router.post('/faucet/recover-nuclear', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        // Get all test users (created in the last 24 hours)
+        const testUsers = await prisma.users.findMany({
+            where: {
+                created_at: {
+                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+                },
+                nickname: {
+                    startsWith: 'Test User'
+                }
+            },
+            select: {
+                id: true,
+                wallet_address: true
+            }
+        });
+
+        const faucetWallet = await FaucetManager.getFaucetWallet();
+        if (!faucetWallet) {
+            throw new Error('Failed to get test faucet wallet');
+        }
+
+        let totalRecovered = 0;
+
+        for (const user of testUsers) {
+            try {
+                const balance = await connection.getBalance(new PublicKey(user.wallet_address));
+                if (balance <= 0) continue;
+
+                const balanceSOL = balance / LAMPORTS_PER_SOL;
+
+                const walletInfo = await WalletGenerator.getWallet(`test-user-${user.id}`);
+                if (!walletInfo) {
+                    console.log(`No private key found for ${user.wallet_address}, skipping...`);
+                    continue;
+                }
+
+                const userKeypair = Keypair.fromSecretKey(bs58.decode(walletInfo.secretKey));
+                
+                // Leave absolute minimum for rent (0.000001 SOL)
+                const recoveryAmount = balance - (0.000001 * LAMPORTS_PER_SOL);
+                if (recoveryAmount <= 0) continue;
+
+                const recoveryAmountSOL = recoveryAmount / LAMPORTS_PER_SOL;
+
+                const transaction = new Transaction().add(
+                    SystemProgram.transfer({
+                        fromPubkey: userKeypair.publicKey,
+                        toPubkey: new PublicKey(faucetWallet.publicKey),
+                        lamports: recoveryAmount
+                    })
+                );
+
+                const signature = await connection.sendTransaction(transaction, [userKeypair]);
+                await connection.confirmTransaction(signature);
+
+                totalRecovered += recoveryAmountSOL;
+                console.log(`Recovered ${recoveryAmountSOL} SOL from ${user.wallet_address}`);
+
+                // Log the recovery transaction
+                await prisma.transactions.create({
+                    data: {
+                        wallet_address: user.wallet_address,
+                        type: 'WITHDRAWAL',
+                        amount: recoveryAmountSOL,
+                        balance_before: balanceSOL,
+                        balance_after: 0.000001, // Minimal balance left
+                        status: 'completed',
+                        metadata: {
+                            blockchain_signature: signature
+                        },
+                        description: 'Nuclear test wallet SOL recovery',
+                        processed_at: new Date()
+                    }
+                });
+
+            } catch (error) {
+                console.error(`Failed to recover SOL from ${user.wallet_address}:`, error);
+            }
+        }
+
+        await FaucetManager.checkBalance();
+        res.json({ 
+            message: 'Nuclear recovery process completed successfully',
+            totalRecovered
+        });
+    } catch (error) {
+        logApi.error('Error performing nuclear recovery:', error);
+        res.status(500).json({ 
+            error: 'Failed to perform nuclear recovery',
+            details: error.message 
         });
     }
 });

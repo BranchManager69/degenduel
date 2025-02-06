@@ -14,11 +14,12 @@
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:seed": "NODE_OPTIONS='--loader ts-node/esm' ts-node prisma/seeds/index.ts",
-    "db:reset": "NODE_OPTIONS='--loader ts-node/esm' ts-node scripts/reset-db.ts",
+    "db:push": "npx prisma db push",
+    "db:seed": "npx prisma db seed",
+    "db:reset": "npx prisma db reset",
     "db:reset-and-seed": "npm run db:reset && npm run db:seed",
-    "start": "npm run start:api",
+    "reseed": "npx prisma db seed",
+    "start": "node --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));' index.js",
     "stop": "npm run stop:api",
     "rebuild": "node scripts/rebuild.js",
     "hard-restart": "node scripts/hard-restart.js",
@@ -39,6 +40,7 @@
   "dependencies": {
     "@faker-js/faker": "^9.4.0",
     "@prisma/client": "^6.1.0",
+    "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.98.0",
     "axios": "^1.7.9",
     "boxen": "^8.0.1",
@@ -73,7 +75,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.13.1",
     "@types/pg": "^8.11.10",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
@@ -81,6 +83,9 @@
     "prettier": "^3.4.2",
     "prisma": "^6.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.3"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seeds/index.ts"
   }
 }

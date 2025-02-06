@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { fileURLToPath } from 'url';
-import { WalletGenerator } from './utils/wallet-generator.js';
+import { WalletGenerator } from '../../utils/solana-suite/wallet-generator.js';
 
 const prisma = new PrismaClient();
 

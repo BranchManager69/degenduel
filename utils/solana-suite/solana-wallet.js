@@ -1,6 +1,8 @@
+// /utils/solana-suite/solana-wallet.js
+
 import { Keypair } from '@solana/web3.js';
 import crypto from 'crypto';
-import { logApi } from './logger-suite/logger.js';
+import { logApi } from '../logger-suite/logger.js';
 
 const ENCRYPTION_KEY = process.env.WALLET_ENCRYPTION_KEY;
 if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
@@ -113,32 +115,36 @@ export const createContestWallet = async () => {
   }
 };
 
-// Get wallet instance from encrypted private key
+// Get a contest wallet from encrypted private key and public key
 export const getContestWallet = async (encryptedPrivateKey, publicKey) => {
   try {
-    // Decrypt private key
-    const privateKeyHex = decryptPrivateKey(encryptedPrivateKey);
-    const privateKeyBytes = Buffer.from(privateKeyHex, 'hex');
-    
-    // Create keypair from private key
-    const wallet = Keypair.fromSecretKey(privateKeyBytes);
-    
-    // Verify public key matches
-    if (wallet.publicKey.toString() !== publicKey) {
-      throw new WalletError('Public key mismatch', 'KEY_MISMATCH');
-    }
-    
-    return wallet;
+      // Decrypt private key
+      const privateKeyHex = decryptPrivateKey(encryptedPrivateKey);
+      const privateKeyBytes = Buffer.from(privateKeyHex, 'hex');
+      
+      // Create keypair from private key
+      const wallet = Keypair.fromSecretKey(privateKeyBytes);
+      
+      // Verify public key matches
+      if (wallet.publicKey.toString() !== publicKey) {
+          throw new WalletError('Public key mismatch', 'KEY_MISMATCH');
+      }
+      
+      // Return unencrypted wallet
+      return wallet;
+
   } catch (error) {
-    logApi.error('Failed to get contest wallet:', {
-      error: error.message,
-      publicKey,
-      stack: error.stack
-    });
-    throw new WalletError(
+      // Wallet retrieval failed
+      logApi.error('Failed to get contest wallet:', {
+          error: error.message,
+          publicKey,
+          stack: error.stack
+  });
+  throw new WalletError(
       'Failed to get contest wallet',
       'WALLET_RETRIEVAL_FAILED',
       { originalError: error.message }
     );
   }
+
 }; 

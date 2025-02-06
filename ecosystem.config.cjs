@@ -8,6 +8,8 @@ module.exports = {
       script: 'index.js',
       watch: false,
       cwd: '/home/branchmanager/websites/degenduel',
+      interpreter: 'node',
+      node_args: '--import \'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("ts-node/esm", pathToFileURL("./"));\'',
       env: {
         PORT: process.env.PORT || 3004,
         DD_API_DEBUG_MODE: process.env.DD_API_DEBUG_MODE || 'false'

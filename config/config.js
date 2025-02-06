@@ -8,7 +8,40 @@ const DD_SERV_API = 'https://degenduel.me/api/dd-serv/tokens';
 const DATA_API = 'https://data.degenduel.me/api';
 const GAME_API = 'https://game.degenduel.me';
 
+// helpful Solana RPC URLs:
+const RPC_URL_MAINNET_HTTP = process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com';
+const RPC_URL_MAINNET_WSS = process.env.QUICKNODE_MAINNET_WSS || '';
+const RPC_URL_DEVNET_HTTP = process.env.QUICKNODE_DEVNET_HTTP || 'https://api.devnet.solana.com';
+const RPC_URL_DEVNET_WSS = process.env.QUICKNODE_DEVNET_WSS || '';
+const RPC_URL = RPC_URL_MAINNET_HTTP;
+
 const config = {
+  rpc_urls: {
+    primary: RPC_URL,
+    mainnet_http: RPC_URL_MAINNET_HTTP,
+    mainnet_wss: RPC_URL_MAINNET_WSS,
+    devnet_http: RPC_URL_DEVNET_HTTP,
+    devnet_wss: RPC_URL_DEVNET_WSS,
+  },
+  master_wallet: {
+    address: process.env.DD_MASTER_WALLET,
+    min_contest_wallet_balance: 0.01 // SOL
+  },
+  transaction_types: {
+    PRIZE_PAYOUT: 'PRIZE_PAYOUT',
+    CONTEST_WALLET_RAKE: 'CONTEST_WALLET_RAKE',
+    CONTEST_ENTRY: 'CONTEST_ENTRY',
+    TOKEN_PURCHASE: 'TOKEN_PURCHASE',
+    TOKEN_SALE: 'TOKEN_SALE',
+    WITHDRAWAL: 'WITHDRAWAL',
+    DEPOSIT: 'DEPOSIT'
+  },
+  transaction_statuses: {
+    PENDING: 'pending',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    CANCELLED: 'cancelled'
+  },
   port: process.env.PORT || process.env.API_PORT || 3004,
   jwt: {
     secret: process.env.JWT_SECRET

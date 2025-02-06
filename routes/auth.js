@@ -9,6 +9,7 @@ import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { clearNonce, generateNonce, getNonceRecord } from '../utils/dbNonceStore.js';
 import { requireAuth } from '../middleware/auth.js';
+import { UserRole } from '../types/userRole.js';
 
 const router = express.Router();
 const { sign } = jwt;
@@ -199,7 +200,7 @@ router.post('/verify-wallet', async (req, res) => {
         wallet_address: wallet,
         created_at: nowIso,
         last_login: nowIso,
-        role: 'user'
+        role: UserRole.user
       },
       update: {
         last_login: nowIso
@@ -371,9 +372,9 @@ router.get('/session', async (req, res) => {
     // Debug mode
     if (config.debug_mode) {
       logApi.info('Session check request received', {
-        headers: req.headers,
-        cookies: req.cookies,
-        origin: req.headers.origin
+        //headers: req.headers,
+        //cookies: req.cookies,
+        //origin: req.headers.origin
       });
     }
 
