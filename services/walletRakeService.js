@@ -16,15 +16,16 @@ import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PE
 import { logApi } from '../utils/logger-suite/logger.js';
 import crypto from 'crypto';
 import bs58 from 'bs58';
+import { config } from '../config/config.js';
 
 const prisma = new PrismaClient();
 const RAKE_INTERVAL = 10 * 60 * 1000; // 10 minutes
-const MIN_BALANCE = 0.01 * LAMPORTS_PER_SOL; // 0.01 SOL in lamports
-const MASTER_WALLET = process.env.DD_MASTER_WALLET;
+const MIN_BALANCE = config.master_wallet.min_contest_wallet_balance * LAMPORTS_PER_SOL;
+const MASTER_WALLET = config.master_wallet.address;
 const WALLET_ENCRYPTION_KEY = process.env.WALLET_ENCRYPTION_KEY;
 
 // Create Solana connection
-const connection = new Connection(process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com', 'confirmed');
+const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
 // Decrypt wallet private key
 function decryptPrivateKey(encryptedData) {
@@ -57,7 +58,7 @@ function decryptPrivateKey(encryptedData) {
 }
 
 // Transfer SOL from contest wallet to master wallet
-async function transferSOL(fromKeypair, amount) {
+async function transferSOL(fromKeypair, amount, contestId) {
     try {
         const transaction = new Transaction().add(
             SystemProgram.transfer({
@@ -69,10 +70,52 @@ async function transferSOL(fromKeypair, amount) {
 
         const signature = await connection.sendTransaction(transaction, [fromKeypair]);
         await connection.confirmTransaction(signature);
+
+        // Get contest details for user relation
+        const contest = await prisma.contests.findUnique({
+            where: { id: contestId },
+            select: { created_by_user_id: true }
+        });
+
+        // Log the rake transaction
+        await prisma.transactions.create({
+            data: {
+                wallet_address: fromKeypair.publicKey.toString(),
+                type: config.transaction_types.CONTEST_WALLET_RAKE,
+                amount: amount / LAMPORTS_PER_SOL,
+                balance_before: (await connection.getBalance(fromKeypair.publicKey)) / LAMPORTS_PER_SOL + (amount / LAMPORTS_PER_SOL),
+                balance_after: (await connection.getBalance(fromKeypair.publicKey)) / LAMPORTS_PER_SOL,
+                description: `Rake operation from contest wallet to master wallet`,
+                status: config.transaction_statuses.COMPLETED,
+                blockchain_signature: signature,
+                completed_at: new Date(),
+                created_at: new Date(),
+                user_id: contest?.created_by_user_id, // Link to contest creator if available
+                contest_id: contestId
+            }
+        });
         
         return signature;
     } catch (error) {
         logApi.error('Failed to transfer SOL:', error);
+        
+        // Log failed rake attempt
+        await prisma.transactions.create({
+            data: {
+                wallet_address: fromKeypair.publicKey.toString(),
+                type: config.transaction_types.CONTEST_WALLET_RAKE,
+                amount: amount / LAMPORTS_PER_SOL,
+                balance_before: (await connection.getBalance(fromKeypair.publicKey)) / LAMPORTS_PER_SOL,
+                balance_after: (await connection.getBalance(fromKeypair.publicKey)) / LAMPORTS_PER_SOL,
+                description: `Failed rake operation: ${error.message}`,
+                status: config.transaction_statuses.FAILED,
+                error_details: JSON.stringify(error),
+                completed_at: new Date(),
+                created_at: new Date(),
+                contest_id: contestId
+            }
+        });
+        
         throw error;
     }
 }
@@ -82,10 +125,22 @@ async function rakeWallets() {
     logApi.info('Starting wallet rake process');
     
     try {
-        // Get all contest wallets
+        // Get all contest wallets with their contests
         const contestWallets = await prisma.contest_wallets.findMany({
+            where: {
+                contests: {
+                    status: {
+                        in: ['completed', 'cancelled']
+                    }
+                }
+            },
             include: {
-                contests: true
+                contests: {
+                    select: {
+                        id: true,
+                        status: true
+                    }
+                }
             }
         });
 
@@ -108,8 +163,8 @@ async function rakeWallets() {
                 const privateKeyBytes = bs58.decode(decryptedPrivateKey);
                 const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
 
-                // Transfer SOL
-                const signature = await transferSOL(fromKeypair, rakeAmount);
+                // Transfer SOL with contest ID
+                const signature = await transferSOL(fromKeypair, rakeAmount, wallet.contest_id);
 
                 logApi.info('Successfully raked wallet', {
                     contestId: wallet.contest_id,

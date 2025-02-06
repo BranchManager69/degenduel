@@ -17,32 +17,17 @@ const MIDDLEWARE_DEBUG_MODE = false;
 // Master middleware config
 export function configureMiddleware(app) {  
 
-  // Allowed origins (CORS)
+  // Allowed origins (CORS) - HTTPS only
   const allowedOrigins = [
-    'http://localhost:3000', 
-    'http://localhost:3001',
-    'http://localhost:3002',
-    'http://localhost:3003', 
-    'http://localhost:3004',
-    'http://localhost:3005',
-    'http://localhost:3006',
-    'http://localhost:3007',
-    'http://localhost:3008',
-    'http://localhost:3009',
-    'http://localhost:3010',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:5176',
-    'http://localhost:5177',
     'https://degenduel.me', 
+    'https://api.degenduel.me',
     'https://data.degenduel.me', 
     'https://game.degenduel.me',
     'https://dev.degenduel.me',
     'https://manager.degenduel.me',
     'https://wallets.degenduel.me',
     'https://branch.bet', 
-    'https://app.branch.bet',
+    'https://app.branch.bet'
   ];
 
   // Basic middleware
@@ -157,20 +142,7 @@ export function configureMiddleware(app) {
           'https://branch.bet',
           'https://app.branch.bet',
           'https://data.degenduel.me',
-          'https://dev.degenduel.me',
-          'https://localhost:3003', 
-          'https://localhost:3004',
-          'https://localhost:3005',
-          'https://localhost:3006',
-          'https://localhost:3007',
-          'https://localhost:3008',
-          'https://localhost:3009',
-          'https://localhost:3010',
-          'https://localhost:5173',
-          'https://localhost:5174',
-          'https://localhost:5175',
-          'https://localhost:5176',
-          'https://localhost:5177'
+          'https://dev.degenduel.me'
         ],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],

@@ -4,8 +4,8 @@ import pkg from '@prisma/client';
 import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
-import { createContestWallet } from '../utils/solana-wallet.js';
-import { verifyTransaction } from '../utils/solana-connection.js';
+import { createContestWallet } from '../utils/solana-suite/solana-wallet.js';
+import { verifyTransaction } from '../utils/solana-suite/solana-connection.js';
 import { colors } from '../utils/colors.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import prisma from '../config/prisma.js';
@@ -2113,7 +2113,62 @@ router.post('/:id/portfolio', requireAuth, async (req, res) => {
         throw new Error('Not a participant in this contest');
       }
 
-      // Delete existing portfolio entries
+      // Get current portfolio state
+      const currentPortfolio = await prisma.contest_portfolios.findMany({
+        where: {
+          contest_id: contestId,
+          wallet_address
+        }
+      });
+
+      // Create a map of current weights
+      const currentWeights = new Map(
+        currentPortfolio.map(p => [p.token_id, p.weight])
+      );
+
+      // Get latest token prices
+      const latestPrices = await Promise.all(
+        tokens.map(token =>
+          prisma.contest_token_prices.findFirst({
+            where: {
+              contest_id: contestId,
+              token_id: token.token_id
+            },
+            orderBy: {
+              timestamp: 'desc'
+            }
+          })
+        )
+      );
+
+      if (latestPrices.some(price => !price)) {
+        throw new Error('Price data not available for all tokens');
+      }
+
+      // Record trades for each token weight change
+      const trades = await Promise.all(
+        tokens.map(async (token, index) => {
+          const currentWeight = currentWeights.get(token.token_id) || 0;
+          const newWeight = token.weight;
+
+          if (currentWeight !== newWeight) {
+            return prisma.contest_portfolio_trades.create({
+              data: {
+                contest_id: contestId,
+                wallet_address,
+                token_id: token.token_id,
+                type: newWeight > currentWeight ? 'BUY' : 'SELL',
+                old_weight: currentWeight,
+                new_weight: newWeight,
+                price_at_trade: latestPrices[index].price,
+                virtual_amount: new Decimal(Math.abs(newWeight - currentWeight)).mul(1000)
+              }
+            });
+          }
+        })
+      );
+
+      // Update portfolio entries
       await prisma.contest_portfolios.deleteMany({
         where: {
           contest_id: contestId,
@@ -2121,33 +2176,23 @@ router.post('/:id/portfolio', requireAuth, async (req, res) => {
         }
       });
 
-      // Create new portfolio entries with proper relations
       const portfolioEntries = await Promise.all(
-        tokens.map(token => 
+        tokens.map(token =>
           prisma.contest_portfolios.create({
             data: {
-              weight: token.weight,
-              contests: {
-                connect: {
-                  id: contestId
-                }
-              },
-              tokens: {
-                connect: {
-                  address: token.contractAddress
-                }
-              },
-              users: {
-                connect: {
-                  wallet_address
-                }
-              }
+              contest_id: contestId,
+              wallet_address,
+              token_id: token.token_id,
+              weight: token.weight
             }
           })
         )
       );
 
-      return portfolioEntries;
+      return {
+        portfolio: portfolioEntries,
+        trades: trades.filter(t => t) // Remove null entries where weight didn't change
+      };
     });
 
     res.json(result);

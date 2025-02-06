@@ -1,9 +1,12 @@
+// /utils/solana-suite/solana-connection.js
+
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { logApi } from './logger-suite/logger.js';
-import { colors } from './colors.js';
+import { logApi } from '../logger-suite/logger.js';
+import { colors } from '../colors.js';
+import config from '../../config/config.js';
 
 // Get RPC URL from environment
-const RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+const RPC_URL = config.rpc_urls.primary;
 
 // Create connection
 const connection = new Connection(RPC_URL, 'confirmed');
