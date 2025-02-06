@@ -1,6 +1,7 @@
 import { PrismaClient, contest_status } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { fileURLToPath } from 'url';
+import { WalletGenerator } from './utils/wallet-generator.js';
 
 const prisma = new PrismaClient();
 
@@ -24,30 +25,39 @@ export async function seedContests() {
     prisma.contests.create({
       data: {
         contest_code: generateContestCode(1),
-        name: 'High Stakes Championship',
-        description: 'Big prize pool contest for experienced traders',
+        name: 'Big Ass Duel',
+        description: 'Big ass degen duel for experienced traders',
         start_time: new Date(now.getTime() - oneHour),
         end_time: new Date(now.getTime() + oneDay),
-        entry_fee: new Decimal('100'),
-        prize_pool: new Decimal('10000'),
-        current_prize_pool: new Decimal('10000'),
+        entry_fee: new Decimal('1.00'),
+        prize_pool: new Decimal('9.00'),
+        current_prize_pool: new Decimal('2.70'),
         status: 'active' as contest_status,
-        participant_count: 45,
-        min_participants: 10,
-        max_participants: 100,
+        participant_count: 3,
+        min_participants: 2,
+        max_participants: 10,
         allowed_buckets: bucketIds,
         settings: {
           scoring: {
-            weight_market_cap: 0.3,
-            weight_volume: 0.3,
-            weight_price_change: 0.4
+            weight_market_cap: 0.0,
+            weight_volume: 0.0,
+            weight_price_change: 1.0,
+          },
+          requirements: {
+            min_rank_score: 0,
+            min_contests_completed: 0
+          },
+          payout_structure: {
+            place_1: 0.70,
+            place_2: 0.20,
+            place_3: 0.10
           }
         },
         contest_wallets: {
           create: {
-            wallet_address: 'Contest1WalletXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-            private_key: 'encrypted_key_1',
-            balance: new Decimal('10000')
+            wallet_address: WalletGenerator.generateWallet('contest_1_main').publicKey,
+            private_key: WalletGenerator.generateWallet('contest_1_main').secretKey,
+            balance: new Decimal('0')
           }
         }
       }
@@ -57,30 +67,34 @@ export async function seedContests() {
     prisma.contests.create({
       data: {
         contest_code: generateContestCode(2),
-        name: 'Newcomer Challenge',
-        description: 'Perfect for beginners with a low entry fee',
+        name: 'Sweaty Basement Duel',
+        description: 'Perfect for trash bags with a low entry fee',
         start_time: new Date(now.getTime() + oneHour),
         end_time: new Date(now.getTime() + oneDay + oneHour),
-        entry_fee: new Decimal('10'),
-        prize_pool: new Decimal('1000'),
-        current_prize_pool: new Decimal('0'),
+        entry_fee: new Decimal('0.10'),
+        prize_pool: new Decimal('0.90'),
+        current_prize_pool: new Decimal('0.45'),
         status: 'pending' as contest_status,
         participant_count: 5,
-        min_participants: 5,
-        max_participants: 20,
-        allowed_buckets: [bucketIds[0], bucketIds[1]], // Only large and mid cap
+        min_participants: 10,
+        max_participants: 50,
+        allowed_buckets: [bucketIds[0], bucketIds[1], bucketIds[2], bucketIds[3], bucketIds[4], bucketIds[5], bucketIds[6], bucketIds[7], bucketIds[8], bucketIds[9] ], // All buckets
         settings: {
           scoring: {
-            weight_market_cap: 0.4,
-            weight_volume: 0.3,
-            weight_price_change: 0.3
+            weight_market_cap: 0.0,
+            weight_volume: 0.0,
+            weight_price_change: 1.0,
+          },
+          requirements: {
+            min_rank_score: 0,
+            min_contests_completed: 0
           }
         },
         contest_wallets: {
           create: {
-            wallet_address: 'Contest2WalletXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-            private_key: 'encrypted_key_2',
-            balance: new Decimal('1000')
+            wallet_address: WalletGenerator.generateWallet('contest_2_main').publicKey,
+            private_key: WalletGenerator.generateWallet('contest_2_main').secretKey,
+            balance: new Decimal('0')
           }
         }
       }
@@ -90,30 +104,39 @@ export async function seedContests() {
     prisma.contests.create({
       data: {
         contest_code: generateContestCode(3),
-        name: 'DeFi Masters Cup',
-        description: 'Specialized contest focusing on DeFi tokens',
+        name: 'DeFi Degen Showdown',
+        description: 'Ape into DeFi tokens and pray for the best',
         start_time: new Date(now.getTime() - oneDay - oneHour),
         end_time: new Date(now.getTime() - oneHour),
-        entry_fee: new Decimal('50'),
-        prize_pool: new Decimal('5000'),
-        current_prize_pool: new Decimal('5000'),
+        entry_fee: new Decimal('0.50'),
+        prize_pool: new Decimal('4.50'),
+        current_prize_pool: new Decimal('4.50'),
         status: 'completed' as contest_status,
-        participant_count: 25,
-        min_participants: 10,
-        max_participants: 50,
+        participant_count: 9,
+        min_participants: 2,
+        max_participants: 10,
         allowed_buckets: [bucketIds[3]], // Only DeFi bucket
         settings: {
           scoring: {
-            weight_market_cap: 0.2,
-            weight_volume: 0.4,
-            weight_price_change: 0.4
+            weight_market_cap: 0.0,
+            weight_volume: 0.0,
+            weight_price_change: 1.0,
+          },
+          requirements: {
+            min_rank_score: 0,
+            min_contests_completed: 0
+          },
+          payout_structure: {
+            place_1: 0.70,
+            place_2: 0.20,
+            place_3: 0.10
           }
         },
         contest_wallets: {
           create: {
-            wallet_address: 'Contest3WalletXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-            private_key: 'encrypted_key_3',
-            balance: new Decimal('5000')
+            wallet_address: WalletGenerator.generateWallet('contest_3_main').publicKey,
+            private_key: WalletGenerator.generateWallet('contest_3_main').secretKey,
+            balance: new Decimal('0')
           }
         }
       }
@@ -123,31 +146,40 @@ export async function seedContests() {
     prisma.contests.create({
       data: {
         contest_code: generateContestCode(4),
-        name: 'Gaming Tokens Special',
-        description: 'Focus on gaming and metaverse tokens',
+        name: 'Gamer Rage Quit',
+        description: 'Trade gaming tokens until you rage quit',
         start_time: new Date(now.getTime() - oneDay),
         end_time: new Date(now.getTime() + oneDay),
-        entry_fee: new Decimal('25'),
-        prize_pool: new Decimal('2500'),
+        entry_fee: new Decimal('0.25'),
+        prize_pool: new Decimal('2.25'),
         current_prize_pool: new Decimal('0'),
         status: 'cancelled' as contest_status,
         participant_count: 3,
-        min_participants: 10,
-        max_participants: 30,
+        min_participants: 2,
+        max_participants: 10,
         allowed_buckets: [bucketIds[4]], // Only gaming bucket
         settings: {
           scoring: {
-            weight_market_cap: 0.3,
-            weight_volume: 0.3,
-            weight_price_change: 0.4
+            weight_market_cap: 0.0,
+            weight_volume: 0.0,
+            weight_price_change: 1.0
+          },
+          requirements: {
+            min_rank_score: 0,
+            min_contests_completed: 0
+          },
+          payout_structure: {
+            place_1: 0.70,
+            place_2: 0.20,
+            place_3: 0.10
           }
         },
         cancelled_at: new Date(now.getTime() - oneHour),
-        cancellation_reason: 'Insufficient participants',
+        cancellation_reason: 'Not enough degens showed up',
         contest_wallets: {
           create: {
-            wallet_address: 'Contest4WalletXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-            private_key: 'encrypted_key_4',
+            wallet_address: WalletGenerator.generateWallet('contest_4_main').publicKey,
+            private_key: WalletGenerator.generateWallet('contest_4_main').secretKey,
             balance: new Decimal('0')
           }
         }
@@ -158,30 +190,39 @@ export async function seedContests() {
     prisma.contests.create({
       data: {
         contest_code: generateContestCode(5),
-        name: 'Mixed Portfolio Challenge',
-        description: 'Create a balanced portfolio across different sectors',
+        name: 'Kitchen Sink Degen',
+        description: 'Throw everything at the wall and see what sticks',
         start_time: new Date(now.getTime() - 2 * oneHour),
         end_time: new Date(now.getTime() + oneDay - oneHour),
-        entry_fee: new Decimal('75'),
-        prize_pool: new Decimal('7500'),
-        current_prize_pool: new Decimal('7500'),
+        entry_fee: new Decimal('0.75'),
+        prize_pool: new Decimal('6.75'),
+        current_prize_pool: new Decimal('6.75'),
         status: 'active' as contest_status,
-        participant_count: 30,
-        min_participants: 20,
-        max_participants: 50,
+        participant_count: 9,
+        min_participants: 2,
+        max_participants: 10,
         allowed_buckets: [bucketIds[0], bucketIds[3], bucketIds[4]], // Large cap, DeFi, and Gaming
         settings: {
           scoring: {
-            weight_market_cap: 0.3,
-            weight_volume: 0.3,
-            weight_price_change: 0.4
+            weight_market_cap: 0.0,
+            weight_volume: 0.0,
+            weight_price_change: 1.0
+          },
+          requirements: {
+            min_rank_score: 0,
+            min_contests_completed: 0
+          },
+          payout_structure: {
+            place_1: 0.70,
+            place_2: 0.20,
+            place_3: 0.10
           }
         },
         contest_wallets: {
           create: {
-            wallet_address: 'Contest5WalletXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-            private_key: 'encrypted_key_5',
-            balance: new Decimal('7500')
+            wallet_address: WalletGenerator.generateWallet('contest_5_main').publicKey,
+            private_key: WalletGenerator.generateWallet('contest_5_main').secretKey,
+            balance: new Decimal('0')
           }
         }
       }

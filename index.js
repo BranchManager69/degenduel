@@ -11,14 +11,18 @@ import { errorHandler } from './utils/errorHandler.js';
 import { logApi } from './utils/logger-suite/logger.js';
 import prisma from './config/prisma.js';
 import maintenanceCheck from './middleware/maintenanceMiddleware.js';
+// Services
 import { startSync, stopSync } from './services/tokenSyncService.js';
+import { startWalletRakeService } from './services/walletRakeService.js';
+import contestEvaluationService from './services/contestEvaluationService.js';
+import tokenSyncRoutes from './routes/admin/token-sync.js';
+
 dotenv.config();
 
 
 /* DegenDuel API Server */
 
 const app = express();
-
 
 const port = process.env.API_PORT || 3003; // DegenDuel API port (main)
 ////const logsPort = process.env.LOGS_PORT || 3334; // Logs streaming port (stub)
@@ -43,6 +47,7 @@ app.get('/', (req, res) => {
 });
 
 // Import routes
+import superadminRoutes from './routes/superadmin.js';
 import prismaAdminRoutes from './routes/prisma/admin.js';
 import prismaBalanceRoutes from './routes/prisma/balance.js';
 import prismaStatsRoutes from './routes/prisma/stats.js';
@@ -57,7 +62,6 @@ import tokenBucketRoutes from './routes/tokenBuckets.js';
 import tokenRoutes from './routes/tokens.js';
 import v2TokenRoutes from './routes/v2/tokens.js';
 import tradeRoutes from './routes/trades.js';
-import superadminRoutes from './routes/superadmin.js';
 import testRoutes from './archive/test-routes.js';
 import statusRoutes from './routes/status.js';
 
@@ -68,6 +72,7 @@ app.use('/api/status', statusRoutes);
 // 2. Mount admin routes (no maintenance check needed)
 app.use('/api/admin', prismaAdminRoutes);
 app.use('/api/admin/maintenance', maintenanceRoutes);
+app.use('/api/admin/token-sync', tokenSyncRoutes);
 app.use('/api/superadmin', superadminRoutes);
 
 // 3. Apply maintenance check to all other routes
@@ -140,6 +145,12 @@ async function startServer() {
         logApi.error('Failed to start token sync service:', error);
         // Continue server startup even if sync service fails
       }
+
+      // Start the wallet rake service
+      startWalletRakeService();
+
+      // Start the contest evaluation service
+      await contestEvaluationService.startContestEvaluationService();
 
       // Main API server listening only on localhost
       const apiServer = app.listen(port, '0.0.0.0', () => {
