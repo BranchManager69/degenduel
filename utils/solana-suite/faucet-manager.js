@@ -5,8 +5,15 @@ import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PE
 import { WalletGenerator } from './wallet-generator.js';
 import bs58 from 'bs58';
 import { fileURLToPath } from 'url';
+import LRUCache from 'lru-cache';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+    datasources: {
+        db: {
+            url: process.env.DATABASE_URL_PROD
+        }
+    }
+});
 const connection = new Connection(process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com', 'confirmed');
 
 // Default configuration
@@ -16,8 +23,24 @@ const DEFAULT_CONFIG = {
     maxTestUsers: 10
 };
 
+// Add more specific error types
+class SolanaWalletError extends Error {
+    constructor(message, code, details) {
+        super(message);
+        this.name = 'SolanaWalletError';
+        this.code = code;
+        this.details = details;
+    }
+}
+
 export class FaucetManager {
     static config = DEFAULT_CONFIG;
+
+    // Add cache size limits and TTL
+    static walletCache = new LRUCache({
+        max: 1000,
+        ttl: 15 * 60 * 1000 // 15 minutes
+    });
 
     static setConfig(newConfig) {
         FaucetManager.config = { ...DEFAULT_CONFIG, ...newConfig };
@@ -25,7 +48,7 @@ export class FaucetManager {
 
     static async getFaucetWallet() {
         const existingFaucet = await prisma.seed_wallets.findFirst({
-            where: { identifier: 'test-faucet' }
+            where: { purpose: 'Seed wallet for test-faucet' }
         });
         if (existingFaucet) {
             return WalletGenerator.getWallet('test-faucet');
@@ -168,6 +191,18 @@ export class FaucetManager {
             return false;
         }
     }
+
+    // Add cache cleanup
+    static cleanupCache() {
+        const maxCacheAge = 1000 * 60 * 60; // 1 hour
+        const now = Date.now();
+        for (const [key, value] of this.walletCache.entries()) {
+            if (value.timestamp < now - maxCacheAge) {
+                this.walletCache.delete(key);
+            }
+        }
+    }
+    
 }
 
 // Command line interface
