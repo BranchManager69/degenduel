@@ -91,9 +91,9 @@ export class WalletGenerator {
         }
         // Check database
         const dbWallet = await prisma.$queryRaw `
-      SELECT identifier, wallet_address, private_key 
+      SELECT wallet_address, private_key 
       FROM seed_wallets 
-      WHERE identifier = ${identifier}
+      WHERE purpose = ${'Seed wallet for ' + identifier}
       LIMIT 1
     `;
         if (dbWallet.length > 0) {
