@@ -16,6 +16,7 @@ import { startSync, stopSync } from './services/tokenSyncService.js';
 import { startWalletRakeService } from './services/walletRakeService.js';
 import contestEvaluationService from './services/contestEvaluationService.js';
 import tokenSyncRoutes from './routes/admin/token-sync.js';
+import { createWebSocketServer, startPeriodicTasks } from './websocket/portfolio-ws.js';
 
 dotenv.config();
 
@@ -64,6 +65,9 @@ import v2TokenRoutes from './routes/v2/tokens.js';
 import tradeRoutes from './routes/trades.js';
 import testRoutes from './archive/test-routes.js';
 import statusRoutes from './routes/status.js';
+// v3 alpha routes
+import portfolioTradesRouter from './routes/portfolio-trades.js';
+import portfolioAnalyticsRouter from './routes/portfolio-analytics.js';
 
 // 1. First mount public routes (no maintenance check needed)
 app.use('/api/auth', authRoutes);
@@ -76,15 +80,13 @@ app.use('/api/admin/token-sync', tokenSyncRoutes);
 app.use('/api/superadmin', superadminRoutes);
 
 // 3. Apply maintenance check to all other routes
-// Prisma-enabled routes
+// Prisma-enabled routes (inaccessible when in maintenance mode)
 app.use('/api/balance', maintenanceCheck, prismaBalanceRoutes);
 app.use('/api/stats', maintenanceCheck, prismaStatsRoutes);
 app.use('/api/leaderboard', maintenanceCheck, leaderboardRoutes);
 app.use('/api/activity', maintenanceCheck, prismaActivityRoutes);
-
-// DD-Serv-enabled routes
+// DD-Serv-enabled routes (inaccessible when in maintenance mode)
 app.use('/api/dd-serv', maintenanceCheck, ddServRoutes);
-
 // Protected routes (inaccessible when in maintenance mode)
 app.use('/api/users', maintenanceCheck, userRoutes);
 app.use('/api/contests', maintenanceCheck, contestRoutes);
@@ -92,10 +94,12 @@ app.use('/api/trades', maintenanceCheck, tradeRoutes);
 app.use('/api/tokens', maintenanceCheck, tokenRoutes); // v1 tokens
 app.use('/api/v2/tokens', maintenanceCheck, v2TokenRoutes); // v2 tokens
 app.use('/api/token-buckets', maintenanceCheck, tokenBucketRoutes);
+// v3 alpha routes (inaccessible when in maintenance mode)
+app.use('/api/portfolio', maintenanceCheck, portfolioTradesRouter);
+app.use('/api/portfolio-analytics', maintenanceCheck, portfolioAnalyticsRouter);
 
 // Test routes (no maintenance check needed)
 app.use('/api/test', testRoutes);
-
 // Server health route (no maintenance check needed)
 app.get('/api/health', async (req, res) => {
   try {
@@ -147,14 +151,33 @@ async function startServer() {
       }
 
       // Start the wallet rake service
-      startWalletRakeService();
+      try {
+        startWalletRakeService();
+        logApi.info('💰  Wallet Rake Service started');
+      } catch (error) {
+        logApi.error('Failed to start wallet rake service:', error);
+      }
 
       // Start the contest evaluation service
-      await contestEvaluationService.startContestEvaluationService();
+      try {
+        await contestEvaluationService.startContestEvaluationService();
+        logApi.info('🏆  Contest Evaluation Service started');
+      } catch (error) {
+        logApi.error('Failed to start contest evaluation service:', error);
+      }
 
       // Main API server listening only on localhost
       const apiServer = app.listen(port, '0.0.0.0', () => {
           logApi.info(`⚔️  DegenDuel API  ========  Server READY on port ${port}!`);
+      });
+
+      // Initialize WebSocket server using the HTTP server
+      global.wss = createWebSocketServer(apiServer);
+      startPeriodicTasks();
+
+      // Log WebSocket server initialization
+      logApi.info('DD Portfolio WebSocket server started', {
+          path: '/portfolio'
       });
 
       apiServer.on('error', (error) => {
@@ -207,6 +230,16 @@ async function shutdown() {
     // Stop token sync service
     stopSync();
     
+    // Close WebSocket server if it exists
+    if (global.wss) {
+      await new Promise((resolve) => {
+        global.wss.close(() => {
+          logApi.info('WebSocket server closed');
+          resolve();
+        });
+      });
+    }
+    
     await Promise.all([
       closeDatabase(),    // SQLite
       closePgDatabase(),  // PostgreSQL
@@ -219,18 +252,19 @@ async function shutdown() {
   }
 }
 
-
-/* Server Events */
-
+// Termination
 process.on('SIGTERM', shutdown);
 
+// Interruption
 process.on('SIGINT', shutdown);
 
+// Uncaught Exception
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
+// Unhandled Rejection
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
