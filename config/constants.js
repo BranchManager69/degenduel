@@ -33,3 +33,39 @@ export const DB_CONFIG = {
       MAX_LIMIT: 1000
     }
   };
+
+  // Token bucket thresholds
+  export const TOKEN_BUCKET_THRESHOLDS = {
+    MARKET_CAP: {
+        LARGE_CAP: 1_000_000_000,    // $1B+
+        MID_CAP: 100_000_000,        // $100M+
+        SMALL_CAP: 0                 // Rest
+    },
+    VOLUME: {
+        HIGH_VOLUME: 1_000_000       // $1M+ daily volume
+    },
+    LIQUIDITY: {
+        HIGH_LIQUIDITY: 500_000      // $500K+ liquidity
+    }
+  };
+
+  // Token metadata validation
+  export const TOKEN_VALIDATION = {
+    DESCRIPTION: {
+      MAX_LENGTH: 1000
+    },
+    URLS: {
+      MAX_LENGTH: 255,
+      ALLOWED_PROTOCOLS: ['http:', 'https:']
+    },
+    SYMBOL: {
+      MAX_LENGTH: 10,
+      PATTERN: /^[A-Z0-9]+$/
+    },
+    NAME: {
+      MAX_LENGTH: 50
+    },
+    ADDRESS: {
+      SOLANA_PATTERN: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+    }
+  };

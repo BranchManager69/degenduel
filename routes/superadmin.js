@@ -8,11 +8,23 @@ import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import logApi from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import { getContestWallet } from '../utils/solana-wallet.js';
+import { PrismaClient } from '@prisma/client';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 
 // Router
 const router = express.Router();
+const prismaClient = new PrismaClient();
+
+// Middleware to ensure superadmin role
+const requireSuperAdminMiddleware = (req, res, next) => {
+    if (req.user?.role !== 'superadmin') {
+        return res.status(403).json({
+            error: 'Superadmin access required'
+        });
+    }
+    next();
+};
 
 // Get available log files (SUPERADMIN ONLY)
 router.get('/logs/available', requireAuth, requireSuperAdmin, async (req, res) => {
@@ -118,6 +130,349 @@ router.post('/generate-tree', requireAuth, requireSuperAdmin, (req, res) => {
             timestamp: new Date().toISOString()
         });
     });
+});
+
+// Phase definitions with rollback support
+const phaseDefinitions = {
+    'clear': {
+        dependencies: [],
+        seed: async () => {
+            await prismaClient.$transaction([
+                prismaClient.transactions.deleteMany(),
+                prismaClient.contest_participants.deleteMany(),
+                prismaClient.contest_portfolios.deleteMany(),
+                prismaClient.contest_token_performance.deleteMany(),
+                prismaClient.contest_token_prices.deleteMany(),
+                prismaClient.contest_wallets.deleteMany(),
+                prismaClient.contests.deleteMany(),
+                prismaClient.user_stats.deleteMany(),
+                prismaClient.users.deleteMany(),
+                prismaClient.tokens.deleteMany(),
+                prismaClient.token_buckets.deleteMany(),
+                prismaClient.achievement_tier_requirements.deleteMany(),
+                prismaClient.achievement_tiers.deleteMany(),
+                prismaClient.achievement_categories.deleteMany(),
+                prismaClient.user_levels.deleteMany(),
+                prismaClient.level_rewards.deleteMany()
+            ]);
+            return 'Database cleared successfully';
+        },
+        rollback: async () => {
+            // No rollback for clear - it's already deleted
+            return 'Clear phase cannot be rolled back';
+        }
+    },
+    'tokens': {
+        dependencies: ['clear'],
+        seed: async () => {
+            const { seedTokens } = await import('../prisma/seeds/01_tokens.js');
+            await seedTokens();
+            return 'Tokens seeded successfully';
+        },
+        rollback: async () => {
+            await prismaClient.$transaction([
+                prismaClient.token_prices.deleteMany(),
+                prismaClient.token_bucket_memberships.deleteMany(),
+                prismaClient.tokens.deleteMany(),
+                prismaClient.token_buckets.deleteMany()
+            ]);
+            return 'Tokens rolled back successfully';
+        }
+    },
+    'achievements': {
+        dependencies: ['clear'],
+        seed: async () => {
+            const { seedAchievements } = await import('../prisma/seeds/05_achievements.js');
+            await seedAchievements();
+            return 'Achievements seeded successfully';
+        },
+        rollback: async () => {
+            await prismaClient.$transaction([
+                prismaClient.achievement_tier_requirements.deleteMany(),
+                prismaClient.achievement_tiers.deleteMany(),
+                prismaClient.achievement_categories.deleteMany()
+            ]);
+            return 'Achievements rolled back successfully';
+        }
+    },
+    'user_levels': {
+        dependencies: ['clear'],
+        seed: async () => {
+            const { seedUserLevels } = await import('../prisma/seeds/06_user_levels.js');
+            await seedUserLevels();
+            return 'User levels seeded successfully';
+        },
+        rollback: async () => {
+            await prismaClient.$transaction([
+                prismaClient.level_rewards.deleteMany(),
+                prismaClient.user_levels.deleteMany()
+            ]);
+            return 'User levels rolled back successfully';
+        }
+    },
+    'users': {
+        dependencies: ['clear', 'user_levels'],
+        seed: async () => {
+            const { seedUsers } = await import('../prisma/seeds/02_users.js');
+            await seedUsers();
+            return 'Users seeded successfully';
+        },
+        rollback: async () => {
+            await prismaClient.$transaction([
+                prismaClient.user_stats.deleteMany(),
+                prismaClient.users.deleteMany()
+            ]);
+            return 'Users rolled back successfully';
+        }
+    },
+    'contests': {
+        dependencies: ['clear', 'tokens', 'users'],
+        seed: async () => {
+            const { seedContests } = await import('../prisma/seeds/03_contests.js');
+            await seedContests();
+            return 'Contests seeded successfully';
+        },
+        rollback: async () => {
+            await prismaClient.$transaction([
+                prismaClient.contest_wallets.deleteMany(),
+                prismaClient.contests.deleteMany()
+            ]);
+            return 'Contests rolled back successfully';
+        }
+    },
+    'participants': {
+        dependencies: ['contests', 'users'],
+        seed: async () => {
+            const { seedContestParticipants } = await import('../prisma/seeds/07_contest_participants.js');
+            await seedContestParticipants();
+            return 'Contest participants seeded successfully';
+        },
+        rollback: async () => {
+            await prismaClient.$transaction([
+                prismaClient.contest_participants.deleteMany()
+            ]);
+            return 'Contest participants rolled back successfully';
+        }
+    },
+    'portfolios': {
+        dependencies: ['contests', 'participants', 'tokens'],
+        seed: async () => {
+            const { seedPortfolios } = await import('../prisma/seeds/04_portfolios.js');
+            await seedPortfolios();
+            return 'Portfolios seeded successfully';
+        },
+        rollback: async () => {
+            await prismaClient.$transaction([
+                prismaClient.contest_token_performance.deleteMany(),
+                prismaClient.contest_token_prices.deleteMany(),
+                prismaClient.contest_portfolios.deleteMany()
+            ]);
+            return 'Portfolios rolled back successfully';
+        }
+    }
+};
+
+// Get current seeding phase status
+router.get('/reseed-status', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const status = await prismaClient.system_settings.findUnique({
+            where: { key: 'reseed_status' }
+        });
+
+        return res.json({
+            current_phase: status?.value?.current_phase || 'not_started',
+            phases_completed: status?.value?.phases_completed || [],
+            last_updated: status?.updated_at || null,
+            available_phases: Object.keys(phaseDefinitions),
+            phase_dependencies: Object.fromEntries(
+                Object.entries(phaseDefinitions).map(([phase, def]) => [phase, def.dependencies])
+            )
+        });
+    } catch (error) {
+        logApi.error('Error getting reseed status:', error);
+        return res.status(500).json({ error: 'Failed to get reseed status' });
+    }
+});
+
+// Rollback a specific phase
+router.post('/reseed-rollback/:phase', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { phase } = req.params;
+        
+        if (!phaseDefinitions[phase]) {
+            return res.status(400).json({
+                error: 'Invalid phase',
+                available_phases: Object.keys(phaseDefinitions)
+            });
+        }
+
+        // Check if any other phases depend on this one
+        const dependentPhases = Object.entries(phaseDefinitions)
+            .filter(([_, def]) => def.dependencies.includes(phase))
+            .map(([p]) => p);
+
+        if (dependentPhases.length > 0) {
+            return res.status(400).json({
+                error: 'Cannot rollback phase with dependencies',
+                dependent_phases: dependentPhases,
+                message: 'You must first rollback the dependent phases'
+            });
+        }
+
+        // Update status before starting rollback
+        await prismaClient.system_settings.upsert({
+            where: { key: 'reseed_status' },
+            update: {
+                value: {
+                    current_phase: `rolling_back_${phase}`,
+                    in_progress: true
+                },
+                updated_at: new Date()
+            },
+            create: {
+                key: 'reseed_status',
+                value: {
+                    current_phase: `rolling_back_${phase}`,
+                    in_progress: true
+                },
+                updated_at: new Date()
+            }
+        });
+
+        // Execute the rollback
+        const message = await phaseDefinitions[phase].rollback();
+
+        // Update status after completion
+        const status = await prismaClient.system_settings.findUnique({
+            where: { key: 'reseed_status' }
+        });
+
+        const completedPhases = status?.value?.phases_completed || [];
+        const updatedPhases = completedPhases.filter(p => p !== phase);
+
+        await prismaClient.system_settings.update({
+            where: { key: 'reseed_status' },
+            data: {
+                value: {
+                    current_phase: 'completed',
+                    phases_completed: updatedPhases,
+                    in_progress: false
+                },
+                updated_at: new Date()
+            }
+        });
+
+        logApi.info(`Database phase ${phase} rolled back`, {
+            admin: req.user.wallet_address,
+            phase
+        });
+
+        return res.json({
+            message,
+            phase,
+            status: 'rolled_back'
+        });
+
+    } catch (error) {
+        logApi.error(`Error rolling back phase ${req.params.phase}:`, {
+            error: error.message,
+            admin: req.user?.wallet_address
+        });
+        return res.status(500).json({
+            error: `Failed to rollback phase ${req.params.phase}`,
+            details: error.message
+        });
+    }
+});
+
+// Start or continue reseeding process with specific phase
+router.post('/reseed-database/:phase', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { phase } = req.params;
+        
+        if (!phaseDefinitions[phase]) {
+            return res.status(400).json({
+                error: 'Invalid phase',
+                available_phases: Object.keys(phaseDefinitions)
+            });
+        }
+
+        // Check dependencies
+        const status = await prismaClient.system_settings.findUnique({
+            where: { key: 'reseed_status' }
+        });
+        const completedPhases = status?.value?.phases_completed || [];
+        const missingDependencies = phaseDefinitions[phase].dependencies.filter(
+            dep => !completedPhases.includes(dep)
+        );
+
+        if (missingDependencies.length > 0) {
+            return res.status(400).json({
+                error: 'Missing dependencies',
+                missing: missingDependencies,
+                message: 'Please complete these phases first'
+            });
+        }
+
+        // Update status before starting
+        await prismaClient.system_settings.upsert({
+            where: { key: 'reseed_status' },
+            update: {
+                value: {
+                    current_phase: phase,
+                    phases_completed: completedPhases,
+                    in_progress: true
+                },
+                updated_at: new Date()
+            },
+            create: {
+                key: 'reseed_status',
+                value: {
+                    current_phase: phase,
+                    phases_completed: completedPhases,
+                    in_progress: true
+                },
+                updated_at: new Date()
+            }
+        });
+
+        // Execute the phase
+        const message = await phaseDefinitions[phase].seed();
+
+        // Update status after completion
+        await prismaClient.system_settings.update({
+            where: { key: 'reseed_status' },
+            data: {
+                value: {
+                    current_phase: 'completed',
+                    phases_completed: [...completedPhases, phase],
+                    in_progress: false
+                },
+                updated_at: new Date()
+            }
+        });
+
+        logApi.info(`Database phase ${phase} completed`, {
+            admin: req.user.wallet_address,
+            phase
+        });
+
+        return res.json({
+            message,
+            phase,
+            status: 'completed'
+        });
+
+    } catch (error) {
+        logApi.error(`Error in reseed phase ${req.params.phase}:`, {
+            error: error.message,
+            admin: req.user?.wallet_address
+        });
+        return res.status(500).json({
+            error: `Failed to execute phase ${req.params.phase}`,
+            details: error.message
+        });
+    }
 });
 
 export default router;

@@ -7,6 +7,8 @@ import { requireAuth } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { VALIDATION } from '../config/constants.js';
 import { validateNicknameRules, generateDefaultUsername } from '../utils/username-generator/username-generator.js';
+import rateLimit from 'express-rate-limit';
+import { validateNickname } from '../utils/nickname-validator.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -58,6 +60,13 @@ async function isNicknameUnique(nickname, excludeWallet = null) {
   });
   return !existingUser;
 }
+
+// Rate limiter: 120 requests per minute per IP
+const nicknameCheckLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    message: { error: 'Too many requests, please try again later' }
+});
 
 /**
  * @swagger
@@ -1117,6 +1126,57 @@ router.get('/:wallet/stats', async (req, res) => {
     logApi.error('Failed to fetch user stats:', error);
     res.status(500).json({ error: 'Failed to fetch user stats' });
   }
+});
+
+// Nickname availability check endpoint (no auth required)
+router.get('/check-nickname', nicknameCheckLimiter, async (req, res) => {
+    const startTime = Date.now();
+    const { nickname } = req.query;
+
+    try {
+        // Validate nickname format
+        const validation = validateNickname(nickname);
+        if (!validation.isValid) {
+            logApi.warn('Invalid nickname check attempt', {
+                nickname,
+                error: validation.error,
+                ip: req.ip
+            });
+            return res.status(400).json({
+                error: validation.error
+            });
+        }
+
+        // Check database for existing nickname (case insensitive)
+        const existingUser = await prisma.users.findFirst({
+            where: {
+                nickname: {
+                    equals: nickname,
+                    mode: 'insensitive'
+                }
+            }
+        });
+
+        // Add artificial delay if needed (minimum 100ms)
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime < 100) {
+            await new Promise(resolve => setTimeout(resolve, 100 - elapsedTime));
+        }
+
+        return res.json({
+            available: !existingUser
+        });
+
+    } catch (error) {
+        logApi.error('Error checking nickname availability:', {
+            nickname,
+            error: error.message,
+            ip: req.ip
+        });
+        return res.status(500).json({
+            error: 'Internal server error'
+        });
+    }
 });
 
 export default router;

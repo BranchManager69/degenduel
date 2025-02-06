@@ -132,18 +132,18 @@ router.get('/global', async (req, res) => {
       
       // Calculate average position in contests
       const avgPosition = user.contest_participants.length > 0
-        ? user.contest_participants.reduce((sum, p) => sum + p.final_rank, 0) / user.contest_participants.length
+        ? user.contest_participants.reduce((sum, p) => sum + (p.final_rank || 0), 0) / user.contest_participants.length
         : null;
 
       return {
         rank: currentRank,
         wallet_address: user.wallet_address,
-        nickname: user.nickname,
-        rank_score: user.user_stats?.best_score?.toNumber() || 0,
-        highest_rank_score: user.user_stats?.best_score?.toNumber() || 0,
-        percentile: Math.round(percentile * 100) / 100,
-        trend: calculateTrend(currentRank, currentRank + 1), // Simplified trend
-        avg_position: avgPosition ? Math.round(avgPosition * 100) / 100 : null,
+        nickname: user.nickname || 'Anonymous',
+        rank_score: user.user_stats?.best_score?.toString() || '0',
+        highest_rank_score: user.user_stats?.best_score?.toString() || '0',
+        percentile: percentile.toFixed(2),
+        trend: calculateTrend(currentRank, currentRank + 1),
+        avg_position: avgPosition ? avgPosition.toFixed(2) : null,
         total_contests: user.user_stats?.contests_entered || 0,
         total_earnings: user.user_stats?.total_prize_money?.toString() || '0'
       };
@@ -155,6 +155,15 @@ router.get('/global', async (req, res) => {
     });
   } catch (error) {
     logApi.error('Failed to fetch global rankings:', error);
+    
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Invalid request parameters',
+        details: error.errors
+      });
+    }
+
     res.status(500).json({ error: 'Failed to fetch global rankings' });
   }
 });
@@ -237,7 +246,7 @@ router.get('/contests/performance', async (req, res) => {
 
     // Calculate date range based on timeframe
     const dateFilter = timeframe === 'all' ? {} : {
-      joined_at: {
+      created_at: {
         gte: new Date(
           timeframe === 'week'
             ? Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -245,7 +254,6 @@ router.get('/contests/performance', async (req, res) => {
         )
       }
     };
-    logApi.info('Date filter:', dateFilter);
 
     // Get total count for percentile calculation
     const total = await prisma.users.count({
@@ -255,40 +263,14 @@ router.get('/contests/performance', async (req, res) => {
         }
       }
     });
-    logApi.info('Total users with contests:', total);
 
     // Get users with their contest performance
-    logApi.info('Fetching user rankings with query:', {
-      select: {
-        wallet_address: true,
-        nickname: true,
-        user_stats: {
-          select: {
-            contests_entered: true,
-            contests_won: true,
-            total_prize_money: true
-          }
-        },
-        contest_participants: {
-          where: {
-            AND: [
-              {
-                contest: {
-                  status: 'COMPLETED'
-                }
-              },
-              {
-                created_at: {
-                  gte: new Date('2024-12-26T06:43:19.237Z')
-                }
-              }
-            ]
-          }
-        }
-      }
-    });
-
     const rankings = await prisma.users.findMany({
+      where: {
+        user_stats: {
+          contests_entered: { gt: 0 }
+        }
+      },
       select: {
         wallet_address: true,
         nickname: true,
@@ -296,43 +278,26 @@ router.get('/contests/performance', async (req, res) => {
           select: {
             contests_entered: true,
             contests_won: true,
-            total_prize_money: true
+            total_prize_money: true,
+            best_score: true,
+            avg_score: true
           }
         },
         contest_participants: {
           where: {
             AND: [
-              {
-                contest: {
-                  status: 'COMPLETED'
-                }
-              },
-              {
-                created_at: {
-                  gte: new Date('2024-12-26T06:43:19.237Z')
-                }
-              }
+              { contests: { status: 'completed' } },
+              dateFilter
             ]
           },
           select: {
             final_rank: true,
-            joined_at: true,
             prize_amount: true,
-            contests: {
-              select: {
-                name: true,
-                prize_pool: true
-              }
-            }
+            created_at: true
           },
           orderBy: {
-            joined_at: 'desc'  // Show most recent contests first
+            created_at: 'desc'
           }
-        }
-      },
-      where: {
-        user_stats: {
-          contests_entered: { gt: 0 }
         }
       },
       orderBy: {
@@ -343,7 +308,6 @@ router.get('/contests/performance', async (req, res) => {
       take: limit,
       skip: offset
     });
-    logApi.info('Retrieved rankings:', { count: rankings.length });
 
     // Calculate enhanced metrics and format data
     const rankedUsers = rankings.map((user, index) => {
@@ -354,13 +318,11 @@ router.get('/contests/performance', async (req, res) => {
       let currentStreak = 0;
       let longestStreak = 0;
       let currentStreakCount = 0;
-      const positions = user.contest_participants.map(p => p.final_rank);
-      logApi.debug('User contest positions:', { 
-        wallet: user.wallet_address, 
-        positions,
-        participantCount: user.contest_participants.length 
-      });
       
+      const positions = user.contest_participants
+        .map(p => p.final_rank)
+        .filter(rank => rank !== null);
+
       positions.forEach(rank => {
         if (rank === 1) {
           currentStreakCount++;
@@ -371,7 +333,6 @@ router.get('/contests/performance', async (req, res) => {
       });
       currentStreak = currentStreakCount;
 
-      const contestsWon = positions.filter(rank => rank === 1).length;
       const avgPosition = positions.length > 0
         ? positions.reduce((sum, rank) => sum + rank, 0) / positions.length
         : null;
@@ -379,26 +340,47 @@ router.get('/contests/performance', async (req, res) => {
       return {
         rank: currentRank,
         wallet_address: user.wallet_address,
-        nickname: user.nickname,
+        nickname: user.nickname || 'Anonymous',
         contests_won: user.user_stats?.contests_won || 0,
         total_contests: user.user_stats?.contests_entered || 0,
-        win_rate: user.user_stats?.contests_entered ? (user.user_stats.contests_won / user.user_stats.contests_entered) * 100 : 0,
+        win_rate: user.user_stats?.contests_entered 
+          ? ((user.user_stats.contests_won / user.user_stats.contests_entered) * 100).toFixed(2)
+          : '0.00',
         longest_win_streak: longestStreak,
         current_win_streak: currentStreak,
-        avg_position: avgPosition ? Math.round(avgPosition * 100) / 100 : null,
-        percentile: Math.round(percentile * 100) / 100,
+        avg_position: avgPosition ? avgPosition.toFixed(2) : null,
+        percentile: percentile.toFixed(2),
         trend: calculateTrend(currentRank, currentRank + 1),
-        total_earnings: user.user_stats?.total_prize_money?.toString() || '0'
+        total_earnings: user.user_stats?.total_prize_money?.toString() || '0',
+        best_score: user.user_stats?.best_score?.toString() || '0',
+        avg_score: user.user_stats?.avg_score?.toString() || '0'
       };
     });
-    logApi.info('Processed rankings:', { count: rankedUsers.length });
 
     res.json({
       total,
+      timeframe,
       rankings: rankedUsers
     });
   } catch (error) {
     logApi.error('Failed to fetch contest performance rankings:', error);
+    
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Invalid request parameters',
+        details: error.errors
+      });
+    }
+    
+    // Handle database errors
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        error: 'Database constraint violation',
+        details: error.meta
+      });
+    }
+
     res.status(500).json({ error: 'Failed to fetch contest performance rankings' });
   }
 });
