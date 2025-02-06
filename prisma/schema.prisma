@@ -338,6 +338,8 @@ model users {
   updated_at              DateTime?                   @db.Timestamptz(6)
   last_login              DateTime?                   @db.Timestamptz(6)
   total_contests          Int?                        @default(0)  // Total number of contests participated in
+  is_banned              Boolean                     @default(false)  // Whether user is banned
+  ban_reason             String?                     // Reason for ban if banned
   contest_participants     contest_participants[]
   contest_portfolios       contest_portfolios[]
   contest_token_performance contest_token_performance[]
@@ -351,6 +353,7 @@ model users {
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
   @@index([role], map: "idx_users_role")
+  @@index([is_banned], map: "idx_users_banned")  // Index for ban status queries
   @@map("users")
 }
 

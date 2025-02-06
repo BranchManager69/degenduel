@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { fileURLToPath } from 'url';
 import { WalletGenerator } from '../../utils/solana-suite/wallet-generator.js';
@@ -23,8 +23,7 @@ export async function seedUsers() {
     // Admins (3)
     {
       count: 3,
-      role: 'admin',
-      baseBalance: 1000,
+      role: 'admin' as UserRole,
       baseExp: 50000,
       baseAchievements: 2500,
       baseRank: 1800,
@@ -36,8 +35,7 @@ export async function seedUsers() {
     // Whales (5)
     {
       count: 5,
-      role: 'user',
-      baseBalance: 10000,
+      role: 'user' as UserRole,
       baseExp: 75000,
       baseAchievements: 3500,
       baseRank: 2200,
@@ -49,8 +47,7 @@ export async function seedUsers() {
     // Active Traders (20)
     {
       count: 20,
-      role: 'user',
-      baseBalance: 500,
+      role: 'user' as UserRole,
       baseExp: 25000,
       baseAchievements: 1500,
       baseRank: 1500,
@@ -62,8 +59,7 @@ export async function seedUsers() {
     // Casual Players (40)
     {
       count: 40,
-      role: 'user',
-      baseBalance: 100,
+      role: 'user' as UserRole,
       baseExp: 5000,
       baseAchievements: 500,
       baseRank: 1200,
@@ -75,8 +71,7 @@ export async function seedUsers() {
     // Newbies (20)
     {
       count: 20,
-      role: 'user',
-      baseBalance: 50,
+      role: 'user' as UserRole,
       baseExp: 0,
       baseAchievements: 0,
       baseRank: 1000,
@@ -85,37 +80,10 @@ export async function seedUsers() {
       riskLevel: 0,
       kycStatus: null
     },
-    // Bots (10)
-    {
-      count: 10,
-      role: 'bot',
-      baseBalance: 1000,
-      baseExp: 30000,
-      baseAchievements: 1500,
-      baseRank: 1600,
-      contestRange: { min: 30, max: 50 },
-      winRange: { min: 5, max: 12 },
-      riskLevel: 0,
-      kycStatus: 'VERIFIED'
-    },
-    // Moderators (2)
-    {
-      count: 2,
-      role: 'moderator',
-      baseBalance: 500,
-      baseExp: 40000,
-      baseAchievements: 2000,
-      baseRank: 1700,
-      contestRange: { min: 15, max: 25 },
-      winRange: { min: 3, max: 8 },
-      riskLevel: 0,
-      kycStatus: 'VERIFIED'
-    },
     // Banned Users (5)
     {
       count: 5,
-      role: 'banned',
-      baseBalance: 0,
+      role: 'user' as UserRole,
       baseExp: 15000,
       baseAchievements: 800,
       baseRank: 800,
@@ -141,24 +109,17 @@ export async function seedUsers() {
         const wins = Math.floor(Math.random() * (group.winRange.max - group.winRange.min + 1)) + group.winRange.min;
         const rankVariation = Math.floor(Math.random() * 200) - 100; // ±100 variation
         const expVariation = Math.floor(Math.random() * 10000) - 5000; // ±5000 variation
-        const balanceVariation = Math.floor(Math.random() * 100); // 0-100 variation
 
         // Generate unique identifier for this user
         const userIdentifier = `${group.role}_${groupIndex}_${index}`;
-        const wallet = WalletGenerator.generateWallet(userIdentifier);
+        const wallet = await WalletGenerator.generateWallet(userIdentifier);
 
         return prisma.users.create({
           data: {
             wallet_address: wallet.publicKey,
             nickname: generateNickname(group.role, index),
             role: group.role,
-            balance: new Decimal(group.baseBalance + balanceVariation),
             total_contests: contests,
-            total_wins: wins,
-            experience_points: group.baseExp + expVariation,
-            total_achievement_points: group.baseAchievements,
-            rank_score: group.baseRank + rankVariation,
-            highest_rank_score: group.baseRank + Math.max(0, rankVariation),
             is_banned: group.isBanned || false,
             ban_reason: group.isBanned ? group.banReasons[index % group.banReasons.length] : null,
             kyc_status: group.kycStatus,
@@ -178,74 +139,8 @@ export async function seedUsers() {
     )
   );
 
-  // Add your personal admin account
-  const superAdmin = await prisma.users.upsert({
-    where: {
-      wallet_address: WalletGenerator.generateWallet('superadmin').publicKey
-    },
-    update: {
-      nickname: 'BranchManager69',
-      role: 'superadmin',
-      balance: new Decimal('1069'),
-      experience_points: 100000,
-      total_achievement_points: 5000,
-      rank_score: 2500,
-      highest_rank_score: 2800,
-      is_banned: false,
-      kyc_status: 'VERIFIED',
-      risk_level: 0,
-      user_stats: {
-        upsert: {
-          create: {
-            contests_entered: 50,
-            contests_won: 20,
-            total_prize_money: new Decimal('5000'),
-            best_score: new Decimal('95.5'),
-            avg_score: new Decimal('82.3')
-          },
-          update: {
-            contests_entered: 50,
-            contests_won: 20,
-            total_prize_money: new Decimal('5000'),
-            best_score: new Decimal('95.5'),
-            avg_score: new Decimal('82.3')
-          }
-        }
-      }
-    },
-    create: {
-      wallet_address: WalletGenerator.generateWallet('superadmin').publicKey,
-      nickname: 'BranchManager69',
-      role: 'superadmin',
-      balance: new Decimal('1069'),
-      experience_points: 100000,
-      total_achievement_points: 5000,
-      rank_score: 2500,
-      highest_rank_score: 2800,
-      is_banned: false,
-      kyc_status: 'VERIFIED',
-      risk_level: 0,
-      user_stats: {
-        create: {
-          contests_entered: 50,
-          contests_won: 20,
-          total_prize_money: new Decimal('5000'),
-          best_score: new Decimal('95.5'),
-          avg_score: new Decimal('82.3')
-        }
-      }
-    }
-  });
-
-  const totalUsers = users.length + 1; // +1 for superadmin
-  console.log(`Seeded ${totalUsers} users`);
-  console.log('Created superadmin account:', {
-    nickname: superAdmin.nickname,
-    role: superAdmin.role,
-    wallet: superAdmin.wallet_address
-  });
-  
-  return [...users, superAdmin];
+  console.log(`Seeded ${users.length} users`);
+  return users;
 }
 
 // Check if this module is being run directly
