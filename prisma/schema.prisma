@@ -8,43 +8,45 @@ datasource db {
 }
 
 model contest_participants {
+  id                   Int       @id @default(autoincrement())
   contest_id           Int
-  wallet_address       String
-  initial_balance      Decimal?      @default(1000000) @db.Decimal(20, 0)
-  current_balance      Decimal?      @default(1000000) @db.Decimal(20, 0)
+  wallet_address       String    @db.VarChar(44)
+  joined_at            DateTime  @default(now()) @db.Timestamptz(6)
+  initial_dxd_points   Decimal?  @default(0) @db.Decimal(20, 0)
+  current_dxd_points   Decimal?  @default(0) @db.Decimal(20, 0)
   rank                 Int?
-  joined_at            DateTime?     @default(now()) @db.Timestamptz(6)
+  prize_amount         Decimal?  @db.Decimal(20, 0)
+  prize_paid_at        DateTime? @db.Timestamptz(6)
+  refund_amount        Decimal?  @db.Decimal(20, 0)
+  refunded_at         DateTime? @db.Timestamptz(6)
   entry_transaction_id Int?
-  entry_time           DateTime?     @default(now()) @db.Timestamptz(6)
-  final_rank           Int?
-  prize_amount         Decimal?      @db.Decimal(20, 0)
-  prize_paid_at        DateTime?     @db.Timestamptz(6)
+  entry_time          DateTime  @default(now()) @db.Timestamptz(6)
+  final_rank          Int?
   prize_transaction_id Int?
-  contests             contests      @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  entry_transaction    transactions? @relation("contest_participants_entry_transaction_idTotransactions", fields: [entry_transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  prize_transaction    transactions? @relation("contest_participants_prize_transaction_idTotransactions", fields: [prize_transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                users         @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+  contests            contests      @relation(fields: [contest_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  entry_transaction   transactions? @relation("contest_participants_entry_transaction_idTotransactions", fields: [entry_transaction_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  prize_transaction   transactions? @relation("contest_participants_prize_transaction_idTotransactions", fields: [prize_transaction_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  users               users         @relation(fields: [wallet_address], references: [wallet_address], onDelete: Restrict, onUpdate: Cascade)
 
-  @@id([contest_id, wallet_address])
-  @@index([joined_at], map: "idx_contest_participants_joined")
-  @@index([wallet_address], map: "idx_contest_participants_wallet")
+  @@unique([contest_id, wallet_address])
+  @@index([wallet_address])
   @@map("contest_participants")
 }
 
 model contest_portfolios {
+  id             Int      @id @default(autoincrement())
   contest_id     Int
-  wallet_address String
+  wallet_address String   @db.VarChar(44)
   token_id       Int
-  weight         Int
-  created_at     DateTime? @default(now()) @db.Timestamptz(6)
-  contests       contests  @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tokens         tokens    @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users          users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+  weight         Int      // Percentage allocation (0-100)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  contests       contests  @relation(fields: [contest_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tokens         tokens    @relation(fields: [token_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  users          users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: Restrict, onUpdate: Cascade)
 
-  @@id([contest_id, wallet_address, token_id])
-  @@index([contest_id], map: "idx_contest_portfolios_contest")
-  @@index([contest_id, wallet_address], map: "idx_contest_portfolios_lookup")
-  @@index([wallet_address], map: "idx_contest_portfolios_wallet")
+  @@unique([contest_id, wallet_address, token_id])
+  @@index([wallet_address])
+  @@index([token_id])
   @@map("contest_portfolios")
 }
 
@@ -78,62 +80,83 @@ model contest_token_buckets {
 }
 
 model contest_token_performance {
+  id             Int      @id @default(autoincrement())
   contest_id     Int
-  wallet_address String
+  wallet_address String   @db.VarChar(44)
   token_id       Int
-  profit_loss    Decimal? @default(0) @db.Decimal(20, 8)
+  profit_loss    Decimal  @default(0) @db.Decimal(20, 8)
   timestamp      DateTime @default(now()) @db.Timestamptz(6)
-  contests       contests @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tokens         tokens   @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+  contests       contests @relation(fields: [contest_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tokens         tokens   @relation(fields: [token_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: Restrict, onUpdate: Cascade)
 
-  @@id([contest_id, wallet_address, token_id, timestamp])
-  @@index([contest_id], map: "idx_contest_token_performance_contest")
-  @@index([wallet_address], map: "idx_contest_token_performance_wallet")
-  @@index([token_id], map: "idx_contest_token_performance_token")
+  @@index([contest_id])
+  @@index([wallet_address])
+  @@index([token_id])
   @@map("contest_token_performance")
 }
 
 model contest_token_prices {
+  id             Int      @id @default(autoincrement())
   contest_id     Int
-  wallet_address String
+  wallet_address String   @db.VarChar(44)
   token_id       Int
-  amount         Decimal? @default(0) @db.Decimal(20, 0)
+  amount         Decimal  @default(0) @db.Decimal(20, 0)
   price          Decimal  @db.Decimal(20, 8)
   timestamp      DateTime @default(now()) @db.Timestamptz(6)
-  contests       contests @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tokens         tokens   @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+  contests       contests @relation(fields: [contest_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tokens         tokens   @relation(fields: [token_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: Restrict, onUpdate: Cascade)
 
-  @@id([contest_id, wallet_address, token_id, timestamp])
-  @@index([contest_id], map: "idx_contest_token_prices_contest")
-  @@index([wallet_address], map: "idx_contest_token_prices_wallet")
-  @@index([token_id], map: "idx_contest_token_prices_token")
+  @@index([contest_id])
+  @@index([wallet_address])
+  @@index([token_id])
   @@map("contest_token_prices")
+}
+
+model contest_portfolio_trades {
+  id             Int       @id @default(autoincrement())
+  contest_id     Int
+  wallet_address String    @db.VarChar(44)  // Solana addresses are 32-44 chars
+  token_id       Int
+  type           TradeType
+  old_weight     Int
+  new_weight     Int
+  price_at_trade Decimal  @db.Decimal(20, 8)
+  virtual_amount Decimal  @db.Decimal(20, 0)
+  executed_at    DateTime @default(now()) @db.Timestamptz(6)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  contests       contests  @relation(fields: [contest_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tokens         tokens    @relation(fields: [token_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  users          users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([contest_id])
+  @@index([wallet_address])
+  @@index([token_id])
+  @@map("contest_portfolio_trades")
 }
 
 model contests {
   id                        Int                         @id @default(autoincrement())
   contest_code              String                      @unique
+  token_mint               String?                     @db.VarChar(44)  // Solana token mint address
   name                      String
   description               String?
-  start_time                DateTime?                   @db.Timestamptz(6)
-  end_time                  DateTime?                   @db.Timestamptz(6)
-  entry_fee                 Decimal?                    @default(0) @db.Decimal(20, 8)
-  prize_pool                Decimal?                    @default(0) @db.Decimal(20, 0)
-  status                    contest_status?             @default(pending)
+  start_time                DateTime                    @db.Timestamptz(6)  // When contest starts & entry deadline
+  end_time                  DateTime                    @db.Timestamptz(6)  // When contest ends
+  entry_fee                 Decimal?                    @default(0) @db.Decimal(20, 8)  // Fixed fee per participant
+  prize_pool                Decimal                     @default(0) @db.Decimal(20, 0)  // Maximum possible prize pool
+  current_prize_pool        Decimal                     @default(0) @db.Decimal(20, 0)  // Actual prize pool based on participants
+  status                    contest_status              @default(pending)
   settings                  Json?                       @default("{}")
-  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
-  current_prize_pool        Decimal?                    @default(0) @db.Decimal(20, 0)
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
   allowed_buckets           Int[]
-  participant_count         Int?                        @default(0)
-  last_entry_time           DateTime?                   @db.Timestamptz(6)
-  min_participants          Int?                        @default(2)
+  participant_count         Int                         @default(0)
+  min_participants          Int                         @default(2)
   max_participants          Int?
-  entry_deadline            DateTime?                   @db.Timestamptz(6)
   cancelled_at              DateTime?                   @db.Timestamptz(6)
+  completed_at             DateTime?                   @db.Timestamptz(6)
   cancellation_reason       String?
-  updated_at                DateTime?                   @db.Timestamptz(6)
   ai_decisions              ai_decisions[]
   blockchain_transactions   blockchain_transactions[]
   contest_participants      contest_participants[]
@@ -142,11 +165,13 @@ model contests {
   contest_token_performance contest_token_performance[]
   contest_token_prices      contest_token_prices[]
   contest_wallets           contest_wallets?
+  vanity_wallet             vanity_wallet_pool?
   transactions              transactions[]
+  contest_portfolio_trades  contest_portfolio_trades[]
 
-  @@index([contest_code], map: "idx_contests_code")
-  @@index([status, start_time], map: "idx_contests_status_start")
-  @@index([status, start_time, end_time], map: "idx_contests_status_time")
+  @@index([status])
+  @@index([start_time])
+  @@index([end_time])
   @@map("contests")
 }
 
@@ -207,6 +232,7 @@ model tokens {
   contest_token_prices      contest_token_prices[]
   token_bucket_memberships  token_bucket_memberships[]
   token_prices              token_prices?
+  contest_portfolio_trades  contest_portfolio_trades[]
 
   @@index([symbol], map: "idx_tokens_symbol")
   @@map("tokens")
@@ -293,40 +319,38 @@ model user_token_stats {
   @@map("user_token_stats")
 }
 
-model users {
-  wallet_address            String                      @id
-  nickname                  String?                     @unique
-  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
-  last_login                DateTime?                   @db.Timestamptz(6)
-  total_contests            Int?                        @default(0)
-  total_wins                Int?                        @default(0)
-  total_earnings            Decimal?                    @default(0) @db.Decimal(20, 0)
-  rank_score                Int?                        @default(1000)
-  settings                  Json?                       @default("{}")
-  balance                   Decimal?                    @default(0) @db.Decimal(20, 0)
-  is_banned                 Boolean?                    @default(false)
-  ban_reason                String?
-  last_deposit_at           DateTime?                   @db.Timestamptz(6)
-  last_withdrawal_at        DateTime?                   @db.Timestamptz(6)
-  kyc_status                String?
-  risk_level                Int?                        @default(0)
-  updated_at                DateTime?                   @db.Timestamptz(6)
-  role                      String                      @default("user")
-  highest_rank_score        Int?                        @default(1000)
-  experience_points         Int?                        @default(0)
-  current_level            user_levels?                @relation(fields: [current_level_id], references: [id])
-  current_level_id          Int?
-  total_achievement_points  Int?                        @default(0)
-  contest_participants      contest_participants[]
-  contest_portfolios        contest_portfolios[]
-  contest_token_performance contest_token_performance[]
-  contest_token_prices      contest_token_prices[]
-  participant_influences    participant_influences[]
-  transactions              transactions[]
-  user_stats                user_stats?
+enum UserRole {
+  user
+  admin
+  superadmin
+}
 
-  @@index([balance], map: "idx_users_balance")
-  @@index([rank_score], map: "idx_users_rank")
+model users {
+  id                        Int                         @id @default(autoincrement())
+  wallet_address           String                      @unique
+  username                 String?                     @unique
+  nickname                 String?                     // Display name for UI
+  email                    String?                     @unique
+  role                     UserRole                    @default(user)  // Role for access control
+  user_level_id           Int?                        // Reference to user's current level
+  user_level              user_levels?                @relation(fields: [user_level_id], references: [id])
+  created_at              DateTime?                   @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime?                   @db.Timestamptz(6)
+  last_login              DateTime?                   @db.Timestamptz(6)
+  total_contests          Int?                        @default(0)  // Total number of contests participated in
+  contest_participants     contest_participants[]
+  contest_portfolios       contest_portfolios[]
+  contest_token_performance contest_token_performance[]
+  contest_token_prices     contest_token_prices[]
+  contest_portfolio_trades contest_portfolio_trades[]
+  transactions            transactions[]
+  user_stats              user_stats[]
+  participant_influences  participant_influences[]
+  websocket_messages     websocket_messages[]
+
+  @@index([wallet_address], map: "idx_users_wallet")
+  @@index([username], map: "idx_users_username")
+  @@index([role], map: "idx_users_role")
   @@map("users")
 }
 
@@ -430,6 +454,16 @@ model contest_wallets {
   @@map("contest_wallets")
 }
 
+model seed_wallets {
+  wallet_address String   @id
+  private_key    String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  is_active      Boolean  @default(true)
+  purpose        String?  // e.g., 'faucet', 'contest', 'admin'
+  metadata       Json?    // Additional metadata as needed
+}
+
 model participant_influences {
   id                  Int          @id @default(autoincrement())
   decision_id         Int
@@ -498,6 +532,13 @@ enum TokenType {
   SPL
 }
 
+enum TradeType {
+  BUY
+  SELL
+  SHORT
+  CLOSE_SHORT
+}
+
 model achievement_categories {
   id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(50)
@@ -554,4 +595,35 @@ model level_rewards {
   created_at   DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("level_rewards")
+}
+
+model websocket_messages {
+  id             Int      @id @default(autoincrement())
+  type           String   // Message type (trade_executed, portfolio_updated, price_updated)
+  data           Json     // Message payload
+  wallet_address String   // Target wallet address
+  timestamp      DateTime @default(now()) @db.Timestamptz(6)
+  delivered      Boolean  @default(false)
+  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+  
+  @@index([wallet_address, type], map: "idx_websocket_messages_wallet_type")
+  @@index([timestamp], map: "idx_websocket_messages_timestamp")
+  @@map("websocket_messages")
+}
+
+model vanity_wallet_pool {
+  id              Int       @id @default(autoincrement())
+  wallet_address  String    @unique
+  private_key     String
+  pattern         String    // e.g., "DEGEN", "DUEL" - helps track what patterns we have
+  is_used         Boolean   @default(false)
+  used_at         DateTime?
+  used_by_contest Int?      @unique // Reference to contest that used this wallet
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  contest         contests? @relation(fields: [used_by_contest], references: [id])
+
+  @@index([is_used])
+  @@index([pattern])
 }
