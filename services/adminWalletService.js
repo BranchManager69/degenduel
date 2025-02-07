@@ -435,6 +435,69 @@ class AdminWalletService {
             throw error;
         }
     }
+
+    // Get contest wallets overview with additional metrics
+    static async getContestWalletsOverview() {
+        try {
+            const wallets = await prisma.contest_wallets.findMany({
+                include: {
+                    contests: {
+                        select: {
+                            contest_code: true,
+                            status: true,
+                            start_time: true,
+                            end_time: true
+                        }
+                    }
+                }
+            });
+
+            // Get SOL balances for all wallets
+            const balances = await Promise.all(
+                wallets.map(async (wallet) => {
+                    try {
+                        const balance = await connection.getBalance(new PublicKey(wallet.wallet_address));
+                        return {
+                            ...wallet,
+                            current_balance: balance / LAMPORTS_PER_SOL,
+                            balance_difference: (balance / LAMPORTS_PER_SOL) - Number(wallet.balance),
+                            last_sync_age: wallet.last_sync ? Date.now() - wallet.last_sync.getTime() : null
+                        };
+                    } catch (error) {
+                        logApi.error(`Failed to get balance for wallet ${wallet.wallet_address}:`, error);
+                        return {
+                            ...wallet,
+                            current_balance: null,
+                            balance_difference: null,
+                            error: error.message
+                        };
+                    }
+                })
+            );
+
+            // Calculate statistics
+            const stats = {
+                total_wallets: wallets.length,
+                active_contests: wallets.filter(w => w.contests?.status === 'active').length,
+                total_balance: balances.reduce((sum, w) => sum + (w.current_balance || 0), 0),
+                needs_sync: balances.filter(w => Math.abs(w.balance_difference || 0) > 0.001).length,
+                status_breakdown: {
+                    active: wallets.filter(w => w.contests?.status === 'active').length,
+                    pending: wallets.filter(w => w.contests?.status === 'pending').length,
+                    completed: wallets.filter(w => w.contests?.status === 'completed').length,
+                    cancelled: wallets.filter(w => w.contests?.status === 'cancelled').length
+                }
+            };
+
+            return {
+                wallets: balances,
+                stats
+            };
+        } catch (error) {
+            logApi.error('Failed to get contest wallets overview:', error);
+            throw error;
+        }
+    }
 }
 
 export default AdminWalletService; 
