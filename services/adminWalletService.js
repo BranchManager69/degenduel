@@ -7,11 +7,70 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from '../config/config.js';
 import crypto from 'crypto';
 import bs58 from 'bs58';
+import ServiceManager, { SERVICE_NAMES } from '../utils/service-manager.js';
 
 const prisma = new PrismaClient();
 const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
+// Configuration
+const ADMIN_WALLET_CONFIG = {
+    max_retries: 3,
+    retry_delay_ms: 5000,
+    min_balance_sol: 0.05,
+    transaction_timeout_ms: 30000
+};
+
+// Statistics tracking
+let adminWalletStats = {
+    operations: {
+        total: 0,
+        successful: 0,
+        failed: 0
+    },
+    transfers: {
+        sol: {
+            count: 0,
+            total_amount: 0
+        },
+        tokens: {
+            count: 0,
+            by_mint: {}
+        }
+    },
+    performance: {
+        average_operation_time_ms: 0
+    }
+};
+
 class AdminWalletService {
+    static async initialize() {
+        try {
+            await ServiceManager.markServiceStarted(
+                SERVICE_NAMES.ADMIN_WALLET,
+                ADMIN_WALLET_CONFIG,
+                adminWalletStats
+            );
+            logApi.info('Admin Wallet Service initialized');
+        } catch (error) {
+            logApi.error('Failed to initialize Admin Wallet Service:', error);
+            throw error;
+        }
+    }
+
+    static async shutdown() {
+        try {
+            await ServiceManager.markServiceStopped(
+                SERVICE_NAMES.ADMIN_WALLET,
+                ADMIN_WALLET_CONFIG,
+                adminWalletStats
+            );
+            logApi.info('Admin Wallet Service shut down');
+        } catch (error) {
+            logApi.error('Failed to shut down Admin Wallet Service:', error);
+            throw error;
+        }
+    }
+
     // Decrypt a wallet's private key
     static decryptWallet(encryptedData) {
         try {
@@ -103,8 +162,9 @@ class AdminWalletService {
         });
     }
 
-    // Update transfer methods to include admin logging
+    // Update transfer methods to track statistics
     static async transferSOL(fromWalletEncrypted, toAddress, amount, description = '', adminId, ip = null) {
+        const startTime = Date.now();
         try {
             // Set admin context for triggers
             await this.setAdminContext(adminId);
@@ -123,6 +183,22 @@ class AdminWalletService {
                 wallet_address: fromWalletEncrypted
             });
 
+            // Update statistics
+            adminWalletStats.operations.total++;
+            adminWalletStats.operations.successful++;
+            adminWalletStats.transfers.sol.count++;
+            adminWalletStats.transfers.sol.total_amount += amount;
+            adminWalletStats.performance.average_operation_time_ms = 
+                (adminWalletStats.performance.average_operation_time_ms * (adminWalletStats.operations.total - 1) + 
+                (Date.now() - startTime)) / adminWalletStats.operations.total;
+
+            // Update service state
+            await ServiceManager.updateServiceHeartbeat(
+                SERVICE_NAMES.ADMIN_WALLET,
+                ADMIN_WALLET_CONFIG,
+                adminWalletStats
+            );
+
             return result;
         } catch (error) {
             // Log failed action
@@ -138,12 +214,25 @@ class AdminWalletService {
                 error_details: error.message
             });
 
+            // Update error statistics
+            adminWalletStats.operations.total++;
+            adminWalletStats.operations.failed++;
+
+            // Update service state with error
+            await ServiceManager.markServiceError(
+                SERVICE_NAMES.ADMIN_WALLET,
+                error,
+                ADMIN_WALLET_CONFIG,
+                adminWalletStats
+            );
+
             throw error;
         }
     }
 
     // Similar updates for other transfer methods...
     static async transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '', adminId, ip = null) {
+        const startTime = Date.now();
         try {
             await this.setAdminContext(adminId);
             const result = await this._transferToken(fromWalletEncrypted, toAddress, mint, amount, description);
@@ -160,6 +249,23 @@ class AdminWalletService {
                 wallet_address: fromWalletEncrypted
             });
 
+            // Update statistics
+            adminWalletStats.operations.total++;
+            adminWalletStats.operations.successful++;
+            adminWalletStats.transfers.tokens.count++;
+            adminWalletStats.transfers.tokens.by_mint[mint] = 
+                (adminWalletStats.transfers.tokens.by_mint[mint] || 0) + amount;
+            adminWalletStats.performance.average_operation_time_ms = 
+                (adminWalletStats.performance.average_operation_time_ms * (adminWalletStats.operations.total - 1) + 
+                (Date.now() - startTime)) / adminWalletStats.operations.total;
+
+            // Update service state
+            await ServiceManager.updateServiceHeartbeat(
+                SERVICE_NAMES.ADMIN_WALLET,
+                ADMIN_WALLET_CONFIG,
+                adminWalletStats
+            );
+
             return result;
         } catch (error) {
             await this.logAdminAction(adminId, 'MANUAL_TOKEN_TRANSFER', {
@@ -175,114 +281,18 @@ class AdminWalletService {
                 error_details: error.message
             });
 
-            throw error;
-        }
-    }
+            // Update error statistics
+            adminWalletStats.operations.total++;
+            adminWalletStats.operations.failed++;
 
-    // Rename existing transfer methods to be internal
-    static async _transferSOL(fromWalletEncrypted, toAddress, amount, description = '') {
-        try {
-            const decryptedKey = this.decryptWallet(fromWalletEncrypted);
-            const fromKeypair = Keypair.fromSecretKey(bs58.decode(decryptedKey));
-            
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(toAddress),
-                    lamports: Math.floor(amount * LAMPORTS_PER_SOL),
-                })
+            // Update service state with error
+            await ServiceManager.markServiceError(
+                SERVICE_NAMES.ADMIN_WALLET,
+                error,
+                ADMIN_WALLET_CONFIG,
+                adminWalletStats
             );
 
-            const signature = await connection.sendTransaction(transaction, [fromKeypair]);
-            await connection.confirmTransaction(signature);
-
-            // Log the transfer
-            await prisma.transactions.create({
-                data: {
-                    wallet_address: fromKeypair.publicKey.toString(),
-                    type: config.transaction_types.WITHDRAWAL,
-                    amount,
-                    description: description || `Admin SOL transfer to ${toAddress}`,
-                    status: config.transaction_statuses.COMPLETED,
-                    blockchain_signature: signature,
-                    completed_at: new Date(),
-                    created_at: new Date()
-                }
-            });
-
-            return { signature, success: true };
-        } catch (error) {
-            logApi.error('SOL transfer failed:', error);
-            throw error;
-        }
-    }
-
-    static async _transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '') {
-        try {
-            const decryptedKey = this.decryptWallet(fromWalletEncrypted);
-            const fromKeypair = Keypair.fromSecretKey(bs58.decode(decryptedKey));
-            const toPubkey = new PublicKey(toAddress);
-
-            // Get associated token accounts
-            const fromATA = await getAssociatedTokenAddress(
-                new PublicKey(mint),
-                fromKeypair.publicKey
-            );
-            const toATA = await getAssociatedTokenAddress(
-                new PublicKey(mint),
-                toPubkey
-            );
-
-            // Create transaction
-            const transaction = new Transaction();
-
-            // Check if destination token account exists
-            try {
-                await getAccount(connection, toATA);
-            } catch (error) {
-                if (error.name === 'TokenAccountNotFoundError') {
-                    transaction.add(
-                        createAssociatedTokenAccountInstruction(
-                            fromKeypair.publicKey,
-                            toATA,
-                            toPubkey,
-                            new PublicKey(mint)
-                        )
-                    );
-                }
-            }
-
-            // Add transfer instruction
-            transaction.add(
-                createTransferInstruction(
-                    fromATA,
-                    toATA,
-                    fromKeypair.publicKey,
-                    amount
-                )
-            );
-
-            const signature = await connection.sendTransaction(transaction, [fromKeypair]);
-            await connection.confirmTransaction(signature);
-
-            // Log the transfer
-            await prisma.transactions.create({
-                data: {
-                    wallet_address: fromKeypair.publicKey.toString(),
-                    type: config.transaction_types.TOKEN_SALE,
-                    amount,
-                    description: description || `Admin token transfer to ${toAddress}`,
-                    status: config.transaction_statuses.COMPLETED,
-                    blockchain_signature: signature,
-                    token_mint: mint,
-                    completed_at: new Date(),
-                    created_at: new Date()
-                }
-            });
-
-            return { signature, success: true };
-        } catch (error) {
-            logApi.error('Token transfer failed:', error);
             throw error;
         }
     }
@@ -498,6 +508,119 @@ class AdminWalletService {
             throw error;
         }
     }
+
+    // Rename existing transfer methods to be internal
+    static async _transferSOL(fromWalletEncrypted, toAddress, amount, description = '') {
+        try {
+            const decryptedKey = this.decryptWallet(fromWalletEncrypted);
+            const fromKeypair = Keypair.fromSecretKey(bs58.decode(decryptedKey));
+            
+            const transaction = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey: fromKeypair.publicKey,
+                    toPubkey: new PublicKey(toAddress),
+                    lamports: Math.floor(amount * LAMPORTS_PER_SOL),
+                })
+            );
+
+            const signature = await connection.sendTransaction(transaction, [fromKeypair]);
+            await connection.confirmTransaction(signature);
+
+            // Log the transfer
+            await prisma.transactions.create({
+                data: {
+                    wallet_address: fromKeypair.publicKey.toString(),
+                    type: config.transaction_types.WITHDRAWAL,
+                    amount,
+                    description: description || `Admin SOL transfer to ${toAddress}`,
+                    status: config.transaction_statuses.COMPLETED,
+                    blockchain_signature: signature,
+                    completed_at: new Date(),
+                    created_at: new Date()
+                }
+            });
+
+            return { signature, success: true };
+        } catch (error) {
+            logApi.error('SOL transfer failed:', error);
+            throw error;
+        }
+    }
+
+    static async _transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '') {
+        try {
+            const decryptedKey = this.decryptWallet(fromWalletEncrypted);
+            const fromKeypair = Keypair.fromSecretKey(bs58.decode(decryptedKey));
+            const toPubkey = new PublicKey(toAddress);
+
+            // Get associated token accounts
+            const fromATA = await getAssociatedTokenAddress(
+                new PublicKey(mint),
+                fromKeypair.publicKey
+            );
+            const toATA = await getAssociatedTokenAddress(
+                new PublicKey(mint),
+                toPubkey
+            );
+
+            // Create transaction
+            const transaction = new Transaction();
+
+            // Check if destination token account exists
+            try {
+                await getAccount(connection, toATA);
+            } catch (error) {
+                if (error.name === 'TokenAccountNotFoundError') {
+                    transaction.add(
+                        createAssociatedTokenAccountInstruction(
+                            fromKeypair.publicKey,
+                            toATA,
+                            toPubkey,
+                            new PublicKey(mint)
+                        )
+                    );
+                }
+            }
+
+            // Add transfer instruction
+            transaction.add(
+                createTransferInstruction(
+                    fromATA,
+                    toATA,
+                    fromKeypair.publicKey,
+                    amount
+                )
+            );
+
+            const signature = await connection.sendTransaction(transaction, [fromKeypair]);
+            await connection.confirmTransaction(signature);
+
+            // Log the transfer
+            await prisma.transactions.create({
+                data: {
+                    wallet_address: fromKeypair.publicKey.toString(),
+                    type: config.transaction_types.TOKEN_SALE,
+                    amount,
+                    description: description || `Admin token transfer to ${toAddress}`,
+                    status: config.transaction_statuses.COMPLETED,
+                    blockchain_signature: signature,
+                    token_mint: mint,
+                    completed_at: new Date(),
+                    created_at: new Date()
+                }
+            });
+
+            return { signature, success: true };
+        } catch (error) {
+            logApi.error('Token transfer failed:', error);
+            throw error;
+        }
+    }
 }
+
+// Initialize service when module is loaded
+AdminWalletService.initialize().catch(error => {
+    logApi.error('Failed to initialize Admin Wallet Service:', error);
+});
 
 export default AdminWalletService; 

@@ -643,4 +643,100 @@ router.post('/faucet/recover-nuclear', requireAuth, requireSuperAdmin, async (re
     }
 });
 
+// Get all service states
+router.get('/services/states', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const serviceStates = await prisma.system_settings.findMany({
+            where: {
+                key: {
+                    in: [
+                        'contest_evaluation_service',
+                        'token_sync_service',
+                        'admin_wallet_service',
+                        'contest_wallet_service',
+                        'vanity_wallet_service',
+                        'wallet_rake_service',
+                        'balance_sync_service',
+                        'notification_service'
+                    ]
+                }
+            }
+        });
+
+        // Format response with default values if service not found
+        const formattedStates = {
+            contest_evaluation_service: { enabled: false },
+            token_sync_service: { enabled: true },
+            admin_wallet_service: { enabled: true },
+            contest_wallet_service: { enabled: true },
+            vanity_wallet_service: { enabled: true },
+            wallet_rake_service: { enabled: true },
+            balance_sync_service: { enabled: true },
+            notification_service: { enabled: true }
+        };
+
+        serviceStates.forEach(service => {
+            try {
+                const value = typeof service.value === 'string' 
+                    ? JSON.parse(service.value)
+                    : service.value;
+                formattedStates[service.key] = value;
+            } catch (e) {
+                logApi.error(`Failed to parse service state for ${service.key}:`, e);
+            }
+        });
+
+        res.json({ success: true, services: formattedStates });
+    } catch (error) {
+        logApi.error('Failed to get service states:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Update service state
+router.post('/services/:service/toggle', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { service } = req.params;
+        const currentState = await prisma.system_settings.findUnique({
+            where: { key: service }
+        });
+
+        let newState = {
+            enabled: true,
+            updated_by: req.user.wallet_address,
+            last_enabled: new Date().toISOString(),
+            last_disabled: null
+        };
+
+        if (currentState?.value) {
+            const parsedState = typeof currentState.value === 'string' 
+                ? JSON.parse(currentState.value)
+                : currentState.value;
+            
+            newState = {
+                enabled: !parsedState.enabled,
+                updated_by: req.user.wallet_address,
+                last_enabled: !parsedState.enabled ? new Date().toISOString() : parsedState.last_enabled,
+                last_disabled: !parsedState.enabled ? null : new Date().toISOString()
+            };
+        }
+
+        await prisma.system_settings.upsert({
+            where: { key: service },
+            create: {
+                key: service,
+                value: newState
+            },
+            update: {
+                value: newState
+            }
+        });
+
+        res.json({ success: true, state: newState });
+    } catch (error) {
+        logApi.error('Failed to toggle service state:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 export default router;

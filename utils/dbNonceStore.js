@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import prisma from '../config/prisma.js';
 import { logApi } from './logger-suite/logger.js';
 
-// We'll expire nonces after 5 minutes
-const NONCE_EXPIRY_MS = 5 * 60 * 1000;
+// We'll expire nonces after 15 minutes
+const NONCE_EXPIRY_MS = 15 * 60 * 1000;
 
 export async function generateNonce(walletAddress) {
   try {

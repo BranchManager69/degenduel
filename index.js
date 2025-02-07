@@ -20,6 +20,8 @@ import vanityWalletRoutes from './routes/admin/vanity-wallet-management.js';
 import walletManagementRoutes from './routes/admin/wallet-management.js';
 import faucetManagementRoutes from './routes/admin/faucet-management.js';
 import { createWebSocketServer, startPeriodicTasks } from './websocket/portfolio-ws.js';
+import { createAnalyticsWebSocket } from './websocket/analytics-ws.js';
+import { memoryMonitoring } from './scripts/monitor-memory.js';
 
 dotenv.config();
 
@@ -39,6 +41,9 @@ setupSwagger(app);
 
 // Middleware setup
 configureMiddleware(app);
+
+// Add response time tracking middleware
+app.use(memoryMonitoring.setupResponseTimeTracking());
 
 
 /* Routes Setup */
@@ -71,6 +76,7 @@ import statusRoutes from './routes/status.js';
 // v3 alpha routes
 import portfolioTradesRouter from './routes/portfolio-trades.js';
 import portfolioAnalyticsRouter from './routes/portfolio-analytics.js';
+import referralRoutes from './routes/referrals.js';
 
 // 1. First mount public routes (no maintenance check needed)
 app.use('/api/auth', authRoutes);
@@ -103,6 +109,7 @@ app.use('/api/token-buckets', maintenanceCheck, tokenBucketRoutes);
 // v3 alpha routes (inaccessible when in maintenance mode)
 app.use('/api/portfolio', maintenanceCheck, portfolioTradesRouter);
 app.use('/api/portfolio-analytics', maintenanceCheck, portfolioAnalyticsRouter);
+app.use('/api/referrals', maintenanceCheck, referralRoutes);
 
 // Test routes (no maintenance check needed)
 app.use('/api/test', testRoutes);
@@ -147,6 +154,9 @@ async function startServer() {
           })
       ]);
 
+      // Initialize memory monitoring
+      memoryMonitoring.initMemoryMonitoring();
+
       // Start token sync service
       try {
         await startSync();
@@ -178,12 +188,11 @@ async function startServer() {
       });
 
       // Initialize WebSocket server using the HTTP server
-      global.wss = createWebSocketServer(apiServer);
-      startPeriodicTasks();
+      global.wss = createAnalyticsWebSocket(apiServer);
 
       // Log WebSocket server initialization
-      logApi.info('DD Portfolio WebSocket server started', {
-          path: '/portfolio'
+      logApi.info('Analytics WebSocket server started', {
+          path: '/analytics'
       });
 
       apiServer.on('error', (error) => {

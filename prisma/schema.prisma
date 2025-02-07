@@ -255,6 +255,7 @@ model transactions {
   contest_participants_contest_participants_prize_transaction_idTotransactions contest_participants[] @relation("contest_participants_prize_transaction_idTotransactions")
   contests                                                                     contests?              @relation(fields: [contest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                                                                        users?                 @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+  referral_rewards     referral_rewards[]
 
   @@index([contest_id], map: "idx_transactions_contest")
   @@index([type, created_at], map: "idx_transactions_type_created")
@@ -344,11 +345,16 @@ model users {
   contest_portfolios       contest_portfolios[]
   contest_token_performance contest_token_performance[]
   contest_token_prices     contest_token_prices[]
-  contest_portfolio_trades contest_portfolio_trades[]
+  contest_portfolio_trades   contest_portfolio_trades[]
   transactions            transactions[]
   user_stats              user_stats[]
   participant_influences  participant_influences[]
   websocket_messages     websocket_messages[]
+  referral_code            String?    @unique @db.VarChar(20)  // Unique referral code for the user
+  referred_by_code         String?    @db.VarChar(20)          // Code used when this user signed up
+  referrals_made           referrals[] @relation("ReferrerRelation")
+  referred_by              referrals[] @relation("ReferredRelation")
+  referral_rewards         referral_rewards[]
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -629,4 +635,55 @@ model vanity_wallet_pool {
 
   @@index([is_used])
   @@index([pattern])
+}
+
+model referrals {
+  id              Int       @id @default(autoincrement())
+  referrer_id     String    @db.VarChar(44)  // Wallet address of the referrer
+  referred_id     String    @db.VarChar(44)  // Wallet address of the referred user
+  referral_code   String    @db.VarChar(20)  // Code used for this referral
+  status          ReferralStatus @default(pending)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  qualified_at    DateTime? @db.Timestamptz(6)  // When the referral became qualified
+  reward_paid_at  DateTime? @db.Timestamptz(6)  // When the referral reward was paid
+  reward_amount   Decimal?  @db.Decimal(20,0)  // Amount of reward paid
+  
+  referrer        users     @relation("ReferrerRelation", fields: [referrer_id], references: [wallet_address], onDelete: Restrict, onUpdate: Cascade)
+  referred        users     @relation("ReferredRelation", fields: [referred_id], references: [wallet_address], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([referrer_id, referred_id])
+  @@index([referral_code])
+  @@index([created_at])
+  @@map("referrals")
+}
+
+model referral_rewards {
+  id              Int       @id @default(autoincrement())
+  wallet_address  String    @db.VarChar(44)
+  reward_type     ReferralRewardType
+  amount          Decimal   @db.Decimal(20,0)
+  description     String?
+  transaction_id  Int?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  paid_at         DateTime? @db.Timestamptz(6)
+  
+  users           users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: Restrict, onUpdate: Cascade)
+  transaction     transactions? @relation(fields: [transaction_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([wallet_address])
+  @@index([created_at])
+  @@map("referral_rewards")
+}
+
+enum ReferralStatus {
+  pending     // Just signed up
+  qualified   // Met qualification criteria
+  rewarded    // Referral reward has been paid
+  expired     // Referral expired without qualification
+}
+
+enum ReferralRewardType {
+  signup_bonus    // Reward for referring a new user
+  contest_bonus   // Bonus when referred user joins contests
+  special_event   // Special promotion rewards
 }
