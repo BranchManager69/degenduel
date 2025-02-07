@@ -522,4 +522,39 @@ router.post('/prices/batch', async (req, res) => {
   }
 });
 
+// Get latest market data for all active tokens
+router.get('/marketData/latest', async (req, res) => {
+    try {
+        const tokens = await prisma.tokens.findMany({
+            where: { is_active: true },
+            include: {
+                token_prices: true
+            }
+        });
+
+        const marketData = tokens.map(token => ({
+            address: token.contract_address,
+            symbol: token.symbol,
+            name: token.name,
+            price: token.token_prices?.price || 0,
+            market_cap: token.market_cap || 0,
+            change_24h: token.change_24h || 0,
+            volume_24h: token.volume_24h || 0,
+            last_updated: token.token_prices?.updated_at || null
+        }));
+
+        res.json({
+            success: true,
+            data: marketData,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error('Failed to fetch market data:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch market data' 
+        });
+    }
+});
+
 export default router; 

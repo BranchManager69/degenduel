@@ -60,6 +60,7 @@
     "gradient-string": "^3.0.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
     "openai": "^4.80.0",
     "ora": "^8.1.1",
     "pg": "^8.13.1",
