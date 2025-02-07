@@ -751,6 +751,77 @@ export class FaucetManager {
             skip: offset
         });
     }
+
+    // Get comprehensive dashboard data for faucet management
+    static async getDashboardData() {
+        try {
+            const faucetStatus = await this.getFaucetStatus();
+            
+            // Get transaction statistics for the last 24 hours
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const recentTransactions = await prisma.transactions.findMany({
+                where: {
+                    wallet_address: faucetStatus.address,
+                    processed_at: {
+                        gte: oneDayAgo
+                    }
+                },
+                orderBy: {
+                    processed_at: 'desc'
+                }
+            });
+
+            // Calculate transaction statistics
+            const stats = {
+                last_24h: {
+                    total_transactions: recentTransactions.length,
+                    total_volume: recentTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0),
+                    unique_recipients: new Set(recentTransactions.map(tx => tx.wallet_address)).size,
+                    average_amount: recentTransactions.length > 0 
+                        ? recentTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0) / recentTransactions.length 
+                        : 0
+                },
+                wallet_status: {
+                    current_balance: faucetStatus.balance,
+                    available_balance: faucetStatus.availableForDistribution,
+                    can_fund_users: faucetStatus.canFundUsers,
+                    needs_refill: faucetStatus.balance < (this.config.minFaucetBalance * 2)
+                },
+                system_health: {
+                    is_operational: faucetStatus.balance > this.config.minFaucetBalance,
+                    current_config: this.config,
+                    fee_structure: FEE_CONSTANTS
+                }
+            };
+
+            // Get hourly distribution for the last 24 hours
+            const hourlyDistribution = Array(24).fill(0).map((_, i) => {
+                const hourStart = new Date(Date.now() - (i + 1) * 60 * 60 * 1000);
+                const hourEnd = new Date(Date.now() - i * 60 * 60 * 1000);
+                const txsInHour = recentTransactions.filter(tx => 
+                    tx.processed_at >= hourStart && tx.processed_at < hourEnd
+                );
+                return {
+                    hour: hourEnd.getHours(),
+                    transactions: txsInHour.length,
+                    volume: txsInHour.reduce((sum, tx) => sum + Number(tx.amount), 0)
+                };
+            }).reverse();
+
+            return {
+                status: faucetStatus,
+                statistics: stats,
+                hourly_distribution: hourlyDistribution,
+                recent_transactions: recentTransactions.slice(0, 10) // Last 10 transactions
+            };
+        } catch (error) {
+            throw new SolanaWalletError(
+                'Failed to get dashboard data',
+                'DASHBOARD_DATA_FAILED',
+                { originalError: error.message }
+            );
+        }
+    }
 }
 
 // Command line interface
