@@ -19,7 +19,7 @@ class WalletError extends Error {
 }
 
 // Encrypt private key using AES-256-GCM with additional authenticated data (AAD)
-const encryptPrivateKey = (privateKey, additionalData = '') => {
+export const encryptPrivateKey = (privateKey, additionalData = '') => {
   try {
     // Generate a random IV for each encryption
     const iv = crypto.randomBytes(12);
@@ -55,7 +55,7 @@ const encryptPrivateKey = (privateKey, additionalData = '') => {
 };
 
 // Decrypt private key
-const decryptPrivateKey = (encryptedData) => {
+export const decryptPrivateKey = (encryptedData) => {
   try {
     const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
     
@@ -67,7 +67,7 @@ const decryptPrivateKey = (encryptedData) => {
     );
     
     // Set AAD and auth tag
-    decipher.setAAD(Buffer.from(aad));
+    decipher.setAAD(Buffer.from(aad || ''));
     decipher.setAuthTag(Buffer.from(tag, 'hex'));
     
     // Decrypt
@@ -146,5 +146,4 @@ export const getContestWallet = async (encryptedPrivateKey, publicKey) => {
       { originalError: error.message }
     );
   }
-
 }; 
