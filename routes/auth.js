@@ -10,9 +10,16 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { clearNonce, generateNonce, getNonceRecord } from '../utils/dbNonceStore.js';
 import { requireAuth } from '../middleware/auth.js';
 import { UserRole } from '../types/userRole.js';
+import crypto from 'crypto';
 
 const router = express.Router();
 const { sign } = jwt;
+
+// Create a service-specific logger with analytics
+const authLogger = {
+    ...logApi.forService('AUTH'),
+    analytics: logApi.analytics
+};
 
 /**
  * @swagger
@@ -139,16 +146,22 @@ router.get('/challenge', async (req, res) => {
 router.post('/verify-wallet', async (req, res) => {
   try {
     const { wallet, signature, message } = req.body;
+    authLogger.info('Verify wallet request received', { wallet });
+
     if (!wallet || !signature || !message) {
+      authLogger.warn('Missing required fields', { wallet, hasSignature: !!signature, hasMessage: !!message });
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
     if (!Array.isArray(signature) || signature.length !== 64) {
+      authLogger.warn('Invalid signature format', { wallet, signatureLength: signature?.length });
       return res.status(400).json({ error: 'Signature must be a 64-byte array' });
     }
 
     // 1) Get the nonce from DB
     const record = await getNonceRecord(wallet);
     if (!record) {
+      authLogger.warn('No nonce record found', { wallet });
       return res.status(401).json({ error: 'Nonce not found or expired' });
     }
 
@@ -156,7 +169,12 @@ router.post('/verify-wallet', async (req, res) => {
     const now = Date.now();
     const expiresAtMs = new Date(record.expires_at).getTime();
     if (expiresAtMs < now) {
-      // It's expired, remove it
+      authLogger.warn('Nonce expired', { 
+        wallet,
+        expiresAt: record.expires_at,
+        now: new Date(now).toISOString(),
+        timeDiff: (now - expiresAtMs) / 1000 + ' seconds'
+      });
       await clearNonce(wallet);
       return res.status(401).json({ error: 'Nonce expired' });
     }
@@ -207,11 +225,22 @@ router.post('/verify-wallet', async (req, res) => {
       }
     });
 
+    // Track session with analytics
+    authLogger.analytics.trackSession(user, {
+      ...req.headers,
+      'x-real-ip': req.ip,
+      'x-forwarded-for': req.headers['x-forwarded-for'],
+      'user-agent': req.headers['user-agent'],
+      'sec-ch-ua-platform': req.headers['sec-ch-ua-platform'],
+      'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile']
+    });
+
     // 6) Create JWT
     const token = sign(
       {
         wallet_address: user.wallet_address,
-        role: user.role
+        role: user.role,
+        session_id: Buffer.from(crypto.randomBytes(16)).toString('hex')
       },
       config.jwt.secret,
       { expiresIn: '24h' }
@@ -222,17 +251,22 @@ router.post('/verify-wallet', async (req, res) => {
       httpOnly: true,
       sameSite: 'none',
       secure: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      domain: '.degenduel.me' // Always set in production URL
     };
-
-    // Add production-only settings
-    if (req.environment === 'production') {
-      cookieOptions.domain = '.degenduel.me';
-    }
 
     res.cookie('session', token, cookieOptions);
 
-    if (config.debug_mode) { logApi.info(`Wallet verified successfully: ${wallet}`, { wallet, role: user.role }); } 
+    // After successful verification
+    authLogger.info('Wallet verified successfully', { 
+      wallet,
+      role: user.role,
+      cookieOptions: {
+        ...cookieOptions,
+        maxAge: cookieOptions.maxAge / 1000 + ' seconds'
+      }
+    });
+
     return res.json({
       verified: true,
       token,
@@ -243,7 +277,11 @@ router.post('/verify-wallet', async (req, res) => {
       }
     });
   } catch (error) {
-    if (config.debug_mode) { logApi.error('Wallet verification failed', { error }); }
+    authLogger.error('Wallet verification failed', {
+      error: error.message,
+      stack: error.stack,
+      wallet: req.body?.wallet
+    });
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -369,47 +407,38 @@ router.post('/logout', requireAuth, async (req, res) => {
  */
 router.get('/session', async (req, res) => {
   try {
-    // Debug mode
-    if (config.debug_mode) {
-      logApi.info('Session check request received', {
-        //headers: req.headers,
-        //cookies: req.cookies,
-        //origin: req.headers.origin
-      });
-    }
-
-    // 0) Get session token
     const token = req.cookies.session;
     if (!token) {
-      if (config.debug_mode) {
-        logApi.warn('No session token provided');
-      }
+      authLogger.debug('No token provided');
       return res.status(401).json({ error: 'No session token provided' });
     }
 
-    // 1) Validate token
     const decoded = jwt.verify(token, config.jwt.secret);
-    if (config.debug_mode) {
-      logApi.info('Token validated successfully', { decoded });
-    }
-
-    // 2) Find user in DB
+    
     const user = await prisma.users.findUnique({
-      where: {
-        wallet_address: decoded.wallet_address
-      }
+      where: { wallet_address: decoded.wallet_address }
     });
 
-    // 3) Check if user exists
     if (!user) {
-      if (config.debug_mode) {
-        logApi.warn('User not found for session token');
-      }
+      authLogger.debug('User not found', { wallet: decoded.wallet_address });
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // 4) Return user session info
-    if (config.debug_mode) { logApi.info('Session check successful', { user: user.wallet_address }); }
+    // Track session check with analytics
+    authLogger.analytics.trackInteraction(user, 'session_check', {
+      success: true,
+      session_id: decoded.session_id
+    }, req.headers);
+
+    // Only log role mismatches at warn level
+    if (user.role !== decoded.role) {
+      authLogger.warn('Role mismatch detected', {
+        wallet: user.wallet_address,
+        stored_role: user.role,
+        token_role: decoded.role
+      });
+    }
+
     res.json({
       authenticated: true,
       user: {
@@ -420,9 +449,16 @@ router.get('/session', async (req, res) => {
     });
 
   } catch (error) {
-    if (config.debug_mode) { logApi.error('Session check failed:', error); }
+    // Track failed session checks
+    authLogger.analytics.trackInteraction(null, 'session_check', {
+      success: false,
+      error: error.message
+    }, req.headers);
+
+    authLogger.error('Session validation failed', { error: error.message });
     res.status(401).json({ error: 'Invalid session token' });
   }
 });
 
 export default router;
+

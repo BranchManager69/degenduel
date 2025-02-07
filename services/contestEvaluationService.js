@@ -847,31 +847,118 @@ async function updateContestStates() {
 // Update startContestEvaluationService to include state management
 async function startContestEvaluationService() {
     try {
-        // Set system_settings table key 'contest_evaluation_service_running' to true
+        // Check if service should be enabled
+        const setting = await prisma.system_settings.findUnique({
+            where: { key: 'contest_evaluation_service' }
+        });
+        
+        const enabled = setting?.value?.enabled ?? true;
+        
+        // Set system_settings table key 'contest_evaluation_service' with proper JSON structure
         await prisma.system_settings.upsert({
-            where: { key: 'contest_evaluation_service_running' },
+            where: { key: 'contest_evaluation_service' },
             update: {
-                value: JSON.stringify(true),
+                value: JSON.stringify({
+                    enabled,
+                    running: enabled,
+                    last_started: enabled ? new Date().toISOString() : null,
+                    status: enabled ? 'active' : 'disabled',
+                    config: {
+                        check_interval_ms: 60 * 1000,
+                        auto_cancel_window_ms: AUTO_CANCEL_WINDOW,
+                        max_refund_retries: MAX_REFUND_RETRIES,
+                        refund_retry_delay_ms: REFUND_RETRY_DELAY
+                    }
+                }),
                 updated_at: new Date()
             },
             create: {
-                key: 'contest_evaluation_service_running',
-                value: JSON.stringify(true),
-                description: 'Indicates if the contest evaluation service is running',
+                key: 'contest_evaluation_service',
+                value: JSON.stringify({
+                    enabled,
+                    running: enabled,
+                    last_started: enabled ? new Date().toISOString() : null,
+                    status: enabled ? 'active' : 'disabled',
+                    config: {
+                        check_interval_ms: 60 * 1000,
+                        auto_cancel_window_ms: AUTO_CANCEL_WINDOW,
+                        max_refund_retries: MAX_REFUND_RETRIES,
+                        refund_retry_delay_ms: REFUND_RETRY_DELAY
+                    }
+                }),
+                description: 'Contest evaluation service status and configuration',
                 updated_at: new Date()
             }
         });
 
+        if (!enabled) {
+            logApi.info('Contest Evaluation Service is disabled');
+            return;
+        }
+
         // Start periodic checks (every minute)
         setInterval(async () => {
             try {
+                // Check if service is still enabled
+                const currentSetting = await prisma.system_settings.findUnique({
+                    where: { key: 'contest_evaluation_service' }
+                });
+                
+                if (!currentSetting?.value?.enabled) {
+                    return;
+                }
+
                 await updateContestStates();
+                // Update last check timestamp
+                await prisma.system_settings.update({
+                    where: { key: 'contest_evaluation_service' },
+                    data: {
+                        value: JSON.stringify({
+                            enabled: true,
+                            running: true,
+                            last_started: new Date().toISOString(),
+                            last_check: new Date().toISOString(),
+                            status: 'active',
+                            config: {
+                                check_interval_ms: 60 * 1000,
+                                auto_cancel_window_ms: AUTO_CANCEL_WINDOW,
+                                max_refund_retries: MAX_REFUND_RETRIES,
+                                refund_retry_delay_ms: REFUND_RETRY_DELAY
+                            }
+                        }),
+                        updated_at: new Date()
+                    }
+                });
             } catch (error) {
                 logApi.error('Error in contest state update interval:', error);
+                // Update status to error
+                await prisma.system_settings.update({
+                    where: { key: 'contest_evaluation_service' },
+                    data: {
+                        value: JSON.stringify({
+                            enabled: true,
+                            running: true,
+                            last_started: new Date().toISOString(),
+                            last_check: new Date().toISOString(),
+                            status: 'error',
+                            last_error: error.message,
+                            last_error_time: new Date().toISOString(),
+                            config: {
+                                check_interval_ms: 60 * 1000,
+                                auto_cancel_window_ms: AUTO_CANCEL_WINDOW,
+                                max_refund_retries: MAX_REFUND_RETRIES,
+                                refund_retry_delay_ms: REFUND_RETRY_DELAY
+                            }
+                        }),
+                        updated_at: new Date()
+                    }
+                });
             }
         }, 60 * 1000);
 
-        logApi.info('Contest Evaluation Service started successfully');
+        if (enabled) {
+            logApi.info('Contest Evaluation Service started successfully');
+        }
     } catch (error) {
         logApi.error(`Contest Evaluation Service failed to start: ${error.message}`);
         throw error;
@@ -881,9 +968,19 @@ async function startContestEvaluationService() {
 async function stopContestEvaluationService() {
     try {
         const result = await prisma.system_settings.update({
-            where: { key: 'contest_evaluation_service_running' },
+            where: { key: 'contest_evaluation_service' },
             data: {
-                value: JSON.stringify(false),
+                value: JSON.stringify({
+                    running: false,
+                    last_stopped: new Date().toISOString(),
+                    status: 'stopped',
+                    config: {
+                        check_interval_ms: 60 * 1000,
+                        auto_cancel_window_ms: AUTO_CANCEL_WINDOW,
+                        max_refund_retries: MAX_REFUND_RETRIES,
+                        refund_retry_delay_ms: REFUND_RETRY_DELAY
+                    }
+                }),
                 updated_at: new Date()
             }
         });
