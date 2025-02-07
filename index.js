@@ -3,6 +3,7 @@
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import express from 'express';
+import fetch from 'node-fetch';
 import { closeDatabase, initDatabase } from './config/database.js'; // SQLite for leaderboard
 import { configureMiddleware } from './config/middleware.js';
 import { closePgDatabase, initPgDatabase } from './config/pg-database.js';
@@ -104,7 +105,7 @@ app.use('/api/users', maintenanceCheck, userRoutes);
 app.use('/api/contests', maintenanceCheck, contestRoutes);
 app.use('/api/trades', maintenanceCheck, tradeRoutes);
 app.use('/api/tokens', maintenanceCheck, tokenRoutes); // v1 tokens
-app.use('/api/v2/tokens', maintenanceCheck, v2TokenRoutes); // v2 tokens
+app.use('/api/v2/tokens', maintenanceCheck, v2TokenRoutes); // v2 tokens with market data
 app.use('/api/token-buckets', maintenanceCheck, tokenBucketRoutes);
 // v3 alpha routes (inaccessible when in maintenance mode)
 app.use('/api/portfolio', maintenanceCheck, portfolioTradesRouter);
@@ -133,6 +134,21 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+});
+
+// Add direct market data route that forwards to v2 tokens
+app.get('/api/marketData/latest', maintenanceCheck, async (req, res) => {
+    try {
+        const response = await fetch(`http://localhost:${port}/api/v2/tokens/marketData/latest`);
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        logApi.error('Failed to forward market data request:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch market data' 
+        });
+    }
 });
 
 // Error handling setup
