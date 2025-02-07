@@ -3,7 +3,7 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import { requireAdmin, requireSuperAdmin } from '../../middleware/authMiddleware.js';
+import { requireAdmin, requireSuperAdmin } from '../../middleware/auth.js';
 import AdminWalletService from '../../services/adminWalletService.js';
 import rateLimit from 'express-rate-limit';
 import { logApi } from '../../utils/logger-suite/logger.js';
@@ -250,5 +250,16 @@ router.get('/total-sol-balance',
         }
     }
 );
+
+// Get contest wallets overview
+router.get('/contest-wallets', async (req, res) => {
+    try {
+        const wallets = await AdminWalletService.getContestWalletsOverview();
+        res.json({ success: true, data: wallets });
+    } catch (error) {
+        logApi.error('Failed to get contest wallets overview:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 export default router; 
