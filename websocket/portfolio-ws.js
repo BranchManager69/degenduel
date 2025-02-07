@@ -5,6 +5,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
+import ReferralService from '../services/referralService.js';
 
 // Store active connections
 const connections = new Map();
@@ -31,11 +32,50 @@ const ADMIN_SUBSCRIPTIONS = {
 export function createWebSocketServer(server) {
   const wss = new WebSocket.Server({ 
     server,
-    path: '/portfolio'
+    path: '/portfolio',
+    // Add these settings
+    perMessageDeflate: false,
+    clientTracking: true,
+    verifyClient: async ({ req }, done) => {
+      try {
+        const url = new URL(req.url, `wss://${req.headers.host}`);
+        const token = url.searchParams.get('token');
+        
+        if (!token) {
+          logApi.warn('WebSocket connection attempt without token');
+          done(false, 401, 'Unauthorized');
+          return;
+        }
+
+        const user = await verifySession(token);
+        if (!user) {
+          logApi.warn('WebSocket connection attempt with invalid token');
+          done(false, 401, 'Unauthorized');
+          return;
+        }
+
+        req.user = user; // Attach user to request
+        done(true);
+      } catch (error) {
+        logApi.error('Error in verifyClient:', error);
+        done(false, 500, 'Internal Server Error');
+      }
+    }
   });
 
-  // Handle new WebSocket connections
-  wss.on('connection', handleConnection);
+  // Add connection logging
+  wss.on('connection', (ws, req) => {
+    logApi.info('WebSocket connection established', {
+      user: req.user?.wallet_address,
+      headers: req.headers
+    });
+    handleConnection(ws, req);
+  });
+
+  // Add error logging
+  wss.on('error', (error) => {
+    logApi.error('WebSocket server error:', error);
+  });
 
   return wss;
 }
@@ -211,6 +251,18 @@ async function handleMessage(ws, data) {
         logApi.info('Superadmin unsubscribed from all monitoring', {
           admin: connection.wallet
         });
+      }
+      break;
+
+    case 'ping':
+      try {
+        ws.send(JSON.stringify({
+          type: 'pong',
+          timestamp: new Date().toISOString(),
+          received: data.timestamp
+        }));
+      } catch (error) {
+        logApi.error('Error sending pong:', error);
       }
       break;
 
@@ -434,6 +486,15 @@ export function startPeriodicTasks() {
       logApi.error('Failed to cleanup old messages:', error);
     }
   }, 2 * 24 * 60 * 60 * 1000); // Run every 2 days
+
+  // Check for expired referrals every hour
+  setInterval(async () => {
+    try {
+      await ReferralService.checkExpiredReferrals();
+    } catch (error) {
+      logApi.error('Error checking expired referrals:', error);
+    }
+  }, 60 * 60 * 1000); // Run every hour
 }
 
 export { broadcastTradeExecution }; 

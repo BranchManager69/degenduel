@@ -2,9 +2,267 @@
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import path from 'path';
+import chalk from 'chalk';
 
 // Define log directory
 const LOG_DIR = path.join(process.cwd(), 'logs');
+
+// Log patterns (matching frontend patterns)
+const LOG_PATTERNS = {
+  USER_QUERY: '👤 User query result:',
+  DECODED_TOKEN: '🔑 Decoded token:',
+  SESSION_TOKEN: '🎫 Session token:',
+  CORS_REQUEST: '🔍 CORS request details:',
+  CHECKING_ORIGIN: '🔎 Checking origin:',
+  ALLOWED_ORIGINS: '📋 Allowed origins:',
+  IS_ORIGIN_ALLOWED: '✓ Is origin allowed?',
+  SETTING_CORS: '📝 Setting CORS headers'
+};
+
+// Add analytics patterns
+const ANALYTICS_PATTERNS = {
+  USER_SESSION: '📊 User session:',
+  USER_INTERACTION: '🔄 User interaction:',
+  PLATFORM_INFO: '💻 Platform info:',
+  PERFORMANCE_METRIC: '⚡ Performance:',
+  FEATURE_USAGE: '🎯 Feature usage:'
+};
+
+// Service-specific colors and icons
+const SERVICE_COLORS = {
+  CONTEST: { color: '#6A0DAD', icon: '🏆' },     // Deep Purple for competition
+  WALLET: { color: '#228B22', icon: '💰' },      // Forest Green for money/security
+  TOKEN_SYNC: { color: '#4169E1', icon: '💫' },  // Royal Blue for market data
+  AUTH: { color: '#FF6B6B', icon: '🔐' },        // Coral Red for security
+  PORTFOLIO: { color: '#20B2AA', icon: '📊' },   // Light Sea Green for analytics
+  ADMIN: { color: '#FFD700', icon: '⚡' },       // Gold for admin operations
+  DEFAULT: { color: '#A9A9A9', icon: '📌' }      // Dark Gray default
+};
+
+// Level-specific colors and formatting
+const LEVEL_STYLES = {
+  error: {
+    badge: chalk.bgRed.white.bold(' ERROR '),
+    color: chalk.red,
+    icon: '❌'
+  },
+  warn: {
+    badge: chalk.bgYellow.black.bold(' WARN '),
+    color: chalk.yellow,
+    icon: '⚠️'
+  },
+  info: {
+    badge: chalk.bgBlue.white.bold(' INFO '),
+    color: chalk.blue,
+    icon: 'ℹ️'
+  },
+  debug: {
+    badge: chalk.bgGray.white(' DEBUG '),
+    color: chalk.gray,
+    icon: '🔧'
+  },
+  http: {
+    badge: chalk.bgGreen.white(' HTTP '),
+    color: chalk.green,
+    icon: '🌐'
+  }
+};
+
+// Helper to format timestamp in EST
+const formatTimestamp = (timestamp) => {
+  const date = timestamp ? new Date(timestamp) : new Date();
+  return date.toLocaleTimeString('en-US', { 
+    timeZone: 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true 
+  });
+};
+
+// Helper to detect special log patterns
+const detectLogPattern = (message) => {
+  for (const [key, pattern] of Object.entries(LOG_PATTERNS)) {
+    if (message.startsWith(pattern)) {
+      return { type: key, showInGroup: key.includes('CORS_') };
+    }
+  }
+  return null;
+};
+
+// Enhanced metadata formatting for analytics
+const formatAnalytics = (metadata) => {
+  const {
+    ip,
+    headers = {},
+    user,
+    performance,
+    ...rest
+  } = metadata;
+
+  return {
+    // User identification (anonymized if needed)
+    user: user ? {
+      id: user.id,
+      wallet: user.wallet_address,
+      role: user.role,
+      // Add session analytics
+      session_id: user.session_id,
+      last_active: user.last_active,
+      total_sessions: user.total_sessions
+    } : null,
+
+    // Device & platform info
+    client: {
+      ip: ip || headers['x-real-ip'] || headers['x-forwarded-for'],
+      user_agent: headers['user-agent'],
+      platform: headers['sec-ch-ua-platform']?.replace(/"/g, ''),
+      mobile: headers['sec-ch-ua-mobile'] === '?1',
+      // Parse user agent for better analytics
+      browser: parseBrowser(headers['user-agent']),
+      os: parseOS(headers['user-agent']),
+      device_type: getDeviceType(headers)
+    },
+
+    // Geolocation (if available)
+    geo: headers['cf-ipcountry'] ? {
+      country: headers['cf-ipcountry'],
+      city: headers['cf-ipcity'],
+      continent: headers['cf-ipcontinent']
+    } : null,
+
+    // Performance metrics
+    performance: performance ? {
+      page_load: performance.page_load,
+      ttfb: performance.ttfb,
+      api_latency: performance.api_latency
+    } : null,
+
+    // Request context
+    request: {
+      path: rest.path,
+      method: rest.method,
+      status: rest.status,
+      duration: rest.duration,
+      query_params: rest.query,
+      referer: headers.referer,
+      origin: headers.origin
+    },
+
+    // Keep any other metadata
+    ...rest
+  };
+};
+
+// Helper to parse browser info from user agent
+const parseBrowser = (ua = '') => {
+  const chrome = /Chrome\/(\d+)/.exec(ua);
+  const firefox = /Firefox\/(\d+)/.exec(ua);
+  const safari = /Safari\/(\d+)/.exec(ua);
+  
+  if (chrome) return { name: 'Chrome', version: chrome[1] };
+  if (firefox) return { name: 'Firefox', version: firefox[1] };
+  if (safari) return { name: 'Safari', version: safari[1] };
+  return { name: 'Other', version: '0' };
+};
+
+// Helper to parse OS info
+const parseOS = (ua = '') => {
+  const windows = /Windows NT (\d+\.\d+)/.exec(ua);
+  const mac = /Mac OS X (\d+[._]\d+)/.exec(ua);
+  const linux = /Linux/.exec(ua);
+  
+  if (windows) return { name: 'Windows', version: windows[1] };
+  if (mac) return { name: 'MacOS', version: mac[1].replace('_', '.') };
+  if (linux) return { name: 'Linux', version: 'N/A' };
+  return { name: 'Other', version: 'N/A' };
+};
+
+// Helper to determine device type
+const getDeviceType = (headers) => {
+  const ua = headers['user-agent'] || '';
+  if (/mobile/i.test(ua)) return 'mobile';
+  if (/tablet/i.test(ua)) return 'tablet';
+  if (/iPad|Android(?!.*Mobile)/i.test(ua)) return 'tablet';
+  return 'desktop';
+};
+
+// Modify the existing formatMetadata function
+const formatMetadata = (metadata, level) => {
+  const { service, ...rest } = metadata;
+  
+  // Check if this is an analytics log
+  if (Object.values(ANALYTICS_PATTERNS).some(pattern => 
+    rest.message?.startsWith(pattern)
+  )) {
+    return formatAnalytics(rest);
+  }
+  
+  // Special formatting for known metadata types
+  if (rest.user) {
+    return {
+      user: {
+        nickname: rest.user.nickname || 'Anonymous',
+        role: rest.user.role || 'user',
+        wallet_address: rest.user.wallet_address
+      }
+    };
+  }
+  
+  if (rest.headers) {
+    return {
+      headers: {
+        'x-real-ip': rest.headers['x-real-ip'],
+        'user-agent': rest.headers['user-agent'],
+        'sec-ch-ua-platform': rest.headers['sec-ch-ua-platform']?.replace(/"/g, '')
+      }
+    };
+  }
+
+  return rest;
+};
+
+// Custom format for consistent, colorized logging
+const customFormat = winston.format.printf(({ level, message, timestamp, service, ...metadata }) => {
+  const ts = chalk.gray(formatTimestamp(timestamp));
+  const levelStyle = LEVEL_STYLES[level] || LEVEL_STYLES.info;
+  const serviceInfo = SERVICE_COLORS[service] || SERVICE_COLORS.DEFAULT;
+  
+  // Add service icon if available
+  const servicePrefix = service ? `${serviceInfo.icon} ` : '';
+  const formattedMessage = servicePrefix + (service ? 
+    chalk.hex(serviceInfo.color)(message) : 
+    levelStyle.color(message));
+  
+  // Format metadata more compactly
+  const meta = Object.keys(metadata).length 
+    ? chalk.gray(JSON.stringify(formatMetadata(metadata, level), null, 0))
+    : '';
+
+  return `${ts} ${levelStyle.badge} ${formattedMessage}${meta ? ' ' + meta : ''}`;
+});
+
+// File format (without colors, but with structured data for frontend)
+const fileFormat = winston.format.printf(({ level, message, timestamp, service, ...metadata }) => {
+  const pattern = detectLogPattern(message);
+  const formattedMeta = formatMetadata(metadata, level);
+  
+  // Create a structured log entry that's easy to parse in the frontend
+  const logEntry = {
+    timestamp: timestamp || new Date().toISOString(),
+    formatted_time: formatTimestamp(timestamp),
+    level: level.toLowerCase(),
+    message,
+    service,
+    service_icon: service ? SERVICE_COLORS[service]?.icon : null,
+    level_icon: LEVEL_STYLES[level]?.icon,
+    pattern_type: pattern?.type,
+    show_in_group: pattern?.showInGroup,
+    details: formattedMeta
+  };
+
+  return JSON.stringify(logEntry);
+});
 
 // Create transports
 const dailyRotateFileTransport = new winston.transports.DailyRotateFile({
@@ -14,7 +272,7 @@ const dailyRotateFileTransport = new winston.transports.DailyRotateFile({
   maxFiles: '14d',
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.json()
+    fileFormat
   )
 });
 
@@ -26,7 +284,19 @@ const errorRotateFileTransport = new winston.transports.DailyRotateFile({
   level: 'error',
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.json()
+    fileFormat
+  )
+});
+
+const debugRotateFileTransport = new winston.transports.DailyRotateFile({
+  filename: path.join(LOG_DIR, 'debug-%DATE%.log'),
+  datePattern: 'YYYY-MM-DD',
+  maxSize: '20m',
+  maxFiles: '3d',
+  level: 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    fileFormat
   )
 });
 
@@ -35,21 +305,103 @@ const logApi = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.json(),
-    winston.format.prettyPrint()
+    winston.format.json()
   ),
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      )
+        winston.format.timestamp(),
+        customFormat
+      ),
+      level: process.env.CONSOLE_LOG_LEVEL || 'info'
     }),
     dailyRotateFileTransport,
-    errorRotateFileTransport
+    errorRotateFileTransport,
+    debugRotateFileTransport
   ]
 });
 
+// Helper method to log with service context
+logApi.forService = (serviceName) => ({
+  error: (msg, meta = {}) => logApi.error(msg, { ...meta, service: serviceName }),
+  warn: (msg, meta = {}) => logApi.warn(msg, { ...meta, service: serviceName }),
+  info: (msg, meta = {}) => logApi.info(msg, { ...meta, service: serviceName }),
+  debug: (msg, meta = {}) => logApi.debug(msg, { ...meta, service: serviceName }),
+  http: (msg, meta = {}) => logApi.http(msg, { ...meta, service: serviceName }),
+  analytics: {
+    trackSession: (user, headers) => {
+      logApi.info(ANALYTICS_PATTERNS.USER_SESSION, {
+        user,
+        headers,
+        timestamp: new Date().toISOString(),
+        service: serviceName
+      });
+    },
+    trackInteraction: (user, action, details, headers) => {
+      logApi.info(ANALYTICS_PATTERNS.USER_INTERACTION, {
+        user,
+        action,
+        details,
+        headers,
+        timestamp: new Date().toISOString(),
+        service: serviceName
+      });
+    },
+    trackPerformance: (metrics, user = null) => {
+      logApi.info(ANALYTICS_PATTERNS.PERFORMANCE_METRIC, {
+        performance: metrics,
+        user,
+        timestamp: new Date().toISOString(),
+        service: serviceName
+      });
+    },
+    trackFeature: (feature, user, details) => {
+      logApi.info(ANALYTICS_PATTERNS.FEATURE_USAGE, {
+        feature,
+        user,
+        details,
+        timestamp: new Date().toISOString(),
+        service: serviceName
+      });
+    }
+  }
+});
+
+// Add analytics helper to logApi
+logApi.analytics = {
+  trackSession: (user, headers) => {
+    logApi.info(ANALYTICS_PATTERNS.USER_SESSION, {
+      user,
+      headers,
+      timestamp: new Date().toISOString()
+    });
+  },
+  trackInteraction: (user, action, details, headers) => {
+    logApi.info(ANALYTICS_PATTERNS.USER_INTERACTION, {
+      user,
+      action,
+      details,
+      headers,
+      timestamp: new Date().toISOString()
+    });
+  },
+  trackPerformance: (metrics, user = null) => {
+    logApi.info(ANALYTICS_PATTERNS.PERFORMANCE_METRIC, {
+      performance: metrics,
+      user,
+      timestamp: new Date().toISOString()
+    });
+  },
+  trackFeature: (feature, user, details) => {
+    logApi.info(ANALYTICS_PATTERNS.FEATURE_USAGE, {
+      feature,
+      user,
+      details,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+
 // Export both default and named
-export { logApi };
+export { logApi, LOG_PATTERNS, ANALYTICS_PATTERNS };
 export default logApi;

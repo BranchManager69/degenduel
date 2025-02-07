@@ -8,12 +8,25 @@ module.exports = {
       script: 'index.js',
       watch: false,
       cwd: '/home/branchmanager/websites/degenduel',
-      interpreter: 'node',
-      node_args: '--import \'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("ts-node/esm", pathToFileURL("./"));\'',
+      node_args: [
+        '--expose-gc',
+        '--max-old-space-size=2048',
+        '--optimize-for-size',
+        '--max-semi-space-size=512',
+        '--max-executable-size=192',
+        '--optimize-for-size',
+        '--gc-interval=100'
+      ],
       env: {
         PORT: process.env.PORT || 3004,
-        DD_API_DEBUG_MODE: process.env.DD_API_DEBUG_MODE || 'false'
-      }
+        DD_API_DEBUG_MODE: 'false',
+        NODE_ENV: 'production',
+        NODE_OPTIONS: '--trace-deprecation'
+      },
+      exp_backoff_restart_delay: 100,
+      max_memory_restart: '2G',
+      kill_timeout: 3000,
+      wait_ready: true
     },
     {
       name: 'prisma-studio',
@@ -26,7 +39,7 @@ module.exports = {
       }
     },
     {
-      name: 'pgadmin4',
+      name: 'pgadmin',
       script: 'docker',
       args: 'start pgadmin4',
       watch: false,
