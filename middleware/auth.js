@@ -5,7 +5,7 @@ import { config } from '../config/config.js';
 import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
-const AUTH_DEBUG_MODE = config.debug_mode;
+const AUTH_DEBUG_MODE = 0 || config.debug_mode;
 
 // For authenticated endpoints
 export const requireAuth = async (req, res, next) => {
@@ -49,7 +49,7 @@ export const requireAuth = async (req, res, next) => {
   }
 };
 
-// For admin/superadmin-only endpoints
+// For admin-or-above endpoints
 export const requireAdmin = (req, res, next) => {
   if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
     if (AUTH_DEBUG_MODE === 'true' || AUTH_DEBUG_MODE === true) { logApi.info('User is not admin or superadmin'); }

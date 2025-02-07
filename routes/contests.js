@@ -9,6 +9,7 @@ import { verifyTransaction } from '../utils/solana-suite/solana-connection.js';
 import { colors } from '../utils/colors.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import prisma from '../config/prisma.js';
+import ReferralService from '../services/referralService.js';
 
 const { Prisma } = pkg;
 
@@ -1486,6 +1487,9 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         }
       });
 
+      // Check referral qualification
+      await ReferralService.checkContestQualification(wallet_address);
+
       logApi.info(`🎉 ${colors.green}Successfully joined contest${colors.reset}`, {
         requestId,
         contestId,
@@ -1859,10 +1863,7 @@ router.post('/:id/start', requireAuth, requireAdmin, async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/ContestNotFound'
  */
-// End a contest and calculate winners  (<< doesn't actually end it; ends are timed. this just sets the status to completed). (ADMIN ONLY)
-//   example: POST https://degenduel.me/api/contests/1/end
-//      body: { "wallet_address": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" }
-//      headers: { "Authorization": "Bearer <JWT>" }
+// End a contest and calculate winners
 router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
   try {
     const result = await prisma.$transaction(async (prisma) => {
@@ -1886,17 +1887,23 @@ router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
       // Update participant rankings
       const participants = contest.contest_participants;
       for (let i = 0; i < participants.length; i++) {
+        const participant = participants[i];
         await prisma.contest_participants.update({
           where: {
             contest_id_wallet_address: {
               contest_id: contest.id,
-              wallet_address: participants[i].wallet_address
+              wallet_address: participant.wallet_address
             }
           },
           data: {
             final_rank: i + 1
           }
         });
+
+        // Check for referral contest bonus if participant placed in top 3
+        if (i < 3) {
+          await ReferralService.awardContestBonus(participant.wallet_address, contest.id);
+        }
       }
 
       // Update contest status
