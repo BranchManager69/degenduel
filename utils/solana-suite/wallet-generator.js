@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import LRUCache from 'lru-cache';
 import bs58 from 'bs58';
+import { logApi } from '../logger-suite/logger.js';
 
 const prisma = new PrismaClient({
     datasources: {
@@ -365,14 +366,46 @@ export class WalletGenerator {
         }
     }
 
-    // Add cache cleanup
-    static cleanupCache() {
-        const maxCacheAge = 1000 * 60 * 60; // 1 hour
-        const now = Date.now();
-        for (const [key, value] of this.walletCache.entries()) {
-            if (value.timestamp < now - maxCacheAge) {
-                this.walletCache.delete(key);
-            }
+    // Enhanced cleanup with proper error handling and state reset
+    static async cleanupCache() {
+        try {
+            logApi.info('Starting wallet generator cleanup...');
+            
+            // Clear the cache
+            this.walletCache.clear();
+            
+            // Update database to mark all wallets as inactive
+            await prisma.seed_wallets.updateMany({
+                where: { is_active: true },
+                data: { 
+                    is_active: false,
+                    updated_at: new Date(),
+                    metadata: {
+                        cleanup_reason: 'service_shutdown',
+                        cleanup_time: new Date().toISOString()
+                    }
+                }
+            });
+
+            logApi.info('Wallet generator cleanup completed successfully');
+        } catch (error) {
+            logApi.error('Error during wallet generator cleanup:', error);
+            throw new WalletGeneratorError(
+                'Cleanup failed',
+                'CLEANUP_FAILED',
+                { originalError: error.message }
+            );
+        }
+    }
+
+    // Add a method to gracefully stop the service
+    static async stop() {
+        try {
+            await this.cleanupCache();
+            // Add any additional cleanup needed
+        } catch (error) {
+            logApi.error('Error stopping wallet generator:', error);
+            throw error;
         }
     }
 

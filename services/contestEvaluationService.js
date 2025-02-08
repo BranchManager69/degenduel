@@ -858,7 +858,7 @@ async function startContestEvaluationService() {
         await prisma.system_settings.upsert({
             where: { key: 'contest_evaluation_service' },
             update: {
-                value: JSON.stringify({
+                value: {
                     enabled,
                     running: enabled,
                     last_started: enabled ? new Date().toISOString() : null,
@@ -869,12 +869,12 @@ async function startContestEvaluationService() {
                         max_refund_retries: MAX_REFUND_RETRIES,
                         refund_retry_delay_ms: REFUND_RETRY_DELAY
                     }
-                }),
+                },
                 updated_at: new Date()
             },
             create: {
                 key: 'contest_evaluation_service',
-                value: JSON.stringify({
+                value: {
                     enabled,
                     running: enabled,
                     last_started: enabled ? new Date().toISOString() : null,
@@ -885,7 +885,7 @@ async function startContestEvaluationService() {
                         max_refund_retries: MAX_REFUND_RETRIES,
                         refund_retry_delay_ms: REFUND_RETRY_DELAY
                     }
-                }),
+                },
                 description: 'Contest evaluation service status and configuration',
                 updated_at: new Date()
             }
@@ -913,7 +913,7 @@ async function startContestEvaluationService() {
                 await prisma.system_settings.update({
                     where: { key: 'contest_evaluation_service' },
                     data: {
-                        value: JSON.stringify({
+                        value: {
                             enabled: true,
                             running: true,
                             last_started: new Date().toISOString(),
@@ -925,7 +925,7 @@ async function startContestEvaluationService() {
                                 max_refund_retries: MAX_REFUND_RETRIES,
                                 refund_retry_delay_ms: REFUND_RETRY_DELAY
                             }
-                        }),
+                        },
                         updated_at: new Date()
                     }
                 });
@@ -935,7 +935,7 @@ async function startContestEvaluationService() {
                 await prisma.system_settings.update({
                     where: { key: 'contest_evaluation_service' },
                     data: {
-                        value: JSON.stringify({
+                        value: {
                             enabled: true,
                             running: true,
                             last_started: new Date().toISOString(),
@@ -949,7 +949,7 @@ async function startContestEvaluationService() {
                                 max_refund_retries: MAX_REFUND_RETRIES,
                                 refund_retry_delay_ms: REFUND_RETRY_DELAY
                             }
-                        }),
+                        },
                         updated_at: new Date()
                     }
                 });
@@ -970,7 +970,7 @@ async function stopContestEvaluationService() {
         const result = await prisma.system_settings.update({
             where: { key: 'contest_evaluation_service' },
             data: {
-                value: JSON.stringify({
+                value: {
                     running: false,
                     last_stopped: new Date().toISOString(),
                     status: 'stopped',
@@ -980,7 +980,7 @@ async function stopContestEvaluationService() {
                         max_refund_retries: MAX_REFUND_RETRIES,
                         refund_retry_delay_ms: REFUND_RETRY_DELAY
                     }
-                }),
+                },
                 updated_at: new Date()
             }
         });

@@ -492,7 +492,7 @@ model system_settings {
   key         String   @unique(map: "unique_system_settings_key")
   value       Json     @default("{}")
   description String?  @db.VarChar
-  updated_at  DateTime @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
   updated_by  String?  @db.VarChar
 
   @@index([key], map: "idx_system_settings_key")
@@ -686,4 +686,17 @@ enum ReferralRewardType {
   signup_bonus    // Reward for referring a new user
   contest_bonus   // Bonus when referred user joins contests
   special_event   // Special promotion rewards
+}
+
+model managed_wallets {
+  id                    String    @id @default(uuid())
+  public_key            String    @unique @db.VarChar(44)
+  encrypted_private_key String    @db.Text
+  label                String?   @db.VarChar(255)
+  status               String    @default("active") @db.VarChar(20)
+  metadata             Json?     @default("{}")
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@map("managed_wallets")
 }

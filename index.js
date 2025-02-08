@@ -20,9 +20,11 @@ import tokenSyncRoutes from './routes/admin/token-sync.js';
 import vanityWalletRoutes from './routes/admin/vanity-wallet-management.js';
 import walletManagementRoutes from './routes/admin/wallet-management.js';
 import faucetManagementRoutes from './routes/admin/faucet-management.js';
-import { createWebSocketServer, startPeriodicTasks } from './websocket/portfolio-ws.js';
 import { createAnalyticsWebSocket } from './websocket/analytics-ws.js';
 import { memoryMonitoring } from './scripts/monitor-memory.js';
+import SolanaServiceManager from './utils/solana-suite/solana-service-manager.js';
+import PortfolioWebSocketServer from './websocket/portfolio-ws.js';
+import { startPeriodicTasks } from './websocket/portfolio-ws.js';
 
 dotenv.config();
 
@@ -159,6 +161,8 @@ async function startServer() {
   try {
       console.log('\n');
       console.log(`\t   🤺  DegenDuel API  \t\t|  INITIALIZING...`);
+      
+      // Initialize databases first
       await Promise.all([
           initDatabase().catch(err => {
               logApi.error('Aborting DegenDuel API; failed to connect to SQLite:', err);
@@ -173,81 +177,48 @@ async function startServer() {
       // Initialize memory monitoring
       memoryMonitoring.initMemoryMonitoring();
 
-      // Start token sync service
-      try {
-        await startSync();
-        logApi.info('💫  Token Sync Service started');
-      } catch (error) {
-        logApi.error('Failed to start token sync service:', error);
-        // Continue server startup even if sync service fails
-      }
-
-      // Start the wallet rake service
-      try {
-        startWalletRakeService();
-        logApi.info('💰  Wallet Rake Service started');
-      } catch (error) {
-        logApi.error('Failed to start wallet rake service:', error);
-      }
-
-      // Start the contest evaluation service
-      try {
-        await contestEvaluationService.startContestEvaluationService();
-        logApi.info('🏆  Contest Evaluation Service started');
-      } catch (error) {
-        logApi.error('Failed to start contest evaluation service:', error);
-      }
-
       // Main API server listening only on localhost
       const apiServer = app.listen(port, '0.0.0.0', () => {
           logApi.info(`⚔️  DegenDuel API  ========  Server READY on port ${port}!`);
       });
 
       // Initialize WebSocket server using the HTTP server
-      global.wss = createAnalyticsWebSocket(apiServer);
-
-      // Log WebSocket server initialization
-      logApi.info('Analytics WebSocket server started', {
-          path: '/analytics'
-      });
+      const portfolioWS = new PortfolioWebSocketServer(apiServer);
+      logApi.info('Portfolio WebSocket server initialized');
 
       apiServer.on('error', (error) => {
           logApi.error('API Server error:', error);
           process.exit(1);
       });
 
-      /*
-      // WebSocket server for logs on port 3334
-      const logsServer = http.createServer(); // Create a separate HTTP server for logs
-      const wss = new WebSocketServer({ server: logsServer }); // Attach WebSocket server to logs server
+      // Optional services - don't block server startup if they fail
+      try {
+          await SolanaServiceManager.initialize();
+          logApi.info('⚡  Solana Service Manager initialized');
+      } catch (error) {
+          logApi.warn('Failed to initialize Solana services (optional):', error);
+      }
 
-      wss.on('connection', (ws) => {
-          console.log('WebSocket connection established for logs.');
+      try {
+          await startSync();
+          logApi.info('💫  Token Sync Service started');
+      } catch (error) {
+          logApi.warn('Failed to start token sync service (optional):', error);
+      }
 
-          // Stream log file to connected clients
-          const stream = fs.createReadStream('app.log', { encoding: 'utf8' });
-          stream.on('data', (chunk) => {
-              ws.send(chunk);
-          });
+      try {
+          startWalletRakeService();
+          logApi.info('💰  Wallet Rake Service started');
+      } catch (error) {
+          logApi.warn('Failed to start wallet rake service (optional):', error);
+      }
 
-          ws.on('close', () => {
-              console.log('WebSocket connection closed.');
-              stream.destroy();
-          });
-
-          ws.on('error', (error) => console.error('WebSocket error:', error));
-
-      });
-
-      logsServer.listen(logsPort, '0.0.0.0', () => {
-          console.log(`    📜  Logs WebSocket server ready on port ${logsPort}`);
-      });
-
-      logsServer.on('error', (error) => {
-          console.error('Logs Server error:', error);
-          process.exit(1);
-      });
-      */
+      try {
+          await contestEvaluationService.startContestEvaluationService();
+          logApi.info('🏆  Contest Evaluation Service started');
+      } catch (error) {
+          logApi.warn('Failed to start contest evaluation service (optional):', error);
+      }
 
   } catch (error) {
       logApi.error(`⛔  Failed to start server:`, error);

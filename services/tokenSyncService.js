@@ -13,6 +13,12 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from '../config/config.js';
 import { TOKEN_VALIDATION } from '../config/constants.js';
 
+// Service state
+let initialSyncComplete = false;
+let priceUpdateInterval = null;
+let metadataUpdateInterval = null;
+let lastKnownTokens = new Map();
+
 // Validation utilities
 function validateUrl(url) {
   if (!url) return null;
@@ -102,10 +108,6 @@ const METADATA_UPDATE_INTERVAL = 5 * 60 * 1000; // every 5 minutes
 // helpful DegenDuel API endpoints:
 const DD_SERV_API = config.api_urls.dd_serv;
 const DATA_API = config.api_urls.data;
-
-let lastKnownTokens = new Map();
-let priceUpdateInterval;
-let metadataUpdateInterval;
 
 // Sync retries and delays
 const MAX_RETRIES = 3;
@@ -393,205 +395,135 @@ async function updateMetadata(fullData) {
   });
 }
 
-async function startSync() {
-  try {
-    // Check if service should be enabled
-    const setting = await prisma.system_settings.findUnique({
-      where: { key: 'token_sync_service' }
-    });
-    
-    const enabled = setting?.value?.enabled ?? true; // Default to true for this critical service
-    
-    // Update system settings to show service is starting
-    await prisma.system_settings.upsert({
-      where: { key: 'token_sync_service' },
-      update: {
-        value: JSON.stringify({
-          enabled,
-          running: enabled,
-          last_started: enabled ? new Date().toISOString() : null,
-          status: enabled ? 'starting' : 'disabled',
-          stats: syncStats,
-          config: {
-            price_update_interval_ms: PRICE_UPDATE_INTERVAL,
-            metadata_update_interval_ms: METADATA_UPDATE_INTERVAL,
-            max_retries: MAX_RETRIES,
-            retry_delay_ms: RETRY_DELAY,
-            initial_sync_timeout_ms: INITIAL_SYNC_TIMEOUT,
-            axios_timeout_ms: AXIOS_TIMEOUT
-          }
-        }),
-        updated_at: new Date()
-      },
-      create: {
-        key: 'token_sync_service',
-        value: JSON.stringify({
-          enabled,
-          running: enabled,
-          last_started: enabled ? new Date().toISOString() : null,
-          status: enabled ? 'starting' : 'disabled',
-          stats: syncStats,
-          config: {
-            price_update_interval_ms: PRICE_UPDATE_INTERVAL,
-            metadata_update_interval_ms: METADATA_UPDATE_INTERVAL,
-            max_retries: MAX_RETRIES,
-            retry_delay_ms: RETRY_DELAY,
-            initial_sync_timeout_ms: INITIAL_SYNC_TIMEOUT,
-            axios_timeout_ms: AXIOS_TIMEOUT
-          }
-        }),
-        description: 'Token sync service status and configuration',
-        updated_at: new Date()
-      }
-    });
-
-    if (!enabled) {
-      logApi.info('Token Sync Service is disabled');
-      return;
+function startPriceSync() {
+    if (priceUpdateInterval) {
+        clearInterval(priceUpdateInterval);
     }
-
-    // Start intervals immediately - don't wait for initial sync
+    
     priceUpdateInterval = setInterval(async () => {
-      try {
-        // Check if service is still enabled
-        const currentSetting = await prisma.system_settings.findUnique({
-          where: { key: 'token_sync_service' }
-        });
-        
-        if (!currentSetting?.value?.enabled) {
-          return;
+        try {
+            await updatePrices();
+            logApi.debug('Price sync completed successfully');
+        } catch (error) {
+            logApi.error('Error in price update interval:', error);
         }
+    }, 30000); // 30 seconds
+}
 
-        if (initialSyncComplete) {
-          await updatePrices();
-          // Update system settings with successful price update
-          await prisma.system_settings.update({
-            where: { key: 'token_sync_service' },
-            data: {
-              value: JSON.stringify({
-                enabled: true,
-                running: true,
-                last_started: new Date().toISOString(),
-                status: 'active',
-                last_price_update: new Date().toISOString(),
-                stats: syncStats,
-                config: {
-                  price_update_interval_ms: PRICE_UPDATE_INTERVAL,
-                  metadata_update_interval_ms: METADATA_UPDATE_INTERVAL,
-                  max_retries: MAX_RETRIES,
-                  retry_delay_ms: RETRY_DELAY,
-                  initial_sync_timeout_ms: INITIAL_SYNC_TIMEOUT,
-                  axios_timeout_ms: AXIOS_TIMEOUT
-                }
-              }),
-              updated_at: new Date()
-            }
-          });
-        }
-      } catch (error) {
-        logApi.error('Error in price update interval:', error);
-        // Update system settings with error state
-        await prisma.system_settings.update({
-          where: { key: 'token_sync_service' },
-          data: {
-            value: JSON.stringify({
-              enabled: true,
-              running: true,
-              last_started: new Date().toISOString(),
-              status: 'error',
-              last_error: error.message,
-              last_error_time: new Date().toISOString(),
-              stats: syncStats,
-              config: {
-                price_update_interval_ms: PRICE_UPDATE_INTERVAL,
-                metadata_update_interval_ms: METADATA_UPDATE_INTERVAL,
-                max_retries: MAX_RETRIES,
-                retry_delay_ms: RETRY_DELAY,
-                initial_sync_timeout_ms: INITIAL_SYNC_TIMEOUT,
-                axios_timeout_ms: AXIOS_TIMEOUT
-              }
-            }),
-            updated_at: new Date()
-          }
-        });
-      }
-    }, PRICE_UPDATE_INTERVAL);
-
-    metadataUpdateInterval = setInterval(async () => {
-      try {
-        // Check if service is still enabled
-        const currentSetting = await prisma.system_settings.findUnique({
-          where: { key: 'token_sync_service' }
-        });
-        
-        if (!currentSetting?.value?.enabled) {
-          return;
-        }
-
-        if (initialSyncComplete) {
-          logApi.info('Starting scheduled metadata update...');
-          const fullData = await fetchFullDetails();
-          await updateMetadata(fullData);
-          // Update system settings with successful metadata update
-          await prisma.system_settings.update({
-            where: { key: 'token_sync_service' },
-            data: {
-              value: JSON.stringify({
-                enabled: true,
-                running: true,
-                last_started: new Date().toISOString(),
-                status: 'active',
-                last_metadata_update: new Date().toISOString(),
-                stats: syncStats,
-                config: {
-                  price_update_interval_ms: PRICE_UPDATE_INTERVAL,
-                  metadata_update_interval_ms: METADATA_UPDATE_INTERVAL,
-                  max_retries: MAX_RETRIES,
-                  retry_delay_ms: RETRY_DELAY,
-                  initial_sync_timeout_ms: INITIAL_SYNC_TIMEOUT,
-                  axios_timeout_ms: AXIOS_TIMEOUT
-                }
-              }),
-              updated_at: new Date()
-            }
-          });
-        }
-      } catch (error) {
-        logApi.error('Error in metadata sync interval:', error);
-        // Update system settings with error state
-        await prisma.system_settings.update({
-          where: { key: 'token_sync_service' },
-          data: {
-            value: JSON.stringify({
-              enabled: true,
-              running: true,
-              last_started: new Date().toISOString(),
-              status: 'error',
-              last_error: error.message,
-              last_error_time: new Date().toISOString(),
-              stats: syncStats,
-              config: {
-                price_update_interval_ms: PRICE_UPDATE_INTERVAL,
-                metadata_update_interval_ms: METADATA_UPDATE_INTERVAL,
-                max_retries: MAX_RETRIES,
-                retry_delay_ms: RETRY_DELAY,
-                initial_sync_timeout_ms: INITIAL_SYNC_TIMEOUT,
-                axios_timeout_ms: AXIOS_TIMEOUT
-              }
-            }),
-            updated_at: new Date()
-          }
-        });
-      }
-    }, METADATA_UPDATE_INTERVAL);
-
-    if (enabled) {
-      logApi.info('Token Sync Service started successfully');
+function startMetadataSync() {
+    if (metadataUpdateInterval) {
+        clearInterval(metadataUpdateInterval);
     }
-  } catch (error) {
-    logApi.error('Failed to start Token Sync Service:', error);
-    throw error;
-  }
+    
+    metadataUpdateInterval = setInterval(async () => {
+        try {
+            const fullData = await fetchFullDetails();
+            await updateMetadata(fullData);
+            logApi.debug('Metadata sync completed successfully');
+        } catch (error) {
+            logApi.error('Error in metadata sync interval:', error);
+        }
+    }, 300000); // 5 minutes
+}
+
+export async function startSync() {
+    try {
+        logApi.info('Starting Token Sync Service...');
+        
+        // Initialize service state
+        const now = new Date();
+        const serviceState = {
+            enabled: true,
+            running: true,
+            last_started: now.toISOString(),
+            status: 'starting',
+            stats: {
+                totalProcessed: 0,
+                validationFailures: {
+                    urls: 0,
+                    descriptions: 0,
+                    symbols: 0,
+                    names: 0,
+                    addresses: 0
+                },
+                metadataCompleteness: {
+                    hasImage: 0,
+                    hasDescription: 0,
+                    hasTwitter: 0,
+                    hasTelegram: 0,
+                    hasDiscord: 0,
+                    hasWebsite: 0
+                },
+                performance: {
+                    lastSyncDuration: 0,
+                    averageSyncDuration: 0,
+                    syncCount: 0
+                },
+                history: {
+                    lastSync: null,
+                    lastSuccessfulSync: null,
+                    failedSyncs: 0,
+                    consecutiveFailures: 0
+                },
+                updates: {
+                    created: 0,
+                    updated: 0,
+                    failed: 0,
+                    unchanged: 0,
+                    totalSince: {
+                        created: 0,
+                        updated: 0,
+                        failed: 0
+                    }
+                },
+                successRate: 0
+            },
+            config: {
+                price_update_interval_ms: 30000,
+                metadata_update_interval_ms: 300000,
+                max_retries: 3,
+                retry_delay_ms: 15000,
+                initial_sync_timeout_ms: 30000,
+                axios_timeout_ms: 30000
+            }
+        };
+
+        // Update service settings with proper error handling
+        try {
+            await prisma.system_settings.upsert({
+                where: {
+                    key: 'token_sync_service'
+                },
+                update: {
+                    value: serviceState,
+                    updated_at: now,
+                    updated_by: 'system'
+                },
+                create: {
+                    key: 'token_sync_service',
+                    value: serviceState,
+                    updated_at: now,
+                    updated_by: 'system',
+                    description: 'Token synchronization service configuration and state'
+                }
+            });
+            logApi.info('Token Sync Service state initialized successfully');
+        } catch (dbError) {
+            logApi.error('Failed to update token sync service state:', dbError);
+            throw new Error('Database operation failed: ' + dbError.message);
+        }
+
+        // Start the sync intervals
+        startPriceSync();
+        startMetadataSync();
+        
+        logApi.info('Token Sync Service started successfully');
+        
+        return true;
+    } catch (error) {
+        logApi.error('Failed to start Token Sync Service:', error);
+        throw error;
+    }
 }
 
 function stopSync() {
@@ -609,7 +541,7 @@ function stopSync() {
     prisma.system_settings.update({
       where: { key: 'token_sync_service' },
       data: {
-        value: JSON.stringify({
+        value: {
           running: false,
           last_stopped: new Date().toISOString(),
           status: 'stopped',
@@ -622,7 +554,7 @@ function stopSync() {
             initial_sync_timeout_ms: INITIAL_SYNC_TIMEOUT,
             axios_timeout_ms: AXIOS_TIMEOUT
           }
-        }),
+        },
         updated_at: new Date()
       }
     }).catch(error => {
