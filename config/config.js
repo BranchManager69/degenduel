@@ -68,5 +68,26 @@ const config = {
   },
 };
 
+export const validateSolanaConfig = () => {
+    const required = {
+        WALLET_ENCRYPTION_KEY: process.env.WALLET_ENCRYPTION_KEY,
+        QUICKNODE_MAINNET_HTTP: process.env.QUICKNODE_MAINNET_HTTP,
+        QUICKNODE_MAINNET_WSS: process.env.QUICKNODE_MAINNET_WSS,
+    };
+
+    const missing = Object.entries(required)
+        .filter(([key, value]) => !value)
+        .map(([key]) => key);
+
+    if (missing.length > 0) {
+        throw new Error(`Missing required Solana configuration: ${missing.join(', ')}`);
+    }
+
+    // Validate WALLET_ENCRYPTION_KEY format
+    if (!/^[a-f0-9]{64}$/i.test(process.env.WALLET_ENCRYPTION_KEY)) {
+        throw new Error('WALLET_ENCRYPTION_KEY must be a 64-character hex string');
+    }
+};
+
 export { config };
 export default config;

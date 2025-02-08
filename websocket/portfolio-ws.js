@@ -1,14 +1,279 @@
 // /websocket/portfolio-ws.js
 
-import WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
 import ReferralService from '../services/referralService.js';
 
-// Store active connections
-const connections = new Map();
+class PortfolioWebSocketServer {
+    static instance = null;
+    #wss = null;
+    #clients = new Map(); // Map<ws, { userId, role }>
+    
+    constructor(server) {
+        if (PortfolioWebSocketServer.instance) {
+            return PortfolioWebSocketServer.instance;
+        }
+        this.#initializeWSS(server);
+        this.#startPeriodicTasks();
+        PortfolioWebSocketServer.instance = this;
+    }
+
+    #initializeWSS(server) {
+        this.#wss = new WebSocketServer({ 
+            server,
+            path: '/api/v2/ws/portfolio',
+            verifyClient: this.#verifyClient,
+            handleProtocols: (protocols, request) => {
+                // Get the token from either protocols or headers
+                const token = protocols[0] || request.headers['sec-websocket-protocol'];
+                if (!token) return false;
+                
+                // Store the token in the request for later use
+                request.token = token;
+                return token;
+            }
+        });
+
+        this.#wss.on('connection', this.#handleConnection.bind(this));
+        
+        // Heartbeat to keep connections alive
+        setInterval(() => {
+            this.#wss.clients.forEach((ws) => {
+                if (ws.isAlive === false) {
+                    this.#clients.delete(ws);
+                    return ws.terminate();
+                }
+                ws.isAlive = false;
+                ws.ping();
+            });
+        }, 30000);
+
+        logApi.info('Portfolio WebSocket server initialized');
+    }
+
+    #verifyClient = async (info, callback) => {
+        try {
+            const token = info.req.headers['sec-websocket-protocol'] || 
+                         info.req.headers.protocol?.[0] ||
+                         info.req.token;
+                         
+            if (!token) {
+                return callback(false, 401, 'Unauthorized');
+            }
+
+            const decoded = jwt.verify(token, config.jwt.secret);
+            const user = await prisma.users.findUnique({
+                where: { wallet_address: decoded.wallet_address }
+            });
+
+            if (!user) {
+                return callback(false, 403, 'Forbidden');
+            }
+
+            info.req.user = user;
+            callback(true);
+        } catch (error) {
+            logApi.error('WebSocket authentication error:', error);
+            callback(false, 401, 'Unauthorized');
+        }
+    }
+
+    #handleConnection(ws, req) {
+        try {
+            logApi.info('New portfolio WebSocket connection attempt');
+            ws.isAlive = true;
+            this.#clients.set(ws, {
+                userId: req.user.id,
+                wallet: req.user.wallet_address,
+                role: req.user.role
+            });
+            logApi.info('Portfolio client added to tracking map');
+
+            // Handle pong messages for connection keepalive
+            ws.on('pong', () => {
+                ws.isAlive = true;
+            });
+
+            // Handle client messages
+            ws.on('message', (data) => {
+                try {
+                    const message = JSON.parse(data);
+                    logApi.debug('Received portfolio ws message:', message);
+                    
+                    if (message.type === 'ping') {
+                        ws.send(JSON.stringify({
+                            type: 'pong',
+                            timestamp: new Date().toISOString()
+                        }));
+                    } else if (message.type === 'PORTFOLIO_UPDATE_REQUEST') {
+                        // Echo back the portfolio data as a PORTFOLIO_UPDATED message
+                        this.broadcastPortfolioUpdate(message.data, req.user.wallet_address);
+                        logApi.info('Portfolio update request processed:', message.data);
+                    }
+                } catch (error) {
+                    logApi.error('Error handling portfolio ws message:', error);
+                }
+            });
+
+            // Handle disconnection
+            ws.on('close', () => {
+                logApi.info('Portfolio WebSocket connection closed');
+                this.#clients.delete(ws);
+            });
+
+            // Send initial connection success
+            const initialMessage = {
+                type: 'CONNECTED',
+                timestamp: new Date().toISOString()
+            };
+            logApi.info('Sending initial portfolio connection message:', initialMessage);
+            ws.send(JSON.stringify(initialMessage));
+            logApi.info('Portfolio WebSocket connection established successfully');
+        } catch (error) {
+            logApi.error('Error in handleConnection:', error);
+            ws.terminate();
+        }
+    }
+
+    // Private broadcast method
+    #broadcast(message, filter = null) {
+        try {
+            logApi.info('Broadcasting portfolio message:', {
+                type: message.type,
+                data: message.data,
+                timestamp: message.timestamp
+            });
+            const payload = JSON.stringify(message);
+            let sentCount = 0;
+            let clientStates = [];
+            
+            this.#wss.clients.forEach((client) => {
+                const clientInfo = this.#clients.get(client);
+                if (!clientInfo) return;
+
+                // Apply filter if provided
+                if (filter && !filter(clientInfo)) return;
+
+                clientStates.push(client.readyState);
+                if (client.readyState === client.OPEN) {
+                    client.send(payload);
+                    sentCount++;
+                }
+            });
+            
+            logApi.info(`Portfolio broadcast complete. Client states:`, clientStates, `Sent to ${sentCount} clients`);
+        } catch (error) {
+            logApi.error('Error broadcasting portfolio message:', error);
+        }
+    }
+
+    // Public methods for broadcasting events
+    broadcastPortfolioUpdate(portfolioData, targetWallet = null) {
+        logApi.info('Portfolio update event:', portfolioData);
+        this.#broadcast({
+            type: 'PORTFOLIO_UPDATED',
+            data: portfolioData,
+            timestamp: new Date().toISOString()
+        }, targetWallet ? (client) => client.wallet === targetWallet : null);
+    }
+
+    broadcastTradeUpdate(tradeData, targetWallet = null) {
+        this.#broadcast({
+            type: 'TRADE_EXECUTED',
+            data: tradeData,
+            timestamp: new Date().toISOString()
+        }, targetWallet ? (client) => client.wallet === targetWallet : null);
+    }
+
+    broadcastPriceUpdate(priceData) {
+        this.#broadcast({
+            type: 'PRICE_UPDATED',
+            data: priceData,
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    broadcastError(error, targetWallet = null) {
+        this.#broadcast({
+            type: 'ERROR',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        }, targetWallet ? (client) => client.wallet === targetWallet : null);
+    }
+
+    // Get active connections count
+    getConnectionsCount() {
+        return this.#clients.size;
+    }
+
+    // Cleanup method
+    cleanup() {
+        this.#wss?.clients.forEach((ws) => {
+            ws.terminate();
+        });
+        this.#clients.clear();
+        this.#wss?.close();
+        PortfolioWebSocketServer.instance = null;
+    }
+
+    #startPeriodicTasks() {
+        // Update portfolio values periodically (every 15 seconds)
+        setInterval(async () => {
+            for (const [ws, client] of this.#clients) {
+                try {
+                    // Get latest portfolio data
+                    const portfolioData = await prisma.contest_portfolios.findMany({
+                        where: { wallet_address: client.wallet },
+                        include: {
+                            tokens: {
+                                select: {
+                                    symbol: true,
+                                    name: true
+                                }
+                            }
+                        }
+                    });
+
+                    // Broadcast update if we have data
+                    if (portfolioData.length > 0) {
+                        this.broadcastPortfolioUpdate(portfolioData, client.wallet);
+                    }
+                } catch (error) {
+                    logApi.error('Error in portfolio periodic update:', error);
+                }
+            }
+        }, 15000);
+
+        // Add cleanup job for old messages
+        setInterval(async () => {
+            try {
+                await prisma.websocket_messages.deleteMany({
+                    where: {
+                        timestamp: {
+                            lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Delete messages older than 7 days
+                        }
+                    }
+                });
+            } catch (error) {
+                logApi.error('Failed to cleanup old messages:', error);
+            }
+        }, 2 * 24 * 60 * 60 * 1000); // Run every 2 days
+
+        // Check for expired referrals every hour
+        setInterval(async () => {
+            try {
+                await ReferralService.checkExpiredReferrals();
+            } catch (error) {
+                logApi.error('Error checking expired referrals:', error);
+            }
+        }, 60 * 60 * 1000); // Run every hour
+    }
+}
+
+export default PortfolioWebSocketServer;
 
 // Message types
 const MESSAGE_TYPES = {
@@ -27,58 +292,6 @@ const ADMIN_SUBSCRIPTIONS = {
   CONTEST: 'contest',     // Monitor specific contest
   USER: 'user'           // Monitor specific user
 };
-
-// Create WebSocket server function (to be called with HTTP server)
-export function createWebSocketServer(server) {
-  const wss = new WebSocket.Server({ 
-    server,
-    path: '/portfolio',
-    // Add these settings
-    perMessageDeflate: false,
-    clientTracking: true,
-    verifyClient: async ({ req }, done) => {
-      try {
-        const url = new URL(req.url, `wss://${req.headers.host}`);
-        const token = url.searchParams.get('token');
-        
-        if (!token) {
-          logApi.warn('WebSocket connection attempt without token');
-          done(false, 401, 'Unauthorized');
-          return;
-        }
-
-        const user = await verifySession(token);
-        if (!user) {
-          logApi.warn('WebSocket connection attempt with invalid token');
-          done(false, 401, 'Unauthorized');
-          return;
-        }
-
-        req.user = user; // Attach user to request
-        done(true);
-      } catch (error) {
-        logApi.error('Error in verifyClient:', error);
-        done(false, 500, 'Internal Server Error');
-      }
-    }
-  });
-
-  // Add connection logging
-  wss.on('connection', (ws, req) => {
-    logApi.info('WebSocket connection established', {
-      user: req.user?.wallet_address,
-      headers: req.headers
-    });
-    handleConnection(ws, req);
-  });
-
-  // Add error logging
-  wss.on('error', (error) => {
-    logApi.error('WebSocket server error:', error);
-  });
-
-  return wss;
-}
 
 // Verify session token and get user
 async function verifySession(token) {
@@ -495,6 +708,4 @@ export function startPeriodicTasks() {
       logApi.error('Error checking expired referrals:', error);
     }
   }, 60 * 60 * 1000); // Run every hour
-}
-
-export { broadcastTradeExecution }; 
+} 

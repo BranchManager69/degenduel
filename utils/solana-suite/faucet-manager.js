@@ -1,12 +1,14 @@
 // /utils/solana-suite/faucet-manager.js
 
 import { PrismaClient } from '@prisma/client';
-import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { WalletGenerator } from './wallet-generator.js';
 import { decryptPrivateKey } from './solana-wallet.js';
 import bs58 from 'bs58';
 import { fileURLToPath } from 'url';
 import LRUCache from 'lru-cache';
+import { logApi } from '../logger-suite/logger.js';
+import SolanaServiceManager from './solana-service-manager.js';
 
 const prisma = new PrismaClient({
     datasources: {
@@ -15,15 +17,6 @@ const prisma = new PrismaClient({
         }
     }
 });
-
-const connection = new Connection(
-    process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com',
-    {
-        commitment: 'confirmed',
-        confirmTransactionInitialTimeout: 120000, // 2 minutes
-        wsEndpoint: process.env.QUICKNODE_MAINNET_WSS
-    }
-);
 
 // Default configuration
 const DEFAULT_CONFIG = {
@@ -57,6 +50,10 @@ export class FaucetManager {
         ttl: 15 * 60 * 1000
     });
 
+    // Add state tracking
+    static isInitialized = false;
+    static recoveryInterval = null;
+
     static setConfig(newConfig) {
         FaucetManager.config = { ...DEFAULT_CONFIG, ...newConfig };
     }
@@ -64,6 +61,7 @@ export class FaucetManager {
     // Calculate total amount needed including fees
     static async calculateTotalAmount(toAddress, baseAmount) {
         try {
+            const connection = SolanaServiceManager.getConnection();
             // Check if destination account exists
             const accountInfo = await connection.getAccountInfo(new PublicKey(toAddress));
             const isNewAccount = !accountInfo || accountInfo.lamports === 0;
@@ -95,6 +93,7 @@ export class FaucetManager {
             throw new SolanaWalletError('Failed to get faucet wallet', 'WALLET_NOT_FOUND');
         }
 
+        const connection = SolanaServiceManager.getConnection();
         const balance = await connection.getBalance(new PublicKey(faucetWallet.publicKey));
         const balanceSOL = balance / LAMPORTS_PER_SOL;
 
@@ -127,6 +126,7 @@ export class FaucetManager {
     static async confirmTransaction(signature, commitment = 'confirmed') {
         let retries = 0;
         const maxRetries = this.config.maxRetries;
+        const connection = SolanaServiceManager.getConnection();
         
         while (retries < maxRetries) {
             try {
@@ -174,6 +174,7 @@ export class FaucetManager {
         }
 
         try {
+            const connection = SolanaServiceManager.getConnection();
             // Calculate total amount needed including fees
             const { baseAmount, baseFee, rentExemption, totalAmount, isNewAccount } = 
                 await this.calculateTotalAmount(toAddress, amount);
@@ -273,9 +274,24 @@ export class FaucetManager {
         const existingFaucet = await prisma.seed_wallets.findFirst({
             where: { purpose: 'Seed wallet for test-faucet' }
         });
+
         if (existingFaucet) {
-            return WalletGenerator.getWallet('test-faucet');
+            const wallet = await WalletGenerator.getWallet('test-faucet');
+            if (!wallet) {
+                throw new Error('Failed to get test faucet wallet from cache/database');
+            }
+            try {
+                // Decrypt the private key
+                const decryptedKey = WalletGenerator.decryptPrivateKey(wallet.secretKey);
+                return {
+                    ...wallet,
+                    secretKey: decryptedKey
+                };
+            } catch (error) {
+                throw new Error(`Failed to decrypt test faucet wallet: ${error.message}`);
+            }
         }
+
         console.log('\n=== IMPORTANT: Test Faucet Setup Required ===');
         console.log('Generating new test faucet wallet...');
         const faucetWallet = await WalletGenerator.generateWallet('test-faucet');
@@ -290,6 +306,7 @@ export class FaucetManager {
         if (!faucetWallet) {
             throw new Error('Failed to get test faucet wallet');
         }
+        const connection = SolanaServiceManager.getConnection();
         const balance = await connection.getBalance(new PublicKey(faucetWallet.publicKey));
         const balanceSOL = balance / LAMPORTS_PER_SOL;
         console.log('\n=== Test Faucet Balance ===');
@@ -820,6 +837,90 @@ export class FaucetManager {
                 'DASHBOARD_DATA_FAILED',
                 { originalError: error.message }
             );
+        }
+    }
+
+    static async initialize() {
+        if (this.isInitialized) return;
+
+        try {
+            // Check initial faucet status
+            await this.getFaucetStatus();
+            
+            // Start automatic recovery monitoring
+            this.startRecoveryMonitoring();
+            
+            this.isInitialized = true;
+            logApi.info('Faucet Manager initialized successfully');
+        } catch (error) {
+            logApi.error('Failed to initialize Faucet Manager:', error);
+            throw error;
+        }
+    }
+
+    static startRecoveryMonitoring() {
+        // Clear any existing interval
+        if (this.recoveryInterval) {
+            clearInterval(this.recoveryInterval);
+        }
+
+        // Check every hour for potential recovery opportunities
+        this.recoveryInterval = setInterval(async () => {
+            try {
+                const faucetWallet = await this.getFaucetWallet();
+                if (!faucetWallet) {
+                    logApi.warn('Recovery monitoring: No faucet wallet found, skipping check');
+                    return;
+                }
+
+                const connection = SolanaServiceManager.getConnection();
+                const balance = await connection.getBalance(new PublicKey(faucetWallet.publicKey));
+                const balanceSOL = balance / LAMPORTS_PER_SOL;
+
+                if (balanceSOL < this.config.minFaucetBalance * 2) {
+                    logApi.info('Faucet balance low, attempting recovery...');
+                    await this.recoverFromTestWallets();
+                }
+            } catch (error) {
+                // Log but don't throw - we want the monitoring to continue
+                logApi.warn('Error in faucet recovery monitoring (will retry next interval):', error);
+            }
+        }, 60 * 60 * 1000); // Every hour
+    }
+
+    static async cleanup() {
+        try {
+            logApi.info('Starting Faucet Manager cleanup...');
+
+            // Clear recovery monitoring interval
+            if (this.recoveryInterval) {
+                clearInterval(this.recoveryInterval);
+                this.recoveryInterval = null;
+            }
+
+            // Clear cache
+            this.walletCache.clear();
+
+            this.isInitialized = false;
+            logApi.info('Faucet Manager cleanup completed successfully');
+        } catch (error) {
+            logApi.error('Error during Faucet Manager cleanup:', error);
+            throw new SolanaWalletError(
+                'Faucet cleanup failed',
+                'FAUCET_CLEANUP_FAILED',
+                { originalError: error.message }
+            );
+        }
+    }
+
+    static async stop() {
+        try {
+            logApi.info('Stopping Faucet Manager...');
+            await this.cleanup();
+            logApi.info('Faucet Manager stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Faucet Manager:', error);
+            throw error;
         }
     }
 }
