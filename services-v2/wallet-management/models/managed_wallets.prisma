@@ -1,0 +1,13 @@
+model managed_wallets {
+    id                    String      @id @default(uuid())
+    public_key           String      @unique
+    encrypted_private_key String
+    label                String?
+    status               String      @default("active")
+    metadata             Json
+    created_at           DateTime    @default(now())
+    updated_at           DateTime    @updatedAt
+
+    @@index([status])
+    @@map("managed_wallets")
+} 
