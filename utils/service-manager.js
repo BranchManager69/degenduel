@@ -1,3 +1,5 @@
+// utils/service-manager.js
+
 import prisma from '../config/prisma.js';
 import { logApi } from './logger-suite/logger.js';
 
@@ -32,12 +34,12 @@ class ServiceManager {
             await prisma.system_settings.upsert({
                 where: { key: serviceName },
                 update: {
-                    value: JSON.stringify(value),
+                    value,
                     updated_at: new Date()
                 },
                 create: {
                     key: serviceName,
-                    value: JSON.stringify(value),
+                    value,
                     description: `${serviceName} status and configuration`,
                     updated_at: new Date()
                 }
