@@ -8,12 +8,10 @@ module.exports = {
       script: 'index.js',
       watch: false,
       cwd: '/home/branchmanager/websites/degenduel',
+      wait_ready: true,
       node_args: [
-        '--expose-gc',
-        '--max-old-space-size=2048',
-        '--optimize-for-size',
-        '--max-semi-space-size=512',
-        '--max-executable-size=192',
+        '--no-warnings',
+        '--experimental-specifier-resolution=node',
         '--optimize-for-size',
         '--gc-interval=100'
       ],
@@ -21,12 +19,11 @@ module.exports = {
         PORT: process.env.PORT || 3004,
         DD_API_DEBUG_MODE: 'false',
         NODE_ENV: 'production',
-        NODE_OPTIONS: '--trace-deprecation'
+        NODE_OPTIONS: '--require ts-node/register'
       },
       exp_backoff_restart_delay: 100,
       max_memory_restart: '2G',
-      kill_timeout: 3000,
-      wait_ready: true
+      kill_timeout: 3000
     },
     {
       name: 'prisma-studio',

@@ -12,6 +12,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from '../config/config.js';
 import { TOKEN_VALIDATION } from '../config/constants.js';
+import { generateServiceAuthHeader } from '../config/service-auth.js';
 
 // Service state
 let initialSyncComplete = false;
@@ -188,7 +189,10 @@ async function fetchTokenPrices(addresses) {
     const response = await axios.post(`${DATA_API}/prices/bulk`, { 
       addresses 
     }, { 
-      timeout: AXIOS_TIMEOUT 
+      timeout: AXIOS_TIMEOUT,
+      headers: {
+        ...generateServiceAuthHeader()
+      }
     });
     logApi.info(`Received price data for ${response.data.data.length} tokens`);
     return response.data.data;
@@ -199,7 +203,10 @@ async function fetchSimpleList() {
   logApi.info('Fetching simple token list...');
   return fetchWithRetry(async () => {
     const response = await axios.get(`${DD_SERV_API}/list?detail=simple`, {
-      timeout: AXIOS_TIMEOUT
+      timeout: AXIOS_TIMEOUT,
+      headers: {
+        ...generateServiceAuthHeader()
+      }
     });
     logApi.info(`Received simple list with ${response.data.length} tokens`);
     return response.data;
@@ -210,7 +217,10 @@ async function fetchFullDetails() {
   logApi.info('Fetching full token details...');
   return fetchWithRetry(async () => {
     const response = await axios.get(`${DD_SERV_API}/list?detail=full`, {
-      timeout: AXIOS_TIMEOUT
+      timeout: AXIOS_TIMEOUT,
+      headers: {
+        ...generateServiceAuthHeader()
+      }
     });
     logApi.info(`Received full details for ${response.data.length} tokens`);
     return response.data;
@@ -426,7 +436,7 @@ function startMetadataSync() {
     }, 300000); // 5 minutes
 }
 
-export async function startSync() {
+async function startSync() {
     try {
         logApi.info('Starting Token Sync Service...');
         
@@ -568,5 +578,9 @@ function stopSync() {
   }
 }
 
-// Export both the service functions and the stats
-export { startSync, stopSync, syncStats }; 
+// Export the service functions and stats
+export default {
+    startSync,
+    stopSync,
+    syncStats
+}; 

@@ -1,6 +1,6 @@
 import express from 'express';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
-import { syncStats } from '../../services/tokenSyncService.js';
+import tokenSyncService from '../../services/tokenSyncService.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 
 const router = express.Router();
@@ -20,15 +20,15 @@ function formatDuration(ms) {
 // Helper function to safely get stats
 function getSafeStats() {
   return {
-    totalProcessed: syncStats?.totalProcessed || 0,
-    validationFailures: syncStats?.validationFailures || {
+    totalProcessed: tokenSyncService.syncStats?.totalProcessed || 0,
+    validationFailures: tokenSyncService.syncStats?.validationFailures || {
       urls: 0,
       descriptions: 0,
       symbols: 0,
       names: 0,
       addresses: 0
     },
-    metadataCompleteness: syncStats?.metadataCompleteness || {
+    metadataCompleteness: tokenSyncService.syncStats?.metadataCompleteness || {
       hasImage: 0,
       hasDescription: 0,
       hasTwitter: 0,
@@ -36,18 +36,18 @@ function getSafeStats() {
       hasDiscord: 0,
       hasWebsite: 0
     },
-    performance: syncStats?.performance || {
+    performance: tokenSyncService.syncStats?.performance || {
       lastSyncDuration: 0,
       averageSyncDuration: 0,
       syncCount: 0
     },
-    history: syncStats?.history || {
+    history: tokenSyncService.syncStats?.history || {
       lastSync: null,
       lastSuccessfulSync: null,
       failedSyncs: 0,
       consecutiveFailures: 0
     },
-    updates: syncStats?.updates || {
+    updates: tokenSyncService.syncStats?.updates || {
       created: 0,
       updated: 0,
       failed: 0,
@@ -58,7 +58,7 @@ function getSafeStats() {
         failed: 0
       }
     },
-    successRate: syncStats?.successRate || 0
+    successRate: tokenSyncService.syncStats?.successRate || 0
   };
 }
 
