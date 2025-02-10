@@ -1,6 +1,14 @@
+// controllers/adminContestController.js
+
 import { PrismaClient } from '@prisma/client';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { processContestRefunds } from '../services/contestEvaluationService.js';
+
+/* 
+ * 
+ * This MIGHT be quite old...
+ * 
+ */
 
 const prisma = new PrismaClient();
 
