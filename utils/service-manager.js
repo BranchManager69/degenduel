@@ -119,7 +119,8 @@ export const SERVICE_NAMES = {
     VANITY_WALLET: 'vanity_wallet_service',
     REFERRAL: 'referral_service',
     ADMIN_WALLET: 'admin_wallet_service',
-    CONTEST_WALLET: 'contest_wallet_service'
+    CONTEST_WALLET: 'contest_wallet_service',
+    DD_SERV: 'dd_serv_service'
 };
 
 export default ServiceManager; 
