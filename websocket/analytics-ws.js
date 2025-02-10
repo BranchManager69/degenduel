@@ -1,176 +1,205 @@
 import WebSocket from 'ws';
 import { logApi } from '../utils/logger-suite/logger.js';
+import prisma from '../config/prisma.js';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
 
-const analyticsLogger = logApi.forService('ANALYTICS');
+const WHALE_THRESHOLD = 100; // 100 SOL threshold for whale status
+const ACTIVE_SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+const CLEANUP_INTERVAL = 60 * 1000; // 1 minute
 
-// Store admin connections
-const adminConnections = new Map();
+// Verify token helper
+const verifyUserToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, config.jwt.secret);
+    return decoded.wallet_address ? decoded : null;
+  } catch (error) {
+    logApi.error('Token verification failed:', error);
+    return null;
+  }
+};
 
-export function createAnalyticsWebSocket(server) {
-    const wss = new WebSocket.Server({ 
-        server,
-        path: '/analytics',
-        verifyClient: async ({ req }, done) => {
-            try {
-                // Get token from query string
-                const url = new URL(req.url, `wss://${req.headers.host}`);
-                const token = url.searchParams.get('token');
-                
-                if (!token) {
-                    analyticsLogger.warn('WebSocket connection attempt without token');
-                    done(false, 401, 'Unauthorized');
-                    return;
-                }
-
-                // Verify JWT and check for superadmin role
-                const decoded = jwt.verify(token, config.jwt.secret);
-                if (decoded.role !== 'superadmin') {
-                    analyticsLogger.warn('Non-superadmin attempted to connect to analytics websocket', {
-                        wallet: decoded.wallet_address,
-                        role: decoded.role
-                    });
-                    done(false, 403, 'Forbidden');
-                    return;
-                }
-
-                req.user = decoded;
-                done(true);
-            } catch (error) {
-                analyticsLogger.error('WebSocket auth error:', error);
-                done(false, 401, 'Invalid token');
-            }
-        }
+class AnalyticsWebSocketServer {
+  constructor(server) {
+    this.wss = new WebSocket.Server({ 
+      server,
+      path: '/analytics'
     });
 
-    wss.on('connection', (ws, req) => {
-        const user = req.user;
-        analyticsLogger.info('Admin connected to analytics websocket', {
-            wallet: user.wallet_address
-        });
+    this.adminConnections = new Set();
+    this.userSessions = new Map();
+    this.zoneActivity = new Map();
 
-        // Store connection with user info
-        adminConnections.set(ws, {
-            wallet: user.wallet_address,
-            connected_at: new Date(),
-            last_ping: Date.now()
-        });
+    this.setupWebSocketServer();
+    this.startCleanupInterval();
+    this.setupPageViewTracking();
+  }
 
-        // Send initial connection success
-        ws.send(JSON.stringify({
-            type: 'connection_established',
-            timestamp: new Date().toISOString()
-        }));
+  setupWebSocketServer() {
+    this.wss.on('connection', async (ws, req) => {
+      try {
+        // Verify admin token
+        const token = new URL(req.url, 'http://localhost').searchParams.get('token');
+        if (!token) {
+          ws.close(4001, 'No token provided');
+          return;
+        }
 
-        // Handle incoming messages (like ping/pong)
-        ws.on('message', (message) => {
-            try {
-                const data = JSON.parse(message);
-                if (data.type === 'ping') {
-                    const connection = adminConnections.get(ws);
-                    if (connection) {
-                        connection.last_ping = Date.now();
-                        ws.send(JSON.stringify({
-                            type: 'pong',
-                            timestamp: new Date().toISOString()
-                        }));
-                    }
-                }
-            } catch (error) {
-                analyticsLogger.error('Error handling websocket message:', error);
-            }
-        });
+        const decoded = verifyUserToken(token);
+        if (decoded.role !== 'superadmin') {
+          ws.close(4003, 'Insufficient permissions');
+          return;
+        }
 
-        // Handle disconnection
+        // Add to admin connections
+        this.adminConnections.add(ws);
+        logApi.info('[Analytics WS] Admin connected', { admin: decoded.wallet_address });
+
+        // Send initial state
+        this.broadcastActivityUpdate(ws);
+
         ws.on('close', () => {
-            analyticsLogger.info('Admin disconnected from analytics websocket', {
-                wallet: user.wallet_address
-            });
-            adminConnections.delete(ws);
+          this.adminConnections.delete(ws);
+          logApi.info('[Analytics WS] Admin disconnected', { admin: decoded.wallet_address });
         });
 
-        // Handle errors
         ws.on('error', (error) => {
-            analyticsLogger.error('WebSocket error:', {
-                error,
-                wallet: user.wallet_address
-            });
+          logApi.error('[Analytics WS] WebSocket error:', error);
         });
+
+      } catch (error) {
+        logApi.error('[Analytics WS] Connection error:', error);
+        ws.close(4000, 'Connection error');
+      }
     });
+  }
 
-    // Broadcast analytics updates to all connected admins
+  startCleanupInterval() {
     setInterval(() => {
-        const deadConnections = [];
-        const now = Date.now();
-
-        // Clean up dead connections
-        for (const [ws, connection] of adminConnections) {
-            if (now - connection.last_ping > 30000) { // 30 seconds timeout
-                deadConnections.push(ws);
-            }
+      const now = Date.now();
+      for (const [wallet, session] of this.userSessions) {
+        if (now - session.last_active > ACTIVE_SESSION_TIMEOUT) {
+          this.userSessions.delete(wallet);
+          this.broadcastActivityUpdate();
         }
+      }
+    }, CLEANUP_INTERVAL);
+  }
 
-        deadConnections.forEach(ws => {
-            ws.terminate();
-            adminConnections.delete(ws);
+  setupPageViewTracking() {
+    // Middleware to track page views and user activity
+    return async (req, res, next) => {
+      try {
+        if (!req.user) return next();
+
+        const wallet = req.user.wallet_address;
+        const path = req.path;
+        const zone = this.getZoneFromPath(path);
+
+        if (!zone) return next();
+
+        // Get user's SOL balance
+        const balance = await this.getUserBalance(wallet);
+        const isWhale = balance >= WHALE_THRESHOLD;
+
+        // Get or create session
+        const existingSession = this.userSessions.get(wallet);
+        const previousZone = existingSession?.current_zone;
+
+        // Update session
+        this.userSessions.set(wallet, {
+          wallet,
+          nickname: req.user.nickname || 'Anonymous',
+          avatar_url: req.user.avatar_url,
+          current_zone: zone,
+          previous_zone: previousZone,
+          wallet_balance: balance,
+          last_action: this.getActionFromPath(path),
+          last_active: Date.now(),
+          session_duration: existingSession ? 
+            Date.now() - existingSession.session_start : 
+            0,
+          session_start: existingSession?.session_start || Date.now(),
+          is_whale: isWhale
         });
 
-        // Only broadcast if we have active connections
-        if (adminConnections.size > 0) {
-            broadcastAnalyticsUpdate();
-        }
-    }, 1000); // Check every second
+        // Track zone activity
+        const zoneActivity = this.zoneActivity.get(zone) || { users: new Set() };
+        zoneActivity.users.add(wallet);
+        this.zoneActivity.set(zone, zoneActivity);
 
-    return wss;
-}
+        // Broadcast update
+        this.broadcastActivityUpdate();
 
-// Broadcast analytics update to all connected admins
-export async function broadcastAnalyticsUpdate() {
+      } catch (error) {
+        logApi.error('[Analytics WS] Error tracking activity:', error);
+      }
+
+      next();
+    };
+  }
+
+  async getUserBalance(wallet) {
     try {
-        // Get active sessions in last 15 minutes
-        const activeSessions = await prisma.system_settings.findMany({
-            where: {
-                key: 'user_session',
-                updated_at: {
-                    gte: new Date(Date.now() - 15 * 60 * 1000)
-                }
-            }
-        });
-
-        const update = {
-            type: 'analytics_update',
-            timestamp: new Date().toISOString(),
-            data: {
-                active_users: activeSessions.length,
-                sessions: activeSessions.map(session => {
-                    const data = JSON.parse(session.value);
-                    return {
-                        wallet: data.user.wallet_address,
-                        current_page: data.last_page,
-                        last_action: data.last_action
-                    };
-                })
-            }
-        };
-
-        // Broadcast to all connected admins
-        for (const [ws, connection] of adminConnections) {
-            try {
-                ws.send(JSON.stringify(update));
-            } catch (error) {
-                analyticsLogger.error('Failed to send update to admin:', {
-                    error,
-                    wallet: connection.wallet
-                });
-            }
-        }
+      const balance = await prisma.user_balance.findUnique({
+        where: { wallet_address: wallet },
+        select: { balance: true }
+      });
+      return Number(balance?.balance || 0);
     } catch (error) {
-        analyticsLogger.error('Failed to broadcast analytics update:', error);
+      logApi.error('[Analytics WS] Error fetching balance:', error);
+      return 0;
     }
+  }
+
+  getZoneFromPath(path) {
+    if (path.includes('/trade')) return 'TRADING';
+    if (path.includes('/contests')) return 'CONTESTS';
+    if (path.includes('/portfolio')) return 'PORTFOLIO';
+    if (path.includes('/tokens')) return 'TOKENS';
+    if (path.includes('/profile')) return 'PROFILE';
+    if (path.includes('/leaderboard')) return 'LEADERBOARD';
+    return null;
+  }
+
+  getActionFromPath(path) {
+    if (path.includes('/trade')) return 'Trading';
+    if (path.includes('/contests/join')) return 'Joining Contest';
+    if (path.includes('/contests')) return 'Browsing Contests';
+    if (path.includes('/portfolio')) return 'Checking Portfolio';
+    if (path.includes('/tokens')) return 'Exploring Tokens';
+    if (path.includes('/profile')) return 'Viewing Profile';
+    if (path.includes('/leaderboard')) return 'Checking Leaderboard';
+    return 'Browsing';
+  }
+
+  broadcastActivityUpdate(targetWs = null) {
+    const activityData = {
+      type: 'user_activity_update',
+      users: Array.from(this.userSessions.values()),
+      timestamp: new Date().toISOString()
+    };
+
+    const message = JSON.stringify(activityData);
+
+    if (targetWs) {
+      // Send to specific admin
+      if (targetWs.readyState === WebSocket.OPEN) {
+        targetWs.send(message);
+      }
+    } else {
+      // Broadcast to all admins
+      this.adminConnections.forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(message);
+        }
+      });
+    }
+  }
 }
 
-// Export for use in other parts of the app
-export function getConnectedAdmins() {
-    return Array.from(adminConnections.values());
-} 
+export const createAnalyticsWebSocket = (server) => {
+  return new AnalyticsWebSocketServer(server);
+};
+
+export default AnalyticsWebSocketServer; 

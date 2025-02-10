@@ -21,28 +21,49 @@ router.get('/code', requireAuth, async (req, res) => {
     try {
         const user = await prisma.users.findUnique({
             where: { wallet_address: req.user.wallet_address },
-            select: { referral_code: true, username: true }
+            select: { referral_code: true, username: true, nickname: true }
         });
 
         if (user.referral_code) {
             return res.json({ referral_code: user.referral_code });
         }
 
-        // Generate code based on username or random string
-        let referralCode = user.username ? 
-            user.username.slice(0, 16).toUpperCase() : // Use username if available
-            generateReferralCode(8); // Otherwise generate random code
+        // Generate base code from username or nickname
+        let baseCode = '';
+        if (user.username) {
+            baseCode = user.username.slice(0, 15).toUpperCase();
+        } else if (user.nickname) {
+            baseCode = user.nickname.slice(0, 15).toUpperCase();
+        }
 
-        // Ensure uniqueness
+        // If no username/nickname, generate random code
+        if (!baseCode) {
+            baseCode = generateReferralCode(8);
+        }
+
+        // Ensure uniqueness by appending random characters if needed
+        let referralCode = baseCode;
         let isUnique = false;
+        let attempts = 0;
+        
         while (!isUnique) {
             const existing = await prisma.users.findUnique({
                 where: { referral_code: referralCode }
             });
+            
             if (!existing) {
                 isUnique = true;
             } else {
-                referralCode = generateReferralCode(8);
+                // If collision, append 4 random characters to the base code
+                const suffix = generateReferralCode(4);
+                // Trim baseCode if needed to keep total length reasonable
+                referralCode = `${baseCode.slice(0, 15)}${suffix}`;
+                attempts++;
+                
+                // If we've tried too many times, fall back to fully random code
+                if (attempts >= 10) {
+                    referralCode = generateReferralCode(16);
+                }
             }
         }
 
@@ -117,11 +138,23 @@ router.post('/apply', async (req, res) => {
     try {
         // Find referrer
         const referrer = await prisma.users.findUnique({
-            where: { referral_code: referral_code }
+            where: { referral_code: referral_code.toUpperCase() },
+            select: {
+                wallet_address: true,
+                is_banned: true
+            }
         });
 
         if (!referrer) {
             return res.status(404).json({ error: 'Invalid referral code' });
+        }
+
+        if (referrer.is_banned) {
+            return res.status(400).json({ error: 'This referral code is no longer valid' });
+        }
+
+        if (referrer.wallet_address === wallet_address) {
+            return res.status(400).json({ error: 'You cannot refer yourself' });
         }
 
         // Check if user already has a referral
@@ -133,27 +166,36 @@ router.post('/apply', async (req, res) => {
             return res.status(400).json({ error: 'User already has a referral' });
         }
 
-        // Create referral record
-        await prisma.users.update({
-            where: { wallet_address },
-            data: {
-                referred_by_code: referral_code
-            }
+        // Create referral record in a transaction to ensure consistency
+        await prisma.$transaction(async (tx) => {
+            await tx.users.update({
+                where: { wallet_address },
+                data: {
+                    referred_by_code: referral_code.toUpperCase()
+                }
+            });
+
+            await tx.referrals.create({
+                data: {
+                    referrer_id: referrer.wallet_address,
+                    referred_id: wallet_address,
+                    referral_code: referral_code.toUpperCase(),
+                    status: 'pending'
+                }
+            });
         });
 
-        await prisma.referrals.create({
-            data: {
-                referrer_id: referrer.wallet_address,
-                referred_id: wallet_address,
-                referral_code,
-                status: 'pending'
-            }
+        res.json({ 
+            success: true, 
+            message: 'Referral code applied successfully',
+            referrer_wallet: referrer.wallet_address
         });
-
-        res.json({ success: true, message: 'Referral code applied successfully' });
     } catch (error) {
         console.error('Error in /referrals/apply:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
