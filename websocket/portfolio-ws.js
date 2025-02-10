@@ -22,18 +22,30 @@ class PortfolioWebSocketServer {
     }
 
     #initializeWSS(server) {
-        this.#wss = new WebSocketServer({ 
-            server,
-            path: '/api/v2/ws/portfolio',
-            verifyClient: this.#verifyClient,
-            handleProtocols: (protocols, request) => {
-                // Get the token from either protocols or headers
-                const token = protocols[0] || request.headers['sec-websocket-protocol'];
-                if (!token) return false;
-                
-                // Store the token in the request for later use
-                request.token = token;
-                return token;
+        if (!server) {
+            throw new Error('HTTP server instance is required for WebSocket initialization');
+        }
+
+        // Create WebSocket server with noServer: true
+        this.#wss = new WebSocketServer({
+            noServer: true
+        });
+
+        // Handle upgrade requests
+        server.on('upgrade', (request, socket, head) => {
+            if (request.url === '/api/v2/ws/portfolio') {
+                // Verify client before upgrade
+                this.#verifyClient({ req: request }, (verified) => {
+                    if (!verified) {
+                        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+                        socket.destroy();
+                        return;
+                    }
+
+                    this.#wss.handleUpgrade(request, socket, head, (ws) => {
+                        this.#wss.emit('connection', ws, request);
+                    });
+                });
             }
         });
 
@@ -51,7 +63,7 @@ class PortfolioWebSocketServer {
             });
         }, 30000);
 
-        logApi.info('Portfolio WebSocket server initialized');
+        logApi.info('Portfolio WebSocket server initialized successfully');
     }
 
     #verifyClient = async (info, callback) => {
