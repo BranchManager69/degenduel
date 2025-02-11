@@ -430,14 +430,30 @@ router.get('/:wallet/history', async (req, res) => {
   const offset = parseInt(req.query.offset) || 0;
 
   try {
+    // First check if user exists
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: wallet },
+      select: { id: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+        data: []
+      });
+    }
+
+    // Get contest history
     const history = await prisma.contest_participants.findMany({
       where: {
         wallet_address: wallet
       },
       select: {
-        initial_balance: true,
-        current_balance: true,
+        initial_dxd_points: true,
+        current_dxd_points: true,
         rank: true,
+        contest_id: true,
         contests: {
           select: {
             id: true,
@@ -454,35 +470,54 @@ router.get('/:wallet/history', async (req, res) => {
       skip: offset
     });
 
-    const formattedHistory = history.map(entry => {
-      // Calculate portfolio return
-      const initial = parseFloat(entry.initial_balance?.toString() || "0");
-      const current = parseFloat(entry.current_balance?.toString() || "0");
-      const portfolioReturn = initial > 0 ? ((current - initial) / initial * 100).toFixed(2) : "0.00";
+    // If no history found, return empty array with success status
+    if (!history || history.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        message: 'No contest history found'
+      });
+    }
 
-      return {
-        contest_id: entry.contests.id,
-        contest_name: entry.contests.name,
-        start_time: entry.contests.start_time,
-        end_time: entry.contests.end_time,
-        portfolio_return: `${portfolioReturn}%`,
-        rank: entry.rank || "-"
-      };
+    // Format the history entries
+    const formattedHistory = history
+      .filter(entry => entry && entry.contests) // Filter out any null entries or entries without contests
+      .map(entry => {
+        const initial = parseFloat(entry.initial_dxd_points?.toString() || "0");
+        const current = parseFloat(entry.current_dxd_points?.toString() || "0");
+        const portfolioReturn = initial > 0 ? ((current - initial) / initial * 100).toFixed(2) : "0.00";
+
+        return {
+          contest_id: entry.contest_id,
+          contest_name: entry.contests.name,
+          start_time: entry.contests.start_time,
+          end_time: entry.contests.end_time,
+          portfolio_return: `${portfolioReturn}%`,
+          rank: entry.rank || "-"
+        };
+      });
+
+    // Return formatted history with success status
+    return res.json({
+      success: true,
+      data: formattedHistory,
+      message: 'Contest history retrieved successfully'
     });
 
-    res.json(formattedHistory);
   } catch (error) {
-    logApi.error('Failed to fetch contest history', {
-      error: {
-        name: error.name,
-        message: error.message,
-        code: error?.code
-      },
+    logApi.error('Error in contest history endpoint', {
+      error: error.message,
       wallet_address: wallet,
-      path: req.path,
-      method: req.method
+      stack: error.stack
     });
-    res.status(500).json({ error: 'Failed to fetch contest history' });
+
+    // Even on error, return a properly structured response
+    return res.json({
+      success: false,
+      data: [],
+      error: 'Failed to fetch contest history',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred while fetching contest history'
+    });
   }
 });
 

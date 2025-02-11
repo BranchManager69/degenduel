@@ -9,9 +9,13 @@ import { VALIDATION } from '../config/constants.js';
 import { validateNicknameRules, generateDefaultUsername } from '../utils/username-generator/username-generator.js';
 import rateLimit from 'express-rate-limit';
 import { validateNickname } from '../utils/nickname-validator.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+const upload = multer();
 
 const { NAME } = VALIDATION;
 
@@ -1206,6 +1210,103 @@ router.get('/:wallet/stats', async (req, res) => {
   } catch (error) {
     logApi.error('Failed to fetch user stats:', error);
     res.status(500).json({ error: 'Failed to fetch user stats' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/{wallet}/profile-image:
+ *   post:
+ *     summary: Update user's profile image
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Profile image updated successfully
+ *       400:
+ *         description: Invalid request or file type
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/:wallet/profile-image', requireAuth, upload.single('image'), async (req, res) => {
+  try {
+    // Verify user exists and requester has permission
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: req.params.wallet }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Ensure user can only update their own profile image unless they're admin
+    if (req.user.wallet_address !== req.params.wallet && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      return res.status(403).json({ error: 'Unauthorized to update this user\'s profile image' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
+    }
+
+    // Get file extension and check if it's allowed
+    const fileExt = req.file.originalname.split('.').pop().toLowerCase();
+    const allowedExts = ['jpg', 'jpeg', 'png', 'gif'];
+    if (!allowedExts.includes(fileExt)) {
+      return res.status(400).json({ error: 'Invalid file type. Allowed types: jpg, jpeg, png, gif' });
+    }
+
+    // Generate unique filename
+    const filename = `${user.wallet_address}_${Date.now()}.${fileExt}`;
+    const uploadPath = path.join(process.env.UPLOAD_DIR || 'uploads', 'profile-images', filename);
+
+    // Ensure upload directory exists
+    await fs.promises.mkdir(path.dirname(uploadPath), { recursive: true });
+
+    // Write file
+    await fs.promises.writeFile(uploadPath, req.file.buffer);
+
+    // Generate public URL
+    const publicUrl = `${process.env.API_URL}/uploads/profile-images/${filename}`;
+
+    // Update user record
+    await prisma.users.update({
+      where: { wallet_address: req.params.wallet },
+      data: {
+        profile_image_url: publicUrl,
+        profile_image_updated_at: new Date(),
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile image updated successfully',
+      data: {
+        profile_image_url: publicUrl
+      }
+    });
+
+  } catch (error) {
+    logApi.error('Failed to update profile image:', error);
+    res.status(500).json({ error: 'Failed to update profile image' });
   }
 });
 
