@@ -44,6 +44,7 @@
     "@prisma/client": "^6.3.1",
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.98.0",
+    "@virtuals-protocol/game": "^0.1.9",
     "axios": "^1.7.9",
     "boxen": "^8.0.1",
     "bs58": "^6.0.0",
@@ -85,7 +86,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "prettier": "^3.4.2",
-    "prisma": "^6.1.0",
+    "prisma": "^6.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },

@@ -1,11 +1,11 @@
 import { Connection } from '@solana/web3.js';
 import os from 'os';
-import { logApi } from '../logger-suite/logger.js';
 import { validateSolanaConfig } from '../../config/config.js';
 import { WalletGenerator } from './wallet-generator.js';
 import { VanityPool } from './vanity-pool.js';
 import { FaucetManager } from './faucet-manager.js';
-import ServiceManager, { SERVICE_NAMES } from '../service-manager.js';
+import { logApi } from '../logger-suite/logger.js';
+import ServiceManager, { SERVICE_NAMES } from '../service-suite/service-manager.js';
 
 class SolanaServiceManager {
     static instance = null;

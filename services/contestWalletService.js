@@ -1,9 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import { Keypair } from '@solana/web3.js';
-import { logApi } from '../utils/logger-suite/logger.js';
-import VanityWalletService from './vanityWalletService.js';
-import ServiceManager, { SERVICE_NAMES } from '../utils/service-manager.js';
 import crypto from 'crypto';
+import VanityWalletService from './vanityWalletService.js';
+import { logApi } from '../utils/logger-suite/logger.js';
+import ServiceManager, { SERVICE_NAMES } from '../utils/service-suite/service-manager.js';
 
 const prisma = new PrismaClient();
 

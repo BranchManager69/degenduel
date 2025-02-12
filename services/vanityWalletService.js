@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import { logApi } from '../utils/logger-suite/logger.js';
-import ServiceManager, { SERVICE_NAMES } from '../utils/service-manager.js';
 import crypto from 'crypto';
+import { logApi } from '../utils/logger-suite/logger.js';
+import ServiceManager, { SERVICE_NAMES } from '../utils/service-suite/service-manager.js';
 
 const prisma = new PrismaClient();
 
