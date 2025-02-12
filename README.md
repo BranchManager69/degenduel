@@ -475,3 +475,40 @@ Required environment variables:
 PORT=3003                    # API server port
 DD_API_DEBUG_MODE=false     # Enable/disable debug logging
 ```
+
+# DegenDuel API
+
+## Development Setup
+
+### Quick Start
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Copy `.env.example` to `.env` and configure
+4. Start the development server: `npm run dev`
+
+### Services
+
+- Production API: [https://degenduel.me](https://degenduel.me)
+- Development API: [https://dev.degenduel.me](https://dev.degenduel.me)
+
+### Local Development
+
+- Production API: [http://localhost:3004](http://localhost:3004)
+- Development API: [http://localhost:3005](http://localhost:3005)
+
+### Environment Variables
+
+```env
+# Development
+VITE_API_URL=http://localhost:3005
+VITE_WS_URL=ws://localhost:3005
+NODE_ENV=development
+PORT=3005
+
+# Production
+VITE_API_URL=http://localhost:3004
+VITE_WS_URL=ws://localhost:3004
+NODE_ENV=production
+PORT=3004
+```
