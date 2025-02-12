@@ -33,7 +33,8 @@ dotenv.config();
 
 const app = express();
 
-const port = process.env.API_PORT || 3003; // DegenDuel API port (main)
+// Use standard PORT environment variable
+const port = process.env.PORT || 3004; // Default to production port if not specified
 ////const logsPort = process.env.LOGS_PORT || 3334; // Logs streaming port (stub)
 
 // Create HTTP server instance

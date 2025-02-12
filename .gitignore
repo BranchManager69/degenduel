@@ -1,15 +1,18 @@
 # Node.js dependencies
 node_modules/
 
-# Logs and debug files
-logs/
-*/logs/
+# Backups
+backups/
 
 # Database-related files
 data/
 db/
 *.dbml
 *.sql
+
+# Logs and debug files
+logs/
+*/logs/
 
 # Temporary files
 *.swp
