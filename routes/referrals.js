@@ -1,11 +1,13 @@
 // /routes/referrals.js
 
-import express from 'express';
+import express, { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth.js';
 import crypto from 'crypto';
+import { logApi } from '../utils/logger-suite/logger.js';
+import { referralClickLimit, referralConversionLimit } from '../middleware/rateLimit.js';
 
-const router = express.Router();
+const router = Router();
 const prisma = new PrismaClient();
 
 // Generate a random referral code
@@ -196,6 +198,218 @@ router.post('/apply', async (req, res) => {
             error: 'Internal server error',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
+    }
+});
+
+// Track initial referral click
+router.post('/analytics/click', referralClickLimit, async (req, res) => {
+    const {
+        referralCode,
+        source,
+        landingPage,
+        utmParams,
+        device,
+        browser,
+        sessionId
+    } = req.body;
+
+    try {
+        // Get IP and user agent
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        const userAgent = req.headers['user-agent'];
+
+        // Find referrer
+        const referrer = await prisma.users.findUnique({
+            where: { referral_code: referralCode.toUpperCase() },
+            select: { wallet_address: true, is_banned: true }
+        });
+
+        if (!referrer || referrer.is_banned) {
+            return res.status(404).json({ error: 'Invalid referral code' });
+        }
+
+        // Create click record
+        const click = await prisma.referral_clicks.create({
+            data: {
+                referral_code: referralCode.toUpperCase(),
+                referrer_id: referrer.wallet_address,
+                source,
+                landing_page: landingPage,
+                utm_source: utmParams?.source,
+                utm_medium: utmParams?.medium,
+                utm_campaign: utmParams?.campaign,
+                device,
+                browser,
+                ip_address: ip,
+                user_agent: userAgent,
+                session_id: sessionId
+            }
+        });
+
+        logApi.info('Referral click tracked', {
+            referralCode: referralCode.toUpperCase(),
+            clickId: click.id,
+            source,
+            device
+        });
+
+        res.json({ success: true, clickId: click.id });
+    } catch (error) {
+        logApi.error('Error tracking referral click:', {
+            error: error instanceof Error ? error.message : error,
+            referralCode,
+            source
+        });
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Track referral conversion
+router.post('/analytics/conversion', referralConversionLimit, requireAuth, async (req, res) => {
+    const { referralCode, sessionId } = req.body;
+    const walletAddress = req.user.wallet_address;
+
+    try {
+        // Start a transaction
+        await prisma.$transaction(async (tx) => {
+            // Update click record
+            await tx.referral_clicks.updateMany({
+                where: { 
+                    referral_code: referralCode.toUpperCase(),
+                    session_id: sessionId,
+                    converted: false
+                },
+                data: {
+                    converted: true,
+                    converted_at: new Date()
+                }
+            });
+
+            // Get click data
+            const click = await tx.referral_clicks.findFirst({
+                where: { 
+                    referral_code: referralCode.toUpperCase(),
+                    session_id: sessionId
+                }
+            });
+
+            if (click) {
+                // Update referral with analytics data
+                await tx.referrals.updateMany({
+                    where: {
+                        referral_code: referralCode.toUpperCase(),
+                        referred_id: walletAddress
+                    },
+                    data: {
+                        source: click.source,
+                        landing_page: click.landing_page,
+                        utm_source: click.utm_source,
+                        utm_medium: click.utm_medium,
+                        utm_campaign: click.utm_campaign,
+                        device: click.device,
+                        browser: click.browser,
+                        ip_address: click.ip_address,
+                        user_agent: click.user_agent,
+                        click_timestamp: click.timestamp,
+                        session_id: click.session_id
+                    }
+                });
+
+                logApi.info('Referral conversion tracked', {
+                    referralCode: referralCode.toUpperCase(),
+                    clickId: click.id,
+                    walletAddress
+                });
+            }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        logApi.error('Error tracking referral conversion:', {
+            error: error instanceof Error ? error.message : error,
+            referralCode,
+            walletAddress
+        });
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Enhanced stats endpoint for referrers
+router.get('/analytics', requireAuth, async (req, res) => {
+    try {
+        const [clicks, conversions, rewards] = await Promise.all([
+            // Get click analytics
+            prisma.referral_clicks.groupBy({
+                by: ['source', 'device', 'browser'],
+                where: { 
+                    referrer_id: req.user.wallet_address,
+                    timestamp: {
+                        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+                    }
+                },
+                _count: true
+            }),
+
+            // Get conversion data
+            prisma.referral_clicks.groupBy({
+                by: ['source'],
+                where: { 
+                    referrer_id: req.user.wallet_address,
+                    converted: true
+                },
+                _count: true
+            }),
+
+            // Get reward data
+            prisma.referral_rewards.groupBy({
+                by: ['reward_type'],
+                where: { wallet_address: req.user.wallet_address },
+                _sum: { amount: true }
+            })
+        ]);
+
+        const response = {
+            clicks: {
+                by_source: clicks.reduce((acc, c) => ({ 
+                    ...acc, 
+                    [c.source]: c._count 
+                }), {}),
+                by_device: clicks.reduce((acc, c) => ({
+                    ...acc,
+                    [c.device]: c._count
+                }), {}),
+                by_browser: clicks.reduce((acc, c) => ({
+                    ...acc,
+                    [c.browser]: c._count
+                }), {})
+            },
+            conversions: {
+                by_source: conversions.reduce((acc, c) => ({
+                    ...acc,
+                    [c.source]: c._count
+                }), {})
+            },
+            rewards: {
+                by_type: rewards.reduce((acc, r) => ({
+                    ...acc,
+                    [r.reward_type]: r._sum.amount
+                }), {})
+            }
+        };
+
+        logApi.info('Referral analytics retrieved', {
+            wallet: req.user.wallet_address,
+            totalClicks: clicks.length,
+            totalConversions: conversions.length
+        });
+
+        res.json(response);
+    } catch (error) {
+        logApi.error('Error getting referral analytics:', {
+            error: error instanceof Error ? error.message : error,
+            wallet: req.user.wallet_address
+        });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
