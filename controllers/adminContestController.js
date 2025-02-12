@@ -2,12 +2,14 @@
 
 import { PrismaClient } from '@prisma/client';
 import { logApi } from '../utils/logger-suite/logger.js';
-import { processContestRefunds } from '../services/contestEvaluationService.js';
+import contestEvaluationService from '../services/contestEvaluationService.js';
+import AdminLogger from '../utils/admin-logger.js';
+import walletRakeService from '../services/walletRakeService.js';
 
 /* 
  * 
- * This MIGHT be quite old...
- * 
+ * I am unclear on the current state of this controller.
+ * It is imported by contest-management.js for 
  */
 
 const prisma = new PrismaClient();
@@ -92,7 +94,7 @@ async function getContestHistory(req, res) {
 async function updateContestState(req, res) {
     const { contestId } = req.params;
     const { action, reason } = req.body;
-    const adminUser = req.user.username;
+    const adminAddress = req.user.wallet_address;
 
     try {
         const contest = await prisma.contests.findUnique({
@@ -110,8 +112,24 @@ async function updateContestState(req, res) {
         }
 
         let updateData = {
-            notes: `${action} manually by ${adminUser}${reason ? `: ${reason}` : ''}`
+            notes: `${action} manually by ${req.user.username}${reason ? `: ${reason}` : ''}`
         };
+
+        // Log admin action
+        await AdminLogger.logAction(
+            adminAddress,
+            AdminLogger.Actions.CONTEST[action],
+            {
+                contest_id: contestId,
+                reason,
+                previous_status: contest.status,
+                participant_count: contest.participants.length
+            },
+            {
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent']
+            }
+        );
 
         switch (action.toUpperCase()) {
             case 'START':
@@ -161,8 +179,15 @@ async function updateContestState(req, res) {
 
         // If cancelling, process refunds
         if (action.toUpperCase() === 'CANCEL' && contest.participants.length > 0) {
-            // Process refunds asynchronously
-            processContestRefunds(contest).catch(error => {
+            // Process refunds with admin context
+            contestEvaluationService.processContestRefunds(
+                contest,
+                adminAddress,
+                {
+                    ip_address: req.ip,
+                    user_agent: req.headers['user-agent']
+                }
+            ).catch(error => {
                 logApi.error('Failed to process refunds for cancelled contest:', {
                     contest_id: contestId,
                     error: error.message
@@ -250,11 +275,144 @@ async function retryFailedTransaction(req, res) {
     }
 }
 
+// Add this new endpoint for manual wallet rake
+async function rakeWallet(req, res) {
+    try {
+        const { walletAddress } = req.params;
+        const adminAddress = req.user.wallet_address;
+        
+        const result = await walletRakeService.forceRakeWallet(
+            walletAddress,
+            adminAddress,
+            {
+                ip_address: req.ip,
+                user_agent: req.get('user-agent')
+            }
+        );
+
+        res.json({
+            success: true,
+            message: 'Wallet rake operation completed successfully',
+            data: result
+        });
+    } catch (error) {
+        logApi.error('Admin wallet rake failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to rake wallet',
+            error: error.message
+        });
+    }
+}
+
+// Add endpoint to get rake service status
+async function getRakeServiceStatus(req, res) {
+    try {
+        const status = {
+            isRunning: walletRakeService.isRunning(),
+            stats: walletRakeService.rakeStats,
+            config: walletRakeService.config,
+            health: walletRakeService.getHealth()
+        };
+
+        await AdminLogger.logAction(
+            req.user.wallet_address,
+            AdminLogger.Actions.SERVICE.STATUS,
+            {
+                service: 'wallet_rake_service',
+                status
+            },
+            {
+                ip_address: req.ip,
+                user_agent: req.get('user-agent')
+            }
+        );
+
+        res.json({
+            success: true,
+            data: status
+        });
+    } catch (error) {
+        logApi.error('Failed to get rake service status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get service status',
+            error: error.message
+        });
+    }
+}
+
+// Add endpoint to control rake service
+async function controlRakeService(req, res) {
+    try {
+        const { action } = req.params;
+        const adminAddress = req.user.wallet_address;
+        
+        if (!['start', 'stop', 'restart'].includes(action)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid action. Must be start, stop, or restart'
+            });
+        }
+
+        let result;
+        switch (action) {
+            case 'start':
+                if (!walletRakeService.isRunning()) {
+                    await walletRakeService.start();
+                }
+                break;
+            case 'stop':
+                if (walletRakeService.isRunning()) {
+                    await walletRakeService.stop();
+                }
+                break;
+            case 'restart':
+                await walletRakeService.stop();
+                await walletRakeService.start();
+                break;
+        }
+
+        await AdminLogger.logAction(
+            adminAddress,
+            AdminLogger.Actions.SERVICE.CONFIGURE,
+            {
+                service: 'wallet_rake_service',
+                action,
+                result: walletRakeService.isRunning() ? 'running' : 'stopped'
+            },
+            {
+                ip_address: req.ip,
+                user_agent: req.get('user-agent')
+            }
+        );
+
+        res.json({
+            success: true,
+            message: `Service ${action} completed successfully`,
+            status: {
+                isRunning: walletRakeService.isRunning(),
+                health: walletRakeService.getHealth()
+            }
+        });
+    } catch (error) {
+        logApi.error(`Failed to ${action} rake service:`, error);
+        res.status(500).json({
+            success: false,
+            message: `Failed to ${action} service`,
+            error: error.message
+        });
+    }
+}
+
 export default {
     getContestMonitoring,
     getContestMetrics,
     getContestHistory,
     updateContestState,
     getFailedTransactions,
-    retryFailedTransaction
+    retryFailedTransaction,
+    rakeWallet,
+    getRakeServiceStatus,
+    controlRakeService
 }; 

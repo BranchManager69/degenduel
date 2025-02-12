@@ -1,11 +1,12 @@
 // /routes/dd-serv/tokens.js
 
 import express from 'express';
+import { PrismaClient } from '@prisma/client';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import ServiceManager from '../../utils/service-manager.js';
-import { SERVICE_NAMES } from '../../utils/service-manager.js';
+import ServiceManager, { SERVICE_NAMES } from '../../utils/service-suite/service-manager.js';
 
 const router = express.Router();
+const prisma = new PrismaClient();
 
 /**
  * @swagger
@@ -31,7 +32,8 @@ let circuitState = {
   isOpen: false,
   failures: 0,
   lastFailure: null,
-  lastSuccess: null
+  lastSuccess: null,
+  lastReset: null
 };
 
 // Initialize service stats
@@ -52,7 +54,7 @@ const initializeStats = () => ({
     failures: 0,
     last_failure: null,
     last_success: null,
-    last_reset: new Date().toISOString()
+    last_reset: null
   }
 });
 
@@ -61,11 +63,27 @@ let ddServStats = initializeStats();
 // Initialize service on startup
 (async () => {
   try {
+    // Check if service should be enabled
+    const setting = await prisma.system_settings.findUnique({
+      where: { key: SERVICE_NAMES.DD_SERV }
+    });
+
+    const enabled = setting?.value?.enabled ?? true; // Default to true if not set
+
     await ServiceManager.markServiceStarted(
       SERVICE_NAMES.DD_SERV,
-      DD_SERV_CONFIG,
+      {
+        ...DD_SERV_CONFIG,
+        enabled
+      },
       ddServStats
     );
+
+    if (!enabled) {
+      logApi.info('[dd-serv] Service is disabled via dashboard');
+      return;
+    }
+
     logApi.info('[dd-serv] Service initialized successfully');
   } catch (error) {
     logApi.error('[dd-serv] Failed to initialize service:', error);
@@ -99,6 +117,18 @@ router.post('/reset-stats', async (req, res) => {
 
 // Utility function for monitored fetch with retries and circuit breaker
 async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
+  // Add retry cycle ID
+  const retryCycleId = Math.random().toString(36).substring(2, 8);
+  
+  // Check service state first
+  const setting = await prisma.system_settings.findUnique({
+    where: { key: SERVICE_NAMES.DD_SERV }
+  });
+
+  if (!setting?.value?.enabled) {
+    throw new Error('Service is disabled via dashboard');
+  }
+
   // Check circuit breaker
   if (circuitState.isOpen) {
     const now = Date.now();
@@ -108,10 +138,11 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
       throw new Error('Circuit breaker is open - service temporarily disabled');
     }
     
-    // Try to reset circuit breaker
+    // Only reset the circuit breaker after the timeout has passed
+    logApi.info('[dd-serv] Circuit breaker reset timeout reached, resetting state');
     circuitState.isOpen = false;
     circuitState.failures = 0;
-    logApi.info('[dd-serv] Circuit breaker reset, attempting requests');
+    circuitState.lastReset = now;
   }
 
   const startTime = Date.now();
@@ -132,6 +163,11 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
   
   for (let attempt = 1; attempt <= DD_SERV_CONFIG.max_retries; attempt++) {
     try {
+      // Log attempt start
+      logApi.info(`[dd-serv] 🔄 Request cycle ${retryCycleId} - Attempt ${attempt}/${DD_SERV_CONFIG.max_retries}\n` +
+        `Endpoint: ${endpointName}\n` +
+        `URL: ${url}`);
+
       // Setup timeout
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), DD_SERV_CONFIG.timeout_ms);
@@ -149,6 +185,9 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
       ddServStats.endpoints[endpointName].total++;
       
       if (response.ok) {
+        // Log success
+        logApi.info(`[dd-serv] 😅 Request cycle ${retryCycleId} succeeded on attempt ${attempt}`);
+        
         // Success handling
         ddServStats.operations.successful++;
         ddServStats.endpoints[endpointName].successful++;
@@ -178,16 +217,35 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
       
       // Non-200 response
       const text = await response.text();
+      logApi.warn(`[dd-serv] ❌ Request cycle ${retryCycleId} failed (Attempt ${attempt}/${DD_SERV_CONFIG.max_retries})\n` +
+        `Status: ${response.status}\n` +
+        `Endpoint: ${endpointName}\n` +
+        `URL: ${url}\n` +
+        `Response: ${text}`);
       throw new Error(`HTTP ${response.status}: ${text}`);
       
-    } catch (error) {
-      lastError = error;
+    } catch (err) {
+      lastError = err;
       
-      // Update failure stats
+      // Update failure stats with safe error object
+      const safeError = {
+        message: err.message,
+        name: err.name,
+        code: err.code,
+        type: err.type
+      };
+      
+      // Log the failure with cycle ID
+      logApi.warn(`[dd-serv] ❌ Request cycle ${retryCycleId} failed (Attempt ${attempt}/${DD_SERV_CONFIG.max_retries})\n` +
+        `Error: ${safeError.message}\n` +
+        `Endpoint: ${endpointName}\n` +
+        `URL: ${url}\n` +
+        `Type: ${safeError.type || safeError.name}`);
+      
       ddServStats.operations.failed++;
       ddServStats.endpoints[endpointName].failed++;
       ddServStats.consecutive_failures++;
-      ddServStats.endpoints[endpointName].last_error = error.message;
+      ddServStats.endpoints[endpointName].last_error = safeError;
       
       // Update circuit breaker state
       circuitState.failures++;
@@ -196,31 +254,35 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
       // Check if we should open circuit breaker
       if (circuitState.failures >= DD_SERV_CONFIG.circuit_breaker.failure_threshold) {
         circuitState.isOpen = true;
-        logApi.error('[dd-serv] Circuit breaker opened due to multiple failures', {
-          failures: circuitState.failures,
-          last_failure: new Date(circuitState.lastFailure).toISOString(),
-          last_success: circuitState.lastSuccess ? new Date(circuitState.lastSuccess).toISOString() : null
-        });
+        logApi.error(`\n[dd-serv] \t☠️ ☢️ 💥 ☠️ ☢️ 💥 CIRCUIT BREAKER OPENED 💥 ☢️ ☠️ 💥 ☢️ ☠️\n` + 
+          `.=====================================================\n` +
+          `||  Request Cycle: ${retryCycleId}\n` +
+          `||  Consecutive Failures: ${circuitState.failures}\n` +
+          `||  Last Failure: ${new Date(circuitState.lastFailure).toISOString()}\n` +
+          `||  Last Success: ${circuitState.lastSuccess ? new Date(circuitState.lastSuccess).toISOString() : 'Never'}\n` +
+          `||  Error: ${safeError.message}\n` +
+          `'=====================================================`);
       }
       
       // Check if we need to alert
       if (ddServStats.consecutive_failures >= DD_SERV_CONFIG.alert_threshold_failures) {
-        logApi.error('[dd-serv] Critical: Service degradation detected', {
-          consecutive_failures: ddServStats.consecutive_failures,
-          last_successful_fetch: ddServStats.last_successful_fetch,
-          endpoint: endpointName,
-          error: error.message,
-          circuit_breaker: {
-            state: circuitState.isOpen ? 'open' : 'closed',
-            failures: circuitState.failures
-          }
-        });
+        const severity = Math.min(Math.floor(ddServStats.consecutive_failures / DD_SERV_CONFIG.alert_threshold_failures), 3);
+        const alerts = ['⚠️', '⚠️⚠️', '🚨', '🚨🚨'][severity];
+        logApi.error(`[dd-serv] ${alerts} Service Degradation Alert ${alerts}\n` +
+          `------------------------------------\n` +
+          `Request Cycle: ${retryCycleId}\n` +
+          `Consecutive Failures: ${ddServStats.consecutive_failures}\n` +
+          `Last Success: ${ddServStats.last_successful_fetch || 'Never'}\n` +
+          `Endpoint: ${endpointName}\n` +
+          `Error: ${safeError.message}\n` +
+          `Circuit Breaker: ${circuitState.isOpen ? '🔓 OPEN' : '🔒 CLOSED'} (${circuitState.failures} failures)\n` +
+          `------------------------------------`);
       }
       
       // Update service state with error
       await ServiceManager.markServiceError(
         SERVICE_NAMES.DD_SERV,
-        error,
+        safeError,
         DD_SERV_CONFIG,
         ddServStats
       );
@@ -228,7 +290,7 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
       // If this is not the last attempt, wait before retrying
       if (attempt < DD_SERV_CONFIG.max_retries) {
         const delay = DD_SERV_CONFIG.retry_delay_ms * attempt;
-        logApi.info(`[dd-serv] Retrying request in ${delay}ms (attempt ${attempt + 1}/${DD_SERV_CONFIG.max_retries})`);
+        logApi.info(`[dd-serv] 🔄 Request cycle ${retryCycleId} - Retry ${attempt + 1}/${DD_SERV_CONFIG.max_retries} in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -236,6 +298,7 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
   }
   
   // If we get here, all retries failed
+  logApi.error(`[dd-serv] ❌ Request cycle ${retryCycleId} - All retries exhausted`);
   throw lastError;
 }
 
