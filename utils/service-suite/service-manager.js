@@ -1,9 +1,12 @@
 // utils/service-manager.js
 
-import prisma from '../config/prisma.js';
-import { logApi } from './logger-suite/logger.js';
+import prisma from '../../config/prisma.js';
+import { logApi } from '../logger-suite/logger.js';
 
-class ServiceManager {
+/**
+ * Service registry for managing all DegenDuel services
+ */
+export class ServiceManager {
     /**
      * Updates the system settings for a service
      * @param {string} serviceName - The name of the service (e.g., 'token_sync_service')
