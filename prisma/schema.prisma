@@ -345,6 +345,7 @@ model users {
   referral_rewards          referral_rewards[]
   referred_by               referrals[]                 @relation("ReferredRelation")
   referrals_made            referrals[]                 @relation("ReferrerRelation")
+  referral_clicks_received  referral_clicks[]
   transactions              transactions[]
   user_stats                user_stats?
   user_level                user_levels?                @relation(fields: [user_level_id], references: [id])
@@ -589,6 +590,18 @@ model referrals {
   qualified_at   DateTime?      @db.Timestamptz(6)
   reward_paid_at DateTime?      @db.Timestamptz(6)
   reward_amount  Decimal?       @db.Decimal(20, 0)
+  source          String?        @db.VarChar(20)  // 'direct', 'contest', 'profile'
+  landing_page    String?        @db.Text
+  utm_source      String?        @db.VarChar(100)
+  utm_medium      String?        @db.VarChar(100)
+  utm_campaign    String?        @db.VarChar(100)
+  device          String?        @db.VarChar(20)
+  browser         String?        @db.VarChar(20)
+  ip_address      String?        @db.VarChar(45)
+  user_agent      String?        @db.Text
+  click_timestamp DateTime?      @db.Timestamptz(6)
+  session_id      String?        @db.Uuid
+  metadata        Json?          @default("{}")
   referred       users          @relation("ReferredRelation", fields: [referred_id], references: [wallet_address])
   referrer       users          @relation("ReferrerRelation", fields: [referrer_id], references: [wallet_address])
 
@@ -596,6 +609,31 @@ model referrals {
   @@index([referral_code])
   @@index([created_at])
   @@map("referrals")
+}
+
+model referral_clicks {
+  id              Int       @id @default(autoincrement())
+  referral_code   String    @db.VarChar(20)
+  source          String    @db.VarChar(20)
+  landing_page    String    @db.Text
+  utm_source      String?   @db.VarChar(100)
+  utm_medium      String?   @db.VarChar(100)
+  utm_campaign    String?   @db.VarChar(100)
+  device          String    @db.VarChar(20)
+  browser         String    @db.VarChar(20)
+  ip_address      String    @db.VarChar(45)
+  user_agent      String    @db.Text
+  session_id      String    @db.Uuid
+  timestamp       DateTime  @default(now()) @db.Timestamptz(6)
+  converted       Boolean   @default(false)
+  converted_at    DateTime? @db.Timestamptz(6)
+  referrer        users     @relation(fields: [referrer_id], references: [wallet_address])
+  referrer_id     String    @db.VarChar(44)
+
+  @@index([referral_code])
+  @@index([timestamp])
+  @@index([session_id])
+  @@map("referral_clicks")
 }
 
 model referral_rewards {
