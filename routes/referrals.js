@@ -6,6 +6,10 @@ import { requireAuth } from '../middleware/auth.js';
 import crypto from 'crypto';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { referralClickLimit, referralConversionLimit } from '../middleware/rateLimit.js';
+import { body } from 'express-validator';
+import { validateRequest } from '../middleware/validateRequest.js';
+import rateLimit from 'express-rate-limit';
+import referralService from '../services/referralService.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -201,216 +205,123 @@ router.post('/apply', async (req, res) => {
     }
 });
 
-// Track initial referral click
-router.post('/analytics/click', referralClickLimit, async (req, res) => {
-    const {
-        referralCode,
-        source,
-        landingPage,
-        utmParams,
-        device,
-        browser,
-        sessionId
-    } = req.body;
+// Rate limiting setup as per documentation
+const clickLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // 100 requests per IP
+});
 
-    try {
-        // Get IP and user agent
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        const userAgent = req.headers['user-agent'];
+const conversionLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10 // 10 attempts per IP
+});
 
-        // Find referrer
-        const referrer = await prisma.users.findUnique({
-            where: { referral_code: referralCode.toUpperCase() },
-            select: { wallet_address: true, is_banned: true }
-        });
+// Track referral click
+router.post('/analytics/click',
+    clickLimiter,
+    [
+        body('referralCode').isString().trim().notEmpty(),
+        body('source').isString().trim().optional(),
+        body('landingPage').isString().trim().optional(),
+        body('utmParams').isObject().optional(),
+        body('device').isString().trim().optional(),
+        body('browser').isString().trim().optional(),
+        body('sessionId').isString().trim().notEmpty()
+    ],
+    validateRequest,
+    async (req, res) => {
+        try {
+            const result = await referralService.trackClick(
+                req.body.referralCode,
+                {
+                    ...req.body,
+                    ip_address: req.ip,
+                    user_agent: req.get('user-agent')
+                }
+            );
 
-        if (!referrer || referrer.is_banned) {
-            return res.status(404).json({ error: 'Invalid referral code' });
+            res.json({
+                success: true,
+                data: result
+            });
+        } catch (error) {
+            logApi.error('Failed to track referral click:', error);
+            res.status(400).json({
+                success: false,
+                error: error.message
+            });
         }
-
-        // Create click record
-        const click = await prisma.referral_clicks.create({
-            data: {
-                referral_code: referralCode.toUpperCase(),
-                referrer_id: referrer.wallet_address,
-                source,
-                landing_page: landingPage,
-                utm_source: utmParams?.source,
-                utm_medium: utmParams?.medium,
-                utm_campaign: utmParams?.campaign,
-                device,
-                browser,
-                ip_address: ip,
-                user_agent: userAgent,
-                session_id: sessionId
-            }
-        });
-
-        logApi.info('Referral click tracked', {
-            referralCode: referralCode.toUpperCase(),
-            clickId: click.id,
-            source,
-            device
-        });
-
-        res.json({ success: true, clickId: click.id });
-    } catch (error) {
-        logApi.error('Error tracking referral click:', {
-            error: error instanceof Error ? error.message : error,
-            referralCode,
-            source
-        });
-        res.status(500).json({ error: 'Internal server error' });
     }
-});
+);
 
-// Track referral conversion
-router.post('/analytics/conversion', referralConversionLimit, requireAuth, async (req, res) => {
-    const { referralCode, sessionId } = req.body;
-    const walletAddress = req.user.wallet_address;
-
-    try {
-        // Start a transaction
-        await prisma.$transaction(async (tx) => {
-            // Update click record
-            await tx.referral_clicks.updateMany({
-                where: { 
-                    referral_code: referralCode.toUpperCase(),
-                    session_id: sessionId,
-                    converted: false
-                },
-                data: {
-                    converted: true,
-                    converted_at: new Date()
+// Track conversion
+router.post('/analytics/conversion',
+    requireAuth,
+    conversionLimiter,
+    [
+        body('referralCode').isString().trim().notEmpty(),
+        body('sessionId').isString().trim().notEmpty()
+    ],
+    validateRequest,
+    async (req, res) => {
+        try {
+            const result = await referralService.processConversion(
+                req.body.sessionId,
+                {
+                    wallet_address: req.user.wallet_address,
+                    ...req.body
                 }
+            );
+
+            res.json({
+                success: true,
+                data: result
             });
-
-            // Get click data
-            const click = await tx.referral_clicks.findFirst({
-                where: { 
-                    referral_code: referralCode.toUpperCase(),
-                    session_id: sessionId
-                }
+        } catch (error) {
+            logApi.error('Failed to process conversion:', error);
+            res.status(400).json({
+                success: false,
+                error: error.message
             });
-
-            if (click) {
-                // Update referral with analytics data
-                await tx.referrals.updateMany({
-                    where: {
-                        referral_code: referralCode.toUpperCase(),
-                        referred_id: walletAddress
-                    },
-                    data: {
-                        source: click.source,
-                        landing_page: click.landing_page,
-                        utm_source: click.utm_source,
-                        utm_medium: click.utm_medium,
-                        utm_campaign: click.utm_campaign,
-                        device: click.device,
-                        browser: click.browser,
-                        ip_address: click.ip_address,
-                        user_agent: click.user_agent,
-                        click_timestamp: click.timestamp,
-                        session_id: click.session_id
-                    }
-                });
-
-                logApi.info('Referral conversion tracked', {
-                    referralCode: referralCode.toUpperCase(),
-                    clickId: click.id,
-                    walletAddress
-                });
-            }
-        });
-
-        res.json({ success: true });
-    } catch (error) {
-        logApi.error('Error tracking referral conversion:', {
-            error: error instanceof Error ? error.message : error,
-            referralCode,
-            walletAddress
-        });
-        res.status(500).json({ error: 'Internal server error' });
+        }
     }
-});
+);
 
-// Enhanced stats endpoint for referrers
-router.get('/analytics', requireAuth, async (req, res) => {
-    try {
-        const [clicks, conversions, rewards] = await Promise.all([
-            // Get click analytics
-            prisma.referral_clicks.groupBy({
-                by: ['source', 'device', 'browser'],
-                where: { 
-                    referrer_id: req.user.wallet_address,
+// Get analytics (requires authentication)
+router.get('/analytics',
+    requireAuth,
+    async (req, res) => {
+        try {
+            // Extract filter parameters from query
+            const filters = {
+                ...(req.query.startDate && {
                     timestamp: {
-                        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+                        gte: new Date(req.query.startDate)
                     }
-                },
-                _count: true
-            }),
+                }),
+                ...(req.query.endDate && {
+                    timestamp: {
+                        lte: new Date(req.query.endDate)
+                    }
+                }),
+                ...(req.query.source && { source: req.query.source }),
+                ...(req.query.campaign && { utm_campaign: req.query.campaign })
+            };
 
-            // Get conversion data
-            prisma.referral_clicks.groupBy({
-                by: ['source'],
-                where: { 
-                    referrer_id: req.user.wallet_address,
-                    converted: true
-                },
-                _count: true
-            }),
+            const analytics = await referralService.getAnalytics(filters);
 
-            // Get reward data
-            prisma.referral_rewards.groupBy({
-                by: ['reward_type'],
-                where: { wallet_address: req.user.wallet_address },
-                _sum: { amount: true }
-            })
-        ]);
-
-        const response = {
-            clicks: {
-                by_source: clicks.reduce((acc, c) => ({ 
-                    ...acc, 
-                    [c.source]: c._count 
-                }), {}),
-                by_device: clicks.reduce((acc, c) => ({
-                    ...acc,
-                    [c.device]: c._count
-                }), {}),
-                by_browser: clicks.reduce((acc, c) => ({
-                    ...acc,
-                    [c.browser]: c._count
-                }), {})
-            },
-            conversions: {
-                by_source: conversions.reduce((acc, c) => ({
-                    ...acc,
-                    [c.source]: c._count
-                }), {})
-            },
-            rewards: {
-                by_type: rewards.reduce((acc, r) => ({
-                    ...acc,
-                    [r.reward_type]: r._sum.amount
-                }), {})
-            }
-        };
-
-        logApi.info('Referral analytics retrieved', {
-            wallet: req.user.wallet_address,
-            totalClicks: clicks.length,
-            totalConversions: conversions.length
-        });
-
-        res.json(response);
-    } catch (error) {
-        logApi.error('Error getting referral analytics:', {
-            error: error instanceof Error ? error.message : error,
-            wallet: req.user.wallet_address
-        });
-        res.status(500).json({ error: 'Internal server error' });
+            res.json({
+                success: true,
+                data: analytics
+            });
+        } catch (error) {
+            logApi.error('Failed to get analytics:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
     }
-});
+);
 
 export default router; 
