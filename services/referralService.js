@@ -279,6 +279,10 @@ class ReferralService extends BaseService {
 
     // Core operation: Track referral click
     async trackClick(referralCode, clickData) {
+        if (this.stats.circuitBreaker.isOpen) {
+            throw ServiceError.operation('Circuit breaker is open for click tracking');
+        }
+
         try {
             // Check rate limiting
             const recentClicks = await prisma.referral_clicks.count({
@@ -314,6 +318,7 @@ class ReferralService extends BaseService {
             });
 
             // Update statistics
+            await this.recordSuccess();
             this.referralStats.clicks.total++;
             this.referralStats.clicks.by_source[clickData.source] = 
                 (this.referralStats.clicks.by_source[clickData.source] || 0) + 1;
@@ -326,13 +331,17 @@ class ReferralService extends BaseService {
 
             return click;
         } catch (error) {
-            logApi.error('Failed to track referral click:', error);
+            await this.handleError(error);
             throw error;
         }
     }
 
     // Core operation: Process conversion
     async processConversion(sessionId, userData) {
+        if (this.stats.circuitBreaker.isOpen) {
+            throw ServiceError.operation('Circuit breaker is open for conversion processing');
+        }
+
         try {
             // Find the original click
             const click = await prisma.referral_clicks.findFirst({
@@ -380,6 +389,7 @@ class ReferralService extends BaseService {
             });
 
             // Update statistics
+            await this.recordSuccess();
             this.referralStats.conversions.total++;
             this.referralStats.conversions.by_source[click.source] = 
                 (this.referralStats.conversions.by_source[click.source] || 0) + 1;
@@ -388,13 +398,17 @@ class ReferralService extends BaseService {
             return referral;
         } catch (error) {
             this.referralStats.conversions.failed++;
-            logApi.error('Failed to process conversion:', error);
+            await this.handleError(error);
             throw error;
         }
     }
 
     // Core operation: Process rewards
     async processRewards(referralId) {
+        if (this.stats.circuitBreaker.isOpen) {
+            throw ServiceError.operation('Circuit breaker is open for reward processing');
+        }
+
         try {
             const referral = await prisma.referrals.findUnique({
                 where: { id: referralId },
@@ -423,6 +437,7 @@ class ReferralService extends BaseService {
             });
 
             // Update statistics
+            await this.recordSuccess();
             this.referralStats.rewards.total_distributed = 
                 this.referralStats.rewards.total_distributed.add(rewardAmount);
             this.referralStats.rewards.by_type['signup_bonus'] = 
@@ -434,7 +449,7 @@ class ReferralService extends BaseService {
                 status: 'COMPLETED'
             };
         } catch (error) {
-            logApi.error('Failed to process rewards:', error);
+            await this.handleError(error);
             throw error;
         }
     }
