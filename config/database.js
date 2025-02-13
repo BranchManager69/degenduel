@@ -2,7 +2,7 @@ import fs from 'fs';
 import { dirname, join } from 'path';
 import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
-import { logApi } from '../utils/logger-suite/logger.js'; // unique
+import { logApi } from '../utils/logger-suite/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DB_PATH 
