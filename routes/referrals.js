@@ -10,9 +10,9 @@ import { body } from 'express-validator';
 import { validateRequest } from '../middleware/validateRequest.js';
 import rateLimit from 'express-rate-limit';
 import referralService from '../services/referralService.js';
+import prisma from '../config/prisma.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Generate a random referral code
 function generateReferralCode(length = 8) {

@@ -5,14 +5,13 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import contestEvaluationService from '../services/contestEvaluationService.js';
 import AdminLogger from '../utils/admin-logger.js';
 import walletRakeService from '../services/walletRakeService.js';
+import prisma from '../config/prisma.js';
 
 /* 
  * 
  * I am unclear on the current state of this controller.
  * It is imported by contest-management.js for 
  */
-
-const prisma = new PrismaClient();
 
 // Get contest monitoring data
 async function getContestMonitoring(req, res) {

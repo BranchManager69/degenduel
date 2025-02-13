@@ -23,7 +23,7 @@ import walletManagementRoutes from "./routes/admin/wallet-management.js";
 import { memoryMonitoring } from "./scripts/monitor-memory.js";
 import contestEvaluationService from "./services/contestEvaluationService.js";
 import tokenSyncService from "./services/tokenSyncService.js";
-import { walletRakeService } from "./services/walletRakeService.js";
+import walletRakeService from "./services/walletRakeService.js";
 import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
 import PortfolioWebSocketServer from "./websocket/portfolio-ws.js";
 import { createServer } from 'http';
