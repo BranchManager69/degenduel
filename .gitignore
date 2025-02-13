@@ -4,6 +4,9 @@ node_modules/
 # Backups
 backups/
 
+# Archives
+archive/
+
 # Database-related files
 data/
 db/

@@ -324,4 +324,118 @@ router.get('/analytics',
     }
 );
 
+// Get leaderboard statistics
+router.get('/leaderboard/stats',
+    async (req, res) => {
+        try {
+            const stats = await referralService.getCachedPeriodStats();
+            
+            if (!stats) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'No active referral period found'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: stats
+            });
+        } catch (error) {
+            logApi.error('Failed to get leaderboard stats:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to get leaderboard statistics'
+            });
+        }
+    }
+);
+
+// Get leaderboard rankings
+router.get('/leaderboard/rankings',
+    async (req, res) => {
+        try {
+            const rankings = await referralService.getCachedRankings();
+            
+            res.json({
+                success: true,
+                data: rankings.map(r => ({
+                    username: r.user.username,
+                    referrals: r.referral_count,
+                    rank: r.rank,
+                    trend: r.trend || 'stable'
+                }))
+            });
+        } catch (error) {
+            logApi.error('Failed to get leaderboard rankings:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to get leaderboard rankings'
+            });
+        }
+    }
+);
+
+// Get user milestones
+router.get('/milestones',
+    requireAuth,
+    async (req, res) => {
+        try {
+            const milestones = await prisma.referral_milestones.findMany({
+                where: { user_id: req.user.wallet_address },
+                orderBy: { milestone_level: 'asc' }
+            });
+
+            res.json({
+                success: true,
+                data: milestones
+            });
+        } catch (error) {
+            logApi.error('Failed to get user milestones:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to get milestone information'
+            });
+        }
+    }
+);
+
+// Get user period rankings
+router.get('/rankings/me',
+    requireAuth,
+    async (req, res) => {
+        try {
+            const currentPeriod = await referralService.getCurrentPeriod();
+            if (!currentPeriod) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'No active referral period found'
+                });
+            }
+
+            const ranking = await prisma.referral_period_rankings.findFirst({
+                where: {
+                    period_id: currentPeriod.id,
+                    user_id: req.user.wallet_address
+                }
+            });
+
+            res.json({
+                success: true,
+                data: ranking || {
+                    referral_count: 0,
+                    rank: null,
+                    trend: 'stable'
+                }
+            });
+        } catch (error) {
+            logApi.error('Failed to get user ranking:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to get ranking information'
+            });
+        }
+    }
+);
+
 export default router; 
