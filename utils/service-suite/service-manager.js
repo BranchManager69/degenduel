@@ -7,6 +7,73 @@ import { logApi } from '../logger-suite/logger.js';
  * Service registry for managing all DegenDuel services
  */
 export class ServiceManager {
+    static services = new Map();
+    static dependencies = new Map();
+
+    /**
+     * Registers a service with its dependencies
+     */
+    static register(service, dependencies = []) {
+        this.services.set(service.name, service);
+        this.dependencies.set(service.name, dependencies);
+    }
+
+    /**
+     * Initialize all registered services in dependency order
+     */
+    static async initializeAll() {
+        const initialized = new Set();
+        const failed = new Set();
+
+        for (const [serviceName, service] of this.services) {
+            if (!initialized.has(serviceName)) {
+                await this._initializeService(serviceName, initialized, failed, new Set());
+            }
+        }
+
+        return {
+            initialized: Array.from(initialized),
+            failed: Array.from(failed)
+        };
+    }
+
+    /**
+     * Initialize a service and its dependencies
+     */
+    static async _initializeService(serviceName, initialized, failed, processing) {
+        // Check for circular dependencies
+        if (processing.has(serviceName)) {
+            throw new Error(`Circular dependency detected: ${Array.from(processing).join(' -> ')} -> ${serviceName}`);
+        }
+
+        // Skip if already processed
+        if (initialized.has(serviceName) || failed.has(serviceName)) {
+            return;
+        }
+
+        processing.add(serviceName);
+
+        // Initialize dependencies first
+        const dependencies = this.dependencies.get(serviceName) || [];
+        for (const dep of dependencies) {
+            if (!initialized.has(dep)) {
+                await this._initializeService(dep, initialized, failed, processing);
+            }
+        }
+
+        // Initialize the service
+        const service = this.services.get(serviceName);
+        try {
+            await service.initialize();
+            initialized.add(serviceName);
+        } catch (error) {
+            failed.add(serviceName);
+            throw error;
+        }
+
+        processing.delete(serviceName);
+    }
+
     /**
      * Updates the system settings for a service
      * @param {string} serviceName - The name of the service (e.g., 'token_sync_service')
@@ -114,15 +181,24 @@ export class ServiceManager {
     }
 }
 
+// Register core services with dependencies
+ServiceManager.register(tokenSyncService, []);
+ServiceManager.register(vanityWalletService, []);
+ServiceManager.register(contestEvaluationService, ['token_sync_service']);
+ServiceManager.register(walletRakeService, ['contest_evaluation_service']);
+ServiceManager.register(referralService, ['token_sync_service']);
+ServiceManager.register(contestWalletService, ['vanity_wallet_service']);
+ServiceManager.register(adminWalletService, ['contest_wallet_service']);
+
 // Service name constants
 export const SERVICE_NAMES = {
     TOKEN_SYNC: 'token_sync_service',
+    VANITY_WALLET: 'vanity_wallet_service',
     CONTEST_EVALUATION: 'contest_evaluation_service',
     WALLET_RAKE: 'wallet_rake_service',
-    VANITY_WALLET: 'vanity_wallet_service',
     REFERRAL: 'referral_service',
-    ADMIN_WALLET: 'admin_wallet_service',
     CONTEST_WALLET: 'contest_wallet_service',
+    ADMIN_WALLET: 'admin_wallet_service',
     DD_SERV: 'dd_serv_service'
 };
 

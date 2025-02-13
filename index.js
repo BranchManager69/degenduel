@@ -28,6 +28,7 @@ import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js
 import PortfolioWebSocketServer from "./websocket/portfolio-ws.js";
 import { createServer } from 'http';
 import referralScheduler from './scripts/referral-scheduler.js';
+import referralService from './services/referralService.js';
 
 dotenv.config();
 
@@ -278,6 +279,21 @@ async function initializeServer() {
         await initDatabase();
         InitLogger.logInit('Database', 'SQLite', 'success', { path: '/home/websites/degenduel/data/leaderboard.db' });
         logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ SQLite Ready\x1b[0m\n');
+
+        // Initialize Referral Service
+        logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🎯 Initializing Referral Service...\x1b[0m');
+        await referralService.initialize();
+        await referralService.start();
+        await AdminLogger.logAction(
+            'SYSTEM',
+            AdminLogger.Actions.SERVICE.START,
+            {
+                service: 'referral_service',
+                config: referralService.config
+            }
+        );
+        InitLogger.logInit('Core', 'Referral Service', 'success');
+        logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ☑️ Referral Service Ready\x1b[0m');
 
         // Start HTTP server - Orange (208)
         logApi.info('\n\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mCore Services\x1b[0m\x1b[38;5;208m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
