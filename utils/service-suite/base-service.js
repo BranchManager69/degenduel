@@ -182,7 +182,8 @@ export class BaseService {
                 this.stats.circuitBreaker.isOpen = true;
                 logApi.warn(`Circuit breaker opened for ${this.name}`, {
                     failures: this.stats.circuitBreaker.failures,
-                    threshold: this.config.circuitBreaker.failureThreshold
+                    threshold: this.config.circuitBreaker.failureThreshold,
+                    service: this.name
                 });
             }
         }

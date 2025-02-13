@@ -298,12 +298,102 @@ const sanitizeError = (obj) => {
   return clean;
 };
 
-// Modify the log formatter to use sanitizeError
+function formatCircuitBreaker(service, details) {
+  const { failures, threshold, service: serviceName } = details;
+  const serviceDisplay = serviceName || service || 'Unknown Service';
+  return `
+🚨 CIRCUIT BREAKER ALERT 🚨
+══════════════════════════
+Service: ${serviceDisplay}
+Status:  OPEN ❌
+Failures: ${failures}/${threshold}
+══════════════════════════`;
+}
+
+function formatUserInteraction(user, action, details) {
+  const userInfo = user ? `${user.nickname} (${user.role})` : 'Anonymous';
+  let formattedDetails = '';
+  
+  if (action === 'session_check') {
+    formattedDetails = details.success ? 
+      `✅ Session validated (${details.session_id})` :
+      `❌ Session invalid: ${details.error || 'Unknown error'}`;
+  } else {
+    formattedDetails = JSON.stringify(details);
+  }
+  
+  return `👤 ${userInfo} | ${action} | ${formattedDetails}`;
+}
+
+function formatMemoryStats(stats) {
+  const { heap_used_mb, heap_total_mb, rss_mb, external_mb, array_buffers_mb, uptime_hours } = stats;
+  const heapUsagePercent = Math.round((heap_used_mb / heap_total_mb) * 100);
+  
+  return `📊 Memory Usage
+    Heap: ${heap_used_mb}MB / ${heap_total_mb}MB (${heapUsagePercent}%)
+    RSS: ${rss_mb}MB | External: ${external_mb}MB | Buffers: ${array_buffers_mb}MB
+    Uptime: ${uptime_hours.toFixed(2)}h`;
+}
+
+function formatPerformanceStats(metrics) {
+  const { total_requests, avg_response_time, max_response_time, routes } = metrics;
+  
+  // Format the header
+  const header = `📊 API Performance | Total: ${total_requests} | Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms`;
+  
+  // Format routes if they exist
+  if (!routes || Object.keys(routes).length === 0) {
+    return header;
+  }
+
+  // Get the longest route name for padding
+  const maxRouteLength = Math.max(...Object.keys(routes).map(r => r.length));
+  
+  // Format each route's stats
+  const routeStats = Object.entries(routes)
+    .sort(([,a], [,b]) => b.requests - a.requests)  // Sort by most requests first
+    .map(([route, stats]) => {
+      const padding = ' '.repeat(maxRouteLength - route.length);
+      return `    ${route}${padding} | ${stats.requests.toString().padStart(3)} reqs | ${Math.round(stats.avg_response_time).toString().padStart(4)}ms avg | ${Math.round(stats.max_response_time).toString().padStart(4)}ms max`;
+    })
+    .join('\n');
+
+  return `${header}\n${routeStats}`;
+}
+
+function formatEventLoopLag(lagMs) {
+  const severity = lagMs > 200 ? '🔴' : lagMs > 100 ? '🟡' : '🟢';
+  return `${severity} Event Loop Lag: ${lagMs}ms`;
+}
+
+function formatAdminAction(details) {
+  const { admin, action, details: actionDetails } = details;
+  const formattedDetails = JSON.stringify(actionDetails, null, 2)
+    .split('\n')
+    .map(line => '    ' + line)
+    .join('\n');
+  
+  return `👑 Admin Action: ${action}
+  By: ${admin}
+  Details:${formattedDetails}`;
+}
+
+// Modify the customFormat to properly handle these special cases
 const customFormat = winston.format.printf(
   ({ level, message, timestamp, service, ...metadata }) => {
     const ts = chalk.gray(formatTimestamp(timestamp));
     const levelStyle = LEVEL_STYLES[level] || LEVEL_STYLES.info;
     const serviceInfo = SERVICE_COLORS[service] || SERVICE_COLORS.DEFAULT;
+
+    // Handle Memory Stats
+    if (message.includes('Memory Stats')) {
+      return `${ts} ${levelStyle.badge} ${formatMemoryStats(metadata)}`;
+    }
+
+    // Handle API Performance Stats
+    if (message.includes('API Performance Stats')) {
+      return `${ts} ${levelStyle.badge} ${formatPerformanceStats(metadata)}`;
+    }
 
     // Add service icon if available
     const servicePrefix = service ? `${serviceInfo.icon} ` : "";
@@ -320,6 +410,23 @@ const customFormat = winston.format.printf(
 
     // Sanitize any error objects in metadata
     const cleanMetadata = sanitizeError(metadata);
+
+    if (message.includes('Circuit breaker opened')) {
+      return `${ts} ${LEVEL_STYLES.error.badge} ${formatCircuitBreaker(service, metadata)}`;
+    }
+
+    if (message === ANALYTICS_PATTERNS.USER_INTERACTION) {
+      const { user, action, details } = metadata;
+      return `${ts} ${levelStyle.badge} ${formatUserInteraction(user, action, details)}`;
+    }
+
+    if (message.includes('Event loop lag detected')) {
+      return `${ts} ${levelStyle.badge} ${formatEventLoopLag(metadata.lag_ms)}`;
+    }
+
+    if (message.includes('Admin action logged')) {
+      return `${ts} ${levelStyle.badge} ${formatAdminAction(metadata)}`;
+    }
 
     return `${ts} ${levelStyle.badge} ${formattedMessage}${meta ? " " + meta : ""}`;
   }
@@ -422,13 +529,8 @@ logApi.forService = (serviceName) => ({
         service: serviceName,
       });
     },
-    trackPerformance: (metrics, user = null) => {
-      logApi.info(ANALYTICS_PATTERNS.PERFORMANCE_METRIC, {
-        performance: metrics,
-        user,
-        timestamp: new Date().toISOString(),
-        service: serviceName,
-      });
+    trackPerformance: (metrics) => {
+      logApi.info('API Performance Stats', metrics);
     },
     trackFeature: (feature, user, details) => {
       logApi.info(ANALYTICS_PATTERNS.FEATURE_USAGE, {
@@ -460,12 +562,8 @@ logApi.analytics = {
       timestamp: new Date().toISOString(),
     });
   },
-  trackPerformance: (metrics, user = null) => {
-    logApi.info(ANALYTICS_PATTERNS.PERFORMANCE_METRIC, {
-      performance: metrics,
-      user,
-      timestamp: new Date().toISOString(),
-    });
+  trackPerformance: (metrics) => {
+    logApi.info('API Performance Stats', metrics);
   },
   trackFeature: (feature, user, details) => {
     logApi.info(ANALYTICS_PATTERNS.FEATURE_USAGE, {

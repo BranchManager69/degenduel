@@ -43,11 +43,9 @@ const router = express.Router();
 router.get("/", requireAuth, requireAdmin, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
+  const adminName = req.user.nickname || req.user.username || 'Admin';
 
-  logApi.info("Fetching maintenance mode status", {
-    requestId,
-    admin_address: req.user.wallet_address,
-  });
+  logApi.info(`🔧 Maintenance check by ${adminName}`);
 
   try {
     const setting = await prisma.system_settings.findUnique({
@@ -64,27 +62,20 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    logApi.info("Successfully fetched maintenance mode status", {
-      requestId,
-      duration: Date.now() - startTime,
-    });
+    logApi.info(`✅ Maintenance status fetched (${Date.now() - startTime}ms)`);
 
     return res.json(setting.value);
   } catch (error) {
-    logApi.error("Failed to fetch maintenance mode status", {
-      requestId,
-      error: {
+    logApi.error(`❌ Maintenance check failed: ${error.message}`, {
+      error: error instanceof Error ? {
         name: error.name,
-        message: error.message,
         stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-      },
-      duration: Date.now() - startTime,
+      } : error
     });
 
     return res.status(500).json({
       error: "Failed to get maintenance status",
-      message:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+      message: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
@@ -138,23 +129,16 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
  *         description: Server error
  */
 router.post("/", requireAuth, requireAdmin, async (req, res) => {
-  const requestId = crypto.randomUUID();
   const startTime = Date.now();
   const { enabled, duration = 300 } = req.body;
+  const adminName = req.user.nickname || req.user.username || 'Admin';
 
-  logApi.info("Attempting to update maintenance mode", {
-    requestId,
-    admin_address: req.user.wallet_address,
-    enabled,
-    duration,
-  });
+  logApi.info(`🔧 Maintenance mode ${enabled ? 'enabled' : 'disabled'} by ${adminName}`);
 
   // Validate input
   if (typeof enabled !== "boolean") {
-    logApi.warn("Invalid maintenance mode update request", {
-      requestId,
-      admin_address: req.user.wallet_address,
-      received_value: enabled,
+    logApi.warn(`⚠️ Invalid maintenance request by ${adminName}`, {
+      received_value: enabled
     });
     return res.status(400).json({
       error: "enabled must be a boolean",
@@ -203,13 +187,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       },
     });
 
-    logApi.info("Successfully updated maintenance mode", {
-      requestId,
-      admin_address: req.user.wallet_address,
-      enabled,
-      duration,
-      duration: Date.now() - startTime,
-    });
+    logApi.info(`✅ Maintenance mode updated (${Date.now() - startTime}ms)`);
 
     return res.json({
       enabled,
@@ -218,23 +196,16 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       updated_by: req.user.wallet_address,
     });
   } catch (error) {
-    logApi.error("Failed to update maintenance mode", {
-      requestId,
-      error: {
+    logApi.error(`❌ Failed to update maintenance mode: ${error.message}`, {
+      error: error instanceof Error ? {
         name: error.name,
-        message: error.message,
         stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-      },
-      admin_address: req.user.wallet_address,
-      enabled,
-      duration,
-      duration: Date.now() - startTime,
+      } : error
     });
 
     return res.status(500).json({
       error: "Failed to set maintenance mode",
-      message:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+      message: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
