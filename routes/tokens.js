@@ -21,15 +21,15 @@ const prisma = new PrismaClient();
  *   schemas:
  *     TokenWithDetails:
  *       allOf:
- *       - $ref: '#/components/schemas/Token'
- *       - type: object
- *         properties:
- *           token_prices:
- *             $ref: '#/components/schemas/TokenPrice'
- *           token_bucket_memberships:
- *             type: array
- *             items:
- *               $ref: '#/components/schemas/TokenBucketMembership'
+ *         - $ref: '#/components/schemas/Token'
+ *         - type: object
+ *           properties:
+ *             token_prices:
+ *               $ref: '#/components/schemas/TokenPrice'
+ *             token_bucket_memberships:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/TokenBucketMembership'
  */
 
 /* Tokens Routes */
