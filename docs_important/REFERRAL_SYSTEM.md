@@ -858,3 +858,264 @@ The service exposes detailed metrics:
    - Authentication required for sensitive operations
    - Role-based access for analytics
    - Audit logging for all admin actions
+
+## Business Logic Implementation
+
+### System Configuration
+
+The referral system uses a flexible configuration stored in the `system_settings` table:
+
+```sql
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS referral_settings JSONB DEFAULT '{
+  "period_length": "weekly",
+  "reward_tiers": {
+    "milestone_1": {"referrals": 100, "reward": 1000},
+    "milestone_2": {"referrals": 500, "reward": 10000},
+    "milestone_3": {"referrals": 1000, "reward": 25000}
+  },
+  "leaderboard_rewards": {
+    "top_3": [5000, 3000, 1000],
+    "top_10": 500
+  }
+}'::jsonb;
+```
+
+### Additional Database Schemas
+
+#### Period Tracking
+```sql
+CREATE TABLE referral_periods (
+    id SERIAL PRIMARY KEY,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    status VARCHAR(20) DEFAULT 'in_progress',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE referral_milestones (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(44) NOT NULL,
+    milestone_level INTEGER NOT NULL,
+    referral_count INTEGER NOT NULL,
+    reward_amount DECIMAL(18,6) NOT NULL,
+    achieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'pending',
+    UNIQUE(user_id, milestone_level)
+);
+
+CREATE TABLE referral_period_rankings (
+    id SERIAL PRIMARY KEY,
+    period_id INTEGER REFERENCES referral_periods(id),
+    user_id VARCHAR(44) NOT NULL,
+    referral_count INTEGER NOT NULL,
+    rank INTEGER NOT NULL,
+    reward_amount DECIMAL(18,6) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    UNIQUE(period_id, user_id)
+);
+
+-- Performance Indexes
+CREATE INDEX idx_referrals_period ON referral_period_rankings(period_id);
+CREATE INDEX idx_referrals_user ON referral_period_rankings(user_id);
+CREATE INDEX idx_milestones_user ON referral_milestones(user_id);
+```
+
+### API Endpoints
+
+#### 1. Leaderboard Statistics
+```typescript
+GET /referrals/leaderboard/stats
+Response: {
+  total_global_referrals: number;
+  current_period: {
+    start_date: string;
+    end_date: string;
+    days_remaining: number;
+  };
+}
+```
+
+#### 2. Leaderboard Rankings
+```typescript
+GET /referrals/leaderboard/rankings
+Response: Array<{
+  username: string;
+  referrals: number;
+  rank: number;
+  trend: "up" | "down" | "stable";
+}>
+```
+
+### Service Features
+
+#### Period Management
+```javascript
+class ReferralPeriodManager {
+    async createNewPeriod() {
+        const settings = await this.getSystemSettings();
+        const periodLength = settings.period_length;
+        
+        // Calculate period dates based on configuration
+        const { startDate, endDate } = this.calculatePeriodDates(periodLength);
+        
+        // Create new period
+        return await prisma.referral_periods.create({
+            data: {
+                start_date: startDate,
+                end_date: endDate,
+                is_active: true,
+                status: 'in_progress'
+            }
+        });
+    }
+
+    async finalizePeriod(periodId) {
+        // Process rankings and rewards
+        await this.processRankingRewards(periodId);
+        
+        // Mark period as completed
+        await prisma.referral_periods.update({
+            where: { id: periodId },
+            data: { 
+                is_active: false,
+                status: 'completed'
+            }
+        });
+    }
+}
+```
+
+#### Milestone System
+```javascript
+interface MilestoneConfig {
+    referrals: number;
+    reward: number;
+}
+
+class MilestoneManager {
+    async checkMilestones(userId, referralCount) {
+        const settings = await this.getSystemSettings();
+        const milestones = settings.reward_tiers;
+        
+        for (const [level, config] of Object.entries(milestones)) {
+            if (referralCount >= config.referrals) {
+                await this.createMilestone(userId, level, config);
+            }
+        }
+    }
+}
+```
+
+#### Ranking System
+```javascript
+class RankingManager {
+    async updateRankings() {
+        const currentPeriod = await this.getCurrentPeriod();
+        
+        // Calculate rankings
+        const rankings = await this.calculateRankings(currentPeriod.id);
+        
+        // Update trend indicators
+        await this.updateTrends(rankings);
+        
+        // Store rankings
+        await this.storeRankings(currentPeriod.id, rankings);
+    }
+}
+```
+
+### Scheduled Tasks
+
+#### Daily Operations
+```javascript
+class ReferralScheduler {
+    async performDailyTasks() {
+        await this.rankingManager.updateRankings();
+        await this.milestoneManager.processNewMilestones();
+        await this.updateTrendIndicators();
+    }
+}
+```
+
+#### Period-End Operations
+```javascript
+class PeriodProcessor {
+    async handlePeriodEnd(periodId) {
+        // Finalize rankings
+        await this.rankingManager.finalizeRankings(periodId);
+        
+        // Process rewards
+        await this.rewardManager.queueRewards(periodId);
+        
+        // Create new period
+        await this.periodManager.createNewPeriod();
+    }
+}
+```
+
+### Caching Strategy
+
+```javascript
+class ReferralCache {
+    // Current period stats (5-minute TTL)
+    async getCurrentPeriodStats() {
+        const cacheKey = 'current_period_stats';
+        let stats = await cache.get(cacheKey);
+        
+        if (!stats) {
+            stats = await this.calculateCurrentPeriodStats();
+            await cache.set(cacheKey, stats, 300); // 5 minutes
+        }
+        
+        return stats;
+    }
+    
+    // Top 100 rankings (1-minute TTL)
+    async getTopRankings() {
+        const cacheKey = 'top_100_rankings';
+        let rankings = await cache.get(cacheKey);
+        
+        if (!rankings) {
+            rankings = await this.calculateTopRankings();
+            await cache.set(cacheKey, rankings, 60); // 1 minute
+        }
+        
+        return rankings;
+    }
+}
+```
+
+### Rate Limiting Configuration
+
+```javascript
+const leaderboardLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 120, // 120 requests per minute
+    keyGenerator: (req) => {
+        // Use both IP and token for rate limiting
+        return `${req.ip}-${req.user?.id || 'anonymous'}`;
+    }
+});
+```
+
+### Validation Rules
+
+```javascript
+class ReferralValidator {
+    async validateReferral(referrerId, referredId) {
+        // Prevent self-referrals
+        if (referrerId === referredId) {
+            throw new ServiceError('Self-referrals are not allowed');
+        }
+        
+        // Check for existing referral
+        const existing = await this.findExistingReferral(referredId);
+        if (existing) {
+            throw new ServiceError('User already has a referral');
+        }
+        
+        // Additional validation logic
+    }
+}
+```

@@ -27,6 +27,7 @@ import { walletRakeService } from "./services/walletRakeService.js";
 import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
 import PortfolioWebSocketServer from "./websocket/portfolio-ws.js";
 import { createServer } from 'http';
+import referralScheduler from './scripts/referral-scheduler.js';
 
 dotenv.config();
 
@@ -352,6 +353,12 @@ async function initializeServer() {
         InitLogger.logInit('Core', 'Contest Evaluation Service', 'success');
         initResults['Contest Evaluation Service'] = { success: true };
         logApi.info('\x1b[38;5;27m┃           ┗━━━━━━━━━━━ ☑️ Contest Evaluation Ready\x1b[0m');
+
+        // Initialize referral scheduler
+        logApi.info('\x1b[38;5;93m┣━━━━━━━━━━━ 🎯 Starting Referral Scheduler...\x1b[0m');
+        await referralScheduler;
+        InitLogger.logInit('Core', 'Referral Scheduler', 'success');
+        logApi.info('\x1b[38;5;93m┃           ┗━━━━━━━━━━━ ☑️ Referral Scheduler Active\x1b[0m');
 
         // Get initialization duration from InitLogger
         const summary = InitLogger.summarizeInitialization();
