@@ -7,6 +7,9 @@ backups/
 # Archives
 archive/
 
+# Drafts
+docs_drafts/
+
 # Database-related files
 data/
 db/
