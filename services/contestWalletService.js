@@ -1,89 +1,68 @@
+import { BaseService } from '../utils/service-suite/base-service.js';
+import { ServiceError } from '../utils/service-suite/service-error.js';
 import { PrismaClient } from '@prisma/client';
 import { Keypair } from '@solana/web3.js';
 import crypto from 'crypto';
 import VanityWalletService from './vanityWalletService.js';
 import { logApi } from '../utils/logger-suite/logger.js';
-import ServiceManager, { SERVICE_NAMES } from '../utils/service-suite/service-manager.js';
+import AdminLogger from '../utils/admin-logger.js';
+import prisma from '../config/prisma.js';
 
-const prisma = new PrismaClient();
-
-// Configuration
 const CONTEST_WALLET_CONFIG = {
-    encryption_algorithm: 'aes-256-gcm',
-    min_balance_sol: 0.01,
-    max_retries: 3,
-    retry_delay_ms: 5000
-};
-
-// Statistics tracking
-let walletStats = {
-    wallets_created: 0,
-    vanity_wallets_used: 0,
-    generated_wallets: 0,
-    errors: {
-        creation_failures: 0,
-        encryption_failures: 0,
-        last_error: null
+    name: 'contest_wallet_service',
+    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
+    maxRetries: 3,
+    retryDelayMs: 5000,
+    circuitBreaker: {
+        failureThreshold: 5,
+        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
+        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
     },
-    performance: {
-        average_creation_time_ms: 0,
-        total_operations: 0
+    backoff: {
+        initialDelayMs: 1000,
+        maxDelayMs: 30000,
+        factor: 2
+    },
+    wallet: {
+        encryption_algorithm: 'aes-256-gcm',
+        min_balance_sol: 0.01
     }
 };
 
-class ContestWalletService {
-    static async initialize() {
-        try {
-            // Check if service should be enabled
-            const setting = await prisma.system_settings.findUnique({
-                where: { key: 'contest_wallet_service' }
-            });
-            
-            const enabled = setting?.value?.enabled ?? true; // Default to true for this critical service
-
-            await ServiceManager.markServiceStarted(
-                SERVICE_NAMES.CONTEST_WALLET,
-                {
-                    ...CONTEST_WALLET_CONFIG,
-                    enabled
-                },
-                walletStats
-            );
-
-            if (!enabled) {
-                logApi.info('Contest Wallet Service is disabled');
-                return;
+class ContestWalletService extends BaseService {
+    constructor() {
+        super(CONTEST_WALLET_CONFIG.name, CONTEST_WALLET_CONFIG);
+        
+        // Service-specific state
+        this.walletStats = {
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
+            },
+            wallets: {
+                created: 0,
+                vanity_used: 0,
+                generated: 0
+            },
+            errors: {
+                creation_failures: 0,
+                encryption_failures: 0,
+                last_error: null
+            },
+            performance: {
+                average_creation_time_ms: 0,
+                last_operation_time_ms: 0
             }
-
-            if (enabled) {
-                logApi.info('Contest Wallet Service initialized');
-            }
-        } catch (error) {
-            logApi.error('Failed to initialize Contest Wallet Service:', error);
-            throw error;
-        }
-    }
-
-    static async shutdown() {
-        try {
-            await ServiceManager.markServiceStopped(
-                SERVICE_NAMES.CONTEST_WALLET,
-                CONTEST_WALLET_CONFIG,
-                walletStats
-            );
-            logApi.info('Contest Wallet Service shut down');
-        } catch (error) {
-            logApi.error('Failed to shut down Contest Wallet Service:', error);
-            throw error;
-        }
+        };
     }
 
     // Encrypt wallet private key
-    static encryptPrivateKey(privateKey) {
+    encryptPrivateKey(privateKey) {
         try {
             const iv = crypto.randomBytes(16);
             const cipher = crypto.createCipheriv(
-                'aes-256-gcm',
+                this.config.wallet.encryption_algorithm,
                 Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
                 iv
             );
@@ -101,14 +80,21 @@ class ContestWalletService {
                 tag: tag.toString('hex')
             });
         } catch (error) {
-            walletStats.errors.encryption_failures++;
-            walletStats.errors.last_error = error.message;
-            throw error;
+            this.walletStats.errors.encryption_failures++;
+            this.walletStats.errors.last_error = error.message;
+            throw ServiceError.operation('Failed to encrypt wallet key', {
+                error: error.message,
+                type: 'ENCRYPTION_ERROR'
+            });
         }
     }
 
     // Create a new contest wallet, trying vanity wallet first
-    static async createContestWallet(contestId, preferredPattern = null) {
+    async createContestWallet(contestId, preferredPattern = null, adminContext = null) {
+        if (this.stats.circuitBreaker.isOpen) {
+            throw ServiceError.operation('Circuit breaker is open for wallet creation');
+        }
+
         const startTime = Date.now();
         try {
             // First, try to get a vanity wallet
@@ -121,14 +107,16 @@ class ContestWalletService {
                     data: {
                         contest_id: contestId,
                         wallet_address: vanityWallet.wallet_address,
-                        private_key: vanityWallet.private_key
+                        private_key: vanityWallet.private_key,
+                        balance: 0,
+                        created_at: new Date()
                     }
                 });
 
                 // Mark vanity wallet as used
                 await VanityWalletService.assignWalletToContest(vanityWallet.id, contestId);
 
-                walletStats.vanity_wallets_used++;
+                this.walletStats.wallets.vanity_used++;
                 logApi.info('Created contest wallet using vanity wallet', {
                     contest_id: contestId,
                     pattern: vanityWallet.pattern
@@ -142,53 +130,104 @@ class ContestWalletService {
                         wallet_address: keypair.publicKey.toString(),
                         private_key: this.encryptPrivateKey(
                             Buffer.from(keypair.secretKey).toString('base64')
-                        )
+                        ),
+                        balance: 0,
+                        created_at: new Date()
                     }
                 });
 
-                walletStats.generated_wallets++;
+                this.walletStats.wallets.generated++;
                 logApi.info('Created contest wallet with generated keypair', {
                     contest_id: contestId
                 });
             }
 
             // Update statistics
-            walletStats.wallets_created++;
-            walletStats.total_operations++;
-            walletStats.performance.average_creation_time_ms = 
-                (walletStats.performance.average_creation_time_ms * (walletStats.total_operations - 1) + 
-                (Date.now() - startTime)) / walletStats.total_operations;
+            await this.recordSuccess();
+            this.walletStats.wallets.created++;
+            this.walletStats.operations.successful++;
+            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
+            this.walletStats.performance.average_creation_time_ms = 
+                (this.walletStats.performance.average_creation_time_ms * this.walletStats.operations.total + 
+                (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
 
-            // Update service state
-            await ServiceManager.updateServiceHeartbeat(
-                SERVICE_NAMES.CONTEST_WALLET,
-                CONTEST_WALLET_CONFIG,
-                walletStats
-            );
+            // Log admin action if context provided
+            if (adminContext) {
+                await AdminLogger.logAction(
+                    adminContext.admin_address,
+                    'CONTEST_WALLET_CREATE',
+                    {
+                        contest_id: contestId,
+                        wallet_address: contestWallet.wallet_address,
+                        used_vanity: !!vanityWallet
+                    },
+                    adminContext
+                );
+            }
 
             return contestWallet;
         } catch (error) {
             // Update error statistics
-            walletStats.errors.creation_failures++;
-            walletStats.errors.last_error = error.message;
+            this.walletStats.operations.failed++;
+            this.walletStats.errors.creation_failures++;
+            this.walletStats.errors.last_error = error.message;
 
-            // Update service state with error
-            await ServiceManager.markServiceError(
-                SERVICE_NAMES.CONTEST_WALLET,
-                error,
-                CONTEST_WALLET_CONFIG,
-                walletStats
-            );
+            await this.handleError(error);
+            throw error;
+        }
+    }
 
-            logApi.error('Failed to create contest wallet:', error);
+    // Main operation implementation - periodic health checks
+    async performOperation() {
+        const startTime = Date.now();
+        
+        try {
+            // Get all contest wallets
+            const contestWallets = await prisma.contest_wallets.findMany({
+                include: {
+                    contests: {
+                        select: {
+                            status: true
+                        }
+                    }
+                }
+            });
+
+            // Check each wallet's state
+            const results = {
+                total: contestWallets.length,
+                active: 0,
+                completed: 0,
+                issues: []
+            };
+
+            for (const wallet of contestWallets) {
+                try {
+                    if (wallet.contests?.status === 'active') {
+                        results.active++;
+                        // Additional health checks could be added here
+                    } else if (wallet.contests?.status === 'completed') {
+                        results.completed++;
+                    }
+                } catch (error) {
+                    results.issues.push({
+                        wallet: wallet.wallet_address,
+                        error: error.message
+                    });
+                }
+            }
+
+            return {
+                duration: Date.now() - startTime,
+                ...results
+            };
+        } catch (error) {
+            // Let the base class handle the error and circuit breaker
             throw error;
         }
     }
 }
 
-// Initialize service when module is loaded
-ContestWalletService.initialize().catch(error => {
-    logApi.error('Failed to initialize Contest Wallet Service:', error);
-});
-
-export default ContestWalletService; 
+// Create and export singleton instance
+const contestWalletService = new ContestWalletService();
+export default contestWalletService; 
