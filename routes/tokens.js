@@ -47,10 +47,10 @@ const prisma = new PrismaClient();
  *             schema:
  *               type: array
  *               items:
+ *                 type: object
  *                 allOf:
  *                   - $ref: '#/components/schemas/Token'
- *                   - type: object
- *                     properties:
+ *                   - properties:
  *                       token_prices:
  *                         $ref: '#/components/schemas/TokenPrice'
  *                       token_bucket_memberships:

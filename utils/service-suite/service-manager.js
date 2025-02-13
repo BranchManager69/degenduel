@@ -2,6 +2,13 @@
 
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
+import tokenSyncService from '../../services/tokenSyncService.js';
+import vanityWalletService from '../../services/vanityWalletService.js';
+import contestEvaluationService from '../../services/contestEvaluationService.js';
+import walletRakeService from '../../services/walletRakeService.js';
+import referralService from '../../services/referralService.js';
+import contestWalletService from '../../services/contestWalletService.js';
+import adminWalletService from '../../services/adminWalletService.js';
 
 /**
  * Service registry for managing all DegenDuel services
@@ -184,7 +191,7 @@ export class ServiceManager {
 // Register core services with dependencies
 ServiceManager.register(tokenSyncService, []);
 ServiceManager.register(vanityWalletService, []);
-ServiceManager.register(contestEvaluationService, ['token_sync_service']);
+ServiceManager.register(contestEvaluationService.service, ['token_sync_service']);
 ServiceManager.register(walletRakeService, ['contest_evaluation_service']);
 ServiceManager.register(referralService, ['token_sync_service']);
 ServiceManager.register(contestWalletService, ['vanity_wallet_service']);

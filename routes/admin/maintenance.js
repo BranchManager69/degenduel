@@ -110,7 +110,9 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
  *                 type: boolean
  *               duration:
  *                 type: number
- *                 description: Duration in seconds before retry (default: 300)
+ *                 description: |
+ *                   Duration in seconds before retry.
+ *                   Default: 300
  *     responses:
  *       200:
  *         description: Maintenance mode updated successfully
