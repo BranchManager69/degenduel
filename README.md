@@ -4,8 +4,19 @@
 <h2 align="center">
   Server Backend
 </h2>
-<p align="center"><i>Looking for the <a href="https://github.com/oyoops/degenduel-fe">Client Frontend</a> repo?</i></p>
+<p align="center"><i>Looking for the <a href="https://github.com/BranchManager69/degenduel-fe">Frontend</a> repo?</i></p>
 </br>
+
+<div align="center">
+  <h1>
+    NOTE:
+  </h1>
+  <h2>
+    This README is old! Check the /docs_important folder for at least *mostly* updated working knowledge of this repo.
+  </h2>
+  <br>
+</div>
+
 
 <div align="center">
   <p>
@@ -33,37 +44,21 @@
 
 ## 🌟 Features
 ### Web3 Integration
-- Phantom Wallet connection
-- Wallet address verification
-- Secure authentication flow
-- Session management
-- Network detection (mainnet/devnet)
+- Web3 ...
 
 ### Real-Time Trading Simulation
-- Live token prices from DexScreener API
-- Real-time portfolio updates
-- Accurate price tracking
-- Historical price charts
+- Live token prices ...
+- Real-time portfolio updates ...
 
 ### Portfolio Management
-- Position tracking
-- Trade history
-- Performance metrics
-- Unrealized/realized P&L
-- Win streak tracking
+- Trade ...
 
-### Advanced Trading Features
-- Hot tokens feed
-- Token search
-- Price alerts
-- Market statistics
+### ...
 
 ### User Experience
-- Dark/Light mode
-- Responsive design
-- Real-time updates
-- Trade animations
-- Performance optimizations
+- Real-time updates ...
+- Responsive design ...
+
 
 ## 🚀 Quick Start
 
