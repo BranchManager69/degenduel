@@ -9,8 +9,8 @@ import { config } from '../config/config.js';
 import crypto from 'crypto';
 import bs58 from 'bs58';
 import { logApi } from '../utils/logger-suite/logger.js';
+import prisma from '../config/prisma.js';
 
-const prisma = new PrismaClient();
 const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
 const ADMIN_WALLET_CONFIG = {
