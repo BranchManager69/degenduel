@@ -1,8 +1,8 @@
 // /routes/tokens.js
 
-import { PrismaClient } from '@prisma/client';
-import express from 'express';
-import { logApi } from '../utils/logger-suite/logger.js';
+import { PrismaClient } from "@prisma/client";
+import express from "express";
+import { logApi } from "../utils/logger-suite/logger.js";
 //import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -13,6 +13,23 @@ const prisma = new PrismaClient();
  * tags:
  *   name: Tokens
  *   description: API endpoints for token and bucket management
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     TokenWithDetails:
+ *       allOf:
+ *       - $ref: '#/components/schemas/Token'
+ *       - type: object
+ *         properties:
+ *           token_prices:
+ *             $ref: '#/components/schemas/TokenPrice'
+ *           token_bucket_memberships:
+ *             type: array
+ *             items:
+ *               $ref: '#/components/schemas/TokenBucketMembership'
  */
 
 /* Tokens Routes */
@@ -47,42 +64,34 @@ const prisma = new PrismaClient();
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 allOf:
- *                   - $ref: '#/components/schemas/Token'
- *                   - properties:
- *                       token_prices:
- *                         $ref: '#/components/schemas/TokenPrice'
- *                       token_bucket_memberships:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             token_buckets:
- *                               $ref: '#/components/schemas/TokenBucket'
+ *                 $ref: '#/components/schemas/TokenWithDetails'
  */
 // Get all tokens (with optional filters)
 //   example: GET https://degenduel.me/api/tokens
 //      headers: { "Cookie": "session=<jwt>" }
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { active, bucket, search } = req.query;
 
     const where = {
       AND: [
-        active !== undefined ? { is_active: active === 'true' } : {},
-        bucket ? {
-          token_bucket_memberships: {
-            some: { bucket_id: parseInt(bucket) }
-          }
-        } : {},
-        search ? {
-          OR: [
-            { symbol: { contains: search, mode: 'insensitive' } },
-            { name: { contains: search, mode: 'insensitive' } }
-          ]
-        } : {}
-      ]
+        active !== undefined ? { is_active: active === "true" } : {},
+        bucket
+          ? {
+              token_bucket_memberships: {
+                some: { bucket_id: parseInt(bucket) },
+              },
+            }
+          : {},
+        search
+          ? {
+              OR: [
+                { symbol: { contains: search, mode: "insensitive" } },
+                { name: { contains: search, mode: "insensitive" } },
+              ],
+            }
+          : {},
+      ],
     };
 
     const tokens = await prisma.tokens.findMany({
@@ -91,19 +100,19 @@ router.get('/', async (req, res) => {
         token_prices: true,
         token_bucket_memberships: {
           include: {
-            token_buckets: true
-          }
-        }
+            token_buckets: true,
+          },
+        },
       },
       orderBy: {
-        market_cap: 'desc'
-      }
+        market_cap: "desc",
+      },
     });
 
     res.json(tokens);
   } catch (error) {
-    logApi.error('Failed to fetch tokens:', error);
-    res.status(500).json({ error: 'Failed to fetch tokens' });
+    logApi.error("Failed to fetch tokens:", error);
+    res.status(500).json({ error: "Failed to fetch tokens" });
   }
 });
 
@@ -126,26 +135,14 @@ router.get('/', async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Token'
- *                 - type: object
- *                   properties:
- *                     token_prices:
- *                       $ref: '#/components/schemas/TokenPrice'
- *                     token_bucket_memberships:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           token_buckets:
- *                             $ref: '#/components/schemas/TokenBucket'
+ *               $ref: '#/components/schemas/TokenWithDetails'
  *       404:
  *         $ref: '#/components/responses/TokenNotFound'
  */
 // Get token by ID
 //   example: GET https://degenduel.me/api/tokens/{token_id}
 //      headers: { "Cookie": "session=<jwt>" }
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const token = await prisma.tokens.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -153,20 +150,20 @@ router.get('/:id', async (req, res) => {
         token_prices: true,
         token_bucket_memberships: {
           include: {
-            token_buckets: true
-          }
-        }
-      }
+            token_buckets: true,
+          },
+        },
+      },
     });
 
     if (!token) {
-      return res.status(404).json({ error: 'Token not found' });
+      return res.status(404).json({ error: "Token not found" });
     }
 
     res.json(token);
   } catch (error) {
-    logApi.error('Failed to fetch token:', error);
-    res.status(500).json({ error: 'Failed to fetch token' });
+    logApi.error("Failed to fetch token:", error);
+    res.status(500).json({ error: "Failed to fetch token" });
   }
 });
 
@@ -198,23 +195,23 @@ router.get('/:id', async (req, res) => {
  */
 // Get current prices for all tokens
 //   example: GET https://degenduel.me/api/tokens/prices
-router.get('/prices', async (req, res) => {
+router.get("/prices", async (req, res) => {
   try {
     const prices = await prisma.token_prices.findMany({
       include: {
         tokens: {
           select: {
             symbol: true,
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     });
 
     res.json(prices);
   } catch (error) {
-    logApi.error('Failed to fetch token prices:', error);
-    res.status(500).json({ error: 'Failed to fetch token prices' });
+    logApi.error("Failed to fetch token prices:", error);
+    res.status(500).json({ error: "Failed to fetch token prices" });
   }
 });
 
@@ -259,7 +256,7 @@ router.get('/prices', async (req, res) => {
  */
 // Get price history for a specific token
 //   example: GET https://degenduel.me/api/tokens/prices/1
-router.get('/prices/:tokenId', async (req, res) => {
+router.get("/prices/:tokenId", async (req, res) => {
   try {
     const price = await prisma.token_prices.findUnique({
       where: { token_id: parseInt(req.params.tokenId) },
@@ -270,20 +267,20 @@ router.get('/prices/:tokenId', async (req, res) => {
             name: true,
             market_cap: true,
             volume_24h: true,
-            change_24h: true
-          }
-        }
-      }
+            change_24h: true,
+          },
+        },
+      },
     });
 
     if (!price) {
-      return res.status(404).json({ error: 'Token price not found' });
+      return res.status(404).json({ error: "Token price not found" });
     }
 
     res.json(price);
   } catch (error) {
-    logApi.error('Failed to fetch token price:', error);
-    res.status(500).json({ error: 'Failed to fetch token price' });
+    logApi.error("Failed to fetch token price:", error);
+    res.status(500).json({ error: "Failed to fetch token price" });
   }
 });
 
@@ -463,14 +460,14 @@ router.get('/prices/:tokenId', async (req, res) => {
 //   example: POST https://degenduel.me/api/tokens
 //      headers: { "Cookie": "session=<jwt>" }
 //      body: { "symbol": "BTC", "name": "Bitcoin", "bucket_id": 1 }
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   // Implementation of POST request
 });
 
 //   example: PUT https://degenduel.me/api/tokens/{token_id}
 //      headers: { "Cookie": "session=<jwt>" }
 //      body: { "symbol": "BTC", "name": "Bitcoin", "bucket_id": 1 }
-router.put('/:id', async (req, res) => {
+router.put("/:id", async (req, res) => {
   // Implementation of PUT request
 });
 
