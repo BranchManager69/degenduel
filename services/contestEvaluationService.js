@@ -20,7 +20,6 @@ import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociate
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 
-const prisma = new PrismaClient();
 const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
 const CONTEST_EVALUATION_CONFIG = {
