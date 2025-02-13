@@ -11,10 +11,10 @@
   <h1>
     NOTE:
   </h1>
-  <br>
   <h2>
     This README is old! Check the /docs_important folder for at least *mostly* updated working knowledge of this repo.
   </h2>
+  <br>
 </div>
 
 
