@@ -1,11 +1,10 @@
 // /routes/v2/tokens.js
 
-import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
+import prisma from '../../config/prisma.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * @swagger
