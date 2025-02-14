@@ -15,10 +15,7 @@
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
     "db:push": "npx prisma db push",
-    "db:seed": "npx prisma db seed",
     "db:reset": "npx prisma db reset",
-    "db:reset-and-seed": "npm run db:reset && npm run db:seed",
-    "reseed": "npx prisma db seed",
     "start": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node index.js",
     "stop": "npm run stop:api",
     "rebuild": "node scripts/rebuild.js",
@@ -96,8 +93,5 @@
     "prisma": "^6.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
-  },
-  "prisma": {
-    "seed": "NODE_OPTIONS='--loader ts-node/esm' ts-node prisma/seeds/index.ts"
   }
 }
