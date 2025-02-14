@@ -321,26 +321,26 @@ model user_token_stats {
 }
 
 model users {
-  id                      Int       @id @default(autoincrement())
-  wallet_address         String    @unique
-  username               String?   @unique
-  email                  String?   @unique
-  nickname               String?
-  role                   UserRole  @default(user)
-  user_level_id          Int?
-  created_at             DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime? @db.Timestamptz(6)
-  last_login             DateTime? @db.Timestamptz(6)
-  total_contests         Int?      @default(0)
-  is_banned              Boolean   @default(false)
-  ban_reason             String?
-  referral_code          String?   @unique @db.VarChar(20)
-  referred_by_code       String?   @db.VarChar(20)
-  
-  // Existing relations
-  contest_participants    contest_participants[]
-  contest_portfolio_trades contest_portfolio_trades[]
-  contest_portfolios     contest_portfolios[]
+  id                        Int                         @id @default(autoincrement())
+  wallet_address            String                      @unique
+  username                  String?                     @unique
+  email                     String?                     @unique
+  nickname                  String?
+  role                      UserRole                    @default(user)
+  user_level_id             Int?
+  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime?                   @db.Timestamptz(6)
+  last_login                DateTime?                   @db.Timestamptz(6)
+  total_contests            Int?                        @default(0)
+  is_banned                 Boolean                     @default(false)
+  ban_reason                String?
+  referral_code             String?                     @unique @db.VarChar(20)
+  referred_by_code          String?                     @db.VarChar(20)
+  profile_image_url         String?                     @db.VarChar(255)
+  profile_image_updated_at  DateTime?                   @db.Timestamptz(6)
+  contest_participants      contest_participants[]
+  contest_portfolio_trades  contest_portfolio_trades[]
+  contest_portfolios        contest_portfolios[]
   contest_token_performance contest_token_performance[]
   contest_token_prices      contest_token_prices[]
   participant_influences    participant_influences[]
@@ -636,8 +636,6 @@ model referral_clicks {
   @@index([referrer_id])
   @@index([session_id])
   @@index([ip_address])
-  @@index([referral_code], map: "idx_referral_clicks_code")
-  @@index([session_id], map: "idx_referral_clicks_session")
 }
 
 model referral_rewards {

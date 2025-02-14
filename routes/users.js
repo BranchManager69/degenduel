@@ -1362,8 +1362,10 @@ router.get('/:wallet/stats', async (req, res) => {
  * @swagger
  * /api/users/{wallet}/profile-image:
  *   post:
- *     summary: Update user's profile image
+ *     summary: Upload or update user's profile image
  *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: wallet
@@ -1392,6 +1394,11 @@ router.get('/:wallet/stats', async (req, res) => {
  *         description: Server error
  */
 router.post('/:wallet/profile-image', requireAuth, upload.single('image'), async (req, res) => {
+  const logContext = {
+    path: 'POST /api/users/:wallet/profile-image',
+    wallet: req.params.wallet
+  };
+
   try {
     // Verify user exists and requester has permission
     const user = await prisma.users.findUnique({
@@ -1399,31 +1406,72 @@ router.post('/:wallet/profile-image', requireAuth, upload.single('image'), async
     });
 
     if (!user) {
+      logApi.warn('User not found for profile image update', logContext);
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Ensure user can only update their own profile image unless they're admin
     if (req.user.wallet_address !== req.params.wallet && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      logApi.warn('Unauthorized profile image update attempt', {
+        ...logContext,
+        requester: req.user.wallet_address
+      });
       return res.status(403).json({ error: 'Unauthorized to update this user\'s profile image' });
     }
 
     if (!req.file) {
+      logApi.warn('No image file provided', logContext);
       return res.status(400).json({ error: 'No image file provided' });
     }
 
     // Get file extension and check if it's allowed
     const fileExt = req.file.originalname.split('.').pop().toLowerCase();
-    const allowedExts = ['jpg', 'jpeg', 'png', 'gif'];
+    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     if (!allowedExts.includes(fileExt)) {
-      return res.status(400).json({ error: 'Invalid file type. Allowed types: jpg, jpeg, png, gif' });
+      logApi.warn('Invalid file type', { ...logContext, fileExt });
+      return res.status(400).json({ 
+        error: 'Invalid file type',
+        allowed_types: allowedExts
+      });
+    }
+
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (req.file.size > maxSize) {
+      logApi.warn('File too large', { 
+        ...logContext,
+        size: req.file.size,
+        maxSize
+      });
+      return res.status(400).json({ 
+        error: 'File too large',
+        max_size_mb: maxSize / (1024 * 1024)
+      });
     }
 
     // Generate unique filename
     const filename = `${user.wallet_address}_${Date.now()}.${fileExt}`;
-    const uploadPath = path.join(process.env.UPLOAD_DIR || 'uploads', 'profile-images', filename);
+    const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+    const profileImagesDir = path.join(uploadDir, 'profile-images');
+    const uploadPath = path.join(profileImagesDir, filename);
 
     // Ensure upload directory exists
-    await fs.promises.mkdir(path.dirname(uploadPath), { recursive: true });
+    await fs.promises.mkdir(profileImagesDir, { recursive: true });
+
+    // If user already has a profile image, delete it
+    if (user.profile_image_url) {
+      const oldFilename = user.profile_image_url.split('/').pop();
+      const oldPath = path.join(profileImagesDir, oldFilename);
+      try {
+        await fs.promises.unlink(oldPath);
+      } catch (error) {
+        logApi.warn('Failed to delete old profile image', {
+          ...logContext,
+          oldPath,
+          error: error.message
+        });
+      }
+    }
 
     // Write file
     await fs.promises.writeFile(uploadPath, req.file.buffer);
@@ -1441,17 +1489,129 @@ router.post('/:wallet/profile-image', requireAuth, upload.single('image'), async
       }
     });
 
+    logApi.info('Profile image updated successfully', {
+      ...logContext,
+      new_url: publicUrl
+    });
+
     res.json({
       success: true,
       message: 'Profile image updated successfully',
       data: {
-        profile_image_url: publicUrl
+        profile_image_url: publicUrl,
+        updated_at: new Date().toISOString()
       }
     });
 
   } catch (error) {
-    logApi.error('Failed to update profile image:', error);
+    logApi.error('Failed to update profile image', {
+      ...logContext,
+      error: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error
+    });
     res.status(500).json({ error: 'Failed to update profile image' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/{wallet}/profile-image:
+ *   delete:
+ *     summary: Remove user's profile image
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *     responses:
+ *       200:
+ *         description: Profile image removed successfully
+ *       403:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found or no profile image
+ *       500:
+ *         description: Server error
+ */
+router.delete('/:wallet/profile-image', requireAuth, async (req, res) => {
+  const logContext = {
+    path: 'DELETE /api/users/:wallet/profile-image',
+    wallet: req.params.wallet
+  };
+
+  try {
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: req.params.wallet }
+    });
+
+    if (!user) {
+      logApi.warn('User not found for profile image deletion', logContext);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check authorization
+    if (req.user.wallet_address !== req.params.wallet && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      logApi.warn('Unauthorized profile image deletion attempt', {
+        ...logContext,
+        requester: req.user.wallet_address
+      });
+      return res.status(403).json({ error: 'Unauthorized to delete this user\'s profile image' });
+    }
+
+    if (!user.profile_image_url) {
+      return res.status(404).json({ error: 'User has no profile image' });
+    }
+
+    // Delete the file
+    const filename = user.profile_image_url.split('/').pop();
+    const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+    const filePath = path.join(uploadDir, 'profile-images', filename);
+
+    try {
+      await fs.promises.unlink(filePath);
+    } catch (error) {
+      logApi.warn('Failed to delete profile image file', {
+        ...logContext,
+        filePath,
+        error: error.message
+      });
+    }
+
+    // Update user record
+    await prisma.users.update({
+      where: { wallet_address: req.params.wallet },
+      data: {
+        profile_image_url: null,
+        profile_image_updated_at: null,
+        updated_at: new Date()
+      }
+    });
+
+    logApi.info('Profile image deleted successfully', logContext);
+
+    res.json({
+      success: true,
+      message: 'Profile image removed successfully'
+    });
+
+  } catch (error) {
+    logApi.error('Failed to delete profile image', {
+      ...logContext,
+      error: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error
+    });
+    res.status(500).json({ error: 'Failed to delete profile image' });
   }
 });
 

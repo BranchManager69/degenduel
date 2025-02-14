@@ -33,6 +33,8 @@ export function configureMiddleware(app) {
   // Basic middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  // Serve static files from uploads directory
+  app.use('/uploads', express.static('uploads'));
   // Environment middleware
   app.use(environmentMiddleware);
   // CORS middleware for all routes
