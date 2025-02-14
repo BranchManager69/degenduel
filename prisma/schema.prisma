@@ -5,9 +5,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // Use different database URLs based on environment
-  // Production uses DATABASE_URL_PROD
-  // Development uses DATABASE_URL
 }
 
 model contest_participants {
@@ -345,20 +342,18 @@ model users {
   contest_portfolio_trades contest_portfolio_trades[]
   contest_portfolios     contest_portfolios[]
   contest_token_performance contest_token_performance[]
-  contest_token_prices   contest_token_prices[]
-  participant_influences participant_influences[]
-  referral_rewards       referral_rewards[]
-  referred_by            referrals[]                 @relation("ReferredByRelation")
-  referrals_made         referrals[]                 @relation("ReferralsMadeRelation")
-  referral_clicks        referral_clicks[]           @relation("ReferralClicksReceived")
-  transactions           transactions[]
-  user_stats             user_stats?
-  user_level             user_levels?                @relation(fields: [user_level_id], references: [id])
-  websocket_messages     websocket_messages[]
-  
-  // Remove redundant relations
-  referral_rankings       referral_period_rankings[]
-  referral_milestones     referral_milestones[]
+  contest_token_prices      contest_token_prices[]
+  participant_influences    participant_influences[]
+  referral_clicks           referral_clicks[]           @relation("ReferralClicksReceived")
+  referral_milestones       referral_milestones[]
+  referral_rankings         referral_period_rankings[]
+  referral_rewards          referral_rewards[]
+  referred_by               referrals[]                 @relation("ReferredByRelation")
+  referrals_made            referrals[]                 @relation("ReferralsMadeRelation")
+  transactions              transactions[]
+  user_stats                user_stats?
+  user_level                user_levels?                @relation(fields: [user_level_id], references: [id])
+  websocket_messages        websocket_messages[]
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -491,7 +486,7 @@ model participant_influences {
 }
 
 model system_settings {
-  key         String   @id @map("key") 
+  key         String   @id @map("key")
   value       Json
   description String?
   updated_at  DateTime @default(now()) @db.Timestamptz(6)
@@ -589,30 +584,28 @@ model vanity_wallet_pool {
 }
 
 model referrals {
-  id             Int            @id @default(autoincrement())
-  referrer_id     String        @db.VarChar(44)
-  referred_id     String        @db.VarChar(44)
-  referral_code   String        @db.VarChar(20)
-  status         ReferralStatus @default(pending)
-  source         String?
-  landing_page   String?
-  utm_source     String?
-  utm_medium     String?
-  utm_campaign   String?
-  device         String?
-  browser        String?
-  ip_address     String?
-  user_agent     String?
-  session_id     String?
-  click_timestamp DateTime?     @db.Timestamptz(6)
-  reward_amount   Decimal?      @db.Decimal(20,0)
-  reward_paid_at  DateTime?     @db.Timestamptz(6)
-  qualified_at    DateTime?     @db.Timestamptz(6)
-  created_at      DateTime      @default(now()) @db.Timestamptz(6)
-  // updated_at      DateTime      @default(now()) @db.Timestamptz(6)
-
-  referrer users @relation("ReferralsMadeRelation", fields: [referrer_id], references: [wallet_address], onDelete: Cascade)
-  referred users @relation("ReferredByRelation", fields: [referred_id], references: [wallet_address], onDelete: Cascade)
+  id              Int            @id @default(autoincrement())
+  referrer_id     String         @db.VarChar(44)
+  referred_id     String         @db.VarChar(44)
+  referral_code   String         @db.VarChar(20)
+  status          ReferralStatus @default(pending)
+  source          String?
+  landing_page    String?
+  utm_source      String?
+  utm_medium      String?
+  utm_campaign    String?
+  device          String?
+  browser         String?
+  ip_address      String?
+  user_agent      String?
+  session_id      String?
+  click_timestamp DateTime?      @db.Timestamptz(6)
+  reward_amount   Decimal?       @db.Decimal(20, 0)
+  reward_paid_at  DateTime?      @db.Timestamptz(6)
+  qualified_at    DateTime?      @db.Timestamptz(6)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  referred        users          @relation("ReferredByRelation", fields: [referred_id], references: [wallet_address], onDelete: Cascade)
+  referrer        users          @relation("ReferralsMadeRelation", fields: [referrer_id], references: [wallet_address], onDelete: Cascade)
 
   @@index([referrer_id])
   @@index([referred_id])
@@ -621,29 +614,30 @@ model referrals {
 }
 
 model referral_clicks {
-  id           Int       @id @default(autoincrement())
-  referral_code String   @db.VarChar(20)
-  referrer_id   String   @db.VarChar(44)
-  source       String?
-  landing_page String?
-  utm_source   String?
-  utm_medium   String?
-  utm_campaign String?
-  device       String?
-  browser      String?
-  ip_address   String
-  user_agent   String?
-  session_id   String
-  converted    Boolean   @default(false)
-  converted_at DateTime? @db.Timestamptz(6)
-  timestamp    DateTime  @default(now()) @db.Timestamptz(6)
-
-  referrer users @relation("ReferralClicksReceived", fields: [referrer_id], references: [wallet_address], onDelete: Cascade)
+  id            Int       @id @default(autoincrement())
+  referral_code String    @db.VarChar(20)
+  referrer_id   String    @db.VarChar(44)
+  source        String?
+  landing_page  String?
+  utm_source    String?
+  utm_medium    String?
+  utm_campaign  String?
+  device        String?
+  browser       String?
+  ip_address    String
+  user_agent    String?
+  session_id    String
+  converted     Boolean   @default(false)
+  converted_at  DateTime? @db.Timestamptz(6)
+  timestamp     DateTime  @default(now()) @db.Timestamptz(6)
+  referrer      users     @relation("ReferralClicksReceived", fields: [referrer_id], references: [wallet_address], onDelete: Cascade)
 
   @@index([referral_code])
   @@index([referrer_id])
   @@index([session_id])
   @@index([ip_address])
+  @@index([referral_code], map: "idx_referral_clicks_code")
+  @@index([session_id], map: "idx_referral_clicks_session")
 }
 
 model referral_rewards {
@@ -674,6 +668,96 @@ model managed_wallets {
   updated_at            DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("managed_wallets")
+}
+
+model referral_periods {
+  id         Int                        @id @default(autoincrement())
+  start_date DateTime                   @db.Timestamptz(6)
+  end_date   DateTime                   @db.Timestamptz(6)
+  is_active  Boolean                    @default(true)
+  status     String                     @default("in_progress")
+  created_at DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime                   @default(now()) @db.Timestamptz(6)
+  rankings   referral_period_rankings[]
+}
+
+model referral_period_rankings {
+  id             Int              @id @default(autoincrement())
+  period_id      Int
+  user_id        String           @db.VarChar(44)
+  referral_count Int              @default(0)
+  rank           Int
+  trend          String           @default("stable")
+  reward_amount  Decimal?         @db.Decimal(20, 0)
+  status         String           @default("pending")
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime         @default(now()) @db.Timestamptz(6)
+  period         referral_periods @relation(fields: [period_id], references: [id], onDelete: Cascade)
+  user           users            @relation(fields: [user_id], references: [wallet_address], onDelete: Cascade)
+
+  @@unique([period_id, user_id])
+  @@index([period_id])
+  @@index([user_id])
+}
+
+model referral_milestones {
+  id              Int      @id @default(autoincrement())
+  user_id         String   @db.VarChar(44)
+  milestone_level Int
+  referral_count  Int
+  reward_amount   Decimal  @db.Decimal(20, 0)
+  status          String   @default("pending")
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+  user            users    @relation(fields: [user_id], references: [wallet_address], onDelete: Cascade)
+
+  @@unique([user_id, milestone_level])
+  @@index([user_id])
+}
+
+model circuit_breaker_states {
+  id                Int                         @id @default(autoincrement())
+  service_name      String                      @unique
+  state             String                      @default("closed")
+  failure_count     Int                         @default(0)
+  last_failure      DateTime?
+  recovery_attempts Int                         @default(0)
+  updated_at        DateTime                    @updatedAt
+  config            circuit_breaker_config?
+  incidents         circuit_breaker_incidents[]
+
+  @@index([state])
+  @@map("circuit_breaker_states")
+}
+
+model circuit_breaker_incidents {
+  id           String                 @id @default(uuid())
+  service_name String
+  type         String
+  severity     String
+  status       String                 @default("active")
+  message      String
+  start_time   DateTime               @default(now())
+  end_time     DateTime?
+  metrics      Json?
+  state        circuit_breaker_states @relation(fields: [service_name], references: [service_name])
+
+  @@index([service_name, status])
+  @@index([start_time])
+  @@map("circuit_breaker_incidents")
+}
+
+model circuit_breaker_config {
+  service_name      String                 @id
+  failure_threshold Int                    @default(5)
+  recovery_timeout  Int                    @default(30000)
+  request_limit     Int                    @default(100)
+  monitoring_window Int                    @default(60000)
+  minimum_requests  Int                    @default(10)
+  updated_at        DateTime               @updatedAt
+  state             circuit_breaker_states @relation(fields: [service_name], references: [service_name])
+
+  @@map("circuit_breaker_config")
 }
 
 enum UserRole {
@@ -742,97 +826,4 @@ enum ReferralRewardType {
   signup_bonus
   contest_bonus
   special_event
-}
-
-model referral_periods {
-  id        Int      @id @default(autoincrement())
-  start_date DateTime @db.Timestamptz(6)
-  end_date   DateTime @db.Timestamptz(6)
-  is_active  Boolean  @default(true)
-  status     String   @default("in_progress")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
-
-  rankings referral_period_rankings[]
-}
-
-model referral_period_rankings {
-  id            Int      @id @default(autoincrement())
-  period_id     Int
-  user_id       String   @db.VarChar(44)
-  referral_count Int     @default(0)
-  rank          Int
-  trend         String   @default("stable")
-  reward_amount  Decimal? @db.Decimal(20,0)
-  status        String   @default("pending")
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime @default(now()) @db.Timestamptz(6)
-
-  period referral_periods @relation(fields: [period_id], references: [id], onDelete: Cascade)
-  user   users           @relation(fields: [user_id], references: [wallet_address], onDelete: Cascade)
-
-  @@unique([period_id, user_id])
-  @@index([period_id])
-  @@index([user_id])
-}
-
-model referral_milestones {
-  id             Int      @id @default(autoincrement())
-  user_id        String   @db.VarChar(44)
-  milestone_level Int
-  referral_count Int
-  reward_amount   Decimal @db.Decimal(20,0)
-  status         String   @default("pending")
-  created_at     DateTime @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime @default(now()) @db.Timestamptz(6)
-
-  user users @relation(fields: [user_id], references: [wallet_address], onDelete: Cascade)
-
-  @@unique([user_id, milestone_level])
-  @@index([user_id])
-}
-
-model circuit_breaker_states {
-  id                Int       @id @default(autoincrement())
-  service_name      String    @unique
-  state            String    @default("closed") // closed, open, half-open
-  failure_count    Int       @default(0)
-  last_failure     DateTime?
-  recovery_attempts Int       @default(0)
-  updated_at       DateTime  @updatedAt
-  config           circuit_breaker_config?
-  incidents        circuit_breaker_incidents[]
-
-  @@index([state])
-  @@map("circuit_breaker_states")
-}
-
-model circuit_breaker_incidents {
-  id            String    @id @default(uuid())
-  service_name  String
-  type          String
-  severity      String
-  status        String    @default("active")
-  message       String
-  start_time    DateTime  @default(now())
-  end_time      DateTime?
-  metrics       Json?
-  state         circuit_breaker_states @relation(fields: [service_name], references: [service_name])
-
-  @@index([service_name, status])
-  @@index([start_time])
-  @@map("circuit_breaker_incidents")
-}
-
-model circuit_breaker_config {
-  service_name      String    @id
-  failure_threshold Int       @default(5)
-  recovery_timeout  Int       @default(30000)
-  request_limit     Int       @default(100)
-  monitoring_window Int       @default(60000)
-  minimum_requests  Int       @default(10)
-  updated_at       DateTime  @updatedAt
-  state            circuit_breaker_states @relation(fields: [service_name], references: [service_name])
-
-  @@map("circuit_breaker_config")
 }
