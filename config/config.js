@@ -6,7 +6,7 @@ dotenv.config();
 // helpful DegenDuel API endpoints:
 const DD_SERV_API = 'https://degenduel.me/api/dd-serv/tokens';
 const DATA_API = 'https://data.degenduel.me/api';
-const GAME_API = 'https://game.degenduel.me';
+const GAME_API = 'https://game.degenduel.me'; // deprecated
 
 // helpful Solana RPC URLs:
 const RPC_URL_MAINNET_HTTP = process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com';

@@ -1,6 +1,6 @@
 // /routes/users.js
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prisma.js';
 import express from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
@@ -14,7 +14,6 @@ import path from 'path';
 import fs from 'fs';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 const upload = multer();
 
 const { NAME } = VALIDATION;

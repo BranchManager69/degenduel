@@ -37,7 +37,12 @@
     "backup-db": "./scripts/backup-db.sh",
     "backup": "./scripts/backup-db.sh",
     "test:websocket": "node scripts/test-websocket.js",
-    "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js"
+    "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
+    "db:status": "./scripts/db-tools.sh status",
+    "db:backup": "./scripts/db-tools.sh backup",
+    "db:reset-test": "./scripts/db-tools.sh reset-test",
+    "db:restore": "./scripts/db-tools.sh restore",
+    "db:safe-migrate": "npm run db:backup && npm run db:reset-test && npx prisma migrate dev"
   },
   "dependencies": {
     "@faker-js/faker": "^9.4.0",
