@@ -71,13 +71,13 @@ const ANALYTICS_PATTERNS = {
 
 // Service-specific colors and icons
 const SERVICE_COLORS = {
-  CONTEST: { color: "#6A0DAD", icon: "🏆" }, // Deep Purple for competition
-  WALLET: { color: "#228B22", icon: "💰" }, // Forest Green for money/security
-  TOKEN_SYNC: { color: "#4169E1", icon: "💫" }, // Royal Blue for market data
-  AUTH: { color: "#FF6B6B", icon: "🔐" }, // Coral Red for security
-  PORTFOLIO: { color: "#20B2AA", icon: "📊" }, // Light Sea Green for analytics
-  ADMIN: { color: "#FFD700", icon: "⚡" }, // Gold for admin operations
-  DEFAULT: { color: "#A9A9A9", icon: "📌" }, // Dark Gray default
+  CONTEST: { color: "#6A0DAD", icon: "🎯" },     // Changed from 🏆 to 🎯
+  WALLET: { color: "#228B22", icon: "💎" },      // Changed from 💰 to 💎
+  TOKEN_SYNC: { color: "#4169E1", icon: "🔄" },  // Changed from 💫 to 🔄
+  AUTH: { color: "#FF6B6B", icon: "🔑" },        // Changed from 🔐 to 🔑
+  PORTFOLIO: { color: "#20B2AA", icon: "📈" },   // Changed from 📊 to 📈
+  ADMIN: { color: "#FFD700", icon: "⭐" },       // Changed from ⚡ to ⭐
+  DEFAULT: { color: "#A9A9A9", icon: "🔹" }      // Changed from 📌 to 🔹
 };
 
 // Level-specific colors and formatting
@@ -302,12 +302,12 @@ function formatCircuitBreaker(service, details) {
   const { failures, threshold, service: serviceName } = details;
   const serviceDisplay = serviceName || service || 'Unknown Service';
   return `
-🚨 CIRCUIT BREAKER ALERT 🚨
-══════════════════════════
-Service: ${serviceDisplay}
-Status:  OPEN ❌
-Failures: ${failures}/${threshold}
-══════════════════════════`;
+${chalk.red('🚨 CIRCUIT BREAKER ALERT 🚨')}
+${chalk.red('══════════════════════════')}
+Service: ${chalk.red(serviceDisplay)}
+Status:  ${chalk.red('OPEN')} ❌
+Failures: ${chalk.red(`${failures}/${threshold}`)}
+${chalk.red('══════════════════════════')}`;
 }
 
 function formatUserInteraction(user, action, details) {
@@ -362,8 +362,12 @@ function formatPerformanceStats(metrics) {
 }
 
 function formatEventLoopLag(lagMs) {
-  const severity = lagMs > 200 ? '🔴' : lagMs > 100 ? '🟡' : '🟢';
-  return `${severity} Event Loop Lag: ${lagMs}ms`;
+  // Only use warning colors for seriously high lag
+  if (lagMs > 250) {
+    return `⚡⚡⚡ Event Loop Lag: ${chalk.yellow(lagMs + 'ms')} (high)`;
+  }
+  // Otherwise just show the lag with appropriate indicators
+  return `${lagMs > 100 ? '⚡⚡' : '⚡'} Event Loop Lag: ${lagMs}ms`;
 }
 
 function formatAdminAction(details) {

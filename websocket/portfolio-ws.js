@@ -283,6 +283,109 @@ class PortfolioWebSocketServer {
             }
         }, 60 * 60 * 1000); // Run every hour
     }
+
+    // Service state broadcasting
+    async broadcastServiceState(service, state) {
+        try {
+            const message = {
+                type: 'service:state',
+                service,
+                data: state,
+                timestamp: new Date().toISOString()
+            };
+
+            this.#broadcast(message);
+            
+            // Store message for offline clients
+            await prisma.websocket_messages.create({
+                data: {
+                    type: 'service:state',
+                    data: message,
+                    delivered: false,
+                    wallet_address: 'SYSTEM',
+                    timestamp: new Date()
+                }
+            });
+
+            logApi.info(`Service state broadcast successful`, {
+                service,
+                state: state.status,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logApi.error(`Failed to broadcast service state`, {
+                service,
+                error: error.message,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+
+    // Service metrics broadcasting
+    async broadcastServiceMetrics(service, metrics) {
+        try {
+            const message = {
+                type: 'service:metrics',
+                service,
+                data: {
+                    status: metrics.status || 'unknown',
+                    uptime: metrics.uptime || 0,
+                    latency: metrics.performance?.averageOperationTimeMs || 0,
+                    activeUsers: metrics.operations?.total || 0
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            this.#broadcast(message);
+            logApi.info(`Service metrics broadcast`, { service, metrics: message.data });
+        } catch (error) {
+            logApi.error(`Failed to broadcast service metrics`, {
+                service,
+                error: error.message
+            });
+        }
+    }
+
+    // Service alert broadcasting
+    async broadcastServiceAlert(service, alert) {
+        try {
+            const message = {
+                type: 'service:alert',
+                service,
+                data: {
+                    severity: alert.severity || 'info',
+                    message: alert.message,
+                    timestamp: new Date().toISOString()
+                }
+            };
+
+            this.#broadcast(message);
+            
+            // Store critical alerts
+            if (alert.severity === 'critical') {
+                await prisma.websocket_messages.create({
+                    data: {
+                        type: 'service:alert',
+                        data: message,
+                        delivered: false,
+                        wallet_address: 'SYSTEM',
+                        timestamp: new Date()
+                    }
+                });
+            }
+
+            logApi.info(`Service alert broadcast`, {
+                service,
+                severity: alert.severity,
+                message: alert.message
+            });
+        } catch (error) {
+            logApi.error(`Failed to broadcast service alert`, {
+                service,
+                error: error.message
+            });
+        }
+    }
 }
 
 export default PortfolioWebSocketServer;

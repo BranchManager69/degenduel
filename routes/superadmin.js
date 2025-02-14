@@ -7,18 +7,18 @@ import path from 'path';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import logApi from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import { PrismaClient } from '@prisma/client';
 import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { WalletGenerator } from '../utils/solana-suite/wallet-generator.js';
 import { FaucetManager } from '../utils/solana-suite/faucet-manager.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
+import { ServiceManager } from '../utils/service-suite/service-manager.js';
 import bs58 from 'bs58';
+import chalk from 'chalk';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 
 // Router
 const router = express.Router();
-const prismaClient = new PrismaClient();
 
 // Solana connection
 const connection = new Connection(process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com', 'confirmed');
@@ -144,32 +144,32 @@ const phaseDefinitions = {
     'clear': {
         dependencies: [],
         seed: async () => {
-            await prismaClient.$transaction([
-                prismaClient.transactions.deleteMany(),
-                prismaClient.contest_participants.deleteMany(),
-                prismaClient.contest_portfolios.deleteMany(),
-                prismaClient.contest_token_performance.deleteMany(),
-                prismaClient.contest_token_prices.deleteMany(),
-                prismaClient.contest_wallets.deleteMany(),
-                prismaClient.contests.deleteMany(),
-                prismaClient.user_stats.deleteMany({
+            await prisma.$transaction([
+                prisma.transactions.deleteMany(),
+                prisma.contest_participants.deleteMany(),
+                prisma.contest_portfolios.deleteMany(),
+                prisma.contest_token_performance.deleteMany(),
+                prisma.contest_token_prices.deleteMany(),
+                prisma.contest_wallets.deleteMany(),
+                prisma.contests.deleteMany(),
+                prisma.user_stats.deleteMany({
                     where: {
                         user: {
                             role: { not: 'superadmin' }
                         }
                     }
                 }),
-                prismaClient.users.deleteMany({
+                prisma.users.deleteMany({
                     where: {
                         role: { not: 'superadmin' }
                     }
                 }),
-                prismaClient.tokens.deleteMany(),
-                prismaClient.token_buckets.deleteMany(),
-                prismaClient.achievement_tier_requirements.deleteMany(),
-                prismaClient.achievement_tiers.deleteMany(),
-                prismaClient.achievement_categories.deleteMany(),
-                prismaClient.user_levels.deleteMany()
+                prisma.tokens.deleteMany(),
+                prisma.token_buckets.deleteMany(),
+                prisma.achievement_tier_requirements.deleteMany(),
+                prisma.achievement_tiers.deleteMany(),
+                prisma.achievement_categories.deleteMany(),
+                prisma.user_levels.deleteMany()
             ]);
             return 'Database cleared successfully (preserved superadmin account)';
         },
@@ -186,11 +186,11 @@ const phaseDefinitions = {
             return 'Tokens seeded successfully';
         },
         rollback: async () => {
-            await prismaClient.$transaction([
-                prismaClient.token_prices.deleteMany(),
-                prismaClient.token_bucket_memberships.deleteMany(),
-                prismaClient.tokens.deleteMany(),
-                prismaClient.token_buckets.deleteMany()
+            await prisma.$transaction([
+                prisma.token_prices.deleteMany(),
+                prisma.token_bucket_memberships.deleteMany(),
+                prisma.tokens.deleteMany(),
+                prisma.token_buckets.deleteMany()
             ]);
             return 'Tokens rolled back successfully';
         }
@@ -203,10 +203,10 @@ const phaseDefinitions = {
             return 'Achievements seeded successfully';
         },
         rollback: async () => {
-            await prismaClient.$transaction([
-                prismaClient.achievement_tier_requirements.deleteMany(),
-                prismaClient.achievement_tiers.deleteMany(),
-                prismaClient.achievement_categories.deleteMany()
+            await prisma.$transaction([
+                prisma.achievement_tier_requirements.deleteMany(),
+                prisma.achievement_tiers.deleteMany(),
+                prisma.achievement_categories.deleteMany()
             ]);
             return 'Achievements rolled back successfully';
         }
@@ -219,9 +219,9 @@ const phaseDefinitions = {
             return 'User levels seeded successfully';
         },
         rollback: async () => {
-            await prismaClient.$transaction([
-                prismaClient.level_rewards.deleteMany(),
-                prismaClient.user_levels.deleteMany()
+            await prisma.$transaction([
+                prisma.level_rewards.deleteMany(),
+                prisma.user_levels.deleteMany()
             ]);
             return 'User levels rolled back successfully';
         }
@@ -234,9 +234,9 @@ const phaseDefinitions = {
             return 'Users seeded successfully';
         },
         rollback: async () => {
-            await prismaClient.$transaction([
-                prismaClient.user_stats.deleteMany(),
-                prismaClient.users.deleteMany()
+            await prisma.$transaction([
+                prisma.user_stats.deleteMany(),
+                prisma.users.deleteMany()
             ]);
             return 'Users rolled back successfully';
         }
@@ -249,9 +249,9 @@ const phaseDefinitions = {
             return 'Contests seeded successfully';
         },
         rollback: async () => {
-            await prismaClient.$transaction([
-                prismaClient.contest_wallets.deleteMany(),
-                prismaClient.contests.deleteMany()
+            await prisma.$transaction([
+                prisma.contest_wallets.deleteMany(),
+                prisma.contests.deleteMany()
             ]);
             return 'Contests rolled back successfully';
         }
@@ -264,8 +264,8 @@ const phaseDefinitions = {
             return 'Contest participants seeded successfully';
         },
         rollback: async () => {
-            await prismaClient.$transaction([
-                prismaClient.contest_participants.deleteMany()
+            await prisma.$transaction([
+                prisma.contest_participants.deleteMany()
             ]);
             return 'Contest participants rolled back successfully';
         }
@@ -278,10 +278,10 @@ const phaseDefinitions = {
             return 'Portfolios seeded successfully';
         },
         rollback: async () => {
-            await prismaClient.$transaction([
-                prismaClient.contest_token_performance.deleteMany(),
-                prismaClient.contest_token_prices.deleteMany(),
-                prismaClient.contest_portfolios.deleteMany()
+            await prisma.$transaction([
+                prisma.contest_token_performance.deleteMany(),
+                prisma.contest_token_prices.deleteMany(),
+                prisma.contest_portfolios.deleteMany()
             ]);
             return 'Portfolios rolled back successfully';
         }
@@ -291,7 +291,7 @@ const phaseDefinitions = {
 // Get current seeding phase status
 router.get('/reseed-status', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
-        const status = await prismaClient.system_settings.findUnique({
+        const status = await prisma.system_settings.findUnique({
             where: { key: 'reseed_status' }
         });
 
@@ -336,7 +336,7 @@ router.post('/reseed-rollback/:phase', requireAuth, requireSuperAdmin, async (re
         }
 
         // Update status before starting rollback
-        await prismaClient.system_settings.upsert({
+        await prisma.system_settings.upsert({
             where: { key: 'reseed_status' },
             update: {
                 value: {
@@ -359,14 +359,14 @@ router.post('/reseed-rollback/:phase', requireAuth, requireSuperAdmin, async (re
         const message = await phaseDefinitions[phase].rollback();
 
         // Update status after completion
-        const status = await prismaClient.system_settings.findUnique({
+        const status = await prisma.system_settings.findUnique({
             where: { key: 'reseed_status' }
         });
 
         const completedPhases = status?.value?.phases_completed || [];
         const updatedPhases = completedPhases.filter(p => p !== phase);
 
-        await prismaClient.system_settings.update({
+        await prisma.system_settings.update({
             where: { key: 'reseed_status' },
             data: {
                 value: {
@@ -414,7 +414,7 @@ router.post('/reseed-database/:phase', requireAuth, requireSuperAdmin, async (re
         }
 
         // Check dependencies
-        const status = await prismaClient.system_settings.findUnique({
+        const status = await prisma.system_settings.findUnique({
             where: { key: 'reseed_status' }
         });
         const completedPhases = status?.value?.phases_completed || [];
@@ -431,7 +431,7 @@ router.post('/reseed-database/:phase', requireAuth, requireSuperAdmin, async (re
         }
 
         // Update status before starting
-        await prismaClient.system_settings.upsert({
+        await prisma.system_settings.upsert({
             where: { key: 'reseed_status' },
             update: {
                 value: {
@@ -456,7 +456,7 @@ router.post('/reseed-database/:phase', requireAuth, requireSuperAdmin, async (re
         const message = await phaseDefinitions[phase].seed();
 
         // Update status after completion
-        await prismaClient.system_settings.update({
+        await prisma.system_settings.update({
             where: { key: 'reseed_status' },
             data: {
                 value: {
@@ -693,49 +693,121 @@ router.get('/services/states', requireAuth, requireSuperAdmin, async (req, res) 
     }
 });
 
-// Update service state
-router.post('/services/:service/toggle', requireAuth, requireSuperAdmin, async (req, res) => {
+// Service state management
+router.post('/services/:serviceName/toggle', requireAuth, requireSuperAdmin, async (req, res) => {
+    const { serviceName } = req.params;
+    const adminName = req.user.nickname || req.user.username || 'Admin';
+
     try {
-        const { service } = req.params;
-        const currentState = await prisma.system_settings.findUnique({
-            where: { key: service }
+        logApi.info(`🎮 Service toggle requested`, {
+            service: serviceName,
+            admin: adminName,
+            wallet: req.user.wallet_address,
+            timestamp: new Date().toISOString()
         });
 
-        let newState = {
-            enabled: true,
-            updated_by: req.user.wallet_address,
-            last_enabled: new Date().toISOString(),
-            last_disabled: null
-        };
-
-        if (currentState?.value) {
-            const parsedState = typeof currentState.value === 'string' 
-                ? JSON.parse(currentState.value)
-                : currentState.value;
-            
-            newState = {
-                enabled: !parsedState.enabled,
-                updated_by: req.user.wallet_address,
-                last_enabled: !parsedState.enabled ? new Date().toISOString() : parsedState.last_enabled,
-                last_disabled: !parsedState.enabled ? null : new Date().toISOString()
-            };
+        // 1. Get service from ServiceManager
+        const service = ServiceManager.services.get(serviceName);
+        if (!service) {
+            logApi.warn(`Service not found: ${serviceName}`, {
+                admin: adminName,
+                service: serviceName
+            });
+            return res.status(404).json({
+                success: false,
+                error: 'Service not found'
+            });
         }
 
+        // 2. Get current state
+        const currentState = await ServiceManager.getServiceState(serviceName);
+        const newEnabled = !currentState?.running;
+
+        // 3. Update system_settings first
+        const systemState = {
+            enabled: newEnabled,
+            updated_by: req.user.wallet_address,
+            last_enabled: newEnabled ? new Date().toISOString() : currentState?.last_enabled,
+            last_disabled: !newEnabled ? new Date().toISOString() : currentState?.last_disabled,
+            status: newEnabled ? 'active' : 'stopped'
+        };
+
         await prisma.system_settings.upsert({
-            where: { key: service },
+            where: { key: serviceName },
             create: {
-                key: service,
-                value: newState
+                key: serviceName,
+                value: systemState,
+                description: `${serviceName} state and configuration`
             },
             update: {
-                value: newState
+                value: systemState
             }
         });
 
-        res.json({ success: true, state: newState });
+        // 4. Toggle service state
+        try {
+            if (newEnabled) {
+                await service.start();
+                logApi.info(`🟩 🟩 🟩 ${chalk.green('Service started')}`, {
+                    service: serviceName,
+                    admin: adminName,
+                    timestamp: new Date().toISOString()
+                });
+            } else {
+                await service.stop();
+                logApi.info(`🟥 🟥 🟥 ${chalk.red('Service stopped')}`, {
+                    service: serviceName,
+                    admin: adminName,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        } catch (error) {
+            // Log service operation failure but continue to get final state
+            logApi.error(`Failed to ${newEnabled ? 'start' : 'stop'} service: ${chalk.red(error.message)}`, {
+                service: serviceName,
+                admin: adminName,
+                error: error.message
+            });
+        }
+
+        // 5. Get final state after operation
+        const finalState = await ServiceManager.getServiceState(serviceName);
+        
+        // 6. Broadcast state via WebSocket
+        if (global.wss?.broadcastServiceState) {
+            await global.wss.broadcastServiceState(serviceName, {
+                ...finalState,
+                ...systemState
+            });
+            logApi.info(`📡 Service state broadcast`, {
+                service: serviceName,
+                state: finalState.status
+            });
+        }
+
+        // 7. Return complete state
+        res.json({
+            success: true,
+            service: serviceName,
+            state: {
+                ...finalState,
+                ...systemState
+            }
+        });
+
     } catch (error) {
-        logApi.error('Failed to toggle service state:', error);
-        res.status(500).json({ success: false, error: error.message });
+        logApi.error(`Service toggle failed`, {
+            service: serviceName,
+            admin: adminName,
+            error: error.message,
+            stack: error.stack
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to toggle service',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
