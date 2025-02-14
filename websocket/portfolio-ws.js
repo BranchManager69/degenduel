@@ -1,287 +1,150 @@
 // /websocket/portfolio-ws.js
 
-import { WebSocketServer } from 'ws';
+import { BaseWebSocketServer } from '../utils/websocket-suite/base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
 import ReferralService from '../services/referralService.js';
 
-class PortfolioWebSocketServer {
-    static instance = null;
-    #wss = null;
-    #clients = new Map(); // Map<ws, { userId, role }>
-    
+class PortfolioWebSocketServer extends BaseWebSocketServer {
     constructor(server) {
-        if (PortfolioWebSocketServer.instance) {
-            return PortfolioWebSocketServer.instance;
-        }
-        this.#initializeWSS(server);
-        this.#startPeriodicTasks();
-        PortfolioWebSocketServer.instance = this;
-    }
-
-    #initializeWSS(server) {
-        if (!server) {
-            throw new Error('HTTP server instance is required for WebSocket initialization');
-        }
-
-        // Create WebSocket server with noServer: true
-        this.#wss = new WebSocketServer({
-            noServer: true
+        super(server, {
+            path: '/api/v2/ws/portfolio',
+            maxMessageSize: 100 * 1024, // 100KB
+            rateLimit: 100, // 100 messages per minute
+            requireAuth: true
         });
 
-        // Handle upgrade requests
-        server.on('upgrade', (request, socket, head) => {
-            if (request.url === '/api/v2/ws/portfolio') {
-                // Verify client before upgrade
-                this.#verifyClient({ req: request }, (verified) => {
-                    if (!verified) {
-                        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-                        socket.destroy();
-                        return;
-                    }
+        this.startPeriodicUpdates();
+    }
 
-                    this.#wss.handleUpgrade(request, socket, head, (ws) => {
-                        this.#wss.emit('connection', ws, request);
-                    });
+    async handleClientMessage(ws, message, clientInfo) {
+        switch (message.type) {
+            case 'PORTFOLIO_UPDATE_REQUEST':
+                await this.handlePortfolioUpdateRequest(ws, clientInfo);
+                break;
+            default:
+                this.sendError(ws, 'Unknown message type', 4004);
+        }
+    }
+
+    async handlePortfolioUpdateRequest(ws, clientInfo) {
+        try {
+            const portfolioData = await this.getPortfolioData(clientInfo.wallet);
+            if (portfolioData) {
+                this.sendToClient(ws, {
+                    type: 'PORTFOLIO_UPDATED',
+                    data: portfolioData,
+                    timestamp: new Date().toISOString()
                 });
             }
-        });
-
-        this.#wss.on('connection', this.#handleConnection.bind(this));
-        
-        // Heartbeat to keep connections alive
-        setInterval(() => {
-            this.#wss.clients.forEach((ws) => {
-                if (ws.isAlive === false) {
-                    this.#clients.delete(ws);
-                    return ws.terminate();
-                }
-                ws.isAlive = false;
-                ws.ping();
-            });
-        }, 30000);
-
-        logApi.info('Portfolio WebSocket server initialized successfully');
-    }
-
-    #verifyClient = async (info, callback) => {
-        try {
-            const token = info.req.headers['sec-websocket-protocol'] || 
-                         info.req.headers.protocol?.[0] ||
-                         info.req.token;
-                         
-            if (!token) {
-                return callback(false, 401, 'Unauthorized');
-            }
-
-            const decoded = jwt.verify(token, config.jwt.secret);
-            const user = await prisma.users.findUnique({
-                where: { wallet_address: decoded.wallet_address }
-            });
-
-            if (!user) {
-                return callback(false, 403, 'Forbidden');
-            }
-
-            info.req.user = user;
-            callback(true);
         } catch (error) {
-            logApi.error('WebSocket authentication error:', error);
-            callback(false, 401, 'Unauthorized');
+            logApi.error('Error handling portfolio update request:', error);
+            this.sendError(ws, 'Failed to fetch portfolio data', 5001);
         }
     }
 
-    #handleConnection(ws, req) {
-        try {
-            logApi.info('New portfolio WebSocket connection attempt');
-            ws.isAlive = true;
-            this.#clients.set(ws, {
-                userId: req.user.id,
-                wallet: req.user.wallet_address,
-                role: req.user.role
-            });
-            logApi.info('Portfolio client added to tracking map');
-
-            // Handle pong messages for connection keepalive
-            ws.on('pong', () => {
-                ws.isAlive = true;
-            });
-
-            // Handle client messages
-            ws.on('message', (data) => {
-                try {
-                    const message = JSON.parse(data);
-                    logApi.debug('Received portfolio ws message:', message);
-                    
-                    if (message.type === 'ping') {
-                        ws.send(JSON.stringify({
-                            type: 'pong',
-                            timestamp: new Date().toISOString()
-                        }));
-                    } else if (message.type === 'PORTFOLIO_UPDATE_REQUEST') {
-                        // Echo back the portfolio data as a PORTFOLIO_UPDATED message
-                        this.broadcastPortfolioUpdate(message.data, req.user.wallet_address);
-                        logApi.info('Portfolio update request processed:', message.data);
+    async getPortfolioData(wallet) {
+        return await prisma.contest_portfolios.findMany({
+            where: { wallet_address: wallet },
+            include: {
+                tokens: {
+                    select: {
+                        symbol: true,
+                        name: true,
+                        decimals: true,
+                        market_cap: true,
+                        change_24h: true,
+                        volume_24h: true
                     }
-                } catch (error) {
-                    logApi.error('Error handling portfolio ws message:', error);
                 }
-            });
-
-            // Handle disconnection
-            ws.on('close', () => {
-                logApi.info('Portfolio WebSocket connection closed');
-                this.#clients.delete(ws);
-            });
-
-            // Send initial connection success
-            const initialMessage = {
-                type: 'CONNECTED',
-                timestamp: new Date().toISOString()
-            };
-            logApi.info('Sending initial portfolio connection message:', initialMessage);
-            ws.send(JSON.stringify(initialMessage));
-            logApi.info('Portfolio WebSocket connection established successfully');
-        } catch (error) {
-            logApi.error('Error in handleConnection:', error);
-            ws.terminate();
-        }
-    }
-
-    // Private broadcast method
-    #broadcast(message, filter = null) {
-        try {
-            logApi.info('Broadcasting portfolio message:', {
-                type: message.type,
-                data: message.data,
-                timestamp: message.timestamp
-            });
-            const payload = JSON.stringify(message);
-            let sentCount = 0;
-            let clientStates = [];
-            
-            this.#wss.clients.forEach((client) => {
-                const clientInfo = this.#clients.get(client);
-                if (!clientInfo) return;
-
-                // Apply filter if provided
-                if (filter && !filter(clientInfo)) return;
-
-                clientStates.push(client.readyState);
-                if (client.readyState === client.OPEN) {
-                    client.send(payload);
-                    sentCount++;
-                }
-            });
-            
-            logApi.info(`Portfolio broadcast complete. Client states:`, clientStates, `Sent to ${sentCount} clients`);
-        } catch (error) {
-            logApi.error('Error broadcasting portfolio message:', error);
-        }
-    }
-
-    // Public methods for broadcasting events
-    broadcastPortfolioUpdate(portfolioData, targetWallet = null) {
-        logApi.info('Portfolio update event:', portfolioData);
-        this.#broadcast({
-            type: 'PORTFOLIO_UPDATED',
-            data: portfolioData,
-            timestamp: new Date().toISOString()
-        }, targetWallet ? (client) => client.wallet === targetWallet : null);
-    }
-
-    broadcastTradeUpdate(tradeData, targetWallet = null) {
-        this.#broadcast({
-            type: 'TRADE_EXECUTED',
-            data: tradeData,
-            timestamp: new Date().toISOString()
-        }, targetWallet ? (client) => client.wallet === targetWallet : null);
-    }
-
-    broadcastPriceUpdate(priceData) {
-        this.#broadcast({
-            type: 'PRICE_UPDATED',
-            data: priceData,
-            timestamp: new Date().toISOString()
+            }
         });
     }
 
-    broadcastError(error, targetWallet = null) {
-        this.#broadcast({
-            type: 'ERROR',
-            error: error.message,
-            timestamp: new Date().toISOString()
-        }, targetWallet ? (client) => client.wallet === targetWallet : null);
-    }
-
-    // Get active connections count
-    getConnectionsCount() {
-        return this.#clients.size;
-    }
-
-    // Cleanup method
-    cleanup() {
-        this.#wss?.clients.forEach((ws) => {
-            ws.terminate();
-        });
-        this.#clients.clear();
-        this.#wss?.close();
-        PortfolioWebSocketServer.instance = null;
-    }
-
-    #startPeriodicTasks() {
-        // Update portfolio values periodically (every 15 seconds)
+    startPeriodicUpdates() {
+        // Update portfolio values every 15 seconds
         setInterval(async () => {
-            for (const [ws, client] of this.#clients) {
-                try {
-                    // Get latest portfolio data
-                    const portfolioData = await prisma.contest_portfolios.findMany({
-                        where: { wallet_address: client.wallet },
-                        include: {
-                            tokens: {
-                                select: {
-                                    symbol: true,
-                                    name: true
-                                }
+            try {
+                const portfolios = await prisma.contest_portfolios.findMany({
+                    include: {
+                        tokens: {
+                            select: {
+                                symbol: true,
+                                name: true,
+                                decimals: true,
+                                market_cap: true,
+                                change_24h: true,
+                                volume_24h: true
                             }
                         }
-                    });
-
-                    // Broadcast update if we have data
-                    if (portfolioData.length > 0) {
-                        this.broadcastPortfolioUpdate(portfolioData, client.wallet);
                     }
-                } catch (error) {
-                    logApi.error('Error in portfolio periodic update:', error);
+                });
+
+                // Group portfolios by wallet
+                const portfoliosByWallet = portfolios.reduce((acc, portfolio) => {
+                    if (!acc[portfolio.wallet_address]) {
+                        acc[portfolio.wallet_address] = [];
+                    }
+                    acc[portfolio.wallet_address].push(portfolio);
+                    return acc;
+                }, {});
+
+                // Broadcast updates to respective clients
+                for (const [wallet, data] of Object.entries(portfoliosByWallet)) {
+                    this.broadcast(
+                        {
+                            type: 'PORTFOLIO_UPDATED',
+                            data,
+                            timestamp: new Date().toISOString(),
+                            store: true // Queue if client is offline
+                        },
+                        (client) => client.wallet === wallet
+                    );
                 }
+            } catch (error) {
+                logApi.error('Error in periodic portfolio update:', error);
             }
         }, 15000);
 
-        // Add cleanup job for old messages
+        // Cleanup old messages every 2 days
         setInterval(async () => {
             try {
                 await prisma.websocket_messages.deleteMany({
                     where: {
                         timestamp: {
-                            lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Delete messages older than 7 days
+                            lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days old
                         }
                     }
                 });
             } catch (error) {
                 logApi.error('Failed to cleanup old messages:', error);
             }
-        }, 2 * 24 * 60 * 60 * 1000); // Run every 2 days
+        }, 2 * 24 * 60 * 60 * 1000);
+    }
 
-        // Check for expired referrals every hour
-        setInterval(async () => {
-            try {
-                await ReferralService.checkExpiredReferrals();
-            } catch (error) {
-                logApi.error('Error checking expired referrals:', error);
-            }
-        }, 60 * 60 * 1000); // Run every hour
+    // Public methods for external use
+    broadcastTradeExecution(tradeData) {
+        this.broadcast(
+            {
+                type: 'TRADE_EXECUTED',
+                data: tradeData,
+                timestamp: new Date().toISOString(),
+                store: true
+            },
+            (client) => 
+                client.wallet === tradeData.wallet_address || 
+                client.role === 'superadmin'
+        );
+    }
+
+    broadcastPriceUpdate(priceData) {
+        this.broadcast({
+            type: 'PRICE_UPDATED',
+            data: priceData,
+            timestamp: new Date().toISOString()
+        });
     }
 
     // Service state broadcasting
@@ -294,7 +157,7 @@ class PortfolioWebSocketServer {
                 timestamp: new Date().toISOString()
             };
 
-            this.#broadcast(message);
+            this.broadcast(message);
             
             // Store message for offline clients
             await prisma.websocket_messages.create({
@@ -336,7 +199,7 @@ class PortfolioWebSocketServer {
                 timestamp: new Date().toISOString()
             };
 
-            this.#broadcast(message);
+            this.broadcast(message);
             logApi.info(`Service metrics broadcast`, { service, metrics: message.data });
         } catch (error) {
             logApi.error(`Failed to broadcast service metrics`, {
@@ -359,7 +222,7 @@ class PortfolioWebSocketServer {
                 }
             };
 
-            this.#broadcast(message);
+            this.broadcast(message);
             
             // Store critical alerts
             if (alert.severity === 'critical') {
@@ -387,6 +250,11 @@ class PortfolioWebSocketServer {
         }
     }
 }
+
+// Export singleton instance creator
+export const createPortfolioWebSocket = (server) => {
+    return new PortfolioWebSocketServer(server);
+};
 
 export default PortfolioWebSocketServer;
 
@@ -617,7 +485,11 @@ async function sendPortfolioState(ws, wallet) {
         tokens: {
           select: {
             symbol: true,
-            name: true
+            name: true,
+            decimals: true,
+            market_cap: true,
+            change_24h: true,
+            volume_24h: true
           }
         },
         contests: {
@@ -661,7 +533,11 @@ async function sendAllPortfolioStates(ws) {
         tokens: {
           select: {
             symbol: true,
-            name: true
+            name: true,
+            decimals: true,
+            market_cap: true,
+            change_24h: true,
+            volume_24h: true
           }
         },
         contests: {
