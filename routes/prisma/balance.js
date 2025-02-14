@@ -5,10 +5,10 @@ import dotenv from 'dotenv';
 import { Router } from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js'; // New DD Logging System
+import prisma from '../../config/prisma.js';
 dotenv.config()
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Superadmin wallet address
 const SUPERADMIN_WALLET_ADDRESS = process.env.SUPERADMIN_WALLET_ADDRESS; // TODO: Move to config/constants.js

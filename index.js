@@ -29,6 +29,7 @@ import PortfolioWebSocketServer from "./websocket/portfolio-ws.js";
 import { createServer } from 'http';
 import referralScheduler from './scripts/referral-scheduler.js';
 import referralService from './services/referralService.js';
+import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
 
 dotenv.config();
 
@@ -102,6 +103,7 @@ app.use("/api/admin/vanity-wallets", vanityWalletRoutes);
 app.use("/api/admin/wallets", walletManagementRoutes);
 app.use("/api/admin/faucet", faucetManagementRoutes);
 app.use("/api/admin/metrics", serviceMetricsRoutes);
+app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
 app.use("/api/superadmin", superadminRoutes);
 
 // 3. Apply maintenance check to all other routes

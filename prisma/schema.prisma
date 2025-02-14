@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL_PROD")
+  url      = env("DATABASE_URL")
 }
 
 model contest_participants {
@@ -590,7 +590,7 @@ model referrals {
   referrer_id     String        @db.VarChar(44)
   referred_id     String        @db.VarChar(44)
   referral_code   String        @db.VarChar(20)
-  status         ReferralStatus @default(PENDING)
+  status         ReferralStatus @default(pending)
   source         String?
   landing_page   String?
   utm_source     String?
@@ -729,10 +729,10 @@ enum TradeType {
 }
 
 enum ReferralStatus {
-  PENDING
-  COMPLETED
-  EXPIRED
-  REJECTED
+  pending
+  qualified
+  rewarded
+  expired
 }
 
 enum ReferralRewardType {
@@ -787,4 +787,49 @@ model referral_milestones {
 
   @@unique([user_id, milestone_level])
   @@index([user_id])
+}
+
+model circuit_breaker_states {
+  id                Int       @id @default(autoincrement())
+  service_name      String    @unique
+  state            String    @default("closed") // closed, open, half-open
+  failure_count    Int       @default(0)
+  last_failure     DateTime?
+  recovery_attempts Int       @default(0)
+  updated_at       DateTime  @updatedAt
+  config           circuit_breaker_config?
+  incidents        circuit_breaker_incidents[]
+
+  @@index([state])
+  @@map("circuit_breaker_states")
+}
+
+model circuit_breaker_incidents {
+  id            String    @id @default(uuid())
+  service_name  String
+  type          String
+  severity      String
+  status        String    @default("active")
+  message       String
+  start_time    DateTime  @default(now())
+  end_time      DateTime?
+  metrics       Json?
+  state         circuit_breaker_states @relation(fields: [service_name], references: [service_name])
+
+  @@index([service_name, status])
+  @@index([start_time])
+  @@map("circuit_breaker_incidents")
+}
+
+model circuit_breaker_config {
+  service_name      String    @id
+  failure_threshold Int       @default(5)
+  recovery_timeout  Int       @default(30000)
+  request_limit     Int       @default(100)
+  monitoring_window Int       @default(60000)
+  minimum_requests  Int       @default(10)
+  updated_at       DateTime  @updatedAt
+  state            circuit_breaker_states @relation(fields: [service_name], references: [service_name])
+
+  @@map("circuit_breaker_config")
 }
