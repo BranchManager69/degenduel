@@ -4,9 +4,12 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import ServiceManager, { SERVICE_NAMES } from '../../utils/service-suite/service-manager.js';
+import redisManager from '../../utils/redis-suite/redis-manager.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+const TOKENS_CACHE_KEY = 'dd_serv:tokens';
+const CACHE_TTL = 30; // 30 seconds
 
 /**
  * @swagger
@@ -329,9 +332,19 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
 //   example: GET https://degenduel.me/api/dd-serv/tokens
 router.get('/tokens', async (req, res) => {
   try {
-    // Fetch from Server B's public endpoint with timeout
+    // Try to get cached data first
+    const cachedData = await redisManager.get(TOKENS_CACHE_KEY);
+    if (cachedData) {
+      return res.json({
+        ...cachedData,
+        _cached: true,
+        _cachedAt: new Date(cachedData.timestamp).toISOString()
+      });
+    }
+
+    // If no cache, fetch fresh data
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeout = setTimeout(() => controller.abort(), 10000);
     
     const response = await fetch('https://data.degenduel.me/api/tokens', {
       signal: controller.signal
@@ -340,21 +353,30 @@ router.get('/tokens', async (req, res) => {
     clearTimeout(timeout);
     
     if (!response.ok) {
-      // If data.degenduel.me responds with 4xx/5xx, handle it
       const text = await response.text();
       logApi.error(`[dd-serv] tokens fetch error ${response.status}: ${text}`);
+      
+      // If data service fails but we have stale cache, return it
+      const staleCache = await redisManager.get(TOKENS_CACHE_KEY);
+      if (staleCache) {
+        return res.json({
+          ...staleCache,
+          _cached: true,
+          _stale: true,
+          _cachedAt: new Date(staleCache.timestamp).toISOString()
+        });
+      }
+      
       return res.status(response.status).json({ error: text });
     }
 
-    // Parse the JSON from data.degenduel.me
+    // Parse and cache the new data
     const tokenDataJson = await response.json();
-    //logApi.info('[dd-serv] Fetched token list:', tokenDataJson);
+    await redisManager.set(TOKENS_CACHE_KEY, tokenDataJson, CACHE_TTL);
 
-    // Respond to the caller with the same JSON
     res.json(tokenDataJson);
 
   } catch (err) {
-    // Catch network errors, etc.
     const errorMessage = err.name === 'AbortError' 
       ? 'Request timed out while fetching tokens from data service'
       : err.message;
@@ -364,6 +386,21 @@ router.get('/tokens', async (req, res) => {
       type: err.name,
       stack: err.stack
     });
+    
+    // Try to get stale cache as fallback
+    try {
+      const staleCache = await redisManager.get(TOKENS_CACHE_KEY);
+      if (staleCache) {
+        return res.json({
+          ...staleCache,
+          _cached: true,
+          _stale: true,
+          _cachedAt: new Date(staleCache.timestamp).toISOString()
+        });
+      }
+    } catch (redisErr) {
+      logApi.error('[dd-serv] Redis error:', redisErr);
+    }
     
     res.status(503).json({ 
       error: errorMessage,
