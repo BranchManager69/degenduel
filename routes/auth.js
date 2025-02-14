@@ -288,6 +288,116 @@ router.post('/verify-wallet', async (req, res) => {
 
 /**
  * @swagger
+ * /api/auth/dev-login:
+ *   post:
+ *     summary: Development-only endpoint for quick admin login
+ *     tags: [Authentication]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - secret
+ *               - wallet_address
+ *             properties:
+ *               secret:
+ *                 type: string
+ *                 description: Development mode secret key
+ *               wallet_address:
+ *                 type: string
+ *                 description: Wallet address to login as
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       401:
+ *         description: Invalid secret
+ *       404:
+ *         description: Not found or user not found
+ */
+router.post('/dev-login', async (req, res) => {
+  // Only available in development mode and on dev port
+  if (process.env.NODE_ENV !== 'development' || process.env.PORT !== '3005') {
+    authLogger.warn('Attempted dev login in production or wrong port', {
+      env: process.env.NODE_ENV,
+      port: process.env.PORT
+    });
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  try {
+    const { secret, wallet_address } = req.body;
+    
+    // Verify secret
+    if (secret !== process.env.DEV_LOGIN_SECRET) {
+      authLogger.warn('Invalid dev login secret attempt', {
+        wallet: wallet_address,
+        providedSecret: secret?.substring(0, 3) + '...'  // Log only first 3 chars for security
+      });
+      return res.status(401).json({ error: 'Invalid secret' });
+    }
+
+    // Get user from database
+    const user = await prisma.users.findUnique({
+      where: { wallet_address }
+    });
+
+    if (!user) {
+      authLogger.warn('Dev login attempted for non-existent user', { wallet: wallet_address });
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Create session ID
+    const sessionId = Buffer.from(crypto.randomBytes(16)).toString('hex');
+
+    // Create JWT token (same as normal login)
+    const token = sign(
+      {
+        wallet_address: user.wallet_address,
+        role: user.role,
+        session_id: sessionId
+      },
+      config.jwt.secret,
+      { expiresIn: '24h' }
+    );
+
+    // Set cookie
+    res.cookie('session', token, {
+      httpOnly: true,
+      secure: false,  // Allow non-HTTPS in development
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    // Log successful dev login
+    authLogger.info('Development login successful', {
+      wallet: user.wallet_address,
+      role: user.role,
+      sessionId
+    });
+
+    // Return success with user info
+    return res.json({
+      success: true,
+      user: {
+        wallet_address: user.wallet_address,
+        role: user.role,
+        nickname: user.nickname
+      }
+    });
+  } catch (error) {
+    authLogger.error('Dev login error:', {
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
  * /api/auth/disconnect:
  *   post:
  *     summary: Disconnect wallet and clear session
