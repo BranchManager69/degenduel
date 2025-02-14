@@ -708,6 +708,152 @@ router.get('/:wallet', async (req, res) => {
 
 /**
  * @swagger
+ * /api/users/by-username/{username}:
+ *   get:
+ *     summary: Get user profile by username
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Username of the user
+ *     responses:
+ *       200:
+ *         description: User profile data with recent contests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 wallet_address:
+ *                   type: string
+ *                 username:
+ *                   type: string
+ *                 nickname:
+ *                   type: string
+ *                 total_contests:
+ *                   type: integer
+ *                 total_wins:
+ *                   type: integer
+ *                 total_earnings:
+ *                   type: number
+ *                   format: float
+ *                 rank_score:
+ *                   type: number
+ *                   format: float
+ *                 created_at:
+ *                   type: string
+ *                   format: date-time
+ *                 last_login:
+ *                   type: string
+ *                   format: date-time
+ *                 contest_participants:
+ *                   type: array
+ *                   description: Last 5 contests participated in
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       joined_at:
+ *                         type: string
+ *                         format: date-time
+ *                       contests:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           name:
+ *                             type: string
+ *                           status:
+ *                             type: string
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Database error while fetching user
+ */
+// Get user profile by username (NO AUTH REQUIRED)
+//   example: GET https://degenduel.me/api/users/by-username/{username}
+router.get('/by-username/:username', async (req, res) => {
+  const logContext = {
+    path: 'GET /api/users/by-username/:username',
+    username: req.params.username
+  };
+
+  try {
+    logApi.debug('Fetching user profile by username', logContext);
+    
+    const user = await prisma.users.findUnique({
+      where: { username: req.params.username },
+      include: {
+        contest_participants: {
+          take: 5,
+          orderBy: { joined_at: 'desc' },
+          include: {
+            contests: true
+          }
+        }
+      }
+    }).catch(error => {
+      logApi.error('Database error while fetching user by username', {
+        ...logContext,
+        error: error instanceof Error ? error.message : error
+      });
+      throw { status: 500, message: 'Database error while fetching user' };
+    });
+
+    if (!user) {
+      logApi.info('User not found by username', logContext);
+      throw { status: 404, message: 'User not found' };
+    }
+
+    logApi.info('Successfully fetched user profile by username', {
+      ...logContext,
+      userId: user.id,
+      hasContests: user.contest_participants.length > 0
+    });
+
+    res.json(user);
+  } catch (error) {
+    const status = error.status || 500;
+    const message = error.message || 'Internal server error';
+
+    logApi.error('Error in GET /users/by-username/:username handler', {
+      ...logContext,
+      status,
+      message,
+      error: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error
+    });
+
+    res.status(status).json({ 
+      error: message,
+      details: req.environment === 'development' ? error.details : undefined
+    });
+  }
+});
+
+/**
+ * @swagger
  * /api/users:
  *   post:
  *     summary: Create new user
