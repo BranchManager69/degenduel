@@ -1,3 +1,5 @@
+// utils/redis-suite/redis-manager.js
+
 import Redis from 'ioredis';
 import { logApi } from '../logger-suite/logger.js';
 
