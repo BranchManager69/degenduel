@@ -9,6 +9,7 @@ import walletRakeService from '../../services/walletRakeService.js';
 import referralService from '../../services/referralService.js';
 import contestWalletService from '../../services/contestWalletService.js';
 import adminWalletService from '../../services/adminWalletService.js';
+import { marketDataService } from '../../services/marketDataService.js';
 
 /**
  * Service registry for managing all DegenDuel services
@@ -196,6 +197,7 @@ ServiceManager.register(walletRakeService, ['contest_evaluation_service']);
 ServiceManager.register(referralService, ['token_sync_service']);
 ServiceManager.register(contestWalletService, ['vanity_wallet_service']);
 ServiceManager.register(adminWalletService, ['contest_wallet_service']);
+ServiceManager.register(marketDataService, ['token_sync_service']);
 
 // Service name constants
 export const SERVICE_NAMES = {
@@ -206,7 +208,8 @@ export const SERVICE_NAMES = {
     REFERRAL: 'referral_service',
     CONTEST_WALLET: 'contest_wallet_service',
     ADMIN_WALLET: 'admin_wallet_service',
-    DD_SERV: 'dd_serv_service'
+    DD_SERV: 'dd_serv_service',
+    MARKET_DATA: 'market_data_service'
 };
 
 export default ServiceManager; 

@@ -25,11 +25,18 @@ import contestEvaluationService from "./services/contestEvaluationService.js";
 import tokenSyncService from "./services/tokenSyncService.js";
 import walletRakeService from "./services/walletRakeService.js";
 import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
-import PortfolioWebSocketServer from "./websocket/portfolio-ws.js";
+import { createPortfolioWebSocket } from "./websocket/portfolio-ws.js";
+import { createAnalyticsWebSocket } from "./websocket/analytics-ws.js";
+import { createWalletWebSocket } from "./websocket/wallet-ws.js";
+import { createContestWebSocket } from "./websocket/contest-ws.js";
+import { createMarketDataWebSocket } from "./websocket/market-ws.js";
 import { createServer } from 'http';
 import referralScheduler from './scripts/referral-scheduler.js';
 import referralService from './services/referralService.js';
 import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
+import marketDataService from './services/marketDataService.js';
+// Import WebSocket test routes
+import websocketTestRoutes from './routes/admin/websocket-test.js';
 
 dotenv.config();
 
@@ -91,6 +98,9 @@ import portfolioAnalyticsRouter from "./routes/portfolio-analytics.js";
 import portfolioTradesRouter from "./routes/portfolio-trades.js";
 import referralRoutes from "./routes/referrals.js";
 
+// Initialize global WebSocket server registry
+global.wsServers = {};
+
 // 1. First mount public routes (no maintenance check needed)
 app.use("/api/auth", authRoutes);
 app.use("/api/status", statusRoutes);
@@ -105,6 +115,7 @@ app.use("/api/admin/faucet", faucetManagementRoutes);
 app.use("/api/admin/metrics", serviceMetricsRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
 app.use("/api/superadmin", superadminRoutes);
+app.use('/api/admin/websocket', websocketTestRoutes);
 
 // 3. Apply maintenance check to all other routes
 // Prisma-enabled routes (inaccessible when in maintenance mode)
@@ -217,8 +228,8 @@ async function displayStartupAnimation(port, initResults = {}) {
 ║\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.symbol} API Services        \x1b[38;5;247m|\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
 ║\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.symbol} WebSocket Server    \x1b[38;5;247m|\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
 ║\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.symbol} Solana Services     \x1b[38;5;247m|\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.symbol} Contest Engine      \x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-╚═══════════════════════════════════════════════════════════════════╝\x1b[0m`;
+║\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.symbol} Contest Engine      \x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.bars}\x1b[0m \x1b[38;5;39m\t\t║
+╚════════════════════════════════════════════════════════════════════╝\x1b[0m`;
 
     // Calculate overall system status
     const allServices = [dbStatus, apiStatus, wsStatus, solanaStatus, contestStatus];
@@ -232,15 +243,15 @@ async function displayStartupAnimation(port, initResults = {}) {
     // Create dynamic startup message
     const startupMessage = `
 \x1b[38;5;51m╔══════════════════════════ INITIALIZATION COMPLETE ══════════════════════╗
-║                                                                      ║
-║  \x1b[38;5;199m🚀 DEGEN DUEL ARENA INITIALIZED ON PORT ${port}\x1b[38;5;51m                       ║
-║  \x1b[38;5;${allOnline ? '226' : '196m'}⚡ SYSTEM STATUS: ${systemState}\x1b[38;5;51m                          ║
-║  \x1b[38;5;82m💫 INITIALIZATION DURATION: ${duration}s\x1b[38;5;51m                              ║
-║  \x1b[38;5;213m🌐 SERVICES ONLINE: ${allServices.filter(s => s.status.includes('ONLINE')).length}/${allServices.length}\x1b[38;5;51m                                       ║
-║                                                                   ║
-║  \x1b[38;5;226m⚔️  ENTER THE ARENA  ⚔️\x1b[38;5;51m                                            ║
-║                                                                   ║
-╚═══════════════════════════════════════════════════════════════════╝\x1b[0m`;
+║                                                                         ║
+║  \x1b[38;5;199m🚀 DEGEN DUEL ARENA INITIALIZED ON PORT ${port}\x1b[38;5;51m                           ║
+║  \x1b[38;5;${allOnline ? '226' : '196m'}⚡ SYSTEM STATUS: ${systemState}\x1b[38;5;51m                                  ║
+║  \x1b[38;5;82m💫 INITIALIZATION DURATION: ${duration}s\x1b[38;5;51m                                      ║
+║  \x1b[38;5;213m🌐 SERVICES ONLINE: ${allServices.filter(s => s.status.includes('ONLINE')).length}/${allServices.length}\x1b[38;5;51m                                               ║
+║                                                                        ║
+║  \x1b[38;5;226m⚔️  ENTER THE ARENA  ⚔️\x1b[38;5;51m                                                 ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝\x1b[0m`;
 
     // Clear console for dramatic effect
     console.clear();
@@ -315,11 +326,42 @@ async function initializeServer() {
         });
 
         // WebSocket - Yellow (226)
-        logApi.info('\x1b[38;5;226m┣━━━━━━━━━━━ 🌐 Initializing WebSocket Server...\x1b[0m');
-        const portfolioWs = new PortfolioWebSocketServer(server);
+        logApi.info('\x1b[38;5;226m┣━━━━━━━━━━━ 🌐 Initializing WebSocket Servers...\x1b[0m');
+
+        // Initialize Portfolio WebSocket
+        const portfolioWs = createPortfolioWebSocket(server);
+        global.wsServers.portfolio = portfolioWs;
         InitLogger.logInit('Core', 'Portfolio WebSocket', 'success');
         initResults['Portfolio WebSocket'] = { success: true };
-        logApi.info('\x1b[38;5;226m┃           ┗━━━━━━━━━━━ ☑️ WebSocket Server Ready\x1b[0m');
+
+        // Initialize Analytics WebSocket
+        const analyticsWs = createAnalyticsWebSocket(server);
+        global.wsServers.analytics = analyticsWs;
+        InitLogger.logInit('Core', 'Analytics WebSocket', 'success');
+        initResults['Analytics WebSocket'] = { success: true };
+
+        // Initialize Wallet WebSocket
+        const walletWs = createWalletWebSocket(server);
+        global.wsServers.wallet = walletWs;
+        InitLogger.logInit('Core', 'Wallet WebSocket', 'success');
+        initResults['Wallet WebSocket'] = { success: true };
+
+        // Initialize Contest WebSocket
+        const contestWs = createContestWebSocket(server);
+        global.wsServers.contest = contestWs;
+        InitLogger.logInit('Core', 'Contest WebSocket', 'success');
+        initResults['Contest WebSocket'] = { success: true };
+
+        // Initialize Market Data WebSocket
+        const marketDataWs = createMarketDataWebSocket(server);
+        global.wsServers.market = marketDataWs;
+        InitLogger.logInit('Core', 'Market Data WebSocket', 'success');
+        initResults['Market Data WebSocket'] = { success: true };
+
+        // Add analytics tracking middleware
+        app.use(analyticsWs.createTrackingMiddleware());
+
+        logApi.info('\x1b[38;5;226m┃           ┗━━━━━━━━━━━ ☑️ WebSocket Servers Ready\x1b[0m');
 
         // Memory Monitor - Green (46)
         logApi.info('\x1b[38;5;46m┣━━━━━━━━━━━ 📊 Initializing Memory Monitor...\x1b[0m');
@@ -340,6 +382,21 @@ async function initializeServer() {
         await tokenSyncService.start();
         InitLogger.logInit('Core', 'Token Sync Service', 'success');
         logApi.info('\x1b[38;5;57m┃           ┗━━━━━━━━━━━ ✅ Token Sync Active\x1b[0m');
+
+        // Initialize Market Data Service
+        logApi.info('\x1b[38;5;57m┣━━━━━━━━━━━ 📊 Starting Market Data Service...\x1b[0m');
+        await marketDataService.initialize();
+        await marketDataService.start();
+        await AdminLogger.logAction(
+            'SYSTEM',
+            AdminLogger.Actions.SERVICE.START,
+            {
+                service: 'market_data_service',
+                config: marketDataService.config
+            }
+        );
+        InitLogger.logInit('Core', 'Market Data Service', 'success');
+        logApi.info('\x1b[38;5;57m┃           ┗━━━━━━━━━━━ ✅ Market Data Service Active\x1b[0m');
 
         // Wallet Service - Violet (93)
         logApi.info('\x1b[38;5;93m┣━━━━━━━━━━━ 💰 Starting Wallet Rake Service...\x1b[0m');
@@ -400,6 +457,17 @@ async function shutdown() {
   try {
     // Stop token sync service
     await tokenSyncService.stop();
+
+    // Stop market data service
+    await marketDataService.stop();
+    await AdminLogger.logAction(
+        'SYSTEM',
+        AdminLogger.Actions.SERVICE.STOP,
+        {
+            service: 'market_data_service',
+            reason: 'Server shutdown'
+        }
+    );
 
     // Close WebSocket server if it exists
     if (global.wss) {
@@ -470,4 +538,24 @@ initializeServer();
 logApi.info("Starting DegenDuel API...", {
   port: port,
   debug_mode: process.env.DEBUG_MODE,
+});
+
+// Update cleanup
+process.on('SIGTERM', async () => {
+    try {
+        // ... existing cleanup ...
+        
+        // Cleanup WebSocket servers
+        portfolioWs.cleanup();
+        analyticsWs.cleanup();
+        walletWs.cleanup();
+        contestWs.cleanup();
+        marketDataWs.cleanup();
+        logApi.info("WebSocket servers closed");
+        
+        // ... rest of cleanup ...
+    } catch (error) {
+        logApi.error('Error during cleanup:', error);
+        process.exit(1);
+    }
 });
