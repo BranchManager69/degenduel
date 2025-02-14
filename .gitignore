@@ -6,6 +6,7 @@ backups/
 
 # Archives
 archive/
+archive/**
 
 # Drafts
 docs_drafts/
