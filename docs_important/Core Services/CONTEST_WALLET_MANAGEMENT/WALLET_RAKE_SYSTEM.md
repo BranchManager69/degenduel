@@ -222,7 +222,7 @@ if (rakeAmount < (config.wallet.min_rake_amount * LAMPORTS_PER_SOL)) {
     balance_before: Number,
     balance_after: Number,
     description: String,
-    status: "COMPLETED" | "FAILED",
+    status: "completed" | "failed",
     blockchain_signature: String,
     completed_at: Date,
     created_at: Date,

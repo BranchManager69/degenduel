@@ -186,7 +186,7 @@ stateDiagram-v2
 {
     referrer_id: String,
     referred_id: String,
-    status: 'PENDING' | 'COMPLETED',
+    status: 'pending' | 'completed',
     reward_amount: Decimal,
     qualified_at: DateTime,
     reward_paid_at: DateTime,

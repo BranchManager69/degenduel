@@ -559,7 +559,7 @@ class RewardDistributor {
                 wallet_address: referral.referrer_id,
                 amount: amount,
                 type: 'REFERRAL_REWARD',
-                status: 'PENDING',
+                status: 'pending',
                 metadata: {
                     referral_id: referralId,
                     reward_type: 'referral_bonus'
@@ -709,7 +709,7 @@ async function diagnoseRewardIssue(referralId) {
 
     const issues = [];
     
-    if (referral.referrer.wallet_status !== 'ACTIVE') {
+    if (referral.referrer.wallet_status !== 'active') {
         issues.push({
             type: 'WALLET_ISSUE',
             description: 'Referrer wallet is not active',
@@ -717,7 +717,7 @@ async function diagnoseRewardIssue(referralId) {
         });
     }
 
-    if (referral.rewards.some(r => r.status === 'FAILED')) {
+    if (referral.rewards.some(r => r.status === 'failed')) {
         issues.push({
             type: 'TRANSACTION_FAILURE',
             description: 'Previous reward transaction failed',

@@ -713,7 +713,7 @@ async performOperation() {
     // Process pending rewards older than 24 hours
     const pendingReferrals = await prisma.referrals.findMany({
         where: {
-            status: 'PENDING',
+            status: 'pending',
             click_timestamp: {
                 lte: new Date(Date.now() - 24 * 60 * 1000)
             }
