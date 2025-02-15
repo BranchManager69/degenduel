@@ -24,6 +24,7 @@ import { memoryMonitoring } from "./scripts/monitor-memory.js";
 import contestEvaluationService from "./services/contestEvaluationService.js";
 import tokenSyncService from "./services/tokenSyncService.js";
 import walletRakeService from "./services/walletRakeService.js";
+import { tokenWhitelistService } from "./services/tokenWhitelistService.js";
 import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
 import { createPortfolioWebSocket } from "./websocket/portfolio-ws.js";
 import { createAnalyticsWebSocket } from "./websocket/analytics-ws.js";
@@ -383,6 +384,21 @@ async function initializeServer() {
         InitLogger.logInit('Core', 'Token Sync Service', 'success');
         logApi.info('\x1b[38;5;57m┃           ┗━━━━━━━━━━━ ✅ Token Sync Active\x1b[0m');
 
+        // Token Whitelist Service
+        logApi.info('\x1b[38;5;57m┣━━━━━━━━━━━ 🎫 Starting Token Whitelist Service...\x1b[0m');
+        await tokenWhitelistService.initialize();
+        await tokenWhitelistService.start();
+        await AdminLogger.logAction(
+            'SYSTEM',
+            AdminLogger.Actions.SERVICE.START,
+            {
+                service: 'token_whitelist_service',
+                config: tokenWhitelistService.config
+            }
+        );
+        InitLogger.logInit('Core', 'Token Whitelist Service', 'success');
+        logApi.info('\x1b[38;5;57m┃           ┗━━━━━━━━━━━ ✅ Token Whitelist Service Active\x1b[0m');
+
         // Initialize Market Data Service
         logApi.info('\x1b[38;5;57m┣━━━━━━━━━━━ 📊 Starting Market Data Service...\x1b[0m');
         await marketDataService.initialize();
@@ -457,6 +473,17 @@ async function shutdown() {
   try {
     // Stop token sync service
     await tokenSyncService.stop();
+
+    // Stop token whitelist service
+    await tokenWhitelistService.stop();
+    await AdminLogger.logAction(
+        'SYSTEM',
+        AdminLogger.Actions.SERVICE.STOP,
+        {
+            service: 'token_whitelist_service',
+            reason: 'Server shutdown'
+        }
+    );
 
     // Stop market data service
     await marketDataService.stop();

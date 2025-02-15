@@ -10,6 +10,7 @@ graph TD
     subgraph "Data Acquisition Layer"
         TS[Token Sync Service]
         EX[External APIs]
+        WL[Token Whitelist]
     end
     
     subgraph "Real-Time Layer"
@@ -25,6 +26,7 @@ graph TD
     
     EX -->|30s Updates| TS
     TS -->|Price Updates| DB[(Database)]
+    WL -->|Token Status| DB
     DB -->|Data Source| MD
     MD -->|Real-time| WS
     MD -->|REST| API
@@ -47,6 +49,23 @@ sequenceDiagram
         TS->>TS: Validate Data
         TS->>DB: Store Updates
     end
+```
+
+### Token Whitelist Service
+- **Primary Role**: Token Validation & Management
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant WL as Whitelist
+    participant TS as Token Sync
+    participant DB as Database
+    
+    U->>WL: Submit Token
+    WL->>WL: Verify Token
+    WL->>DB: Update Status
+    TS->>WL: Check Status
+    WL-->>TS: Token Valid
+    TS->>DB: Update Token
 ```
 
 ### Market Data Service
@@ -116,6 +135,7 @@ graph TD
     subgraph "Token Sync Cache"
         TSC[Validation Cache]
         MTC[Metadata Cache]
+        WLC[Whitelist Cache]
     end
     
     subgraph "Market Data Cache"
@@ -126,6 +146,7 @@ graph TD
     
     TSC -->|Validates| PDC
     MTC -->|Enriches| PDC
+    WLC -->|Filters| PDC
     PDC -->|Informs| SDC
     PDC -->|Affects| VDC
 ```
@@ -176,9 +197,11 @@ token_prices (
     token_id UUID REFERENCES tokens(id),
     price DECIMAL,
     updated_at TIMESTAMP,
-    -- Used by both services
+    -- Used by all services
     last_sync_by VARCHAR(50),
-    last_sync_at TIMESTAMP
+    last_sync_at TIMESTAMP,
+    is_whitelisted BOOLEAN DEFAULT false,
+    whitelist_updated_at TIMESTAMP
 )
 ```
 
@@ -241,6 +264,7 @@ graph TD
 1. **Data Consistency**
    - Token Sync is source of truth
    - Market Data provides real-time access
+   - Whitelist Service manages token status
    - Coordinate cache invalidation
 
 2. **Performance Optimization**
