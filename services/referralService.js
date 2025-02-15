@@ -364,7 +364,7 @@ class ReferralService extends BaseService {
                     referrer_id: click.referrer_id,
                     referred_id: userData.wallet_address,
                     referral_code: click.referral_code,
-                    status: 'PENDING',
+                    status: 'pending',
                     source: click.source,
                     landing_page: click.landing_page,
                     utm_source: click.utm_source,
@@ -418,7 +418,7 @@ class ReferralService extends BaseService {
                 }
             });
 
-            if (!referral || referral.status !== 'PENDING') {
+            if (!referral || referral.status !== 'pending') {
                 throw ServiceError.validation('Invalid referral for reward processing');
             }
 
@@ -429,7 +429,7 @@ class ReferralService extends BaseService {
             await prisma.referrals.update({
                 where: { id: referralId },
                 data: {
-                    status: 'COMPLETED',
+                    status: 'completed',
                     reward_amount: rewardAmount,
                     reward_paid_at: new Date(),
                     qualified_at: new Date()
@@ -446,7 +446,7 @@ class ReferralService extends BaseService {
             return {
                 referralId,
                 rewardAmount,
-                status: 'COMPLETED'
+                status: 'completed'
             };
         } catch (error) {
             await this.handleError(error);
@@ -550,7 +550,7 @@ class ReferralService extends BaseService {
             // Process pending rewards
             const pendingReferrals = await prisma.referrals.findMany({
                 where: {
-                    status: 'PENDING',
+                    status: 'pending',
                     click_timestamp: {
                         lte: new Date(Date.now() - 24 * 60 * 60 * 1000)
                     }
@@ -580,7 +580,7 @@ class ReferralService extends BaseService {
     // Helper methods
     async getTotalGlobalReferrals() {
         return await prisma.referrals.count({
-            where: { status: 'COMPLETED' }
+            where: { status: 'completed' }
         });
     }
 
@@ -588,7 +588,7 @@ class ReferralService extends BaseService {
         return await prisma.referrals.count({
             where: {
                 referrer_id: userId,
-                status: 'COMPLETED'
+                status: 'completed'
             }
         });
     }
