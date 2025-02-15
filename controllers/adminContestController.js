@@ -215,7 +215,7 @@ async function getFailedTransactions(req, res) {
         const failedTxs = await prisma.transactions.findMany({
             where: {
                 contest_id: parseInt(contestId),
-                status: 'FAILED'
+                status: 'failed'
             },
             orderBy: {
                 created_at: 'desc'
@@ -254,7 +254,7 @@ async function retryFailedTransaction(req, res) {
         await prisma.transactions.update({
             where: { id: parseInt(transactionId) },
             data: {
-                status: 'PENDING',
+                status: 'pending',
                 error_details: null,
                 retry_count: (transaction.retry_count || 0) + 1,
                 updated_at: new Date()
