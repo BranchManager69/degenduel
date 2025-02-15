@@ -24,7 +24,7 @@ class TokenWhitelistService extends BaseService {
     constructor() {
         super(WHITELIST_SERVICE_CONFIG.name, WHITELIST_SERVICE_CONFIG);
         this.connection = new Connection(process.env.SOLANA_RPC_ENDPOINT);
-        this.treasuryWallet = new PublicKey(process.env.TREASURY_WALLET_ADDRESS);
+        this.treasuryWallet = new PublicKey(process.env.TREASURY_WALLET);
         this.submissionCost = parseFloat(process.env.TOKEN_SUBMISSION_COST || "0.01") * LAMPORTS_PER_SOL;
         this.umi = createUmi(process.env.SOLANA_RPC_ENDPOINT).use(mplTokenMetadata());
     }
