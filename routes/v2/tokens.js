@@ -3,6 +3,9 @@
 import { Router } from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
+import { tokenWhitelistService } from '../../services/tokenWhitelistService.js';
+import { requireAuth } from '../../middleware/auth.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
@@ -552,6 +555,102 @@ router.get('/marketData/latest', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             error: 'Failed to fetch market data' 
+        });
+    }
+});
+
+// Rate limiter: 10 requests per hour per IP
+const whitelistLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 10,
+    message: { error: 'Too many whitelist requests, please try again later' }
+});
+
+/**
+ * @swagger
+ * /api/v2/tokens/whitelist:
+ *   post:
+ *     summary: Add a token to the whitelist
+ *     tags: [V2 Tokens]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - contractAddress
+ *               - transactionSignature
+ *             properties:
+ *               contractAddress:
+ *                 type: string
+ *                 description: SPL token address
+ *               transactionSignature:
+ *                 type: string
+ *                 description: Payment transaction signature
+ *     responses:
+ *       200:
+ *         description: Token whitelisted successfully
+ *       400:
+ *         description: Invalid input or verification failed
+ *       401:
+ *         description: Not authenticated
+ *       429:
+ *         description: Rate limit exceeded
+ *       500:
+ *         description: Server error
+ */
+router.post('/whitelist', requireAuth, whitelistLimiter, async (req, res) => {
+    const { contractAddress, transactionSignature } = req.body;
+    const logContext = {
+        path: 'POST /api/v2/tokens/whitelist',
+        contractAddress,
+        signature: transactionSignature,
+        userId: req.user?.id,
+        wallet: req.user?.wallet_address
+    };
+
+    try {
+        logApi.info('Token whitelist request received', logContext);
+
+        // Step 1: Verify the token and get metadata
+        const metadata = await tokenWhitelistService.verifyToken(contractAddress);
+
+        // Step 2: Verify the payment
+        await tokenWhitelistService.verifyPayment(transactionSignature, req.user.wallet_address);
+
+        // Step 3: Add to whitelist with metadata
+        const token = await tokenWhitelistService.addToWhitelist(contractAddress, metadata);
+
+        logApi.info('Token whitelisted successfully', {
+            ...logContext,
+            tokenId: token.id,
+            metadata
+        });
+
+        res.json({
+            success: true,
+            token: {
+                address: token.address,
+                name: token.name,
+                symbol: token.symbol,
+                status: 'pending'
+            }
+        });
+    } catch (error) {
+        logApi.error('Token whitelist request failed:', {
+            ...logContext,
+            error: error.message
+        });
+
+        const status = error.status || 500;
+        const message = error.message || 'Internal server error';
+
+        res.status(status).json({
+            success: false,
+            error: message
         });
     }
 });

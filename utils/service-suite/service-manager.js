@@ -10,6 +10,7 @@ import referralService from '../../services/referralService.js';
 import contestWalletService from '../../services/contestWalletService.js';
 import adminWalletService from '../../services/adminWalletService.js';
 import { marketDataService } from '../../services/marketDataService.js';
+import { tokenWhitelistService } from '../../services/tokenWhitelistService.js';
 
 /**
  * Service registry for managing all DegenDuel services
@@ -198,6 +199,7 @@ ServiceManager.register(referralService, ['token_sync_service']);
 ServiceManager.register(contestWalletService, ['vanity_wallet_service']);
 ServiceManager.register(adminWalletService, ['contest_wallet_service']);
 ServiceManager.register(marketDataService, ['token_sync_service']);
+ServiceManager.register(tokenWhitelistService, ['token_sync_service']);
 
 // Service name constants
 export const SERVICE_NAMES = {
@@ -209,7 +211,8 @@ export const SERVICE_NAMES = {
     CONTEST_WALLET: 'contest_wallet_service',
     ADMIN_WALLET: 'admin_wallet_service',
     DD_SERV: 'dd_serv_service',
-    MARKET_DATA: 'market_data_service'
+    MARKET_DATA: 'market_data_service',
+    TOKEN_WHITELIST: 'token_whitelist_service'
 };
 
 export default ServiceManager; 
