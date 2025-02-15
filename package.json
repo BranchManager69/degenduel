@@ -43,6 +43,9 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.4.0",
+    "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@metaplex-foundation/umi": "^1.0.0",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.0.0",
     "@prisma/client": "^6.3.1",
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.98.0",
