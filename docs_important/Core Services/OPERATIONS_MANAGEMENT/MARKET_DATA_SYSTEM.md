@@ -47,6 +47,7 @@ graph TD
     subgraph "Data Sources"
         TS[Token Sync Service]
         DB[(Database)]
+        WL[Token Whitelist]
     end
     
     subgraph "Clients"
@@ -60,6 +61,7 @@ graph TD
     
     TS --> MD
     DB --> MD
+    WL --> MD
     
     WS --> TI
     MD --> API
@@ -73,6 +75,7 @@ sequenceDiagram
     participant MD as Market Data
     participant CM as Cache
     participant DB as Database
+    participant WL as Whitelist
     
     C->>WS: Subscribe(symbol)
     
@@ -82,6 +85,7 @@ sequenceDiagram
             CM-->>MD: Return Data
         else Cache Miss
             MD->>DB: Fetch Data
+            MD->>WL: Verify Whitelist
             MD->>CM: Update Cache
         end
         MD->>WS: Stream Update
@@ -99,6 +103,7 @@ class MarketDataService extends BaseService {
     - Cache management
     - Health monitoring
     - Rate limiting
+    - Whitelist verification
 }
 ```
 
@@ -438,6 +443,21 @@ ws.onmessage = (event) => {
 5. Resource monitoring
 6. Error tracking
 7. Performance tuning
+8. Whitelist compliance
+
+### Data Validation
+```javascript
+async validateMarketData(symbol) {
+    // Validation checks
+    {
+        isWhitelisted: Boolean,
+        hasValidPrice: Boolean,
+        isActive: Boolean,
+        lastUpdate: DateTime,
+        dataQuality: 'high' | 'medium' | 'low'
+    }
+}
+```
 
 ---
 

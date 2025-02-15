@@ -53,6 +53,7 @@ graph TD
         DB[(Database)]
         CS[Contest System]
         MS[Monitoring System]
+        WS[Token Whitelist Service]
     end
     
     TS --> VP
@@ -68,6 +69,8 @@ graph TD
     
     CS --> DB
     MS --> TS
+    WS --> DB
+    TS --> WS
 ```
 
 ### Data Flow
@@ -78,12 +81,14 @@ sequenceDiagram
     participant DD as DD Service
     participant VP as Validator
     participant DB as Database
+    participant WS as Whitelist Service
     
     loop Every 30 seconds
         TS->>MP: Fetch Price Updates
         MP-->>TS: Price Data
         TS->>VP: Validate Prices
         VP->>DB: Update Prices
+        WS->>DB: Check Whitelist
     end
     
     loop On Token Changes
@@ -91,6 +96,7 @@ sequenceDiagram
         DD-->>TS: Token Details
         TS->>VP: Validate Metadata
         VP->>DB: Update Metadata
+        WS->>DB: Validate Token Status
     end
 ```
 
@@ -105,6 +111,7 @@ class TokenSyncService extends BaseService {
     - Data validation
     - Cache management
     - Performance tracking
+    - Whitelist coordination
 }
 ```
 
@@ -367,6 +374,38 @@ tokenSyncService.on('metadata.updated', async (updates) => {
 })
 ```
 
+### Integration Points
+
+### Database Schema Sharing
+```sql
+-- Shared tables
+token_prices (
+    id UUID PRIMARY KEY,
+    token_id UUID REFERENCES tokens(id),
+    price DECIMAL,
+    updated_at TIMESTAMP,
+    -- Used by both services
+    last_sync_by VARCHAR(50),
+    last_sync_at TIMESTAMP,
+    is_whitelisted BOOLEAN DEFAULT false
+)
+```
+
+### Service Dependencies
+```javascript
+// Service dependencies
+{
+    tokenSync: {
+        dependencies: [],
+        dependents: [
+            'market_data_service',
+            'contest_evaluation_service',
+            'token_whitelist_service'
+        ]
+    }
+}
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -415,6 +454,7 @@ tokenSyncService.on('metadata.updated', async (updates) => {
 5. Performance optimization
 6. Data consistency checks
 7. Resource utilization tracking
+8. Whitelist status verification
 
 ---
 

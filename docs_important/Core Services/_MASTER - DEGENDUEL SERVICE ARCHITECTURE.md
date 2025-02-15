@@ -35,6 +35,7 @@ graph TD
         CE[Contest Evaluation]
         MD[Market Data]
         RF[Referral Service]
+        WL[Token Whitelist]
     end
     
     subgraph "Wallet Layer"
@@ -53,6 +54,7 @@ graph TD
     CE -->|Triggers| CW
     MD -->|Informs| CE
     RF -->|Rewards| CW
+    WL -->|Validates| MD
     
     CW -->|Uses| VW
     WR -->|Collects| CW
@@ -104,6 +106,7 @@ graph TD
         MD[Market Data Service]
         CE[Contest Evaluation]
         RF[Referral Service]
+        WL[Token Whitelist]
     end
     
     subgraph "Support Systems"
@@ -114,6 +117,7 @@ graph TD
     
     MD -->|Feeds| CE
     CE -->|Triggers| RF
+    WL -->|Validates| TS
     
     TS -->|Updates| MD
     MD -->|Streams| WS
@@ -132,6 +136,7 @@ graph TD
 | Contest Eval | Operations | On demand | Critical | Market Data |
 | Market Data | Operations | 100ms | Critical | Token Sync |
 | Referral | Operations | 5 minutes | High | Contest Eval |
+| Token Whitelist | Operations | On demand | High | Token Sync |
 
 ### Service States
 ```mermaid
@@ -154,6 +159,7 @@ stateDiagram-v2
         CE: Contest Evaluation
         MD: Market Data
         RF: Referral Service
+        WL: Token Whitelist
     }
     
     Initialization --> Running
@@ -245,6 +251,11 @@ sequenceDiagram
             owner: "Contest Evaluation",
             readers: ["All"],
             writers: ["Contest Evaluation"]
+        },
+        token_whitelist: {
+            owner: "Token Whitelist Service",
+            readers: ["All"],
+            writers: ["Token Whitelist"]
         }
     }
 }
@@ -429,7 +440,8 @@ graph TD
         operations_services: {
             price_latency: "< 100ms",
             evaluation_accuracy: "100%",
-            referral_tracking: "99.9%"
+            referral_tracking: "99.9%",
+            whitelist_validation: "100%"
         }
     }
 }

@@ -12,7 +12,7 @@
 
 ## System Overview
 
-The Operations Management layer of DegenDuel consists of three interconnected services that manage critical platform operations:
+The Operations Management layer of DegenDuel consists of four interconnected services that manage critical platform operations:
 
 1. **Contest Evaluation Service**
    - Contest lifecycle management
@@ -32,6 +32,12 @@ The Operations Management layer of DegenDuel consists of three interconnected se
    - Period-based competitions
    - Analytics tracking
 
+4. **Token Whitelist Service**
+   - Token validation
+   - Submission management
+   - Whitelist enforcement
+   - Token status tracking
+
 ### Service Relationships
 ```mermaid
 graph TD
@@ -39,6 +45,7 @@ graph TD
         CE[Contest Evaluation]
         MD[Market Data]
         RF[Referral Service]
+        WL[Token Whitelist]
     end
     
     subgraph "Platform Core"
@@ -50,6 +57,7 @@ graph TD
     CE -->|Evaluates| CS
     MD -->|Provides Data| CE
     RF -->|Tracks| CS
+    WL -->|Validates| TS
     
     TS -->|Updates| MD
     MD -->|Streams| CS
@@ -229,6 +237,7 @@ graph TD
 | Market Data | 100ms | 1s | High CPU/Memory |
 | Contest Eval | On demand | 5m | High CPU |
 | Referral | 5m | 5m | High I/O |
+| Token Whitelist | On demand | 1h | Medium I/O |
 
 ### Resource Allocation
 ```javascript
@@ -247,6 +256,11 @@ graph TD
         cpu: "2 cores",
         memory: "4GB",
         network: "100Mbps"
+    },
+    tokenWhitelist: {
+        cpu: "1 core",
+        memory: "2GB",
+        network: "100Mbps"
     }
 }
 ```
@@ -259,6 +273,7 @@ graph TD
 | Market Data | Yes | 600/min | Medium |
 | Contest Eval | Yes | 10/min | High |
 | Referral | Yes | 100/15min | High |
+| Token Whitelist | Yes | 10/hour | High |
 
 ### Cross-Service Security
 ```mermaid
@@ -292,6 +307,11 @@ graph TD
         tracking: "100%",
         distribution: "< 24h",
         errorRate: "< 1%"
+    },
+    tokenWhitelist: {
+        validation: "100%",
+        response: "< 30s",
+        errorRate: "< 0.1%"
     }
 }
 ```
