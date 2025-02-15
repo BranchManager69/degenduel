@@ -1,3 +1,14 @@
+# DATABASE SCHEMA
+
+<div style="border: 4px solid red; padding: 20px; margin: 20px 0; background-color: #ffe6e6;">
+  <h1 style="color: red; text-align: center;">⚠️ WARNING: DOCUMENT OUT OF DATE ⚠️</h1>
+  <h2 style="color: darkred; text-align: center;">PLEASE REFER TO /prisma/schema.prisma AND MIGRATION HISTORY FOR THE LATEST INFORMATION</h2>
+  <p style="color: red; text-align: center; font-weight: bold;">
+    This documentation is likely out of date and may not accurately reflect current configurations, API endpoints, or feature implementations.
+    Proceed with extreme caution!
+  </p>
+</div>
+
 ## Achievement System
 
 ### Achievement Categories (`achievement_categories`)

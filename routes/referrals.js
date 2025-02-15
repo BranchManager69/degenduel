@@ -310,14 +310,10 @@ router.get('/analytics',
 
             const analytics = await referralService.getAnalytics(filters);
 
-            res.json({
-                success: true,
-                data: analytics
-            });
+            res.json(analytics);
         } catch (error) {
             logApi.error('Failed to get analytics:', error);
             res.status(500).json({
-                success: false,
                 error: error.message
             });
         }
