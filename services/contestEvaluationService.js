@@ -51,7 +51,8 @@ const CONTEST_EVALUATION_CONFIG = {
         ACTIVE: 'active',
         COMPLETED: 'completed',
         CANCELLED: 'cancelled'
-    }
+    },
+    platformFee: 0.10
 };
 
 class ContestEvaluationService extends BaseService {
@@ -534,8 +535,8 @@ class ContestEvaluationService extends BaseService {
                 throw new Error(`No wallet found for contest ${contest.id}`);
             }
 
-            // Calculate actual prize pool after platform fee (10%)
-            const platformFeePercentage = new Decimal('0.10'); // 10%
+            // Calculate actual prize pool after DegenDuel platform fee
+            const platformFeePercentage = new Decimal(this.config.platformFee);
             const actualPrizePool = contest.prize_pool.mul(new Decimal('1').sub(platformFeePercentage));
             const platformFeeAmount = contest.prize_pool.mul(platformFeePercentage);
 
