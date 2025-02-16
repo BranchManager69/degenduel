@@ -4,8 +4,9 @@ import { Router } from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { tokenWhitelistService } from '../../services/tokenWhitelistService.js';
-import { requireAuth } from '../../middleware/auth.js';
+import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
+import AdminLogger from '../../utils/admin-logger.js';
 
 const router = Router();
 
@@ -619,7 +620,7 @@ router.post('/whitelist', requireAuth, whitelistLimiter, async (req, res) => {
         const metadata = await tokenWhitelistService.verifyToken(contractAddress);
 
         // Step 2: Verify the payment
-        await tokenWhitelistService.verifyPayment(transactionSignature, req.user.wallet_address);
+        await tokenWhitelistService.verifyPayment(transactionSignature, req.user.wallet_address, req.user);
 
         // Step 3: Add to whitelist with metadata
         const token = await tokenWhitelistService.addToWhitelist(contractAddress, metadata);
@@ -651,6 +652,92 @@ router.post('/whitelist', requireAuth, whitelistLimiter, async (req, res) => {
         res.status(status).json({
             success: false,
             error: message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/v2/tokens/{contractAddress}:
+ *   delete:
+ *     summary: Remove a token from the whitelist (Admin only)
+ *     tags: [V2 Tokens]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: contractAddress
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reason
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Reason for token removal
+ *     responses:
+ *       200:
+ *         description: Token removed successfully
+ *       401:
+ *         description: Not authenticated or not an admin
+ *       404:
+ *         description: Token not found
+ *       500:
+ *         description: Server error
+ */
+router.delete('/:contractAddress', requireAuth, requireAdmin, async (req, res) => {
+    const { contractAddress } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+        return res.status(400).json({
+            success: false,
+            error: 'Reason for removal is required'
+        });
+    }
+
+    try {
+        // Forward deletion request to market data API
+        const response = await fetch(`https://data.degenduel.me/api/tokens/${contractAddress}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        // Log admin action regardless of market data API response
+        await AdminLogger.logAction(
+            req.user.id,
+            'TOKEN_REMOVAL',
+            {
+                contract_address: contractAddress,
+                reason: reason,
+                market_data_response: result
+            },
+            {
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent']
+            }
+        );
+
+        // Forward the market data API response
+        res.json(result);
+    } catch (error) {
+        logApi.error('Failed to remove token:', {
+            contractAddress,
+            adminId: req.user.id,
+            error: error.message
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to remove token'
         });
     }
 });
