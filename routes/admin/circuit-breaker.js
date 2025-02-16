@@ -1,9 +1,10 @@
-import express from 'express';
-import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
+import { Router } from 'express';
+import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import prisma from '../../config/prisma.js';
+import AdminLogger from '../../utils/admin-logger.js';
+import ServiceManager, { SERVICE_NAMES } from '../../utils/service-suite/service-manager.js';
 
-const router = express.Router();
+const router = Router();
 
 /**
  * @swagger
@@ -17,7 +18,7 @@ const router = express.Router();
  *       200:
  *         description: Current circuit breaker states
  */
-router.get('/states', requireAuth, requireSuperAdmin, async (req, res) => {
+router.get('/states', requireAuth, requireAdmin, async (req, res) => {
     try {
         const states = await prisma.circuit_breaker_states.findMany({
             include: {
@@ -78,82 +79,6 @@ router.get('/states', requireAuth, requireSuperAdmin, async (req, res) => {
 
 /**
  * @swagger
- * /api/admin/circuit-breaker/{service}/config:
- *   post:
- *     summary: Update circuit breaker configuration for a service
- *     tags: [Circuit Breaker]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - name: service
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- */
-router.post('/:service/config', requireAuth, requireSuperAdmin, async (req, res) => {
-    const { service } = req.params;
-    const config = req.body;
-
-    try {
-        // Validate config
-        const requiredFields = ['failureThreshold', 'recoveryTimeout', 'requestLimit', 'monitoringWindow', 'minimumRequests'];
-        const missingFields = requiredFields.filter(field => config[field] === undefined);
-        
-        if (missingFields.length > 0) {
-            return res.status(400).json({
-                error: {
-                    code: 'INVALID_CONFIG',
-                    message: 'Missing required configuration fields',
-                    details: { missingFields }
-                }
-            });
-        }
-
-        // Update or create configuration
-        const updatedConfig = await prisma.circuit_breaker_config.upsert({
-            where: { service_name: service },
-            update: {
-                failure_threshold: config.failureThreshold,
-                recovery_timeout: config.recoveryTimeout,
-                request_limit: config.requestLimit,
-                monitoring_window: config.monitoringWindow,
-                minimum_requests: config.minimumRequests,
-                updated_at: new Date()
-            },
-            create: {
-                service_name: service,
-                failure_threshold: config.failureThreshold,
-                recovery_timeout: config.recoveryTimeout,
-                request_limit: config.requestLimit,
-                monitoring_window: config.monitoringWindow,
-                minimum_requests: config.minimumRequests
-            }
-        });
-
-        // Broadcast update via WebSocket if available
-        if (global.circuitBreakerWss) {
-            global.circuitBreakerWss.broadcastConfigUpdate(service, config);
-        }
-
-        res.json({
-            service,
-            config: updatedConfig
-        });
-    } catch (error) {
-        logApi.error(`Failed to update circuit breaker config for ${service}:`, error);
-        res.status(500).json({
-            error: {
-                code: 'UPDATE_FAILED',
-                message: 'Failed to update circuit breaker configuration',
-                details: process.env.NODE_ENV === 'development' ? error.message : undefined
-            }
-        });
-    }
-});
-
-/**
- * @swagger
  * /api/admin/circuit-breaker/incidents:
  *   get:
  *     summary: Get circuit breaker incident history
@@ -194,7 +119,7 @@ router.post('/:service/config', requireAuth, requireSuperAdmin, async (req, res)
  *         schema:
  *           type: integer
  */
-router.get('/incidents', requireAuth, requireSuperAdmin, async (req, res) => {
+router.get('/incidents', requireAuth, requireAdmin, async (req, res) => {
     try {
         const {
             start_date,
@@ -257,99 +182,172 @@ router.get('/incidents', requireAuth, requireSuperAdmin, async (req, res) => {
 });
 
 /**
- * @swagger
- * /api/admin/circuit-breaker/{service}/reset:
- *   post:
- *     summary: Manually reset circuit breaker for a service
- *     tags: [Circuit Breaker]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - name: service
- *         in: path
- *         required: true
- *         schema:
- *           type: string
+ * Get circuit breaker status for all services
+ * GET /api/admin/circuit-breaker/status
  */
-router.post('/:service/reset', requireAuth, requireSuperAdmin, async (req, res) => {
-    const { service } = req.params;
-    const { reason, force = false } = req.body;
-
+router.get('/status', requireAuth, requireAdmin, async (req, res) => {
     try {
-        // Get current state
-        const state = await prisma.circuit_breaker_states.findUnique({
-            where: { service_name: service }
-        });
-
-        if (!state) {
-            return res.status(404).json({
-                error: {
-                    code: 'SERVICE_NOT_FOUND',
-                    message: 'Service circuit breaker not found'
-                }
-            });
-        }
-
-        if (state.state === 'closed' && !force) {
-            return res.status(400).json({
-                error: {
-                    code: 'ALREADY_CLOSED',
-                    message: 'Circuit breaker is already closed'
-                }
-            });
-        }
-
-        // Reset the circuit breaker
-        const updatedState = await prisma.circuit_breaker_states.update({
-            where: { service_name: service },
-            data: {
-                state: 'closed',
-                failure_count: 0,
-                recovery_attempts: 0,
-                updated_at: new Date()
-            }
-        });
-
-        // Log the manual reset
-        await prisma.circuit_breaker_incidents.create({
-            data: {
-                service_name: service,
-                type: 'manual_reset',
-                severity: 'info',
-                status: 'resolved',
-                message: `Circuit breaker manually reset by admin. Reason: ${reason || 'Not provided'}`,
-                start_time: new Date(),
-                end_time: new Date(),
-                metrics: {
-                    previousState: state.state,
-                    previousFailures: state.failure_count,
-                    forcedReset: force
-                }
-            }
-        });
-
-        // Broadcast reset via WebSocket if available
-        if (global.circuitBreakerWss) {
-            global.circuitBreakerWss.broadcastCircuitReset(service);
-        }
+        const services = Array.from(ServiceManager.services.keys());
+        const statuses = await Promise.all(
+            services.map(async (serviceName) => {
+                const state = await ServiceManager.getServiceState(serviceName);
+                return {
+                    service: serviceName,
+                    circuitBreaker: state?.stats?.circuitBreaker || {},
+                    config: state?.config?.circuitBreaker || {},
+                    dependencies: ServiceManager.dependencies.get(serviceName) || [],
+                    operations: state?.stats?.operations || {},
+                    history: state?.stats?.history || {}
+                };
+            })
+        );
 
         res.json({
-            service,
-            state: updatedState,
-            reset: {
-                timestamp: new Date().toISOString(),
-                reason,
-                forced: force
+            success: true,
+            data: statuses
+        });
+    } catch (error) {
+        logApi.error('Failed to fetch circuit breaker status:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch circuit breaker status'
+        });
+    }
+});
+
+/**
+ * Update circuit breaker configuration for a service
+ * PUT /api/admin/circuit-breaker/:service/config
+ */
+router.put('/:service/config', requireAuth, requireAdmin, async (req, res) => {
+    const { service } = req.params;
+    const { failureThreshold, resetTimeoutMs, minHealthyPeriodMs } = req.body;
+
+    try {
+        const serviceInstance = ServiceManager.services.get(service);
+        if (!serviceInstance) {
+            return res.status(404).json({
+                success: false,
+                error: 'Service not found'
+            });
+        }
+
+        // Update the configuration
+        const oldConfig = { ...serviceInstance.config.circuitBreaker };
+        serviceInstance.config.circuitBreaker = {
+            ...oldConfig,
+            ...(failureThreshold !== undefined && { failureThreshold }),
+            ...(resetTimeoutMs !== undefined && { resetTimeoutMs }),
+            ...(minHealthyPeriodMs !== undefined && { minHealthyPeriodMs })
+        };
+
+        // Save the updated configuration
+        await ServiceManager.updateServiceState(service, {
+            running: true,
+            status: 'active'
+        }, serviceInstance.config, serviceInstance.stats);
+
+        // Log the admin action
+        await AdminLogger.logAction(
+            req.user.id,
+            AdminLogger.Actions.SERVICE.CONFIGURE,
+            {
+                service,
+                type: 'circuit_breaker',
+                old_config: oldConfig,
+                new_config: serviceInstance.config.circuitBreaker
+            },
+            {
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent']
+            }
+        );
+
+        res.json({
+            success: true,
+            data: {
+                service,
+                config: serviceInstance.config.circuitBreaker
             }
         });
     } catch (error) {
-        logApi.error(`Failed to reset circuit breaker for ${service}:`, error);
+        logApi.error('Failed to update circuit breaker config:', error);
         res.status(500).json({
-            error: {
-                code: 'RESET_FAILED',
-                message: 'Failed to reset circuit breaker',
-                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            success: false,
+            error: 'Failed to update circuit breaker configuration'
+        });
+    }
+});
+
+/**
+ * Reset circuit breaker for a service
+ * POST /api/admin/circuit-breaker/:service/reset
+ */
+router.post('/:service/reset', requireAuth, requireAdmin, async (req, res) => {
+    const { service } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+        return res.status(400).json({
+            success: false,
+            error: 'Reason for reset is required'
+        });
+    }
+
+    try {
+        const serviceInstance = ServiceManager.services.get(service);
+        if (!serviceInstance) {
+            return res.status(404).json({
+                success: false,
+                error: 'Service not found'
+            });
+        }
+
+        // Store old state for logging
+        const oldState = { ...serviceInstance.stats.circuitBreaker };
+
+        // Reset the circuit breaker
+        serviceInstance.stats.circuitBreaker = {
+            ...serviceInstance.stats.circuitBreaker,
+            isOpen: false,
+            failures: 0,
+            lastReset: new Date().toISOString()
+        };
+
+        // Save the updated state
+        await ServiceManager.updateServiceState(service, {
+            running: true,
+            status: 'active'
+        }, serviceInstance.config, serviceInstance.stats);
+
+        // Log the admin action
+        await AdminLogger.logAction(
+            req.user.id,
+            'CIRCUIT_BREAKER_RESET',
+            {
+                service,
+                reason,
+                old_state: oldState,
+                new_state: serviceInstance.stats.circuitBreaker
+            },
+            {
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent']
             }
+        );
+
+        res.json({
+            success: true,
+            data: {
+                service,
+                circuitBreaker: serviceInstance.stats.circuitBreaker
+            }
+        });
+    } catch (error) {
+        logApi.error('Failed to reset circuit breaker:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to reset circuit breaker'
         });
     }
 });
