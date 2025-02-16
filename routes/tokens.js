@@ -143,8 +143,18 @@ router.get("/", async (req, res) => {
 //      headers: { "Cookie": "session=<jwt>" }
 router.get("/:id", async (req, res) => {
   try {
+    // Validate id parameter
+    if (!req.params.id) {
+      return res.status(400).json({ error: "Token ID is required" });
+    }
+
+    const tokenId = parseInt(req.params.id);
+    if (isNaN(tokenId)) {
+      return res.status(400).json({ error: "Invalid token ID format" });
+    }
+
     const token = await prisma.tokens.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where: { id: tokenId },
       include: {
         token_prices: true,
         token_bucket_memberships: {
