@@ -864,7 +864,7 @@ export default function() {
     };
 
     const response = http.post(
-        'http://api.degenduel.com/referrals/analytics/click',
+        'http://api.degenduel.me/referrals/analytics/click',
         JSON.stringify(payload),
         { headers: { 'Content-Type': 'application/json' } }
     );

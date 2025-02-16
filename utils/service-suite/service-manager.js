@@ -11,6 +11,7 @@ import contestWalletService from '../../services/contestWalletService.js';
 import adminWalletService from '../../services/adminWalletService.js';
 import { marketDataService } from '../../services/marketDataService.js';
 import { tokenWhitelistService } from '../../services/tokenWhitelistService.js';
+import { createCircuitBreakerWebSocket } from '../websocket-suite/circuit-breaker-ws.js';
 
 /**
  * Service registry for managing all DegenDuel services
@@ -18,6 +19,26 @@ import { tokenWhitelistService } from '../../services/tokenWhitelistService.js';
 export class ServiceManager {
     static services = new Map();
     static dependencies = new Map();
+    static circuitBreakerWs = null;
+
+    /**
+     * Initialize the circuit breaker WebSocket with a server
+     * @param {http.Server} server - The HTTP server instance
+     */
+    static initializeWebSocket(server) {
+        if (!server) {
+            logApi.warn('Attempted to initialize circuit breaker WebSocket without server instance');
+            return;
+        }
+
+        try {
+            this.circuitBreakerWs = createCircuitBreakerWebSocket(server);
+            logApi.info('Circuit breaker WebSocket initialized successfully');
+        } catch (error) {
+            logApi.error('Failed to initialize circuit breaker WebSocket:', error);
+            throw error;
+        }
+    }
 
     /**
      * Registers a service with its dependencies
@@ -123,6 +144,11 @@ export class ServiceManager {
                     updated_at: new Date()
                 }
             });
+
+            // Broadcast state update via WebSocket if instance exists
+            if (this.circuitBreakerWs) {
+                this.circuitBreakerWs.notifyServiceUpdate(serviceName, value);
+            }
         } catch (error) {
             logApi.error(`Failed to update service state for ${serviceName}:`, error);
             throw error;
@@ -182,7 +208,25 @@ export class ServiceManager {
             const setting = await prisma.system_settings.findUnique({
                 where: { key: serviceName }
             });
-            return setting ? JSON.parse(setting.value) : null;
+            
+            // If no setting found, return null
+            if (!setting) return null;
+
+            // Handle both string and object value formats
+            if (typeof setting.value === 'string') {
+                try {
+                    return JSON.parse(setting.value);
+                } catch (e) {
+                    logApi.error(`Invalid JSON in system_settings for ${serviceName}:`, {
+                        value: setting.value,
+                        error: e.message
+                    });
+                    return null;
+                }
+            }
+            
+            // If value is already an object, return it directly
+            return setting.value;
         } catch (error) {
             logApi.error(`Failed to get service state for ${serviceName}:`, error);
             throw error;

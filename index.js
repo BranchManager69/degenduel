@@ -38,6 +38,7 @@ import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
 import marketDataService from './services/marketDataService.js';
 // Import WebSocket test routes
 import websocketTestRoutes from './routes/admin/websocket-test.js';
+import { createCircuitBreakerWebSocket } from './utils/websocket-suite/circuit-breaker-ws.js';
 
 dotenv.config();
 
@@ -69,7 +70,7 @@ app.use(memoryMonitoring.setupResponseTimeTracking());
 
 /* Routes Setup */
 
-// Default API route (https://degenduel.com/api)
+// Default API route (https://degenduel.me/api)
 app.get("/", (req, res) => {
   res.send(`
     Welcome to the DegenDuel API! You probably should not be here.
@@ -328,6 +329,12 @@ async function initializeServer() {
 
         // WebSocket - Yellow (226)
         logApi.info('\x1b[38;5;226m┣━━━━━━━━━━━ 🌐 Initializing WebSocket Servers...\x1b[0m');
+
+        // Initialize circuit breaker WebSocket
+        const circuitBreakerWs = createCircuitBreakerWebSocket(server);
+        global.wsServers.circuitBreaker = circuitBreakerWs;
+        InitLogger.logInit('Core', 'Circuit Breaker WebSocket', 'success');
+        initResults['Circuit Breaker WebSocket'] = { success: true };
 
         // Initialize Portfolio WebSocket
         const portfolioWs = createPortfolioWebSocket(server);

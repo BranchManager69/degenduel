@@ -29,6 +29,44 @@ class TokenWhitelistService extends BaseService {
         this.umi = createUmi(process.env.SOLANA_RPC_ENDPOINT).use(mplTokenMetadata());
     }
 
+    async getUserLevelDiscount(userId) {
+        try {
+            const userStats = await prisma.user_stats.findUnique({
+                where: { user_id: userId },
+                select: { level: true }
+            });
+
+            if (!userStats || !userStats.level) {
+                return 0; // No discount if no level found
+            }
+
+            // 1% discount per level
+            return userStats.level;
+        } catch (error) {
+            logApi.error('Failed to get user level:', {
+                userId,
+                error: error.message
+            });
+            return 0; // No discount on error
+        }
+    }
+
+    async calculateSubmissionCost(user) {
+        // Base cost: 0.01 SOL for super admins, 1 SOL for others
+        const baseCost = user.role === 'SUPER_ADMIN' ? 
+            0.01 * LAMPORTS_PER_SOL : 
+            1 * LAMPORTS_PER_SOL;
+
+        // Get level-based discount percentage
+        const discountPercent = await this.getUserLevelDiscount(user.id);
+        
+        // Calculate final cost with discount
+        const discount = (discountPercent / 100) * baseCost;
+        const finalCost = baseCost - discount;
+
+        return Math.max(finalCost, 0); // Ensure we don't go negative
+    }
+
     async verifyToken(contractAddress) {
         try {
             // Validate address format
@@ -75,7 +113,7 @@ class TokenWhitelistService extends BaseService {
         }
     }
 
-    async verifyPayment(signature, walletAddress) {
+    async verifyPayment(signature, walletAddress, user) {
         try {
             const tx = await this.connection.getTransaction(signature, {
                 commitment: 'confirmed'
@@ -84,6 +122,9 @@ class TokenWhitelistService extends BaseService {
             if (!tx) {
                 throw new ServiceError('Transaction not found');
             }
+
+            // Calculate required amount based on user role and level
+            const requiredAmount = await this.calculateSubmissionCost(user);
 
             // Verify payment amount and recipient
             const transfer = tx.transaction.message.instructions.find(ix => 
@@ -99,8 +140,10 @@ class TokenWhitelistService extends BaseService {
                 throw new ServiceError('Invalid payment recipient');
             }
 
-            if (transfer.parsed.info.lamports < this.submissionCost) {
-                throw new ServiceError('Insufficient payment amount');
+            if (transfer.parsed.info.lamports < requiredAmount) {
+                const required = requiredAmount / LAMPORTS_PER_SOL;
+                const provided = transfer.parsed.info.lamports / LAMPORTS_PER_SOL;
+                throw new ServiceError(`Insufficient payment amount. Required: ${required} SOL, Provided: ${provided} SOL`);
             }
 
             // Log the transaction
@@ -117,7 +160,10 @@ class TokenWhitelistService extends BaseService {
                         signature,
                         token_submission: true,
                         lamports: transfer.parsed.info.lamports,
-                        treasury_wallet: this.treasuryWallet.toString()
+                        treasury_wallet: this.treasuryWallet.toString(),
+                        user_level_discount: await this.getUserLevelDiscount(user.id),
+                        required_amount: requiredAmount,
+                        user_role: user.role
                     },
                     processed_at: new Date()
                 }
@@ -157,6 +203,43 @@ class TokenWhitelistService extends BaseService {
                 error: error.message
             });
             throw new ServiceError('Failed to add token to whitelist');
+        }
+    }
+
+    async removeFromWhitelist(contractAddress, adminId, reason) {
+        try {
+            // Verify token exists
+            const token = await prisma.tokens.findUnique({
+                where: { address: contractAddress }
+            });
+
+            if (!token) {
+                throw new ServiceError('Token not found in whitelist');
+            }
+
+            // Remove token
+            await prisma.tokens.delete({
+                where: { address: contractAddress }
+            });
+
+            // Log admin action
+            logApi.info('Token removed from whitelist:', {
+                contractAddress,
+                adminId,
+                reason,
+                tokenId: token.id,
+                tokenName: token.name,
+                tokenSymbol: token.symbol
+            });
+
+            return token;
+        } catch (error) {
+            logApi.error('Failed to remove token from whitelist:', {
+                contractAddress,
+                adminId,
+                error: error.message
+            });
+            throw new ServiceError('Failed to remove token from whitelist');
         }
     }
 }
