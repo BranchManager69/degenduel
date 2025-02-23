@@ -14,28 +14,27 @@ import { errorHandler } from "./utils/errorHandler.js";
 import { logApi } from "./utils/logger-suite/logger.js";
 import InitLogger from './utils/logger-suite/init-logger.js';
 import AdminLogger from './utils/admin-logger.js';
+import { memoryMonitoring } from "./scripts/monitor-memory.js";
+import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
+import ServiceManager from "./utils/service-suite/service-manager.js";
+import ServiceInitializer from "./utils/service-suite/service-initializer.js";
+import { createServer } from 'http';
+import referralScheduler from './scripts/referral-scheduler.js';
 // Services
 import faucetManagementRoutes from "./routes/admin/faucet-management.js";
 import serviceMetricsRoutes from "./routes/admin/service-metrics.js";
 import tokenSyncRoutes from "./routes/admin/token-sync.js";
 import vanityWalletRoutes from "./routes/admin/vanity-wallet-management.js";
 import walletManagementRoutes from "./routes/admin/wallet-management.js";
-import { memoryMonitoring } from "./scripts/monitor-memory.js";
 import contestEvaluationService from "./services/contestEvaluationService.js";
 import tokenSyncService from "./services/tokenSyncService.js";
 import walletRakeService from "./services/walletRakeService.js";
 import tokenWhitelistService from "./services/tokenWhitelistService.js";
-import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
 import { createPortfolioWebSocket } from "./websocket/portfolio-ws.js";
 import { createAnalyticsWebSocket } from "./websocket/analytics-ws.js";
 import { createWalletWebSocket } from "./websocket/wallet-ws.js";
 import { createContestWebSocket } from "./websocket/contest-ws.js";
 import { createMarketDataWebSocket } from "./websocket/market-ws.js";
-import { createServer } from 'http';
-import referralScheduler from './scripts/referral-scheduler.js';
-import referralService from './services/referralService.js';
-import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
-import marketDataService from './services/marketDataService.js';
 // Import WebSocket test routes
 import websocketTestRoutes from './routes/admin/websocket-test.js';
 import { createCircuitBreakerWebSocket } from './utils/websocket-suite/circuit-breaker-ws.js';
@@ -271,11 +270,82 @@ async function displayStartupAnimation(port, initResults = {}) {
     console.log('\n');
 }
 
+// Create sad startup failure animation function
+async function displayStartupFailureAnimation(port, initResults = {}) {
+  // Helper to get status indicators
+  const getStatusIndicators = (serviceName) => {
+      const service = initResults[serviceName];
+      if (!service) return { status: 'UNKNOWN ', symbol: '?', bars: '□ □ □ □ □' };
+      return {
+          status: service.success ? 'ONLINE  ' : 'ERROR   ', // Fixed width with spaces
+          symbol: service.success ? '✓' : '✗',
+          bars: service.success ? '■ ■ ■ ■ ■' : '□ □ □ □ □'
+      };
+  };
+
+  // Create a sad ASCII art banner
+  const sadBanner = `
+\x1b[38;5;196m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
+║                                                                         ║
+║  \x1b[38;5;199m🚨 DEGEN DUEL ARENA INITIALIZATION FAILED\x1b[38;5;51m                           ║
+║                                                                         ║
+╚════════════════════════════════════════════════════════════════════════╝\x1b[0m`;
+
+  // Get status for each core service
+  const dbStatus = getStatusIndicators('Database');
+  const apiStatus = getStatusIndicators('Core');
+  const wsStatus = getStatusIndicators('Portfolio WebSocket');
+  const solanaStatus = getStatusIndicators('Solana Service Manager');
+  const contestStatus = getStatusIndicators('Contest Evaluation Service');
+
+  // Create dynamic status display based on actual initialization results
+  const statusDisplay = `
+\x1b[38;5;39m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
+║\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.symbol} Database Cluster    \x1b[38;5;247m|\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
+║\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.symbol} API Services        \x1b[38;5;247m|\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
+║\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.symbol} WebSocket Server    \x1b[38;5;247m|\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
+║\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.symbol} Solana Services     \x1b[38;5;247m|\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
+║\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.symbol} Contest Engine      \x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.bars}\x1b[0m \x1b[38;5;39m\t\t║
+╚════════════════════════════════════════════════════════════════════╝\x1b[0m`;
+
+  // Calculate overall system status
+  const allServices = [dbStatus, apiStatus, wsStatus, solanaStatus, contestStatus];
+  const allOnline = allServices.every(s => s.status.includes('ONLINE'));
+  const anyError = allServices.some(s => s.status.includes('ERROR'));
+  const systemState = allOnline ? 'FULLY OPERATIONAL ✨' : (anyError ? 'DEGRADED PERFORMANCE ⚠️' : 'PARTIAL STARTUP ⏳');
+
+  // Format duration nicely
+  const duration = initResults.duration ? initResults.duration.toFixed(2) : 'N/A';
+
+  // Create dynamic startup message
+  const startupMessage = `
+\x1b[38;5;196m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
+║                                                                         ║
+║  \x1b[38;5;199m🚨 DEGEN DUEL ARENA INITIALIZATION FAILED\x1b[38;5;51m                           ║
+║                                                                         ║
+╚════════════════════════════════════════════════════════════════════════╝\x1b[0m`;
+
+  // Clear console for dramatic effect
+  console.clear();
+  
+  // Add dramatic pause between elements
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  
+  // Display sad startup sequence
+  console.log('\n');
+  console.log(sadBanner);
+  await sleep(300);
+  console.log(statusDisplay);
+  await sleep(300);
+  console.log(startupMessage);
+  console.log('\n');
+}
+
 // Main
 async function initializeServer() {
     // Add colors to initialization logs
     console.log('\n\x1b[38;5;199m╭───────────────── DegenDuel Initialization Starting ─────────────────╮\x1b[0m');
-    console.log('\x1b[38;5;199m│\x1b[38;5;226m               🔍 Swagger docs available at /api-docs                │\x1b[0m');
+    console.log('\x1b[38;5;199m│\x1b[38;5;226m               🔍 Swagger docs available at /api-docs                \x1b[38;5;199m│\x1b[0m');
     console.log('\x1b[38;5;199m╰─────────────────────────────────────────────────────────────────────╯\x1b[0m\n');
 
     InitLogger.startInitialization();
@@ -295,21 +365,6 @@ async function initializeServer() {
         InitLogger.logInit('Database', 'SQLite', 'success', { path: '/home/websites/degenduel/data/leaderboard.db' });
         logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ SQLite Ready\x1b[0m\n');
 
-        // Initialize Referral Service
-        logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🎯 Initializing Referral Service...\x1b[0m');
-        await referralService.initialize();
-        await referralService.start();
-        await AdminLogger.logAction(
-            'SYSTEM',
-            AdminLogger.Actions.SERVICE.START,
-            {
-                service: 'referral_service',
-                config: referralService.config
-            }
-        );
-        InitLogger.logInit('Core', 'Referral Service', 'success');
-        logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ☑️ Referral Service Ready\x1b[0m');
-
         // Start HTTP server - Orange (208)
         logApi.info('\n\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mCore Services\x1b[0m\x1b[38;5;208m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
         logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🌐 Starting Express Server...\x1b[0m');
@@ -327,162 +382,19 @@ async function initializeServer() {
             });
         });
 
-        // WebSocket - Yellow (226)
-        logApi.info('\x1b[38;5;226m┣━━━━━━━━━━━ 🌐 Initializing WebSocket Servers...\x1b[0m');
+        // Initialize Circuit Breaker WebSocket
+        ServiceManager.initializeWebSocket(server);
 
-        try {
-            // Initialize circuit breaker WebSocket
-            const circuitBreakerWs = createCircuitBreakerWebSocket(server);
-            global.wsServers.circuitBreaker = circuitBreakerWs;
-            InitLogger.logInit('Core', 'Circuit Breaker WebSocket', 'success');
-            initResults['Circuit Breaker WebSocket'] = { success: true };
-        } catch (error) {
-            logApi.error('Failed to initialize Circuit Breaker WebSocket:', error);
-            initResults['Circuit Breaker WebSocket'] = { success: false, error: error.message };
-        }
+        // Initialize and start all services
+        await ServiceInitializer.registerCoreServices();
+        await ServiceInitializer.initializeServices();
 
-        try {
-            // Initialize Portfolio WebSocket
-            const portfolioWs = createPortfolioWebSocket(server);
-            global.wsServers.portfolio = portfolioWs;
-            InitLogger.logInit('Core', 'Portfolio WebSocket', 'success');
-            initResults['Portfolio WebSocket'] = { success: true };
-        } catch (error) {
-            logApi.error('Failed to initialize Portfolio WebSocket:', error);
-            initResults['Portfolio WebSocket'] = { success: false, error: error.message };
-        }
-
-        try {
-            // Initialize Analytics WebSocket
-            const analyticsWs = createAnalyticsWebSocket(server);
-            global.wsServers.analytics = analyticsWs;
-            InitLogger.logInit('Core', 'Analytics WebSocket', 'success');
-            initResults['Analytics WebSocket'] = { success: true };
-        } catch (error) {
-            logApi.error('Failed to initialize Analytics WebSocket:', error);
-            initResults['Analytics WebSocket'] = { success: false, error: error.message };
-        }
-
-        try {
-            // Initialize Wallet WebSocket
-            const walletWs = createWalletWebSocket(server);
-            global.wsServers.wallet = walletWs;
-            InitLogger.logInit('Core', 'Wallet WebSocket', 'success');
-            initResults['Wallet WebSocket'] = { success: true };
-        } catch (error) {
-            logApi.error('Failed to initialize Wallet WebSocket:', error);
-            initResults['Wallet WebSocket'] = { success: false, error: error.message };
-        }
-
-        try {
-            // Initialize Contest WebSocket
-            const contestWs = createContestWebSocket(server);
-            global.wsServers.contest = contestWs;
-            InitLogger.logInit('Core', 'Contest WebSocket', 'success');
-            initResults['Contest WebSocket'] = { success: true };
-        } catch (error) {
-            logApi.error('Failed to initialize Contest WebSocket:', error);
-            initResults['Contest WebSocket'] = { success: false, error: error.message };
-        }
-
-        try {
-            // Initialize Market Data WebSocket
-            const marketDataWs = createMarketDataWebSocket(server);
-            global.wsServers.market = marketDataWs;
-            InitLogger.logInit('Core', 'Market Data WebSocket', 'success');
-            initResults['Market Data WebSocket'] = { success: true };
-        } catch (error) {
-            logApi.error('Failed to initialize Market Data WebSocket:', error);
-            initResults['Market Data WebSocket'] = { success: false, error: error.message };
-        }
-
-        // Add analytics tracking middleware
-        if (global.wsServers.analytics) {
-            app.use(global.wsServers.analytics.createTrackingMiddleware());
-        }
-
-        logApi.info('\x1b[38;5;226m┃           ┗━━━━━━━━━━━ ☑️ WebSocket Servers Ready\x1b[0m');
-
-        // Memory Monitor - Green (46)
-        logApi.info('\x1b[38;5;46m┣━━━━━━━━━━━ 📊 Initializing Memory Monitor...\x1b[0m');
-        memoryMonitoring.initMemoryMonitoring();
-        InitLogger.logInit('Core', 'Memory Monitor', 'success');
-        logApi.info('\x1b[38;5;46m┃           ┗━━━━━━━━━━━ ☑️ Memory Monitor Active\x1b[0m');
-
-        // Solana Services - Blue (27)
+        // Initialize Solana Service Manager
         logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ ⚡ Initializing Solana Services...\x1b[0m');
         await SolanaServiceManager.initialize();
         InitLogger.logInit('Core', 'Solana Service Manager', 'success');
         initResults['Solana Service Manager'] = { success: true };
         logApi.info('\x1b[38;5;27m┃           ┗━━━━━━━━━━━ ☑️ Solana Services Ready\x1b[0m');
-
-        // Token Sync - Indigo (57)
-        logApi.info('\x1b[38;5;57m┣━━━━━━━━━━━ 🔄 Starting Token Sync Service...\x1b[0m');
-        await tokenSyncService.initialize();
-        await tokenSyncService.start();
-        InitLogger.logInit('Core', 'Token Sync Service', 'success');
-        logApi.info('\x1b[38;5;57m┃           ┗━━━━━━━━━━━ ✅ Token Sync Active\x1b[0m');
-
-        // Token Whitelist Service
-        logApi.info('\x1b[38;5;57m┣━━━━━━━━━━━ 🎫 Starting Token Whitelist Service...\x1b[0m');
-        await tokenWhitelistService.initialize();
-        await tokenWhitelistService.start();
-        await AdminLogger.logAction(
-            'SYSTEM',
-            AdminLogger.Actions.SERVICE.START,
-            {
-                service: 'token_whitelist_service',
-                config: tokenWhitelistService.config
-            }
-        );
-        InitLogger.logInit('Core', 'Token Whitelist Service', 'success');
-        logApi.info('\x1b[38;5;57m┃           ┗━━━━━━━━━━━ ✅ Token Whitelist Service Active\x1b[0m');
-
-        // Initialize Market Data Service
-        logApi.info('\x1b[38;5;57m┣━━━━━━━━━━━ 📊 Starting Market Data Service...\x1b[0m');
-        await marketDataService.initialize();
-        await marketDataService.start();
-        await AdminLogger.logAction(
-            'SYSTEM',
-            AdminLogger.Actions.SERVICE.START,
-            {
-                service: 'market_data_service',
-                config: marketDataService.config
-            }
-        );
-        InitLogger.logInit('Core', 'Market Data Service', 'success');
-        logApi.info('\x1b[38;5;57m┃           ┗━━━━━━━━━━━ ✅ Market Data Service Active\x1b[0m');
-
-        // Wallet Service - Violet (93)
-        logApi.info('\x1b[38;5;93m┣━━━━━━━━━━━ 💰 Starting Wallet Rake Service...\x1b[0m');
-        await walletRakeService.initialize();
-        await walletRakeService.start();
-        await AdminLogger.logAction(
-            'SYSTEM',
-            AdminLogger.Actions.SERVICE.START,
-            {
-                service: 'wallet_rake_service',
-                config: walletRakeService.config
-            }
-        );
-        InitLogger.logInit('Core', 'Wallet Rake Service', 'success');
-        logApi.info('\x1b[38;5;93m┃           ┗━━━━━━━━━━━ ☑️ Wallet Rake Active\x1b[0m');
-
-        // Contest Service - Blue (27)
-        logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ ⚡ Initializing Contest Evaluation...\x1b[0m');
-        await contestEvaluationService.service.initialize();
-        await contestEvaluationService.service.start();
-        await AdminLogger.logAction(
-            'SYSTEM',
-            AdminLogger.Actions.SERVICE.START,
-            {
-                service: 'contest_evaluation_service',
-                config: contestEvaluationService.service.config
-            }
-        );
-        InitLogger.logInit('Core', 'Contest Evaluation Service', 'success');
-        initResults['Contest Evaluation Service'] = { success: true };
-        logApi.info('\x1b[38;5;27m┃           ┗━━━━━━━━━━━ ☑️ Contest Evaluation Ready\x1b[0m');
 
         // Initialize referral scheduler
         logApi.info('\x1b[38;5;93m┣━━━━━━━━━━━ 🎯 Starting Referral Scheduler...\x1b[0m');
@@ -498,11 +410,13 @@ async function initializeServer() {
         await displayStartupAnimation(port, initResults);
 
     } catch (error) {
+        // Display the sad startup failure animation
+        logApi.error('\n');
         logApi.error('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ ERROR ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
         logApi.error('\x1b[38;5;196m┃           ❌ Server Initialization Failed              ┃\x1b[0m');
         logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━ Error: ' + error.message + '\x1b[0m');
-        // Still show the startup animation, but with error states
-        await displayStartupAnimation(port, initResults);
+        logApi.error('\n');
+        await displayStartupFailureAnimation(port, initResults);
         process.exit(1);
     }
 }
@@ -510,63 +424,10 @@ async function initializeServer() {
 // Handle graceful shutdown
 async function shutdown() {
   try {
-    // Stop token sync service
-    await tokenSyncService.stop();
+    // Cleanup all services
+    await ServiceInitializer.cleanup();
 
-    // Stop token whitelist service
-    await tokenWhitelistService.stop();
-    await AdminLogger.logAction(
-        'SYSTEM',
-        AdminLogger.Actions.SERVICE.STOP,
-        {
-            service: 'token_whitelist_service',
-            reason: 'Server shutdown'
-        }
-    );
-
-    // Stop market data service
-    await marketDataService.stop();
-    await AdminLogger.logAction(
-        'SYSTEM',
-        AdminLogger.Actions.SERVICE.STOP,
-        {
-            service: 'market_data_service',
-            reason: 'Server shutdown'
-        }
-    );
-
-    // Close WebSocket server if it exists
-    if (global.wss) {
-      await new Promise((resolve) => {
-        global.wss.close(() => {
-          logApi.info("WebSocket server closed");
-          resolve();
-        });
-      });
-    }
-
-    // Stop wallet rake service
-    await walletRakeService.stop();
-    await AdminLogger.logAction(
-        'SYSTEM',
-        AdminLogger.Actions.SERVICE.STOP,
-        {
-            service: 'wallet_rake_service',
-            reason: 'Server shutdown'
-        }
-    );
-
-    // Stop contest evaluation service
-    await contestEvaluationService.service.stop();
-    await AdminLogger.logAction(
-        'SYSTEM',
-        AdminLogger.Actions.SERVICE.STOP,
-        {
-            service: 'contest_evaluation_service',
-            reason: 'Server shutdown'
-        }
-    );
-
+    // Close databases
     await Promise.all([
       closeDatabase(), // SQLite
       closePgDatabase(), // PostgreSQL
@@ -604,24 +465,4 @@ initializeServer();
 logApi.info("Starting DegenDuel API...", {
   port: port,
   debug_mode: process.env.DEBUG_MODE,
-});
-
-// Update cleanup
-process.on('SIGTERM', async () => {
-    try {
-        // ... existing cleanup ...
-        
-        // Cleanup WebSocket servers
-        portfolioWs.cleanup();
-        analyticsWs.cleanup();
-        walletWs.cleanup();
-        contestWs.cleanup();
-        marketDataWs.cleanup();
-        logApi.info("WebSocket servers closed");
-        
-        // ... rest of cleanup ...
-    } catch (error) {
-        logApi.error('Error during cleanup:', error);
-        process.exit(1);
-    }
 });

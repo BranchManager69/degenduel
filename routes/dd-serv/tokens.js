@@ -74,6 +74,21 @@ let ddServStats = initializeStats();
 
     const enabled = setting?.value?.enabled ?? true; // Default to true if not set
 
+    // If service doesn't exist, create it with default config
+    if (!setting) {
+      await prisma.system_settings.create({
+        data: {
+          key: SERVICE_NAMES.DD_SERV,
+          value: {
+            enabled: true,
+            config: DD_SERV_CONFIG,
+            stats: ddServStats
+          },
+          description: 'DD-Serv status and configuration'
+        }
+      });
+    }
+
     // Mark service started
     await ServiceManager.markServiceStarted(
       SERVICE_NAMES.DD_SERV,
@@ -139,8 +154,25 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
     where: { key: SERVICE_NAMES.DD_SERV }
   });
 
-  if (!setting?.value?.enabled) {
-    throw new Error('Service is disabled via dashboard');
+  // If service doesn't exist or is disabled, throw error
+  if (!setting || !setting.value?.enabled) {
+    // Create default settings if they don't exist
+    if (!setting) {
+      await prisma.system_settings.create({
+        data: {
+          key: SERVICE_NAMES.DD_SERV,
+          value: {
+            enabled: true,
+            config: DD_SERV_CONFIG,
+            stats: ddServStats
+          },
+          description: 'DD-Serv status and configuration'
+        }
+      });
+      // Continue execution since we just enabled it
+    } else {
+      throw new Error('Service is disabled via dashboard');
+    }
   }
 
   // Check circuit breaker
