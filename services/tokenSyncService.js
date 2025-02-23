@@ -16,7 +16,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 // Solana
 import { TOKEN_VALIDATION } from '../config/constants.js'; //TODO: Verify all is correct
 // Other
@@ -54,7 +54,8 @@ const TOKEN_SYNC_CONFIG = {
 // Token Sync Service
 class TokenSyncService extends BaseService {
     constructor() {
-        super(TOKEN_SYNC_CONFIG.name, TOKEN_SYNC_CONFIG);
+        ////super(TOKEN_SYNC_CONFIG.name, TOKEN_SYNC_CONFIG);
+        super(TOKEN_SYNC_CONFIG);
         
         // Initialize service-specific state
         this.lastKnownTokens = new Map();
@@ -158,7 +159,7 @@ class TokenSyncService extends BaseService {
                 syncStats: this.syncStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -502,7 +503,7 @@ class TokenSyncService extends BaseService {
                 (Date.now() - startTime)) / (this.syncStats.operations.total + 1);
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -555,7 +556,7 @@ class TokenSyncService extends BaseService {
             this.lastKnownTokens.clear();
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {

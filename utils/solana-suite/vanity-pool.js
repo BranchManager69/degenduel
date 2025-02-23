@@ -10,6 +10,9 @@ import os from 'os';
 import { BaseService } from '../service-suite/base-service.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../service-suite/service-constants.js';
 import { logApi } from '../logger-suite/logger.js';
+import prisma from '../../config/prisma.js';
+
+// Vanity Wallet Generation Service
 
 class VanityGeneratorError extends Error {
     constructor(message, code, details) {
@@ -69,12 +72,17 @@ const VANITY_POOL_CONFIG = {
     }
 };
 
+// Vanity Pool Service
 export class VanityPool extends BaseService {
     constructor(config = {}) {
-        super(VANITY_POOL_CONFIG.name, {
+        ////super(VANITY_POOL_CONFIG.name, {
+        /*
+        super(VANITY_POOL_CONFIG, {
             ...VANITY_POOL_CONFIG,
             ...config
         });
+        */
+        super(VANITY_POOL_CONFIG);
 
         // Instance properties
         this.maxWorkers = Math.max(1, cpus().length - 1); // Leave one core free

@@ -17,7 +17,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Dependencies
 import { VanityPool } from '../utils/solana-suite/vanity-pool.js';
@@ -55,7 +55,7 @@ const VANITY_WALLET_CONFIG = {
 
 class VanityWalletService extends BaseService {
     constructor() {
-        super(VANITY_WALLET_CONFIG.name, VANITY_WALLET_CONFIG);
+        super(VANITY_WALLET_CONFIG);
         
         // Initialize vanity pool
         this.vanityPool = new VanityPool();
@@ -114,7 +114,7 @@ class VanityWalletService extends BaseService {
             await super.initialize();
             
             // Check dependencies
-            const walletGeneratorStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
+            const walletGeneratorStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
             if (!walletGeneratorStatus) {
                 throw ServiceError.initialization('Wallet Generator Service not healthy');
             }
@@ -170,7 +170,7 @@ class VanityWalletService extends BaseService {
                 poolStats: this.poolStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -391,7 +391,7 @@ class VanityWalletService extends BaseService {
         
         try {
             // Check dependency health
-            const walletGeneratorStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
+            const walletGeneratorStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
             this.poolStats.dependencies.walletGenerator = {
                 status: walletGeneratorStatus ? 'healthy' : 'unhealthy',
                 lastCheck: new Date().toISOString(),
@@ -426,7 +426,7 @@ class VanityWalletService extends BaseService {
             this.poolStats.pool_health.last_check = new Date().toISOString();
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -487,7 +487,7 @@ class VanityWalletService extends BaseService {
             this.activeOperations.clear();
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {

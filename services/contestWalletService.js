@@ -17,7 +17,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 // Solana
 import { Keypair } from '@solana/web3.js';
 import crypto from 'crypto';
@@ -48,7 +48,8 @@ const CONTEST_WALLET_CONFIG = {
 // Contest Wallet Service
 class ContestWalletService extends BaseService {
     constructor() {
-        super(CONTEST_WALLET_CONFIG.name, CONTEST_WALLET_CONFIG);
+        ////super(CONTEST_WALLET_CONFIG.name, CONTEST_WALLET_CONFIG);
+        super(CONTEST_WALLET_CONFIG);
         
         // Service-specific state
         this.walletStats = {

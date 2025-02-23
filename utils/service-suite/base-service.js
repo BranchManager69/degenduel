@@ -8,6 +8,9 @@ import {
     getCircuitBreakerStatus 
 } from './circuit-breaker-config.js';
 import { EventEmitter } from 'events';
+import serviceManager from './service-manager.js';
+import serviceEvents from './service-events.js';
+import { ServiceError } from './service-error.js';
 
 /**
  * Base configuration template for all services
@@ -23,21 +26,28 @@ export const BASE_SERVICE_CONFIG = {
     }
 };
 
-// Global event emitter for service events
-export const serviceEvents = new EventEmitter();
-
 /**
  * Base service class that all DegenDuel services should extend
  */
 export class BaseService {
-    constructor(name, config = {}) {
-        this.name = name;
+    constructor(config) {
+        if (!config || !config.name) {
+            logApi.error(config);
+            throw new Error('Service configuration must include a name');
+        }
+
         this.config = {
             ...BASE_SERVICE_CONFIG,
-            ...config,
-            name,
-            circuitBreaker: getCircuitBreakerConfig(name)
+            ...config
         };
+
+        this.isOperational = false;
+        this.name = config.name;
+        this.layer = config.layer;
+        this.criticalLevel = config.criticalLevel;
+        this.dependencies = config.dependencies || [];
+        this.serviceManager = serviceManager;
+        this.events = serviceEvents;
 
         this.isInitialized = false;
         this.isStarted = false;
@@ -143,7 +153,7 @@ export class BaseService {
             this.isInitialized = true;
 
             // Emit service initialized event
-            serviceEvents.emit('service:initialized', {
+            this.events.emit('service:initialized', {
                 name: this.name,
                 config: this.config,
                 stats: this.stats
@@ -212,7 +222,7 @@ export class BaseService {
             }
 
             // Emit circuit breaker state change
-            serviceEvents.emit('service:circuit_breaker', {
+            this.events.emit('service:circuit_breaker', {
                 name: this.name,
                 status: getCircuitBreakerStatus(this.stats),
                 config: this.config,
@@ -267,7 +277,7 @@ export class BaseService {
             this.isStarted = true;
 
             // Emit service started event
-            serviceEvents.emit('service:started', {
+            this.events.emit('service:started', {
                 name: this.name,
                 config: this.config,
                 stats: this.stats
@@ -302,7 +312,7 @@ export class BaseService {
             this.stats.history.lastStopped = new Date().toISOString();
 
             // Emit service stopped event
-            serviceEvents.emit('service:stopped', {
+            this.events.emit('service:stopped', {
                 name: this.name,
                 config: this.config,
                 stats: this.stats
@@ -341,7 +351,7 @@ export class BaseService {
         this.stats.circuitBreaker.failures = 0;
         this.stats.history.consecutiveFailures = 0;
 
-        serviceEvents.emit('service:heartbeat', {
+        this.events.emit('service:heartbeat', {
             name: this.name,
             config: this.config,
             stats: this.stats
@@ -367,7 +377,7 @@ export class BaseService {
             await this.attemptCircuitRecovery();
         }
 
-        serviceEvents.emit('service:error', {
+        this.events.emit('service:error', {
             name: this.name,
             error,
             config: this.config,

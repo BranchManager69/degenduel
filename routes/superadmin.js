@@ -13,7 +13,7 @@ import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PE
 import WalletGenerator from '../services/walletGenerationService.js';
 import FaucetManager  from '../services/faucetService.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 
@@ -707,7 +707,7 @@ router.post('/services/:serviceName/toggle', requireAuth, requireSuperAdmin, asy
         });
 
         // 1. Get service from ServiceManager
-        const service = ServiceManager.services.get(serviceName);
+        const service = serviceManager.services.get(serviceName);
         if (!service) {
             logApi.warn(`Service not found: ${serviceName}`, {
                 admin: adminName,
@@ -720,7 +720,7 @@ router.post('/services/:serviceName/toggle', requireAuth, requireSuperAdmin, asy
         }
 
         // 2. Get current state
-        const currentState = await ServiceManager.getServiceState(serviceName);
+        const currentState = await serviceManager.getServiceState(serviceName);
         const newEnabled = !currentState?.running;
 
         // 3. Update system_settings first
@@ -771,7 +771,7 @@ router.post('/services/:serviceName/toggle', requireAuth, requireSuperAdmin, asy
         }
 
         // 5. Get final state after operation
-        const finalState = await ServiceManager.getServiceState(serviceName);
+        const finalState = await serviceManager.getServiceState(serviceName);
         
         // 6. Broadcast state via WebSocket
         if (global.wss?.broadcastServiceState) {

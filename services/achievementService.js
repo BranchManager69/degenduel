@@ -17,12 +17,12 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const ACHIEVEMENT_SERVICE_CONFIG = {
-    name: SERVICE_NAMES.ACHIEVEMENT,
-    description: getServiceMetadata(SERVICE_NAMES.ACHIEVEMENT).description,
+    name: 'achievement_service',
+    description: getServiceMetadata('achievement_service').description,
     checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
     maxRetries: 3,
     retryDelayMs: 5000,
@@ -47,7 +47,7 @@ const ACHIEVEMENT_SERVICE_CONFIG = {
 
 class AchievementService extends BaseService {
     constructor() {
-        super(SERVICE_NAMES.ACHIEVEMENT, ACHIEVEMENT_SERVICE_CONFIG);
+        super(ACHIEVEMENT_SERVICE_CONFIG);
         
         // Initialize service-specific stats
         this.achievementStats = {
@@ -101,7 +101,7 @@ class AchievementService extends BaseService {
             await super.initialize();
             
             // Check dependencies
-            const contestEvalStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
+            const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             if (!contestEvalStatus) {
                 throw ServiceError.initialization('Contest Evaluation Service not healthy');
             }
@@ -178,7 +178,7 @@ class AchievementService extends BaseService {
                 achievementStats: this.achievementStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -204,7 +204,7 @@ class AchievementService extends BaseService {
         
         try {
             // Check dependency health
-            const contestEvalStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
+            const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             this.achievementStats.dependencies.contestEvaluation = {
                 status: contestEvalStatus ? 'healthy' : 'unhealthy',
                 lastCheck: new Date().toISOString(),
@@ -225,7 +225,7 @@ class AchievementService extends BaseService {
                 (Date.now() - startTime)) / (this.achievementStats.operations.total + 1);
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -476,7 +476,7 @@ class AchievementService extends BaseService {
             this.activeChecks.clear();
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {

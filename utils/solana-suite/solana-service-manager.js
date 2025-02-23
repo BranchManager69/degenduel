@@ -5,7 +5,23 @@ import WalletGenerator from '../../services/walletGenerationService.js';
 import { VanityPool } from './vanity-pool.js';
 import FaucetManager from '../../services/faucetService.js';
 import { logApi } from '../logger-suite/logger.js';
-import ServiceManager, { SERVICE_NAMES, SERVICE_LAYERS } from '../service-suite/service-manager.js';
+import serviceManager from '../service-suite/service-manager.js';
+import { SERVICE_NAMES, SERVICE_LAYERS } from '../service-suite/service-constants.js';
+
+const SOLANA_SERVICES = [
+    SERVICE_NAMES.WALLET_GENERATOR,
+    SERVICE_NAMES.FAUCET,
+    SERVICE_NAMES.TOKEN_SYNC,
+    SERVICE_NAMES.MARKET_DATA,
+    SERVICE_NAMES.TOKEN_WHITELIST,
+    SERVICE_NAMES.CONTEST_EVALUATION,
+    SERVICE_NAMES.ACHIEVEMENT,
+    SERVICE_NAMES.REFERRAL,
+    SERVICE_NAMES.CONTEST_WALLET,
+    SERVICE_NAMES.VANITY_WALLET,
+    SERVICE_NAMES.WALLET_RAKE,
+    SERVICE_NAMES.ADMIN_WALLET
+];
 
 /**
  * Manages Solana-specific functionality and coordinates with the main ServiceManager

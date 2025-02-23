@@ -17,7 +17,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -61,7 +61,8 @@ const TOKEN_WHITELIST_CONFIG = {
 
 class TokenWhitelistService extends BaseService {
     constructor() {
-        super(TOKEN_WHITELIST_CONFIG.name, TOKEN_WHITELIST_CONFIG);
+        ////super(TOKEN_WHITELIST_CONFIG.name, TOKEN_WHITELIST_CONFIG);
+        super(TOKEN_WHITELIST_CONFIG);
         
         // Initialize Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
@@ -149,7 +150,7 @@ class TokenWhitelistService extends BaseService {
                 whitelistStats: this.whitelistStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -528,7 +529,7 @@ class TokenWhitelistService extends BaseService {
             }
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -561,7 +562,7 @@ class TokenWhitelistService extends BaseService {
             this.activeSubmissions.clear();
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {

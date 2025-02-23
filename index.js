@@ -16,7 +16,7 @@ import InitLogger from './utils/logger-suite/init-logger.js';
 import AdminLogger from './utils/admin-logger.js';
 import { memoryMonitoring } from "./scripts/monitor-memory.js";
 import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
-import ServiceManager from "./utils/service-suite/service-manager.js";
+import serviceManager from "./utils/service-suite/service-manager.js";
 import ServiceInitializer from "./utils/service-suite/service-initializer.js";
 import { createServer } from 'http';
 import referralScheduler from './scripts/referral-scheduler.js';
@@ -365,7 +365,7 @@ async function initializeServer() {
         });
 
         // Initialize Circuit Breaker WebSocket
-        ServiceManager.initializeWebSocket(server);
+        serviceManager.initializeWebSocket(server);
 
         // Initialize and start all services
         await ServiceInitializer.registerCoreServices();
@@ -401,7 +401,7 @@ async function initializeServer() {
         initResults.duration = summary?.duration || 0;
 
         // Calculate total services
-        const totalServices = Array.from(ServiceManager.services.keys()).length;
+        const totalServices = Array.from(serviceManager.services.keys()).length;
         const initializedServices = initResults.Services.initialized.length;
         initResults.servicesStatus = {
             total: totalServices,
