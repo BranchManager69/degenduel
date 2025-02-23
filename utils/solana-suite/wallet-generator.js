@@ -1,21 +1,23 @@
 // /utils/solana-suite/wallet-generator.js
 
-import { Keypair, PublicKey } from '@solana/web3.js';
-import { PrismaClient } from '@prisma/client';
-import crypto from 'crypto';
-import LRUCache from 'lru-cache';
-import bs58 from 'bs58';
+/*
+ * This file is responsible for generating and managing wallets.
+ * It allows the admin to generate new wallets, deactivate wallets, and import existing wallets.
+ * 
+ */
+
+// Services
 import { logApi } from '../logger-suite/logger.js';
+import prisma from '../../config/prisma.js';
+// Solana
+import { Keypair } from '@solana/web3.js';
+import crypto from 'crypto';
+import bs58 from 'bs58';
+// Other
+import LRUCache from 'lru-cache';
 
-const prisma = new PrismaClient({
-    datasources: {
-        db: {
-            url: process.env.DATABASE_URL_PROD
-        }
-    }
-});
+// ...
 
-// Add more specific error types
 class WalletGeneratorError extends Error {
     constructor(message, code, details) {
         super(message);
@@ -24,6 +26,7 @@ class WalletGeneratorError extends Error {
         this.details = details;
     }
 }
+// (create more specific error types)
 
 export class WalletGenerator {
     // Add cache with size limits and TTL
@@ -422,3 +425,9 @@ export class WalletGenerator {
 
 // Initialize wallet cache when module is loaded
 WalletGenerator.initialize();
+
+
+//// -------------------------------------
+//// Export service singleton
+////const walletGenerator = new WalletGenerator();
+////export default walletGenerator;

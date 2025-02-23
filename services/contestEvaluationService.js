@@ -1,7 +1,6 @@
 // services/contestEvaluationService.js
 
 /*
- *
  * The Contest Evaluation Service is responsible for starting, ending, and evaluating contests.
  * It also handles the logic for determining winners and distributing prizes to winners.
  * 
@@ -14,10 +13,10 @@ import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
-import { CircuitBreaker } from '../utils/circuit-breaker.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+////import { CircuitBreaker } from '../utils/circuit-breaker.js';
 // ** Service Manager (?) **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
 // Solana
@@ -1072,3 +1071,8 @@ const exportedService = {
 
 export default exportedService;
 
+
+
+//// -------------------------------------
+//// Export service singleton
+////export default contestEvaluationService;

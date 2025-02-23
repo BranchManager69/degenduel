@@ -12,10 +12,10 @@ import { generateServiceAuthHeader } from '../config/service-auth.js';
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
-import { CircuitBreaker } from '../utils/circuit-breaker.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+////import { CircuitBreaker } from '../utils/circuit-breaker.js';
 // ** Service Manager (?) **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
 // Solana
@@ -37,15 +37,20 @@ const WHITELIST_SERVICE_CONFIG = {
         minHealthyPeriodMs: 120000
     }
 };
+// extra config
+const SOLANA_RPC_ENDPOINT = config.rpc_urls.primary;
+const DEGENDUAL_TREASURY_WALLET = config.degendual_treasury_wallet;
+const TOKEN_SUBMISSION_COST = config.token_submission_cost;
+const TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL = config.token_submission_discount_percentage_per_level;
 
 // Token Whitelist Service
 class TokenWhitelistService extends BaseService {
     constructor() {
         super(WHITELIST_SERVICE_CONFIG.name, WHITELIST_SERVICE_CONFIG);
-        this.connection = new Connection(process.env.SOLANA_RPC_ENDPOINT);
-        this.treasuryWallet = new PublicKey(process.env.TREASURY_WALLET);
-        this.submissionCost = parseFloat(process.env.TOKEN_SUBMISSION_COST || "0.01") * LAMPORTS_PER_SOL;
-        this.umi = createUmi(process.env.SOLANA_RPC_ENDPOINT).use(mplTokenMetadata());
+        this.connection = new Connection(SOLANA_RPC_ENDPOINT);
+        this.treasuryWallet = new PublicKey(DEGENDUAL_TREASURY_WALLET);
+        this.submissionCost = parseFloat(TOKEN_SUBMISSION_COST) * LAMPORTS_PER_SOL;
+        this.umi = createUmi(SOLANA_RPC_ENDPOINT).use(mplTokenMetadata());
     }
 
     async getUserLevelDiscount(userId) {
@@ -59,8 +64,8 @@ class TokenWhitelistService extends BaseService {
                 return 0; // No discount if no level found
             }
 
-            // 1% discount per level
-            return userStats.level;
+            // Discount percentage per level (default: 1% per level)
+            return userStats.level * TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL;
         } catch (error) {
             logApi.error('Failed to get user level:', {
                 userId,
@@ -263,4 +268,6 @@ class TokenWhitelistService extends BaseService {
     }
 }
 
-export const tokenWhitelistService = new TokenWhitelistService(); 
+// Export service singleton
+const tokenWhitelistService = new TokenWhitelistService();
+export default tokenWhitelistService;

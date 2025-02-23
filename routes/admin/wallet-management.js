@@ -1,13 +1,20 @@
 // routes/admin/wallet-management.js
 
+/*
+ * This file is responsible for managing the admin's wallet.
+ * It allows the admin to transfer SOL and tokens to other wallets.
+ * 
+ */
+
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { body, param, query } from 'express-validator';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { requireAdmin, requireSuperAdmin } from '../../middleware/auth.js';
 import AdminWalletService from '../../services/adminWalletService.js';
-import rateLimit from 'express-rate-limit';
 import { logApi } from '../../utils/logger-suite/logger.js';
 
+// TODO: Duplicate router!!
 const router = express.Router();
 
 // Rate limiting setup
@@ -15,26 +22,23 @@ const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     max: 50 // 50 requests per minute
 });
-
 const hourlyLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 500 // 500 requests per hour
 });
-
 // Stricter rate limit for transfer endpoints
 const transferLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     max: 10 // 10 transfers per minute
 });
-
 // Apply rate limiting to all routes
 router.use(limiter);
 router.use(hourlyLimiter);
-
 // Apply admin authentication to all routes
 router.use(requireAdmin);
 
 // Validate Solana address
+// TODO: THIS DOES NOT ACTUALLY VALIDATE A SOLANA ADDRESS!!!
 const validateSolanaAddress = (value) => {
     try {
         return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value);
@@ -42,6 +46,9 @@ const validateSolanaAddress = (value) => {
         return false;
     }
 };
+
+
+/* Useful routes */
 
 // Get all contest wallets
 router.get('/contest-wallets',
