@@ -7,7 +7,7 @@
  */
 
 import { PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { WalletGenerator } from './walletGenerationService.js';
+import WalletGenerator from './walletGenerationService.js';
 import { decryptPrivateKey } from '../utils/solana-suite/solana-wallet.js';
 import bs58 from 'bs58';
 import { fileURLToPath } from 'url';
