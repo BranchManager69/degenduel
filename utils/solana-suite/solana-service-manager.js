@@ -14,6 +14,7 @@ class SolanaServiceManager {
     static connection = null;
     static isInitialized = false;
     static monitoringInterval = null;
+    static vanityPool = null;  // Add instance storage
 
     static async initialize() {
         if (this.isInitialized) return;
@@ -35,9 +36,6 @@ class SolanaServiceManager {
             // Test connection
             await this.connection.getVersion();
 
-            // Initialize infrastructure services
-            await this.initializeInfrastructureServices();
-
             // Start monitoring connection
             this.startConnectionMonitoring();
 
@@ -51,64 +49,24 @@ class SolanaServiceManager {
         }
     }
 
-    static async initializeInfrastructureServices() {
-        // Initialize wallet generator service
-        const walletGeneratorConfig = {
-            maxWorkers: Math.max(1, os.cpus().length - 1),
-            targetUtilization: 0.80
-        };
-        await WalletGenerator.initialize();
-        ServiceManager.register(WalletGenerator, [], walletGeneratorConfig);
+    static async cleanup() {
+        try {
+            logApi.info('Starting Solana Service Manager cleanup...');
 
-        // Initialize vanity pool service
-        const vanityPoolConfig = {
-            maxWorkers: Math.max(1, os.cpus().length - 1),
-            targetUtilization: 0.80
-        };
-        const vanityPool = new VanityPool(vanityPoolConfig);
-        await vanityPool.initialize();
-        ServiceManager.register(vanityPool, [SERVICE_NAMES.WALLET_GENERATOR], vanityPoolConfig);
-
-        // Initialize faucet service
-        await FaucetManager.initialize();
-        ServiceManager.register(FaucetManager, [SERVICE_NAMES.WALLET_GENERATOR]);
-
-        // Update service states
-        await this.updateInfrastructureServiceStates();
-    }
-
-    static async updateInfrastructureServiceStates() {
-        const services = [
-            {
-                name: SERVICE_NAMES.WALLET_GENERATOR,
-                config: {
-                    maxWorkers: WalletGenerator.maxWorkers,
-                    targetUtilization: WalletGenerator.targetUtilization
-                }
-            },
-            {
-                name: SERVICE_NAMES.VANITY_WALLET,
-                config: {
-                    maxWorkers: Math.max(1, os.cpus().length - 1),
-                    targetUtilization: 0.80
-                }
-            },
-            {
-                name: SERVICE_NAMES.FAUCET,
-                config: FaucetManager.config
+            // Clear monitoring interval
+            if (this.monitoringInterval) {
+                clearInterval(this.monitoringInterval);
+                this.monitoringInterval = null;
             }
-        ];
 
-        for (const service of services) {
-            await ServiceManager.updateServiceState(
-                service.name,
-                {
-                    running: true,
-                    status: 'active',
-                    last_check: new Date().toISOString()
-                },
-                service.config
-            );
+            // Clear connection
+            this.connection = null;
+            this.isInitialized = false;
+
+            logApi.info('Solana Service Manager cleanup completed');
+        } catch (error) {
+            logApi.error('Error during Solana Service Manager cleanup:', error);
+            throw error;
         }
     }
 
@@ -149,37 +107,6 @@ class SolanaServiceManager {
             throw new Error('Solana Service Manager not initialized');
         }
         return this.connection;
-    }
-
-    static async cleanup() {
-        try {
-            logApi.info('Starting Solana Service Manager cleanup...');
-
-            // Clear monitoring interval
-            if (this.monitoringInterval) {
-                clearInterval(this.monitoringInterval);
-                this.monitoringInterval = null;
-            }
-
-            // Clean up infrastructure services through ServiceManager
-            const infraServices = ServiceManager.getServicesInLayer(SERVICE_LAYERS.INFRASTRUCTURE);
-            for (const serviceName of infraServices) {
-                try {
-                    await ServiceManager.markServiceStopped(serviceName);
-                } catch (error) {
-                    logApi.error(`Error stopping ${serviceName}:`, error);
-                }
-            }
-
-            // Clear connection
-            this.connection = null;
-            this.isInitialized = false;
-
-            logApi.info('Solana Service Manager cleanup completed');
-        } catch (error) {
-            logApi.error('Error during Solana Service Manager cleanup:', error);
-            throw error;
-        }
     }
 }
 
