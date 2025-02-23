@@ -18,6 +18,8 @@ import prisma from '../config/prisma.js';
 // ** Service Manager **
 import ServiceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+// ** Dependencies **
+import walletGeneratorService from './walletGenerationService.js';
 // Solana
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
@@ -129,6 +131,15 @@ class FaucetService extends BaseService {
                 };
             }
 
+            // Reset circuit breaker state for fresh initialization
+            this.stats.circuitBreaker = {
+                isOpen: false,
+                failures: 0,
+                lastFailure: null,
+                lastReset: new Date().toISOString(),
+                recoveryTimeout: null
+            };
+
             // Initialize faucet wallet
             await this.initializeFaucetWallet();
 
@@ -158,15 +169,35 @@ class FaucetService extends BaseService {
 
     async initializeFaucetWallet() {
         try {
-            const wallet = await prisma.seed_wallets.findFirst({
+            // First try to find existing faucet wallet
+            let wallet = await prisma.seed_wallets.findFirst({
                 where: {
-                    purpose: 'faucet',
+                    purpose: 'Seed wallet for faucet',
                     is_active: true
                 }
             });
 
+            // If no wallet exists, generate one using WalletGenerator
             if (!wallet) {
-                throw ServiceError.operation('Faucet wallet not found');
+                logApi.info('No faucet wallet found, generating new one...');
+                const walletInfo = await walletGeneratorService.generateWallet('faucet', {
+                    metadata: {
+                        purpose: 'faucet',
+                        created_at: new Date().toISOString()
+                    }
+                });
+
+                // Verify the wallet was created
+                wallet = await prisma.seed_wallets.findFirst({
+                    where: {
+                        purpose: 'Seed wallet for faucet',
+                        is_active: true
+                    }
+                });
+
+                if (!wallet) {
+                    throw ServiceError.operation('Failed to create faucet wallet');
+                }
             }
 
             this.faucetWallet = wallet;
@@ -174,10 +205,27 @@ class FaucetService extends BaseService {
                 new PublicKey(wallet.wallet_address)
             ) / LAMPORTS_PER_SOL;
 
-            logApi.info('Faucet wallet initialized', {
-                address: wallet.wallet_address,
-                balance: this.faucetStats.faucet.balance
-            });
+            // During initialization, don't treat zero balance as a failure
+            // Just log a warning and allow initialization to proceed
+            if (this.faucetStats.faucet.balance < this.config.faucet.minFaucetBalance) {
+                // Reset circuit breaker state since this is initialization
+                this.stats.circuitBreaker.failures = 0;
+                this.stats.circuitBreaker.isOpen = false;
+                this.stats.circuitBreaker.lastReset = new Date().toISOString();
+                
+                logApi.warn('Faucet wallet initialized with low balance - funding required', {
+                    address: wallet.wallet_address,
+                    balance: this.faucetStats.faucet.balance,
+                    minimum: this.config.faucet.minFaucetBalance
+                });
+            } else {
+                logApi.info('Faucet wallet initialized', {
+                    address: wallet.wallet_address,
+                    balance: this.faucetStats.faucet.balance
+                });
+            }
+
+            return true;
         } catch (error) {
             throw ServiceError.operation('Failed to initialize faucet wallet', {
                 error: error.message
@@ -206,12 +254,20 @@ class FaucetService extends BaseService {
                 (this.faucetStats.performance.averageTransactionTimeMs * this.faucetStats.operations.total + 
                 (Date.now() - startTime)) / (this.faucetStats.operations.total + 1);
 
-            // Update ServiceManager state
+            // Update ServiceManager state - don't count low balance as a failure
             await ServiceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
                     ...this.stats,
+                    // Override circuit breaker stats if only issue is low balance
+                    circuitBreaker: this.faucetStats.faucet.balance < this.config.faucet.minFaucetBalance
+                        ? {
+                            ...this.stats.circuitBreaker,
+                            isOpen: false,  // Don't open circuit breaker for low balance
+                            failures: 0     // Reset failure count
+                        }
+                        : this.stats.circuitBreaker,
                     faucetStats: this.faucetStats
                 }
             );

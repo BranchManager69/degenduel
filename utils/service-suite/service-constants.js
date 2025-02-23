@@ -35,14 +35,18 @@ export const SERVICE_NAMES = {
 
     // Infrastructure Layer Services
     FAUCET: 'faucet_service',
-    WALLET_GENERATOR: 'wallet_generator_service'
+    WALLET_GENERATOR: 'wallet_generator_service',
+
+    //// Auth Layer Services
+    ////AUTH: 'auth_service'
 };
 
 export const SERVICE_LAYERS = {
     DATA: 'data_layer',
     CONTEST: 'contest_layer',
     WALLET: 'wallet_layer',
-    INFRASTRUCTURE: 'infrastructure_layer'
+    INFRASTRUCTURE: 'infrastructure_layer',
+    ////AUTH: 'auth_layer'
 };
 
 export const SERVICE_METADATA = {

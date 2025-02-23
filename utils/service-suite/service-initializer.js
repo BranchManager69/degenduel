@@ -6,7 +6,7 @@
 import { logApi } from '../logger-suite/logger.js';
 import AdminLogger from '../admin-logger.js';
 import ServiceManager from './service-manager.js';
-import { SERVICE_LAYERS } from './service-constants.js';
+import { SERVICE_NAMES, SERVICE_LAYERS } from './service-constants.js';
 
 // Import all services
 import achievementService from '../../services/achievementService.js';
@@ -26,57 +26,57 @@ class ServiceInitializer {
     static async registerCoreServices() {
         logApi.info('\n\x1b[38;5;199m╭───────────────── Registering Core Services ─────────────────╮\x1b[0m');
 
-        // Register services by layer
-        await this.registerInfrastructureLayer();
-        await this.registerDataLayer();
-        await this.registerContestLayer();
-        await this.registerWalletLayer();
+        // Infrastructure Layer
+        logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Infrastructure Layer ━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+        ServiceManager.register(SERVICE_NAMES.WALLET_GENERATOR);
+        ServiceManager.register(SERVICE_NAMES.FAUCET, [SERVICE_NAMES.WALLET_GENERATOR]);
+        logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ Infrastructure Services Registered\x1b[0m');
+
+        // Data Layer
+        logApi.info('\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+        ServiceManager.register(SERVICE_NAMES.TOKEN_SYNC);
+        ServiceManager.register(SERVICE_NAMES.MARKET_DATA, [SERVICE_NAMES.TOKEN_SYNC]);
+        ServiceManager.register(SERVICE_NAMES.TOKEN_WHITELIST);
+        logApi.info('\x1b[38;5;208m┗━━━━━━━━━━━ ✅ Data Services Registered\x1b[0m');
+
+        // Contest Layer
+        logApi.info('\x1b[38;5;226m┏━━━━━━━━━━━━━━━━━━━━━━━ Contest Layer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+        ServiceManager.register(SERVICE_NAMES.CONTEST_EVALUATION);
+        ServiceManager.register(SERVICE_NAMES.ACHIEVEMENT, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        ServiceManager.register(SERVICE_NAMES.REFERRAL, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ Contest Services Registered\x1b[0m');
+
+        // Wallet Layer
+        logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+        ServiceManager.register(SERVICE_NAMES.VANITY_WALLET, [SERVICE_NAMES.WALLET_GENERATOR]);
+        ServiceManager.register(SERVICE_NAMES.CONTEST_WALLET, [SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.CONTEST_EVALUATION]);
+        ServiceManager.register(SERVICE_NAMES.ADMIN_WALLET, [SERVICE_NAMES.CONTEST_WALLET]);
+        ServiceManager.register(SERVICE_NAMES.WALLET_RAKE, [SERVICE_NAMES.CONTEST_WALLET]);
+        logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ Wallet Services Registered\x1b[0m');
+
+        // Register dependencies
+        this.registerDependencies();
 
         logApi.info('\x1b[38;5;199m╰─────────────────────────────────────────────────────────────╯\x1b[0m\n');
     }
 
-    static async registerInfrastructureLayer() {
-        logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mInfrastructure Layer\x1b[0m\x1b[38;5;196m ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        
-        // Register infrastructure services
-        ServiceManager.register(walletGeneratorService);
-        ServiceManager.register(faucetService, []);
-        
-        logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ Infrastructure Services Registered\x1b[0m\n');
-    }
+    static registerDependencies() {
+        // Infrastructure Layer Dependencies
+        ServiceManager.addDependency(SERVICE_NAMES.FAUCET, SERVICE_NAMES.WALLET_GENERATOR);
 
-    static async registerDataLayer() {
-        logApi.info('\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mData Layer\x1b[0m\x1b[38;5;208m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        
-        // Register data layer services
-        ServiceManager.register(tokenSyncService);
-        ServiceManager.register(marketDataService);
-        ServiceManager.register(tokenWhitelistService);
-        
-        logApi.info('\x1b[38;5;208m┗━━━━━━━━━━━ ✅ Data Services Registered\x1b[0m\n');
-    }
+        // Data Layer Dependencies
+        ServiceManager.addDependency(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
 
-    static async registerContestLayer() {
-        logApi.info('\x1b[38;5;226m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mContest Layer\x1b[0m\x1b[38;5;226m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        
-        // Register contest layer services
-        ServiceManager.register(contestEvaluationService.service);
-        ServiceManager.register(achievementService);
-        ServiceManager.register(referralService);
-        
-        logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ Contest Services Registered\x1b[0m\n');
-    }
+        // Contest Layer Dependencies
+        ServiceManager.addDependency(SERVICE_NAMES.CONTEST_EVALUATION, SERVICE_NAMES.MARKET_DATA);
+        ServiceManager.addDependency(SERVICE_NAMES.ACHIEVEMENT, SERVICE_NAMES.CONTEST_EVALUATION);
+        ServiceManager.addDependency(SERVICE_NAMES.REFERRAL, SERVICE_NAMES.CONTEST_EVALUATION);
 
-    static async registerWalletLayer() {
-        logApi.info('\x1b[38;5;46m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mWallet Layer\x1b[0m\x1b[38;5;46m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        
-        // Register wallet layer services
-        ServiceManager.register(vanityWalletService);
-        ServiceManager.register(contestWalletService);
-        ServiceManager.register(adminWalletService);
-        ServiceManager.register(walletRakeService);
-        
-        logApi.info('\x1b[38;5;46m┗━━━━━━━━━━━ ✅ Wallet Services Registered\x1b[0m\n');
+        // Wallet Layer Dependencies
+        ServiceManager.addDependency(SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.WALLET_GENERATOR);
+        ServiceManager.addDependency(SERVICE_NAMES.CONTEST_WALLET, [SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.CONTEST_EVALUATION]);
+        ServiceManager.addDependency(SERVICE_NAMES.ADMIN_WALLET, SERVICE_NAMES.CONTEST_WALLET);
+        ServiceManager.addDependency(SERVICE_NAMES.WALLET_RAKE, SERVICE_NAMES.CONTEST_WALLET);
     }
 
     static async initializeServices() {

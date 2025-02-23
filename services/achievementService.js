@@ -47,7 +47,7 @@ const ACHIEVEMENT_SERVICE_CONFIG = {
 
 class AchievementService extends BaseService {
     constructor() {
-        super(ACHIEVEMENT_SERVICE_CONFIG.name, ACHIEVEMENT_SERVICE_CONFIG);
+        super(SERVICE_NAMES.ACHIEVEMENT, ACHIEVEMENT_SERVICE_CONFIG);
         
         // Initialize service-specific stats
         this.achievementStats = {

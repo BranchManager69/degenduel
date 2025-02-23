@@ -50,7 +50,7 @@ const REFERRAL_SERVICE_CONFIG = {
 
 class ReferralService extends BaseService {
     constructor() {
-        super(REFERRAL_SERVICE_CONFIG.name, REFERRAL_SERVICE_CONFIG);
+        super(SERVICE_NAMES.REFERRAL, REFERRAL_SERVICE_CONFIG);
         
         // Initialize service-specific stats
         this.referralStats = {

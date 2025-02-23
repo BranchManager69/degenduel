@@ -220,7 +220,7 @@ async function displayStartupAnimation(port, initResults = {}) {
     // Get status for each core service
     const dbStatus = getStatusIndicators('Database');
     const apiStatus = getStatusIndicators('Core');
-    const wsStatus = getStatusIndicators('Portfolio WebSocket');
+    const wsStatus = getStatusIndicators('WebSocket');
     const solanaStatus = getStatusIndicators('Solana Service Manager');
     const contestStatus = getStatusIndicators('Contest Evaluation Service');
 
@@ -238,6 +238,9 @@ async function displayStartupAnimation(port, initResults = {}) {
     const allServices = [dbStatus, apiStatus, wsStatus, solanaStatus, contestStatus];
     const allOnline = allServices.every(s => s.status.includes('ONLINE'));
     const anyError = allServices.some(s => s.status.includes('ERROR'));
+    
+    // Get service initialization status
+    const servicesStatus = initResults.servicesStatus || { total: 0, initialized: 0, failed: 0 };
     const systemState = allOnline ? 'FULLY OPERATIONAL ✨' : (anyError ? 'DEGRADED PERFORMANCE ⚠️' : 'PARTIAL STARTUP ⏳');
 
     // Format duration nicely
@@ -250,7 +253,7 @@ async function displayStartupAnimation(port, initResults = {}) {
 ║  \x1b[38;5;199m🚀 DEGEN DUEL ARENA INITIALIZED ON PORT ${port}\x1b[38;5;51m                           ║
 ║  \x1b[38;5;${allOnline ? '226' : '196m'}⚡ SYSTEM STATUS: ${systemState}\x1b[38;5;51m                                  ║
 ║  \x1b[38;5;82m💫 INITIALIZATION DURATION: ${duration}s\x1b[38;5;51m                                      ║
-║  \x1b[38;5;213m🌐 SERVICES ONLINE: ${allServices.filter(s => s.status.includes('ONLINE')).length}/${allServices.length}\x1b[38;5;51m                                               ║
+║  \x1b[38;5;213m🌐 SERVICES ONLINE: ${servicesStatus.initialized}/${servicesStatus.total}\x1b[38;5;51m                                               ║
 ║                                                                        ║
 ║  \x1b[38;5;226m⚔️  ENTER THE ARENA  ⚔️\x1b[38;5;51m                                                 ║
 ║                                                                        ║
@@ -274,73 +277,50 @@ async function displayStartupAnimation(port, initResults = {}) {
 
 // Create sad startup failure animation function
 async function displayStartupFailureAnimation(port, initResults = {}) {
-  // Helper to get status indicators
-  const getStatusIndicators = (serviceName) => {
-      const service = initResults[serviceName];
-      if (!service) return { status: 'UNKNOWN ', symbol: '?', bars: '□ □ □ □ □' };
-      return {
-          status: service.success ? 'ONLINE  ' : 'ERROR   ', // Fixed width with spaces
-          symbol: service.success ? '✓' : '✗',
-          bars: service.success ? '■ ■ ■ ■ ■' : '□ □ □ □ □'
-      };
-  };
+    // Helper to get status indicators
+    const getStatusIndicators = (serviceName) => {
+        const service = initResults[serviceName];
+        if (!service) return { status: 'UNKNOWN ', symbol: '?', bars: '□ □ □ □ □' };
+        return {
+            status: service.success ? 'ONLINE  ' : 'ERROR   ',
+            symbol: service.success ? '✓' : '✗',
+            bars: service.success ? '■ ■ ■ ■' : '□ □ □ □'
+        };
+    };
 
-  // Create a sad ASCII art banner
-  const sadBanner = `
+    // Create a sad ASCII art banner
+    const sadBanner = `
 \x1b[38;5;196m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
 ║                                                                         ║
 ║  \x1b[38;5;199m🚨 DEGEN DUEL ARENA INITIALIZATION FAILED\x1b[38;5;51m                           ║
 ║                                                                         ║
 ╚════════════════════════════════════════════════════════════════════════╝\x1b[0m`;
 
-  // Get status for each core service
-  const dbStatus = getStatusIndicators('Database');
-  const apiStatus = getStatusIndicators('Core');
-  const wsStatus = getStatusIndicators('Portfolio WebSocket');
-  const solanaStatus = getStatusIndicators('Solana Service Manager');
-  const contestStatus = getStatusIndicators('Contest Evaluation Service');
+    // Get status for each core service
+    const dbStatus = getStatusIndicators('Database');
+    const apiStatus = getStatusIndicators('Core');
+    const wsStatus = getStatusIndicators('WebSocket');
+    const solanaStatus = getStatusIndicators('Solana Service Manager');
+    const contestStatus = getStatusIndicators('Contest Engine');
 
-  // Create dynamic status display based on actual initialization results
-  const statusDisplay = `
-\x1b[38;5;39m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
-║\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.symbol} Database Cluster    \x1b[38;5;247m|\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.symbol} API Services        \x1b[38;5;247m|\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.symbol} WebSocket Server    \x1b[38;5;247m|\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.symbol} Solana Services     \x1b[38;5;247m|\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.symbol} Contest Engine      \x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.bars}\x1b[0m \x1b[38;5;39m\t\t║
-╚════════════════════════════════════════════════════════════════════╝\x1b[0m`;
-
-  // Calculate overall system status
-  const allServices = [dbStatus, apiStatus, wsStatus, solanaStatus, contestStatus];
-  const allOnline = allServices.every(s => s.status.includes('ONLINE'));
-  const anyError = allServices.some(s => s.status.includes('ERROR'));
-  const systemState = allOnline ? 'FULLY OPERATIONAL ✨' : (anyError ? 'DEGRADED PERFORMANCE ⚠️' : 'PARTIAL STARTUP ⏳');
-
-  // Format duration nicely
-  const duration = initResults.duration ? initResults.duration.toFixed(2) : 'N/A';
-
-  // Create dynamic startup message
-  const startupMessage = `
+    // Create status display
+    const statusDisplay = `
 \x1b[38;5;196m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
-║                                                                         ║
-║  \x1b[38;5;199m🚨 DEGEN DUEL ARENA INITIALIZATION FAILED\x1b[38;5;51m                           ║
-║                                                                         ║
-╚════════════════════════════════════════════════════════════════════════╝\x1b[0m`;
+║  Database Cluster    | ${dbStatus.status} |  ${dbStatus.bars}                              ║
+║  API Services        | ${apiStatus.status} |  ${apiStatus.bars}                              ║
+║  WebSocket Server    | ${wsStatus.status} | ${wsStatus.bars}                           ║
+║  Solana Services     | ${solanaStatus.status} |  ${solanaStatus.bars}                              ║
+║  Contest Engine      | ${contestStatus.status} | ${contestStatus.bars}           ║
+╚════════════════════════════════════════════════════════════════════════╝`;
 
-  // Clear console for dramatic effect
-  console.clear();
-  
-  // Add dramatic pause between elements
-  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-  
-  // Display sad startup sequence
-  console.log('\n');
-  console.log(sadBanner);
-  await sleep(300);
-  console.log(statusDisplay);
-  await sleep(300);
-  console.log(startupMessage);
-  console.log('\n');
+    // Add dramatic pause between elements
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    // Display failure message
+    console.log(sadBanner);
+    await sleep(300);
+    console.log(statusDisplay);
+    await sleep(300);
 }
 
 // Main
@@ -389,7 +369,19 @@ async function initializeServer() {
 
         // Initialize and start all services
         await ServiceInitializer.registerCoreServices();
-        await ServiceInitializer.initializeServices();
+        try {
+            const results = await ServiceInitializer.initializeServices();
+            initResults.Services = {
+                initialized: Array.isArray(results?.initialized) ? results.initialized : [],
+                failed: Array.isArray(results?.failed) ? results.failed : []
+            };
+        } catch (error) {
+            logApi.error('Service initialization failed:', error);
+            initResults.Services = {
+                initialized: [],
+                failed: ['Service initialization failed: ' + error.message]
+            };
+        }
 
         // Initialize Solana Service Manager
         logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ ⚡ Initializing Solana Services...\x1b[0m');
@@ -407,6 +399,15 @@ async function initializeServer() {
         // Get initialization duration from InitLogger
         const summary = InitLogger.summarizeInitialization();
         initResults.duration = summary?.duration || 0;
+
+        // Calculate total services
+        const totalServices = Array.from(ServiceManager.services.keys()).length;
+        const initializedServices = initResults.Services.initialized.length;
+        initResults.servicesStatus = {
+            total: totalServices,
+            initialized: initializedServices,
+            failed: initResults.Services.failed.length
+        };
         
         // Display the epic startup animation with actual initialization results
         await displayStartupAnimation(port, initResults);

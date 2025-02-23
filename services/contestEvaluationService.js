@@ -53,7 +53,7 @@ const CONTEST_EVALUATION_CONFIG = {
 
 class ContestEvaluationService extends BaseService {
     constructor() {
-        super(CONTEST_EVALUATION_CONFIG.name, CONTEST_EVALUATION_CONFIG);
+        super(SERVICE_NAMES.CONTEST_EVALUATION, CONTEST_EVALUATION_CONFIG);
         
         // Initialize Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");

@@ -82,35 +82,45 @@ class ServiceManager {
     /**
      * Register a service with its dependencies
      */
-    static register(service, dependencies = []) {
-        if (!service) {
+    static register(serviceOrName, dependencies = []) {
+        if (!serviceOrName) {
             throw new Error('Attempted to register undefined service');
         }
 
-        const metadata = getServiceMetadata(service.name);
+        // Handle both service instances and service names
+        const serviceName = typeof serviceOrName === 'string' ? serviceOrName : serviceOrName.name;
+        const service = typeof serviceOrName === 'string' ? null : serviceOrName;
+
+        const metadata = getServiceMetadata(serviceName);
         if (!metadata) {
-            throw new Error(`Service ${service.name} not found in metadata`);
+            throw new Error(`Service ${serviceName} not found in metadata`);
         }
 
         // Validate dependencies from metadata
         const allDependencies = new Set([
             ...dependencies,
-            ...getServiceDependencies(service.name)
+            ...getServiceDependencies(serviceName)
         ]);
 
         // Check for circular dependencies
-        if (!validateDependencyChain(service.name)) {
-            throw new Error(`Circular dependency detected for ${service.name}`);
+        if (!validateDependencyChain(serviceName)) {
+            throw new Error(`Circular dependency detected for ${serviceName}`);
         }
 
-        this.services.set(service.name, service);
-        this.dependencies.set(service.name, Array.from(allDependencies));
-        
-        logApi.info(`Registered service: ${service.name}`, {
+        // Register service and dependencies
+        if (service) {
+            this.services.set(serviceName, service);
+        }
+        this.dependencies.set(serviceName, Array.from(allDependencies));
+
+        // Log registration
+        logApi.info(`Registered service: ${serviceName}`, {
             layer: metadata.layer,
             criticalLevel: metadata.criticalLevel,
-            dependencies: Array.from(allDependencies)
+            dependencies: allDependencies.size ? Array.from(allDependencies) : []
         });
+
+        return true;
     }
 
     /**
@@ -121,11 +131,35 @@ class ServiceManager {
         const failed = new Set();
         const initOrder = this.calculateInitializationOrder();
 
-        for (const serviceName of initOrder) {
+        logApi.info('Starting service initialization in order:', initOrder);
+
+        // First, initialize infrastructure layer services
+        const infraServices = initOrder.filter(service => 
+            this.services.get(service)?.config.layer === SERVICE_LAYERS.INFRASTRUCTURE
+        );
+
+        for (const serviceName of infraServices) {
             try {
-                await this._initializeService(serviceName, initialized, failed);
+                const success = await this._initializeService(serviceName, initialized, failed);
+                if (success) {
+                    logApi.info(`Infrastructure service ${serviceName} initialization completed successfully`);
+                }
             } catch (error) {
-                logApi.error(`Failed to initialize ${serviceName}:`, error);
+                logApi.error(`Failed to initialize infrastructure service ${serviceName}:`, error);
+                failed.add(serviceName);
+            }
+        }
+
+        // Then initialize remaining services in dependency order
+        const remainingServices = initOrder.filter(service => !infraServices.includes(service));
+        for (const serviceName of remainingServices) {
+            try {
+                const success = await this._initializeService(serviceName, initialized, failed);
+                if (success) {
+                    logApi.info(`Service ${serviceName} initialization completed successfully`);
+                }
+            } catch (error) {
+                logApi.error(`Failed to initialize service ${serviceName}:`, error);
                 failed.add(serviceName);
             }
         }
@@ -185,34 +219,90 @@ class ServiceManager {
      * Initialize a single service
      */
     static async _initializeService(serviceName, initialized, failed) {
-        if (initialized.has(serviceName) || failed.has(serviceName)) {
-            return;
+        if (initialized.has(serviceName)) {
+            return true;
+        }
+        if (failed.has(serviceName)) {
+            return false;
         }
 
+        let service = this.services.get(serviceName);
+        if (!service) {
+            // Create service instance if not already created
+            try {
+                // Convert service name to file path
+                const fileName = serviceName.split('_').map(part => 
+                    part.charAt(0).toUpperCase() + part.slice(1)
+                ).join('');
+                const ServiceClass = await import(`../../services/${fileName}.js`).then(m => m.default);
+                service = new ServiceClass();
+                this.services.set(serviceName, service);
+            } catch (error) {
+                logApi.error(`Failed to create service instance for ${serviceName}:`, error);
+                failed.add(serviceName);
+                return false;
+            }
+        }
+
+        // Check dependencies first
         const dependencies = this.dependencies.get(serviceName) || [];
         for (const dep of dependencies) {
             if (!initialized.has(dep)) {
-                await this._initializeService(dep, initialized, failed);
-            }
-            if (failed.has(dep)) {
-                failed.add(serviceName);
-                return;
+                if (failed.has(dep)) {
+                    logApi.error(`Cannot initialize ${serviceName} - dependency ${dep} failed to initialize`);
+                    failed.add(serviceName);
+                    return false;
+                }
+                try {
+                    const success = await this._initializeService(dep, initialized, failed);
+                    if (!success) {
+                        logApi.error(`Cannot initialize ${serviceName} - dependency ${dep} failed to initialize`);
+                        failed.add(serviceName);
+                        return false;
+                    }
+                } catch (error) {
+                    logApi.error(`Error initializing dependency ${dep} for ${serviceName}:`, error);
+                    failed.add(serviceName);
+                    return false;
+                }
             }
         }
 
         try {
-            const service = this.services.get(serviceName);
-            await service.initialize();
-            initialized.add(serviceName);
-
-            const metadata = getServiceMetadata(serviceName);
-            logApi.info(`Initialized service: ${serviceName}`, {
-                layer: metadata.layer,
-                criticalLevel: metadata.criticalLevel
-            });
+            const success = await service.initialize();
+            if (success) {
+                initialized.add(serviceName);
+                return true;
+            } else {
+                logApi.error(`Service ${serviceName} initialization returned false`);
+                failed.add(serviceName);
+                return false;
+            }
         } catch (error) {
+            logApi.error(`Error initializing service ${serviceName}:`, error);
             failed.add(serviceName);
-            throw error;
+            return false;
+        }
+    }
+
+    /**
+     * Clean up problematic service state
+     */
+    static async cleanupServiceState(serviceName) {
+        try {
+            // Delete existing state
+            await prisma.system_settings.delete({
+                where: { key: serviceName }
+            }).catch(() => {}); // Ignore if doesn't exist
+
+            // Clear from local state
+            this.state.delete(serviceName);
+
+            logApi.info(`Cleaned up state for service: ${serviceName}`);
+            return true;
+        } catch (error) {
+            logApi.error(`Failed to clean up state for ${serviceName}:`, error);
+            return false;
         }
     }
 
@@ -224,6 +314,29 @@ class ServiceManager {
             // Get current circuit breaker config
             const circuitBreakerConfig = getCircuitBreakerConfig(serviceName);
             
+            // Helper to safely serialize values
+            const safeSerialize = (obj) => {
+                const seen = new WeakSet();
+                try {
+                    return JSON.parse(JSON.stringify(obj, (key, value) => {
+                        if (typeof value === 'bigint') return value.toString();
+                        if (value instanceof Date) return value.toISOString();
+                        if (value instanceof Set) return Array.from(value);
+                        if (value instanceof Map) return Object.fromEntries(value);
+                        if (typeof value === 'object' && value !== null) {
+                            if (seen.has(value)) {
+                                return '[Circular]';
+                            }
+                            seen.add(value);
+                        }
+                        return value;
+                    }));
+                } catch (err) {
+                    logApi.warn(`Failed to serialize object:`, err);
+                    return null;
+                }
+            };
+            
             // Update state with circuit breaker status
             const serviceState = {
                 running: state.running,
@@ -232,28 +345,70 @@ class ServiceManager {
                 last_stopped: state.last_stopped,
                 last_check: state.last_check,
                 last_error: state.last_error,
-                last_error_time: state.last_error_time,
-                config: {
-                    ...config,
-                    circuitBreaker: circuitBreakerConfig
-                },
-                ...(stats && { stats })
+                last_error_time: state.last_error_time
             };
 
-            // Update database
-            await prisma.system_settings.upsert({
-                where: { key: serviceName },
-                update: {
-                    value: serviceState,
-                    updated_at: new Date()
-                },
-                create: {
-                    key: serviceName,
-                    value: serviceState,
-                    description: `${serviceName} status and configuration`,
-                    updated_at: new Date()
-                }
+            // Safely serialize config
+            const serializedConfig = safeSerialize({
+                ...config,
+                circuitBreaker: circuitBreakerConfig
             });
+
+            if (serializedConfig) {
+                serviceState.config = serializedConfig;
+            } else {
+                // Fallback to basic config
+                serviceState.config = {
+                    circuitBreaker: circuitBreakerConfig
+                };
+            }
+
+            // Only include stats if they exist and can be safely serialized
+            if (stats) {
+                const serializedStats = safeSerialize(stats);
+                if (serializedStats) {
+                    serviceState.stats = serializedStats;
+                } else {
+                    // Include basic stats if full serialization fails
+                    serviceState.stats = {
+                        operations: {},
+                        performance: {},
+                        circuitBreaker: stats.circuitBreaker || {}
+                    };
+                }
+            }
+
+            // Try to update, if it fails due to recursion, clean up and try again
+            try {
+                await prisma.system_settings.upsert({
+                    where: { key: serviceName },
+                    update: {
+                        value: serviceState,
+                        updated_at: new Date()
+                    },
+                    create: {
+                        key: serviceName,
+                        value: serviceState,
+                        description: `${serviceName} status and configuration`,
+                        updated_at: new Date()
+                    }
+                });
+            } catch (error) {
+                if (error.message.includes('recursion limit exceeded')) {
+                    // Clean up and try again
+                    await this.cleanupServiceState(serviceName);
+                    await prisma.system_settings.create({
+                        data: {
+                            key: serviceName,
+                            value: serviceState,
+                            description: `${serviceName} status and configuration`,
+                            updated_at: new Date()
+                        }
+                    });
+                } else {
+                    throw error;
+                }
+            }
 
             // Update local state
             this.state.set(serviceName, serviceState);
@@ -437,6 +592,31 @@ class ServiceManager {
     }
 
     /**
+     * Clean up all service states
+     */
+    static async cleanupAllServiceStates() {
+        try {
+            // Delete all service states
+            await prisma.system_settings.deleteMany({
+                where: {
+                    key: {
+                        in: Object.values(SERVICE_NAMES)
+                    }
+                }
+            });
+
+            // Clear local state
+            this.state.clear();
+
+            logApi.info('Cleaned up all service states');
+            return true;
+        } catch (error) {
+            logApi.error('Failed to clean up service states:', error);
+            return false;
+        }
+    }
+
+    /**
      * Clean up all services
      */
     static async cleanup() {
@@ -462,6 +642,34 @@ class ServiceManager {
         this.state.clear();
 
         return results;
+    }
+
+    /**
+     * Add a dependency between services
+     */
+    static addDependency(serviceName, dependencyOrDependencies) {
+        const dependencies = Array.isArray(dependencyOrDependencies) 
+            ? dependencyOrDependencies 
+            : [dependencyOrDependencies];
+
+        // Get current dependencies
+        const currentDependencies = this.dependencies.get(serviceName) || [];
+
+        // Add new dependencies
+        const allDependencies = new Set([...currentDependencies, ...dependencies]);
+
+        // Check for circular dependencies
+        if (!validateDependencyChain(serviceName)) {
+            throw new Error(`Circular dependency detected for ${serviceName}`);
+        }
+
+        // Update dependencies
+        this.dependencies.set(serviceName, Array.from(allDependencies));
+
+        // Log dependency addition
+        logApi.info(`Added dependencies for ${serviceName}:`, dependencies);
+
+        return true;
     }
 }
 
