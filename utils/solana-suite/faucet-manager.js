@@ -15,6 +15,9 @@ import LRUCache from 'lru-cache';
 import { logApi } from '../logger-suite/logger.js';
 import SolanaServiceManager from './solana-service-manager.js';
 import prisma from '../../config/prisma.js';
+import { BaseService } from '../service-suite/base-service.js';
+import { ServiceError } from '../service-suite/service-error.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../service-suite/service-constants.js';
 
 // ...
 
@@ -42,24 +45,109 @@ class SolanaWalletError extends Error {
     }
 }
 
-// Faucet Manager
-export class FaucetManager {
-    static config = DEFAULT_FAUCET_CONFIG;
-    static walletCache = new LRUCache({
-        max: 1000,
-        ttl: 15 * 60 * 1000
-    });
+const FAUCET_SERVICE_CONFIG = {
+    name: SERVICE_NAMES.FAUCET,
+    description: getServiceMetadata(SERVICE_NAMES.FAUCET).description,
+    checkIntervalMs: 60 * 60 * 1000, // Check every hour
+    maxRetries: 3,
+    retryDelayMs: 5000,
+    circuitBreaker: {
+        failureThreshold: 5,
+        resetTimeoutMs: 60000,
+        minHealthyPeriodMs: 120000
+    },
+    defaultAmount: 0.025,
+    minFaucetBalance: 0.05,
+    maxTestUsers: 10,
+    minConfirmations: 2,
+    fees: {
+        BASE_FEE: 0.000005,
+        RENT_EXEMPTION: 0.00089088
+    }
+};
 
-    // Add state tracking
-    static isInitialized = false;
-    static recoveryInterval = null;
+class FaucetService extends BaseService {
+    constructor() {
+        super(FAUCET_SERVICE_CONFIG.name, FAUCET_SERVICE_CONFIG);
+        
+        this.walletCache = new LRUCache({
+            max: 1000,
+            ttl: 15 * 60 * 1000
+        });
 
-    static setConfig(newConfig) {
-        FaucetManager.config = { ...DEFAULT_FAUCET_CONFIG, ...newConfig };
+        this.stats = {
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
+            },
+            transactions: {
+                total: 0,
+                successful: 0,
+                failed: 0,
+                totalAmount: 0
+            },
+            faucet: {
+                balance: 0,
+                lastCheck: null,
+                recoveryAttempts: 0
+            },
+            circuitBreaker: {
+                isOpen: false,
+                failures: 0,
+                lastFailure: null,
+                lastSuccess: null,
+                recoveryAttempts: 0
+            }
+        };
+    }
+
+    async initialize() {
+        try {
+            await super.initialize();
+
+            // Initialize faucet wallet
+            const faucetWallet = await this.getFaucetWallet();
+            if (!faucetWallet) {
+                throw ServiceError.initialization('Failed to initialize faucet wallet');
+            }
+
+            // Check initial balance
+            await this.checkBalance();
+
+            // Start automatic recovery monitoring
+            this.startRecoveryMonitoring();
+
+            return true;
+        } catch (error) {
+            logApi.error('Failed to initialize Faucet Service:', error);
+            throw error;
+        }
+    }
+
+    async performOperation() {
+        try {
+            // Check faucet health
+            const status = await this.getFaucetStatus();
+            
+            // If balance is low, attempt recovery
+            if (status.balance < this.config.minFaucetBalance * 2) {
+                await this.recoverFromTestWallets();
+            }
+
+            // Update stats
+            this.stats.faucet.balance = status.balance;
+            this.stats.faucet.lastCheck = new Date().toISOString();
+
+            return true;
+        } catch (error) {
+            await this.handleError(error);
+            return false;
+        }
     }
 
     // Calculate total amount needed including fees
-    static async calculateTotalAmount(toAddress, baseAmount) {
+    async calculateTotalAmount(toAddress, baseAmount) {
         try {
             const connection = SolanaServiceManager.getConnection();
             // Check if destination account exists
@@ -67,8 +155,8 @@ export class FaucetManager {
             const isNewAccount = !accountInfo || accountInfo.lamports === 0;
 
             // Calculate fees
-            const baseFee = FEE_CONSTANTS.BASE_FEE;
-            const rentExemption = isNewAccount ? FEE_CONSTANTS.RENT_EXEMPTION : 0;
+            const baseFee = this.config.fees.BASE_FEE;
+            const rentExemption = isNewAccount ? this.config.fees.RENT_EXEMPTION : 0;
 
             return {
                 baseAmount,
@@ -87,7 +175,7 @@ export class FaucetManager {
     }
 
     // Get detailed faucet status
-    static async getFaucetStatus() {
+    async getFaucetStatus() {
         const faucetWallet = await this.getFaucetWallet();
         if (!faucetWallet) {
             throw new SolanaWalletError('Failed to get faucet wallet', 'WALLET_NOT_FOUND');
@@ -118,12 +206,12 @@ export class FaucetManager {
             canFundUsers: Math.floor((balanceSOL - this.config.minFaucetBalance) / this.config.defaultAmount),
             recentTransactions: transactions,
             config: this.config,
-            fees: FEE_CONSTANTS
+            fees: this.config.fees
         };
     }
 
     // Enhanced transaction confirmation
-    static async confirmTransaction(signature, commitment = 'confirmed') {
+    async confirmTransaction(signature, commitment = 'confirmed') {
         let retries = 0;
         const maxRetries = this.config.maxRetries;
         const connection = SolanaServiceManager.getConnection();
@@ -167,7 +255,7 @@ export class FaucetManager {
         }
     }
 
-    static async sendSOL(toAddress, amount) {
+    async sendSOL(toAddress, amount) {
         const faucetWallet = await this.getFaucetWallet();
         if (!faucetWallet) {
             throw new SolanaWalletError('Failed to get faucet wallet', 'WALLET_NOT_FOUND');
@@ -270,7 +358,7 @@ export class FaucetManager {
         }
     }
 
-    static async getFaucetWallet() {
+    async getFaucetWallet() {
         const existingFaucet = await prisma.seed_wallets.findFirst({
             where: { purpose: 'Seed wallet for test-faucet' }
         });
@@ -301,7 +389,7 @@ export class FaucetManager {
         return faucetWallet;
     }
 
-    static async checkBalance() {
+    async checkBalance() {
         const faucetWallet = await this.getFaucetWallet();
         if (!faucetWallet) {
             throw new Error('Failed to get test faucet wallet');
@@ -318,7 +406,7 @@ export class FaucetManager {
         return balanceSOL;
     }
 
-    static async recoverFromTestWallets() {
+    async recoverFromTestWallets() {
         console.log('Recovering SOL from test wallets...');
         // Get all test users (created in the last 24 hours)
         const testUsers = await prisma.users.findMany({
@@ -392,7 +480,7 @@ export class FaucetManager {
     }
 
     // Add cache cleanup
-    static cleanupCache() {
+    cleanupCache() {
         const maxCacheAge = 1000 * 60 * 60; // 1 hour
         const now = Date.now();
         for (const [key, value] of this.walletCache.entries()) {
@@ -403,7 +491,7 @@ export class FaucetManager {
     }
     
     // Core transfer functionality that both sendSOL and transferSOL will use
-    static async executeTransfer(sourceWallet, toAddress, amount, options = {}) {
+    async executeTransfer(sourceWallet, toAddress, amount, options = {}) {
         try {
             // Calculate total amount needed including fees
             const { baseAmount, baseFee, rentExemption, totalAmount, isNewAccount } = 
@@ -495,7 +583,7 @@ export class FaucetManager {
     }
 
     // Flexible wallet-to-wallet transfer
-    static async transferSOL(fromWalletId, toAddress, amount, options = {}) {
+    async transferSOL(fromWalletId, toAddress, amount, options = {}) {
         try {
             // Get source wallet
             const sourceWallet = await WalletGenerator.getWallet(fromWalletId);
@@ -542,7 +630,7 @@ export class FaucetManager {
     }
 
     // System health check
-    static async systemCheck() {
+    async systemCheck() {
         try {
             // 1. Check faucet wallet
             const faucetStatus = await this.getFaucetStatus();
@@ -588,7 +676,7 @@ export class FaucetManager {
     }
 
     // Get transaction statistics
-    static async getTransactionStats(timeframe = '24h') {
+    async getTransactionStats(timeframe = '24h') {
         const timeframeMap = {
             '1h': 60 * 60 * 1000,
             '24h': 24 * 60 * 60 * 1000,
@@ -638,7 +726,7 @@ export class FaucetManager {
     }
 
     // Get comprehensive admin dashboard data
-    static async getAdminDashboardData() {
+    async getAdminDashboardData() {
         const [
             faucetStatus,
             recentTransactions,
@@ -695,12 +783,12 @@ export class FaucetManager {
                 }
             },
             warnings,
-            fees: FEE_CONSTANTS
+            fees: this.config.fees
         };
     }
 
     // Batch transfer operations
-    static async batchTransfer(transfers) {
+    async batchTransfer(transfers) {
         const results = {
             successful: [],
             failed: [],
@@ -738,7 +826,7 @@ export class FaucetManager {
     }
 
     // Helper method to log failed transfers
-    static async logFailedTransfer(fromWalletId, toAddress, amount, error) {
+    async logFailedTransfer(fromWalletId, toAddress, amount, error) {
         await prisma.transactions.create({
             data: {
                 wallet_address: toAddress,
@@ -758,7 +846,7 @@ export class FaucetManager {
     }
 
     // Get recent transactions with pagination
-    static async getRecentTransactions(limit = 50, offset = 0, filters = {}) {
+    async getRecentTransactions(limit = 50, offset = 0, filters = {}) {
         return await prisma.transactions.findMany({
             where: filters,
             orderBy: {
@@ -770,7 +858,7 @@ export class FaucetManager {
     }
 
     // Get comprehensive dashboard data for faucet management
-    static async getDashboardData() {
+    async getDashboardData() {
         try {
             const faucetStatus = await this.getFaucetStatus();
             
@@ -807,7 +895,7 @@ export class FaucetManager {
                 system_health: {
                     is_operational: faucetStatus.balance > this.config.minFaucetBalance,
                     current_config: this.config,
-                    fee_structure: FEE_CONSTANTS
+                    fee_structure: this.config.fees
                 }
             };
 
@@ -840,25 +928,7 @@ export class FaucetManager {
         }
     }
 
-    static async initialize() {
-        if (this.isInitialized) return;
-
-        try {
-            // Check initial faucet status
-            await this.getFaucetStatus();
-            
-            // Start automatic recovery monitoring
-            this.startRecoveryMonitoring();
-            
-            this.isInitialized = true;
-            logApi.info('Faucet Manager initialized successfully');
-        } catch (error) {
-            logApi.error('Failed to initialize Faucet Manager:', error);
-            throw error;
-        }
-    }
-
-    static startRecoveryMonitoring() {
+    startRecoveryMonitoring() {
         // Clear any existing interval
         if (this.recoveryInterval) {
             clearInterval(this.recoveryInterval);
@@ -888,11 +958,11 @@ export class FaucetManager {
         }, 60 * 60 * 1000); // Every hour
     }
 
-    static async cleanup() {
+    async stop() {
         try {
-            logApi.info('Starting Faucet Manager cleanup...');
-
-            // Clear recovery monitoring interval
+            await super.stop();
+            
+            // Clear recovery monitoring
             if (this.recoveryInterval) {
                 clearInterval(this.recoveryInterval);
                 this.recoveryInterval = null;
@@ -901,41 +971,29 @@ export class FaucetManager {
             // Clear cache
             this.walletCache.clear();
 
-            this.isInitialized = false;
-            logApi.info('Faucet Manager cleanup completed successfully');
+            logApi.info('Faucet Service stopped successfully');
         } catch (error) {
-            logApi.error('Error during Faucet Manager cleanup:', error);
-            throw new SolanaWalletError(
-                'Faucet cleanup failed',
-                'FAUCET_CLEANUP_FAILED',
-                { originalError: error.message }
-            );
-        }
-    }
-
-    static async stop() {
-        try {
-            logApi.info('Stopping Faucet Manager...');
-            await this.cleanup();
-            logApi.info('Faucet Manager stopped successfully');
-        } catch (error) {
-            logApi.error('Error stopping Faucet Manager:', error);
+            logApi.error('Error stopping Faucet Service:', error);
             throw error;
         }
     }
 }
+
+// Create and export singleton instance
+const faucetService = new FaucetService();
+export default faucetService;
 
 // Command line interface
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const command = process.argv[2];
     switch (command) {
         case 'balance':
-            FaucetManager.checkBalance()
+            faucetService.checkBalance()
                 .then(() => process.exit(0))
                 .catch(console.error);
             break;
         case 'recover':
-            FaucetManager.recoverFromTestWallets()
+            faucetService.recoverFromTestWallets()
                 .then(() => process.exit(0))
                 .catch(console.error);
             break;
@@ -945,7 +1003,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
                 minFaucetBalance: parseFloat(process.argv[4]) || DEFAULT_FAUCET_CONFIG.minFaucetBalance,
                 maxTestUsers: parseInt(process.argv[5]) || DEFAULT_FAUCET_CONFIG.maxTestUsers
             };
-            FaucetManager.setConfig(newConfig);
+            faucetService.setConfig(newConfig);
             console.log('Faucet configuration updated:', newConfig);
             break;
         default:
