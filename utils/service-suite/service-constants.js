@@ -18,16 +18,22 @@ export const SERVICE_NAMES = {
     CONTEST_WALLET: 'contest_wallet_service',
     VANITY_WALLET: 'vanity_wallet_service',
     WALLET_RAKE: 'wallet_rake_service',
-    ADMIN_WALLET: 'admin_wallet_service'
+    ADMIN_WALLET: 'admin_wallet_service',
+
+    // Infrastructure Services
+    FAUCET: 'faucet_service',
+    WALLET_GENERATOR: 'wallet_generator_service'
 };
 
 export const SERVICE_LAYERS = {
     DATA: 'data_layer',
     CONTEST: 'contest_layer',
-    WALLET: 'wallet_layer'
+    WALLET: 'wallet_layer',
+    INFRASTRUCTURE: 'infrastructure_layer'  // New layer for infrastructure services
 };
 
 export const SERVICE_METADATA = {
+    // Data Services
     [SERVICE_NAMES.TOKEN_SYNC]: {
         layer: SERVICE_LAYERS.DATA,
         description: 'External token data synchronization',
@@ -43,6 +49,8 @@ export const SERVICE_METADATA = {
         description: 'Token whitelist management',
         updateFrequency: 'on demand'
     },
+
+    // Contest Services
     [SERVICE_NAMES.CONTEST_EVALUATION]: {
         layer: SERVICE_LAYERS.CONTEST,
         description: 'Contest lifecycle and evaluation',
@@ -58,6 +66,8 @@ export const SERVICE_METADATA = {
         description: 'Referral program management',
         updateFrequency: '5m'
     },
+
+    // Wallet Services
     [SERVICE_NAMES.CONTEST_WALLET]: {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Contest wallet management',
@@ -77,6 +87,18 @@ export const SERVICE_METADATA = {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Administrative wallet operations',
         updateFrequency: 'on demand'
+    },
+
+    // Infrastructure Services
+    [SERVICE_NAMES.FAUCET]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'Test user SOL distribution and recovery',
+        updateFrequency: '1h'
+    },
+    [SERVICE_NAMES.WALLET_GENERATOR]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'Wallet generation and encryption',
+        updateFrequency: '5m'
     }
 };
 

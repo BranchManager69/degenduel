@@ -5,14 +5,15 @@ import { WalletGenerator } from './wallet-generator.js';
 import { VanityPool } from './vanity-pool.js';
 import { FaucetManager } from './faucet-manager.js';
 import { logApi } from '../logger-suite/logger.js';
-import ServiceManager, { SERVICE_NAMES } from '../service-suite/service-manager.js';
+import ServiceManager, { SERVICE_NAMES, SERVICE_LAYERS } from '../service-suite/service-manager.js';
 
+/**
+ * Manages Solana-specific functionality and coordinates with the main ServiceManager
+ */
 class SolanaServiceManager {
-    static instance = null;
     static connection = null;
     static isInitialized = false;
     static monitoringInterval = null;
-    static activeServices = new Set();
 
     static async initialize() {
         if (this.isInitialized) return;
@@ -34,49 +35,66 @@ class SolanaServiceManager {
             // Test connection
             await this.connection.getVersion();
 
-            // Initialize wallet generator
-            await WalletGenerator.initialize();
-            this.activeServices.add('wallet-generator');
-
-            // Initialize vanity pool with optimal settings
-            VanityPool.maxWorkers = Math.max(1, os.cpus().length - 1);
-            VanityPool.targetUtilization = 0.80;
-            this.activeServices.add('vanity-pool');
-
-            // Initialize faucet manager
-            await FaucetManager.checkBalance();
-            this.activeServices.add('faucet-manager');
-
-            // Update service states
-            await this.updateServiceStates();
-
-            this.isInitialized = true;
-            logApi.info('Solana Service Manager initialized successfully');
+            // Initialize infrastructure services
+            await this.initializeInfrastructureServices();
 
             // Start monitoring connection
             this.startConnectionMonitoring();
 
+            this.isInitialized = true;
+            logApi.info('Solana Service Manager initialized successfully');
+
         } catch (error) {
             logApi.error('Failed to initialize Solana Service Manager:', error);
-            await this.cleanup(); // Attempt cleanup on initialization failure
+            await this.cleanup();
             throw error;
         }
     }
 
-    static async updateServiceStates() {
+    static async initializeInfrastructureServices() {
+        // Initialize wallet generator service
+        const walletGeneratorConfig = {
+            maxWorkers: Math.max(1, os.cpus().length - 1),
+            targetUtilization: 0.80
+        };
+        await WalletGenerator.initialize();
+        ServiceManager.register(WalletGenerator, [], walletGeneratorConfig);
+
+        // Initialize vanity pool service
+        const vanityPoolConfig = {
+            maxWorkers: Math.max(1, os.cpus().length - 1),
+            targetUtilization: 0.80
+        };
+        await VanityPool.initialize();
+        ServiceManager.register(VanityPool, [], vanityPoolConfig);
+
+        // Initialize faucet service
+        await FaucetManager.initialize();
+        ServiceManager.register(FaucetManager, [SERVICE_NAMES.WALLET_GENERATOR]);
+
+        // Update service states
+        await this.updateInfrastructureServiceStates();
+    }
+
+    static async updateInfrastructureServiceStates() {
         const services = [
             {
-                name: SERVICE_NAMES.VANITY_WALLET,
+                name: SERVICE_NAMES.WALLET_GENERATOR,
                 config: {
-                    max_workers: VanityPool.maxWorkers,
-                    target_utilization: VanityPool.targetUtilization
+                    maxWorkers: WalletGenerator.maxWorkers,
+                    targetUtilization: WalletGenerator.targetUtilization
                 }
             },
             {
-                name: SERVICE_NAMES.ADMIN_WALLET,
+                name: SERVICE_NAMES.VANITY_WALLET,
                 config: {
-                    cache_ttl: WalletGenerator.walletCache.ttl
+                    maxWorkers: VanityPool.maxWorkers,
+                    targetUtilization: VanityPool.targetUtilization
                 }
+            },
+            {
+                name: SERVICE_NAMES.FAUCET,
+                config: FaucetManager.config
             }
         ];
 
@@ -94,7 +112,6 @@ class SolanaServiceManager {
     }
 
     static startConnectionMonitoring() {
-        // Clear any existing interval
         if (this.monitoringInterval) {
             clearInterval(this.monitoringInterval);
         }
@@ -104,7 +121,6 @@ class SolanaServiceManager {
                 await this.connection.getVersion();
             } catch (error) {
                 logApi.error('Solana connection error:', error);
-                // Attempt to reconnect
                 await this.reconnect();
             }
         }, 30000); // Check every 30 seconds
@@ -127,13 +143,6 @@ class SolanaServiceManager {
         }
     }
 
-    static getInstance() {
-        if (!this.instance) {
-            this.instance = new SolanaServiceManager();
-        }
-        return this.instance;
-    }
-
     static getConnection() {
         if (!this.connection) {
             throw new Error('Solana Service Manager not initialized');
@@ -141,7 +150,6 @@ class SolanaServiceManager {
         return this.connection;
     }
 
-    // Cleanup method
     static async cleanup() {
         try {
             logApi.info('Starting Solana Service Manager cleanup...');
@@ -152,32 +160,19 @@ class SolanaServiceManager {
                 this.monitoringInterval = null;
             }
 
-            // Cleanup active services
-            for (const service of this.activeServices) {
+            // Clean up infrastructure services through ServiceManager
+            const infraServices = ServiceManager.getServicesInLayer(SERVICE_LAYERS.INFRASTRUCTURE);
+            for (const serviceName of infraServices) {
                 try {
-                    switch (service) {
-                        case 'wallet-generator':
-                            await WalletGenerator.cleanupCache();
-                            break;
-                        case 'vanity-pool':
-                            VanityPool.stopUtilizationMonitoring();
-                            break;
-                        case 'faucet-manager':
-                            // Add any faucet cleanup if needed
-                            break;
-                    }
+                    await ServiceManager.markServiceStopped(serviceName);
                 } catch (error) {
-                    logApi.error(`Error cleaning up ${service}:`, error);
+                    logApi.error(`Error stopping ${serviceName}:`, error);
                 }
             }
 
             // Clear connection
             this.connection = null;
             this.isInitialized = false;
-            this.activeServices.clear();
-
-            // Update service states one final time
-            await this.updateServiceStates();
 
             logApi.info('Solana Service Manager cleanup completed');
         } catch (error) {
