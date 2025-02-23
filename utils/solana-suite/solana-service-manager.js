@@ -65,8 +65,9 @@ class SolanaServiceManager {
             maxWorkers: Math.max(1, os.cpus().length - 1),
             targetUtilization: 0.80
         };
-        await VanityPool.initialize();
-        ServiceManager.register(VanityPool, [], vanityPoolConfig);
+        const vanityPool = new VanityPool(vanityPoolConfig);
+        await vanityPool.initialize();
+        ServiceManager.register(vanityPool, [SERVICE_NAMES.WALLET_GENERATOR], vanityPoolConfig);
 
         // Initialize faucet service
         await FaucetManager.initialize();
@@ -88,8 +89,8 @@ class SolanaServiceManager {
             {
                 name: SERVICE_NAMES.VANITY_WALLET,
                 config: {
-                    maxWorkers: VanityPool.maxWorkers,
-                    targetUtilization: VanityPool.targetUtilization
+                    maxWorkers: Math.max(1, os.cpus().length - 1),
+                    targetUtilization: 0.80
                 }
             },
             {
