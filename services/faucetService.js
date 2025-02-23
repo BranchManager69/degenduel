@@ -75,12 +75,8 @@ class FaucetService extends BaseService {
             ttl: 15 * 60 * 1000
         });
 
-        this.stats = {
-            operations: {
-                total: 0,
-                successful: 0,
-                failed: 0
-            },
+        // Merge with base stats instead of overwriting
+        Object.assign(this.stats, {
             transactions: {
                 total: 0,
                 successful: 0,
@@ -91,15 +87,8 @@ class FaucetService extends BaseService {
                 balance: 0,
                 lastCheck: null,
                 recoveryAttempts: 0
-            },
-            circuitBreaker: {
-                isOpen: false,
-                failures: 0,
-                lastFailure: null,
-                lastSuccess: null,
-                recoveryAttempts: 0
             }
-        };
+        });
     }
 
     async initialize() {

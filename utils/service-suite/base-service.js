@@ -37,6 +37,8 @@ export class BaseService {
             ...config,
             circuitBreaker: getCircuitBreakerConfig(name)
         };
+
+        // Initialize base stats structure that should never be overwritten
         this.stats = {
             operations: {
                 total: 0,
@@ -64,6 +66,7 @@ export class BaseService {
                 consecutiveFailures: 0
             }
         };
+
         this.interval = null;
         this.recoveryTimeout = null;
     }
@@ -84,31 +87,38 @@ export class BaseService {
                 where: { key: this.name }
             });
 
-            if (previousState) {
-                if (previousState.value?.stats) {
-                    this.stats = {
-                        ...this.stats,
-                        ...previousState.value.stats,
-                        circuitBreaker: {
-                            ...this.stats.circuitBreaker,
-                            ...previousState.value.stats.circuitBreaker
-                        }
-                    };
-
-                    // Time-Based Circuit Breaker Recovery
-                    if (this.stats.circuitBreaker.isOpen) {
-                        await this.attemptCircuitRecovery();
+            if (previousState?.value?.stats) {
+                // Merge stats carefully preserving base structure
+                this.stats = {
+                    ...this.stats,
+                    ...previousState.value.stats,
+                    // Always preserve these core structures
+                    history: {
+                        ...this.stats.history,
+                        ...previousState.value.stats.history
+                    },
+                    circuitBreaker: {
+                        ...this.stats.circuitBreaker,
+                        ...previousState.value.stats.circuitBreaker
                     }
-                }
+                };
 
-                // Restore any custom config that was saved
-                if (previousState.value?.config) {
-                    this.config = {
-                        ...this.config,
-                        ...previousState.value.config
-                    };
+                // Time-Based Circuit Breaker Recovery
+                if (this.stats.circuitBreaker.isOpen) {
+                    await this.attemptCircuitRecovery();
                 }
             }
+
+            // Restore any custom config that was saved
+            if (previousState?.value?.config) {
+                this.config = {
+                    ...this.config,
+                    ...previousState.value.config
+                };
+            }
+
+            // Update history
+            this.stats.history.lastStarted = new Date().toISOString();
 
             // Emit service started event
             serviceEvents.emit('service:started', {
@@ -117,7 +127,6 @@ export class BaseService {
                 stats: this.stats
             });
 
-            this.stats.history.lastStarted = new Date().toISOString();
             return true;
         } catch (error) {
             logApi.error(`Failed to initialize ${this.name}:`, error);

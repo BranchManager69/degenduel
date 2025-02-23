@@ -94,7 +94,7 @@ class ServiceInitializer {
                     logApi.error(`\x1b[38;5;196m┃ - ${service}\x1b[0m`);
                 });
             }
-            logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
+            logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
 
             // Log to admin logger
             await AdminLogger.logAction(
@@ -145,7 +145,7 @@ class ServiceInitializer {
         } catch (error) {
             logApi.error('\x1b[38;5;196m┏━━━━━━━━━━━ Service Cleanup Failed ━━━━━━━━━━━┓\x1b[0m');
             logApi.error(`\x1b[38;5;196m┃ Error: ${error.message}\x1b[0m`);
-            logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
+            logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
             throw error;
         }
 
