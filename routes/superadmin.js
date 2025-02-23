@@ -4,16 +4,16 @@ import { exec } from 'child_process';
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
-import logApi from '../utils/logger-suite/logger.js';
-import prisma from '../config/prisma.js';
-import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { WalletGenerator } from '../utils/solana-suite/wallet-generator.js';
-import { FaucetManager } from '../utils/solana-suite/faucet-manager.js';
-import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
-import { ServiceManager } from '../utils/service-suite/service-manager.js';
 import bs58 from 'bs58';
 import chalk from 'chalk';
+import logApi from '../utils/logger-suite/logger.js';
+import prisma from '../config/prisma.js';
+import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
+import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { WalletGenerator } from '../services/walletGenerationService.js';
+import { FaucetManager } from '../services/faucetService.js';
+import { getContestWallet } from '../services/solana-wallet.js';
+import { ServiceManager } from '../utils/service-suite/service-manager.js';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 

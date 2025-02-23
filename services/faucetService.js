@@ -1,4 +1,4 @@
-// /utils/solana-suite/faucet-manager.js
+// services/faucetService.js
 
 /*
  * This file is responsible for managing the faucet for the test users.
@@ -7,17 +7,17 @@
  */
 
 import { PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { WalletGenerator } from './wallet-generator.js';
-import { decryptPrivateKey } from './solana-wallet.js';
+import { WalletGenerator } from './walletGenerationService.js';
+import { decryptPrivateKey } from '../utils/solana-suite/solana-wallet.js';
 import bs58 from 'bs58';
 import { fileURLToPath } from 'url';
 import LRUCache from 'lru-cache';
-import { logApi } from '../logger-suite/logger.js';
-import SolanaServiceManager from './solana-service-manager.js';
-import prisma from '../../config/prisma.js';
-import { BaseService } from '../service-suite/base-service.js';
-import { ServiceError } from '../service-suite/service-error.js';
-import { SERVICE_NAMES, getServiceMetadata } from '../service-suite/service-constants.js';
+import { logApi } from '../utils/logger-suite/logger.js';
+import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.js';
+import prisma from '../config/prisma.js';
+import { BaseService } from '../utils/service-suite/base-service.js';
+import { ServiceError } from '../utils/service-suite/service-error.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 // ...
 
@@ -1008,10 +1008,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             break;
         default:
             console.log(`
-Usage:
-  node faucet-manager.js balance              - Check faucet balance
-  node faucet-manager.js recover              - Recover SOL from test wallets
-  node faucet-manager.js config <amount> <min> <max>  - Update faucet configuration
+Usage (**MIGHT BE OUTDATED**):
+  node faucetService.js balance              - Check faucet balance
+  node faucetService.js recover              - Recover SOL from test wallets
+  node faucetService.js config <amount> <min> <max>  - Update faucet configuration
       `);
     }
 }
