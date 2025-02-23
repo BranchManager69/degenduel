@@ -1,9 +1,9 @@
 import { Connection } from '@solana/web3.js';
 import os from 'os';
 import { validateSolanaConfig } from '../../config/config.js';
-import { WalletGenerator } from '../../services/walletGenerationService.js';
+import WalletGenerator from '../../services/walletGenerationService.js';
 import { VanityPool } from './vanity-pool.js';
-import { FaucetManager } from '../../services/faucetService.js';
+import FaucetManager from '../../services/faucetService.js';
 import { logApi } from '../logger-suite/logger.js';
 import ServiceManager, { SERVICE_NAMES, SERVICE_LAYERS } from '../service-suite/service-manager.js';
 
