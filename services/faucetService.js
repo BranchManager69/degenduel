@@ -47,13 +47,13 @@ const FAUCET_SERVICE_CONFIG = {
         ttl: 15 * 60 * 1000 // 15 minutes
     },
     faucet: {
-        defaultAmount: 0.025,
-        minFaucetBalance: 0.05,
-        maxTestUsers: 10,
-        minConfirmations: 2,
-        fees: {
-            BASE_FEE: 0.000005,
-            RENT_EXEMPTION: 0.00089088
+    defaultAmount: 0.025,
+    minFaucetBalance: 0.05,
+    maxTestUsers: 10,
+    minConfirmations: 2,
+    fees: {
+        BASE_FEE: 0.000005,
+        RENT_EXEMPTION: 0.00089088
         }
     }
 };
@@ -109,7 +109,7 @@ class FaucetService extends BaseService {
         try {
             // Call parent initialize first
             await super.initialize();
-            
+
             // Load configuration from database
             const settings = await prisma.system_settings.findUnique({
                 where: { key: this.name }
@@ -467,7 +467,7 @@ class FaucetService extends BaseService {
                     amount: amount / LAMPORTS_PER_SOL,
                     description: options.description || 'Faucet distribution',
                     status: 'completed',
-                    blockchain_signature: signature,
+                        blockchain_signature: signature,
                     completed_at: new Date()
                 }
             });
@@ -522,8 +522,8 @@ class FaucetService extends BaseService {
             await super.stop();
             
             // Clear intervals
-            clearInterval(this.recoveryInterval);
-            
+                clearInterval(this.recoveryInterval);
+
             logApi.info('Faucet Service stopped successfully');
         } catch (error) {
             logApi.error('Error stopping Faucet Service:', error);

@@ -26,6 +26,28 @@ module.exports = {
       kill_timeout: 3000
     },
     {
+      name: 'degenduel-api-test',
+      script: 'index.js',
+      watch: false,
+      cwd: '/home/branchmanager/websites/degenduel',
+      wait_ready: true,
+      node_args: [
+        '--no-warnings',
+        '--experimental-specifier-resolution=node',
+        '--optimize-for-size',
+        '--gc-interval=100'
+      ],
+      env: {
+        PORT: 3005,
+        DD_API_DEBUG_MODE: 'false',
+        NODE_ENV: 'test',
+        NODE_OPTIONS: '--require ts-node/register'
+      },
+      exp_backoff_restart_delay: 100,
+      max_memory_restart: '2G',
+      kill_timeout: 3000
+    },
+    {
       name: 'prisma-studio',
       script: 'npx',
       args: 'prisma studio',
