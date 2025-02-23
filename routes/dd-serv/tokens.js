@@ -61,9 +61,10 @@ const initializeStats = () => ({
   }
 });
 
+// Initialize stats
 let ddServStats = initializeStats();
 
-// Initialize service on startup
+// Initialize service on service manager startup
 (async () => {
   try {
     // Check if service should be enabled
@@ -73,6 +74,7 @@ let ddServStats = initializeStats();
 
     const enabled = setting?.value?.enabled ?? true; // Default to true if not set
 
+    // Mark service started
     await ServiceManager.markServiceStarted(
       SERVICE_NAMES.DD_SERV,
       {
@@ -82,13 +84,16 @@ let ddServStats = initializeStats();
       ddServStats
     );
 
+    // If service is disabled, log and return
     if (!enabled) {
       logApi.info('[dd-serv] Service is disabled via dashboard');
       return;
     }
 
+    // Log success
     logApi.info('[dd-serv] Service initialized successfully');
   } catch (error) {
+    // Log failure
     logApi.error('[dd-serv] Failed to initialize service:', error);
   }
 })();
@@ -97,23 +102,29 @@ let ddServStats = initializeStats();
 const resetStats = async () => {
   ddServStats = initializeStats();
   try {
+    // Update service heartbeat
     await ServiceManager.updateServiceHeartbeat(
       SERVICE_NAMES.DD_SERV,
       DD_SERV_CONFIG,
       ddServStats
     );
+    // Log success
     logApi.info('[dd-serv] Stats reset successfully');
   } catch (error) {
+    // Log failure
     logApi.error('[dd-serv] Failed to reset stats:', error);
   }
 };
 
-// Add reset endpoint
+// Reset stats endpoint
 router.post('/reset-stats', async (req, res) => {
   try {
+    // Reset stats
     await resetStats();
+    // Log success
     res.json({ message: 'Stats reset successfully', stats: ddServStats });
   } catch (error) {
+    // Log failure
     res.status(500).json({ error: error.message });
   }
 });
@@ -305,31 +316,60 @@ async function monitoredFetch(url, options = {}, endpointName = 'unknown') {
   throw lastError;
 }
 
+
 /* DD-Serv Tokens Routes */
 
+// Service health monitoring endpoint
+//   example: GET https://degenduel.me/api/dd-serv/health
+/**
+ * @swagger
+ * /api/dd-serv/health:
+ *   get:
+ *     summary: Get the health status of the DD-Serv
+ *     tags: [DD-Serv]
+ */
+router.get('/health', async (req, res) => {
+  try {
+    const state = await ServiceManager.getServiceState(SERVICE_NAMES.DD_SERV);
+    res.json({
+      status: ddServStats.consecutive_failures >= DD_SERV_CONFIG.alert_threshold_failures ? 'degraded' : 'healthy',
+      stats: ddServStats,
+      config: DD_SERV_CONFIG,
+      state
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Circuit breaker status endpoint
+//   example: GET https://degenduel.me/api/dd-serv/circuit-breaker
+/**
+ * @swagger
+ * /api/dd-serv/circuit-breaker:
+ *   get:
+ *     summary: Get the circuit breaker status of the DD-Serv
+ *     tags: [DD-Serv]
+ */
+router.get('/circuit-breaker', async (req, res) => {
+  res.json({
+    state: circuitState.isOpen ? 'open' : 'closed',
+    failures: circuitState.failures,
+    last_failure: circuitState.lastFailure ? new Date(circuitState.lastFailure).toISOString() : null,
+    last_success: circuitState.lastSuccess ? new Date(circuitState.lastSuccess).toISOString() : null,
+    config: DD_SERV_CONFIG.circuit_breaker
+  });
+});
+
+// Get OFFICIAL DD-Serv list of tokens
+//   example: GET https://degenduel.me/api/dd-serv/tokens
 /**
  * @swagger
  * /api/dd-serv/tokens:
  *   get:
  *     summary: Get a list of all tokens from the DD-Serv (data.degenduel.me)
  *     tags: [DD-Serv]
- *     responses:
- *       200:
- *         description: A list of tokens from the DD-Serv Data API
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 timestamp:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- */
-// Get OFFICIAL DD-Serv list of tokens
-//   example: GET https://degenduel.me/api/dd-serv/tokens
+ */ 
 router.get('/tokens', async (req, res) => {
   try {
     // Try to get cached data first
@@ -436,6 +476,7 @@ router.get('/tokens', async (req, res) => {
  */
 // Get (official DD-Serv?*) list of tokens with configurable detail level (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/dd-serv/tokens/list?detail=simple
+//   example: GET https://degenduel.me/api/dd-serv/tokens/list?detail=full
 router.get('/tokens/list', async (req, res) => {
   try {
     const { detail = 'simple' } = req.query;
@@ -619,32 +660,6 @@ router.post('/tokens/bulk-price-history', async (req, res) => {
     logApi.error('[dd-serv] Error in bulk price history:', err);
     res.status(500).json({ error: err.message });
   }
-});
-
-// Add monitoring endpoint for service health
-router.get('/health', async (req, res) => {
-  try {
-    const state = await ServiceManager.getServiceState(SERVICE_NAMES.DD_SERV);
-    res.json({
-      status: ddServStats.consecutive_failures >= DD_SERV_CONFIG.alert_threshold_failures ? 'degraded' : 'healthy',
-      stats: ddServStats,
-      config: DD_SERV_CONFIG,
-      state
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Add circuit breaker status endpoint
-router.get('/circuit-breaker', async (req, res) => {
-  res.json({
-    state: circuitState.isOpen ? 'open' : 'closed',
-    failures: circuitState.failures,
-    last_failure: circuitState.lastFailure ? new Date(circuitState.lastFailure).toISOString() : null,
-    last_success: circuitState.lastSuccess ? new Date(circuitState.lastSuccess).toISOString() : null,
-    config: DD_SERV_CONFIG.circuit_breaker
-  });
 });
 
 export default router;

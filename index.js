@@ -24,7 +24,7 @@ import { memoryMonitoring } from "./scripts/monitor-memory.js";
 import contestEvaluationService from "./services/contestEvaluationService.js";
 import tokenSyncService from "./services/tokenSyncService.js";
 import walletRakeService from "./services/walletRakeService.js";
-import { tokenWhitelistService } from "./services/tokenWhitelistService.js";
+import tokenWhitelistService from "./services/tokenWhitelistService.js";
 import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
 import { createPortfolioWebSocket } from "./websocket/portfolio-ws.js";
 import { createAnalyticsWebSocket } from "./websocket/analytics-ws.js";
@@ -330,44 +330,76 @@ async function initializeServer() {
         // WebSocket - Yellow (226)
         logApi.info('\x1b[38;5;226m┣━━━━━━━━━━━ 🌐 Initializing WebSocket Servers...\x1b[0m');
 
-        // Initialize circuit breaker WebSocket
-        const circuitBreakerWs = createCircuitBreakerWebSocket(server);
-        global.wsServers.circuitBreaker = circuitBreakerWs;
-        InitLogger.logInit('Core', 'Circuit Breaker WebSocket', 'success');
-        initResults['Circuit Breaker WebSocket'] = { success: true };
+        try {
+            // Initialize circuit breaker WebSocket
+            const circuitBreakerWs = createCircuitBreakerWebSocket(server);
+            global.wsServers.circuitBreaker = circuitBreakerWs;
+            InitLogger.logInit('Core', 'Circuit Breaker WebSocket', 'success');
+            initResults['Circuit Breaker WebSocket'] = { success: true };
+        } catch (error) {
+            logApi.error('Failed to initialize Circuit Breaker WebSocket:', error);
+            initResults['Circuit Breaker WebSocket'] = { success: false, error: error.message };
+        }
 
-        // Initialize Portfolio WebSocket
-        const portfolioWs = createPortfolioWebSocket(server);
-        global.wsServers.portfolio = portfolioWs;
-        InitLogger.logInit('Core', 'Portfolio WebSocket', 'success');
-        initResults['Portfolio WebSocket'] = { success: true };
+        try {
+            // Initialize Portfolio WebSocket
+            const portfolioWs = createPortfolioWebSocket(server);
+            global.wsServers.portfolio = portfolioWs;
+            InitLogger.logInit('Core', 'Portfolio WebSocket', 'success');
+            initResults['Portfolio WebSocket'] = { success: true };
+        } catch (error) {
+            logApi.error('Failed to initialize Portfolio WebSocket:', error);
+            initResults['Portfolio WebSocket'] = { success: false, error: error.message };
+        }
 
-        // Initialize Analytics WebSocket
-        const analyticsWs = createAnalyticsWebSocket(server);
-        global.wsServers.analytics = analyticsWs;
-        InitLogger.logInit('Core', 'Analytics WebSocket', 'success');
-        initResults['Analytics WebSocket'] = { success: true };
+        try {
+            // Initialize Analytics WebSocket
+            const analyticsWs = createAnalyticsWebSocket(server);
+            global.wsServers.analytics = analyticsWs;
+            InitLogger.logInit('Core', 'Analytics WebSocket', 'success');
+            initResults['Analytics WebSocket'] = { success: true };
+        } catch (error) {
+            logApi.error('Failed to initialize Analytics WebSocket:', error);
+            initResults['Analytics WebSocket'] = { success: false, error: error.message };
+        }
 
-        // Initialize Wallet WebSocket
-        const walletWs = createWalletWebSocket(server);
-        global.wsServers.wallet = walletWs;
-        InitLogger.logInit('Core', 'Wallet WebSocket', 'success');
-        initResults['Wallet WebSocket'] = { success: true };
+        try {
+            // Initialize Wallet WebSocket
+            const walletWs = createWalletWebSocket(server);
+            global.wsServers.wallet = walletWs;
+            InitLogger.logInit('Core', 'Wallet WebSocket', 'success');
+            initResults['Wallet WebSocket'] = { success: true };
+        } catch (error) {
+            logApi.error('Failed to initialize Wallet WebSocket:', error);
+            initResults['Wallet WebSocket'] = { success: false, error: error.message };
+        }
 
-        // Initialize Contest WebSocket
-        const contestWs = createContestWebSocket(server);
-        global.wsServers.contest = contestWs;
-        InitLogger.logInit('Core', 'Contest WebSocket', 'success');
-        initResults['Contest WebSocket'] = { success: true };
+        try {
+            // Initialize Contest WebSocket
+            const contestWs = createContestWebSocket(server);
+            global.wsServers.contest = contestWs;
+            InitLogger.logInit('Core', 'Contest WebSocket', 'success');
+            initResults['Contest WebSocket'] = { success: true };
+        } catch (error) {
+            logApi.error('Failed to initialize Contest WebSocket:', error);
+            initResults['Contest WebSocket'] = { success: false, error: error.message };
+        }
 
-        // Initialize Market Data WebSocket
-        const marketDataWs = createMarketDataWebSocket(server);
-        global.wsServers.market = marketDataWs;
-        InitLogger.logInit('Core', 'Market Data WebSocket', 'success');
-        initResults['Market Data WebSocket'] = { success: true };
+        try {
+            // Initialize Market Data WebSocket
+            const marketDataWs = createMarketDataWebSocket(server);
+            global.wsServers.market = marketDataWs;
+            InitLogger.logInit('Core', 'Market Data WebSocket', 'success');
+            initResults['Market Data WebSocket'] = { success: true };
+        } catch (error) {
+            logApi.error('Failed to initialize Market Data WebSocket:', error);
+            initResults['Market Data WebSocket'] = { success: false, error: error.message };
+        }
 
         // Add analytics tracking middleware
-        app.use(analyticsWs.createTrackingMiddleware());
+        if (global.wsServers.analytics) {
+            app.use(global.wsServers.analytics.createTrackingMiddleware());
+        }
 
         logApi.info('\x1b[38;5;226m┃           ┗━━━━━━━━━━━ ☑️ WebSocket Servers Ready\x1b[0m');
 
