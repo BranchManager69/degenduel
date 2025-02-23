@@ -21,9 +21,11 @@ import { ServiceManager } from '../utils/service-suite/service-manager.js';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
 import cache from '../utils/cache.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const REFERRAL_SERVICE_CONFIG = {
-    name: 'referral_service',
+    name: SERVICE_NAMES.REFERRAL,
+    description: getServiceMetadata(SERVICE_NAMES.REFERRAL).description,
     checkIntervalMs: 5 * 60 * 1000,  // Check every 5 minutes
     maxRetries: 3,
     retryDelayMs: 30000,

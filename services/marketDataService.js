@@ -18,34 +18,25 @@ import prisma from '../config/prisma.js';
 ////import { CircuitBreaker } from '../utils/circuit-breaker.js';
 // ** Service Manager **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
-const MARKET_DATA_SERVICE_CONFIG = {
-    name: 'Market Data Service',
-    description: 'Fetches and updates token prices and metadata',
+const MARKET_DATA_CONFIG = {
+    name: SERVICE_NAMES.MARKET_DATA,
+    description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA).description,
+    checkIntervalMs: 30 * 1000, // Check every 30 seconds
+    maxRetries: 3,
+    retryDelayMs: 5000,
     circuitBreaker: {
-        enabled: true,
         failureThreshold: 5,
-        resetTimeoutMs: 60000, // 1 minute
-        minHealthyPeriodMs: 120000 // 2 minutes
+        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
+        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
     }
 };
 
 // Market Data Service
 class MarketDataService extends BaseService {
     constructor() {
-        // Initialize with proper config structure
-        const config = {
-            updateInterval: 100, // 100ms for 10 updates/second
-            maxConcurrentRequests: 100,
-            cacheTimeout: 1000, // 1 second cache
-            circuitBreaker: {
-                failureThreshold: 5,
-                resetTimeoutMs: 60000, // 1 minute
-                minHealthyPeriodMs: 120000 // 2 minutes
-            }
-        };
-        
-        super('market_data_service', config);
+        super(MARKET_DATA_CONFIG.name, MARKET_DATA_CONFIG);
         
         this.cache = new Map();
         this.requestCount = 0;

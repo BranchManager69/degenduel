@@ -26,11 +26,13 @@ import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PE
 import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
 const CONTEST_EVALUATION_CONFIG = {
-    name: 'contest_evaluation_service',
+    name: SERVICE_NAMES.CONTEST_EVALUATION,
+    description: getServiceMetadata(SERVICE_NAMES.CONTEST_EVALUATION).description,
     checkIntervalMs: 60 * 1000, // Check every minute
     maxRetries: 3,
     retryDelayMs: 5000,
