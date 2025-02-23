@@ -9,15 +9,13 @@
 // ** Service Auth **
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
-import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
-////import { CircuitBreaker } from '../utils/circuit-breaker.js';
-// ** Service Manager (?) **
+// ** Service Manager **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
 // Solana
 import crypto from 'crypto';
@@ -71,31 +69,81 @@ class ContestEvaluationService extends BaseService {
         
         // Service-specific state
         this.evaluationStats = {
-            totalEvaluated: 0,
-            successfulEvaluations: 0,
-            failedEvaluations: 0,
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
+            },
+            performance: {
+                average_operation_time_ms: 0,
+                last_operation_time_ms: 0
+            },
+            contests: {
+                total_evaluated: 0,
+                successful_evaluations: 0,
+                failed_evaluations: 0,
+                prizes_distributed: 0,
+                refunds_processed: 0
+            },
             prizeDistribution: {
                 total: 0,
                 successful: 0,
                 failed: 0,
-                totalAmountDistributed: new Decimal(0)
+                total_amount_distributed: new Decimal(0)
             },
             refunds: {
                 total: 0,
                 successful: 0,
                 failed: 0,
-                totalAmountRefunded: new Decimal(0)
+                total_amount_refunded: new Decimal(0)
             },
             tieBreaks: {
                 total: 0,
                 resolved: 0,
                 failed: 0
-            },
-            contestsEvaluated: 0,
-            prizesDistributed: 0,
-            refundsProcessed: 0,
-            totalOperations: 0
+            }
         };
+    }
+
+    async initialize() {
+        try {
+            await super.initialize();
+            
+            // Load configuration from database
+            const settings = await prisma.system_settings.findUnique({
+                where: { key: this.name }
+            });
+
+            if (settings?.value) {
+                const dbConfig = typeof settings.value === 'string' 
+                    ? JSON.parse(settings.value)
+                    : settings.value;
+
+                this.config = {
+                    ...this.config,
+                    ...dbConfig,
+                    circuitBreaker: {
+                        ...this.config.circuitBreaker,
+                        ...(dbConfig.circuitBreaker || {})
+                    }
+                };
+            }
+
+            // Ensure stats are JSON-serializable for ServiceManager
+            const serializableStats = JSON.parse(JSON.stringify(this.stats));
+            await ServiceManager.markServiceStarted(
+                this.name,
+                JSON.parse(JSON.stringify(this.config)),
+                serializableStats
+            );
+
+            logApi.info('Contest Evaluation Service initialized');
+            return true;
+        } catch (error) {
+            logApi.error('Contest Evaluation Service initialization error:', error);
+            await this.handleError('initialize', error);
+            throw error;
+        }
     }
 
     // Utility functions
@@ -888,128 +936,94 @@ class ContestEvaluationService extends BaseService {
         try {
             const now = new Date();
 
-            // Find contests that should start
-            const contestsToStart = await prisma.contests.findMany({
-                where: {
-                    status: this.config.states.PENDING,
-                    start_time: {
-                        lte: now
-                    }
-                },
-                include: {
-                    contest_participants: true
-                }
-            });
-
-            // Start contests that meet criteria
+            // Find and process contests that should start
+            const contestsToStart = await this.findContestsToStart(now);
             for (const contest of contestsToStart) {
-                const minParticipants = contest.settings?.minimum_participants || 1;
-                
-                if (contest.contest_participants.length >= minParticipants) {
-                    await prisma.contests.update({
-                        where: { id: contest.id },
-                        data: { 
-                            status: this.config.states.ACTIVE,
-                            started_at: now
-                        }
-                    });
-
-                    await AdminLogger.logAction(
-                        'SYSTEM',
-                        AdminLogger.Actions.CONTEST.START,
-                        {
-                            contest_id: contest.id,
-                            participant_count: contest.contest_participants.length
-                        }
-                    );
-
-                    logApi.info(`Contest ${contest.id} '${contest.contest_name}' started automatically`);
-                } else if (contest.contest_participants.length === 0) {
-                    // Immediately cancel contests with no participants
-                    await prisma.contests.update({
-                        where: { id: contest.id },
-                        data: { 
-                            status: this.config.states.CANCELLED,
-                            cancellation_reason: `Contest cancelled due to no participants at start time`
-                        }
-                    });
-
-                    await AdminLogger.logAction(
-                        'SYSTEM',
-                        AdminLogger.Actions.CONTEST.CANCEL,
-                        {
-                            contest_id: contest.id,
-                            required_participants: minParticipants,
-                            actual_participants: 0,
-                            reason: `'${contest.contest_name}' cancelled - no participants at start time`
-                        }
-                    );
-
-                    logApi.info(`Contest ${contest.id} cancelled due to no participants at start time`);
-                } else if (contest.start_time < new Date(now.getTime() - this.config.autoCancelWindow)) {
-                    // Auto-cancel contests that have at least 1 participant but have not met minimum participants after the auto-cancel wait period
-                    await prisma.contests.update({
-                        where: { id: contest.id },
-                        data: { 
-                            status: this.config.states.CANCELLED,
-                            cancellation_reason: `Contest auto-cancelled due to insufficient participants (${contest.contest_participants.length}/${minParticipants}) after waiting ${(this.config.autoCancelWindow/1000).toFixed(0)} seconds`
-                        }
-                    });
-
-                    await AdminLogger.logAction(
-                        'SYSTEM',
-                        AdminLogger.Actions.CONTEST.CANCEL,
-                        {
-                            contest_id: contest.id,
-                            required_participants: minParticipants,
-                            actual_participants: contest.contest_participants.length,
-                            reason: `'${contest.contest_name}' auto-cancelled - insufficient participants (${contest.contest_participants.length}/${minParticipants}) after waiting ${(this.config.autoCancelWindow/1000).toFixed(0)} seconds`
-                        }
-                    );
-
-                    const refundsProcessed = await this.processContestRefunds(contest);
-                    try {
-                        // If there was at least one processed refund
-                        if (refundsProcessed.refunded > 0) {
-                            logApi.info(`Contest ${contest.id} auto-cancelled. ${refundsProcessed.refunded} refunds were processed.`);
-                        } else {
-                            logApi.info(`Contest ${contest.id} auto-cancelled. No refunds were needed as there were no participants.`);
-                        }
-                    } catch (error) {
-                        logApi.error(`Failed to process refunds for contest ${contest.id}: ${error.message}`);
-                    }
-                }
+                await this.processContestStart(contest);
             }
 
-            // Find contests that should end
-            const contestsToEnd = await prisma.contests.findMany({
-                where: {
-                    status: this.config.states.ACTIVE,
-                    end_time: {
-                        lte: now
-                    }
-                },
-                include: {
-                    contest_wallets: true,
-                    contest_participants: true
-                }
-            });
-
-            // End and evaluate contests
+            // Find and process contests that should end
+            const contestsToEnd = await this.findContestsToEnd(now);
             for (const contest of contestsToEnd) {
                 await this.evaluateContest(contest);
             }
 
-            const duration = Date.now() - startTime;
+            // Update performance metrics
+            this.evaluationStats.performance.last_operation_time_ms = Date.now() - startTime;
+            this.evaluationStats.performance.average_operation_time_ms = 
+                (this.evaluationStats.performance.average_operation_time_ms * this.evaluationStats.operations.total + 
+                (Date.now() - startTime)) / (this.evaluationStats.operations.total + 1);
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    evaluationStats: this.evaluationStats
+                }
+            );
+
             return {
-                duration,
+                duration: Date.now() - startTime,
                 contestsStarted: contestsToStart.length,
                 contestsEnded: contestsToEnd.length
             };
-
         } catch (error) {
-            // Let the base class handle the error and circuit breaker
+            // Let base class handle circuit breaker
             throw error;
+        }
+    }
+
+    async stop() {
+        try {
+            await super.stop();
+            logApi.info('Contest Evaluation Service stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Contest Evaluation Service:', error);
+            throw error;
+        }
+    }
+
+    // Helper methods for performOperation
+    async findContestsToStart(now) {
+        return await prisma.contests.findMany({
+            where: {
+                status: this.config.states.PENDING,
+                start_time: {
+                    lte: now
+                }
+            },
+            include: {
+                contest_participants: true
+            }
+        });
+    }
+
+    async findContestsToEnd(now) {
+        return await prisma.contests.findMany({
+            where: {
+                status: this.config.states.ACTIVE,
+                end_time: {
+                    lte: now
+                }
+            },
+            include: {
+                contest_wallets: true,
+                contest_participants: true
+            }
+        });
+    }
+
+    async processContestStart(contest) {
+        const minParticipants = contest.settings?.minimum_participants || 1;
+        
+        if (contest.contest_participants.length >= minParticipants) {
+            await this.startContest(contest);
+        } else if (contest.contest_participants.length === 0) {
+            await this.cancelContestNoParticipants(contest);
+        } else if (contest.start_time < new Date(Date.now() - this.config.autoCancelWindow)) {
+            await this.cancelContestInsufficientParticipants(contest);
         }
     }
 
@@ -1054,7 +1068,7 @@ class ContestEvaluationService extends BaseService {
 // Create singleton instance
 const contestEvaluationService = new ContestEvaluationService();
 
-// Export the service instance and maintain backward compatibility with existing code
+// Export the service instance and maintain backward compatibility
 const exportedService = {
     startContestEvaluationService: async () => {
         await contestEvaluationService.initialize();
@@ -1067,7 +1081,6 @@ const exportedService = {
     processContestRefunds: async (contest) => {
         return contestEvaluationService.processContestRefunds(contest);
     },
-    // Export the service instance itself for direct access if needed
     service: contestEvaluationService
 };
 
