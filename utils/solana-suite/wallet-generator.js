@@ -15,30 +15,116 @@ import crypto from 'crypto';
 import bs58 from 'bs58';
 // Other
 import LRUCache from 'lru-cache';
+import { BaseService } from '../service-suite/base-service.js';
+import { ServiceError } from '../service-suite/service-error.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../service-suite/service-constants.js';
 
-// ...
-
-class WalletGeneratorError extends Error {
-    constructor(message, code, details) {
-        super(message);
-        this.name = 'WalletGeneratorError';
-        this.code = code;
-        this.details = details;
-    }
-}
-// (create more specific error types)
-
-export class WalletGenerator {
-    // Add cache with size limits and TTL
-    static walletCache = new LRUCache({
-        max: 1000,
+const WALLET_SERVICE_CONFIG = {
+    name: SERVICE_NAMES.WALLET_GENERATOR,
+    description: getServiceMetadata(SERVICE_NAMES.WALLET_GENERATOR).description,
+    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
+    maxRetries: 3,
+    retryDelayMs: 5000,
+    circuitBreaker: {
+        failureThreshold: 5,
+        resetTimeoutMs: 60000,
+        minHealthyPeriodMs: 120000
+    },
+    cache: {
+        maxSize: 1000,
         ttl: 15 * 60 * 1000 // 15 minutes
-    });
+    }
+};
+
+class WalletService extends BaseService {
+    constructor() {
+        super(WALLET_SERVICE_CONFIG.name, WALLET_SERVICE_CONFIG);
+        
+        this.walletCache = new LRUCache({
+            max: this.config.cache.maxSize,
+            ttl: this.config.cache.ttl
+        });
+
+        this.stats = {
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
+            },
+            wallets: {
+                generated: 0,
+                imported: 0,
+                deactivated: 0,
+                cached: 0
+            },
+            encryption: {
+                successful: 0,
+                failed: 0
+            },
+            circuitBreaker: {
+                isOpen: false,
+                failures: 0,
+                lastFailure: null,
+                lastSuccess: null,
+                recoveryAttempts: 0
+            }
+        };
+    }
+
+    async initialize() {
+        try {
+            await super.initialize();
+
+            // Load existing wallets from database into cache
+            const existingWallets = await prisma.seed_wallets.findMany({
+                where: { is_active: true },
+                select: {
+                    purpose: true,
+                    wallet_address: true,
+                    private_key: true
+                }
+            });
+            
+            for (const wallet of existingWallets) {
+                const identifier = wallet.purpose.replace('Seed wallet for ', '');
+                this.walletCache.set(identifier, {
+                    publicKey: wallet.wallet_address,
+                    secretKey: wallet.private_key,
+                    timestamp: Date.now()
+                });
+                this.stats.wallets.cached++;
+            }
+
+            logApi.info(`Initialized wallet cache with ${existingWallets.length} wallets`);
+            return true;
+        } catch (error) {
+            logApi.error('Failed to initialize Wallet Service:', error);
+            throw error;
+        }
+    }
+
+    async performOperation() {
+        try {
+            // Perform cache cleanup
+            this.cleanupCache();
+            
+            // Verify wallet integrity for cached wallets
+            const verificationResults = await this.verifyAllWallets();
+            
+            // Update stats
+            this.stats.wallets.cached = this.walletCache.size;
+            
+            return verificationResults;
+        } catch (error) {
+            await this.handleError(error);
+            return false;
+        }
+    }
 
     // Encrypt a private key using the wallet encryption key from env
-    static encryptPrivateKey(privateKey) {
+    encryptPrivateKey(privateKey) {
         if (!process.env.WALLET_ENCRYPTION_KEY) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'WALLET_ENCRYPTION_KEY environment variable is not set',
                 'MISSING_ENCRYPTION_KEY'
             );
@@ -61,7 +147,7 @@ export class WalletGenerator {
                 tag: tag.toString('hex')
             });
         } catch (error) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Failed to encrypt private key',
                 'ENCRYPTION_FAILED',
                 { originalError: error.message }
@@ -70,7 +156,7 @@ export class WalletGenerator {
     }
 
     // Decrypt a private key
-    static decryptPrivateKey(encryptedData) {
+    decryptPrivateKey(encryptedData) {
         try {
             const { encrypted, iv, tag } = JSON.parse(encryptedData);
             const decipher = crypto.createDecipheriv(
@@ -83,7 +169,7 @@ export class WalletGenerator {
             decrypted += decipher.final('utf8');
             return decrypted;
         } catch (error) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Failed to decrypt private key',
                 'DECRYPTION_FAILED',
                 { originalError: error.message }
@@ -91,38 +177,7 @@ export class WalletGenerator {
         }
     }
 
-    static async initialize() {
-        try {
-            // Load existing wallets from database into cache
-            const existingWallets = await prisma.seed_wallets.findMany({
-                where: { is_active: true },
-                select: {
-                    purpose: true,
-                    wallet_address: true,
-                    private_key: true
-                }
-            });
-            
-            existingWallets.forEach(wallet => {
-                const identifier = wallet.purpose.replace('Seed wallet for ', '');
-                this.walletCache.set(identifier, {
-                    publicKey: wallet.wallet_address,
-                    secretKey: wallet.private_key,
-                    timestamp: Date.now()
-                });
-            });
-            console.log(`Initialized wallet cache with ${existingWallets.length} wallets`);
-        } catch (error) {
-            console.error('Failed to initialize wallet cache:', error);
-            throw new WalletGeneratorError(
-                'Failed to initialize wallet cache',
-                'INIT_FAILED',
-                { originalError: error.message }
-            );
-        }
-    }
-
-    static async generateWallet(identifier, options = {}) {
+    async generateWallet(identifier, options = {}) {
         try {
             // Check if wallet already exists in cache
             const existingWallet = this.walletCache.get(identifier);
@@ -178,7 +233,7 @@ export class WalletGenerator {
             this.walletCache.set(identifier, walletInfo);
             return walletInfo;
         } catch (error) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Failed to generate wallet',
                 'GENERATION_FAILED',
                 { identifier, originalError: error.message }
@@ -186,7 +241,7 @@ export class WalletGenerator {
         }
     }
 
-    static async getWallet(identifier) {
+    async getWallet(identifier) {
         try {
             // Check cache first
             const cachedWallet = this.walletCache.get(identifier);
@@ -220,7 +275,7 @@ export class WalletGenerator {
 
             return undefined;
         } catch (error) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Failed to retrieve wallet',
                 'RETRIEVAL_FAILED',
                 { identifier, originalError: error.message }
@@ -229,10 +284,10 @@ export class WalletGenerator {
     }
 
     // Get keypair from wallet
-    static async getKeypair(identifier) {
+    async getKeypair(identifier) {
         const wallet = await this.getWallet(identifier);
         if (!wallet) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Wallet not found',
                 'WALLET_NOT_FOUND',
                 { identifier }
@@ -245,7 +300,7 @@ export class WalletGenerator {
                 Buffer.from(decryptedKey, 'base64')
             );
         } catch (error) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Failed to create keypair',
                 'KEYPAIR_CREATION_FAILED',
                 { identifier, originalError: error.message }
@@ -254,7 +309,7 @@ export class WalletGenerator {
     }
 
     // Deactivate a wallet
-    static async deactivateWallet(identifier) {
+    async deactivateWallet(identifier) {
         try {
             await prisma.seed_wallets.updateMany({
                 where: { 
@@ -267,7 +322,7 @@ export class WalletGenerator {
             this.walletCache.delete(identifier);
             return true;
         } catch (error) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Failed to deactivate wallet',
                 'DEACTIVATION_FAILED',
                 { identifier, originalError: error.message }
@@ -276,7 +331,7 @@ export class WalletGenerator {
     }
 
     // Update wallet metadata
-    static async updateWalletMetadata(identifier, metadata) {
+    async updateWalletMetadata(identifier, metadata) {
         try {
             await prisma.seed_wallets.updateMany({
                 where: { 
@@ -294,7 +349,7 @@ export class WalletGenerator {
 
             return true;
         } catch (error) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Failed to update wallet metadata',
                 'METADATA_UPDATE_FAILED',
                 { identifier, originalError: error.message }
@@ -303,7 +358,7 @@ export class WalletGenerator {
     }
 
     // Import existing wallet
-    static async importWallet(identifier, privateKey, options = {}) {
+    async importWallet(identifier, privateKey, options = {}) {
         return this.generateWallet(identifier, {
             ...options,
             fromPrivateKey: privateKey
@@ -311,7 +366,7 @@ export class WalletGenerator {
     }
 
     // List all active wallets
-    static async listWallets(filter = {}) {
+    async listWallets(filter = {}) {
         try {
             const wallets = await prisma.seed_wallets.findMany({
                 where: { 
@@ -331,7 +386,7 @@ export class WalletGenerator {
                 metadata: wallet.metadata
             }));
         } catch (error) {
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Failed to list wallets',
                 'LIST_FAILED',
                 { originalError: error.message }
@@ -340,7 +395,7 @@ export class WalletGenerator {
     }
 
     // Verify a wallet's integrity
-    static async verifyWallet(identifier) {
+    async verifyWallet(identifier) {
         try {
             const wallet = await this.getWallet(identifier);
             if (!wallet) {
@@ -370,7 +425,7 @@ export class WalletGenerator {
     }
 
     // Enhanced cleanup with proper error handling and state reset
-    static async cleanupCache() {
+    async cleanupCache() {
         try {
             logApi.info('Starting wallet generator cleanup...');
             
@@ -393,7 +448,7 @@ export class WalletGenerator {
             logApi.info('Wallet generator cleanup completed successfully');
         } catch (error) {
             logApi.error('Error during wallet generator cleanup:', error);
-            throw new WalletGeneratorError(
+            throw new ServiceError(
                 'Cleanup failed',
                 'CLEANUP_FAILED',
                 { originalError: error.message }
@@ -401,19 +456,52 @@ export class WalletGenerator {
         }
     }
 
-    // Add a method to gracefully stop the service
-    static async stop() {
+    // Helper method to verify all cached wallets
+    async verifyAllWallets() {
+        const results = {
+            total: this.walletCache.size,
+            verified: 0,
+            failed: 0,
+            errors: []
+        };
+
+        for (const [identifier, wallet] of this.walletCache.entries()) {
+            try {
+                const verification = await this.verifyWallet(identifier);
+                if (verification.valid) {
+                    results.verified++;
+                } else {
+                    results.failed++;
+                    results.errors.push({
+                        identifier,
+                        error: verification.error
+                    });
+                }
+            } catch (error) {
+                results.failed++;
+                results.errors.push({
+                    identifier,
+                    error: error.message
+                });
+            }
+        }
+
+        return results;
+    }
+
+    async stop() {
         try {
+            await super.stop();
             await this.cleanupCache();
-            // Add any additional cleanup needed
+            logApi.info('Wallet Service stopped successfully');
         } catch (error) {
-            logApi.error('Error stopping wallet generator:', error);
+            logApi.error('Error stopping Wallet Service:', error);
             throw error;
         }
     }
 
     // Get cache statistics
-    static getCacheStats() {
+    getCacheStats() {
         return {
             size: this.walletCache.size,
             maxSize: this.walletCache.max,
@@ -423,11 +511,6 @@ export class WalletGenerator {
     }
 }
 
-// Initialize wallet cache when module is loaded
-WalletGenerator.initialize();
-
-
-//// -------------------------------------
-//// Export service singleton
-////const walletGenerator = new WalletGenerator();
-////export default walletGenerator;
+// Create and export singleton instance
+const walletService = new WalletService();
+export default walletService;
