@@ -12,10 +12,10 @@ import { generateServiceAuthHeader } from '../config/service-auth.js';
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
-import { CircuitBreaker } from '../utils/circuit-breaker.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+////import { CircuitBreaker } from '../utils/circuit-breaker.js';
 // ** Service Manager (?) **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
 // Other
@@ -609,6 +609,6 @@ class ReferralService extends BaseService {
     }
 }
 
-// Create and export singleton instance
+// Export service singleton
 const referralService = new ReferralService();
 export default referralService; 
