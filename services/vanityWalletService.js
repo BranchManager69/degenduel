@@ -2,15 +2,16 @@
 
 /*
  * This service is responsible for managing the vanity wallet pool.
- * It allows the admin to add and remove wallets from the pool.
- * 
+ * It handles the generation, validation, and assignment of vanity wallets
+ * for contests. The service ensures a healthy pool of available wallets
+ * and manages the lifecycle of vanity wallet patterns.
  */
 
 // ** Service Auth **
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
+import { ServiceError } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
@@ -18,6 +19,8 @@ import prisma from '../config/prisma.js';
 // ** Service Manager **
 import ServiceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+// Dependencies
+import { VanityPool } from '../utils/solana-suite/vanity-pool.js';
 
 const VANITY_WALLET_CONFIG = {
     name: SERVICE_NAMES.VANITY_WALLET,
@@ -26,9 +29,9 @@ const VANITY_WALLET_CONFIG = {
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
-        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
+        failureThreshold: 4, // Lower threshold for quick recovery
+        resetTimeoutMs: 45000, // Faster reset for wallet availability
+        minHealthyPeriodMs: 120000 // Standard health period
     },
     backoff: {
         initialDelayMs: 1000,
@@ -36,18 +39,27 @@ const VANITY_WALLET_CONFIG = {
         factor: 2
     },
     pool: {
-        min_size: 10,
-        max_size: 1000,
-        low_threshold: 20,
-        generation_batch_size: 5
+        minSize: 10,
+        maxSize: 1000,
+        lowThreshold: 20,
+        generationBatchSize: 5,
+        maxParallelOperations: 3,
+        operationTimeoutMs: 60000,
+        patterns: {
+            maxLength: 8,
+            allowedChars: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+            defaultPosition: 'start'
+        }
     }
 };
 
-// Vanity Wallet Service
 class VanityWalletService extends BaseService {
     constructor() {
         super(VANITY_WALLET_CONFIG.name, VANITY_WALLET_CONFIG);
         
+        // Initialize vanity pool
+        this.vanityPool = new VanityPool();
+
         // Service-specific state
         this.poolStats = {
             operations: {
@@ -66,6 +78,12 @@ class VanityWalletService extends BaseService {
                 successful: 0,
                 failed: 0
             },
+            generation: {
+                total: 0,
+                successful: 0,
+                failed: 0,
+                average_time_ms: 0
+            },
             pool_health: {
                 last_check: null,
                 below_threshold_count: 0,
@@ -73,12 +91,122 @@ class VanityWalletService extends BaseService {
             },
             performance: {
                 average_operation_time_ms: 0,
-                last_operation_time_ms: 0
+                last_operation_time_ms: 0,
+                average_assignment_time_ms: 0
+            },
+            dependencies: {
+                walletGenerator: {
+                    status: 'unknown',
+                    lastCheck: null,
+                    errors: 0
+                }
             }
         };
+
+        // Active processing tracking
+        this.activeOperations = new Map();
+        this.operationTimeouts = new Set();
     }
 
-    // Get an available vanity wallet, prioritizing specific patterns if requested
+    async initialize() {
+        try {
+            // Call parent initialize first
+            await super.initialize();
+            
+            // Check dependencies
+            const walletGeneratorStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
+            if (!walletGeneratorStatus) {
+                throw ServiceError.initialization('Wallet Generator Service not healthy');
+            }
+
+            // Load configuration from database
+            const settings = await prisma.system_settings.findUnique({
+                where: { key: this.name }
+            });
+
+            if (settings?.value) {
+                const dbConfig = typeof settings.value === 'string' 
+                    ? JSON.parse(settings.value)
+                    : settings.value;
+
+                // Merge configs carefully preserving circuit breaker settings
+                this.config = {
+                    ...this.config,
+                    ...dbConfig,
+                    circuitBreaker: {
+                        ...this.config.circuitBreaker,
+                        ...(dbConfig.circuitBreaker || {})
+                    }
+                };
+            }
+
+            // Initialize vanity pool
+            await this.vanityPool.initialize();
+
+            // Load initial pool state
+            const [totalWallets, availableWallets] = await Promise.all([
+                prisma.vanity_wallet_pool.count(),
+                prisma.vanity_wallet_pool.count({ where: { is_used: false } })
+            ]);
+
+            // Initialize stats
+            this.poolStats.wallets.total = totalWallets;
+            this.poolStats.wallets.available = availableWallets;
+            this.poolStats.wallets.used = totalWallets - availableWallets;
+
+            // Load pattern stats
+            const patternStats = await prisma.vanity_wallet_pool.groupBy({
+                by: ['pattern'],
+                _count: true
+            });
+
+            patternStats.forEach(stat => {
+                this.poolStats.wallets.by_pattern[stat.pattern] = stat._count;
+            });
+
+            // Ensure stats are JSON-serializable for ServiceManager
+            const serializableStats = JSON.parse(JSON.stringify({
+                ...this.stats,
+                poolStats: this.poolStats
+            }));
+
+            await ServiceManager.markServiceStarted(
+                this.name,
+                JSON.parse(JSON.stringify(this.config)),
+                serializableStats
+            );
+
+            logApi.info('Vanity Wallet Service initialized', {
+                totalWallets,
+                availableWallets,
+                patternStats
+            });
+
+            return true;
+        } catch (error) {
+            logApi.error('Vanity Wallet Service initialization error:', error);
+            await this.handleError(error);
+            throw error;
+        }
+    }
+
+    validatePattern(pattern) {
+        if (!pattern) return true; // No pattern is valid
+
+        if (pattern.length > this.config.pool.patterns.maxLength) {
+            throw ServiceError.validation('Pattern too long');
+        }
+
+        const validChars = new Set(this.config.pool.patterns.allowedChars);
+        for (const char of pattern) {
+            if (!validChars.has(char)) {
+                throw ServiceError.validation(`Invalid character in pattern: ${char}`);
+            }
+        }
+
+        return true;
+    }
+
     async getAvailableWallet(preferredPattern = null, adminContext = null) {
         if (this.stats.circuitBreaker.isOpen) {
             throw ServiceError.operation('Circuit breaker is open for wallet retrieval');
@@ -86,6 +214,11 @@ class VanityWalletService extends BaseService {
 
         const startTime = Date.now();
         try {
+            // Validate pattern if provided
+            if (preferredPattern) {
+                this.validatePattern(preferredPattern);
+            }
+
             const wallet = await prisma.vanity_wallet_pool.findFirst({
                 where: {
                     is_used: false,
@@ -133,7 +266,6 @@ class VanityWalletService extends BaseService {
         }
     }
 
-    // Mark a wallet as used by a contest
     async assignWalletToContest(walletId, contestId, adminContext = null) {
         if (this.stats.circuitBreaker.isOpen) {
             throw ServiceError.operation('Circuit breaker is open for wallet assignment');
@@ -141,6 +273,25 @@ class VanityWalletService extends BaseService {
 
         const startTime = Date.now();
         try {
+            // Add to active operations
+            this.activeOperations.set(walletId, {
+                startTime,
+                contestId,
+                type: 'assignment'
+            });
+
+            // Set timeout
+            const timeout = setTimeout(() => {
+                this.activeOperations.delete(walletId);
+                this.poolStats.assignments.failed++;
+                logApi.error('Assignment operation timeout:', {
+                    walletId,
+                    contestId
+                });
+            }, this.config.pool.operationTimeoutMs);
+            
+            this.operationTimeouts.add(timeout);
+
             const result = await prisma.vanity_wallet_pool.update({
                 where: { id: walletId },
                 data: {
@@ -149,6 +300,11 @@ class VanityWalletService extends BaseService {
                     used_by_contest: contestId
                 }
             });
+
+            // Clear timeout and active operation
+            clearTimeout(timeout);
+            this.operationTimeouts.delete(timeout);
+            this.activeOperations.delete(walletId);
 
             // Update statistics
             await this.recordSuccess();
@@ -181,7 +337,6 @@ class VanityWalletService extends BaseService {
         }
     }
 
-    // Add new wallets to the pool
     async addToPool(wallets, adminContext = null) {
         if (this.stats.circuitBreaker.isOpen) {
             throw ServiceError.operation('Circuit breaker is open for pool addition');
@@ -231,29 +386,54 @@ class VanityWalletService extends BaseService {
         }
     }
 
-    // Main operation implementation - periodic pool health checks
     async performOperation() {
         const startTime = Date.now();
         
         try {
+            // Check dependency health
+            const walletGeneratorStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
+            this.poolStats.dependencies.walletGenerator = {
+                status: walletGeneratorStatus ? 'healthy' : 'unhealthy',
+                lastCheck: new Date().toISOString(),
+                errors: walletGeneratorStatus ? 0 : this.poolStats.dependencies.walletGenerator.errors + 1
+            };
+
+            if (!walletGeneratorStatus) {
+                throw ServiceError.dependency('Wallet Generator Service unhealthy');
+            }
+
             // Get current pool stats
             const stats = await this.getPoolStats();
             
             // Check if pool is below threshold
-            if (stats.available < this.config.pool.low_threshold) {
+            if (stats.available < this.config.pool.lowThreshold) {
                 this.poolStats.pool_health.below_threshold_count++;
                 this.poolStats.pool_health.generation_requests++;
                 
                 logApi.warn('Vanity wallet pool below threshold', {
                     available: stats.available,
-                    threshold: this.config.pool.low_threshold
+                    threshold: this.config.pool.lowThreshold
                 });
 
-                // Here you would trigger wallet generation
-                // This could be implemented as a separate service call
+                // Generate new wallets
+                const newWallets = await this.vanityPool.generateBatch({
+                    count: this.config.pool.generationBatchSize
+                });
+
+                await this.addToPool(newWallets);
             }
 
             this.poolStats.pool_health.last_check = new Date().toISOString();
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    poolStats: this.poolStats
+                }
+            );
 
             return {
                 duration: Date.now() - startTime,
@@ -268,7 +448,6 @@ class VanityWalletService extends BaseService {
         }
     }
 
-    // Helper method to get current pool statistics
     async getPoolStats() {
         const [total, available, used] = await Promise.all([
             prisma.vanity_wallet_pool.count(),
@@ -289,6 +468,39 @@ class VanityWalletService extends BaseService {
                 byPattern.map(p => [p.pattern, p._count])
             )
         };
+    }
+
+    async stop() {
+        try {
+            await super.stop();
+            
+            // Stop vanity pool
+            await this.vanityPool.stop();
+            
+            // Clear all timeouts
+            for (const timeout of this.operationTimeouts) {
+                clearTimeout(timeout);
+            }
+            this.operationTimeouts.clear();
+            
+            // Clear active operations
+            this.activeOperations.clear();
+            
+            // Final stats update
+            await ServiceManager.markServiceStopped(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    poolStats: this.poolStats
+                }
+            );
+            
+            logApi.info('Vanity Wallet Service stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Vanity Wallet Service:', error);
+            throw error;
+        }
     }
 }
 
