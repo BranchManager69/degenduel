@@ -1,15 +1,13 @@
-// Circuit breaker configuration and utilities
+// utils/service-suite/circuit-breaker-config.js
 
-export const DEFAULT_CIRCUIT_BREAKER_CONFIG = {
-    enabled: true,
-    failureThreshold: 5,
-    resetTimeoutMs: 60000, // 1 minute
-    minHealthyPeriodMs: 120000, // 2 minutes
-    monitoringWindowMs: 300000, // 5 minutes
-    healthCheckIntervalMs: 30000, // 30 seconds
-    maxRecoveryAttempts: 3,
-    backoffMultiplier: 2
-};
+/* 
+ * This file is responsible for configuring the circuit breaker for each service.
+ * It is used to configure the circuit breaker for each service.
+ * 
+ */
+
+// Circuit breaker configuration and utilities
+import { SERVICE_NAMES, DEFAULT_CIRCUIT_BREAKER_CONFIG } from './service-constants.js';
 
 // Service-specific configurations
 export const SERVICE_SPECIFIC_CONFIGS = {

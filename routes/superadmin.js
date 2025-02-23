@@ -10,10 +10,10 @@ import logApi from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { WalletGenerator } from '../services/walletGenerationService.js';
-import { FaucetManager } from '../services/faucetService.js';
-import { getContestWallet } from '../services/solana-wallet.js';
-import { ServiceManager } from '../utils/service-suite/service-manager.js';
+import WalletGenerator from '../services/walletGenerationService.js';
+import FaucetManager  from '../services/faucetService.js';
+import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
+import ServiceManager from '../utils/service-suite/service-manager.js';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 

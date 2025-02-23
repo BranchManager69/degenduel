@@ -3,6 +3,19 @@
  * This file serves as the single source of truth for service names
  */
 
+// Default circuit breaker configuration
+export const DEFAULT_CIRCUIT_BREAKER_CONFIG = {
+    enabled: true,
+    failureThreshold: 5,
+    resetTimeoutMs: 60000, // 1 minute
+    minHealthyPeriodMs: 120000, // 2 minutes
+    monitoringWindowMs: 300000, // 5 minutes
+    healthCheckIntervalMs: 30000, // 30 seconds
+    maxRecoveryAttempts: 3,
+    backoffMultiplier: 2
+};
+
+
 export const SERVICE_NAMES = {
     // Data Layer Services
     TOKEN_SYNC: 'token_sync_service',
