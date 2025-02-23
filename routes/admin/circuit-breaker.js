@@ -3,7 +3,7 @@
 import express from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import ServiceManager from '../../utils/service-suite/service-manager.js';
-import { requireAdmin } from '../../middleware/authMiddleware.js';
+import { requireAdmin } from '../../middleware/auth.js';
 
 const router = express.Router();
 
