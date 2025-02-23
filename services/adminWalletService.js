@@ -1,31 +1,29 @@
 // services/adminWalletService.js
 
 /*
- * This service is responsible for managing the admin's wallet.
- * It allows the admin to transfer SOL and tokens to other wallets.
- * 
+ * This service is responsible for managing administrative wallet operations.
+ * It handles secure wallet management, SOL/token transfers, and mass operations
+ * for contest wallets. It integrates with the Contest Wallet Service for
+ * coordinated wallet operations.
  */
 
 // ** Service Auth **
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
-import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
+import { ServiceError } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
 import ServiceManager from '../utils/service-suite/service-manager.js';
-// Solana
-import crypto from 'crypto';
-import bs58 from 'bs58';
-import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
-
-const connection = new Connection(config.rpc_urls.primary, 'confirmed');
+// Solana
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
+import bs58 from 'bs58';
+import crypto from 'crypto';
 
 const ADMIN_WALLET_CONFIG = {
     name: SERVICE_NAMES.ADMIN_WALLET,
@@ -34,67 +32,297 @@ const ADMIN_WALLET_CONFIG = {
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
-        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
+        failureThreshold: 7, // Higher threshold for critical service
+        resetTimeoutMs: 80000, // Longer reset time for financial operations
+        minHealthyPeriodMs: 150000 // Longer health period required
     },
     backoff: {
         initialDelayMs: 1000,
         maxDelayMs: 30000,
         factor: 2
     },
+    dependencies: [SERVICE_NAMES.CONTEST_WALLET],
     wallet: {
-        min_balance_sol: 0.05,
-        transaction_timeout_ms: 30000
+        encryption: {
+            algorithm: 'aes-256-gcm',
+            keyLength: 32,
+            ivLength: 16,
+            tagLength: 16
+        },
+        operations: {
+            maxParallelTransfers: 5,
+            transferTimeoutMs: 30000,
+            minSOLBalance: 0.05,
+            maxBatchSize: 50
+        }
     }
 };
 
-// Admin Wallet Service
 class AdminWalletService extends BaseService {
     constructor() {
         super(ADMIN_WALLET_CONFIG.name, ADMIN_WALLET_CONFIG);
         
-        // Service-specific state
+        // Initialize Solana connection
+        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        
+        // Initialize service-specific stats
         this.walletStats = {
-    operations: {
-        total: 0,
-        successful: 0,
-        failed: 0
-    },
-    transfers: {
-        sol: {
-            count: 0,
-            total_amount: 0
-        },
-        tokens: {
-            count: 0,
-            by_mint: {}
-        }
-    },
-    performance: {
-        average_operation_time_ms: 0
-    }
-};
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
+            },
+            transfers: {
+                total: 0,
+                successful: 0,
+                failed: 0,
+                sol_amount: 0,
+                token_amount: 0,
+                by_type: {}
+            },
+            wallets: {
+                total: 0,
+                active: 0,
+                processing: 0,
+                by_type: {}
+            },
+            batches: {
+                total: 0,
+                successful: 0,
+                failed: 0,
+                items_processed: 0
+            },
+            performance: {
+                average_transfer_time_ms: 0,
+                last_operation_time_ms: 0,
+                average_batch_time_ms: 0
+            },
+            dependencies: {
+                contestWallet: {
+                    status: 'unknown',
+                    lastCheck: null,
+                    errors: 0
+                }
+            }
+        };
+
+        // Active transfer tracking
+        this.activeTransfers = new Map();
+        this.transferTimeouts = new Set();
     }
 
-    // Utility functions
+    async initialize() {
+        try {
+            // Call parent initialize first
+            await super.initialize();
+            
+            // Check dependencies
+            const contestWalletStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            if (!contestWalletStatus) {
+                throw ServiceError.initialization('Contest Wallet Service not healthy');
+            }
+
+            // Load configuration from database
+            const settings = await prisma.system_settings.findUnique({
+                where: { key: this.name }
+            });
+
+            if (settings?.value) {
+                const dbConfig = typeof settings.value === 'string' 
+                    ? JSON.parse(settings.value)
+                    : settings.value;
+
+                // Merge configs carefully preserving circuit breaker settings
+                this.config = {
+                    ...this.config,
+                    ...dbConfig,
+                    circuitBreaker: {
+                        ...this.config.circuitBreaker,
+                        ...(dbConfig.circuitBreaker || {})
+                    }
+                };
+            }
+
+            // Load initial wallet state
+            const [totalWallets, activeWallets] = await Promise.all([
+                prisma.managed_wallets.count(),
+                prisma.managed_wallets.count({ where: { is_active: true } })
+            ]);
+
+            this.walletStats.wallets.total = totalWallets;
+            this.walletStats.wallets.active = activeWallets;
+
+            // Load wallet type stats
+            const typeStats = await prisma.managed_wallets.groupBy({
+                by: ['wallet_type'],
+                _count: true
+            });
+
+            typeStats.forEach(stat => {
+                this.walletStats.wallets.by_type[stat.wallet_type] = stat._count;
+            });
+
+            // Ensure stats are JSON-serializable for ServiceManager
+            const serializableStats = JSON.parse(JSON.stringify({
+                ...this.stats,
+                walletStats: this.walletStats
+            }));
+
+            await ServiceManager.markServiceStarted(
+                this.name,
+                JSON.parse(JSON.stringify(this.config)),
+                serializableStats
+            );
+
+            logApi.info('Admin Wallet Service initialized', {
+                totalWallets,
+                activeWallets
+            });
+
+            return true;
+        } catch (error) {
+            logApi.error('Admin Wallet Service initialization error:', error);
+            await this.handleError(error);
+            throw error;
+        }
+    }
+
+    async performOperation() {
+        const startTime = Date.now();
+        
+        try {
+            // Check dependency health
+            const contestWalletStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            this.walletStats.dependencies.contestWallet = {
+                status: contestWalletStatus ? 'healthy' : 'unhealthy',
+                lastCheck: new Date().toISOString(),
+                errors: contestWalletStatus ? 0 : this.walletStats.dependencies.contestWallet.errors + 1
+            };
+
+            if (!contestWalletStatus) {
+                throw ServiceError.dependency('Contest Wallet Service unhealthy');
+            }
+
+            // Check wallet states and balances
+            const results = await this.checkWalletStates();
+
+            // Update performance metrics
+            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
+            this.walletStats.performance.average_transfer_time_ms = 
+                (this.walletStats.performance.average_transfer_time_ms * this.walletStats.operations.total + 
+                (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    walletStats: this.walletStats
+                }
+            );
+
+            return {
+                duration: Date.now() - startTime,
+                results
+            };
+        } catch (error) {
+            await this.handleError(error);
+            return false;
+        }
+    }
+
+    async checkWalletStates() {
+        try {
+            // Get active wallets
+            const wallets = await prisma.managed_wallets.findMany({
+                where: { is_active: true }
+            });
+
+            const results = {
+                checked: 0,
+                healthy: 0,
+                issues: []
+            };
+
+            // Check each wallet's state
+            for (const wallet of wallets) {
+                try {
+                    const balance = await this.connection.getBalance(new PublicKey(wallet.wallet_address));
+                    results.checked++;
+
+                    if (balance < this.config.wallet.operations.minSOLBalance * LAMPORTS_PER_SOL) {
+                        results.issues.push({
+                            wallet: wallet.wallet_address,
+                            type: 'low_balance',
+                            balance: balance / LAMPORTS_PER_SOL
+                        });
+                    } else {
+                        results.healthy++;
+                    }
+                } catch (error) {
+                    results.issues.push({
+                        wallet: wallet.wallet_address,
+                        type: 'check_failed',
+                        error: error.message
+                    });
+                }
+            }
+
+            return results;
+        } catch (error) {
+            throw ServiceError.operation('Failed to check wallet states', {
+                error: error.message
+            });
+        }
+    }
+
+    // Wallet encryption/decryption
+    encryptWallet(privateKey) {
+        try {
+            const iv = crypto.randomBytes(this.config.wallet.encryption.ivLength);
+            const cipher = crypto.createCipheriv(
+                this.config.wallet.encryption.algorithm,
+                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
+                iv
+            );
+
+            const encrypted = Buffer.concat([
+                cipher.update(privateKey),
+                cipher.final()
+            ]);
+
+            const tag = cipher.getAuthTag();
+
+            return JSON.stringify({
+                encrypted: encrypted.toString('hex'),
+                iv: iv.toString('hex'),
+                tag: tag.toString('hex')
+            });
+        } catch (error) {
+            throw ServiceError.operation('Failed to encrypt wallet', {
+                error: error.message,
+                type: 'ENCRYPTION_ERROR'
+            });
+        }
+    }
+
     decryptWallet(encryptedData) {
         try {
-            const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
+            const { encrypted, iv, tag } = JSON.parse(encryptedData);
             const decipher = crypto.createDecipheriv(
-                'aes-256-gcm',
+                this.config.wallet.encryption.algorithm,
                 Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
                 Buffer.from(iv, 'hex')
             );
-            
+
             decipher.setAuthTag(Buffer.from(tag, 'hex'));
-            if (aad) decipher.setAAD(Buffer.from(aad));
             
             const decrypted = Buffer.concat([
                 decipher.update(Buffer.from(encrypted, 'hex')),
                 decipher.final()
             ]);
-            
+
             return decrypted.toString();
         } catch (error) {
             throw ServiceError.operation('Failed to decrypt wallet', {
@@ -104,192 +332,132 @@ class AdminWalletService extends BaseService {
         }
     }
 
-    // Core wallet operations
-    async getWalletDetails(walletAddress, tokenMints = []) {
-        try {
-            const pubkey = new PublicKey(walletAddress);
-            const solBalance = await connection.getBalance(pubkey);
-            
-            logApi.info('Wallet',  walletAddress + ":");
-            logApi.info('\tSOL balance: ' + (solBalance / LAMPORTS_PER_SOL).toFixed(3) + ' SOL');
-            logApi.info('\tTokens held: ' + tokenMints.join(', '));
-            
-            const tokenBalances = await Promise.all(
-                tokenMints.map(async (mint) => {
-                    try {
-                        const associatedTokenAddress = await getAssociatedTokenAddress(
-                            new PublicKey(mint),
-                            pubkey
-                        );
-                        const tokenAccount = await getAccount(connection, associatedTokenAddress);
-                        return {
-                            mint,
-                            balance: tokenAccount.amount.toString(),
-                            address: associatedTokenAddress.toString()
-                        };
-                    } catch (error) {
-                        return {
-                            mint,
-                            balance: '0',
-                            error: error.message
-                        };
-                    }
-                })
-            );
-
-            return {
-                address: walletAddress,
-                solBalance: solBalance / LAMPORTS_PER_SOL,
-                tokens: tokenBalances
-            };
-        } catch (error) {
-            throw ServiceError.operation('Failed to get wallet details', {
-                error: error.message,
-                wallet: walletAddress
-            });
-        }
-    }
-
-    // Admin context management
-    async setAdminContext(adminId) {
-        await prisma.$executeRaw`SELECT set_admin_context(${adminId})`;
-    }
-
-    async logAdminAction(adminId, actionType, details, options = {}) {
-        await prisma.admin_logs.create({
-            data: {
-                admin_id: adminId,
-                action_type: actionType,
-                details,
-                ip_address: options.ip_address,
-                wallet_address: options.wallet_address,
-                transaction_id: options.transaction_id,
-                contest_id: options.contest_id,
-                status: options.status || 'success',
-                error_details: options.error_details
-            }
-        });
-    }
-
-    // Transfer methods with statistics tracking
-    async transferSOL(fromWalletEncrypted, toAddress, amount, description = '', adminId, ip = null) {
+    // Transfer operations
+    async transferSOL(fromWalletEncrypted, toAddress, amount, description = '', adminId = null, context = {}) {
         const startTime = Date.now();
+        
         try {
-            await this.setAdminContext(adminId);
+            // Skip if already being processed
+            const transferKey = `${fromWalletEncrypted}:${toAddress}:${amount}`;
+            if (this.activeTransfers.has(transferKey)) {
+                throw ServiceError.operation('Transfer already in progress');
+            }
 
+            // Add to active transfers
+            this.activeTransfers.set(transferKey, startTime);
+
+            // Set timeout
+            const timeout = setTimeout(() => {
+                this.activeTransfers.delete(transferKey);
+                this.walletStats.transfers.failed++;
+            }, this.config.wallet.operations.transferTimeoutMs);
+            
+            this.transferTimeouts.add(timeout);
+
+            // Perform transfer
             const result = await this._transferSOL(fromWalletEncrypted, toAddress, amount, description);
             
-            await this.logAdminAction(adminId, 'MANUAL_SOL_TRANSFER', {
-                from: fromWalletEncrypted,
-                to: toAddress,
-                amount,
-                description,
-                signature: result.signature
-            }, {
-                ip_address: ip,
-                wallet_address: fromWalletEncrypted
-            });
+            // Update stats
+            this.walletStats.transfers.total++;
+            this.walletStats.transfers.successful++;
+            this.walletStats.transfers.sol_amount += amount;
+            this.walletStats.transfers.by_type['sol'] = 
+                (this.walletStats.transfers.by_type['sol'] || 0) + 1;
 
-            // Update statistics
-            this.walletStats.operations.total++;
-            this.walletStats.operations.successful++;
-            this.walletStats.transfers.sol.count++;
-            this.walletStats.transfers.sol.total_amount += amount;
-            this.walletStats.performance.average_operation_time_ms = 
-                (this.walletStats.performance.average_operation_time_ms * (this.walletStats.operations.total - 1) + 
-                (Date.now() - startTime)) / this.walletStats.operations.total;
+            // Log admin action if context provided
+            if (adminId) {
+                await AdminLogger.logAction(
+                    adminId,
+                    'ADMIN_WALLET_TRANSFER',
+                    {
+                        from: fromWalletEncrypted,
+                        to: toAddress,
+                        amount,
+                        type: 'sol',
+                        description
+                    },
+                    context
+                );
+            }
+
+            // Clear timeout and active transfer
+            clearTimeout(timeout);
+            this.transferTimeouts.delete(timeout);
+            this.activeTransfers.delete(transferKey);
 
             return result;
         } catch (error) {
-            // Log failed action
-            await this.logAdminAction(adminId, 'MANUAL_SOL_TRANSFER', {
-                from: fromWalletEncrypted,
-                to: toAddress,
-                amount,
-                description
-            }, {
-                ip_address: ip,
-                wallet_address: fromWalletEncrypted,
-                status: 'failed',
-                error_details: error.message
-            });
-
-            // Update error statistics
-            this.walletStats.operations.total++;
-            this.walletStats.operations.failed++;
-
-            throw ServiceError.operation('SOL transfer failed', {
-                error: error.message,
-                from: fromWalletEncrypted,
-                to: toAddress,
-                amount
-            });
+            this.walletStats.transfers.failed++;
+            throw error;
         }
     }
 
-    async transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '', adminId, ip = null) {
+    async transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '', adminId = null, context = {}) {
         const startTime = Date.now();
+        
         try {
-            await this.setAdminContext(adminId);
+            // Skip if already being processed
+            const transferKey = `${fromWalletEncrypted}:${toAddress}:${mint}:${amount}`;
+            if (this.activeTransfers.has(transferKey)) {
+                throw ServiceError.operation('Transfer already in progress');
+            }
+
+            // Add to active transfers
+            this.activeTransfers.set(transferKey, startTime);
+
+            // Set timeout
+            const timeout = setTimeout(() => {
+                this.activeTransfers.delete(transferKey);
+                this.walletStats.transfers.failed++;
+            }, this.config.wallet.operations.transferTimeoutMs);
+            
+            this.transferTimeouts.add(timeout);
+
+            // Perform transfer
             const result = await this._transferToken(fromWalletEncrypted, toAddress, mint, amount, description);
             
-            await this.logAdminAction(adminId, 'MANUAL_TOKEN_TRANSFER', {
-                from: fromWalletEncrypted,
-                to: toAddress,
-                mint,
-                amount,
-                description,
-                signature: result.signature
-            }, {
-                ip_address: ip,
-                wallet_address: fromWalletEncrypted
-            });
+            // Update stats
+            this.walletStats.transfers.total++;
+            this.walletStats.transfers.successful++;
+            this.walletStats.transfers.token_amount += amount;
+            this.walletStats.transfers.by_type['token'] = 
+                (this.walletStats.transfers.by_type['token'] || 0) + 1;
 
-            // Update statistics
-            this.walletStats.operations.total++;
-            this.walletStats.operations.successful++;
-            this.walletStats.transfers.tokens.count++;
-            this.walletStats.transfers.tokens.by_mint[mint] = 
-                (this.walletStats.transfers.tokens.by_mint[mint] || 0) + amount;
-            this.walletStats.performance.average_operation_time_ms = 
-                (this.walletStats.performance.average_operation_time_ms * (this.walletStats.operations.total - 1) + 
-                (Date.now() - startTime)) / this.walletStats.operations.total;
+            // Log admin action if context provided
+            if (adminId) {
+                await AdminLogger.logAction(
+                    adminId,
+                    'ADMIN_WALLET_TRANSFER',
+                    {
+                        from: fromWalletEncrypted,
+                        to: toAddress,
+                        mint,
+                        amount,
+                        type: 'token',
+                        description
+                    },
+                    context
+                );
+            }
+
+            // Clear timeout and active transfer
+            clearTimeout(timeout);
+            this.transferTimeouts.delete(timeout);
+            this.activeTransfers.delete(transferKey);
 
             return result;
         } catch (error) {
-            await this.logAdminAction(adminId, 'MANUAL_TOKEN_TRANSFER', {
-                from: fromWalletEncrypted,
-                to: toAddress,
-                mint,
-                amount,
-                description
-            }, {
-                ip_address: ip,
-                wallet_address: fromWalletEncrypted,
-                status: 'failed',
-                error_details: error.message
-            });
-
-            // Update error statistics
-            this.walletStats.operations.total++;
-            this.walletStats.operations.failed++;
-
-            throw ServiceError.operation('Token transfer failed', {
-                error: error.message,
-                from: fromWalletEncrypted,
-                to: toAddress,
-                    mint,
-                amount
-            });
+            this.walletStats.transfers.failed++;
+            throw error;
         }
     }
 
-    // Internal transfer implementations
     async _transferSOL(fromWalletEncrypted, toAddress, amount, description = '') {
         try {
-            const decryptedKey = this.decryptWallet(fromWalletEncrypted);
-            const fromKeypair = Keypair.fromSecretKey(bs58.decode(decryptedKey));
-            
+            const decryptedPrivateKey = this.decryptWallet(fromWalletEncrypted);
+            const privateKeyBytes = bs58.decode(decryptedPrivateKey);
+            const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
+
             const transaction = new Transaction().add(
                 SystemProgram.transfer({
                     fromPubkey: fromKeypair.publicKey,
@@ -298,26 +466,26 @@ class AdminWalletService extends BaseService {
                 })
             );
 
-            const signature = await connection.sendTransaction(transaction, [fromKeypair]);
-            await connection.confirmTransaction(signature);
+            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
+            await this.connection.confirmTransaction(signature);
 
-            // Log the transfer
+            // Log the transaction
             await prisma.transactions.create({
                 data: {
                     wallet_address: fromKeypair.publicKey.toString(),
-                    type: config.transaction_types.WITHDRAWAL,
+                    type: 'ADMIN_TRANSFER',
                     amount,
-                    description: description || `Admin SOL transfer to ${toAddress}`,
-                    status: config.transaction_statuses.COMPLETED,
+                    description,
+                    status: 'completed',
                     blockchain_signature: signature,
                     completed_at: new Date(),
                     created_at: new Date()
                 }
             });
 
-            return { signature, success: true };
+            return { signature };
         } catch (error) {
-            throw ServiceError.blockchain('SOL transfer failed', {
+            throw ServiceError.operation('SOL transfer failed', {
                 error: error.message,
                 from: fromWalletEncrypted,
                 to: toAddress,
@@ -328,70 +496,50 @@ class AdminWalletService extends BaseService {
 
     async _transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '') {
         try {
-            const decryptedKey = this.decryptWallet(fromWalletEncrypted);
-            const fromKeypair = Keypair.fromSecretKey(bs58.decode(decryptedKey));
-            const toPubkey = new PublicKey(toAddress);
+            const decryptedPrivateKey = this.decryptWallet(fromWalletEncrypted);
+            const privateKeyBytes = bs58.decode(decryptedPrivateKey);
+            const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
 
-            // Get associated token accounts
-            const fromATA = await getAssociatedTokenAddress(
+            const fromTokenAccount = await getAssociatedTokenAddress(
                 new PublicKey(mint),
                 fromKeypair.publicKey
             );
-            const toATA = await getAssociatedTokenAddress(
+
+            const toTokenAccount = await getAssociatedTokenAddress(
                 new PublicKey(mint),
-                toPubkey
+                new PublicKey(toAddress)
             );
 
-            // Create transaction
-            const transaction = new Transaction();
-
-            // Check if destination token account exists
-            try {
-                await getAccount(connection, toATA);
-            } catch (error) {
-                if (error.name === 'TokenAccountNotFoundError') {
-                    transaction.add(
-                        createAssociatedTokenAccountInstruction(
-                            fromKeypair.publicKey,
-                            toATA,
-                            toPubkey,
-                            new PublicKey(mint)
-                        )
-                    );
-                }
-            }
-
-            // Add transfer instruction
-            transaction.add(
+            const transaction = new Transaction().add(
                 createTransferInstruction(
-                    fromATA,
-                    toATA,
+                    fromTokenAccount,
+                    toTokenAccount,
                     fromKeypair.publicKey,
                     amount
                 )
             );
 
-            const signature = await connection.sendTransaction(transaction, [fromKeypair]);
-            await connection.confirmTransaction(signature);
+            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
+            await this.connection.confirmTransaction(signature);
 
-            // Log the transfer
+            // Log the transaction
             await prisma.transactions.create({
                 data: {
                     wallet_address: fromKeypair.publicKey.toString(),
-                    type: config.transaction_types.TOKEN_SALE,
+                    type: 'ADMIN_TOKEN_TRANSFER',
                     amount,
-                    description: description || `Admin token transfer to ${toAddress}`,
-                    status: config.transaction_statuses.COMPLETED,
-                    blockchain_signature: signature,
                     token_mint: mint,
+                    description,
+                    status: 'completed',
+                    blockchain_signature: signature,
                     completed_at: new Date(),
                     created_at: new Date()
                 }
             });
 
-            return { signature, success: true };
+            return { signature };
         } catch (error) {
-            throw ServiceError.blockchain('Token transfer failed', {
+            throw ServiceError.operation('Token transfer failed', {
                 error: error.message,
                 from: fromWalletEncrypted,
                 to: toAddress,
@@ -401,235 +549,177 @@ class AdminWalletService extends BaseService {
         }
     }
 
-    // Mass transfer methods
+    // Batch operations
     async massTransferSOL(fromWalletEncrypted, transfers) {
-        const results = [];
-        for (const transfer of transfers) {
-            try {
-                const result = await this.transferSOL(
-                    fromWalletEncrypted,
-                    transfer.address,
-                    transfer.amount,
-                    transfer.description
-                );
-                results.push({
-                    address: transfer.address,
-                    amount: transfer.amount,
-                    success: true,
-                    signature: result.signature
-                });
-            } catch (error) {
-                results.push({
-                    address: transfer.address,
-                    amount: transfer.amount,
-                    success: false,
-                    error: error.message
-                });
-            }
-        }
-        return results;
-    }
-
-    async massTransferTokens(fromWalletEncrypted, mint, transfers) {
-        const results = [];
-        for (const transfer of transfers) {
-            try {
-                const result = await this.transferToken(
-                    fromWalletEncrypted,
-                    transfer.address,
-                    mint,
-                    transfer.amount,
-                    transfer.description
-                );
-                results.push({
-                    address: transfer.address,
-                    amount: transfer.amount,
-                    success: true,
-                    signature: result.signature
-                });
-            } catch (error) {
-                results.push({
-                    address: transfer.address,
-                    amount: transfer.amount,
-                    success: false,
-                    error: error.message
-                });
-            }
-        }
-        return results;
-    }
-
-    // Wallet management methods
-    async getAllContestWallets() {
-        const contestWallets = await prisma.contest_wallets.findMany({
-            include: {
-                contests: {
-                    select: {
-                        id: true,
-                        status: true,
-                        contest_code: true,
-                        token_mint: true
-                    }
-                }
-            }
-        });
-
-        return Promise.all(contestWallets.map(async wallet => {
-            const details = await this.getWalletDetails(
-                wallet.wallet_address,
-                wallet.contests.token_mint ? [wallet.contests.token_mint] : []
-            );
-            return {
-                ...wallet,
-                ...details
-            };
-        }));
-    }
-
-    async exportWalletPrivateKey(walletAddress) {
-        try {
-            const wallet = await prisma.contest_wallets.findFirst({
-                where: { wallet_address: walletAddress }
-            });
-
-            if (!wallet) {
-                throw ServiceError.validation('Wallet not found');
-            }
-
-            const decryptedKey = this.decryptWallet(wallet.private_key);
-            return {
-                address: walletAddress,
-                privateKey: decryptedKey
-            };
-        } catch (error) {
-            throw ServiceError.operation('Failed to export wallet', {
-                error: error.message,
-                wallet: walletAddress
-            });
-        }
-    }
-
-    async getTotalSOLBalance() {
-        try {
-            const wallets = await prisma.contest_wallets.findMany({
-                select: {
-                    wallet_address: true
-                }
-            });
-
-            const balances = await Promise.all(
-                wallets.map(async wallet => {
-                    try {
-                        const pubkey = new PublicKey(wallet.wallet_address);
-                        return await connection.getBalance(pubkey);
-                    } catch (error) {
-                        logApi.error('Failed to get balance for wallet:', {
-                            wallet: wallet.wallet_address,
-                            error: error.message
-                        });
-                        return 0;
-                    }
-                })
-            );
-
-            const totalLamports = balances.reduce((sum, balance) => sum + balance, 0);
-            const totalSOL = totalLamports / LAMPORTS_PER_SOL;
-
-            return {
-                totalSOL,
-                totalLamports,
-                walletCount: wallets.length
-            };
-        } catch (error) {
-            throw ServiceError.operation('Failed to get total SOL balance', {
-                error: error.message
-            });
-        }
-    }
-
-    async getContestWalletsOverview() {
-        try {
-            const wallets = await prisma.contest_wallets.findMany({
-                include: {
-                    contests: {
-                        select: {
-                            contest_code: true,
-                            status: true,
-                            start_time: true,
-                            end_time: true
-                        }
-                    }
-                }
-            });
-
-            const balances = await Promise.all(
-                wallets.map(async (wallet) => {
-                    try {
-                        const balance = await connection.getBalance(new PublicKey(wallet.wallet_address));
-                        return {
-                            ...wallet,
-                            current_balance: balance / LAMPORTS_PER_SOL,
-                            balance_difference: (balance / LAMPORTS_PER_SOL) - Number(wallet.balance),
-                            last_sync_age: wallet.last_sync ? Date.now() - wallet.last_sync.getTime() : null
-                        };
-                    } catch (error) {
-                        logApi.error(`Failed to get balance for wallet ${wallet.wallet_address}:`, error);
-                        return {
-                            ...wallet,
-                            current_balance: null,
-                            balance_difference: null,
-                            error: error.message
-                        };
-                    }
-                })
-            );
-
-            const stats = {
-                total_wallets: wallets.length,
-                active_contests: wallets.filter(w => w.contests?.status === 'active').length,
-                total_balance: balances.reduce((sum, w) => sum + (w.current_balance || 0), 0),
-                needs_sync: balances.filter(w => Math.abs(w.balance_difference || 0) > 0.001).length,
-                status_breakdown: {
-                    active: wallets.filter(w => w.contests?.status === 'active').length,
-                    pending: wallets.filter(w => w.contests?.status === 'pending').length,
-                    completed: wallets.filter(w => w.contests?.status === 'completed').length,
-                    cancelled: wallets.filter(w => w.contests?.status === 'cancelled').length
-                }
-            };
-
-            return {
-                wallets: balances,
-                stats
-            };
-        } catch (error) {
-            throw ServiceError.operation('Failed to get contest wallets overview', {
-                error: error.message
-            });
-        }
-    }
-
-    // Main operation implementation
-    async performOperation() {
         const startTime = Date.now();
         
         try {
-            // This service is primarily event-driven (admin actions)
-            // But we can use this to perform periodic health checks
-            const overview = await this.getContestWalletsOverview();
-            
-            // Update service stats
-            this.stats.lastCheck = new Date().toISOString();
-            this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
-            this.stats.performance.averageOperationTimeMs = 
-                (this.stats.performance.averageOperationTimeMs * this.stats.operations.total + 
-                (Date.now() - startTime)) / (this.stats.operations.total + 1);
+            if (transfers.length > this.config.wallet.operations.maxBatchSize) {
+                throw ServiceError.validation('Batch size exceeds maximum allowed');
+            }
 
-            return {
-                duration: Date.now() - startTime,
-                overview
+            const results = {
+                total: transfers.length,
+                successful: 0,
+                failed: 0,
+                transfers: []
             };
+
+            // Process transfers in parallel with limit
+            const chunks = [];
+            for (let i = 0; i < transfers.length; i += this.config.wallet.operations.maxParallelTransfers) {
+                const chunk = transfers.slice(i, i + this.config.wallet.operations.maxParallelTransfers);
+                chunks.push(chunk);
+            }
+
+            for (const chunk of chunks) {
+                const chunkResults = await Promise.allSettled(
+                    chunk.map(transfer => 
+                        this.transferSOL(
+                            fromWalletEncrypted,
+                            transfer.toAddress,
+                            transfer.amount,
+                            transfer.description
+                        )
+                    )
+                );
+
+                chunkResults.forEach((result, index) => {
+                    if (result.status === 'fulfilled') {
+                        results.successful++;
+                        results.transfers.push({
+                            ...chunk[index],
+                            status: 'success',
+                            signature: result.value.signature
+                        });
+                    } else {
+                        results.failed++;
+                        results.transfers.push({
+                            ...chunk[index],
+                            status: 'failed',
+                            error: result.reason.message
+                        });
+                    }
+                });
+            }
+
+            // Update batch stats
+            this.walletStats.batches.total++;
+            this.walletStats.batches.successful += results.successful;
+            this.walletStats.batches.failed += results.failed;
+            this.walletStats.batches.items_processed += transfers.length;
+            this.walletStats.performance.average_batch_time_ms = 
+                (this.walletStats.performance.average_batch_time_ms * this.walletStats.batches.total + 
+                (Date.now() - startTime)) / (this.walletStats.batches.total + 1);
+
+            return results;
         } catch (error) {
-            // Let the base class handle the error and circuit breaker
+            throw ServiceError.operation('Mass SOL transfer failed', {
+                error: error.message,
+                transfer_count: transfers.length
+            });
+        }
+    }
+
+    async massTransferTokens(fromWalletEncrypted, mint, transfers) {
+        const startTime = Date.now();
+        
+        try {
+            if (transfers.length > this.config.wallet.operations.maxBatchSize) {
+                throw ServiceError.validation('Batch size exceeds maximum allowed');
+            }
+
+            const results = {
+                total: transfers.length,
+                successful: 0,
+                failed: 0,
+                transfers: []
+            };
+
+            // Process transfers in parallel with limit
+            const chunks = [];
+            for (let i = 0; i < transfers.length; i += this.config.wallet.operations.maxParallelTransfers) {
+                const chunk = transfers.slice(i, i + this.config.wallet.operations.maxParallelTransfers);
+                chunks.push(chunk);
+            }
+
+            for (const chunk of chunks) {
+                const chunkResults = await Promise.allSettled(
+                    chunk.map(transfer => 
+                        this.transferToken(
+                            fromWalletEncrypted,
+                            transfer.toAddress,
+                            mint,
+                            transfer.amount,
+                            transfer.description
+                        )
+                    )
+                );
+
+                chunkResults.forEach((result, index) => {
+                    if (result.status === 'fulfilled') {
+                        results.successful++;
+                        results.transfers.push({
+                            ...chunk[index],
+                            status: 'success',
+                            signature: result.value.signature
+                        });
+                    } else {
+                        results.failed++;
+                        results.transfers.push({
+                            ...chunk[index],
+                            status: 'failed',
+                            error: result.reason.message
+                        });
+                    }
+                });
+            }
+
+            // Update batch stats
+            this.walletStats.batches.total++;
+            this.walletStats.batches.successful += results.successful;
+            this.walletStats.batches.failed += results.failed;
+            this.walletStats.batches.items_processed += transfers.length;
+            this.walletStats.performance.average_batch_time_ms = 
+                (this.walletStats.performance.average_batch_time_ms * this.walletStats.batches.total + 
+                (Date.now() - startTime)) / (this.walletStats.batches.total + 1);
+
+            return results;
+        } catch (error) {
+            throw ServiceError.operation('Mass token transfer failed', {
+                error: error.message,
+                mint,
+                transfer_count: transfers.length
+            });
+        }
+    }
+
+    async stop() {
+        try {
+            await super.stop();
+            
+            // Clear all timeouts
+            for (const timeout of this.transferTimeouts) {
+                clearTimeout(timeout);
+            }
+            this.transferTimeouts.clear();
+            
+            // Clear active transfers
+            this.activeTransfers.clear();
+            
+            // Final stats update
+            await ServiceManager.markServiceStopped(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    walletStats: this.walletStats
+                }
+            );
+            
+            logApi.info('Admin Wallet Service stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Admin Wallet Service:', error);
             throw error;
         }
     }

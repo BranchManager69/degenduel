@@ -2,13 +2,9 @@
 
 /*
  * This service is responsible for collecting leftover Solana from contest wallets.
- * It should check all already-evaluated contests every 10 minutes for leftover SOL/tokens.
- *   Remember, the contestEvaluateService should have already transferred all prizes to the contest winners.
- *   Therefore, if anything is left over, it belongs to us and should be transferred to the 'main' DegenDuel wallet.
- * For buffer purposes, I will always want to keep 0.01 SOL in contest wallets; account for this while raking.
- *
- * DegenDuel's 'main' wallet address to rake contest wallet funds to: BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp (my main personal wallet!)
- *
+ * It checks all already-evaluated contests every 10 minutes for leftover SOL/tokens.
+ * The contestEvaluateService should have already transferred all prizes to the contest winners.
+ * Therefore, if anything is left over, it belongs to us and should be transferred to the 'main' DegenDuel wallet.
  */
 
 // ** Service Auth **
@@ -22,20 +18,13 @@ import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
 import ServiceManager from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
-import {
-    Connection,
-    Keypair,
-    LAMPORTS_PER_SOL,
-    PublicKey,
-    SystemProgram,
-    Transaction,
-} from '@solana/web3.js';
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import crypto from 'crypto';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
-import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const WALLET_RAKE_CONFIG = {
     name: SERVICE_NAMES.WALLET_RAKE,
@@ -44,9 +33,9 @@ const WALLET_RAKE_CONFIG = {
     maxRetries: 3,
     retryDelayMs: 5 * 60 * 1000, // 5 minutes between retries
     circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
-        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
+        failureThreshold: 8, // Higher threshold for financial operations
+        resetTimeoutMs: 90000, // Longer reset time for fund collection
+        minHealthyPeriodMs: 150000 // Longer health period required
     },
     backoff: {
         initialDelayMs: 1000,
@@ -57,10 +46,14 @@ const WALLET_RAKE_CONFIG = {
         min_balance_sol: config.master_wallet.min_contest_wallet_balance,
         master_wallet: config.master_wallet.address,
         min_rake_amount: 0.001 // Minimum SOL to rake
+    },
+    processing: {
+        batchSize: 50,
+        maxParallelOperations: 5,
+        operationTimeoutMs: 60000
     }
 };
 
-// Wallet Rake Service
 class WalletRakeService extends BaseService {
     constructor() {
         super(WALLET_RAKE_CONFIG.name, WALLET_RAKE_CONFIG);
@@ -85,17 +78,113 @@ class WalletRakeService extends BaseService {
                 failed: 0,
                 last_processed: {}
             },
+            batches: {
+                total: 0,
+                successful: 0,
+                failed: 0,
+                average_size: 0
+            },
             performance: {
                 average_rake_time_ms: 0,
-                last_rake_time_ms: 0
+                last_rake_time_ms: 0,
+                average_batch_time_ms: 0
+            },
+            dependencies: {
+                contestWallet: {
+                    status: 'unknown',
+                    lastCheck: null,
+                    errors: 0
+                }
             }
         };
+
+        // Active processing tracking
+        this.activeOperations = new Map();
+        this.operationTimeouts = new Set();
+    }
+
+    async initialize() {
+        try {
+            // Call parent initialize first
+            await super.initialize();
+            
+            // Check dependencies
+            const contestWalletStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            if (!contestWalletStatus) {
+                throw ServiceError.initialization('Contest Wallet Service not healthy');
+            }
+
+            // Load configuration from database
+            const settings = await prisma.system_settings.findUnique({
+                where: { key: this.name }
+            });
+
+            if (settings?.value) {
+                const dbConfig = typeof settings.value === 'string' 
+                    ? JSON.parse(settings.value)
+                    : settings.value;
+
+                // Merge configs carefully preserving circuit breaker settings
+                this.config = {
+                    ...this.config,
+                    ...dbConfig,
+                    circuitBreaker: {
+                        ...this.config.circuitBreaker,
+                        ...(dbConfig.circuitBreaker || {})
+                    }
+                };
+            }
+
+            // Load initial rake state
+            const [totalRaked, totalWallets] = await Promise.all([
+                prisma.transactions.aggregate({
+                    where: { type: config.transaction_types.CONTEST_WALLET_RAKE },
+                    _sum: { amount: true }
+                }),
+                prisma.contest_wallets.count({
+                    where: {
+                        contests: {
+                            status: {
+                                in: ['completed', 'cancelled']
+                            }
+                        }
+                    }
+                })
+            ]);
+
+            // Initialize stats
+            this.rakeStats.amounts.total_raked = totalRaked._sum.amount || 0;
+            this.rakeStats.wallets.total = totalWallets;
+
+            // Ensure stats are JSON-serializable for ServiceManager
+            const serializableStats = JSON.parse(JSON.stringify({
+                ...this.stats,
+                rakeStats: this.rakeStats
+            }));
+
+            await ServiceManager.markServiceStarted(
+                this.name,
+                JSON.parse(JSON.stringify(this.config)),
+                serializableStats
+            );
+
+            logApi.info('Wallet Rake Service initialized', {
+                totalRaked: this.rakeStats.amounts.total_raked,
+                totalWallets: this.rakeStats.wallets.total
+            });
+
+            return true;
+        } catch (error) {
+            logApi.error('Wallet Rake Service initialization error:', error);
+            await this.handleError(error);
+            throw error;
+        }
     }
 
     // Utility: Decrypt wallet private key
     decryptPrivateKey(encryptedData) {
         try {
-            const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
+            const { encrypted, iv, tag } = JSON.parse(encryptedData);
             const decipher = crypto.createDecipheriv(
                 'aes-256-gcm',
                 Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
@@ -103,7 +192,6 @@ class WalletRakeService extends BaseService {
             );
             
             decipher.setAuthTag(Buffer.from(tag, 'hex'));
-            if (aad) decipher.setAAD(Buffer.from(aad));
             
             const decrypted = Buffer.concat([
                 decipher.update(Buffer.from(encrypted, 'hex')),
@@ -236,8 +324,32 @@ class WalletRakeService extends BaseService {
             const privateKeyBytes = bs58.decode(decryptedPrivateKey);
             const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
 
+            // Add to active operations
+            this.activeOperations.set(wallet.wallet_address, {
+                startTime,
+                contestId: wallet.contest_id,
+                amount: rakeAmount
+            });
+
+            // Set timeout
+            const timeout = setTimeout(() => {
+                this.activeOperations.delete(wallet.wallet_address);
+                this.rakeStats.wallets.failed++;
+                logApi.error('Rake operation timeout:', {
+                    wallet: wallet.wallet_address,
+                    contest: wallet.contest_id
+                });
+            }, this.config.processing.operationTimeoutMs);
+            
+            this.operationTimeouts.add(timeout);
+
             // Perform transfer with retries
             const result = await this.transferSOL(fromKeypair, rakeAmount, wallet.contest_id);
+
+            // Clear timeout and active operation
+            clearTimeout(timeout);
+            this.operationTimeouts.delete(timeout);
+            this.activeOperations.delete(wallet.wallet_address);
 
             // Update statistics
             this.rakeStats.operations.total++;
@@ -283,6 +395,18 @@ class WalletRakeService extends BaseService {
         const startTime = Date.now();
         
         try {
+            // Check dependency health
+            const contestWalletStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            this.rakeStats.dependencies.contestWallet = {
+                status: contestWalletStatus ? 'healthy' : 'unhealthy',
+                lastCheck: new Date().toISOString(),
+                errors: contestWalletStatus ? 0 : this.rakeStats.dependencies.contestWallet.errors + 1
+            };
+
+            if (!contestWalletStatus) {
+                throw ServiceError.dependency('Contest Wallet Service unhealthy');
+            }
+
             // Get eligible contest wallets
             const contestWallets = await prisma.contest_wallets.findMany({
                 where: {
@@ -303,31 +427,60 @@ class WalletRakeService extends BaseService {
                 }
             });
 
-            // Process each wallet
+            // Process wallets in batches
             const results = [];
-            for (const wallet of contestWallets) {
-                try {
-                    const result = await this.processWallet(wallet);
-                    if (result) {
+            for (let i = 0; i < contestWallets.length; i += this.config.processing.batchSize) {
+                const batch = contestWallets.slice(i, i + this.config.processing.batchSize);
+                const batchStartTime = Date.now();
+
+                // Process batch with parallel limit
+                const batchPromises = batch.map(wallet => this.processWallet(wallet));
+                const batchResults = await Promise.allSettled(batchPromises);
+
+                // Update batch stats
+                this.rakeStats.batches.total++;
+                const successfulBatch = batchResults.filter(r => r.status === 'fulfilled').length;
+                this.rakeStats.batches.successful += successfulBatch;
+                this.rakeStats.batches.failed += batchResults.length - successfulBatch;
+                this.rakeStats.batches.average_size = 
+                    (this.rakeStats.batches.average_size * (this.rakeStats.batches.total - 1) + batch.length) / 
+                    this.rakeStats.batches.total;
+
+                // Update performance metrics
+                const batchDuration = Date.now() - batchStartTime;
+                this.rakeStats.performance.average_batch_time_ms = 
+                    (this.rakeStats.performance.average_batch_time_ms * (this.rakeStats.batches.total - 1) + batchDuration) / 
+                    this.rakeStats.batches.total;
+
+                // Collect results
+                batchResults.forEach((result, index) => {
+                    if (result.status === 'fulfilled' && result.value) {
                         results.push({
-                            wallet: wallet.wallet_address,
-                            contest: wallet.contest_id,
+                            wallet: batch[index].wallet_address,
+                            contest: batch[index].contest_id,
                             status: 'success',
-                            signature: result.signature
+                            signature: result.value.signature
+                        });
+                    } else if (result.status === 'rejected') {
+                        results.push({
+                            wallet: batch[index].wallet_address,
+                            contest: batch[index].contest_id,
+                            status: 'failed',
+                            error: result.reason.message
                         });
                     }
-                } catch (error) {
-                    results.push({
-                        wallet: wallet.wallet_address,
-                        contest: wallet.contest_id,
-                        status: 'failed',
-                        error: error.message
-                    });
-                    
-                    // Let circuit breaker handle consecutive failures
-                    if (error.isServiceError) throw error;
-                }
+                });
             }
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    rakeStats: this.rakeStats
+                }
+            );
 
             return {
                 duration: Date.now() - startTime,
@@ -372,6 +525,36 @@ class WalletRakeService extends BaseService {
             };
         } catch (error) {
             logApi.error('Force rake operation failed:', error);
+            throw error;
+        }
+    }
+
+    async stop() {
+        try {
+            await super.stop();
+            
+            // Clear all timeouts
+            for (const timeout of this.operationTimeouts) {
+                clearTimeout(timeout);
+            }
+            this.operationTimeouts.clear();
+            
+            // Clear active operations
+            this.activeOperations.clear();
+            
+            // Final stats update
+            await ServiceManager.markServiceStopped(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    rakeStats: this.rakeStats
+                }
+            );
+            
+            logApi.info('Wallet Rake Service stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Wallet Rake Service:', error);
             throw error;
         }
     }
