@@ -2,7 +2,7 @@
 
 import express from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import ServiceManager from '../../utils/service-suite/service-manager.js';
+import serviceManager from '../../utils/service-suite/service-manager.js';
 import { requireAdmin } from '../../middleware/auth.js';
 
 const router = express.Router();
@@ -21,13 +21,13 @@ const router = express.Router();
  */
 router.get('/status', requireAdmin, async (req, res) => {
     try {
-        const services = Array.from(ServiceManager.services.entries());
+        const services = Array.from(serviceManager.services.entries());
         const states = await Promise.all(
             services.map(async ([name, service]) => {
-                const state = await ServiceManager.getServiceState(name);
+                const state = await serviceManager.getServiceState(name);
                 return {
                     service: name,
-                    status: ServiceManager.determineServiceStatus(service.stats),
+                    status: serviceManager.determineServiceStatus(service.stats),
                     circuit_breaker: {
                         is_open: service.stats.circuitBreaker.isOpen,
                         failures: service.stats.circuitBreaker.failures,
@@ -77,7 +77,7 @@ router.get('/status', requireAdmin, async (req, res) => {
 router.post('/reset/:service', requireAdmin, async (req, res) => {
     try {
         const { service } = req.params;
-        const serviceInstance = ServiceManager.services.get(service);
+        const serviceInstance = serviceManager.services.get(service);
         
         if (!serviceInstance) {
             return res.status(404).json({
@@ -87,7 +87,7 @@ router.post('/reset/:service', requireAdmin, async (req, res) => {
         }
 
         await serviceInstance.attemptCircuitRecovery();
-        const state = await ServiceManager.getServiceState(service);
+        const state = await serviceManager.getServiceState(service);
 
         res.json({
             success: true,
@@ -124,7 +124,7 @@ router.post('/reset/:service', requireAdmin, async (req, res) => {
 router.get('/config/:service', requireAdmin, async (req, res) => {
     try {
         const { service } = req.params;
-        const serviceInstance = ServiceManager.services.get(service);
+        const serviceInstance = serviceManager.services.get(service);
         
         if (!serviceInstance) {
             return res.status(404).json({
@@ -181,7 +181,7 @@ router.get('/config/:service', requireAdmin, async (req, res) => {
 router.put('/config/:service', requireAdmin, async (req, res) => {
     try {
         const { service } = req.params;
-        const serviceInstance = ServiceManager.services.get(service);
+        const serviceInstance = serviceManager.services.get(service);
         
         if (!serviceInstance) {
             return res.status(404).json({
@@ -197,7 +197,7 @@ router.put('/config/:service', requireAdmin, async (req, res) => {
         };
 
         // Update state in database
-        await ServiceManager.updateServiceState(
+        await serviceManager.updateServiceState(
             service,
             { running: true, status: 'config_updated' },
             serviceInstance.config,
