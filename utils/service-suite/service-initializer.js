@@ -28,30 +28,37 @@ class ServiceInitializer {
 
         // Infrastructure Layer
         logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Infrastructure Layer ━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        ServiceManager.register(SERVICE_NAMES.WALLET_GENERATOR);
-        ServiceManager.register(SERVICE_NAMES.FAUCET, [SERVICE_NAMES.WALLET_GENERATOR]);
+        ServiceManager.register(walletGeneratorService);
+        ServiceManager.register(faucetService, [SERVICE_NAMES.WALLET_GENERATOR]);
         logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ Infrastructure Services Registered\x1b[0m');
 
         // Data Layer
         logApi.info('\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        ServiceManager.register(SERVICE_NAMES.TOKEN_SYNC);
-        ServiceManager.register(SERVICE_NAMES.MARKET_DATA, [SERVICE_NAMES.TOKEN_SYNC]);
-        ServiceManager.register(SERVICE_NAMES.TOKEN_WHITELIST);
+        ServiceManager.register(tokenSyncService);
+        ServiceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
+        ServiceManager.register(tokenWhitelistService);
         logApi.info('\x1b[38;5;208m┗━━━━━━━━━━━ ✅ Data Services Registered\x1b[0m');
 
         // Contest Layer
         logApi.info('\x1b[38;5;226m┏━━━━━━━━━━━━━━━━━━━━━━━ Contest Layer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        ServiceManager.register(SERVICE_NAMES.CONTEST_EVALUATION);
-        ServiceManager.register(SERVICE_NAMES.ACHIEVEMENT, [SERVICE_NAMES.CONTEST_EVALUATION]);
-        ServiceManager.register(SERVICE_NAMES.REFERRAL, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        // Log service names before registration
+        logApi.info('Registering Contest Layer services:', {
+            contestEvaluation: SERVICE_NAMES.CONTEST_EVALUATION,
+            achievement: SERVICE_NAMES.ACHIEVEMENT,
+            referral: SERVICE_NAMES.REFERRAL
+        });
+        
+        ServiceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
+        ServiceManager.register(achievementService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        ServiceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
         logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ Contest Services Registered\x1b[0m');
 
         // Wallet Layer
         logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        ServiceManager.register(SERVICE_NAMES.VANITY_WALLET, [SERVICE_NAMES.WALLET_GENERATOR]);
-        ServiceManager.register(SERVICE_NAMES.CONTEST_WALLET, [SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.CONTEST_EVALUATION]);
-        ServiceManager.register(SERVICE_NAMES.ADMIN_WALLET, [SERVICE_NAMES.CONTEST_WALLET]);
-        ServiceManager.register(SERVICE_NAMES.WALLET_RAKE, [SERVICE_NAMES.CONTEST_WALLET]);
+        ServiceManager.register(vanityWalletService, [SERVICE_NAMES.WALLET_GENERATOR]);
+        ServiceManager.register(contestWalletService, [SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.CONTEST_EVALUATION]);
+        ServiceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
+        ServiceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
         logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ Wallet Services Registered\x1b[0m');
 
         // Register dependencies
@@ -87,11 +94,16 @@ class ServiceInitializer {
             
             // Log initialization results
             logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━ Initialization Results ━━━━━━━━━━━┓\x1b[0m');
-            logApi.info(`\x1b[38;5;82m┃ Successfully initialized: ${results.initialized.length} services\x1b[0m`);
+            if (results.initialized.length > 0) {
+                logApi.info(`\x1b[38;5;82m┃ Successfully initialized: ${results.initialized.length} services\x1b[0m`);
+                results.initialized.forEach(service => {
+                    logApi.info(`\x1b[38;5;82m┃ ✓ ${service}\x1b[0m`);
+                });
+            }
             if (results.failed.length > 0) {
                 logApi.error(`\x1b[38;5;196m┃ Failed to initialize: ${results.failed.length} services\x1b[0m`);
                 results.failed.forEach(service => {
-                    logApi.error(`\x1b[38;5;196m┃ - ${service}\x1b[0m`);
+                    logApi.error(`\x1b[38;5;196m┃ ✗ ${service}\x1b[0m`);
                 });
             }
             logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
@@ -106,6 +118,7 @@ class ServiceInitializer {
                 }
             );
 
+            return results;
         } catch (error) {
             logApi.error('\x1b[38;5;196m┏━━━━━━━━━━━ Service Initialization Failed ━━━━━━━━━━━┓\x1b[0m');
             logApi.error(`\x1b[38;5;196m┃ Error: ${error.message}\x1b[0m`);

@@ -143,16 +143,6 @@ class TokenWhitelistService extends BaseService {
             this.whitelistStats.tokens.total = totalTokens;
             this.whitelistStats.tokens.active = activeTokens;
 
-            // Load chain stats
-            const chainStats = await prisma.tokens.groupBy({
-                by: ['chain'],
-                _count: true
-            });
-
-            chainStats.forEach(stat => {
-                this.whitelistStats.tokens.by_chain[stat.chain] = stat._count;
-            });
-
             // Ensure stats are JSON-serializable for ServiceManager
             const serializableStats = JSON.parse(JSON.stringify({
                 ...this.stats,
@@ -167,8 +157,7 @@ class TokenWhitelistService extends BaseService {
 
             logApi.info('Token Whitelist Service initialized', {
                 totalTokens,
-                activeTokens,
-                chainStats
+                activeTokens
             });
 
             return true;

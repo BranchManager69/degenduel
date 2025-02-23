@@ -60,51 +60,14 @@ class MarketDataService extends BaseService {
 
         // Initialize service-specific stats
         this.marketStats = {
-            operations: {
-                total: 0,
-                successful: 0,
-                failed: 0
-            },
-            performance: {
-                averageOperationTimeMs: 0,
-                lastOperationTimeMs: 0,
-                averageLatencyMs: 0
-            },
-            cache: {
-                hits: 0,
-                misses: 0,
-                size: 0,
-                lastCleanup: null
-            },
-            requests: {
-                total: 0,
-                active: 0,
-                queued: 0,
-                rejected: 0,
-                timedOut: 0
-            },
             data: {
                 tokens: {
                     total: 0,
                     active: 0,
-                    withPrices: 0,
-                    withVolume: 0,
-                    withSentiment: 0
+                    withPrices: 0
                 },
                 updates: {
                     prices: {
-                        total: 0,
-                        successful: 0,
-                        failed: 0,
-                        lastUpdate: null
-                    },
-                    volume: {
-                        total: 0,
-                        successful: 0,
-                        failed: 0,
-                        lastUpdate: null
-                    },
-                    sentiment: {
                         total: 0,
                         successful: 0,
                         failed: 0,
@@ -118,35 +81,67 @@ class MarketDataService extends BaseService {
                     lastCheck: null,
                     errors: 0
                 }
+            },
+            performance: {
+                averageLatencyMs: 0,
+                lastOperationTimeMs: 0,
+                averageOperationTimeMs: 0
+            },
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
             }
         };
     }
 
     async initialize() {
         try {
-            // Call parent initialize first
-            await super.initialize();
-            
-            // Check dependencies
-            const tokenSyncStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.TOKEN_SYNC);
-            if (!tokenSyncStatus) {
-                throw ServiceError.initialization('Token Sync Service not healthy');
-            }
+            // Initialize market stats structure
+            this.marketStats = {
+                data: {
+                    tokens: {
+                        total: 0,
+                        active: 0,
+                        withPrices: 0
+                    },
+                    updates: {
+                        prices: {
+                            total: 0,
+                            successful: 0,
+                            failed: 0,
+                            lastUpdate: null
+                        }
+                    }
+                },
+                dependencies: {
+                    tokenSync: {
+                        status: 'unknown',
+                        lastCheck: null,
+                        errors: 0
+                    }
+                },
+                performance: {
+                    averageLatencyMs: 0,
+                    lastOperationTimeMs: 0,
+                    averageOperationTimeMs: 0
+                },
+                operations: {
+                    total: 0,
+                    successful: 0,
+                    failed: 0
+                }
+            };
 
-            // Load configuration from database
-            const settings = await prisma.system_settings.findUnique({
+            // Load config from database if exists
+            const dbConfig = await prisma.system_settings.findUnique({
                 where: { key: this.name }
             });
 
-            if (settings?.value) {
-                const dbConfig = typeof settings.value === 'string' 
-                    ? JSON.parse(settings.value)
-                    : settings.value;
-
-                // Merge configs carefully preserving circuit breaker settings
+            if (dbConfig?.value?.config) {
                 this.config = {
                     ...this.config,
-                    ...dbConfig,
+                    ...dbConfig.value.config,
                     circuitBreaker: {
                         ...this.config.circuitBreaker,
                         ...(dbConfig.circuitBreaker || {})
@@ -160,36 +155,27 @@ class MarketDataService extends BaseService {
             this.requestCount = 0;
 
             // Load initial market state
-            const [activeTokens, tokensWithPrices, tokensWithVolume] = await Promise.all([
+            const [activeTokens, tokensWithPrices] = await Promise.all([
                 prisma.tokens.count({ where: { is_active: true } }),
-                prisma.token_prices.count(),
-                prisma.token_volumes.count()
+                prisma.token_prices.count()
             ]);
 
             this.marketStats.data.tokens.total = await prisma.tokens.count();
             this.marketStats.data.tokens.active = activeTokens;
             this.marketStats.data.tokens.withPrices = tokensWithPrices;
-            this.marketStats.data.tokens.withVolume = tokensWithVolume;
 
             // Start cleanup interval
             this.startCleanupInterval();
 
-            // Ensure stats are JSON-serializable for ServiceManager
-            const serializableStats = JSON.parse(JSON.stringify({
+            // Update stats
+            this.stats = {
                 ...this.stats,
                 marketStats: this.marketStats
-            }));
-
-            await ServiceManager.markServiceStarted(
-                this.name,
-                JSON.parse(JSON.stringify(this.config)),
-                serializableStats
-            );
+            };
 
             logApi.info('Market Data Service initialized', {
                 activeTokens,
-                withPrices: tokensWithPrices,
-                withVolume: tokensWithVolume
+                withPrices: tokensWithPrices
             });
 
             return true;

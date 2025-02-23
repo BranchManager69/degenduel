@@ -35,8 +35,12 @@ export class BaseService {
         this.config = {
             ...BASE_SERVICE_CONFIG,
             ...config,
+            name,
             circuitBreaker: getCircuitBreakerConfig(name)
         };
+
+        this.isInitialized = false;
+        this.isStarted = false;
 
         // Initialize base stats structure that should never be overwritten
         this.stats = {
@@ -76,6 +80,11 @@ export class BaseService {
      */
     async initialize() {
         try {
+            if (this.isInitialized) {
+                logApi.info(`${this.name} already initialized`);
+                return true;
+            }
+
             const isEnabled = await this.checkEnabled();
             if (!isEnabled) {
                 logApi.info(`${this.name} is disabled`);
@@ -87,49 +96,63 @@ export class BaseService {
                 where: { key: this.name }
             });
 
-            if (previousState?.value?.stats) {
+            if (previousState?.value) {
                 // Merge stats carefully preserving base structure
-                this.stats = {
-                    ...this.stats,
-                    ...previousState.value.stats,
-                    // Always preserve these core structures
-                    history: {
-                        ...this.stats.history,
-                        ...previousState.value.stats.history
-                    },
-                    circuitBreaker: {
-                        ...this.stats.circuitBreaker,
-                        ...previousState.value.stats.circuitBreaker
-                    }
-                };
+                if (previousState.value.stats) {
+                    this.stats = {
+                        ...this.stats,
+                        ...previousState.value.stats,
+                        // Always preserve these core structures
+                        history: {
+                            ...this.stats.history,
+                            ...previousState.value.stats.history
+                        },
+                        circuitBreaker: {
+                            ...this.stats.circuitBreaker,
+                            ...previousState.value.stats.circuitBreaker
+                        }
+                    };
+                }
 
-                // Time-Based Circuit Breaker Recovery
-                if (this.stats.circuitBreaker.isOpen) {
-                    await this.attemptCircuitRecovery();
+                // Restore any custom config that was saved
+                if (previousState.value.config) {
+                    this.config = {
+                        ...this.config,
+                        ...previousState.value.config,
+                        // Preserve circuit breaker config
+                        circuitBreaker: {
+                            ...this.config.circuitBreaker,
+                            ...(previousState.value.config.circuitBreaker || {})
+                        }
+                    };
                 }
             }
 
-            // Restore any custom config that was saved
-            if (previousState?.value?.config) {
-                this.config = {
-                    ...this.config,
-                    ...previousState.value.config
-                };
-            }
+            // Reset circuit breaker state for fresh initialization
+            this.stats.circuitBreaker = {
+                isOpen: false,
+                failures: 0,
+                lastFailure: null,
+                lastReset: new Date().toISOString(),
+                recoveryTimeout: null,
+                recoveryAttempts: 0
+            };
 
-            // Update history
+            // Mark initialization success
             this.stats.history.lastStarted = new Date().toISOString();
+            this.isInitialized = true;
 
-            // Emit service started event
-            serviceEvents.emit('service:started', {
+            // Emit service initialized event
+            serviceEvents.emit('service:initialized', {
                 name: this.name,
                 config: this.config,
                 stats: this.stats
             });
 
+            logApi.info(`${this.name} initialized successfully`);
             return true;
         } catch (error) {
-            logApi.error(`Failed to initialize ${this.name}:`, error);
+            logApi.error(`${this.name} initialization error:`, error);
             throw error;
         }
     }
@@ -220,59 +243,77 @@ export class BaseService {
      * Start the service's main operation interval
      */
     async start() {
-        if (this.interval) {
-            clearInterval(this.interval);
-        }
-
-        this.interval = setInterval(async () => {
-            try {
-                // Check service enabled state
-                const isEnabled = await this.checkEnabled();
-                if (!isEnabled) return;
-
-                // Check circuit breaker
-                if (this.stats.circuitBreaker.isOpen) {
-                    if (shouldReset(this.stats, this.config.circuitBreaker)) {
-                        await this.attemptCircuitRecovery();
-                    }
-                    return;
-                }
-
-                await this.performOperation();
-                await this.recordSuccess();
-            } catch (error) {
-                await this.handleError(error);
+        try {
+            if (!this.isInitialized) {
+                throw new Error(`Cannot start ${this.name} - not initialized`);
             }
-        }, this.config.checkIntervalMs);
 
-        this.stats.history.lastStarted = new Date().toISOString();
-        serviceEvents.emit('service:started', {
-            name: this.name,
-            config: this.config,
-            stats: this.stats
-        });
+            if (this.isStarted) {
+                logApi.info(`${this.name} already started`);
+                return true;
+            }
+
+            // Clear any existing intervals
+            if (this.operationInterval) {
+                clearInterval(this.operationInterval);
+            }
+
+            // Start the operation interval
+            this.operationInterval = setInterval(
+                () => this.performOperation().catch(error => this.handleError(error)),
+                this.config.checkIntervalMs
+            );
+
+            this.isStarted = true;
+
+            // Emit service started event
+            serviceEvents.emit('service:started', {
+                name: this.name,
+                config: this.config,
+                stats: this.stats
+            });
+
+            logApi.info(`Service ${this.name} started successfully`);
+            return true;
+        } catch (error) {
+            logApi.error(`Failed to start service ${this.name}:`, error);
+            throw error;
+        }
     }
 
     /**
      * Stop the service
      */
     async stop() {
-        if (this.interval) {
-            clearInterval(this.interval);
-            this.interval = null;
-        }
+        try {
+            // Clear the operation interval
+            if (this.operationInterval) {
+                clearInterval(this.operationInterval);
+                this.operationInterval = null;
+            }
 
-        if (this.recoveryTimeout) {
-            clearTimeout(this.recoveryTimeout);
-            this.recoveryTimeout = null;
-        }
+            // Clear any recovery timeouts
+            if (this.recoveryTimeout) {
+                clearTimeout(this.recoveryTimeout);
+                this.recoveryTimeout = null;
+            }
 
-        this.stats.history.lastStopped = new Date().toISOString();
-        serviceEvents.emit('service:stopped', {
-            name: this.name,
-            config: this.config,
-            stats: this.stats
-        });
+            this.isStarted = false;
+            this.stats.history.lastStopped = new Date().toISOString();
+
+            // Emit service stopped event
+            serviceEvents.emit('service:stopped', {
+                name: this.name,
+                config: this.config,
+                stats: this.stats
+            });
+
+            logApi.info(`Service ${this.name} stopped successfully`);
+            return true;
+        } catch (error) {
+            logApi.error(`Failed to stop service ${this.name}:`, error);
+            throw error;
+        }
     }
 
     /**
