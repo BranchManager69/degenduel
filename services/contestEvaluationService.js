@@ -16,7 +16,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
@@ -59,7 +59,8 @@ class ContestEvaluationService extends BaseService {
             config: CONTEST_EVALUATION_CONFIG
         });
         
-        super(SERVICE_NAMES.CONTEST_EVALUATION, CONTEST_EVALUATION_CONFIG);
+        ////super(SERVICE_NAMES.CONTEST_EVALUATION, CONTEST_EVALUATION_CONFIG);
+        super(CONTEST_EVALUATION_CONFIG);
         
         // Add logging after super call
         logApi.info('Contest Evaluation Service base initialization complete:', {
@@ -128,7 +129,7 @@ class ContestEvaluationService extends BaseService {
             await super.initialize();
             
             // Check dependencies
-            const marketDataStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.MARKET_DATA);
+            const marketDataStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.MARKET_DATA);
             if (!marketDataStatus) {
                 throw ServiceError.initialization('Market Data Service not healthy');
             }
@@ -172,7 +173,7 @@ class ContestEvaluationService extends BaseService {
                 evaluationStats: this.evaluationStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -197,7 +198,7 @@ class ContestEvaluationService extends BaseService {
         
         try {
             // Check dependency health
-            const marketDataStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.MARKET_DATA);
+            const marketDataStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.MARKET_DATA);
             this.evaluationStats.dependencies.marketData = {
                 status: marketDataStatus ? 'healthy' : 'unhealthy',
                 lastCheck: new Date().toISOString(),
@@ -257,7 +258,7 @@ class ContestEvaluationService extends BaseService {
                 (Date.now() - startTime)) / (this.evaluationStats.operations.total + 1);
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -290,7 +291,7 @@ class ContestEvaluationService extends BaseService {
             this.activeEvaluations.clear();
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {
@@ -1115,7 +1116,7 @@ class ContestEvaluationService extends BaseService {
                 (Date.now() - startTime)) / (this.evaluationStats.operations.total + 1);
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {

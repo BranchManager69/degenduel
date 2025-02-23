@@ -16,7 +16,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // ** Dependencies **
 import walletGeneratorService from './walletGenerationService.js';
@@ -60,15 +60,15 @@ const FAUCET_SERVICE_CONFIG = {
 
 class FaucetService extends BaseService {
     constructor() {
-        super(FAUCET_SERVICE_CONFIG.name, FAUCET_SERVICE_CONFIG);
+        super(FAUCET_SERVICE_CONFIG);
         
         // Initialize Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         
         // Initialize cache for rate limiting
         this.transactionCache = new LRUCache({
-            max: this.config.cache.maxSize,
-            ttl: this.config.cache.ttl
+            max: this.config.cache.maxSize || 1000, // Default to 1000 items
+            ttl: this.config.cache.ttl || 15 * 60 * 1000 // Default to 15 minutes
         });
 
         // Initialize service-specific stats
@@ -152,7 +152,7 @@ class FaucetService extends BaseService {
                 faucetStats: this.faucetStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -255,7 +255,7 @@ class FaucetService extends BaseService {
                 (Date.now() - startTime)) / (this.faucetStats.operations.total + 1);
 
             // Update ServiceManager state - don't count low balance as a failure
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {

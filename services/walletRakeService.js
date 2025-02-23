@@ -17,7 +17,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
@@ -56,7 +56,8 @@ const WALLET_RAKE_CONFIG = {
 
 class WalletRakeService extends BaseService {
     constructor() {
-        super(WALLET_RAKE_CONFIG.name, WALLET_RAKE_CONFIG);
+        ////super(WALLET_RAKE_CONFIG.name, WALLET_RAKE_CONFIG);
+        super(WALLET_RAKE_CONFIG);
         
         // Initialize Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
@@ -109,7 +110,7 @@ class WalletRakeService extends BaseService {
             await super.initialize();
             
             // Check dependencies
-            const contestWalletStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
             if (!contestWalletStatus) {
                 throw ServiceError.initialization('Contest Wallet Service not healthy');
             }
@@ -162,7 +163,7 @@ class WalletRakeService extends BaseService {
                 rakeStats: this.rakeStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -396,7 +397,7 @@ class WalletRakeService extends BaseService {
         
         try {
             // Check dependency health
-            const contestWalletStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
             this.rakeStats.dependencies.contestWallet = {
                 status: contestWalletStatus ? 'healthy' : 'unhealthy',
                 lastCheck: new Date().toISOString(),
@@ -473,7 +474,7 @@ class WalletRakeService extends BaseService {
             }
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -543,7 +544,7 @@ class WalletRakeService extends BaseService {
             this.activeOperations.clear();
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {
