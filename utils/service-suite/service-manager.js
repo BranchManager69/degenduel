@@ -231,9 +231,11 @@ class ServiceManager {
             // Create service instance if not already created
             try {
                 // Convert service name to file path
-                const fileName = serviceName.split('_').map(part => 
-                    part.charAt(0).toUpperCase() + part.slice(1)
-                ).join('');
+                const fileName = serviceName.split('_')
+                    .slice(0, -1) // Remove the 'service' suffix
+                    .map((part, index) => 
+                        index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)
+                    ).join('') + 'Service';
                 const ServiceClass = await import(`../../services/${fileName}.js`).then(m => m.default);
                 service = new ServiceClass();
                 this.services.set(serviceName, service);
