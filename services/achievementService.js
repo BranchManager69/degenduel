@@ -13,10 +13,10 @@ import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
-import { CircuitBreaker } from '../utils/circuit-breaker.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+//////import { CircuitBreaker } from '../utils/circuit-breaker.js';
 // ** Service Manager (?) **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
 
@@ -96,6 +96,6 @@ class AchievementService extends BaseService {
     }
 }
 
- // Create and export singleton instance
- const achievementService = new AchievementService();
- export default achievementService;
+// Export service singleton
+const achievementService = new AchievementService();
+export default achievementService;
