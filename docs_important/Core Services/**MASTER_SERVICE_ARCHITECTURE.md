@@ -129,43 +129,101 @@ graph TD
 ### Service Matrix
 | Service | Layer | Update Frequency | Criticality | Dependencies |
 |---------|-------|-----------------|-------------|--------------|
-| Contest Wallet | Wallet | On demand | Critical | Vanity, Admin |
-| Vanity Wallet | Wallet | Continuous | High | Admin |
-| Wallet Rake | Wallet | 10 minutes | High | Contest, Admin |
-| Admin Wallet | Wallet | On demand | Critical | All |
+| Token Sync | Operations | 30 seconds | Critical | None |
+| Market Data | Operations | 100ms | Critical | None |
 | Contest Eval | Operations | On demand | Critical | Market Data |
-| Market Data | Operations | 100ms | Critical | Token Sync |
+| Wallet Rake | Wallet | 10 minutes | High | Contest Eval |
 | Referral | Operations | 5 minutes | High | Contest Eval |
+| Contest Wallet | Wallet | On demand | Critical | Vanity |
+| Admin Wallet | Wallet | On demand | Critical | Contest Wallet |
 | Token Whitelist | Operations | On demand | High | Token Sync |
+| Achievement | Operations | On demand | High | Contest Eval |
+
+### Service Responsibilities
+```mermaid
+graph TD
+    subgraph "Data Layer"
+        TS[Token Sync Service]
+        MD[Market Data Service]
+        DB[(Database)]
+    end
+    
+    subgraph "Contest Layer"
+        CE[Contest Evaluation]
+        RF[Referral Service]
+        ACH[Achievement Service]
+    end
+    
+    subgraph "Wallet Layer"
+        CW[Contest Wallet]
+        VW[Vanity Wallet]
+        WR[Wallet Rake]
+        AW[Admin Wallet]
+    end
+    
+    TS -->|Updates| DB
+    DB -->|Reads| MD
+    MD -->|Provides Data| CE
+    CE -->|Triggers| RF
+    CE -->|Updates| ACH
+    CE -->|Uses| CW
+    CW -->|Uses| VW
+    WR -->|Monitors| CW
+    AW -->|Manages| CW
+```
+
+### Data Flow
+```mermaid
+sequenceDiagram
+    participant External as External APIs
+    participant TS as Token Sync
+    participant DB as Database
+    participant MD as Market Data
+    participant CE as Contest Eval
+    
+    TS->>External: Fetch Token Data
+    TS->>DB: Update Prices/Metadata
+    MD->>DB: Read Token Data
+    CE->>MD: Request Price Data
+    MD-->>CE: Provide Cached Data
+```
 
 ### Service States
 ```mermaid
 stateDiagram-v2
-    [*] --> Initialization
+    [*] --> Healthy
     
-    state Initialization {
-        [*] --> WalletLayer
-        [*] --> OperationsLayer
+    state "Service States" as ServiceStates {
+        Healthy --> Degraded: Failures Detected
+        Degraded --> CircuitOpen: Threshold Exceeded
+        CircuitOpen --> Recovering: Reset Period
+        Recovering --> Healthy: Success
+        Recovering --> CircuitOpen: Failure
     }
     
-    state WalletLayer {
-        CW: Contest Wallet
-        VW: Vanity Wallet
-        WR: Wallet Rake
-        AW: Admin Wallet
+    state Healthy {
+        [*] --> NormalOperation
+        NormalOperation --> PerformanceMonitoring
+        PerformanceMonitoring --> MetricsCollection
     }
     
-    state OperationsLayer {
-        CE: Contest Evaluation
-        MD: Market Data
-        RF: Referral Service
-        WL: Token Whitelist
+    state Degraded {
+        [*] --> IncreasedMonitoring
+        IncreasedMonitoring --> FailureTracking
+        FailureTracking --> ThresholdChecking
     }
     
-    Initialization --> Running
-    Running --> Maintenance
-    Maintenance --> Running
-    Running --> [*]
+    state CircuitOpen {
+        [*] --> OperationsSuspended
+        OperationsSuspended --> WaitingReset
+        WaitingReset --> RecoveryEligibility
+    }
+    
+    state Recovering {
+        [*] --> TestOperations
+        TestOperations --> HealthCheck
+        HealthCheck --> StateDecision
+    }
 ```
 
 ## Service Interactions
@@ -285,6 +343,30 @@ stateDiagram-v2
     }
     
     ContestEnd --> [*]
+```
+
+### Circuit Breaker Configuration
+```javascript
+{
+    global_defaults: {
+        enabled: true,
+        failureThreshold: 5,
+        resetTimeoutMs: 60000,
+        minHealthyPeriodMs: 120000,
+        monitoringWindowMs: 300000,
+        healthCheckIntervalMs: 30000
+    },
+    service_specific: {
+        market_data_service: {
+            failureThreshold: 3,
+            resetTimeoutMs: 30000
+        },
+        contest_evaluation_service: {
+            failureThreshold: 10,
+            resetTimeoutMs: 120000
+        }
+    }
+}
 ```
 
 ## Platform Operations
@@ -432,6 +514,11 @@ graph TD
 ```javascript
 {
     critical_metrics: {
+        circuit_breaker: {
+            status_check_interval: "5s",
+            health_broadcast_interval: "5s",
+            recovery_check_interval: "30s"
+        },
         wallet_services: {
             wallet_creation_time: "< 1s",
             transaction_success: "99.99%",
@@ -443,34 +530,58 @@ graph TD
             referral_tracking: "99.9%",
             whitelist_validation: "100%"
         }
+    },
+    health_states: {
+        healthy: {
+            description: "Normal operation",
+            criteria: "No recent failures",
+            monitoring: "Standard"
+        },
+        degraded: {
+            description: "Performance issues detected",
+            criteria: "Some failures, below threshold",
+            monitoring: "Enhanced"
+        },
+        circuit_open: {
+            description: "Service protection active",
+            criteria: "Failure threshold exceeded",
+            monitoring: "Critical"
+        },
+        recovering: {
+            description: "Testing service restoration",
+            criteria: "Reset period elapsed",
+            monitoring: "Intensive"
+        }
     }
 }
 ```
 
-### Alert Hierarchy
+### Real-time Monitoring
 ```mermaid
 graph TD
-    subgraph "Critical Alerts"
-        A[Wallet Security]
-        B[Fund Movement]
-        C[Price Data]
+    subgraph "Circuit Breaker Monitoring"
+        A[Service Manager]
+        B[WebSocket Server]
+        C[Health Check]
+        D[Metrics Collection]
     end
     
-    subgraph "Warning Alerts"
-        D[Performance]
-        E[Resource Usage]
-        F[Error Rates]
+    subgraph "Client Updates"
+        E[Admin Dashboard]
+        F[Status Page]
+        G[Alert System]
     end
     
-    subgraph "Info Alerts"
-        G[Statistics]
-        H[Analytics]
-        I[Updates]
-    end
+    A -->|State Changes| B
+    A -->|Health Status| C
+    A -->|Performance Data| D
     
-    A --> D
-    B --> E
-    C --> F
+    B -->|Real-time Updates| E
+    C -->|Health Reports| F
+    D -->|Metrics| G
+    
+    E -->|Admin Actions| A
+    F -->|Status Changes| G
 ```
 
 ## Disaster Recovery

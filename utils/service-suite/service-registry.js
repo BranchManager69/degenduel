@@ -1,18 +1,20 @@
+/*
+
+// /utils/service-suite/service-registry.js
+
+// THIS IS USED TO REGISTER AND MANAGE ALL SERVICES
+
 import { logApi } from './logger-suite/logger.js';
 import { ServiceError } from './service-error.js';
 
-/**
- * Service registry for managing all DegenDuel services
- */
+
 export class ServiceRegistry {
     constructor() {
         this.services = new Map();
         this.dependencies = new Map();
     }
 
-    /**
-     * Register a service with its dependencies
-     */
+    // Register a service with its dependencies
     register(service, dependencies = []) {
         if (this.services.has(service.name)) {
             throw ServiceError.configuration(
@@ -25,9 +27,7 @@ export class ServiceRegistry {
         logApi.info(`Registered service: ${service.name}`);
     }
 
-    /**
-     * Get a registered service by name
-     */
+    // Get a registered service by name
     getService(name) {
         const service = this.services.get(name);
         if (!service) {
@@ -38,9 +38,7 @@ export class ServiceRegistry {
         return service;
     }
 
-    /**
-     * Initialize all registered services in dependency order
-     */
+    // Initialize all registered services in dependency order
     async initializeAll() {
         const initialized = new Set();
         const failed = new Set();
@@ -62,9 +60,7 @@ export class ServiceRegistry {
         return results;
     }
 
-    /**
-     * Initialize a single service and its dependencies
-     */
+    // Initialize a single service and its dependencies
     async initializeService(
         serviceName,
         initialized,
@@ -128,9 +124,7 @@ export class ServiceRegistry {
         processing.delete(serviceName);
     }
 
-    /**
-     * Start all registered services
-     */
+    // Start all registered services
     async startAll() {
         const results = {
             successful: [],
@@ -152,9 +146,7 @@ export class ServiceRegistry {
         return results;
     }
 
-    /**
-     * Stop all registered services
-     */
+    // Stop all registered services
     async stopAll() {
         const results = {
             successful: [],
@@ -176,9 +168,7 @@ export class ServiceRegistry {
         return results;
     }
 
-    /**
-     * Get health status of all services
-     */
+    // Get health status of all services
     async getHealthStatus() {
         const status = {
             healthy: [],
@@ -228,4 +218,6 @@ export class ServiceRegistry {
 
 // Create and export singleton instance
 export const serviceRegistry = new ServiceRegistry();
-export default serviceRegistry; 
+export default serviceRegistry;
+
+*/

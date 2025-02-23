@@ -24,11 +24,13 @@ import crypto from 'crypto';
 import bs58 from 'bs58';
 import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
 const ADMIN_WALLET_CONFIG = {
-    name: 'admin_wallet_service',
+    name: SERVICE_NAMES.ADMIN_WALLET,
+    description: getServiceMetadata(SERVICE_NAMES.ADMIN_WALLET).description,
     checkIntervalMs: 60 * 1000, // Check every minute
     maxRetries: 3,
     retryDelayMs: 5000,
@@ -43,8 +45,8 @@ const ADMIN_WALLET_CONFIG = {
         factor: 2
     },
     wallet: {
-    min_balance_sol: 0.05,
-    transaction_timeout_ms: 30000
+        min_balance_sol: 0.05,
+        transaction_timeout_ms: 30000
     }
 };
 

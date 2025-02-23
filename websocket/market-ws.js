@@ -1,7 +1,11 @@
+// /websocket/market-ws.js
+
+// THIS IS THE MARKET DATA WEBSOCKET SERVER
+
 import { BaseWebSocketServer } from '../utils/websocket-suite/base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import { MarketDataService } from '../services/marketDataService.js';
+import marketDataService from '../services/marketDataService.js';
 
 class MarketDataWebSocketServer extends BaseWebSocketServer {
     constructor(httpServer) {

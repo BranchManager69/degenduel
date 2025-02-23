@@ -3,8 +3,10 @@
 import express from "express";
 import { logApi } from "../utils/logger-suite/logger.js";
 import prisma from '../config/prisma.js';
-//import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 
+// WHY USING A NEW ROUTER???
+// WE NEED TO CHECK FOR AUTH THROUGHOUT!!!
 const router = express.Router();
 
 /**
@@ -30,6 +32,7 @@ const router = express.Router();
  *               items:
  *                 $ref: '#/components/schemas/TokenBucketMembership'
  */
+
 
 /* Tokens Routes */
 
@@ -65,9 +68,6 @@ const router = express.Router();
  *               items:
  *                 $ref: '#/components/schemas/TokenWithDetails'
  */
-// Get all tokens (with optional filters)
-//   example: GET https://degenduel.me/api/tokens
-//      headers: { "Cookie": "session=<jwt>" }
 router.get("/", async (req, res) => {
   try {
     const { active, bucket, search } = req.query;
@@ -138,9 +138,6 @@ router.get("/", async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/TokenNotFound'
  */
-// Get token by ID
-//   example: GET https://degenduel.me/api/tokens/{token_id}
-//      headers: { "Cookie": "session=<jwt>" }
 router.get("/:id", async (req, res) => {
   try {
     // Validate id parameter
@@ -202,8 +199,6 @@ router.get("/:id", async (req, res) => {
  *                           name:
  *                             type: string
  */
-// Get current prices for all tokens
-//   example: GET https://degenduel.me/api/tokens/prices
 router.get("/prices", async (req, res) => {
   try {
     const prices = await prisma.token_prices.findMany({
@@ -263,8 +258,6 @@ router.get("/prices", async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/TokenNotFound'
  */
-// Get price history for a specific token
-//   example: GET https://degenduel.me/api/tokens/prices/1
 router.get("/prices/:tokenId", async (req, res) => {
   try {
     const price = await prisma.token_prices.findUnique({
@@ -373,6 +366,9 @@ router.get("/prices/:tokenId", async (req, res) => {
  *                   type: string
  *                   example: Failed to create token
  */
+router.post("/", async (req, res) => {
+  // Implementation of POST request
+});
 
 /**
  * @swagger
@@ -465,17 +461,6 @@ router.get("/prices/:tokenId", async (req, res) => {
  *                   type: string
  *                   example: Failed to update token
  */
-
-//   example: POST https://degenduel.me/api/tokens
-//      headers: { "Cookie": "session=<jwt>" }
-//      body: { "symbol": "BTC", "name": "Bitcoin", "bucket_id": 1 }
-router.post("/", async (req, res) => {
-  // Implementation of POST request
-});
-
-//   example: PUT https://degenduel.me/api/tokens/{token_id}
-//      headers: { "Cookie": "session=<jwt>" }
-//      body: { "symbol": "BTC", "name": "Bitcoin", "bucket_id": 1 }
 router.put("/:id", async (req, res) => {
   // Implementation of PUT request
 });

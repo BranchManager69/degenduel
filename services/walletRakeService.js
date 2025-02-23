@@ -36,9 +36,11 @@ import bs58 from 'bs58';
 import crypto from 'crypto';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const WALLET_RAKE_CONFIG = {
-    name: 'wallet_rake_service',
+    name: SERVICE_NAMES.WALLET_RAKE,
+    description: getServiceMetadata(SERVICE_NAMES.WALLET_RAKE).description,
     checkIntervalMs: 10 * 60 * 1000, // Check every 10 minutes
     maxRetries: 3,
     retryDelayMs: 5 * 60 * 1000, // 5 minutes between retries

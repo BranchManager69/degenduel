@@ -23,9 +23,11 @@ import { TOKEN_VALIDATION } from '../config/constants.js'; //TODO: Verify all is
 // Other
 import axios from 'axios';
 import { Decimal } from '@prisma/client/runtime/library';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const TOKEN_SYNC_CONFIG = {
-    name: 'token_sync_service',
+    name: SERVICE_NAMES.TOKEN_SYNC,
+    description: getServiceMetadata(SERVICE_NAMES.TOKEN_SYNC).description,
     checkIntervalMs: 30 * 1000, // Check every 30 seconds
     maxRetries: 3,
     retryDelayMs: 5000,
@@ -41,7 +43,7 @@ const TOKEN_SYNC_CONFIG = {
     },
     validation: TOKEN_VALIDATION,
     api: {
-        timeoutMs: 10000, // Reduced from 30s to 10s since we have retry logic
+        timeoutMs: 10000,
         endpoints: {
             prices: `${config.api_urls.data}/prices/bulk`,
             simpleList: `${config.api_urls.dd_serv}/list?detail=simple`,

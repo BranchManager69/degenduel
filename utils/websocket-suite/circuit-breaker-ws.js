@@ -1,6 +1,7 @@
 import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../logger-suite/logger.js';
 import ServiceManager from '../service-suite/service-manager.js';
+import { isHealthy } from '../service-suite/circuit-breaker-config.js';
 
 const HEARTBEAT_INTERVAL = 5000; // 5 seconds
 const CLIENT_TIMEOUT = 7000;     // 7 seconds
@@ -61,18 +62,27 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
 
     /**
      * Notify clients about a service update
-     * @param {string} serviceName - The name of the service
-     * @param {object} state - The current state of the service
      */
-    notifyServiceUpdate(serviceName, state) {
-        if (!this.wss) return; // Not initialized yet
+    async notifyServiceUpdate(serviceName, state) {
+        if (!this.wss) return;
 
-        this.services.set(serviceName, state);
+        const service = ServiceManager.services.get(serviceName);
+        if (!service) return;
 
         const message = {
             type: 'service:update',
             timestamp: new Date().toISOString(),
             service: serviceName,
+            status: ServiceManager.determineServiceStatus(service.stats),
+            circuit_breaker: {
+                is_open: service.stats.circuitBreaker.isOpen,
+                failures: service.stats.circuitBreaker.failures,
+                last_failure: service.stats.circuitBreaker.lastFailure,
+                last_success: service.stats.circuitBreaker.lastSuccess,
+                recovery_attempts: service.stats.circuitBreaker.recoveryAttempts
+            },
+            operations: service.stats.operations,
+            performance: service.stats.performance,
             ...state
         };
 
@@ -81,31 +91,41 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
 
     /**
      * Handle client connection
-     * @param {WebSocket} ws - The WebSocket client
-     * @param {object} request - The HTTP request
      */
-    onConnection(ws, request) {
+    async onConnection(ws, request) {
         super.onConnection(ws, request);
 
-        // Send current service states
-        if (this.services.size > 0) {
-            const servicesArray = Array.from(this.services.entries()).map(([service, state]) => ({
-                service,
-                ...state
-            }));
+        // Send current state of all services
+        const services = Array.from(ServiceManager.services.entries());
+        const states = await Promise.all(
+            services.map(async ([name, service]) => {
+                const state = await ServiceManager.getServiceState(name);
+                return {
+                    service: name,
+                    status: ServiceManager.determineServiceStatus(service.stats),
+                    circuit_breaker: {
+                        is_open: service.stats.circuitBreaker.isOpen,
+                        failures: service.stats.circuitBreaker.failures,
+                        last_failure: service.stats.circuitBreaker.lastFailure,
+                        last_success: service.stats.circuitBreaker.lastSuccess,
+                        recovery_attempts: service.stats.circuitBreaker.recoveryAttempts
+                    },
+                    operations: service.stats.operations,
+                    performance: service.stats.performance,
+                    ...state
+                };
+            })
+        );
 
-            ws.send(JSON.stringify({
-                type: 'service:update',
-                timestamp: new Date().toISOString(),
-                services: servicesArray
-            }));
-        }
+        ws.send(JSON.stringify({
+            type: 'services:state',
+            timestamp: new Date().toISOString(),
+            services: states
+        }));
     }
 
     /**
      * Handle client message
-     * @param {WebSocket} ws - The WebSocket client
-     * @param {string} message - The message received
      */
     onMessage(ws, message) {
         try {
@@ -113,8 +133,13 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
 
             switch (data.type) {
                 case 'subscribe:services':
-                    // Client is requesting service updates
-                    // We'll automatically send updates, so no action needed
+                    // Already handled by default behavior
+                    break;
+
+                case 'service:health_check':
+                    if (data.service) {
+                        this.handleHealthCheck(ws, data.service);
+                    }
                     break;
 
                 default:
@@ -135,58 +160,63 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
         }
     }
 
-    async broadcastServiceStates(targetClient = null) {
-        try {
-            const services = Array.from(ServiceManager.services.keys());
+    /**
+     * Handle health check request
+     */
+    async handleHealthCheck(ws, serviceName) {
+        const service = ServiceManager.services.get(serviceName);
+        if (!service) {
+            ws.send(JSON.stringify({
+                type: 'error',
+                code: 4004,
+                message: 'Service not found',
+                timestamp: new Date().toISOString()
+            }));
+            return;
+        }
+
+        const isServiceHealthy = await ServiceManager.checkServiceHealth(serviceName);
+        ws.send(JSON.stringify({
+            type: 'service:health_check_result',
+            timestamp: new Date().toISOString(),
+            service: serviceName,
+            healthy: isServiceHealthy,
+            status: ServiceManager.determineServiceStatus(service.stats)
+        }));
+    }
+
+    /**
+     * Start periodic state broadcasts
+     */
+    startPeriodicUpdates() {
+        setInterval(async () => {
+            const services = Array.from(ServiceManager.services.entries());
             const states = await Promise.all(
-                services.map(async (serviceName) => {
-                    const state = await ServiceManager.getServiceState(serviceName);
+                services.map(async ([name, service]) => {
+                    const state = await ServiceManager.getServiceState(name);
                     return {
-                        service: serviceName,
-                        status: this.determineServiceStatus(state),
-                        circuit: {
-                            state: state?.stats?.circuitBreaker?.isOpen ? 'open' : 'closed',
-                            failureCount: state?.stats?.circuitBreaker?.failures || 0,
-                            lastFailure: state?.stats?.circuitBreaker?.lastFailure,
-                            recoveryAttempts: state?.stats?.history?.consecutiveFailures || 0
+                        service: name,
+                        status: ServiceManager.determineServiceStatus(service.stats),
+                        circuit_breaker: {
+                            is_open: service.stats.circuitBreaker.isOpen,
+                            failures: service.stats.circuitBreaker.failures,
+                            last_failure: service.stats.circuitBreaker.lastFailure,
+                            last_success: service.stats.circuitBreaker.lastSuccess,
+                            recovery_attempts: service.stats.circuitBreaker.recoveryAttempts
                         },
-                        operations: state?.stats?.operations || {
-                            total: 0,
-                            successful: 0,
-                            failed: 0
-                        }
+                        operations: service.stats.operations,
+                        performance: service.stats.performance,
+                        ...state
                     };
                 })
             );
 
-            const message = {
-                type: 'service:update',
+            this.broadcast({
+                type: 'services:state',
                 timestamp: new Date().toISOString(),
                 services: states
-            };
-
-            if (targetClient) {
-                this.sendToClient(targetClient, message);
-            } else {
-                this.broadcast(message);
-            }
-        } catch (error) {
-            logApi.error('Failed to broadcast service states:', error);
-        }
-    }
-
-    determineServiceStatus(state) {
-        if (!state) return 'unknown';
-        if (state.stats?.circuitBreaker?.isOpen) return 'failed';
-        if (state.stats?.history?.consecutiveFailures > 0) return 'degraded';
-        return 'healthy';
-    }
-
-    startPeriodicUpdates() {
-        // Broadcast service states every 5 seconds
-        setInterval(() => {
-            this.broadcastServiceStates();
-        }, 5000);
+            });
+        }, HEARTBEAT_INTERVAL);
     }
 }
 

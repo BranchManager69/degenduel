@@ -22,10 +22,12 @@ import { ServiceManager } from '../utils/service-suite/service-manager.js';
 // Solana
 import { Keypair } from '@solana/web3.js';
 import crypto from 'crypto';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const CONTEST_WALLET_CONFIG = {
-    name: 'contest_wallet_service',
-    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
+    name: SERVICE_NAMES.CONTEST_WALLET,
+    description: getServiceMetadata(SERVICE_NAMES.CONTEST_WALLET).description,
+    checkIntervalMs: 60 * 1000, // Check every minute
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {

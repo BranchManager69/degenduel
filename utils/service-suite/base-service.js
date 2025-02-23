@@ -1,6 +1,7 @@
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
 import ServiceManager, { SERVICE_NAMES } from '../service-suite/service-manager.js';
+import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';
 
 /**
  * Base configuration template for all services
@@ -9,11 +10,6 @@ export const BASE_SERVICE_CONFIG = {
     checkIntervalMs: 5000,
     maxRetries: 3,
     retryDelayMs: 5000,
-    circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 30000,
-        minHealthyPeriodMs: 60000
-    },
     backoff: {
         initialDelayMs: 1000,
         maxDelayMs: 30000,
@@ -29,7 +25,8 @@ export class BaseService {
         this.name = name;
         this.config = {
             ...BASE_SERVICE_CONFIG,
-            ...config
+            ...config,
+            circuitBreaker: getCircuitBreakerConfig(name)
         };
         this.stats = {
             operations: {
@@ -46,7 +43,8 @@ export class BaseService {
                 lastFailure: null,
                 lastSuccess: null,
                 lastReset: null,
-                isOpen: false
+                isOpen: false,
+                recoveryAttempts: 0
             },
             history: {
                 lastStarted: null,
@@ -194,8 +192,13 @@ export class BaseService {
 
         this.interval = setInterval(async () => {
             try {
-                const isEnabled = await this.checkEnabled();
-                if (!isEnabled || this.stats.circuitBreaker.isOpen) {
+                // Check both service enabled state and circuit breaker status
+                const [isEnabled, isHealthy] = await Promise.all([
+                    this.checkEnabled(),
+                    ServiceManager.checkServiceHealth(this.name)
+                ]);
+
+                if (!isEnabled || !isHealthy) {
                     return;
                 }
 
@@ -205,6 +208,9 @@ export class BaseService {
                 await this.handleError(error);
             }
         }, this.config.checkIntervalMs);
+
+        this.stats.history.lastStarted = new Date().toISOString();
+        await ServiceManager.markServiceStarted(this.name, this.config, this.stats);
     }
 
     /**
@@ -249,15 +255,6 @@ export class BaseService {
         this.stats.circuitBreaker.failures = 0;
         this.stats.history.consecutiveFailures = 0;
 
-        if (this.stats.circuitBreaker.isOpen) {
-            const timeSinceLastFailure = Date.now() - new Date(this.stats.circuitBreaker.lastFailure).getTime();
-            if (timeSinceLastFailure >= this.config.circuitBreaker.minHealthyPeriodMs) {
-                this.stats.circuitBreaker.isOpen = false;
-                this.stats.circuitBreaker.lastReset = new Date().toISOString();
-                logApi.info(`Circuit breaker reset for ${this.name}`);
-            }
-        }
-
         await ServiceManager.updateServiceHeartbeat(
             this.name,
             this.config,
@@ -276,22 +273,6 @@ export class BaseService {
         this.stats.history.lastErrorTime = new Date().toISOString();
         this.stats.circuitBreaker.failures++;
         this.stats.circuitBreaker.lastFailure = new Date().toISOString();
-
-        if (this.stats.circuitBreaker.failures >= this.config.circuitBreaker.failureThreshold) {
-            if (!this.stats.circuitBreaker.isOpen) {
-                this.stats.circuitBreaker.isOpen = true;
-                logApi.warn(`Circuit breaker opened for ${this.name}`, {
-                    failures: this.stats.circuitBreaker.failures,
-                    threshold: this.config.circuitBreaker.failureThreshold,
-                    service: this.name
-                });
-            }
-        }
-
-        // If error indicates service is disabled, stop the service
-        if (error.message === 'Service is disabled via dashboard') {
-            await this.stop();
-        }
 
         await ServiceManager.markServiceError(
             this.name,
