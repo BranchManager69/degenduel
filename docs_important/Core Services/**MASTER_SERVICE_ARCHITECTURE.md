@@ -14,57 +14,66 @@
 
 ## Platform Overview
 
-DegenDuel's architecture consists of two primary service layers that work together to provide a secure, real-time trading platform:
+DegenDuel's architecture consists of four primary service layers that work together to provide a secure, real-time trading platform:
 
-1. **Wallet Management Layer**
-   - Contest wallet creation and management
-   - Vanity wallet generation and pooling
-   - Post-contest fund collection
-   - Administrative wallet oversight
+1. **Infrastructure Layer**
+   - Wallet generation and encryption
+   - Test environment faucet
+   - Core system utilities
 
-2. **Operations Management Layer**
-   - Contest evaluation and prize distribution
-   - Real-time market data streaming
-   - Referral program management
-   - Analytics and reporting
+2. **Data Layer**
+   - Token synchronization
+   - Market data management
+   - Token whitelist control
+
+3. **Contest Layer**
+   - Contest evaluation and prizes
+   - Achievement tracking
+   - Referral management
+
+4. **Wallet Layer**
+   - Contest wallet management
+   - Vanity wallet pooling
+   - Fund collection and rake
+   - Administrative operations
 
 ### Complete Service Architecture
 ```mermaid
 graph TD
-    subgraph "Operations Layer"
-        CE[Contest Evaluation]
+    subgraph "Infrastructure Layer"
+        WG[Wallet Generator]
+        FC[Faucet]
+    end
+
+    subgraph "Data Layer"
+        TS[Token Sync]
         MD[Market Data]
-        RF[Referral Service]
         WL[Token Whitelist]
     end
-    
+
+    subgraph "Contest Layer"
+        CE[Contest Evaluation]
+        ACH[Achievement]
+        RF[Referral]
+    end
+
     subgraph "Wallet Layer"
         CW[Contest Wallet]
         VW[Vanity Wallet]
         WR[Wallet Rake]
         AW[Admin Wallet]
     end
-    
-    subgraph "Infrastructure"
-        DB[(Database)]
-        WS[WebSocket]
-        BC[Blockchain]
-    end
-    
-    CE -->|Triggers| CW
-    MD -->|Informs| CE
-    RF -->|Rewards| CW
-    WL -->|Validates| MD
-    
-    CW -->|Uses| VW
-    WR -->|Collects| CW
-    AW -->|Manages| CW
-    AW -->|Oversees| VW
-    AW -->|Controls| WR
-    
-    MD -->|Updates| WS
-    CW -->|Transactions| BC
-    DB -->|Stores| CE
+
+    WG --> VW
+    WG --> FC
+    TS --> MD
+    MD --> CE
+    CE --> ACH
+    CE --> RF
+    CE --> CW
+    VW --> CW
+    CW --> WR
+    CW --> AW
 ```
 
 ## Service Layers
@@ -127,17 +136,20 @@ graph TD
 ## Core Services
 
 ### Service Matrix
-| Service | Layer | Update Frequency | Criticality | Dependencies |
-|---------|-------|-----------------|-------------|--------------|
-| Token Sync | Operations | 30 seconds | Critical | None |
-| Market Data | Operations | 100ms | Critical | None |
-| Contest Eval | Operations | On demand | Critical | Market Data |
-| Wallet Rake | Wallet | 10 minutes | High | Contest Eval |
-| Referral | Operations | 5 minutes | High | Contest Eval |
-| Contest Wallet | Wallet | On demand | Critical | Vanity |
+| Service | Layer | Update Frequency | Critical Level | Dependencies |
+|---------|-------|-----------------|----------------|--------------|
+| Wallet Generator | Infrastructure | 5m | High | None |
+| Faucet | Infrastructure | 1h | Medium | Wallet Generator |
+| Token Sync | Data | 30s | High | None |
+| Market Data | Data | 100ms | Critical | Token Sync |
+| Token Whitelist | Data | On demand | Medium | None |
+| Contest Evaluation | Contest | On demand | Critical | Market Data |
+| Achievement | Contest | On demand | Low | Contest Evaluation |
+| Referral | Contest | 5m | Medium | Contest Evaluation |
+| Contest Wallet | Wallet | On demand | Critical | Vanity Wallet, Contest Evaluation |
+| Vanity Wallet | Wallet | Continuous | High | Wallet Generator |
+| Wallet Rake | Wallet | 10m | High | Contest Wallet |
 | Admin Wallet | Wallet | On demand | Critical | Contest Wallet |
-| Token Whitelist | Operations | On demand | High | Token Sync |
-| Achievement | Operations | On demand | High | Contest Eval |
 
 ### Service Responsibilities
 ```mermaid
@@ -191,38 +203,33 @@ sequenceDiagram
 ### Service States
 ```mermaid
 stateDiagram-v2
-    [*] --> Healthy
+    [*] --> Initializing
     
     state "Service States" as ServiceStates {
-        Healthy --> Degraded: Failures Detected
+        Initializing --> Active: Dependencies Ready
+        Active --> Degraded: Performance Issues
         Degraded --> CircuitOpen: Threshold Exceeded
         CircuitOpen --> Recovering: Reset Period
-        Recovering --> Healthy: Success
+        Recovering --> Active: Success
         Recovering --> CircuitOpen: Failure
     }
     
-    state Healthy {
-        [*] --> NormalOperation
-        NormalOperation --> PerformanceMonitoring
-        PerformanceMonitoring --> MetricsCollection
+    state Active {
+        [*] --> Running
+        Running --> PerformingOperation
+        PerformingOperation --> Running
     }
     
     state Degraded {
-        [*] --> IncreasedMonitoring
-        IncreasedMonitoring --> FailureTracking
-        FailureTracking --> ThresholdChecking
+        [*] --> MonitoringHealth
+        MonitoringHealth --> AttemptingRecovery
+        AttemptingRecovery --> MonitoringHealth
     }
     
     state CircuitOpen {
-        [*] --> OperationsSuspended
-        OperationsSuspended --> WaitingReset
-        WaitingReset --> RecoveryEligibility
-    }
-    
-    state Recovering {
-        [*] --> TestOperations
-        TestOperations --> HealthCheck
-        HealthCheck --> StateDecision
+        [*] --> WaitingReset
+        WaitingReset --> CheckingDependencies
+        CheckingDependencies --> AttemptingRecovery
     }
 ```
 

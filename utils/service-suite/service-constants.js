@@ -4,23 +4,23 @@
  */
 
 export const SERVICE_NAMES = {
-    // Data Services
+    // Data Layer Services
     TOKEN_SYNC: 'token_sync_service',
     MARKET_DATA: 'market_data_service',
     TOKEN_WHITELIST: 'token_whitelist_service',
 
-    // Contest Services
+    // Contest Layer Services
     CONTEST_EVALUATION: 'contest_evaluation_service',
     ACHIEVEMENT: 'achievement_service',
     REFERRAL: 'referral_service',
 
-    // Wallet Services
+    // Wallet Layer Services
     CONTEST_WALLET: 'contest_wallet_service',
     VANITY_WALLET: 'vanity_wallet_service',
     WALLET_RAKE: 'wallet_rake_service',
     ADMIN_WALLET: 'admin_wallet_service',
 
-    // Infrastructure Services
+    // Infrastructure Layer Services
     FAUCET: 'faucet_service',
     WALLET_GENERATOR: 'wallet_generator_service'
 };
@@ -29,76 +29,100 @@ export const SERVICE_LAYERS = {
     DATA: 'data_layer',
     CONTEST: 'contest_layer',
     WALLET: 'wallet_layer',
-    INFRASTRUCTURE: 'infrastructure_layer'  // New layer for infrastructure services
+    INFRASTRUCTURE: 'infrastructure_layer'
 };
 
 export const SERVICE_METADATA = {
-    // Data Services
+    // Data Layer Services
     [SERVICE_NAMES.TOKEN_SYNC]: {
         layer: SERVICE_LAYERS.DATA,
         description: 'External token data synchronization',
-        updateFrequency: '30s'
+        updateFrequency: '30s',
+        criticalLevel: 'high',
+        dependencies: []
     },
     [SERVICE_NAMES.MARKET_DATA]: {
         layer: SERVICE_LAYERS.DATA,
         description: 'Internal market data provider',
-        updateFrequency: '100ms'
+        updateFrequency: '100ms',
+        criticalLevel: 'critical',
+        dependencies: [SERVICE_NAMES.TOKEN_SYNC]
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         layer: SERVICE_LAYERS.DATA,
         description: 'Token whitelist management',
-        updateFrequency: 'on demand'
+        updateFrequency: 'on demand',
+        criticalLevel: 'medium',
+        dependencies: []
     },
 
-    // Contest Services
+    // Contest Layer Services
     [SERVICE_NAMES.CONTEST_EVALUATION]: {
         layer: SERVICE_LAYERS.CONTEST,
         description: 'Contest lifecycle and evaluation',
-        updateFrequency: 'on demand'
+        updateFrequency: 'on demand',
+        criticalLevel: 'critical',
+        dependencies: [SERVICE_NAMES.MARKET_DATA]
     },
     [SERVICE_NAMES.ACHIEVEMENT]: {
         layer: SERVICE_LAYERS.CONTEST,
         description: 'User achievement tracking',
-        updateFrequency: 'on demand'
+        updateFrequency: 'on demand',
+        criticalLevel: 'low',
+        dependencies: [SERVICE_NAMES.CONTEST_EVALUATION]
     },
     [SERVICE_NAMES.REFERRAL]: {
         layer: SERVICE_LAYERS.CONTEST,
         description: 'Referral program management',
-        updateFrequency: '5m'
+        updateFrequency: '5m',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.CONTEST_EVALUATION]
     },
 
-    // Wallet Services
+    // Wallet Layer Services
     [SERVICE_NAMES.CONTEST_WALLET]: {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Contest wallet management',
-        updateFrequency: 'on demand'
+        updateFrequency: 'on demand',
+        criticalLevel: 'critical',
+        dependencies: [SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.CONTEST_EVALUATION]
     },
     [SERVICE_NAMES.VANITY_WALLET]: {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Vanity wallet pool management',
-        updateFrequency: 'continuous'
+        updateFrequency: 'continuous',
+        criticalLevel: 'high',
+        dependencies: [SERVICE_NAMES.WALLET_GENERATOR]
     },
     [SERVICE_NAMES.WALLET_RAKE]: {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Post-contest fund collection',
-        updateFrequency: '10m'
+        updateFrequency: '10m',
+        criticalLevel: 'high',
+        dependencies: [SERVICE_NAMES.CONTEST_WALLET]
     },
     [SERVICE_NAMES.ADMIN_WALLET]: {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Administrative wallet operations',
-        updateFrequency: 'on demand'
+        updateFrequency: 'on demand',
+        criticalLevel: 'critical',
+        dependencies: [SERVICE_NAMES.CONTEST_WALLET]
     },
 
-    // Infrastructure Services
+    // Infrastructure Layer Services
     [SERVICE_NAMES.FAUCET]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'Test user SOL distribution and recovery',
-        updateFrequency: '1h'
+        updateFrequency: '1h',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.WALLET_GENERATOR]
     },
     [SERVICE_NAMES.WALLET_GENERATOR]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'Wallet generation and encryption',
-        updateFrequency: '5m'
+        updateFrequency: '5m',
+        criticalLevel: 'high',
+        dependencies: []
     }
 };
 
@@ -121,6 +145,38 @@ export function validateServiceName(serviceName) {
     return Object.values(SERVICE_NAMES).includes(serviceName);
 }
 
+export function getServiceDependencies(serviceName) {
+    return SERVICE_METADATA[serviceName]?.dependencies || [];
+}
+
+export function getServiceCriticalLevel(serviceName) {
+    return SERVICE_METADATA[serviceName]?.criticalLevel || 'medium';
+}
+
+export function validateDependencyChain(serviceName) {
+    const visited = new Set();
+    const recursionStack = new Set();
+
+    function hasCycle(service) {
+        visited.add(service);
+        recursionStack.add(service);
+
+        const dependencies = getServiceDependencies(service);
+        for (const dep of dependencies) {
+            if (!visited.has(dep)) {
+                if (hasCycle(dep)) return true;
+            } else if (recursionStack.has(dep)) {
+                return true;
+            }
+        }
+
+        recursionStack.delete(service);
+        return false;
+    }
+
+    return !hasCycle(serviceName);
+}
+
 export default {
     SERVICE_NAMES,
     SERVICE_LAYERS,
@@ -128,5 +184,8 @@ export default {
     getServiceMetadata,
     getServiceLayer,
     getServicesInLayer,
-    validateServiceName
+    validateServiceName,
+    getServiceDependencies,
+    getServiceCriticalLevel,
+    validateDependencyChain
 }; 
