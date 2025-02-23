@@ -1,23 +1,29 @@
 // services/walletGenerationService.js
 
 /*
- * This file is responsible for generating and managing wallets.
- * It allows the admin to generate new wallets, deactivate wallets, and import existing wallets.
- * 
+ * This service is responsible for generating and managing wallets.
+ * It provides secure wallet generation, encryption, and management capabilities
+ * for all DegenDuel services.
  */
 
-// Services
+// ** Service Auth **
+import { generateServiceAuthHeader } from '../config/service-auth.js';
+// ** Service Class **
+import { BaseService } from '../utils/service-suite/base-service.js';
+import { ServiceError } from '../utils/service-suite/service-error.js';
+import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+// ** Service Manager **
+import ServiceManager from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
 import { Keypair } from '@solana/web3.js';
 import crypto from 'crypto';
 import bs58 from 'bs58';
 // Other
 import LRUCache from 'lru-cache';
-import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
-import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const WALLET_SERVICE_CONFIG = {
     name: SERVICE_NAMES.WALLET_GENERATOR,
@@ -30,9 +36,20 @@ const WALLET_SERVICE_CONFIG = {
         resetTimeoutMs: 60000,
         minHealthyPeriodMs: 120000
     },
+    backoff: {
+        initialDelayMs: 1000,
+        maxDelayMs: 30000,
+        factor: 2
+    },
     cache: {
         maxSize: 1000,
         ttl: 15 * 60 * 1000 // 15 minutes
+    },
+    encryption: {
+        algorithm: 'aes-256-gcm',
+        keyLength: 32,
+        ivLength: 16,
+        tagLength: 16
     }
 };
 
@@ -45,7 +62,8 @@ class WalletService extends BaseService {
             ttl: this.config.cache.ttl
         });
 
-        this.stats = {
+        // Initialize service-specific stats
+        this.walletStats = {
             operations: {
                 total: 0,
                 successful: 0,
@@ -61,21 +79,41 @@ class WalletService extends BaseService {
                 successful: 0,
                 failed: 0
             },
-            circuitBreaker: {
-                isOpen: false,
-                failures: 0,
-                lastFailure: null,
-                lastSuccess: null,
-                recoveryAttempts: 0
+            performance: {
+                average_generation_time_ms: 0,
+                last_operation_time_ms: 0,
+                cache_hit_rate: 0
             }
         };
     }
 
     async initialize() {
         try {
+            // Call parent initialize first
             await super.initialize();
+            
+            // Load configuration from database
+            const settings = await prisma.system_settings.findUnique({
+                where: { key: this.name }
+            });
 
-            // Load existing wallets from database into cache
+            if (settings?.value) {
+                const dbConfig = typeof settings.value === 'string' 
+                    ? JSON.parse(settings.value)
+                    : settings.value;
+
+                // Merge configs carefully preserving circuit breaker settings
+                this.config = {
+                    ...this.config,
+                    ...dbConfig,
+                    circuitBreaker: {
+                        ...this.config.circuitBreaker,
+                        ...(dbConfig.circuitBreaker || {})
+                    }
+                };
+            }
+
+            // Load existing wallets into cache
             const existingWallets = await prisma.seed_wallets.findMany({
                 where: { is_active: true },
                 select: {
@@ -92,18 +130,33 @@ class WalletService extends BaseService {
                     secretKey: wallet.private_key,
                     timestamp: Date.now()
                 });
-                this.stats.wallets.cached++;
+                this.walletStats.wallets.cached++;
             }
 
-            logApi.info(`Initialized wallet cache with ${existingWallets.length} wallets`);
+            // Ensure stats are JSON-serializable for ServiceManager
+            const serializableStats = JSON.parse(JSON.stringify({
+                ...this.stats,
+                walletStats: this.walletStats
+            }));
+
+            await ServiceManager.markServiceStarted(
+                this.name,
+                JSON.parse(JSON.stringify(this.config)),
+                serializableStats
+            );
+
+            logApi.info('Wallet Generator Service initialized');
             return true;
         } catch (error) {
-            logApi.error('Failed to initialize Wallet Service:', error);
+            logApi.error('Wallet Generator Service initialization error:', error);
+            await this.handleError(error);
             throw error;
         }
     }
 
     async performOperation() {
+        const startTime = Date.now();
+        
         try {
             // Perform cache cleanup
             this.cleanupCache();
@@ -112,7 +165,21 @@ class WalletService extends BaseService {
             const verificationResults = await this.verifyAllWallets();
             
             // Update stats
-            this.stats.wallets.cached = this.walletCache.size;
+            this.walletStats.wallets.cached = this.walletCache.size;
+            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
+            this.walletStats.performance.average_generation_time_ms = 
+                (this.walletStats.performance.average_generation_time_ms * this.walletStats.operations.total + 
+                (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    walletStats: this.walletStats
+                }
+            );
             
             return verificationResults;
         } catch (error) {
@@ -121,37 +188,36 @@ class WalletService extends BaseService {
         }
     }
 
-    // Encrypt a private key using the wallet encryption key from env
+    // Encrypt a private key
     encryptPrivateKey(privateKey) {
-        if (!process.env.WALLET_ENCRYPTION_KEY) {
-            throw new ServiceError(
-                'WALLET_ENCRYPTION_KEY environment variable is not set',
-                'MISSING_ENCRYPTION_KEY'
-            );
-        }
         try {
-            const iv = crypto.randomBytes(16);
+            const iv = crypto.randomBytes(this.config.encryption.ivLength);
             const cipher = crypto.createCipheriv(
-                'aes-256-gcm',
+                this.config.encryption.algorithm,
                 Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
                 iv
             );
+
             const encrypted = Buffer.concat([
                 cipher.update(Buffer.from(privateKey)),
                 cipher.final()
             ]);
+
             const tag = cipher.getAuthTag();
+
+            this.walletStats.encryption.successful++;
+            
             return JSON.stringify({
                 encrypted: encrypted.toString('hex'),
                 iv: iv.toString('hex'),
                 tag: tag.toString('hex')
             });
         } catch (error) {
-            throw new ServiceError(
-                'Failed to encrypt private key',
-                'ENCRYPTION_FAILED',
-                { originalError: error.message }
-            );
+            this.walletStats.encryption.failed++;
+            throw ServiceError.operation('Failed to encrypt private key', {
+                error: error.message,
+                type: 'ENCRYPTION_ERROR'
+            });
         }
     }
 
@@ -160,28 +226,37 @@ class WalletService extends BaseService {
         try {
             const { encrypted, iv, tag } = JSON.parse(encryptedData);
             const decipher = crypto.createDecipheriv(
-                'aes-256-gcm',
+                this.config.encryption.algorithm,
                 Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
                 Buffer.from(iv, 'hex')
             );
+
             decipher.setAuthTag(Buffer.from(tag, 'hex'));
-            let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-            decrypted += decipher.final('utf8');
-            return decrypted;
+            
+            const decrypted = Buffer.concat([
+                decipher.update(Buffer.from(encrypted, 'hex')),
+                decipher.final()
+            ]);
+
+            return decrypted.toString();
         } catch (error) {
-            throw new ServiceError(
-                'Failed to decrypt private key',
-                'DECRYPTION_FAILED',
-                { originalError: error.message }
-            );
+            throw ServiceError.operation('Failed to decrypt private key', {
+                error: error.message,
+                type: 'DECRYPTION_ERROR'
+            });
         }
     }
 
     async generateWallet(identifier, options = {}) {
+        const startTime = Date.now();
+        
         try {
             // Check if wallet already exists in cache
             const existingWallet = this.walletCache.get(identifier);
             if (existingWallet && !options.forceNew) {
+                this.walletStats.performance.cache_hit_rate = 
+                    (this.walletStats.performance.cache_hit_rate * this.walletStats.operations.total + 1) /
+                    (this.walletStats.operations.total + 1);
                 return existingWallet;
             }
 
@@ -190,10 +265,6 @@ class WalletService extends BaseService {
                 where: { 
                     purpose: `Seed wallet for ${identifier}`,
                     is_active: true
-                },
-                select: {
-                    wallet_address: true,
-                    private_key: true
                 }
             });
 
@@ -204,6 +275,7 @@ class WalletService extends BaseService {
                     timestamp: Date.now()
                 };
                 this.walletCache.set(identifier, walletInfo);
+                this.walletStats.wallets.cached++;
                 return walletInfo;
             }
 
@@ -229,15 +301,28 @@ class WalletService extends BaseService {
                 }
             });
 
+            // Update stats
+            this.walletStats.operations.total++;
+            this.walletStats.operations.successful++;
+            this.walletStats.wallets.generated++;
+            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
+            this.walletStats.performance.average_generation_time_ms = 
+                (this.walletStats.performance.average_generation_time_ms * 
+                (this.walletStats.operations.total - 1) + (Date.now() - startTime)) / 
+                this.walletStats.operations.total;
+
             // Save to cache
             this.walletCache.set(identifier, walletInfo);
+            this.walletStats.wallets.cached++;
+
             return walletInfo;
         } catch (error) {
-            throw new ServiceError(
-                'Failed to generate wallet',
-                'GENERATION_FAILED',
-                { identifier, originalError: error.message }
-            );
+            this.walletStats.operations.total++;
+            this.walletStats.operations.failed++;
+            throw ServiceError.operation('Failed to generate wallet', {
+                identifier,
+                error: error.message
+            });
         }
     }
 
@@ -246,6 +331,9 @@ class WalletService extends BaseService {
             // Check cache first
             const cachedWallet = this.walletCache.get(identifier);
             if (cachedWallet) {
+                this.walletStats.performance.cache_hit_rate = 
+                    (this.walletStats.performance.cache_hit_rate * this.walletStats.operations.total + 1) /
+                    (this.walletStats.operations.total + 1);
                 return cachedWallet;
             }
 
@@ -254,11 +342,6 @@ class WalletService extends BaseService {
                 where: { 
                     purpose: `Seed wallet for ${identifier}`,
                     is_active: true
-                },
-                select: {
-                    wallet_address: true,
-                    private_key: true,
-                    metadata: true
                 }
             });
 
@@ -270,131 +353,19 @@ class WalletService extends BaseService {
                     metadata: dbWallet.metadata
                 };
                 this.walletCache.set(identifier, walletInfo);
+                this.walletStats.wallets.cached++;
                 return walletInfo;
             }
 
             return undefined;
         } catch (error) {
-            throw new ServiceError(
-                'Failed to retrieve wallet',
-                'RETRIEVAL_FAILED',
-                { identifier, originalError: error.message }
-            );
-        }
-    }
-
-    // Get keypair from wallet
-    async getKeypair(identifier) {
-        const wallet = await this.getWallet(identifier);
-        if (!wallet) {
-            throw new ServiceError(
-                'Wallet not found',
-                'WALLET_NOT_FOUND',
-                { identifier }
-            );
-        }
-
-        try {
-            const decryptedKey = this.decryptPrivateKey(wallet.secretKey);
-            return Keypair.fromSecretKey(
-                Buffer.from(decryptedKey, 'base64')
-            );
-        } catch (error) {
-            throw new ServiceError(
-                'Failed to create keypair',
-                'KEYPAIR_CREATION_FAILED',
-                { identifier, originalError: error.message }
-            );
-        }
-    }
-
-    // Deactivate a wallet
-    async deactivateWallet(identifier) {
-        try {
-            await prisma.seed_wallets.updateMany({
-                where: { 
-                    purpose: `Seed wallet for ${identifier}`,
-                    is_active: true
-                },
-                data: { is_active: false }
+            throw ServiceError.operation('Failed to retrieve wallet', {
+                identifier,
+                error: error.message
             });
-
-            this.walletCache.delete(identifier);
-            return true;
-        } catch (error) {
-            throw new ServiceError(
-                'Failed to deactivate wallet',
-                'DEACTIVATION_FAILED',
-                { identifier, originalError: error.message }
-            );
         }
     }
 
-    // Update wallet metadata
-    async updateWalletMetadata(identifier, metadata) {
-        try {
-            await prisma.seed_wallets.updateMany({
-                where: { 
-                    purpose: `Seed wallet for ${identifier}`,
-                    is_active: true
-                },
-                data: { metadata }
-            });
-
-            const wallet = await this.getWallet(identifier);
-            if (wallet) {
-                wallet.metadata = metadata;
-                this.walletCache.set(identifier, wallet);
-            }
-
-            return true;
-        } catch (error) {
-            throw new ServiceError(
-                'Failed to update wallet metadata',
-                'METADATA_UPDATE_FAILED',
-                { identifier, originalError: error.message }
-            );
-        }
-    }
-
-    // Import existing wallet
-    async importWallet(identifier, privateKey, options = {}) {
-        return this.generateWallet(identifier, {
-            ...options,
-            fromPrivateKey: privateKey
-        });
-    }
-
-    // List all active wallets
-    async listWallets(filter = {}) {
-        try {
-            const wallets = await prisma.seed_wallets.findMany({
-                where: { 
-                    is_active: true,
-                    ...filter
-                },
-                select: {
-                    purpose: true,
-                    wallet_address: true,
-                    metadata: true
-                }
-            });
-
-            return wallets.map(wallet => ({
-                identifier: wallet.purpose.replace('Seed wallet for ', ''),
-                publicKey: wallet.wallet_address,
-                metadata: wallet.metadata
-            }));
-        } catch (error) {
-            throw new ServiceError(
-                'Failed to list wallets',
-                'LIST_FAILED',
-                { originalError: error.message }
-            );
-        }
-    }
-
-    // Verify a wallet's integrity
     async verifyWallet(identifier) {
         try {
             const wallet = await this.getWallet(identifier);
@@ -407,7 +378,11 @@ class WalletService extends BaseService {
             }
 
             // Try to create a keypair to verify the private key
-            const keypair = await this.getKeypair(identifier);
+            const decryptedKey = this.decryptPrivateKey(wallet.secretKey);
+            const keypair = Keypair.fromSecretKey(
+                Buffer.from(decryptedKey, 'base64')
+            );
+            
             const publicKeyMatches = keypair.publicKey.toString() === wallet.publicKey;
 
             return {
@@ -424,39 +399,6 @@ class WalletService extends BaseService {
         }
     }
 
-    // Enhanced cleanup with proper error handling and state reset
-    async cleanupCache() {
-        try {
-            logApi.info('Starting wallet generator cleanup...');
-            
-            // Clear the cache
-            this.walletCache.clear();
-            
-            // Update database to mark all wallets as inactive
-            await prisma.seed_wallets.updateMany({
-                where: { is_active: true },
-                data: { 
-                    is_active: false,
-                    updated_at: new Date(),
-                    metadata: {
-                        cleanup_reason: 'service_shutdown',
-                        cleanup_time: new Date().toISOString()
-                    }
-                }
-            });
-
-            logApi.info('Wallet generator cleanup completed successfully');
-        } catch (error) {
-            logApi.error('Error during wallet generator cleanup:', error);
-            throw new ServiceError(
-                'Cleanup failed',
-                'CLEANUP_FAILED',
-                { originalError: error.message }
-            );
-        }
-    }
-
-    // Helper method to verify all cached wallets
     async verifyAllWallets() {
         const results = {
             total: this.walletCache.size,
@@ -465,7 +407,7 @@ class WalletService extends BaseService {
             errors: []
         };
 
-        for (const [identifier, wallet] of this.walletCache.entries()) {
+        for (const [identifier] of this.walletCache.entries()) {
             try {
                 const verification = await this.verifyWallet(identifier);
                 if (verification.valid) {
@@ -489,14 +431,59 @@ class WalletService extends BaseService {
         return results;
     }
 
+    cleanupCache() {
+        const now = Date.now();
+        let cleaned = 0;
+        
+        for (const [key, value] of this.walletCache.entries()) {
+            if (now - value.timestamp > this.config.cache.ttl) {
+                this.walletCache.delete(key);
+                cleaned++;
+            }
+        }
+        
+        if (cleaned > 0) {
+            this.walletStats.wallets.cached -= cleaned;
+            logApi.info(`Cleaned ${cleaned} expired wallet(s) from cache`);
+        }
+    }
+
     async stop() {
         try {
             await super.stop();
-            await this.cleanupCache();
-            logApi.info('Wallet Service stopped successfully');
+            await this.cleanup();
+            logApi.info('Wallet Generator Service stopped successfully');
         } catch (error) {
-            logApi.error('Error stopping Wallet Service:', error);
+            logApi.error('Error stopping Wallet Generator Service:', error);
             throw error;
+        }
+    }
+
+    async cleanup() {
+        try {
+            // Clear the cache
+            this.walletCache.clear();
+            this.walletStats.wallets.cached = 0;
+            
+            // Update database to mark all wallets as inactive
+            await prisma.seed_wallets.updateMany({
+                where: { is_active: true },
+                data: { 
+                    is_active: false,
+                    updated_at: new Date(),
+                    metadata: {
+                        cleanup_reason: 'service_shutdown',
+                        cleanup_time: new Date().toISOString()
+                    }
+                }
+            });
+
+            logApi.info('Wallet generator cleanup completed successfully');
+        } catch (error) {
+            logApi.error('Error during wallet generator cleanup:', error);
+            throw ServiceError.operation('Cleanup failed', {
+                error: error.message
+            });
         }
     }
 
