@@ -1,612 +1,575 @@
 // services/referralService.js
 
 /*
- * This service is responsible for managing the referral system.
- * It allows the admin to create and manage referral periods, milestones, and rankings.
- * 
+ * This service is responsible for managing the referral program.
+ * It handles referral tracking, milestone achievements, period rankings,
+ * and reward distribution. It integrates with the Contest Evaluation Service
+ * to track contest participation and performance.
  */
 
 // ** Service Auth **
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
+import { ServiceError } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
 import ServiceManager from '../utils/service-suite/service-manager.js';
-// Other
-import { Decimal } from '@prisma/client/runtime/library';
-import cache from '../utils/cache.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const REFERRAL_SERVICE_CONFIG = {
     name: SERVICE_NAMES.REFERRAL,
     description: getServiceMetadata(SERVICE_NAMES.REFERRAL).description,
-    checkIntervalMs: 5 * 60 * 1000,  // Check every 5 minutes
+    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
     maxRetries: 3,
-    retryDelayMs: 30000,
+    retryDelayMs: 5000,
     circuitBreaker: {
         failureThreshold: 5,
         resetTimeoutMs: 60000,
         minHealthyPeriodMs: 120000
     },
-    tracking: {
-        maxClicksPerIP: 100,
-        clickWindowMs: 15 * 60 * 1000,  // 15 minutes
-        maxConversionsPerIP: 10,
-        conversionWindowMs: 60 * 60 * 1000  // 1 hour
+    backoff: {
+        initialDelayMs: 1000,
+        maxDelayMs: 30000,
+        factor: 2
     },
-    cache: {
-        periodStatsTTL: 300,  // 5 minutes
-        rankingsTTL: 60       // 1 minute
+    dependencies: [SERVICE_NAMES.CONTEST_EVALUATION],
+    referral: {
+        batchSize: 100,
+        maxParallelProcessing: 5,
+        processingTimeoutMs: 30000,
+        minProcessInterval: 60000,
+        periodLength: 'weekly',
+        rankingUpdateInterval: 3600000, // 1 hour
+        cacheTimeout: 300000 // 5 minutes
     }
 };
 
-// Referral Service
 class ReferralService extends BaseService {
     constructor() {
         super(REFERRAL_SERVICE_CONFIG.name, REFERRAL_SERVICE_CONFIG);
         
-        // Service-specific state
+        // Initialize service-specific stats
         this.referralStats = {
             operations: {
                 total: 0,
                 successful: 0,
                 failed: 0
             },
-            clicks: {
+            referrals: {
                 total: 0,
-                by_source: {},
-                by_device: {},
-                by_campaign: {}
+                active: 0,
+                converted: 0,
+                failed: 0,
+                by_status: {}
             },
-            conversions: {
+            periods: {
                 total: 0,
-                by_source: {},
-                successful: 0,
-                failed: 0
+                active: 0,
+                completed: 0,
+                rankings_updated: 0
             },
             rewards: {
-                total_distributed: new Decimal(0),
-                by_type: {},
-                pending: 0
+                total_distributed: 0,
+                successful_distributions: 0,
+                failed_distributions: 0,
+                total_amount: 0
+            },
+            milestones: {
+                total: 0,
+                achieved: 0,
+                failed: 0,
+                by_level: {}
             },
             performance: {
-                average_operation_time_ms: 0,
-                last_operation_time_ms: 0
+                average_processing_time_ms: 0,
+                last_operation_time_ms: 0,
+                average_reward_time_ms: 0
+            },
+            dependencies: {
+                contestEvaluation: {
+                    status: 'unknown',
+                    lastCheck: null,
+                    errors: 0
+                }
             }
         };
+
+        // Active processing tracking
+        this.activeProcessing = new Map();
+        this.processingTimeouts = new Set();
+
+        // Cache for period stats and rankings
+        this.periodStatsCache = new Map();
+        this.rankingsCache = new Map();
     }
 
-    // System Settings Management
-    async getSystemSettings() {
-        const settings = await prisma.system_settings.findFirst({
-            where: { key: 'referral_settings' }
-        });
-        return settings?.value || {};
-    }
-
-    // Period Management
-    async getCurrentPeriod() {
-        return await prisma.referral_periods.findFirst({
-            where: { is_active: true },
-            orderBy: { start_date: 'desc' }
-        });
-    }
-
-    async createNewPeriod() {
-        const settings = await this.getSystemSettings();
-        const { startDate, endDate } = this.calculatePeriodDates(settings.period_length);
-        
-        return await prisma.referral_periods.create({
-            data: {
-                start_date: startDate,
-                end_date: endDate,
-                is_active: true,
-                status: 'in_progress'
-            }
-        });
-    }
-
-    calculatePeriodDates(periodLength = 'weekly') {
-        const startDate = new Date();
-        const endDate = new Date();
-        
-        switch (periodLength) {
-            case 'weekly':
-                endDate.setDate(endDate.getDate() + 7);
-                break;
-            case 'monthly':
-                endDate.setMonth(endDate.getMonth() + 1);
-                break;
-            default:
-                endDate.setDate(endDate.getDate() + 7); // Default to weekly
-        }
-        
-        return { startDate, endDate };
-    }
-
-    // Milestone Management
-    async checkMilestones(userId) {
-        const settings = await this.getSystemSettings();
-        const referralCount = await this.getUserReferralCount(userId);
-        
-        for (const [level, config] of Object.entries(settings.reward_tiers || {})) {
-            if (referralCount >= config.referrals) {
-                await this.createMilestone(userId, parseInt(level.split('_')[1]), config);
-            }
-        }
-    }
-
-    async createMilestone(userId, level, config) {
-        const existing = await prisma.referral_milestones.findFirst({
-            where: { 
-                user_id: userId,
-                milestone_level: level
-            }
-        });
-
-        if (!existing) {
-            await prisma.referral_milestones.create({
-                data: {
-                    user_id: userId,
-                    milestone_level: level,
-                    referral_count: config.referrals,
-                    reward_amount: config.reward,
-                    status: 'pending'
-                }
-            });
-        }
-    }
-
-    // Ranking Management
-    async updateRankings() {
-        const currentPeriod = await this.getCurrentPeriod();
-        if (!currentPeriod) return;
-
-        const rankings = await this.calculateRankings(currentPeriod.id);
-        await this.updateTrends(rankings);
-        await this.storeRankings(currentPeriod.id, rankings);
-    }
-
-    async calculateRankings(periodId) {
-        const referrals = await prisma.$queryRaw`
-            SELECT 
-                r.referrer_id as user_id,
-                COUNT(*) as referral_count
-            FROM referrals r
-            JOIN referral_periods p ON r.created_at BETWEEN p.start_date AND p.end_date
-            WHERE p.id = ${periodId}
-            GROUP BY r.referrer_id
-            ORDER BY referral_count DESC
-        `;
-
-        return referrals.map((r, index) => ({
-            ...r,
-            rank: index + 1
-        }));
-    }
-
-    async updateTrends(newRankings) {
-        const previousRankings = await prisma.referral_period_rankings.findMany({
-            orderBy: { created_at: 'desc' },
-            take: 1
-        });
-
-        return newRankings.map(ranking => {
-            const previous = previousRankings.find(p => p.user_id === ranking.user_id);
-            const trend = !previous ? 'stable' :
-                         ranking.rank < previous.rank ? 'up' :
-                         ranking.rank > previous.rank ? 'down' : 'stable';
-            return { ...ranking, trend };
-        });
-    }
-
-    async storeRankings(periodId, rankings) {
-        const settings = await this.getSystemSettings();
-        
-        for (const ranking of rankings) {
-            let rewardAmount = 0;
+    async initialize() {
+        try {
+            // Call parent initialize first
+            await super.initialize();
             
-            // Calculate reward based on rank
-            if (ranking.rank <= 3) {
-                rewardAmount = settings.leaderboard_rewards.top_3[ranking.rank - 1];
-            } else if (ranking.rank <= 10) {
-                rewardAmount = settings.leaderboard_rewards.top_10;
+            // Check dependencies
+            const contestEvalStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
+            if (!contestEvalStatus) {
+                throw ServiceError.initialization('Contest Evaluation Service not healthy');
             }
 
-            await prisma.referral_period_rankings.upsert({
-                where: {
-                    period_id_user_id: {
-                        period_id: periodId,
-                        user_id: ranking.user_id
-                    }
-                },
-                update: {
-                    referral_count: ranking.referral_count,
-                    rank: ranking.rank,
-                    reward_amount: rewardAmount
-                },
-                create: {
-                    period_id: periodId,
-                    user_id: ranking.user_id,
-                    referral_count: ranking.referral_count,
-                    rank: ranking.rank,
-                    reward_amount: rewardAmount,
-                    status: 'pending'
-                }
-            });
-        }
-    }
-
-    // Caching
-    async getCachedPeriodStats() {
-        const cacheKey = 'current_period_stats';
-        let stats = await cache.get(cacheKey);
-        
-        if (!stats) {
-            const currentPeriod = await this.getCurrentPeriod();
-            if (!currentPeriod) return null;
-
-            stats = {
-                total_global_referrals: await this.getTotalGlobalReferrals(),
-                current_period: {
-                    start_date: currentPeriod.start_date,
-                    end_date: currentPeriod.end_date,
-                    days_remaining: Math.ceil((new Date(currentPeriod.end_date) - new Date()) / (1000 * 60 * 60 * 24))
-                }
-            };
-
-            await cache.set(cacheKey, stats, this.config.cache.periodStatsTTL);
-        }
-        
-        return stats;
-    }
-
-    async getCachedRankings() {
-        const cacheKey = 'current_rankings';
-        let rankings = await cache.get(cacheKey);
-        
-        if (!rankings) {
-            const currentPeriod = await this.getCurrentPeriod();
-            if (!currentPeriod) return [];
-
-            rankings = await prisma.referral_period_rankings.findMany({
-                where: { period_id: currentPeriod.id },
-                orderBy: { rank: 'asc' },
-                take: 100,
-                include: {
-                    user: {
-                        select: {
-                            username: true
-                        }
-                    }
-                }
+            // Load configuration from database
+            const settings = await prisma.system_settings.findUnique({
+                where: { key: this.name }
             });
 
-            await cache.set(cacheKey, rankings, this.config.cache.rankingsTTL);
-        }
-        
-        return rankings;
-    }
+            if (settings?.value) {
+                const dbConfig = typeof settings.value === 'string' 
+                    ? JSON.parse(settings.value)
+                    : settings.value;
 
-    // Core operation: Track referral click
-    async trackClick(referralCode, clickData) {
-        if (this.stats.circuitBreaker.isOpen) {
-            throw ServiceError.operation('Circuit breaker is open for click tracking');
-        }
-
-        try {
-            // Check rate limiting
-            const recentClicks = await prisma.referral_clicks.count({
-                where: {
-                    ip_address: clickData.ip_address,
-                    timestamp: {
-                        gte: new Date(Date.now() - this.config.tracking.clickWindowMs)
+                // Merge configs carefully preserving circuit breaker settings
+                this.config = {
+                    ...this.config,
+                    ...dbConfig,
+                    circuitBreaker: {
+                        ...this.config.circuitBreaker,
+                        ...(dbConfig.circuitBreaker || {})
                     }
-                }
-            });
-
-            if (recentClicks >= this.config.tracking.maxClicksPerIP) {
-                throw ServiceError.validation('Rate limit exceeded for click tracking');
+                };
             }
 
-            // Record the click
-            const click = await prisma.referral_clicks.create({
-                data: {
-                    referral_code: referralCode,
-                    source: clickData.source,
-                    landing_page: clickData.landing_page,
-                    utm_source: clickData.utm_params?.source,
-                    utm_medium: clickData.utm_params?.medium,
-                    utm_campaign: clickData.utm_params?.campaign,
-                    device: clickData.device,
-                    browser: clickData.browser,
-                    ip_address: clickData.ip_address,
-                    user_agent: clickData.user_agent,
-                    session_id: clickData.session_id,
-                    timestamp: new Date(),
-                    referrer_id: clickData.referrer_id
-                }
+            // Load initial referral state
+            const [totalReferrals, activeReferrals, convertedReferrals] = await Promise.all([
+                prisma.referrals.count(),
+                prisma.referrals.count({ where: { status: 'active' } }),
+                prisma.referrals.count({ where: { status: 'converted' } })
+            ]);
+
+            this.referralStats.referrals.total = totalReferrals;
+            this.referralStats.referrals.active = activeReferrals;
+            this.referralStats.referrals.converted = convertedReferrals;
+
+            // Load status stats
+            const statusStats = await prisma.referrals.groupBy({
+                by: ['status'],
+                _count: true
             });
 
-            // Update statistics
-            await this.recordSuccess();
-            this.referralStats.clicks.total++;
-            this.referralStats.clicks.by_source[clickData.source] = 
-                (this.referralStats.clicks.by_source[clickData.source] || 0) + 1;
-            this.referralStats.clicks.by_device[clickData.device] = 
-                (this.referralStats.clicks.by_device[clickData.device] || 0) + 1;
-            if (clickData.utm_params?.campaign) {
-                this.referralStats.clicks.by_campaign[clickData.utm_params.campaign] = 
-                    (this.referralStats.clicks.by_campaign[clickData.utm_params.campaign] || 0) + 1;
-            }
+            statusStats.forEach(stat => {
+                this.referralStats.referrals.by_status[stat.status] = stat._count;
+            });
 
-            return click;
+            // Load milestone stats
+            const [totalMilestones, achievedMilestones] = await Promise.all([
+                prisma.referral_milestones.count(),
+                prisma.referral_milestones.count({ where: { achieved_at: { not: null } } })
+            ]);
+
+            this.referralStats.milestones.total = totalMilestones;
+            this.referralStats.milestones.achieved = achievedMilestones;
+
+            // Load level stats
+            const levelStats = await prisma.referral_milestones.groupBy({
+                by: ['level'],
+                _count: true,
+                where: { achieved_at: { not: null } }
+            });
+
+            levelStats.forEach(stat => {
+                this.referralStats.milestones.by_level[stat.level] = stat._count;
+            });
+
+            // Load period stats
+            const [totalPeriods, activePeriods, completedPeriods] = await Promise.all([
+                prisma.referral_periods.count(),
+                prisma.referral_periods.count({ where: { end_time: { gt: new Date() } } }),
+                prisma.referral_periods.count({ where: { end_time: { lt: new Date() } } })
+            ]);
+
+            this.referralStats.periods.total = totalPeriods;
+            this.referralStats.periods.active = activePeriods;
+            this.referralStats.periods.completed = completedPeriods;
+
+            // Start ranking update interval
+            this.startRankingUpdates();
+
+            // Ensure stats are JSON-serializable for ServiceManager
+            const serializableStats = JSON.parse(JSON.stringify({
+                ...this.stats,
+                referralStats: this.referralStats
+            }));
+
+            await ServiceManager.markServiceStarted(
+                this.name,
+                JSON.parse(JSON.stringify(this.config)),
+                serializableStats
+            );
+
+            logApi.info('Referral Service initialized', {
+                totalReferrals,
+                activeReferrals,
+                convertedReferrals,
+                totalMilestones,
+                achievedMilestones
+            });
+
+            return true;
         } catch (error) {
+            logApi.error('Referral Service initialization error:', error);
             await this.handleError(error);
             throw error;
         }
     }
 
-    // Core operation: Process conversion
-    async processConversion(sessionId, userData) {
-        if (this.stats.circuitBreaker.isOpen) {
-            throw ServiceError.operation('Circuit breaker is open for conversion processing');
-        }
-
-        try {
-            // Find the original click
-            const click = await prisma.referral_clicks.findFirst({
-                where: {
-                    session_id: sessionId,
-                    converted: false
-                },
-                orderBy: {
-                    timestamp: 'desc'
-                }
-            });
-
-            if (!click) {
-                throw ServiceError.validation('No matching click found for conversion');
-            }
-
-            // Create the referral record
-            const referral = await prisma.referrals.create({
-                data: {
-                    referrer_id: click.referrer_id,
-                    referred_id: userData.wallet_address,
-                    referral_code: click.referral_code,
-                    status: 'pending',
-                    source: click.source,
-                    landing_page: click.landing_page,
-                    utm_source: click.utm_source,
-                    utm_medium: click.utm_medium,
-                    utm_campaign: click.utm_campaign,
-                    device: click.device,
-                    browser: click.browser,
-                    ip_address: click.ip_address,
-                    user_agent: click.user_agent,
-                    click_timestamp: click.timestamp,
-                    session_id: click.session_id
-                }
-            });
-
-            // Mark click as converted
-            await prisma.referral_clicks.update({
-                where: { id: click.id },
-                data: {
-                    converted: true,
-                    converted_at: new Date()
-                }
-            });
-
-            // Update statistics
-            await this.recordSuccess();
-            this.referralStats.conversions.total++;
-            this.referralStats.conversions.by_source[click.source] = 
-                (this.referralStats.conversions.by_source[click.source] || 0) + 1;
-            this.referralStats.conversions.successful++;
-
-            return referral;
-        } catch (error) {
-            this.referralStats.conversions.failed++;
-            await this.handleError(error);
-            throw error;
-        }
-    }
-
-    // Core operation: Process rewards
-    async processRewards(referralId) {
-        if (this.stats.circuitBreaker.isOpen) {
-            throw ServiceError.operation('Circuit breaker is open for reward processing');
-        }
-
-        try {
-            const referral = await prisma.referrals.findUnique({
-                where: { id: referralId },
-                include: {
-                    referrer: true,
-                    referred: true
-                }
-            });
-
-            if (!referral || referral.status !== 'pending') {
-                throw ServiceError.validation('Invalid referral for reward processing');
-            }
-
-            // Calculate reward amount based on your criteria
-            const rewardAmount = new Decimal('1.0'); // Example fixed amount
-
-            // Record the reward
-            await prisma.referrals.update({
-                where: { id: referralId },
-                data: {
-                    status: 'completed',
-                    reward_amount: rewardAmount,
-                    reward_paid_at: new Date(),
-                    qualified_at: new Date()
-                }
-            });
-
-            // Update statistics
-            await this.recordSuccess();
-            this.referralStats.rewards.total_distributed = 
-                this.referralStats.rewards.total_distributed.add(rewardAmount);
-            this.referralStats.rewards.by_type['signup_bonus'] = 
-                (this.referralStats.rewards.by_type['signup_bonus'] || new Decimal(0)).add(rewardAmount);
-
-            return {
-                referralId,
-                rewardAmount,
-                status: 'completed'
-            };
-        } catch (error) {
-            await this.handleError(error);
-            throw error;
-        }
-    }
-
-    // Admin operation: Get referral analytics
-    async getAnalytics(filters = {}) {
-        try {
-            const analytics = {
-                clicks: await this._getClickAnalytics(filters),
-                conversions: await this._getConversionAnalytics(filters),
-                rewards: await this._getRewardAnalytics(filters)
-            };
-
-            return analytics;
-        } catch (error) {
-            logApi.error('Failed to get analytics:', error);
-            throw error;
-        }
-    }
-
-    // Helper: Get click analytics
-    async _getClickAnalytics(filters) {
-        const clicks = await prisma.referral_clicks.groupBy({
-            by: ['source', 'device', 'utm_campaign'],
-            _count: {
-                _all: true
-            },
-            where: filters
-        });
-
-        return {
-            total: await prisma.referral_clicks.count({ where: filters }),
-            by_source: this._groupByField(clicks, 'source'),
-            by_device: this._groupByField(clicks, 'device'),
-            by_campaign: this._groupByField(clicks, 'utm_campaign')
-        };
-    }
-
-    // Helper: Get conversion analytics
-    async _getConversionAnalytics(filters) {
-        const conversions = await prisma.referrals.groupBy({
-            by: ['source', 'status'],
-            _count: {
-                _all: true
-            },
-            where: filters
-        });
-
-        return {
-            total: await prisma.referrals.count({ where: filters }),
-            by_source: this._groupByField(conversions, 'source'),
-            by_status: this._groupByField(conversions, 'status')
-        };
-    }
-
-    // Helper: Get reward analytics
-    async _getRewardAnalytics(filters) {
-        const rewards = await prisma.referrals.groupBy({
-            by: ['status'],
-            _sum: {
-                reward_amount: true
-            },
-            where: {
-                ...filters,
-                reward_amount: { not: null }
-            }
-        });
-
-        return {
-            total_distributed: rewards.reduce((sum, r) => sum.add(r._sum.reward_amount || 0), new Decimal(0)),
-            by_status: this._groupByField(rewards, 'status', '_sum.reward_amount')
-        };
-    }
-
-    // Helper: Group analytics by field
-    _groupByField(data, field, valueField = '_count._all') {
-        return data.reduce((acc, item) => {
-            if (item[field]) {
-                acc[item[field]] = this._getNestedValue(item, valueField);
-            }
-            return acc;
-        }, {});
-    }
-
-    // Helper: Get nested object value
-    _getNestedValue(obj, path) {
-        return path.split('.').reduce((acc, part) => acc && acc[part], obj);
-    }
-
-    // Main operation implementation
     async performOperation() {
         const startTime = Date.now();
         
         try {
-            // Update rankings
-            await this.updateRankings();
+            // Check dependency health
+            const contestEvalStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
+            this.referralStats.dependencies.contestEvaluation = {
+                status: contestEvalStatus ? 'healthy' : 'unhealthy',
+                lastCheck: new Date().toISOString(),
+                errors: contestEvalStatus ? 0 : this.referralStats.dependencies.contestEvaluation.errors + 1
+            };
 
-            // Process pending rewards
-            const pendingReferrals = await prisma.referrals.findMany({
-                where: {
-                    status: 'pending',
-                    click_timestamp: {
-                        lte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-                    }
-                }
-            });
-
-            for (const referral of pendingReferrals) {
-                try {
-                    await this.processRewards(referral.id);
-                    await this.checkMilestones(referral.referrer_id);
-                } catch (error) {
-                    logApi.error(`Failed to process rewards for referral ${referral.id}:`, error);
-                }
+            if (!contestEvalStatus) {
+                throw ServiceError.dependency('Contest Evaluation Service unhealthy');
             }
+
+            // Get current period
+            const currentPeriod = await this.getCurrentPeriod();
+            if (!currentPeriod) {
+                await this.createNewPeriod();
+            }
+
+            // Process referrals in batches
+            const results = await this.processReferrals();
+
+            // Update performance metrics
+            this.referralStats.performance.last_operation_time_ms = Date.now() - startTime;
+            this.referralStats.performance.average_processing_time_ms = 
+                (this.referralStats.performance.average_processing_time_ms * this.referralStats.operations.total + 
+                (Date.now() - startTime)) / (this.referralStats.operations.total + 1);
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    referralStats: this.referralStats
+                }
+            );
 
             return {
                 duration: Date.now() - startTime,
-                processed: pendingReferrals.length,
-                rankings_updated: true
+                results
             };
         } catch (error) {
-            // Let the base class handle the error and circuit breaker
-            throw error;
+            await this.handleError(error);
+            return false;
         }
     }
 
-    // Helper methods
-    async getTotalGlobalReferrals() {
-        return await prisma.referrals.count({
-            where: { status: 'completed' }
-        });
+    async processReferrals() {
+        const startTime = Date.now();
+        
+        try {
+            // Get pending referrals
+            const referrals = await prisma.referrals.findMany({
+                where: {
+                    OR: [
+                        { status: 'pending' },
+                        { status: 'active', last_check: { lt: new Date(Date.now() - this.config.referral.minProcessInterval) } }
+                    ]
+                },
+                take: this.config.referral.batchSize,
+                orderBy: { created_at: 'asc' }
+            });
+
+            const results = {
+                processed: 0,
+                converted: 0,
+                failed: 0,
+                rewards_distributed: 0
+            };
+
+            // Process each referral
+            for (const referral of referrals) {
+                try {
+                    // Skip if already being processed
+                    if (this.activeProcessing.has(referral.id)) {
+                        continue;
+                    }
+
+                    // Add to active processing
+                    this.activeProcessing.set(referral.id, startTime);
+
+                    // Set timeout
+                    const timeout = setTimeout(() => {
+                        this.activeProcessing.delete(referral.id);
+                        this.referralStats.referrals.failed++;
+                    }, this.config.referral.processingTimeoutMs);
+                    
+                    this.processingTimeouts.add(timeout);
+
+                    // Process referral
+                    const result = await this.processReferral(referral);
+                    
+                    // Update results
+                    results.processed++;
+                    if (result.converted) results.converted++;
+                    if (result.reward_distributed) results.rewards_distributed++;
+
+                    // Clear timeout and active processing
+                    clearTimeout(timeout);
+                    this.processingTimeouts.delete(timeout);
+                    this.activeProcessing.delete(referral.id);
+
+                } catch (error) {
+                    results.failed++;
+                    logApi.error(`Failed to process referral ${referral.id}:`, error);
+                }
+            }
+
+            return results;
+        } catch (error) {
+            throw ServiceError.operation('Failed to process referrals', {
+                error: error.message
+            });
+        }
     }
 
-    async getUserReferralCount(userId) {
-        return await prisma.referrals.count({
-            where: {
-                referrer_id: userId,
-                status: 'completed'
+    async processReferral(referral) {
+        try {
+            const result = {
+                converted: false,
+                reward_distributed: false
+            };
+
+            // Check if referral should be converted
+            if (referral.status === 'pending') {
+                const shouldConvert = await this.checkConversionCriteria(referral);
+                if (shouldConvert) {
+                    await this.convertReferral(referral);
+                    result.converted = true;
+                }
             }
+
+            // Check milestones
+            if (referral.status === 'active') {
+                const milestoneResult = await this.checkMilestones(referral.referrer_id);
+                if (milestoneResult.achieved) {
+                    const rewardResult = await this.processRewards(referral.id);
+                    result.reward_distributed = rewardResult.success;
+                }
+            }
+
+            return result;
+        } catch (error) {
+            throw ServiceError.operation('Failed to process referral', {
+                referral_id: referral.id,
+                error: error.message
+            });
+        }
+    }
+
+    async checkConversionCriteria(referral) {
+        // Implementation will vary based on conversion criteria
+        // This is a placeholder for the actual implementation
+        return false;
+    }
+
+    async convertReferral(referral) {
+        try {
+            await prisma.referrals.update({
+                where: { id: referral.id },
+                data: {
+                    status: 'converted',
+                    converted_at: new Date()
+                }
+            });
+
+            this.referralStats.referrals.converted++;
+            this.referralStats.referrals.by_status['converted'] = 
+                (this.referralStats.referrals.by_status['converted'] || 0) + 1;
+
+        } catch (error) {
+            throw ServiceError.operation('Failed to convert referral', {
+                referral_id: referral.id,
+                error: error.message
+            });
+        }
+    }
+
+    async getCurrentPeriod() {
+        try {
+            return await prisma.referral_periods.findFirst({
+                where: {
+                    start_time: { lte: new Date() },
+                    end_time: { gt: new Date() }
+                }
+            });
+        } catch (error) {
+            throw ServiceError.operation('Failed to get current period', {
+                error: error.message
+            });
+        }
+    }
+
+    async createNewPeriod() {
+        try {
+            const { startTime, endTime } = this.calculatePeriodDates();
+            
+            const period = await prisma.referral_periods.create({
+                data: {
+                    start_time: startTime,
+                    end_time: endTime,
+                    period_type: this.config.referral.periodLength
+                }
+            });
+
+            this.referralStats.periods.total++;
+            this.referralStats.periods.active++;
+
+            return period;
+        } catch (error) {
+            throw ServiceError.operation('Failed to create new period', {
+                error: error.message
+            });
+        }
+    }
+
+    calculatePeriodDates(periodLength = 'weekly') {
+        const now = new Date();
+        const startTime = new Date(now);
+        const endTime = new Date(now);
+
+        switch (periodLength) {
+            case 'weekly':
+                startTime.setHours(0, 0, 0, 0);
+                startTime.setDate(startTime.getDate() - startTime.getDay());
+                endTime.setTime(startTime.getTime() + 7 * 24 * 60 * 60 * 1000);
+                break;
+            case 'monthly':
+                startTime.setDate(1);
+                startTime.setHours(0, 0, 0, 0);
+                endTime.setMonth(endTime.getMonth() + 1);
+                endTime.setDate(1);
+                endTime.setHours(0, 0, 0, 0);
+                break;
+            default:
+                throw new Error(`Invalid period length: ${periodLength}`);
+        }
+
+        return { startTime, endTime };
+    }
+
+    async startRankingUpdates() {
+        setInterval(async () => {
+            try {
+                await this.updateRankings();
+            } catch (error) {
+                logApi.error('Failed to update rankings:', error);
+            }
+        }, this.config.referral.rankingUpdateInterval);
+    }
+
+    async updateRankings() {
+        try {
+            const currentPeriod = await this.getCurrentPeriod();
+            if (!currentPeriod) return;
+
+            const rankings = await this.calculateRankings(currentPeriod.id);
+            await this.storeRankings(currentPeriod.id, rankings);
+
+            // Update cache
+            this.rankingsCache.set(currentPeriod.id, {
+                rankings,
+                timestamp: Date.now()
+            });
+
+            this.referralStats.periods.rankings_updated++;
+
+        } catch (error) {
+            throw ServiceError.operation('Failed to update rankings', {
+                error: error.message
+            });
+        }
+    }
+
+    async getCachedPeriodStats() {
+        const currentPeriod = await this.getCurrentPeriod();
+        if (!currentPeriod) return null;
+
+        const cacheKey = `period_stats:${currentPeriod.id}`;
+        const cached = this.periodStatsCache.get(cacheKey);
+
+        if (cached && (Date.now() - cached.timestamp) < this.config.referral.cacheTimeout) {
+            return cached.stats;
+        }
+
+        const stats = await this.calculatePeriodStats(currentPeriod);
+        this.periodStatsCache.set(cacheKey, {
+            stats,
+            timestamp: Date.now()
         });
+
+        return stats;
+    }
+
+    async getCachedRankings() {
+        const currentPeriod = await this.getCurrentPeriod();
+        if (!currentPeriod) return null;
+
+        const cached = this.rankingsCache.get(currentPeriod.id);
+        if (cached && (Date.now() - cached.timestamp) < this.config.referral.cacheTimeout) {
+            return cached.rankings;
+        }
+
+        const rankings = await this.calculateRankings(currentPeriod.id);
+        this.rankingsCache.set(currentPeriod.id, {
+            rankings,
+            timestamp: Date.now()
+        });
+
+        return rankings;
+    }
+
+    async stop() {
+        try {
+            await super.stop();
+            
+            // Clear all timeouts
+            for (const timeout of this.processingTimeouts) {
+                clearTimeout(timeout);
+            }
+            this.processingTimeouts.clear();
+            
+            // Clear active processing
+            this.activeProcessing.clear();
+            
+            // Clear caches
+            this.periodStatsCache.clear();
+            this.rankingsCache.clear();
+            
+            // Final stats update
+            await ServiceManager.markServiceStopped(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    referralStats: this.referralStats
+                }
+            );
+            
+            logApi.info('Referral Service stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Referral Service:', error);
+            throw error;
+        }
     }
 }
 

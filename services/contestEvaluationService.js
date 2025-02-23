@@ -1,9 +1,9 @@
 // services/contestEvaluationService.js
 
 /*
- * The Contest Evaluation Service is responsible for starting, ending, and evaluating contests.
- * It also handles the logic for determining winners and distributing prizes to winners.
- * 
+ * This service is responsible for managing contest lifecycle and evaluation.
+ * It handles contest start, end, and prize distribution, ensuring fair and
+ * accurate evaluation of contest results.
  */
 
 // ** Service Auth **
@@ -17,16 +17,13 @@ import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
 import ServiceManager from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
-import crypto from 'crypto';
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
-import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
-import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
-
-const connection = new Connection(config.rpc_urls.primary, 'confirmed');
+import marketDataService from './marketDataService.js';
 
 const CONTEST_EVALUATION_CONFIG = {
     name: SERVICE_NAMES.CONTEST_EVALUATION,
@@ -35,80 +32,95 @@ const CONTEST_EVALUATION_CONFIG = {
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
-        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
+        failureThreshold: 10, // Higher threshold for critical service
+        resetTimeoutMs: 120000, // Longer reset time for financial operations
+        minHealthyPeriodMs: 180000 // Longer health period required
     },
     backoff: {
         initialDelayMs: 1000,
         maxDelayMs: 30000,
         factor: 2
     },
-    prizeDistribution: {
+    dependencies: [SERVICE_NAMES.MARKET_DATA],
+    evaluation: {
+        maxParallelEvaluations: 5,
+        minPrizeAmount: 0.001,
         maxRetries: 3,
-        retryDelayMs: 5000
-    },
-    refunds: {
-        maxRetries: 3,
-        retryDelayMs: 5000
-    },
-    autoCancelWindow: (0 * 24 * 60 * 60 * 1000) + (0 * 60 * 60 * 1000) + (1 * 60 * 1000) + (29 * 1000),  // 0 days, 0 hours, 1 minutes, and 29 seconds
-    states: {
-        PENDING: 'pending',
-        ACTIVE: 'active',
-        COMPLETED: 'completed',
-        CANCELLED: 'cancelled'
-    },
-    platformFee: 0.10
+        retryDelayMs: 5000,
+        timeoutMs: 300000 // 5 minutes
+    }
 };
 
-// Contest Evaluation Service
 class ContestEvaluationService extends BaseService {
     constructor() {
         super(CONTEST_EVALUATION_CONFIG.name, CONTEST_EVALUATION_CONFIG);
         
-        // Service-specific state
+        // Initialize Solana connection
+        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        
+        // Initialize service-specific stats
         this.evaluationStats = {
             operations: {
                 total: 0,
                 successful: 0,
                 failed: 0
             },
-            performance: {
-                average_operation_time_ms: 0,
-                last_operation_time_ms: 0
-            },
             contests: {
-                total_evaluated: 0,
-                successful_evaluations: 0,
-                failed_evaluations: 0,
-                prizes_distributed: 0,
-                refunds_processed: 0
+                total: 0,
+                active: 0,
+                completed: 0,
+                failed: 0,
+                by_status: {}
             },
-            prizeDistribution: {
+            evaluations: {
                 total: 0,
                 successful: 0,
                 failed: 0,
-                total_amount_distributed: new Decimal(0)
+                retried: 0,
+                average_duration_ms: 0
+            },
+            prizes: {
+                total_distributed: 0,
+                successful_distributions: 0,
+                failed_distributions: 0,
+                total_amount: 0
             },
             refunds: {
                 total: 0,
                 successful: 0,
                 failed: 0,
-                total_amount_refunded: new Decimal(0)
+                total_amount: 0
             },
-            tieBreaks: {
-                total: 0,
-                resolved: 0,
-                failed: 0
+            performance: {
+                average_evaluation_time_ms: 0,
+                last_operation_time_ms: 0,
+                average_prize_distribution_time_ms: 0
+            },
+            dependencies: {
+                marketData: {
+                    status: 'unknown',
+                    lastCheck: null,
+                    errors: 0
+                }
             }
         };
+
+        // Active evaluations tracking
+        this.activeEvaluations = new Map();
+        this.evaluationTimeouts = new Set();
     }
 
     async initialize() {
         try {
+            // Call parent initialize first
             await super.initialize();
             
+            // Check dependencies
+            const marketDataStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.MARKET_DATA);
+            if (!marketDataStatus) {
+                throw ServiceError.initialization('Market Data Service not healthy');
+            }
+
             // Load configuration from database
             const settings = await prisma.system_settings.findUnique({
                 where: { key: this.name }
@@ -119,6 +131,7 @@ class ContestEvaluationService extends BaseService {
                     ? JSON.parse(settings.value)
                     : settings.value;
 
+                // Merge configs carefully preserving circuit breaker settings
                 this.config = {
                     ...this.config,
                     ...dbConfig,
@@ -129,19 +142,154 @@ class ContestEvaluationService extends BaseService {
                 };
             }
 
+            // Load initial contest state
+            const [activeContests, completedContests, failedContests] = await Promise.all([
+                prisma.contests.count({ where: { status: 'active' } }),
+                prisma.contests.count({ where: { status: 'completed' } }),
+                prisma.contests.count({ where: { status: 'failed' } })
+            ]);
+
+            this.evaluationStats.contests.total = await prisma.contests.count();
+            this.evaluationStats.contests.active = activeContests;
+            this.evaluationStats.contests.completed = completedContests;
+            this.evaluationStats.contests.failed = failedContests;
+
             // Ensure stats are JSON-serializable for ServiceManager
-            const serializableStats = JSON.parse(JSON.stringify(this.stats));
+            const serializableStats = JSON.parse(JSON.stringify({
+                ...this.stats,
+                evaluationStats: this.evaluationStats
+            }));
+
             await ServiceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
             );
 
-            logApi.info('Contest Evaluation Service initialized');
+            logApi.info('Contest Evaluation Service initialized', {
+                activeContests,
+                completedContests,
+                failedContests
+            });
+
             return true;
         } catch (error) {
             logApi.error('Contest Evaluation Service initialization error:', error);
-            await this.handleError('initialize', error);
+            await this.handleError(error);
+            throw error;
+        }
+    }
+
+    async performOperation() {
+        const startTime = Date.now();
+        
+        try {
+            // Check dependency health
+            const marketDataStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.MARKET_DATA);
+            this.evaluationStats.dependencies.marketData = {
+                status: marketDataStatus ? 'healthy' : 'unhealthy',
+                lastCheck: new Date().toISOString(),
+                errors: marketDataStatus ? 0 : this.evaluationStats.dependencies.marketData.errors + 1
+            };
+
+            if (!marketDataStatus) {
+                throw ServiceError.dependency('Market Data Service unhealthy');
+            }
+
+            // Find contests that need attention
+            const now = new Date();
+            const [contestsToStart, contestsToEnd] = await Promise.all([
+                this.findContestsToStart(now),
+                this.findContestsToEnd(now)
+            ]);
+
+            // Process contests
+            const results = {
+                started: [],
+                ended: [],
+                failed: []
+            };
+
+            // Start new contests
+            for (const contest of contestsToStart) {
+                try {
+                    await this.processContestStart(contest);
+                    results.started.push(contest.id);
+                } catch (error) {
+                    results.failed.push({
+                        contest: contest.id,
+                        operation: 'start',
+                        error: error.message
+                    });
+                }
+            }
+
+            // End completed contests
+            for (const contest of contestsToEnd) {
+                try {
+                    await this.evaluateContest(contest);
+                    results.ended.push(contest.id);
+                } catch (error) {
+                    results.failed.push({
+                        contest: contest.id,
+                        operation: 'end',
+                        error: error.message
+                    });
+                }
+            }
+
+            // Update performance metrics
+            this.evaluationStats.performance.last_operation_time_ms = Date.now() - startTime;
+            this.evaluationStats.performance.average_evaluation_time_ms = 
+                (this.evaluationStats.performance.average_evaluation_time_ms * this.evaluationStats.operations.total + 
+                (Date.now() - startTime)) / (this.evaluationStats.operations.total + 1);
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    evaluationStats: this.evaluationStats
+                }
+            );
+
+            return {
+                duration: Date.now() - startTime,
+                results
+            };
+        } catch (error) {
+            await this.handleError(error);
+            return false;
+        }
+    }
+
+    async stop() {
+        try {
+            await super.stop();
+            
+            // Clear all timeouts
+            for (const timeout of this.evaluationTimeouts) {
+                clearTimeout(timeout);
+            }
+            this.evaluationTimeouts.clear();
+            
+            // Clear active evaluations
+            this.activeEvaluations.clear();
+            
+            // Final stats update
+            await ServiceManager.markServiceStopped(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    evaluationStats: this.evaluationStats
+                }
+            );
+            
+            logApi.info('Contest Evaluation Service stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Contest Evaluation Service:', error);
             throw error;
         }
     }
@@ -187,8 +335,8 @@ class ContestEvaluationService extends BaseService {
                 })
             );
 
-            const signature = await connection.sendTransaction(transaction, [fromKeypair]);
-            await connection.confirmTransaction(signature);
+            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
+            await this.connection.confirmTransaction(signature);
 
             return signature;
         } catch (error) {
@@ -257,9 +405,8 @@ class ContestEvaluationService extends BaseService {
                     }
                 });
 
-                this.evaluationStats.prizeDistribution.successful++;
-                this.evaluationStats.prizeDistribution.totalAmountDistributed = 
-                    this.evaluationStats.prizeDistribution.totalAmountDistributed.add(prizeAmount);
+                this.evaluationStats.prizes.successful_distributions++;
+                this.evaluationStats.prizes.total_amount += prizeAmount;
 
                 logApi.info(`Successfully distributed prize for place ${place}`, {
                     contest_id: contest.id,
@@ -291,7 +438,7 @@ class ContestEvaluationService extends BaseService {
                 });
 
                 if (attempt === this.config.prizeDistribution.maxRetries) {
-                    this.evaluationStats.prizeDistribution.failed++;
+                    this.evaluationStats.prizes.failed_distributions++;
                     throw error;
                 }
 
@@ -443,7 +590,7 @@ class ContestEvaluationService extends BaseService {
 
     async validateContestWalletBalance(contestWallet, totalPrizePool) {
         try {
-            const balance = await connection.getBalance(new PublicKey(contestWallet.wallet_address));
+            const balance = await this.connection.getBalance(new PublicKey(contestWallet.wallet_address));
             const minimumBuffer = config.master_wallet.min_contest_wallet_balance * LAMPORTS_PER_SOL; // 0.01 SOL
             const requiredBalance = Math.ceil(totalPrizePool * LAMPORTS_PER_SOL) + minimumBuffer;
             
@@ -471,7 +618,7 @@ class ContestEvaluationService extends BaseService {
             );
 
             try {
-                const tokenAccount = await getAccount(connection, associatedTokenAddress);
+                const tokenAccount = await getAccount(this.connection, associatedTokenAddress);
                 if (tokenAccount.amount < BigInt(amount)) {
                     throw new Error(`Insufficient token balance. Required: ${amount}, Available: ${tokenAccount.amount}`);
                 }
@@ -916,7 +1063,8 @@ class ContestEvaluationService extends BaseService {
                 }
             }
 
-            this.evaluationStats.refundsProcessed++;
+            this.evaluationStats.refunds.total += results.filter(r => r.status === 'success').length;
+            this.evaluationStats.refunds.total_amount += results.filter(r => r.status === 'success').reduce((sum, r) => sum + r.amount, 0);
             return {
                 status: 'completed',
                 refunded: results.filter(r => r.status === 'success').length,
