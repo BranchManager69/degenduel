@@ -38,6 +38,8 @@ import { createMarketDataWebSocket } from "./websocket/market-ws.js";
 // Import WebSocket test routes
 import websocketTestRoutes from './routes/admin/websocket-test.js';
 import { createCircuitBreakerWebSocket } from './utils/websocket-suite/circuit-breaker-ws.js';
+// Import Circuit Breaker routes
+import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
 
 dotenv.config();
 
@@ -114,9 +116,9 @@ app.use("/api/admin/vanity-wallets", vanityWalletRoutes);
 app.use("/api/admin/wallets", walletManagementRoutes);
 app.use("/api/admin/faucet", faucetManagementRoutes);
 app.use("/api/admin/metrics", serviceMetricsRoutes);
-app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use('/api/admin/websocket', websocketTestRoutes);
+app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
 
 // 3. Apply maintenance check to all other routes
 // Prisma-enabled routes (inaccessible when in maintenance mode)
