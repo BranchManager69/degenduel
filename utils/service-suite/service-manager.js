@@ -8,20 +8,6 @@
 
 // Master Circuit Breaker
 import { createCircuitBreakerWebSocket } from '../websocket-suite/circuit-breaker-ws.js';
-// Services
-import achievementService from '../../services/achievementService.js';
-import adminWalletService from '../../services/adminWalletService.js';
-import contestEvaluationService from '../../services/contestEvaluationService.js';
-import contestWalletService from '../../services/contestWalletService.js';
-import marketDataService from '../../services/marketDataService.js';
-import referralService from '../../services/referralService.js';
-import tokenSyncService from '../../services/tokenSyncService.js';
-import tokenWhitelistService from '../../services/tokenWhitelistService.js';
-import vanityWalletService from '../../services/vanityWalletService.js';
-import walletRakeService from '../../services/walletRakeService.js';
-import faucetService from '../../services/faucetService.js';
-import walletGeneratorService from '../../services/walletGenerationService.js';
-// Other
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
 import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';
@@ -34,6 +20,7 @@ import {
     validateDependencyChain 
 } from './service-constants.js';
 import { ServiceError } from './service-error.js';
+import { serviceEvents } from './base-service.js';
 
 /**
  * Consolidated service management system for DegenDuel
@@ -44,6 +31,34 @@ class ServiceManager {
     static dependencies = new Map();
     static state = new Map();
     static circuitBreakerWs = null;
+
+    /**
+     * Initialize event listeners
+     */
+    static initializeEventListeners() {
+        // Service lifecycle events
+        serviceEvents.on('service:started', async (data) => {
+            await this.markServiceStarted(data.name, data.config, data.stats);
+        });
+
+        serviceEvents.on('service:stopped', async (data) => {
+            await this.markServiceStopped(data.name, data.config, data.stats);
+        });
+
+        serviceEvents.on('service:error', async (data) => {
+            await this.markServiceError(data.name, data.error, data.config, data.stats);
+        });
+
+        serviceEvents.on('service:heartbeat', async (data) => {
+            await this.updateServiceHeartbeat(data.name, data.config, data.stats);
+        });
+
+        serviceEvents.on('service:circuit_breaker', async (data) => {
+            await this.updateServiceState(data.name, {
+                status: data.status
+            }, data.config, data.stats);
+        });
+    }
 
     /**
      * Initialize the circuit breaker WebSocket with a server
@@ -450,28 +465,8 @@ class ServiceManager {
     }
 }
 
-// Register core services with dependencies
-// Data Layer
-ServiceManager.register(tokenSyncService);
-ServiceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
-ServiceManager.register(tokenWhitelistService);
-
-// Contest Layer
-ServiceManager.register(contestEvaluationService.service, [SERVICE_NAMES.MARKET_DATA]);
-ServiceManager.register(achievementService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-ServiceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-
-// Wallet Layer
-ServiceManager.register(vanityWalletService, [SERVICE_NAMES.WALLET_GENERATOR]);
-ServiceManager.register(contestWalletService, [SERVICE_NAMES.VANITY_WALLET]);
-ServiceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
-ServiceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-
-// Infrastructure Layer
-ServiceManager.register(walletGeneratorService);
-ServiceManager.register(faucetService, [SERVICE_NAMES.WALLET_GENERATOR]);
-
-// Infrastructure Layer services are registered by SolanaServiceManager during its initialization
+// Initialize event listeners
+ServiceManager.initializeEventListeners();
 
 // Export service name constants for backward compatibility
 export { SERVICE_NAMES, SERVICE_LAYERS };
