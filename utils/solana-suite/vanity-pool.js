@@ -3,7 +3,7 @@
 import { Keypair } from '@solana/web3.js';
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 import { cpus } from 'os';
-import { WalletGenerator } from './wallet-generator.js';
+import { WalletGenerator } from '../services/walletGenerationService.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import os from 'os';
