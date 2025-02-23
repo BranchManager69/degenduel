@@ -31,9 +31,9 @@ const TOKEN_SYNC_CONFIG = {
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
-        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
+        failureThreshold: 4, // Lower threshold due to external API dependency
+        resetTimeoutMs: 45000, // Faster reset for market data flow
+        minHealthyPeriodMs: 120000
     },
     backoff: {
         initialDelayMs: 1000,
@@ -56,26 +56,125 @@ class TokenSyncService extends BaseService {
     constructor() {
         super(TOKEN_SYNC_CONFIG.name, TOKEN_SYNC_CONFIG);
         
-        // Service-specific state
+        // Initialize service-specific state
         this.lastKnownTokens = new Map();
         this.syncStats = {
-            totalProcessed: 0,
-            validationFailures: {
-                urls: 0,
-                descriptions: 0,
-                symbols: 0,
-                names: 0,
-                addresses: 0
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
             },
-            metadataCompleteness: {
-                hasImage: 0,
-                hasDescription: 0,
-                hasTwitter: 0,
-                hasTelegram: 0,
-                hasDiscord: 0,
-                hasWebsite: 0
+            performance: {
+                averageOperationTimeMs: 0,
+                lastOperationTimeMs: 0,
+                lastPriceUpdateMs: 0,
+                lastMetadataUpdateMs: 0
+            },
+            tokens: {
+                total: 0,
+                active: 0,
+                inactive: 0,
+                lastUpdate: null
+            },
+            prices: {
+                updated: 0,
+                failed: 0,
+                lastUpdate: null,
+                averageUpdateTimeMs: 0
+            },
+            metadata: {
+                created: 0,
+                updated: 0,
+                unchanged: 0,
+                failed: 0,
+                lastUpdate: null,
+                averageUpdateTimeMs: 0
+            },
+            validation: {
+                failures: {
+                    urls: 0,
+                    descriptions: 0,
+                    symbols: 0,
+                    names: 0,
+                    addresses: 0
+                },
+                completeness: {
+                    hasImage: 0,
+                    hasDescription: 0,
+                    hasTwitter: 0,
+                    hasTelegram: 0,
+                    hasDiscord: 0,
+                    hasWebsite: 0
+                }
+            },
+            api: {
+                calls: 0,
+                successful: 0,
+                failed: 0,
+                averageLatencyMs: 0
             }
         };
+    }
+
+    async initialize() {
+        try {
+            // Call parent initialize first
+            await super.initialize();
+            
+            // Load configuration from database
+            const settings = await prisma.system_settings.findUnique({
+                where: { key: this.name }
+            });
+
+            if (settings?.value) {
+                const dbConfig = typeof settings.value === 'string' 
+                    ? JSON.parse(settings.value)
+                    : settings.value;
+
+                // Merge configs carefully preserving circuit breaker settings
+                this.config = {
+                    ...this.config,
+                    ...dbConfig,
+                    circuitBreaker: {
+                        ...this.config.circuitBreaker,
+                        ...(dbConfig.circuitBreaker || {})
+                    }
+                };
+            }
+
+            // Load initial token state
+            const [activeTokens, totalTokens] = await Promise.all([
+                prisma.tokens.count({ where: { is_active: true } }),
+                prisma.tokens.count()
+            ]);
+
+            this.syncStats.tokens.active = activeTokens;
+            this.syncStats.tokens.total = totalTokens;
+            this.syncStats.tokens.inactive = totalTokens - activeTokens;
+
+            // Ensure stats are JSON-serializable for ServiceManager
+            const serializableStats = JSON.parse(JSON.stringify({
+                ...this.stats,
+                syncStats: this.syncStats
+            }));
+
+            await ServiceManager.markServiceStarted(
+                this.name,
+                JSON.parse(JSON.stringify(this.config)),
+                serializableStats
+            );
+
+            logApi.info('Token Sync Service initialized', {
+                activeTokens,
+                totalTokens
+            });
+
+            return true;
+        } catch (error) {
+            logApi.error('Token Sync Service initialization error:', error);
+            await this.handleError(error);
+            throw error;
+        }
     }
 
     // Validation utilities
@@ -253,10 +352,10 @@ class TokenSyncService extends BaseService {
             });
 
             // Update performance metrics
-            this.stats.performance.lastOperationTimeMs = duration;
-            this.stats.performance.averageOperationTimeMs = 
-                (this.stats.performance.averageOperationTimeMs * this.stats.operations.total + duration) / 
-                (this.stats.operations.total + 1);
+            this.syncStats.performance.lastPriceUpdateMs = duration;
+            this.syncStats.performance.averageOperationTimeMs = 
+                (this.syncStats.performance.averageOperationTimeMs * this.syncStats.operations.total + duration) / 
+                (this.syncStats.operations.total + 1);
 
         } catch (error) {
             if (error.isServiceError) throw error;
@@ -325,17 +424,17 @@ class TokenSyncService extends BaseService {
                         }
 
                         // Update metadata completeness stats
-                        this.syncStats.metadataCompleteness.hasImage += validatedData.image_url ? 1 : 0;
-                        this.syncStats.metadataCompleteness.hasDescription += validatedData.description ? 1 : 0;
-                        this.syncStats.metadataCompleteness.hasTwitter += validatedData.twitter_url ? 1 : 0;
-                        this.syncStats.metadataCompleteness.hasTelegram += validatedData.telegram_url ? 1 : 0;
-                        this.syncStats.metadataCompleteness.hasDiscord += validatedData.discord_url ? 1 : 0;
-                        this.syncStats.metadataCompleteness.hasWebsite += validatedData.website_url ? 1 : 0;
+                        this.syncStats.validation.completeness.hasImage += validatedData.image_url ? 1 : 0;
+                        this.syncStats.validation.completeness.hasDescription += validatedData.description ? 1 : 0;
+                        this.syncStats.validation.completeness.hasTwitter += validatedData.twitter_url ? 1 : 0;
+                        this.syncStats.validation.completeness.hasTelegram += validatedData.telegram_url ? 1 : 0;
+                        this.syncStats.validation.completeness.hasDiscord += validatedData.discord_url ? 1 : 0;
+                        this.syncStats.validation.completeness.hasWebsite += validatedData.website_url ? 1 : 0;
 
                     } catch (error) {
                         if (error.type === ServiceErrorTypes.VALIDATION) {
                             validationFailures++;
-                            this.syncStats.validationFailures[error.details?.field || 'other']++;
+                            this.syncStats.validation.failures[error.details?.field || 'other']++;
                         }
                         logApi.error('Failed to process token:', {
                             token: token?.contractAddress,
@@ -367,10 +466,10 @@ class TokenSyncService extends BaseService {
             });
 
             // Update performance metrics
-            this.stats.performance.lastOperationTimeMs = duration;
-            this.stats.performance.averageOperationTimeMs = 
-                (this.stats.performance.averageOperationTimeMs * this.stats.operations.total + duration) / 
-                (this.stats.operations.total + 1);
+            this.syncStats.performance.lastMetadataUpdateMs = duration;
+            this.syncStats.performance.averageOperationTimeMs = 
+                (this.syncStats.performance.averageOperationTimeMs * this.syncStats.operations.total + duration) / 
+                (this.syncStats.operations.total + 1);
 
         } catch (error) {
             if (error.isServiceError) throw error;
@@ -396,10 +495,27 @@ class TokenSyncService extends BaseService {
                 await this.updateMetadata(fullData);
             }
 
+            // Update performance metrics
+            this.syncStats.performance.lastOperationTimeMs = Date.now() - startTime;
+            this.syncStats.performance.averageOperationTimeMs = 
+                (this.syncStats.performance.averageOperationTimeMs * this.syncStats.operations.total + 
+                (Date.now() - startTime)) / (this.syncStats.operations.total + 1);
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    syncStats: this.syncStats
+                }
+            );
+
             return {
                 duration: Date.now() - startTime,
                 pricesUpdated: true,
-                metadataUpdated: true
+                metadataUpdated: true,
+                stats: this.syncStats
             };
         } catch (error) {
             // Let the base class handle the error and circuit breaker
@@ -429,6 +545,30 @@ class TokenSyncService extends BaseService {
             }
         }
         return false;
+    }
+
+    async stop() {
+        try {
+            await super.stop();
+            
+            // Clear state
+            this.lastKnownTokens.clear();
+            
+            // Final stats update
+            await ServiceManager.markServiceStopped(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    syncStats: this.syncStats
+                }
+            );
+            
+            logApi.info('Token Sync Service stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Token Sync Service:', error);
+            throw error;
+        }
     }
 }
 
