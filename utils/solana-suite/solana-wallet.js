@@ -1,14 +1,27 @@
 // /utils/solana-suite/solana-wallet.js
 
-import { Keypair } from '@solana/web3.js';
-import crypto from 'crypto';
-import { logApi } from '../logger-suite/logger.js';
+/*
+ * This file is responsible for encrypting and decrypting the private keys of the contest wallets.
+ * It also allows the admin to create a new contest wallet and get all contest wallets.
+ * 
+ */
 
+// Services
+import prisma from '../../config/prisma.js';
+import { logApi } from '../logger-suite/logger.js';
+// Solana
+import crypto from 'crypto';
+import { Keypair } from '@solana/web3.js';
+
+// Master Wallet Encryption/Decryption Key
 const ENCRYPTION_KEY = process.env.WALLET_ENCRYPTION_KEY;
 if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
   throw new Error('Invalid or missing WALLET_ENCRYPTION_KEY. Must be a 64-character hex string.');
 }
 
+// ...
+
+// Wallet Error
 class WalletError extends Error {
   constructor(message, code, details = {}) {
     super(message);
@@ -17,6 +30,7 @@ class WalletError extends Error {
     this.details = details;
   }
 }
+// (create more specific error types)
 
 // Encrypt private key using AES-256-GCM with additional authenticated data (AAD)
 export const encryptPrivateKey = (privateKey, additionalData = '') => {
@@ -54,7 +68,7 @@ export const encryptPrivateKey = (privateKey, additionalData = '') => {
   }
 };
 
-// Decrypt private key
+// Decrypt private key using AES-256-GCM with additional authenticated data (AAD)
 export const decryptPrivateKey = (encryptedData) => {
   try {
     const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
@@ -84,7 +98,7 @@ export const decryptPrivateKey = (encryptedData) => {
   }
 };
 
-// Create a new Solana wallet with encryption
+// Create a new contest wallet (encrypted private key)
 export const createContestWallet = async () => {
   try {
     // Generate new keypair
@@ -115,7 +129,7 @@ export const createContestWallet = async () => {
   }
 };
 
-// Get a contest wallet from encrypted private key and public key
+// Unencrypt a contest wallet
 export const getContestWallet = async (encryptedPrivateKey, publicKey) => {
   try {
       // Decrypt private key
@@ -147,3 +161,47 @@ export const getContestWallet = async (encryptedPrivateKey, publicKey) => {
     );
   }
 }; 
+
+// Unencrypt all contest wallets
+export const getAllContestWallets = async () => {
+  try {
+    // Get all contest wallets from the database
+    const contestWallets = await prisma.contestWallet.findMany();
+  } catch (error) {
+    logApi.error('Failed to get contest wallets:', {
+      error: error.message,
+      stack: error.stack
+    });
+    throw new WalletError('Failed to get contest wallets', 'WALLET_RETRIEVAL_FAILED');
+  }
+
+  // Unencrypt all contest wallets
+  try {
+    const unencryptedWallets = [];
+    for (const wallet of contestWallets) {
+      const unencryptedWallet = await getContestWallet(wallet.encryptedPrivateKey, wallet.publicKey);
+      unencryptedWallets.push(unencryptedWallet);
+    }
+
+    // Log unencrypted contest wallet count, public keys, and private keys
+    logApi.info('UNENCRYPTED CONTEST WALLETS:', {
+      count: unencryptedWallets.length,
+      publicKeys: unencryptedWallets.map(wallet => wallet.publicKey.toString()),
+      privateKeys: unencryptedWallets.map(wallet => wallet.secretKey.toString('hex'))
+    });
+
+    // Return all unencrypted contest wallets
+    return unencryptedWallets;
+
+  } catch (error) {
+    // Failed to get unencrypted contest wallets
+    logApi.error('Failed to get unencrypted contest wallets:', {
+      error: error.message,
+      stack: error.stack
+    });
+    throw new WalletError('Failed to get unencrypted contest wallets', 'WALLET_RETRIEVAL_FAILED');
+  }
+};
+
+//// Export all functions
+////export { encryptPrivateKey, decryptPrivateKey, createContestWallet, getContestWallet, getAllContestWallets };

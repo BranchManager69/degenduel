@@ -1,6 +1,11 @@
 // /utils/solana-suite/faucet-manager.js
 
-import { PrismaClient } from '@prisma/client';
+/*
+ * This file is responsible for managing the faucet for the test users.
+ * It allows the admin to check the balance, recover from test wallets, and update the configuration.
+ * 
+ */
+
 import { PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { WalletGenerator } from './wallet-generator.js';
 import { decryptPrivateKey } from './solana-wallet.js';
@@ -9,17 +14,11 @@ import { fileURLToPath } from 'url';
 import LRUCache from 'lru-cache';
 import { logApi } from '../logger-suite/logger.js';
 import SolanaServiceManager from './solana-service-manager.js';
+import prisma from '../../config/prisma.js';
 
-const prisma = new PrismaClient({
-    datasources: {
-        db: {
-            url: process.env.DATABASE_URL_PROD
-        }
-    }
-});
+// ...
 
-// Default configuration
-const DEFAULT_CONFIG = {
+const DEFAULT_FAUCET_CONFIG = {
     defaultAmount: 0.025,
     minFaucetBalance: 0.05,
     maxTestUsers: 10,
@@ -43,6 +42,7 @@ class SolanaWalletError extends Error {
     }
 }
 
+// Faucet Manager
 export class FaucetManager {
     static config = DEFAULT_CONFIG;
     static walletCache = new LRUCache({
@@ -55,7 +55,7 @@ export class FaucetManager {
     static recoveryInterval = null;
 
     static setConfig(newConfig) {
-        FaucetManager.config = { ...DEFAULT_CONFIG, ...newConfig };
+        FaucetManager.config = { ...DEFAULT_FAUCET_CONFIG, ...newConfig };
     }
 
     // Calculate total amount needed including fees
