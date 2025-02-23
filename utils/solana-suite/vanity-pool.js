@@ -7,6 +7,9 @@ import WalletGenerator from '../../services/walletGenerationService.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import os from 'os';
+import { BaseService } from '../service-suite/base-service.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../service-suite/service-constants.js';
+import { logApi } from '../logger-suite/logger.js';
 
 class VanityGeneratorError extends Error {
     constructor(message, code, details) {
@@ -53,21 +56,127 @@ if (!isMainThread) {
     parentPort.postMessage(result);
 }
 
-export class VanityPool {
-    static maxWorkers = Math.max(1, cpus().length - 1); // Leave one core free
-    static activeWorkers = new Map();
-    static taskQueue = [];
-    static isProcessing = false;
-    
-    // CPU utilization management
-    static targetUtilization = 0.80; // 80% target CPU utilization
-    static utilizationCheckInterval = 5000; // Check every 5 seconds
-    static utilizationWindow = 30000; // 30 second window for averaging
-    static utilizationHistory = [];
-    static utilizationChecker = null;
+const VANITY_POOL_CONFIG = {
+    name: SERVICE_NAMES.VANITY_WALLET,
+    description: getServiceMetadata(SERVICE_NAMES.VANITY_WALLET).description,
+    checkIntervalMs: 5000, // Check pool health every 5 seconds
+    maxRetries: 3,
+    retryDelayMs: 5000,
+    circuitBreaker: {
+        failureThreshold: 5,
+        resetTimeoutMs: 60000,
+        minHealthyPeriodMs: 120000
+    }
+};
 
-    // Dynamic worker management
-    static getOptimalWorkerCount() {
+export class VanityPool extends BaseService {
+    constructor(config = {}) {
+        super(VANITY_POOL_CONFIG.name, {
+            ...VANITY_POOL_CONFIG,
+            ...config
+        });
+
+        // Instance properties
+        this.maxWorkers = Math.max(1, cpus().length - 1); // Leave one core free
+        this.activeWorkers = new Map();
+        this.taskQueue = [];
+        this.isProcessing = false;
+        
+        // CPU utilization management
+        this.targetUtilization = config.targetUtilization || 0.80; // 80% target CPU utilization
+        this.utilizationCheckInterval = 5000; // Check every 5 seconds
+        this.utilizationWindow = 30000; // 30 second window for averaging
+        this.utilizationHistory = [];
+        this.utilizationChecker = null;
+
+        // Service stats
+        this.poolStats = {
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
+            },
+            workers: {
+                active: 0,
+                total_created: 0,
+                current_load: 0
+            },
+            patterns: {
+                total_generated: 0,
+                by_complexity: {}
+            },
+            performance: {
+                average_generation_time_ms: 0,
+                last_generation_time_ms: 0
+            }
+        };
+    }
+
+    async initialize() {
+        try {
+            // Call parent initialize
+            await super.initialize();
+
+            // Start utilization monitoring
+            this.startUtilizationMonitoring();
+
+            logApi.info('Vanity Pool Service initialized');
+            return true;
+        } catch (error) {
+            logApi.error('Failed to initialize Vanity Pool Service:', error);
+            throw error;
+        }
+    }
+
+    async stop() {
+        try {
+            // Stop utilization monitoring
+            this.stopUtilizationMonitoring();
+
+            // Terminate all workers
+            for (const [id, worker] of this.activeWorkers) {
+                worker.terminate();
+                this.activeWorkers.delete(id);
+            }
+
+            // Call parent stop
+            await super.stop();
+            
+            logApi.info('Vanity Pool Service stopped');
+        } catch (error) {
+            logApi.error('Error stopping Vanity Pool Service:', error);
+            throw error;
+        }
+    }
+
+    // Main operation - health check and maintenance
+    async performOperation() {
+        try {
+            // Check worker health
+            const workerCount = this.activeWorkers.size;
+            const optimalCount = this.getOptimalWorkerCount();
+            
+            // Adjust workers if needed
+            if (optimalCount !== workerCount) {
+                this.adjustWorkerCount(optimalCount);
+            }
+
+            // Update stats
+            this.poolStats.workers.active = this.activeWorkers.size;
+            this.poolStats.workers.current_load = this.getCurrentCPUUtilization();
+
+            return {
+                workers: this.poolStats.workers,
+                patterns: this.poolStats.patterns,
+                performance: this.poolStats.performance
+            };
+        } catch (error) {
+            // Let base class handle error and circuit breaker
+            throw error;
+        }
+    }
+
+    getOptimalWorkerCount() {
         const cpuCount = cpus().length;
         const currentLoad = this.getCurrentCPUUtilization();
         
@@ -85,7 +194,7 @@ export class VanityPool {
         return this.activeWorkers.size;
     }
 
-    static getCurrentCPUUtilization() {
+    getCurrentCPUUtilization() {
         const cpus = os.cpus();
         let totalUsage = 0;
         let totalTime = 0;
@@ -100,7 +209,7 @@ export class VanityPool {
         return totalUsage / totalTime;
     }
 
-    static startUtilizationMonitoring() {
+    startUtilizationMonitoring() {
         if (this.utilizationChecker) return;
 
         this.utilizationChecker = setInterval(() => {
@@ -130,14 +239,14 @@ export class VanityPool {
         }, this.utilizationCheckInterval);
     }
 
-    static stopUtilizationMonitoring() {
+    stopUtilizationMonitoring() {
         if (this.utilizationChecker) {
             clearInterval(this.utilizationChecker);
             this.utilizationChecker = null;
         }
     }
 
-    static throttleWorkers() {
+    throttleWorkers() {
         const currentWorkers = this.activeWorkers.size;
         const optimalCount = this.getOptimalWorkerCount();
 
@@ -153,7 +262,30 @@ export class VanityPool {
         }
     }
 
-    static validatePattern(pattern) {
+    adjustWorkerCount(targetCount) {
+        const currentCount = this.activeWorkers.size;
+        
+        if (targetCount > currentCount) {
+            // Add workers
+            for (let i = currentCount; i < targetCount; i++) {
+                const worker = new Worker(fileURLToPath(import.meta.url));
+                const workerId = Date.now() + i;
+                this.activeWorkers.set(workerId, worker);
+                this.poolStats.workers.total_created++;
+            }
+        } else if (targetCount < currentCount) {
+            // Remove workers
+            let toRemove = currentCount - targetCount;
+            for (const [id, worker] of this.activeWorkers) {
+                if (toRemove <= 0) break;
+                worker.terminate();
+                this.activeWorkers.delete(id);
+                toRemove--;
+            }
+        }
+    }
+
+    validatePattern(pattern) {
         // Check for valid base58 characters
         const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
         if (!base58Regex.test(pattern)) {
@@ -174,7 +306,7 @@ export class VanityPool {
         }
     }
 
-    static estimateTime(pattern) {
+    estimateTime(pattern) {
         // Rough estimation based on pattern length and character set
         const base58Size = 58;
         const patternLength = pattern.length;
@@ -188,25 +320,26 @@ export class VanityPool {
         };
     }
 
-    static async generateVanityWallet(options) {
-        const {
-            pattern,
-            identifier,
-            isCaseSensitive = false,
-            position = 'start',
-            timeout = 300000,
-            metadata = {}
-        } = options;
+    async generateVanityWallet(options) {
+        const startTime = Date.now();
 
         try {
+            const {
+                pattern,
+                identifier,
+                isCaseSensitive = false,
+                position = 'start',
+                timeout = 300000,
+                metadata = {}
+            } = options;
+
             this.validatePattern(pattern);
-            this.startUtilizationMonitoring();
 
             const workerPromise = new Promise((resolve, reject) => {
                 const workers = [];
                 let completed = false;
 
-                // Use optimal worker count instead of max
+                // Use optimal worker count
                 const workerCount = this.getOptimalWorkerCount();
                 
                 for (let i = 0; i < workerCount; i++) {
@@ -243,56 +376,60 @@ export class VanityPool {
                                 }
                             );
 
+                            // Update stats
+                            this.poolStats.operations.total++;
+                            this.poolStats.operations.successful++;
+                            this.poolStats.patterns.total_generated++;
+                            this.poolStats.patterns.by_complexity[pattern.length] = 
+                                (this.poolStats.patterns.by_complexity[pattern.length] || 0) + 1;
+                            
+                            const duration = Date.now() - startTime;
+                            this.poolStats.performance.last_generation_time_ms = duration;
+                            this.poolStats.performance.average_generation_time_ms = 
+                                (this.poolStats.performance.average_generation_time_ms * 
+                                (this.poolStats.operations.total - 1) + duration) / 
+                                this.poolStats.operations.total;
+
                             resolve(wallet);
                         }
                     });
 
                     worker.on('error', (err) => {
                         if (!completed) {
+                            completed = true;
+                            workers.forEach(w => w.terminate());
+                            this.poolStats.operations.total++;
+                            this.poolStats.operations.failed++;
                             reject(new VanityGeneratorError(
-                                'Worker error',
+                                'Worker error during generation',
                                 'WORKER_ERROR',
                                 { error: err.message }
                             ));
                         }
                     });
                 }
-            });
 
-            const timeoutPromise = new Promise((_, reject) => {
+                // Set timeout
                 setTimeout(() => {
-                    reject(new VanityGeneratorError(
-                        'Vanity address generation timed out',
-                        'GENERATION_TIMEOUT',
-                        { pattern, timeout }
-                    ));
+                    if (!completed) {
+                        completed = true;
+                        workers.forEach(w => w.terminate());
+                        this.poolStats.operations.total++;
+                        this.poolStats.operations.failed++;
+                        reject(new VanityGeneratorError(
+                            'Generation timed out',
+                            'TIMEOUT',
+                            { timeout }
+                        ));
+                    }
                 }, timeout);
             });
 
-            const result = await Promise.race([workerPromise, timeoutPromise]);
-            
-            // Only stop monitoring if no other generations are active
-            if (this.activeWorkers.size === 0) {
-                this.stopUtilizationMonitoring();
-            }
-
-            return result;
-
+            return await workerPromise;
         } catch (error) {
-            // Cleanup on error
-            if (this.activeWorkers.size === 0) {
-                this.stopUtilizationMonitoring();
-            }
-
-            throw new VanityGeneratorError(
-                'Failed to generate vanity wallet',
-                'GENERATION_FAILED',
-                {
-                    pattern,
-                    identifier,
-                    originalError: error.message
-                }
-            );
+            this.poolStats.operations.total++;
+            this.poolStats.operations.failed++;
+            throw error;
         }
     }
 
