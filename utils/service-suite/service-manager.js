@@ -19,11 +19,20 @@ import tokenSyncService from '../../services/tokenSyncService.js';
 import tokenWhitelistService from '../../services/tokenWhitelistService.js';
 import vanityWalletService from '../../services/vanityWalletService.js';
 import walletRakeService from '../../services/walletRakeService.js';
+import faucetService from '../../services/faucetService.js';
+import walletGeneratorService from '../../services/walletGenerationService.js';
 // Other
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
 import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';
-import { SERVICE_NAMES, SERVICE_LAYERS, validateServiceName } from './service-constants.js';
+import { 
+    SERVICE_NAMES, 
+    SERVICE_LAYERS, 
+    getServiceMetadata,
+    getServiceDependencies,
+    getServiceCriticalLevel,
+    validateDependencyChain 
+} from './service-constants.js';
 import { ServiceError } from './service-error.js';
 
 /**
@@ -60,40 +69,49 @@ class ServiceManager {
      */
     static register(service, dependencies = []) {
         if (!service) {
-            throw ServiceError.configuration('Attempted to register undefined service');
+            throw new Error('Attempted to register undefined service');
         }
 
-        if (!validateServiceName(service.name)) {
-            throw ServiceError.configuration(`Invalid service name: ${service.name}`);
-        }
-        
-        if (this.services.has(service.name)) {
-            logApi.warn(`Service ${service.name} is already registered`);
-            return;
+        const metadata = getServiceMetadata(service.name);
+        if (!metadata) {
+            throw new Error(`Service ${service.name} not found in metadata`);
         }
 
-        // Validate dependencies
-        const invalidDeps = dependencies.filter(dep => !validateServiceName(dep));
-        if (invalidDeps.length > 0) {
-            throw ServiceError.configuration(`Invalid dependencies for ${service.name}: ${invalidDeps.join(', ')}`);
+        // Validate dependencies from metadata
+        const allDependencies = new Set([
+            ...dependencies,
+            ...getServiceDependencies(service.name)
+        ]);
+
+        // Check for circular dependencies
+        if (!validateDependencyChain(service.name)) {
+            throw new Error(`Circular dependency detected for ${service.name}`);
         }
 
         this.services.set(service.name, service);
-        this.dependencies.set(service.name, dependencies);
-        this.validateDependencies(service.name, dependencies);
-        logApi.info(`Registered service: ${service.name}`);
+        this.dependencies.set(service.name, Array.from(allDependencies));
+        
+        logApi.info(`Registered service: ${service.name}`, {
+            layer: metadata.layer,
+            criticalLevel: metadata.criticalLevel,
+            dependencies: Array.from(allDependencies)
+        });
     }
 
     /**
-     * Initialize all registered services in dependency order
+     * Initialize all services in dependency order
      */
     static async initializeAll() {
         const initialized = new Set();
         const failed = new Set();
+        const initOrder = this.calculateInitializationOrder();
 
-        for (const [serviceName] of this.services) {
-            if (!initialized.has(serviceName)) {
-                await this._initializeService(serviceName, initialized, failed, new Set());
+        for (const serviceName of initOrder) {
+            try {
+                await this._initializeService(serviceName, initialized, failed);
+            } catch (error) {
+                logApi.error(`Failed to initialize ${serviceName}:`, error);
+                failed.add(serviceName);
             }
         }
 
@@ -104,52 +122,83 @@ class ServiceManager {
     }
 
     /**
-     * Initialize a single service and its dependencies
+     * Calculate initialization order based on dependencies
      */
-    static async _initializeService(serviceName, initialized, failed, processing) {
-        // Check for circular dependencies
-        if (processing.has(serviceName)) {
-            throw ServiceError.configuration(
-                `Circular dependency detected: ${Array.from(processing).join(' -> ')} -> ${serviceName}`
-            );
+    static calculateInitializationOrder() {
+        const visited = new Set();
+        const order = [];
+
+        function visit(serviceName) {
+            if (visited.has(serviceName)) return;
+            visited.add(serviceName);
+
+            const dependencies = ServiceManager.dependencies.get(serviceName) || [];
+            for (const dep of dependencies) {
+                visit(dep);
+            }
+            order.push(serviceName);
         }
 
-        // Skip if already processed
+        // Start with infrastructure layer
+        const infraServices = this.getServicesInLayer(SERVICE_LAYERS.INFRASTRUCTURE);
+        for (const service of infraServices) {
+            visit(service);
+        }
+
+        // Then data layer
+        const dataServices = this.getServicesInLayer(SERVICE_LAYERS.DATA);
+        for (const service of dataServices) {
+            visit(service);
+        }
+
+        // Then contest layer
+        const contestServices = this.getServicesInLayer(SERVICE_LAYERS.CONTEST);
+        for (const service of contestServices) {
+            visit(service);
+        }
+
+        // Finally wallet layer
+        const walletServices = this.getServicesInLayer(SERVICE_LAYERS.WALLET);
+        for (const service of walletServices) {
+            visit(service);
+        }
+
+        return order;
+    }
+
+    /**
+     * Initialize a single service
+     */
+    static async _initializeService(serviceName, initialized, failed) {
         if (initialized.has(serviceName) || failed.has(serviceName)) {
             return;
         }
 
-        processing.add(serviceName);
-
-        // Initialize dependencies first
         const dependencies = this.dependencies.get(serviceName) || [];
         for (const dep of dependencies) {
             if (!initialized.has(dep)) {
-                await this._initializeService(dep, initialized, failed, processing);
+                await this._initializeService(dep, initialized, failed);
+            }
+            if (failed.has(dep)) {
+                failed.add(serviceName);
+                return;
             }
         }
 
-        // Check if any dependencies failed
-        const dependencyFailed = dependencies.some(dep => failed.has(dep));
-        if (dependencyFailed) {
-            failed.add(serviceName);
-            logApi.error(`Service ${serviceName} failed due to dependency failure`);
-            return;
-        }
-
-        // Initialize the service
         try {
             const service = this.services.get(serviceName);
             await service.initialize();
             initialized.add(serviceName);
-            logApi.info(`Initialized service: ${serviceName}`);
+
+            const metadata = getServiceMetadata(serviceName);
+            logApi.info(`Initialized service: ${serviceName}`, {
+                layer: metadata.layer,
+                criticalLevel: metadata.criticalLevel
+            });
         } catch (error) {
             failed.add(serviceName);
-            logApi.error(`Failed to initialize service: ${serviceName}`, error);
             throw error;
         }
-
-        processing.delete(serviceName);
     }
 
     /**
@@ -403,9 +452,9 @@ class ServiceManager {
 
 // Register core services with dependencies
 // Data Layer
-ServiceManager.register(tokenSyncService, []);
-ServiceManager.register(marketDataService, []);
-ServiceManager.register(tokenWhitelistService, [SERVICE_NAMES.TOKEN_SYNC]);
+ServiceManager.register(tokenSyncService);
+ServiceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
+ServiceManager.register(tokenWhitelistService);
 
 // Contest Layer
 ServiceManager.register(contestEvaluationService.service, [SERVICE_NAMES.MARKET_DATA]);
@@ -413,10 +462,14 @@ ServiceManager.register(achievementService, [SERVICE_NAMES.CONTEST_EVALUATION]);
 ServiceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
 
 // Wallet Layer
-ServiceManager.register(vanityWalletService, []);
+ServiceManager.register(vanityWalletService, [SERVICE_NAMES.WALLET_GENERATOR]);
 ServiceManager.register(contestWalletService, [SERVICE_NAMES.VANITY_WALLET]);
 ServiceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
 ServiceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+
+// Infrastructure Layer
+ServiceManager.register(walletGeneratorService);
+ServiceManager.register(faucetService, [SERVICE_NAMES.WALLET_GENERATOR]);
 
 // Infrastructure Layer services are registered by SolanaServiceManager during its initialization
 

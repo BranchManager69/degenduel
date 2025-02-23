@@ -1,7 +1,7 @@
 import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../logger-suite/logger.js';
 import ServiceManager from '../service-suite/service-manager.js';
-import { isHealthy } from '../service-suite/circuit-breaker-config.js';
+import { isHealthy, getCircuitBreakerStatus } from '../service-suite/circuit-breaker-config.js';
 
 const HEARTBEAT_INTERVAL = 5000; // 5 seconds
 const CLIENT_TIMEOUT = 7000;     // 7 seconds
@@ -50,6 +50,7 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
         super(server, config);
 
         this.services = new Map();
+        this.recoveryTimeouts = new Map();
 
         // Start periodic state broadcasts
         this.startPeriodicUpdates();
@@ -69,24 +70,44 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
         const service = ServiceManager.services.get(serviceName);
         if (!service) return;
 
+        const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
         const message = {
             type: 'service:update',
             timestamp: new Date().toISOString(),
             service: serviceName,
             status: ServiceManager.determineServiceStatus(service.stats),
             circuit_breaker: {
+                status: circuitBreakerStatus.status,
+                details: circuitBreakerStatus.details,
                 is_open: service.stats.circuitBreaker.isOpen,
                 failures: service.stats.circuitBreaker.failures,
                 last_failure: service.stats.circuitBreaker.lastFailure,
                 last_success: service.stats.circuitBreaker.lastSuccess,
-                recovery_attempts: service.stats.circuitBreaker.recoveryAttempts
+                recovery_attempts: service.stats.circuitBreaker.recoveryAttempts,
+                last_recovery_attempt: service.stats.circuitBreaker.lastRecoveryAttempt,
+                last_reset: service.stats.circuitBreaker.lastReset
             },
             operations: service.stats.operations,
             performance: service.stats.performance,
+            config: service.config.circuitBreaker,
             ...state
         };
 
         this.broadcast(message);
+
+        // Log significant state changes
+        if (circuitBreakerStatus.status === 'open') {
+            logApi.warn(`Circuit breaker opened for ${serviceName}`, {
+                failures: service.stats.circuitBreaker.failures,
+                lastFailure: service.stats.circuitBreaker.lastFailure,
+                recoveryAttempts: service.stats.circuitBreaker.recoveryAttempts
+            });
+        } else if (circuitBreakerStatus.status === 'closed' && state.previousStatus === 'open') {
+            logApi.info(`Circuit breaker closed for ${serviceName}`, {
+                recoveryAttempts: service.stats.circuitBreaker.recoveryAttempts,
+                lastReset: service.stats.circuitBreaker.lastReset
+            });
+        }
     }
 
     /**
@@ -100,18 +121,24 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
         const states = await Promise.all(
             services.map(async ([name, service]) => {
                 const state = await ServiceManager.getServiceState(name);
+                const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
                 return {
                     service: name,
                     status: ServiceManager.determineServiceStatus(service.stats),
                     circuit_breaker: {
+                        status: circuitBreakerStatus.status,
+                        details: circuitBreakerStatus.details,
                         is_open: service.stats.circuitBreaker.isOpen,
                         failures: service.stats.circuitBreaker.failures,
                         last_failure: service.stats.circuitBreaker.lastFailure,
                         last_success: service.stats.circuitBreaker.lastSuccess,
-                        recovery_attempts: service.stats.circuitBreaker.recoveryAttempts
+                        recovery_attempts: service.stats.circuitBreaker.recoveryAttempts,
+                        last_recovery_attempt: service.stats.circuitBreaker.lastRecoveryAttempt,
+                        last_reset: service.stats.circuitBreaker.lastReset
                     },
                     operations: service.stats.operations,
                     performance: service.stats.performance,
+                    config: service.config.circuitBreaker,
                     ...state
                 };
             })
@@ -139,6 +166,12 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
                 case 'service:health_check':
                     if (data.service) {
                         this.handleHealthCheck(ws, data.service);
+                    }
+                    break;
+
+                case 'service:reset_circuit_breaker':
+                    if (data.service) {
+                        this.handleCircuitBreakerReset(ws, data.service);
                     }
                     break;
 
@@ -176,13 +209,59 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
         }
 
         const isServiceHealthy = await ServiceManager.checkServiceHealth(serviceName);
+        const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
+        
         ws.send(JSON.stringify({
             type: 'service:health_check_result',
             timestamp: new Date().toISOString(),
             service: serviceName,
             healthy: isServiceHealthy,
-            status: ServiceManager.determineServiceStatus(service.stats)
+            status: ServiceManager.determineServiceStatus(service.stats),
+            circuit_breaker: {
+                status: circuitBreakerStatus.status,
+                details: circuitBreakerStatus.details,
+                is_open: service.stats.circuitBreaker.isOpen,
+                failures: service.stats.circuitBreaker.failures
+            }
         }));
+    }
+
+    /**
+     * Handle circuit breaker reset request
+     */
+    async handleCircuitBreakerReset(ws, serviceName) {
+        const service = ServiceManager.services.get(serviceName);
+        if (!service) {
+            ws.send(JSON.stringify({
+                type: 'error',
+                code: 4004,
+                message: 'Service not found',
+                timestamp: new Date().toISOString()
+            }));
+            return;
+        }
+
+        try {
+            await service.attemptCircuitRecovery();
+            const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
+            
+            ws.send(JSON.stringify({
+                type: 'service:circuit_breaker_reset_result',
+                timestamp: new Date().toISOString(),
+                service: serviceName,
+                success: !service.stats.circuitBreaker.isOpen,
+                status: circuitBreakerStatus.status,
+                details: circuitBreakerStatus.details
+            }));
+        } catch (error) {
+            ws.send(JSON.stringify({
+                type: 'error',
+                code: 5000,
+                message: 'Failed to reset circuit breaker',
+                details: error.message,
+                timestamp: new Date().toISOString()
+            }));
+        }
     }
 
     /**
@@ -194,18 +273,24 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
             const states = await Promise.all(
                 services.map(async ([name, service]) => {
                     const state = await ServiceManager.getServiceState(name);
+                    const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
                     return {
                         service: name,
                         status: ServiceManager.determineServiceStatus(service.stats),
                         circuit_breaker: {
+                            status: circuitBreakerStatus.status,
+                            details: circuitBreakerStatus.details,
                             is_open: service.stats.circuitBreaker.isOpen,
                             failures: service.stats.circuitBreaker.failures,
                             last_failure: service.stats.circuitBreaker.lastFailure,
                             last_success: service.stats.circuitBreaker.lastSuccess,
-                            recovery_attempts: service.stats.circuitBreaker.recoveryAttempts
+                            recovery_attempts: service.stats.circuitBreaker.recoveryAttempts,
+                            last_recovery_attempt: service.stats.circuitBreaker.lastRecoveryAttempt,
+                            last_reset: service.stats.circuitBreaker.lastReset
                         },
                         operations: service.stats.operations,
                         performance: service.stats.performance,
+                        config: service.config.circuitBreaker,
                         ...state
                     };
                 })
@@ -217,6 +302,18 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
                 services: states
             });
         }, HEARTBEAT_INTERVAL);
+    }
+
+    /**
+     * Clean up resources
+     */
+    cleanup() {
+        super.cleanup();
+        // Clear all recovery timeouts
+        for (const timeout of this.recoveryTimeouts.values()) {
+            clearTimeout(timeout);
+        }
+        this.recoveryTimeouts.clear();
     }
 }
 

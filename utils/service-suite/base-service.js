@@ -1,7 +1,13 @@
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
-import ServiceManager, { SERVICE_NAMES } from '../service-suite/service-manager.js';
-import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';
+import ServiceManager from './service-manager.js';
+import { 
+    getCircuitBreakerConfig, 
+    isHealthy, 
+    shouldReset,
+    calculateBackoffDelay,
+    getCircuitBreakerStatus 
+} from './circuit-breaker-config.js';
 
 /**
  * Base configuration template for all services
@@ -44,7 +50,8 @@ export class BaseService {
                 lastSuccess: null,
                 lastReset: null,
                 isOpen: false,
-                recoveryAttempts: 0
+                recoveryAttempts: 0,
+                lastRecoveryAttempt: null
             },
             history: {
                 lastStarted: null,
@@ -55,6 +62,7 @@ export class BaseService {
             }
         };
         this.interval = null;
+        this.recoveryTimeout = null;
     }
 
     /**
@@ -71,32 +79,22 @@ export class BaseService {
             // Load previous state from system_settings
             const previousState = await ServiceManager.getServiceState(this.name);
             if (previousState) {
-                // Restore stats including circuit breaker state
                 if (previousState.stats) {
                     this.stats = {
                         ...this.stats,
                         ...previousState.stats,
-                        // Ensure circuit breaker state is properly restored
                         circuitBreaker: {
                             ...this.stats.circuitBreaker,
                             ...previousState.stats.circuitBreaker
                         }
                     };
 
-                    // 1. Time-Based Circuit Breaker Recovery
-                    if (this.stats.circuitBreaker.isOpen && this.stats.circuitBreaker.lastFailure) {
-                        const timeSinceLastFailure = Date.now() - new Date(this.stats.circuitBreaker.lastFailure).getTime();
-                        if (timeSinceLastFailure >= this.config.circuitBreaker.resetTimeoutMs) {
-                            logApi.info(`${this.name} circuit breaker auto-reset after ${timeSinceLastFailure}ms of downtime`, {
-                                previousFailures: this.stats.circuitBreaker.failures
-                            });
-                            this.stats.circuitBreaker.isOpen = false;
-                            this.stats.circuitBreaker.failures = 0;
-                            this.stats.circuitBreaker.lastReset = new Date().toISOString();
-                        }
+                    // Time-Based Circuit Breaker Recovery
+                    if (this.stats.circuitBreaker.isOpen) {
+                        await this.attemptCircuitRecovery();
                     }
 
-                    // 2. Cascading Service Recovery
+                    // Cascading Service Recovery
                     if (this.stats.circuitBreaker.isOpen) {
                         const dependencies = ServiceManager.dependencies.get(this.name) || [];
                         for (const dep of dependencies) {
@@ -110,52 +108,6 @@ export class BaseService {
                                 return false;
                             }
                         }
-                    }
-
-                    // 3. Health Check Before Full Restoration
-                    if (this.stats.circuitBreaker.isOpen) {
-                        try {
-                            logApi.info(`${this.name} performing initialization health check`);
-                            // Temporarily disable circuit breaker for health check
-                            const tempOpen = this.stats.circuitBreaker.isOpen;
-                            this.stats.circuitBreaker.isOpen = false;
-                            
-                            await this.performOperation();
-                            
-                            // If health check succeeds, reduce failure count but maintain circuit breaker state
-                            this.stats.circuitBreaker.failures = Math.max(0, this.stats.circuitBreaker.failures - 1);
-                            if (this.stats.circuitBreaker.failures < this.config.circuitBreaker.failureThreshold) {
-                                this.stats.circuitBreaker.isOpen = false;
-                                this.stats.circuitBreaker.lastReset = new Date().toISOString();
-                                logApi.info(`${this.name} health check passed, circuit breaker reset`, {
-                                    newFailureCount: this.stats.circuitBreaker.failures
-                                });
-                            } else {
-                                this.stats.circuitBreaker.isOpen = tempOpen;
-                                logApi.warn(`${this.name} health check passed but maintaining circuit breaker due to high failure count`, {
-                                    failures: this.stats.circuitBreaker.failures,
-                                    threshold: this.config.circuitBreaker.failureThreshold
-                                });
-                            }
-                        } catch (error) {
-                            logApi.error(`${this.name} health check failed during initialization`, {
-                                error: error.message,
-                                stack: error.stack
-                            });
-                            // Keep circuit breaker open and increment failure count
-                            this.stats.circuitBreaker.failures++;
-                            this.stats.circuitBreaker.lastFailure = new Date().toISOString();
-                            return false;
-                        }
-                    }
-
-                    // Log final circuit breaker state after all checks
-                    if (this.stats.circuitBreaker.isOpen) {
-                        logApi.warn(`${this.name} initialized with OPEN circuit breaker`, {
-                            failures: this.stats.circuitBreaker.failures,
-                            lastFailure: this.stats.circuitBreaker.lastFailure,
-                            threshold: this.config.circuitBreaker.failureThreshold
-                        });
                     }
                 }
 
@@ -179,6 +131,88 @@ export class BaseService {
         } catch (error) {
             logApi.error(`Failed to initialize ${this.name}:`, error);
             throw error;
+        }
+    }
+
+    /**
+     * Attempt circuit breaker recovery
+     */
+    async attemptCircuitRecovery() {
+        if (!this.stats.circuitBreaker.isOpen) return;
+
+        try {
+            // Check if we should attempt recovery
+            if (!shouldReset(this.stats, this.config.circuitBreaker)) {
+                const nextAttemptDelay = calculateBackoffDelay(
+                    this.stats.circuitBreaker.recoveryAttempts,
+                    this.config.circuitBreaker
+                );
+                
+                logApi.info(`${this.name} circuit breaker recovery scheduled in ${nextAttemptDelay}ms`);
+                
+                // Schedule next recovery attempt
+                if (this.recoveryTimeout) clearTimeout(this.recoveryTimeout);
+                this.recoveryTimeout = setTimeout(
+                    () => this.attemptCircuitRecovery(),
+                    nextAttemptDelay
+                );
+                
+                return;
+            }
+
+            // Perform health check
+            logApi.info(`${this.name} attempting circuit breaker recovery`);
+            
+            // Temporarily disable circuit breaker for health check
+            const tempOpen = this.stats.circuitBreaker.isOpen;
+            this.stats.circuitBreaker.isOpen = false;
+            
+            await this.performOperation();
+            
+            // Update recovery stats
+            this.stats.circuitBreaker.failures = Math.max(0, this.stats.circuitBreaker.failures - 1);
+            this.stats.circuitBreaker.lastRecoveryAttempt = new Date().toISOString();
+            this.stats.circuitBreaker.recoveryAttempts++;
+
+            if (this.stats.circuitBreaker.failures < this.config.circuitBreaker.failureThreshold) {
+                this.stats.circuitBreaker.isOpen = false;
+                this.stats.circuitBreaker.lastReset = new Date().toISOString();
+                logApi.info(`${this.name} circuit breaker reset successful`, {
+                    newFailureCount: this.stats.circuitBreaker.failures
+                });
+            } else {
+                this.stats.circuitBreaker.isOpen = tempOpen;
+                logApi.warn(`${this.name} circuit breaker recovery failed - maintaining open state`, {
+                    failures: this.stats.circuitBreaker.failures,
+                    threshold: this.config.circuitBreaker.failureThreshold
+                });
+            }
+
+            // Update service state
+            await ServiceManager.updateServiceState(
+                this.name,
+                { status: getCircuitBreakerStatus(this.stats) },
+                this.config,
+                this.stats
+            );
+
+        } catch (error) {
+            logApi.error(`${this.name} circuit breaker recovery failed:`, error);
+            this.stats.circuitBreaker.failures++;
+            this.stats.circuitBreaker.lastFailure = new Date().toISOString();
+            this.stats.circuitBreaker.recoveryAttempts++;
+            
+            // Schedule next recovery attempt
+            const nextAttemptDelay = calculateBackoffDelay(
+                this.stats.circuitBreaker.recoveryAttempts,
+                this.config.circuitBreaker
+            );
+            
+            if (this.recoveryTimeout) clearTimeout(this.recoveryTimeout);
+            this.recoveryTimeout = setTimeout(
+                () => this.attemptCircuitRecovery(),
+                nextAttemptDelay
+            );
         }
     }
 
@@ -220,6 +254,11 @@ export class BaseService {
         if (this.interval) {
             clearInterval(this.interval);
             this.interval = null;
+        }
+
+        if (this.recoveryTimeout) {
+            clearTimeout(this.recoveryTimeout);
+            this.recoveryTimeout = null;
         }
 
         this.stats.history.lastStopped = new Date().toISOString();
@@ -274,6 +313,13 @@ export class BaseService {
         this.stats.circuitBreaker.failures++;
         this.stats.circuitBreaker.lastFailure = new Date().toISOString();
 
+        // Check if we should open the circuit
+        if (this.stats.circuitBreaker.failures >= this.config.circuitBreaker.failureThreshold) {
+            this.stats.circuitBreaker.isOpen = true;
+            // Schedule recovery attempt
+            await this.attemptCircuitRecovery();
+        }
+
         await ServiceManager.markServiceError(
             this.name,
             error,
@@ -287,7 +333,10 @@ export class BaseService {
      */
     getBackoffDelay() {
         return Math.min(
-            this.config.backoff.initialDelayMs * Math.pow(this.config.backoff.factor, this.stats.history.consecutiveFailures),
+            this.config.backoff.initialDelayMs * Math.pow(
+                this.config.backoff.factor,
+                this.stats.history.consecutiveFailures
+            ),
             this.config.backoff.maxDelayMs
         );
     }

@@ -7,6 +7,7 @@ The DegenDuel circuit breaker system provides a unified approach to service reli
 ## Core Components
 
 ### 1. Circuit Breaker Configuration (`circuit-breaker-config.js`)
+
 ```typescript
 interface CircuitBreakerConfig {
     enabled: boolean;
@@ -68,6 +69,7 @@ The circuit breaker WebSocket provides real-time monitoring:
 - Real-time updates broadcast via WebSocket
 
 ### 2. Failure Detection
+
 ```typescript
 interface FailureHandling {
     incrementFailures(): void;
@@ -80,6 +82,7 @@ interface FailureHandling {
 - State change broadcast to all clients
 
 ### 3. Recovery Process
+
 ```typescript
 interface RecoveryProcess {
     checkRecoveryEligibility(): boolean;
@@ -108,6 +111,7 @@ interface RecoveryProcess {
 ## Implementation Details
 
 ### 1. Service Integration
+
 ```typescript
 class BaseService {
     stats: ServiceStats;
@@ -125,6 +129,7 @@ class BaseService {
 - Automatic state recovery
 
 ### 3. WebSocket Communication
+
 ```typescript
 interface WebSocketMessage {
     type: string;
@@ -139,29 +144,29 @@ interface WebSocketMessage {
 
 ## Security and Reliability
 
-1. **Authentication**
-   - Required for WebSocket connections
-   - Admin privileges for configuration changes
+### 1. Authentication
+- Required for WebSocket connections
+- Admin privileges for configuration changes
 
-2. **Rate Limiting**
-   - WebSocket: 60 messages per minute
-   - Health checks: Configurable interval
+### 2. Rate Limiting
+- WebSocket: 60 messages per minute
+- Health checks: Configurable interval
 
-3. **Error Handling**
-   - Graceful degradation
-   - Automatic recovery attempts
-   - Detailed error logging
+### 3. Error Handling
+- Graceful degradation
+- Automatic recovery attempts
+- Detailed error logging
 
 ## Monitoring Integration
 
-1. **Metrics Collection**
-   - Operation counts and success rates
-   - Response times and latency
-   - Circuit breaker state changes
-   - Recovery attempt tracking
+### 1. Metrics Collection
+- Operation counts and success rates
+- Response times and latency
+- Circuit breaker state changes
+- Recovery attempt tracking
 
-2. **Alerting**
-   - Circuit breaker state changes
-   - Consecutive failures
-   - Recovery failures
-   - Performance degradation 
+### 2. Alerting
+- Circuit breaker state changes
+- Consecutive failures
+- Recovery failures
+- Performance degradation 
