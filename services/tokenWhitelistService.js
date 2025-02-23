@@ -25,16 +25,18 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { publicKey } from "@metaplex-foundation/umi";
 // Other
 import { Decimal } from 'decimal.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
-const WHITELIST_SERVICE_CONFIG = {
-    name: 'token_whitelist_service',
-    checkIntervalMs: 1 * 30 * 1000,  // Check every 30 seconds
+const TOKEN_WHITELIST_CONFIG = {
+    name: SERVICE_NAMES.TOKEN_WHITELIST,
+    description: getServiceMetadata(SERVICE_NAMES.TOKEN_WHITELIST).description,
+    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
     maxRetries: 3,
-    retryDelayMs: 30000,
+    retryDelayMs: 5000,
     circuitBreaker: {
         failureThreshold: 5,
-        resetTimeoutMs: 60000,
-        minHealthyPeriodMs: 120000
+        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
+        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
     }
 };
 // extra config
@@ -46,7 +48,7 @@ const TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL = config.token_submission_d
 // Token Whitelist Service
 class TokenWhitelistService extends BaseService {
     constructor() {
-        super(WHITELIST_SERVICE_CONFIG.name, WHITELIST_SERVICE_CONFIG);
+        super(TOKEN_WHITELIST_CONFIG.name, TOKEN_WHITELIST_CONFIG);
         this.connection = new Connection(SOLANA_RPC_ENDPOINT);
         this.treasuryWallet = new PublicKey(DEGENDUAL_TREASURY_WALLET);
         this.submissionCost = parseFloat(TOKEN_SUBMISSION_COST) * LAMPORTS_PER_SOL;

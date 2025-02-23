@@ -1,17 +1,29 @@
 // utils/service-manager.js
 
+/*
+ * This file is responsible for managing all DegenDuel services.
+ * It allows the admin to start, stop, and update the state of all services.
+ * 
+ */
+
+// Master Circuit Breaker
+import { createCircuitBreakerWebSocket } from '../websocket-suite/circuit-breaker-ws.js';
+// Services
+import achievementService from '../../services/achievementService.js';
+import adminWalletService from '../../services/adminWalletService.js';
+import contestEvaluationService from '../../services/contestEvaluationService.js';
+import contestWalletService from '../../services/contestWalletService.js';
+import marketDataService from '../../services/marketDataService.js';
+import referralService from '../../services/referralService.js';
+import tokenSyncService from '../../services/tokenSyncService.js';
+import tokenWhitelistService from '../../services/tokenWhitelistService.js';
+import vanityWalletService from '../../services/vanityWalletService.js';
+import walletRakeService from '../../services/walletRakeService.js';
+// Other
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
-import tokenSyncService from '../../services/tokenSyncService.js';
-import vanityWalletService from '../../services/vanityWalletService.js';
-import contestEvaluationService from '../../services/contestEvaluationService.js';
-import walletRakeService from '../../services/walletRakeService.js';
-import referralService from '../../services/referralService.js';
-import contestWalletService from '../../services/contestWalletService.js';
-import adminWalletService from '../../services/adminWalletService.js';
-import { marketDataService } from '../../services/marketDataService.js';
-import { tokenWhitelistService } from '../../services/tokenWhitelistService.js';
-import { createCircuitBreakerWebSocket } from '../websocket-suite/circuit-breaker-ws.js';
+import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';
+import { SERVICE_NAMES, SERVICE_LAYERS, validateServiceName } from './service-constants.js';
 
 /**
  * Service registry for managing all DegenDuel services
@@ -41,11 +53,54 @@ export class ServiceManager {
     }
 
     /**
+     * Validates service dependencies
+     */
+    static validateDependencies(serviceName, dependencies) {
+        const missingDeps = [];
+        for (const dep of dependencies) {
+            if (!this.services.has(dep)) {
+                missingDeps.push(dep);
+            }
+        }
+        if (missingDeps.length > 0) {
+            logApi.warn(`Missing dependencies for ${serviceName}:`, {
+                missing: missingDeps,
+                available: Array.from(this.services.keys())
+            });
+        }
+        return missingDeps.length === 0;
+    }
+
+    /**
      * Registers a service with its dependencies
      */
     static register(service, dependencies = []) {
+        if (!service) {
+            logApi.error('Attempted to register undefined service');
+            return;
+        }
+
+        if (!validateServiceName(service.name)) {
+            logApi.error(`Invalid service name: ${service.name}`);
+            return;
+        }
+        
+        if (this.services.has(service.name)) {
+            logApi.warn(`Service ${service.name} is already registered`);
+            return;
+        }
+
+        // Validate dependencies
+        const invalidDeps = dependencies.filter(dep => !validateServiceName(dep));
+        if (invalidDeps.length > 0) {
+            logApi.error(`Invalid dependencies for ${service.name}:`, invalidDeps);
+            return;
+        }
+
         this.services.set(service.name, service);
         this.dependencies.set(service.name, dependencies);
+        this.validateDependencies(service.name, dependencies);
+        logApi.info(`Registered service: ${service.name}`);
     }
 
     /**
@@ -105,54 +160,116 @@ export class ServiceManager {
     }
 
     /**
-     * Updates the system settings for a service
-     * @param {string} serviceName - The name of the service (e.g., 'token_sync_service')
-     * @param {object} state - The current state of the service
-     * @param {object} config - Service configuration
-     * @param {object} stats - Service statistics (optional)
-     * @returns {Promise<void>}
+     * Updates service state and broadcasts to WebSocket clients
      */
     static async updateServiceState(serviceName, state, config, stats = null) {
         try {
-            const value = {
+            // Get current circuit breaker config
+            const circuitBreakerConfig = getCircuitBreakerConfig(serviceName);
+            
+            // Update state with circuit breaker status
+            const serviceState = {
                 running: state.running,
-                status: state.status,
+                status: this.determineServiceStatus(stats),
                 last_started: state.last_started,
                 last_stopped: state.last_stopped,
                 last_check: state.last_check,
                 last_error: state.last_error,
                 last_error_time: state.last_error_time,
-                config,
+                config: {
+                    ...config,
+                    circuitBreaker: circuitBreakerConfig
+                },
                 ...(stats && { stats })
             };
 
-            // Clean undefined values
-            Object.keys(value).forEach(key => 
-                value[key] === undefined && delete value[key]
-            );
-
+            // Update database
             await prisma.system_settings.upsert({
                 where: { key: serviceName },
                 update: {
-                    value,
+                    value: serviceState,
                     updated_at: new Date()
                 },
                 create: {
                     key: serviceName,
-                    value,
+                    value: serviceState,
                     description: `${serviceName} status and configuration`,
                     updated_at: new Date()
                 }
             });
 
-            // Broadcast state update via WebSocket if instance exists
+            // Broadcast update if WebSocket is available
             if (this.circuitBreakerWs) {
-                this.circuitBreakerWs.notifyServiceUpdate(serviceName, value);
+                this.circuitBreakerWs.notifyServiceUpdate(serviceName, serviceState);
             }
+
+            return serviceState;
         } catch (error) {
             logApi.error(`Failed to update service state for ${serviceName}:`, error);
             throw error;
         }
+    }
+
+    /**
+     * Determine overall service status
+     */
+    static determineServiceStatus(stats) {
+        if (!stats) return 'unknown';
+        
+        if (stats.circuitBreaker?.isOpen) return 'circuit_open';
+        if (stats.history?.consecutiveFailures > 0) return 'degraded';
+        if (!isHealthy(stats)) return 'unhealthy';
+        
+        return 'healthy';
+    }
+
+    /**
+     * Check if service should be allowed to operate
+     */
+    static async checkServiceHealth(serviceName) {
+        const service = this.services.get(serviceName);
+        if (!service) return false;
+
+        const state = await this.getServiceState(serviceName);
+        if (!state) return true; // No state = new service, allow operation
+
+        // Check circuit breaker status
+        if (state.stats?.circuitBreaker?.isOpen) {
+            if (shouldReset(state.stats, state.config.circuitBreaker)) {
+                // Attempt recovery
+                try {
+                    await service.performOperation();
+                    await this.markServiceRecovered(serviceName);
+                    return true;
+                } catch (error) {
+                    await this.markServiceError(serviceName, error);
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Mark service as recovered from circuit breaker
+     */
+    static async markServiceRecovered(serviceName) {
+        const service = this.services.get(serviceName);
+        if (!service) return;
+
+        service.stats.circuitBreaker.isOpen = false;
+        service.stats.circuitBreaker.failures = 0;
+        service.stats.circuitBreaker.lastReset = new Date().toISOString();
+        service.stats.circuitBreaker.recoveryAttempts++;
+
+        await this.updateServiceState(
+            serviceName,
+            { running: true, status: 'recovered' },
+            service.config,
+            service.stats
+        );
     }
 
     /**
@@ -236,27 +353,17 @@ export class ServiceManager {
 
 // Register core services with dependencies
 ServiceManager.register(tokenSyncService, []);
+ServiceManager.register(marketDataService, []);
 ServiceManager.register(vanityWalletService, []);
-ServiceManager.register(contestEvaluationService.service, ['token_sync_service']);
-ServiceManager.register(walletRakeService, ['contest_evaluation_service']);
-ServiceManager.register(referralService, ['token_sync_service']);
-ServiceManager.register(contestWalletService, ['vanity_wallet_service']);
-ServiceManager.register(adminWalletService, ['contest_wallet_service']);
-ServiceManager.register(marketDataService, ['token_sync_service']);
-ServiceManager.register(tokenWhitelistService, ['token_sync_service']);
+ServiceManager.register(contestEvaluationService.service, [SERVICE_NAMES.MARKET_DATA]);
+ServiceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+ServiceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+ServiceManager.register(contestWalletService, [SERVICE_NAMES.VANITY_WALLET]);
+ServiceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
+ServiceManager.register(tokenWhitelistService, [SERVICE_NAMES.TOKEN_SYNC]);
+ServiceManager.register(achievementService, [SERVICE_NAMES.CONTEST_EVALUATION]);
 
-// Service name constants
-export const SERVICE_NAMES = {
-    TOKEN_SYNC: 'token_sync_service',
-    VANITY_WALLET: 'vanity_wallet_service',
-    CONTEST_EVALUATION: 'contest_evaluation_service',
-    WALLET_RAKE: 'wallet_rake_service',
-    REFERRAL: 'referral_service',
-    CONTEST_WALLET: 'contest_wallet_service',
-    ADMIN_WALLET: 'admin_wallet_service',
-    DD_SERV: 'dd_serv_service',
-    MARKET_DATA: 'market_data_service',
-    TOKEN_WHITELIST: 'token_whitelist_service'
-};
+// Export service name constants for backward compatibility
+export { SERVICE_NAMES, SERVICE_LAYERS };
 
 export default ServiceManager; 

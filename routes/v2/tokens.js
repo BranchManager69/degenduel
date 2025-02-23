@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
-import { tokenWhitelistService } from '../../services/tokenWhitelistService.js';
+import tokenWhitelistService from '../../services/tokenWhitelistService.js';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 import AdminLogger from '../../utils/admin-logger.js';
@@ -742,4 +742,4 @@ router.delete('/:contractAddress', requireAuth, requireAdmin, async (req, res) =
     }
 });
 
-export default router; 
+export default router;
