@@ -1,4 +1,4 @@
-// /utils/solana-suite/wallet-generator.js
+// services/walletGenerationService.js
 
 /*
  * This file is responsible for generating and managing wallets.
