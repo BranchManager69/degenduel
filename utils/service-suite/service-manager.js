@@ -24,13 +24,16 @@ import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
 import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';
 import { SERVICE_NAMES, SERVICE_LAYERS, validateServiceName } from './service-constants.js';
+import { ServiceError } from './service-error.js';
 
 /**
- * Service registry for managing all DegenDuel services
+ * Consolidated service management system for DegenDuel
+ * Combines functionality from ServiceManager and ServiceRegistry
  */
-export class ServiceManager {
+class ServiceManager {
     static services = new Map();
     static dependencies = new Map();
+    static state = new Map();
     static circuitBreakerWs = null;
 
     /**
@@ -53,36 +56,15 @@ export class ServiceManager {
     }
 
     /**
-     * Validates service dependencies
-     */
-    static validateDependencies(serviceName, dependencies) {
-        const missingDeps = [];
-        for (const dep of dependencies) {
-            if (!this.services.has(dep)) {
-                missingDeps.push(dep);
-            }
-        }
-        if (missingDeps.length > 0) {
-            logApi.warn(`Missing dependencies for ${serviceName}:`, {
-                missing: missingDeps,
-                available: Array.from(this.services.keys())
-            });
-        }
-        return missingDeps.length === 0;
-    }
-
-    /**
-     * Registers a service with its dependencies
+     * Register a service with its dependencies
      */
     static register(service, dependencies = []) {
         if (!service) {
-            logApi.error('Attempted to register undefined service');
-            return;
+            throw ServiceError.configuration('Attempted to register undefined service');
         }
 
         if (!validateServiceName(service.name)) {
-            logApi.error(`Invalid service name: ${service.name}`);
-            return;
+            throw ServiceError.configuration(`Invalid service name: ${service.name}`);
         }
         
         if (this.services.has(service.name)) {
@@ -93,8 +75,7 @@ export class ServiceManager {
         // Validate dependencies
         const invalidDeps = dependencies.filter(dep => !validateServiceName(dep));
         if (invalidDeps.length > 0) {
-            logApi.error(`Invalid dependencies for ${service.name}:`, invalidDeps);
-            return;
+            throw ServiceError.configuration(`Invalid dependencies for ${service.name}: ${invalidDeps.join(', ')}`);
         }
 
         this.services.set(service.name, service);
@@ -110,7 +91,7 @@ export class ServiceManager {
         const initialized = new Set();
         const failed = new Set();
 
-        for (const [serviceName, service] of this.services) {
+        for (const [serviceName] of this.services) {
             if (!initialized.has(serviceName)) {
                 await this._initializeService(serviceName, initialized, failed, new Set());
             }
@@ -123,12 +104,14 @@ export class ServiceManager {
     }
 
     /**
-     * Initialize a service and its dependencies
+     * Initialize a single service and its dependencies
      */
     static async _initializeService(serviceName, initialized, failed, processing) {
         // Check for circular dependencies
         if (processing.has(serviceName)) {
-            throw new Error(`Circular dependency detected: ${Array.from(processing).join(' -> ')} -> ${serviceName}`);
+            throw ServiceError.configuration(
+                `Circular dependency detected: ${Array.from(processing).join(' -> ')} -> ${serviceName}`
+            );
         }
 
         // Skip if already processed
@@ -146,13 +129,23 @@ export class ServiceManager {
             }
         }
 
+        // Check if any dependencies failed
+        const dependencyFailed = dependencies.some(dep => failed.has(dep));
+        if (dependencyFailed) {
+            failed.add(serviceName);
+            logApi.error(`Service ${serviceName} failed due to dependency failure`);
+            return;
+        }
+
         // Initialize the service
-        const service = this.services.get(serviceName);
         try {
+            const service = this.services.get(serviceName);
             await service.initialize();
             initialized.add(serviceName);
+            logApi.info(`Initialized service: ${serviceName}`);
         } catch (error) {
             failed.add(serviceName);
+            logApi.error(`Failed to initialize service: ${serviceName}`, error);
             throw error;
         }
 
@@ -160,7 +153,7 @@ export class ServiceManager {
     }
 
     /**
-     * Updates service state and broadcasts to WebSocket clients
+     * Update service state and broadcast changes
      */
     static async updateServiceState(serviceName, state, config, stats = null) {
         try {
@@ -198,6 +191,9 @@ export class ServiceManager {
                 }
             });
 
+            // Update local state
+            this.state.set(serviceName, serviceState);
+
             // Broadcast update if WebSocket is available
             if (this.circuitBreakerWs) {
                 this.circuitBreakerWs.notifyServiceUpdate(serviceName, serviceState);
@@ -211,20 +207,38 @@ export class ServiceManager {
     }
 
     /**
-     * Determine overall service status
+     * Get the current state of a service
      */
-    static determineServiceStatus(stats) {
-        if (!stats) return 'unknown';
-        
-        if (stats.circuitBreaker?.isOpen) return 'circuit_open';
-        if (stats.history?.consecutiveFailures > 0) return 'degraded';
-        if (!isHealthy(stats)) return 'unhealthy';
-        
-        return 'healthy';
+    static async getServiceState(serviceName) {
+        try {
+            // Check local state first
+            const localState = this.state.get(serviceName);
+            if (localState) return localState;
+
+            // Fallback to database
+            const setting = await prisma.system_settings.findUnique({
+                where: { key: serviceName }
+            });
+            
+            if (!setting) return null;
+
+            // Parse value if it's a string
+            const value = typeof setting.value === 'string' 
+                ? JSON.parse(setting.value) 
+                : setting.value;
+
+            // Cache in local state
+            this.state.set(serviceName, value);
+            
+            return value;
+        } catch (error) {
+            logApi.error(`Failed to get service state for ${serviceName}:`, error);
+            throw error;
+        }
     }
 
     /**
-     * Check if service should be allowed to operate
+     * Check service health and manage circuit breaker
      */
     static async checkServiceHealth(serviceName) {
         const service = this.services.get(serviceName);
@@ -253,6 +267,47 @@ export class ServiceManager {
     }
 
     /**
+     * Determine overall service status
+     */
+    static determineServiceStatus(stats) {
+        if (!stats) return 'unknown';
+        
+        if (stats.circuitBreaker?.isOpen) return 'circuit_open';
+        if (stats.history?.consecutiveFailures > 0) return 'degraded';
+        if (!isHealthy(stats)) return 'unhealthy';
+        
+        return 'healthy';
+    }
+
+    /**
+     * Get all services in a specific layer
+     */
+    static getServicesInLayer(layer) {
+        return Array.from(this.services.entries())
+            .filter(([_, service]) => service.config.layer === layer)
+            .map(([name]) => name);
+    }
+
+    /**
+     * Validate service dependencies
+     */
+    static validateDependencies(serviceName, dependencies) {
+        const missingDeps = [];
+        for (const dep of dependencies) {
+            if (!this.services.has(dep)) {
+                missingDeps.push(dep);
+            }
+        }
+        if (missingDeps.length > 0) {
+            logApi.warn(`Missing dependencies for ${serviceName}:`, {
+                missing: missingDeps,
+                available: Array.from(this.services.keys())
+            });
+        }
+        return missingDeps.length === 0;
+    }
+
+    /**
      * Mark service as recovered from circuit breaker
      */
     static async markServiceRecovered(serviceName) {
@@ -273,7 +328,7 @@ export class ServiceManager {
     }
 
     /**
-     * Marks a service as started
+     * Mark service as started
      */
     static async markServiceStarted(serviceName, config, stats = null) {
         return this.updateServiceState(serviceName, {
@@ -284,7 +339,7 @@ export class ServiceManager {
     }
 
     /**
-     * Marks a service as stopped
+     * Mark service as stopped
      */
     static async markServiceStopped(serviceName, config, stats = null) {
         return this.updateServiceState(serviceName, {
@@ -295,7 +350,7 @@ export class ServiceManager {
     }
 
     /**
-     * Updates service state with error
+     * Mark service error
      */
     static async markServiceError(serviceName, error, config, stats = null) {
         return this.updateServiceState(serviceName, {
@@ -307,7 +362,7 @@ export class ServiceManager {
     }
 
     /**
-     * Updates service heartbeat
+     * Update service heartbeat
      */
     static async updateServiceHeartbeat(serviceName, config, stats = null) {
         return this.updateServiceState(serviceName, {
@@ -318,50 +373,52 @@ export class ServiceManager {
     }
 
     /**
-     * Gets the current state of a service
+     * Clean up all services
      */
-    static async getServiceState(serviceName) {
-        try {
-            const setting = await prisma.system_settings.findUnique({
-                where: { key: serviceName }
-            });
-            
-            // If no setting found, return null
-            if (!setting) return null;
+    static async cleanup() {
+        const results = {
+            successful: [],
+            failed: []
+        };
 
-            // Handle both string and object value formats
-            if (typeof setting.value === 'string') {
-                try {
-                    return JSON.parse(setting.value);
-                } catch (e) {
-                    logApi.error(`Invalid JSON in system_settings for ${serviceName}:`, {
-                        value: setting.value,
-                        error: e.message
-                    });
-                    return null;
-                }
+        for (const [serviceName, service] of this.services) {
+            try {
+                await service.stop();
+                results.successful.push(serviceName);
+            } catch (error) {
+                results.failed.push({
+                    service: serviceName,
+                    error: error.message
+                });
             }
-            
-            // If value is already an object, return it directly
-            return setting.value;
-        } catch (error) {
-            logApi.error(`Failed to get service state for ${serviceName}:`, error);
-            throw error;
         }
+
+        this.services.clear();
+        this.dependencies.clear();
+        this.state.clear();
+
+        return results;
     }
 }
 
 // Register core services with dependencies
+// Data Layer
 ServiceManager.register(tokenSyncService, []);
 ServiceManager.register(marketDataService, []);
-ServiceManager.register(vanityWalletService, []);
+ServiceManager.register(tokenWhitelistService, [SERVICE_NAMES.TOKEN_SYNC]);
+
+// Contest Layer
 ServiceManager.register(contestEvaluationService.service, [SERVICE_NAMES.MARKET_DATA]);
-ServiceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+ServiceManager.register(achievementService, [SERVICE_NAMES.CONTEST_EVALUATION]);
 ServiceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+
+// Wallet Layer
+ServiceManager.register(vanityWalletService, []);
 ServiceManager.register(contestWalletService, [SERVICE_NAMES.VANITY_WALLET]);
 ServiceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
-ServiceManager.register(tokenWhitelistService, [SERVICE_NAMES.TOKEN_SYNC]);
-ServiceManager.register(achievementService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+ServiceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+
+// Infrastructure Layer services are registered by SolanaServiceManager during its initialization
 
 // Export service name constants for backward compatibility
 export { SERVICE_NAMES, SERVICE_LAYERS };
