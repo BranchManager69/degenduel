@@ -10,7 +10,7 @@ import { colors } from '../utils/colors.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import prisma from '../config/prisma.js';
 import ReferralService from '../services/referralService.js';
-import { sendSMSAlert, formatContestWalletAlert } from '../utils/notification-suite/sms-alerts.js';
+////import { sendSMSAlert, formatContestWalletAlert } from '../utils/notification-suite/sms-alerts.js';
 
 const { Prisma } = pkg;
 
@@ -625,11 +625,12 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       });
 
       // Send success SMS alert
-      await sendSMSAlert(formatContestWalletAlert('creation', {
-        contest_id: contest.id,
-        wallet_address: publicKey
-      }));
-
+      //await sendSMSAlert(
+      //  formatContestWalletAlert('creation', {
+      //    contest_id: contest.id,
+      //    wallet_address: publicKey
+      //  })
+      //);
       logApi.info({
         requestId,
         message: 'Contest wallet created successfully',
@@ -649,11 +650,12 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     res.status(201).json(result);
   } catch (error) {
     // Send error SMS alert
-    await sendSMSAlert(formatContestWalletAlert('error', {
-      contest_id: contest?.id || 'N/A',
-      error: error.message
-    }));
-
+    //await sendSMSAlert(
+    //  formatContestWalletAlert('error', {
+    //    contest_id: contest?.id || 'N/A',
+    //    error: error.message
+    //  })
+    //);
     logApi.error('Error in contest creation:', {
       requestId,
       error: error instanceof Error ? {

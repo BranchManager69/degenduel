@@ -11,9 +11,19 @@
  *
  */
 
+// ** Service Auth **
+import { generateServiceAuthHeader } from '../config/service-auth.js';
+// ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
+import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
+import { config } from '../config/config.js';
+import { CircuitBreaker } from '../utils/circuit-breaker.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
+import prisma from '../config/prisma.js';
+// ** Service Manager (?) **
+import { ServiceManager } from '../utils/service-suite/service-manager.js';
+// Solana
 import {
     Connection,
     Keypair,
@@ -24,9 +34,8 @@ import {
 } from '@solana/web3.js';
 import bs58 from 'bs58';
 import crypto from 'crypto';
-import { config } from '../config/config.js';
-import prisma from '../config/prisma.js';
-import { logApi } from '../utils/logger-suite/logger.js';
+// Other
+import { Decimal } from '@prisma/client/runtime/library';
 
 const WALLET_RAKE_CONFIG = {
     name: 'wallet_rake_service',
@@ -50,6 +59,7 @@ const WALLET_RAKE_CONFIG = {
     }
 };
 
+// Wallet Rake Service
 class WalletRakeService extends BaseService {
     constructor() {
         super(WALLET_RAKE_CONFIG.name, WALLET_RAKE_CONFIG);
