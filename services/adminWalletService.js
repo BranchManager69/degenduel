@@ -67,12 +67,12 @@ class AdminWalletService extends BaseService {
         
         // Initialize service-specific stats
         this.walletStats = {
-            operations: {
-                total: 0,
-                successful: 0,
-                failed: 0
-            },
-            transfers: {
+    operations: {
+        total: 0,
+        successful: 0,
+        failed: 0
+    },
+    transfers: {
                 total: 0,
                 successful: 0,
                 failed: 0,
@@ -315,14 +315,14 @@ class AdminWalletService extends BaseService {
                 Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
                 Buffer.from(iv, 'hex')
             );
-
+            
             decipher.setAuthTag(Buffer.from(tag, 'hex'));
             
             const decrypted = Buffer.concat([
                 decipher.update(Buffer.from(encrypted, 'hex')),
                 decipher.final()
             ]);
-
+            
             return decrypted.toString();
         } catch (error) {
             throw ServiceError.operation('Failed to decrypt wallet', {
@@ -370,9 +370,9 @@ class AdminWalletService extends BaseService {
                     adminId,
                     'ADMIN_WALLET_TRANSFER',
                     {
-                        from: fromWalletEncrypted,
-                        to: toAddress,
-                        amount,
+                from: fromWalletEncrypted,
+                to: toAddress,
+                amount,
                         type: 'sol',
                         description
                     },
@@ -429,10 +429,10 @@ class AdminWalletService extends BaseService {
                     adminId,
                     'ADMIN_WALLET_TRANSFER',
                     {
-                        from: fromWalletEncrypted,
-                        to: toAddress,
-                        mint,
-                        amount,
+                from: fromWalletEncrypted,
+                to: toAddress,
+                mint,
+                amount,
                         type: 'token',
                         description
                     },
@@ -457,7 +457,7 @@ class AdminWalletService extends BaseService {
             const decryptedPrivateKey = this.decryptWallet(fromWalletEncrypted);
             const privateKeyBytes = bs58.decode(decryptedPrivateKey);
             const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
-
+            
             const transaction = new Transaction().add(
                 SystemProgram.transfer({
                     fromPubkey: fromKeypair.publicKey,
@@ -576,10 +576,10 @@ class AdminWalletService extends BaseService {
                 const chunkResults = await Promise.allSettled(
                     chunk.map(transfer => 
                         this.transferSOL(
-                            fromWalletEncrypted,
+                    fromWalletEncrypted,
                             transfer.toAddress,
-                            transfer.amount,
-                            transfer.description
+                    transfer.amount,
+                    transfer.description
                         )
                     )
                 );

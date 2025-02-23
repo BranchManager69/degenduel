@@ -15,7 +15,6 @@ export const DEFAULT_CIRCUIT_BREAKER_CONFIG = {
     backoffMultiplier: 2
 };
 
-
 export const SERVICE_NAMES = {
     // Data Layer Services
     TOKEN_SYNC: 'token_sync_service',

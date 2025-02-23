@@ -53,7 +53,19 @@ const CONTEST_EVALUATION_CONFIG = {
 
 class ContestEvaluationService extends BaseService {
     constructor() {
+        // Add logging before super call
+        logApi.info('Initializing Contest Evaluation Service with config:', {
+            name: SERVICE_NAMES.CONTEST_EVALUATION,
+            config: CONTEST_EVALUATION_CONFIG
+        });
+        
         super(SERVICE_NAMES.CONTEST_EVALUATION, CONTEST_EVALUATION_CONFIG);
+        
+        // Add logging after super call
+        logApi.info('Contest Evaluation Service base initialization complete:', {
+            name: this.name,
+            config: this.config
+        });
         
         // Initialize Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
@@ -1213,26 +1225,9 @@ class ContestEvaluationService extends BaseService {
     }
 }
 
-// Create singleton instance
+// Create and export an instance of the service
 const contestEvaluationService = new ContestEvaluationService();
-
-// Export the service instance and maintain backward compatibility
-const exportedService = {
-    startContestEvaluationService: async () => {
-        await contestEvaluationService.initialize();
-        await contestEvaluationService.start();
-        return contestEvaluationService;
-    },
-    stopContestEvaluationService: async () => {
-        await contestEvaluationService.stop();
-    },
-    processContestRefunds: async (contest) => {
-        return contestEvaluationService.processContestRefunds(contest);
-    },
-    service: contestEvaluationService
-};
-
-export default exportedService;
+export default contestEvaluationService;
 
 
 

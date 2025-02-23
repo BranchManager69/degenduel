@@ -18,7 +18,7 @@ This document outlines the standard pattern that all DegenDuel services must fol
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 
 // 2. Service Base Classes
-import { BaseService } from '../utils/service-suite/base-service.js';
+import BaseService from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 
 // 3. Core Dependencies
