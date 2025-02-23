@@ -16,7 +16,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
 import { Keypair } from '@solana/web3.js';
@@ -27,8 +27,7 @@ import LRUCache from 'lru-cache';
 
 const WALLET_SERVICE_CONFIG = {
     name: SERVICE_NAMES.WALLET_GENERATOR,
-    description: getServiceMetadata(SERVICE_NAMES.WALLET_GENERATOR).description,
-    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
+    checkIntervalMs: 5 * 60 * 1000,  // 5-minute checks
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -36,33 +35,17 @@ const WALLET_SERVICE_CONFIG = {
         resetTimeoutMs: 60000,
         minHealthyPeriodMs: 120000
     },
-    backoff: {
-        initialDelayMs: 1000,
-        maxDelayMs: 30000,
-        factor: 2
-    },
     cache: {
         maxSize: 1000,
-        ttl: 15 * 60 * 1000 // 15 minutes
-    },
-    encryption: {
-        algorithm: 'aes-256-gcm',
-        keyLength: 32,
-        ivLength: 16,
-        tagLength: 16
+        ttl: 15 * 60 * 1000  // 15 minutes
     }
 };
 
 class WalletService extends BaseService {
     constructor() {
-        super(WALLET_SERVICE_CONFIG.name, WALLET_SERVICE_CONFIG);
+        super(WALLET_SERVICE_CONFIG);
         
-        this.walletCache = new LRUCache({
-            max: this.config.cache.maxSize,
-            ttl: this.config.cache.ttl
-        });
-
-        // Initialize service-specific stats
+        // Service-specific state
         this.walletStats = {
             operations: {
                 total: 0,
@@ -78,13 +61,12 @@ class WalletService extends BaseService {
             encryption: {
                 successful: 0,
                 failed: 0
-            },
-            performance: {
-                average_generation_time_ms: 0,
-                last_operation_time_ms: 0,
-                cache_hit_rate: 0
             }
         };
+
+        // Initialize cache
+        this.cache = new Map();
+        this.cacheOrder = [];
     }
 
     async initialize() {
@@ -125,7 +107,7 @@ class WalletService extends BaseService {
             
             for (const wallet of existingWallets) {
                 const identifier = wallet.purpose.replace('Seed wallet for ', '');
-                this.walletCache.set(identifier, {
+                this.cache.set(identifier, {
                     publicKey: wallet.wallet_address,
                     secretKey: wallet.private_key,
                     timestamp: Date.now()
@@ -139,7 +121,7 @@ class WalletService extends BaseService {
                 walletStats: this.walletStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -165,14 +147,14 @@ class WalletService extends BaseService {
             const verificationResults = await this.verifyAllWallets();
             
             // Update stats
-            this.walletStats.wallets.cached = this.walletCache.size;
+            this.walletStats.wallets.cached = this.cache.size;
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
             this.walletStats.performance.average_generation_time_ms = 
                 (this.walletStats.performance.average_generation_time_ms * this.walletStats.operations.total + 
                 (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -252,7 +234,7 @@ class WalletService extends BaseService {
         
         try {
             // Check if wallet already exists in cache
-            const existingWallet = this.walletCache.get(identifier);
+            const existingWallet = this.cache.get(identifier);
             if (existingWallet && !options.forceNew) {
                 this.walletStats.performance.cache_hit_rate = 
                     (this.walletStats.performance.cache_hit_rate * this.walletStats.operations.total + 1) /
@@ -274,7 +256,7 @@ class WalletService extends BaseService {
                     secretKey: existingDbWallet.private_key,
                     timestamp: Date.now()
                 };
-                this.walletCache.set(identifier, walletInfo);
+                this.cache.set(identifier, walletInfo);
                 this.walletStats.wallets.cached++;
                 return walletInfo;
             }
@@ -312,7 +294,7 @@ class WalletService extends BaseService {
                 this.walletStats.operations.total;
 
             // Save to cache
-            this.walletCache.set(identifier, walletInfo);
+            this.cache.set(identifier, walletInfo);
             this.walletStats.wallets.cached++;
 
             return walletInfo;
@@ -329,7 +311,7 @@ class WalletService extends BaseService {
     async getWallet(identifier) {
         try {
             // Check cache first
-            const cachedWallet = this.walletCache.get(identifier);
+            const cachedWallet = this.cache.get(identifier);
             if (cachedWallet) {
                 this.walletStats.performance.cache_hit_rate = 
                     (this.walletStats.performance.cache_hit_rate * this.walletStats.operations.total + 1) /
@@ -352,7 +334,7 @@ class WalletService extends BaseService {
                     timestamp: Date.now(),
                     metadata: dbWallet.metadata
                 };
-                this.walletCache.set(identifier, walletInfo);
+                this.cache.set(identifier, walletInfo);
                 this.walletStats.wallets.cached++;
                 return walletInfo;
             }
@@ -401,13 +383,13 @@ class WalletService extends BaseService {
 
     async verifyAllWallets() {
         const results = {
-            total: this.walletCache.size,
+            total: this.cache.size,
             verified: 0,
             failed: 0,
             errors: []
         };
 
-        for (const [identifier] of this.walletCache.entries()) {
+        for (const [identifier] of this.cache.entries()) {
             try {
                 const verification = await this.verifyWallet(identifier);
                 if (verification.valid) {
@@ -435,9 +417,9 @@ class WalletService extends BaseService {
         const now = Date.now();
         let cleaned = 0;
         
-        for (const [key, value] of this.walletCache.entries()) {
+        for (const [key, value] of this.cache.entries()) {
             if (now - value.timestamp > this.config.cache.ttl) {
-                this.walletCache.delete(key);
+                this.cache.delete(key);
                 cleaned++;
             }
         }
@@ -462,7 +444,7 @@ class WalletService extends BaseService {
     async cleanup() {
         try {
             // Clear the cache
-            this.walletCache.clear();
+            this.cache.clear();
             this.walletStats.wallets.cached = 0;
             
             // Update database to mark all wallets as inactive
@@ -490,10 +472,10 @@ class WalletService extends BaseService {
     // Get cache statistics
     getCacheStats() {
         return {
-            size: this.walletCache.size,
-            maxSize: this.walletCache.max,
-            ttl: this.walletCache.ttl,
-            keys: Array.from(this.walletCache.keys())
+            size: this.cache.size,
+            maxSize: this.cache.max,
+            ttl: this.cache.ttl,
+            keys: Array.from(this.cache.keys())
         };
     }
 }
