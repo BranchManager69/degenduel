@@ -1,10 +1,24 @@
-// /services/referralService.js
+// services/referralService.js
 
+/*
+ * This service is responsible for managing the referral system.
+ * It allows the admin to create and manage referral periods, milestones, and rankings.
+ * 
+ */
+
+// ** Service Auth **
+import { generateServiceAuthHeader } from '../config/service-auth.js';
+// ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
+import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
+import { config } from '../config/config.js';
+import { CircuitBreaker } from '../utils/circuit-breaker.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
-import { logApi } from '../utils/logger-suite/logger.js';
+// ** Service Manager (?) **
+import { ServiceManager } from '../utils/service-suite/service-manager.js';
+// Other
 import { Decimal } from '@prisma/client/runtime/library';
 import cache from '../utils/cache.js';
 
@@ -30,6 +44,7 @@ const REFERRAL_SERVICE_CONFIG = {
     }
 };
 
+// Referral Service
 class ReferralService extends BaseService {
     constructor() {
         super(REFERRAL_SERVICE_CONFIG.name, REFERRAL_SERVICE_CONFIG);

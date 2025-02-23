@@ -1,10 +1,37 @@
-import { logApi } from '../utils/logger-suite/logger.js';
-import prisma from '../config/prisma.js';
+// services/marketDataService.js
+
+/*
+ * This service is responsible for fetching and updating token prices and metadata.
+ * It stays up to date by constantly fetching from the DegenDuel Market Data API.
+ * 
+ */
+
+// ** Service Auth **
+import { generateServiceAuthHeader } from '../config/service-auth.js';
+// ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
+import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
+import { config } from '../config/config.js';
+import { CircuitBreaker } from '../utils/circuit-breaker.js';
+import { logApi } from '../utils/logger-suite/logger.js';
+import AdminLogger from '../utils/admin-logger.js';
+import prisma from '../config/prisma.js';
+// ** Service Manager **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
 
-export class MarketDataService extends BaseService {
+const MARKET_DATA_SERVICE_CONFIG = {
+    name: 'Market Data Service',
+    description: 'Fetches and updates token prices and metadata',
+    circuitBreaker: {
+        enabled: true,
+        failureThreshold: 5,
+        resetTimeoutMs: 60000, // 1 minute
+        minHealthyPeriodMs: 120000 // 2 minutes
+    }
+};
+
+// Market Data Service
+class MarketDataService extends BaseService {
     constructor() {
         // Initialize with proper config structure
         const config = {
@@ -372,5 +399,5 @@ export class MarketDataService extends BaseService {
 }
 
 // Create and export singleton instance
-export const marketDataService = new MarketDataService();
-export default marketDataService; 
+const marketDataService = new MarketDataService();
+export default marketDataService;

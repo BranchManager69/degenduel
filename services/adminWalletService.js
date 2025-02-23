@@ -1,15 +1,29 @@
 // services/adminWalletService.js
 
+/*
+ * This service is responsible for managing the admin's wallet.
+ * It allows the admin to transfer SOL and tokens to other wallets.
+ * 
+ */
+
+// ** Service Auth **
+import { generateServiceAuthHeader } from '../config/service-auth.js';
+// ** Service Class **
+import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
-import { PrismaClient } from '@prisma/client';
-import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
+import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
+import { CircuitBreaker } from '../utils/circuit-breaker.js';
+import { logApi } from '../utils/logger-suite/logger.js';
+import AdminLogger from '../utils/admin-logger.js';
+import prisma from '../config/prisma.js';
+// ** Service Manager (?) **
+import { ServiceManager } from '../utils/service-suite/service-manager.js';
+// Solana
 import crypto from 'crypto';
 import bs58 from 'bs58';
-import { logApi } from '../utils/logger-suite/logger.js';
-import prisma from '../config/prisma.js';
+import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
 
 const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
@@ -34,6 +48,7 @@ const ADMIN_WALLET_CONFIG = {
     }
 };
 
+// Admin Wallet Service
 class AdminWalletService extends BaseService {
     constructor() {
         super(ADMIN_WALLET_CONFIG.name, ADMIN_WALLET_CONFIG);

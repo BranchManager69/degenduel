@@ -1,4 +1,4 @@
-# Contest Wallet System Reference
+# Contest Wallet Service Reference
 
 ## Table of Contents
 1. [System Overview](#system-overview)

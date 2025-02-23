@@ -1,10 +1,24 @@
+// services/vanityWalletService.js
+
+/*
+ * This service is responsible for managing the vanity wallet pool.
+ * It allows the admin to add and remove wallets from the pool.
+ * 
+ */
+
+// ** Service Auth **
+import { generateServiceAuthHeader } from '../config/service-auth.js';
+// ** Service Class **
+import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
-import { PrismaClient } from '@prisma/client';
-import crypto from 'crypto';
+import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
+import { config } from '../config/config.js';
+import { CircuitBreaker } from '../utils/circuit-breaker.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+// ** Service Manager (?) **
+import { ServiceManager } from '../utils/service-suite/service-manager.js';
 
 const VANITY_WALLET_CONFIG = {
     name: 'vanity_wallet_service',
@@ -29,6 +43,7 @@ const VANITY_WALLET_CONFIG = {
     }
 };
 
+// Vanity Wallet Service
 class VanityWalletService extends BaseService {
     constructor() {
         super(VANITY_WALLET_CONFIG.name, VANITY_WALLET_CONFIG);

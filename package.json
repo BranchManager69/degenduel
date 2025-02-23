@@ -1,7 +1,7 @@
 {
   "name": "degenduel",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "node index.js",
@@ -76,6 +76,7 @@
     "ora": "^8.1.1",
     "pg": "^8.13.1",
     "pm2": "^5.3.1",
+    "solana-agent-kit": "^1.4.8",
     "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",

@@ -1,4 +1,4 @@
-# Contest Evaluation System Reference
+# Contest Evaluation Service Reference
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -108,7 +108,7 @@ class ContestEvaluationService extends BaseService {
         maxRetries: 3,
         retryDelayMs: 5000
     },
-    autoCancelWindow: 3 * 24 * 60 * 60 * 1000,  // 3 days
+    autoCancelWindow: (0 * 24 * 60 * 60 * 1000) + (0 * 60 * 60 * 1000) + (1 * 60 * 1000) + (29 * 1000),  // 0 days, 0 hours, 1 minutes, and 29 seconds
     states: {
         PENDING: 'pending',
         ACTIVE: 'active',
@@ -180,9 +180,9 @@ actualPrizePool = totalPool * (1 - platformFeePercentage)
 
 // Prize structure example
 {
-    place_1: 0.50,  // 50% to first place
-    place_2: 0.30,  // 30% to second place
-    place_3: 0.20   // 20% to third place
+    place_1: 0.69,  // 69% to first place
+    place_2: 0.20,  // 20% to second place
+    place_3: 0.11   // 11% to third place
 }
 ```
 

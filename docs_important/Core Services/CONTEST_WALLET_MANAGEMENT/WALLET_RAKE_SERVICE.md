@@ -1,4 +1,4 @@
-# Wallet Rake System Reference
+# Wallet Rake Service Reference
 
 ## Table of Contents
 1. [System Overview](#system-overview)
