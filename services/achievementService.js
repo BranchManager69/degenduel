@@ -1,12 +1,12 @@
- // services/achievementService.js
+// services/achievementService.js
 
- /*
-  * This service is responsible for managing the achievement system.
-  * It allows the admin to create and manage achievements.
-  * 
-  */
+/*
+ * This service is responsible for managing the achievement system.
+ * It allows the admin to create and manage achievements.
+ * 
+ */
 
- // ** Service Auth **
+// ** Service Auth **
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
 import VanityWalletService from './vanityWalletService.js'; // Service Subclass
@@ -19,10 +19,11 @@ import prisma from '../config/prisma.js';
 //////import { CircuitBreaker } from '../utils/circuit-breaker.js';
 // ** Service Manager (?) **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const ACHIEVEMENT_SERVICE_CONFIG = {
-    name: 'Achievement Service',
-    description: 'Manages achievements for the platform',
+    name: SERVICE_NAMES.ACHIEVEMENT,
+    description: getServiceMetadata(SERVICE_NAMES.ACHIEVEMENT).description,
     circuitBreaker: {
         enabled: true,
         threshold: 1000,

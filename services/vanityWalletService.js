@@ -9,7 +9,6 @@
 // ** Service Auth **
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
-import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
@@ -19,9 +18,11 @@ import prisma from '../config/prisma.js';
 ////import { CircuitBreaker } from '../utils/circuit-breaker.js';
 // ** Service Manager (?) **
 import { ServiceManager } from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const VANITY_WALLET_CONFIG = {
-    name: 'vanity_wallet_service',
+    name: SERVICE_NAMES.VANITY_WALLET,
+    description: getServiceMetadata(SERVICE_NAMES.VANITY_WALLET).description,
     checkIntervalMs: 60 * 60 * 1000, // Check pool size every hour
     maxRetries: 3,
     retryDelayMs: 5000,

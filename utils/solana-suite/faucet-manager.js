@@ -44,7 +44,7 @@ class SolanaWalletError extends Error {
 
 // Faucet Manager
 export class FaucetManager {
-    static config = DEFAULT_CONFIG;
+    static config = DEFAULT_FAUCET_CONFIG;
     static walletCache = new LRUCache({
         max: 1000,
         ttl: 15 * 60 * 1000
@@ -941,9 +941,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             break;
         case 'config':
             const newConfig = {
-                defaultAmount: parseFloat(process.argv[3]) || DEFAULT_CONFIG.defaultAmount,
-                minFaucetBalance: parseFloat(process.argv[4]) || DEFAULT_CONFIG.minFaucetBalance,
-                maxTestUsers: parseInt(process.argv[5]) || DEFAULT_CONFIG.maxTestUsers
+                defaultAmount: parseFloat(process.argv[3]) || DEFAULT_FAUCET_CONFIG.defaultAmount,
+                minFaucetBalance: parseFloat(process.argv[4]) || DEFAULT_FAUCET_CONFIG.minFaucetBalance,
+                maxTestUsers: parseInt(process.argv[5]) || DEFAULT_FAUCET_CONFIG.maxTestUsers
             };
             FaucetManager.setConfig(newConfig);
             console.log('Faucet configuration updated:', newConfig);
