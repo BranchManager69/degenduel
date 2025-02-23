@@ -1,6 +1,5 @@
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
-import ServiceManager from './service-manager.js';
 import { 
     getCircuitBreakerConfig, 
     isHealthy, 
@@ -8,6 +7,7 @@ import {
     calculateBackoffDelay,
     getCircuitBreakerStatus 
 } from './circuit-breaker-config.js';
+import { EventEmitter } from 'events';
 
 /**
  * Base configuration template for all services
@@ -22,6 +22,9 @@ export const BASE_SERVICE_CONFIG = {
         factor: 2
     }
 };
+
+// Global event emitter for service events
+export const serviceEvents = new EventEmitter();
 
 /**
  * Base service class that all DegenDuel services should extend
@@ -77,15 +80,18 @@ export class BaseService {
             }
 
             // Load previous state from system_settings
-            const previousState = await ServiceManager.getServiceState(this.name);
+            const previousState = await prisma.system_settings.findUnique({
+                where: { key: this.name }
+            });
+
             if (previousState) {
-                if (previousState.stats) {
+                if (previousState.value?.stats) {
                     this.stats = {
                         ...this.stats,
-                        ...previousState.stats,
+                        ...previousState.value.stats,
                         circuitBreaker: {
                             ...this.stats.circuitBreaker,
-                            ...previousState.stats.circuitBreaker
+                            ...previousState.value.stats.circuitBreaker
                         }
                     };
 
@@ -93,38 +99,23 @@ export class BaseService {
                     if (this.stats.circuitBreaker.isOpen) {
                         await this.attemptCircuitRecovery();
                     }
-
-                    // Cascading Service Recovery
-                    if (this.stats.circuitBreaker.isOpen) {
-                        const dependencies = ServiceManager.dependencies.get(this.name) || [];
-                        for (const dep of dependencies) {
-                            const depState = await ServiceManager.getServiceState(dep);
-                            if (depState?.stats?.circuitBreaker?.isOpen) {
-                                logApi.warn(`${this.name} initialization blocked: dependency ${dep} circuit breaker is open`, {
-                                    dependency: dep,
-                                    dependencyFailures: depState.stats.circuitBreaker.failures,
-                                    dependencyLastFailure: depState.stats.circuitBreaker.lastFailure
-                                });
-                                return false;
-                            }
-                        }
-                    }
                 }
 
                 // Restore any custom config that was saved
-                if (previousState.config) {
+                if (previousState.value?.config) {
                     this.config = {
                         ...this.config,
-                        ...previousState.config
+                        ...previousState.value.config
                     };
                 }
             }
 
-            await ServiceManager.markServiceStarted(
-                this.name,
-                this.config,
-                this.stats
-            );
+            // Emit service started event
+            serviceEvents.emit('service:started', {
+                name: this.name,
+                config: this.config,
+                stats: this.stats
+            });
 
             this.stats.history.lastStarted = new Date().toISOString();
             return true;
@@ -188,13 +179,13 @@ export class BaseService {
                 });
             }
 
-            // Update service state
-            await ServiceManager.updateServiceState(
-                this.name,
-                { status: getCircuitBreakerStatus(this.stats) },
-                this.config,
-                this.stats
-            );
+            // Emit circuit breaker state change
+            serviceEvents.emit('service:circuit_breaker', {
+                name: this.name,
+                status: getCircuitBreakerStatus(this.stats),
+                config: this.config,
+                stats: this.stats
+            });
 
         } catch (error) {
             logApi.error(`${this.name} circuit breaker recovery failed:`, error);
@@ -226,13 +217,15 @@ export class BaseService {
 
         this.interval = setInterval(async () => {
             try {
-                // Check both service enabled state and circuit breaker status
-                const [isEnabled, isHealthy] = await Promise.all([
-                    this.checkEnabled(),
-                    ServiceManager.checkServiceHealth(this.name)
-                ]);
+                // Check service enabled state
+                const isEnabled = await this.checkEnabled();
+                if (!isEnabled) return;
 
-                if (!isEnabled || !isHealthy) {
+                // Check circuit breaker
+                if (this.stats.circuitBreaker.isOpen) {
+                    if (shouldReset(this.stats, this.config.circuitBreaker)) {
+                        await this.attemptCircuitRecovery();
+                    }
                     return;
                 }
 
@@ -244,7 +237,11 @@ export class BaseService {
         }, this.config.checkIntervalMs);
 
         this.stats.history.lastStarted = new Date().toISOString();
-        await ServiceManager.markServiceStarted(this.name, this.config, this.stats);
+        serviceEvents.emit('service:started', {
+            name: this.name,
+            config: this.config,
+            stats: this.stats
+        });
     }
 
     /**
@@ -262,11 +259,11 @@ export class BaseService {
         }
 
         this.stats.history.lastStopped = new Date().toISOString();
-        await ServiceManager.markServiceStopped(
-            this.name,
-            this.config,
-            this.stats
-        );
+        serviceEvents.emit('service:stopped', {
+            name: this.name,
+            config: this.config,
+            stats: this.stats
+        });
     }
 
     /**
@@ -294,11 +291,11 @@ export class BaseService {
         this.stats.circuitBreaker.failures = 0;
         this.stats.history.consecutiveFailures = 0;
 
-        await ServiceManager.updateServiceHeartbeat(
-            this.name,
-            this.config,
-            this.stats
-        );
+        serviceEvents.emit('service:heartbeat', {
+            name: this.name,
+            config: this.config,
+            stats: this.stats
+        });
     }
 
     /**
@@ -320,12 +317,12 @@ export class BaseService {
             await this.attemptCircuitRecovery();
         }
 
-        await ServiceManager.markServiceError(
-            this.name,
+        serviceEvents.emit('service:error', {
+            name: this.name,
             error,
-            this.config,
-            this.stats
-        );
+            config: this.config,
+            stats: this.stats
+        });
     }
 
     /**
