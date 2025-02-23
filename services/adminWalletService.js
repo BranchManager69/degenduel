@@ -17,8 +17,8 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
-import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, SERVICE_LAYERS, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
@@ -58,9 +58,10 @@ const ADMIN_WALLET_CONFIG = {
     }
 };
 
+// Admin Wallet Service
 class AdminWalletService extends BaseService {
     constructor() {
-        super(ADMIN_WALLET_CONFIG.name, ADMIN_WALLET_CONFIG);
+        super(ADMIN_WALLET_CONFIG);
         
         // Initialize Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
@@ -117,7 +118,7 @@ class AdminWalletService extends BaseService {
             await super.initialize();
             
             // Check dependencies
-            const contestWalletStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
             if (!contestWalletStatus) {
                 throw ServiceError.initialization('Contest Wallet Service not healthy');
             }
@@ -168,7 +169,7 @@ class AdminWalletService extends BaseService {
                 walletStats: this.walletStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -192,7 +193,7 @@ class AdminWalletService extends BaseService {
         
         try {
             // Check dependency health
-            const contestWalletStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
             this.walletStats.dependencies.contestWallet = {
                 status: contestWalletStatus ? 'healthy' : 'unhealthy',
                 lastCheck: new Date().toISOString(),
@@ -213,7 +214,7 @@ class AdminWalletService extends BaseService {
                 (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -708,7 +709,7 @@ class AdminWalletService extends BaseService {
             this.activeTransfers.clear();
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {

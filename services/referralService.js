@@ -17,7 +17,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const REFERRAL_SERVICE_CONFIG = {
@@ -50,7 +50,7 @@ const REFERRAL_SERVICE_CONFIG = {
 
 class ReferralService extends BaseService {
     constructor() {
-        super(SERVICE_NAMES.REFERRAL, REFERRAL_SERVICE_CONFIG);
+        super(REFERRAL_SERVICE_CONFIG);
         
         // Initialize service-specific stats
         this.referralStats = {
@@ -113,7 +113,7 @@ class ReferralService extends BaseService {
             await super.initialize();
             
             // Check dependencies
-            const contestEvalStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
+            const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             if (!contestEvalStatus) {
                 throw ServiceError.initialization('Contest Evaluation Service not healthy');
             }
@@ -183,8 +183,8 @@ class ReferralService extends BaseService {
             // Load period stats
             const [totalPeriods, activePeriods, completedPeriods] = await Promise.all([
                 prisma.referral_periods.count(),
-                prisma.referral_periods.count({ where: { end_time: { gt: new Date() } } }),
-                prisma.referral_periods.count({ where: { end_time: { lt: new Date() } } })
+                prisma.referral_periods.count({ where: { end_date: { gt: new Date() } } }),
+                prisma.referral_periods.count({ where: { end_date: { lt: new Date() } } })
             ]);
 
             this.referralStats.periods.total = totalPeriods;
@@ -200,7 +200,7 @@ class ReferralService extends BaseService {
                 referralStats: this.referralStats
             }));
 
-            await ServiceManager.markServiceStarted(
+            await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
@@ -227,7 +227,7 @@ class ReferralService extends BaseService {
         
         try {
             // Check dependency health
-            const contestEvalStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
+            const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             this.referralStats.dependencies.contestEvaluation = {
                 status: contestEvalStatus ? 'healthy' : 'unhealthy',
                 lastCheck: new Date().toISOString(),
@@ -254,7 +254,7 @@ class ReferralService extends BaseService {
                 (Date.now() - startTime)) / (this.referralStats.operations.total + 1);
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -408,8 +408,8 @@ class ReferralService extends BaseService {
         try {
             return await prisma.referral_periods.findFirst({
                 where: {
-                    start_time: { lte: new Date() },
-                    end_time: { gt: new Date() }
+                    start_date: { lte: new Date() },
+                    end_date: { gt: new Date() }
                 }
             });
         } catch (error) {
@@ -425,9 +425,11 @@ class ReferralService extends BaseService {
             
             const period = await prisma.referral_periods.create({
                 data: {
-                    start_time: startTime,
-                    end_time: endTime,
-                    period_type: this.config.referral.periodLength
+                    start_date: startTime,
+                    end_date: endTime,
+                    period_type: this.config.referral.periodLength,
+                    is_active: true,
+                    status: 'active'
                 }
             });
 
@@ -556,7 +558,7 @@ class ReferralService extends BaseService {
             this.rankingsCache.clear();
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {

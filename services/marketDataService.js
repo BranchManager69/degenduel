@@ -16,7 +16,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Dependencies
 import tokenSyncService from './tokenSyncService.js';
@@ -24,13 +24,13 @@ import tokenSyncService from './tokenSyncService.js';
 const MARKET_DATA_CONFIG = {
     name: SERVICE_NAMES.MARKET_DATA,
     description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA).description,
-    checkIntervalMs: 100, // Fast updates for real-time data
+    checkIntervalMs: 5000, // Slowed down to 5 seconds
     maxRetries: 3,
-    retryDelayMs: 1000, // Fast retry for real-time data
+    retryDelayMs: 1000,
     circuitBreaker: {
-        failureThreshold: 3, // Lower threshold for critical service
-        resetTimeoutMs: 30000, // Fast reset for real-time data
-        minHealthyPeriodMs: 60000 // Shorter health period for real-time
+        failureThreshold: 10, // Increased threshold
+        resetTimeoutMs: 30000,
+        minHealthyPeriodMs: 60000
     },
     backoff: {
         initialDelayMs: 100,
@@ -39,7 +39,7 @@ const MARKET_DATA_CONFIG = {
     },
     cache: {
         maxSize: 10000,
-        ttl: 5000, // 5 second cache for real-time data
+        ttl: 10000, // Increased to 10 seconds
         cleanupInterval: 1000
     },
     dependencies: [SERVICE_NAMES.TOKEN_SYNC],
@@ -51,7 +51,8 @@ const MARKET_DATA_CONFIG = {
 
 class MarketDataService extends BaseService {
     constructor() {
-        super(MARKET_DATA_CONFIG.name, MARKET_DATA_CONFIG);
+        ////super(MARKET_DATA_CONFIG.name, MARKET_DATA_CONFIG);
+        super(MARKET_DATA_CONFIG);
         
         // Initialize caches
         this.cache = new Map();
@@ -191,7 +192,7 @@ class MarketDataService extends BaseService {
         
         try {
             // Check dependency health
-            const tokenSyncStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.TOKEN_SYNC);
+            const tokenSyncStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.TOKEN_SYNC);
             this.marketStats.dependencies.tokenSync = {
                 status: tokenSyncStatus ? 'healthy' : 'unhealthy',
                 lastCheck: new Date().toISOString(),
@@ -213,7 +214,7 @@ class MarketDataService extends BaseService {
                 (Date.now() - startTime)) / (this.marketStats.operations.total + 1);
 
             // Update ServiceManager state
-            await ServiceManager.updateServiceHeartbeat(
+            await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
                 {
@@ -243,6 +244,16 @@ class MarketDataService extends BaseService {
             const cached = this.getFromCache(cacheKey);
             if (cached) return cached;
 
+            // First check if token exists and is active
+            const token = await prisma.tokens.findFirst({
+                where: { symbol, is_active: true }
+            });
+
+            if (!token) {
+                // Token doesn't exist or isn't active - this is not a failure
+                return null;
+            }
+
             const price = await prisma.token_prices.findFirst({
                 where: { symbol },
                 orderBy: { timestamp: 'desc' }
@@ -258,9 +269,19 @@ class MarketDataService extends BaseService {
                 orderBy: { timestamp: 'desc' }
             });
 
+            // If token exists but no price, it's pending sync - not a failure
             if (!price) {
-                this.marketStats.data.updates.prices.failed++;
-                return null;
+                const result = {
+                    current: 0,
+                    change_24h: 0,
+                    volume_24h: 0,
+                    high_24h: 0,
+                    low_24h: 0,
+                    timestamp: new Date(),
+                    pending_sync: true
+                };
+                this.setCache(cacheKey, result);
+                return result;
             }
 
             const result = {
@@ -269,7 +290,8 @@ class MarketDataService extends BaseService {
                 volume_24h: price.volume_24h || 0,
                 high_24h: price.high_24h || price.price,
                 low_24h: price.low_24h || price.price,
-                timestamp: price.timestamp
+                timestamp: price.timestamp,
+                pending_sync: false
             };
 
             // Update stats
@@ -486,7 +508,7 @@ class MarketDataService extends BaseService {
             this.marketStats.cache.size = 0;
             
             // Final stats update
-            await ServiceManager.markServiceStopped(
+            await serviceManager.markServiceStopped(
                 this.name,
                 this.config,
                 {

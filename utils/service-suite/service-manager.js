@@ -20,23 +20,31 @@ import {
     validateDependencyChain 
 } from './service-constants.js';
 import { ServiceError } from './service-error.js';
-import { serviceEvents, BaseService } from './base-service.js';
+import serviceEvents from './service-events.js';
+import { BaseService } from './base-service.js';
 
 /**
  * Consolidated service management system for DegenDuel
  * Combines functionality from ServiceManager and ServiceRegistry
  */
 class ServiceManager {
-    static services = new Map();
-    static dependencies = new Map();
-    static state = new Map();
-    static circuitBreakerWs = null;
+    constructor() {
+        this.services = new Map();
+        this.dependencies = new Map();
+        this.state = new Map();
+        this.circuitBreakerWs = null;
+        this.initializeEventListeners();
+    }
 
     /**
      * Initialize event listeners
      */
-    static initializeEventListeners() {
+    initializeEventListeners() {
         // Service lifecycle events
+        serviceEvents.on('service:initialized', async (data) => {
+            await this.markServiceStarted(data.name, data.config, data.stats);
+        });
+
         serviceEvents.on('service:started', async (data) => {
             await this.markServiceStarted(data.name, data.config, data.stats);
         });
@@ -55,8 +63,10 @@ class ServiceManager {
 
         serviceEvents.on('service:circuit_breaker', async (data) => {
             await this.updateServiceState(data.name, {
-                status: data.status
-            }, data.config, data.stats);
+                status: data.status,
+                config: data.config,
+                stats: data.stats
+            });
         });
     }
 
@@ -64,7 +74,7 @@ class ServiceManager {
      * Initialize the circuit breaker WebSocket with a server
      * @param {http.Server} server - The HTTP server instance
      */
-    static initializeWebSocket(server) {
+    initializeWebSocket(server) {
         if (!server) {
             logApi.warn('Attempted to initialize circuit breaker WebSocket without server instance');
             return;
@@ -82,7 +92,7 @@ class ServiceManager {
     /**
      * Register a service with its dependencies
      */
-    static register(serviceOrName, dependencies = []) {
+    register(serviceOrName, dependencies = []) {
         if (!serviceOrName) {
             throw new Error('Attempted to register undefined service');
         }
@@ -148,7 +158,7 @@ class ServiceManager {
     /**
      * Initialize all services in dependency order
      */
-    static async initializeAll() {
+    async initializeAll() {
         const initialized = new Set();
         const failed = new Set();
         const initOrder = this.calculateInitializationOrder();
@@ -209,16 +219,17 @@ class ServiceManager {
     /**
      * Calculate initialization order based on dependencies
      */
-    static calculateInitializationOrder() {
+    calculateInitializationOrder() {
         const visited = new Set();
         const order = [];
+        const dependencies = this.dependencies; // Store reference to instance dependencies
 
         function visit(serviceName) {
             if (visited.has(serviceName)) return;
             visited.add(serviceName);
 
-            const dependencies = ServiceManager.dependencies.get(serviceName) || [];
-            for (const dep of dependencies) {
+            const serviceDeps = dependencies.get(serviceName) || [];
+            for (const dep of serviceDeps) {
                 visit(dep);
             }
             order.push(serviceName);
@@ -254,7 +265,7 @@ class ServiceManager {
     /**
      * Initialize a single service
      */
-    static async _initializeService(serviceName, initialized, failed) {
+    async _initializeService(serviceName, initialized, failed) {
         try {
             logApi.info(`[SERVICE INIT] Starting initialization of service ${serviceName}`);
 
@@ -361,7 +372,7 @@ class ServiceManager {
     /**
      * Clean up problematic service state
      */
-    static async cleanupServiceState(serviceName) {
+    async cleanupServiceState(serviceName) {
         try {
             // Delete existing state
             await prisma.system_settings.delete({
@@ -382,7 +393,7 @@ class ServiceManager {
     /**
      * Update service state and broadcast changes
      */
-    static async updateServiceState(serviceName, state, config, stats = null) {
+    async updateServiceState(serviceName, state, config, stats = null) {
         try {
             // Get current circuit breaker config
             const circuitBreakerConfig = getCircuitBreakerConfig(serviceName);
@@ -527,7 +538,7 @@ class ServiceManager {
     /**
      * Get the current state of a service
      */
-    static async getServiceState(serviceName) {
+    async getServiceState(serviceName) {
         try {
             // Check local state first
             const localState = this.state.get(serviceName);
@@ -558,7 +569,7 @@ class ServiceManager {
     /**
      * Check service health and manage circuit breaker
      */
-    static async checkServiceHealth(serviceName) {
+    async checkServiceHealth(serviceName) {
         const service = this.services.get(serviceName);
         if (!service) return false;
 
@@ -587,7 +598,7 @@ class ServiceManager {
     /**
      * Determine overall service status
      */
-    static determineServiceStatus(stats) {
+    determineServiceStatus(stats) {
         if (!stats) return 'unknown';
         
         if (stats.circuitBreaker?.isOpen) return 'circuit_open';
@@ -600,7 +611,7 @@ class ServiceManager {
     /**
      * Get all services in a specific layer
      */
-    static getServicesInLayer(layer) {
+    getServicesInLayer(layer) {
         return Array.from(this.services.entries())
             .filter(([serviceName]) => {
                 const metadata = getServiceMetadata(serviceName);
@@ -612,7 +623,7 @@ class ServiceManager {
     /**
      * Validate service dependencies
      */
-    static validateDependencies(serviceName, dependencies) {
+    validateDependencies(serviceName, dependencies) {
         const missingDeps = [];
         for (const dep of dependencies) {
             if (!this.services.has(dep)) {
@@ -631,7 +642,7 @@ class ServiceManager {
     /**
      * Mark service as recovered from circuit breaker
      */
-    static async markServiceRecovered(serviceName) {
+    async markServiceRecovered(serviceName) {
         const service = this.services.get(serviceName);
         if (!service) return;
 
@@ -651,7 +662,7 @@ class ServiceManager {
     /**
      * Mark service as started
      */
-    static async markServiceStarted(serviceName, config, stats = null) {
+    async markServiceStarted(serviceName, config, stats = null) {
         return this.updateServiceState(serviceName, {
             running: true,
             status: 'active',
@@ -662,7 +673,7 @@ class ServiceManager {
     /**
      * Mark service as stopped
      */
-    static async markServiceStopped(serviceName, config, stats = null) {
+    async markServiceStopped(serviceName, config, stats = null) {
         return this.updateServiceState(serviceName, {
             running: false,
             status: 'stopped',
@@ -673,7 +684,7 @@ class ServiceManager {
     /**
      * Mark service error
      */
-    static async markServiceError(serviceName, error, config, stats = null) {
+    async markServiceError(serviceName, error, config, stats = null) {
         return this.updateServiceState(serviceName, {
             running: true,
             status: 'error',
@@ -685,7 +696,7 @@ class ServiceManager {
     /**
      * Update service heartbeat
      */
-    static async updateServiceHeartbeat(serviceName, config, stats = null) {
+    async updateServiceHeartbeat(serviceName, config, stats = null) {
         return this.updateServiceState(serviceName, {
             running: true,
             status: 'active',
@@ -696,7 +707,7 @@ class ServiceManager {
     /**
      * Clean up all service states
      */
-    static async cleanupAllServiceStates() {
+    async cleanupAllServiceStates() {
         try {
             // Delete all service states
             await prisma.system_settings.deleteMany({
@@ -721,7 +732,7 @@ class ServiceManager {
     /**
      * Clean up all services
      */
-    static async cleanup() {
+    async cleanup() {
         const results = {
             successful: [],
             failed: []
@@ -749,7 +760,7 @@ class ServiceManager {
     /**
      * Add a dependency between services
      */
-    static addDependency(serviceName, dependencyOrDependencies) {
+    addDependency(serviceName, dependencyOrDependencies) {
         const dependencies = Array.isArray(dependencyOrDependencies) 
             ? dependencyOrDependencies 
             : [dependencyOrDependencies];
@@ -775,10 +786,6 @@ class ServiceManager {
     }
 }
 
-// Initialize event listeners
-ServiceManager.initializeEventListeners();
-
-// Export service name constants for backward compatibility
-export { SERVICE_NAMES, SERVICE_LAYERS };
-
-export default ServiceManager; 
+// Create and export singleton instance
+const serviceManager = new ServiceManager();
+export default serviceManager;
