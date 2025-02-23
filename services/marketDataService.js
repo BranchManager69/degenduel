@@ -1,9 +1,9 @@
 // services/marketDataService.js
 
 /*
- * This service is responsible for fetching and updating token prices and metadata.
- * It stays up to date by constantly fetching from the DegenDuel Market Data API.
- * 
+ * This service is responsible for providing real-time market data for all tokens.
+ * It depends on the Token Sync Service for base data and adds real-time analytics,
+ * price aggregation, and market sentiment analysis.
  */
 
 // ** Service Auth **
@@ -18,63 +18,108 @@ import prisma from '../config/prisma.js';
 // ** Service Manager **
 import ServiceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+// Dependencies
+import tokenSyncService from './tokenSyncService.js';
 
 const MARKET_DATA_CONFIG = {
     name: SERVICE_NAMES.MARKET_DATA,
     description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA).description,
-    checkIntervalMs: 30 * 1000, // Check every 30 seconds
+    checkIntervalMs: 100, // Fast updates for real-time data
     maxRetries: 3,
-    retryDelayMs: 5000,
+    retryDelayMs: 1000, // Fast retry for real-time data
     circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
-        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
+        failureThreshold: 3, // Lower threshold for critical service
+        resetTimeoutMs: 30000, // Fast reset for real-time data
+        minHealthyPeriodMs: 60000 // Shorter health period for real-time
+    },
+    backoff: {
+        initialDelayMs: 100,
+        maxDelayMs: 5000,
+        factor: 2
+    },
+    cache: {
+        maxSize: 10000,
+        ttl: 5000, // 5 second cache for real-time data
+        cleanupInterval: 1000
+    },
+    dependencies: [SERVICE_NAMES.TOKEN_SYNC],
+    limits: {
+        maxConcurrentRequests: 1000,
+        requestTimeoutMs: 2000
     }
 };
 
-// Market Data Service
 class MarketDataService extends BaseService {
     constructor() {
         super(MARKET_DATA_CONFIG.name, MARKET_DATA_CONFIG);
         
+        // Initialize caches
         this.cache = new Map();
         this.requestCount = 0;
-        this.requestTimeouts = new Set(); // Track timeouts for cleanup
-        
-        // Initialize stats after super, preserving base stats
-        const baseStats = { ...this.stats };
-        this.stats = {
-            ...baseStats,
-            requestCount: 0,
-            cacheHits: 0,
-            cacheMisses: 0,
-            errors: 0,
-            lastError: null,
-            marketData: {
-                circuitBreaker: {
-                    isOpen: false,
-                    failures: 0,
-                    lastFailure: null,
-                    recoveryAttempts: 0,
-                    lastCheck: null
+        this.requestTimeouts = new Set();
+
+        // Initialize service-specific stats
+        this.marketStats = {
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0
+            },
+            performance: {
+                averageOperationTimeMs: 0,
+                lastOperationTimeMs: 0,
+                averageLatencyMs: 0
+            },
+            cache: {
+                hits: 0,
+                misses: 0,
+                size: 0,
+                lastCleanup: null
+            },
+            requests: {
+                total: 0,
+                active: 0,
+                queued: 0,
+                rejected: 0,
+                timedOut: 0
+            },
+            data: {
+                tokens: {
+                    total: 0,
+                    active: 0,
+                    withPrices: 0,
+                    withVolume: 0,
+                    withSentiment: 0
+                },
+                updates: {
+                    prices: {
+                        total: 0,
+                        successful: 0,
+                        failed: 0,
+                        lastUpdate: null
+                    },
+                    volume: {
+                        total: 0,
+                        successful: 0,
+                        failed: 0,
+                        lastUpdate: null
+                    },
+                    sentiment: {
+                        total: 0,
+                        successful: 0,
+                        failed: 0,
+                        lastUpdate: null
+                    }
+                }
+            },
+            dependencies: {
+                tokenSync: {
+                    status: 'unknown',
+                    lastCheck: null,
+                    errors: 0
                 }
             }
         };
-    }
-
-    // Required by BaseService
-    async performOperation() {
-        try {
-            // Perform health check and maintenance
-            await this.checkCircuitBreaker();
-            this.cleanupCache();
-            
-            // Update service heartbeat
-            return true;
-        } catch (error) {
-            this.handleError('performOperation', error);
-            return false;
-        }
     }
 
     async initialize() {
@@ -82,6 +127,12 @@ class MarketDataService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
+            // Check dependencies
+            const tokenSyncStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.TOKEN_SYNC);
+            if (!tokenSyncStatus) {
+                throw ServiceError.initialization('Token Sync Service not healthy');
+            }
+
             // Load configuration from database
             const settings = await prisma.system_settings.findUnique({
                 where: { key: this.name }
@@ -103,92 +154,101 @@ class MarketDataService extends BaseService {
                 };
             }
 
-            // Initialize cache and stats
+            // Initialize cache
             this.cache.clear();
-            
-            // Update only our specific stats, preserve BaseService stats
-            const currentStats = { ...this.stats };
-            this.stats = {
-                ...currentStats,
-                requestCount: 0,
-                cacheHits: 0,
-                cacheMisses: 0,
-                errors: 0,
-                lastError: null,
-                marketData: {
-                    ...currentStats.marketData,
-                    circuitBreaker: {
-                        isOpen: false,
-                        failures: 0,
-                        lastFailure: null,
-                        recoveryAttempts: 0,
-                        lastCheck: null
-                    }
-                }
-            };
+            this.requestTimeouts.clear();
+            this.requestCount = 0;
+
+            // Load initial market state
+            const [activeTokens, tokensWithPrices, tokensWithVolume] = await Promise.all([
+                prisma.tokens.count({ where: { is_active: true } }),
+                prisma.token_prices.count(),
+                prisma.token_volumes.count()
+            ]);
+
+            this.marketStats.data.tokens.total = await prisma.tokens.count();
+            this.marketStats.data.tokens.active = activeTokens;
+            this.marketStats.data.tokens.withPrices = tokensWithPrices;
+            this.marketStats.data.tokens.withVolume = tokensWithVolume;
+
+            // Start cleanup interval
+            this.startCleanupInterval();
 
             // Ensure stats are JSON-serializable for ServiceManager
-            const serializableStats = JSON.parse(JSON.stringify(this.stats));
+            const serializableStats = JSON.parse(JSON.stringify({
+                ...this.stats,
+                marketStats: this.marketStats
+            }));
+
             await ServiceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
             );
 
-            logApi.info('Market Data Service initialized');
+            logApi.info('Market Data Service initialized', {
+                activeTokens,
+                withPrices: tokensWithPrices,
+                withVolume: tokensWithVolume
+            });
+
             return true;
         } catch (error) {
             logApi.error('Market Data Service initialization error:', error);
-            await this.handleError('initialize', error);
+            await this.handleError(error);
             throw error;
         }
     }
 
-    async checkCircuitBreaker() {
-        const now = Date.now();
-        const circuitBreaker = this.stats.marketData.circuitBreaker;
-
-        // Update last check time
-        circuitBreaker.lastCheck = new Date().toISOString();
-
-        // Check if circuit breaker should be reset
-        if (circuitBreaker.isOpen && circuitBreaker.lastFailure) {
-            const timeSinceLastFailure = now - new Date(circuitBreaker.lastFailure).getTime();
-            if (timeSinceLastFailure >= this.config.circuitBreaker.resetTimeoutMs) {
-                circuitBreaker.isOpen = false;
-                circuitBreaker.failures = 0;
-                circuitBreaker.recoveryAttempts++;
-                logApi.info('Circuit breaker reset for market data service');
-            }
-        }
-    }
-
-    async stop() {
+    async performOperation() {
+        const startTime = Date.now();
+        
         try {
-            // Call parent stop first
-            await super.stop();
-            
-            // Clear all intervals
-            clearInterval(this.circuitBreakerInterval);
-            clearInterval(this.cacheCleanupInterval);
-            
-            // Clear all request timeouts
-            for (const timeout of this.requestTimeouts) {
-                clearTimeout(timeout);
+            // Check dependency health
+            const tokenSyncStatus = await ServiceManager.checkServiceHealth(SERVICE_NAMES.TOKEN_SYNC);
+            this.marketStats.dependencies.tokenSync = {
+                status: tokenSyncStatus ? 'healthy' : 'unhealthy',
+                lastCheck: new Date().toISOString(),
+                errors: tokenSyncStatus ? 0 : this.marketStats.dependencies.tokenSync.errors + 1
+            };
+
+            if (!tokenSyncStatus) {
+                throw ServiceError.dependency('Token Sync Service unhealthy');
             }
-            this.requestTimeouts.clear();
-            
-            // Clear cache
-            this.cache.clear();
-            
-            logApi.info('Market Data Service stopped');
+
+            // Perform maintenance
+            this.cleanupCache();
+            await this.checkServiceHealth();
+
+            // Update performance metrics
+            this.marketStats.performance.lastOperationTimeMs = Date.now() - startTime;
+            this.marketStats.performance.averageOperationTimeMs = 
+                (this.marketStats.performance.averageOperationTimeMs * this.marketStats.operations.total + 
+                (Date.now() - startTime)) / (this.marketStats.operations.total + 1);
+
+            // Update ServiceManager state
+            await ServiceManager.updateServiceHeartbeat(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    marketStats: this.marketStats
+                }
+            );
+
+            return {
+                duration: Date.now() - startTime,
+                stats: this.marketStats
+            };
         } catch (error) {
             await this.handleError(error);
-            throw ServiceError.shutdown(error.message);
+            return false;
         }
     }
 
     async getPrice(symbol) {
+        const startTime = Date.now();
+        
         try {
             await this.checkServiceHealth();
             
@@ -212,25 +272,40 @@ class MarketDataService extends BaseService {
                 orderBy: { timestamp: 'desc' }
             });
 
-            if (!price) return null;
+            if (!price) {
+                this.marketStats.data.updates.prices.failed++;
+                return null;
+            }
 
             const result = {
                 current: price.price,
                 change_24h: price24hAgo ? ((price.price - price24hAgo.price) / price24hAgo.price) * 100 : 0,
                 volume_24h: price.volume_24h || 0,
                 high_24h: price.high_24h || price.price,
-                low_24h: price.low_24h || price.price
+                low_24h: price.low_24h || price.price,
+                timestamp: price.timestamp
             };
+
+            // Update stats
+            this.marketStats.data.updates.prices.successful++;
+            this.marketStats.data.updates.prices.lastUpdate = new Date().toISOString();
+            this.marketStats.performance.averageLatencyMs = 
+                (this.marketStats.performance.averageLatencyMs * this.marketStats.data.updates.prices.total + 
+                (Date.now() - startTime)) / (this.marketStats.data.updates.prices.total + 1);
 
             this.setCache(cacheKey, result);
             return result;
         } catch (error) {
-            this.handleError('getPrice', error);
-            return null;
+            this.marketStats.data.updates.prices.failed++;
+            throw error;
+        } finally {
+            this.marketStats.data.updates.prices.total++;
         }
     }
 
     async getVolume(symbol) {
+        const startTime = Date.now();
+        
         try {
             await this.checkServiceHealth();
             
@@ -248,25 +323,40 @@ class MarketDataService extends BaseService {
                 orderBy: { timestamp: 'desc' }
             });
 
-            if (volumes.length === 0) return null;
+            if (volumes.length === 0) {
+                this.marketStats.data.updates.volume.failed++;
+                return null;
+            }
 
             const result = {
                 total: volumes.reduce((sum, v) => sum + v.volume, 0),
                 trades_count: volumes.reduce((sum, v) => sum + v.trades_count, 0),
                 buy_volume: volumes.reduce((sum, v) => sum + v.buy_volume, 0),
                 sell_volume: volumes.reduce((sum, v) => sum + v.sell_volume, 0),
-                interval: '1h'
+                interval: '1h',
+                timestamp: new Date()
             };
+
+            // Update stats
+            this.marketStats.data.updates.volume.successful++;
+            this.marketStats.data.updates.volume.lastUpdate = new Date().toISOString();
+            this.marketStats.performance.averageLatencyMs = 
+                (this.marketStats.performance.averageLatencyMs * this.marketStats.data.updates.volume.total + 
+                (Date.now() - startTime)) / (this.marketStats.data.updates.volume.total + 1);
 
             this.setCache(cacheKey, result);
             return result;
         } catch (error) {
-            this.handleError('getVolume', error);
-            return null;
+            this.marketStats.data.updates.volume.failed++;
+            throw error;
+        } finally {
+            this.marketStats.data.updates.volume.total++;
         }
     }
 
     async getSentiment(symbol) {
+        const startTime = Date.now();
+        
         try {
             await this.checkServiceHealth();
             
@@ -279,7 +369,10 @@ class MarketDataService extends BaseService {
                 orderBy: { timestamp: 'desc' }
             });
 
-            if (!sentiment) return null;
+            if (!sentiment) {
+                this.marketStats.data.updates.sentiment.failed++;
+                return null;
+            }
 
             const previousVolumes = await prisma.token_volumes.findMany({
                 where: {
@@ -305,25 +398,35 @@ class MarketDataService extends BaseService {
                 score: sentiment.sentiment_score,
                 buy_pressure: sentiment.buy_pressure,
                 sell_pressure: sentiment.sell_pressure,
-                volume_trend: volumeTrend
+                volume_trend: volumeTrend,
+                timestamp: sentiment.timestamp
             };
+
+            // Update stats
+            this.marketStats.data.updates.sentiment.successful++;
+            this.marketStats.data.updates.sentiment.lastUpdate = new Date().toISOString();
+            this.marketStats.performance.averageLatencyMs = 
+                (this.marketStats.performance.averageLatencyMs * this.marketStats.data.updates.sentiment.total + 
+                (Date.now() - startTime)) / (this.marketStats.data.updates.sentiment.total + 1);
 
             this.setCache(cacheKey, result);
             return result;
         } catch (error) {
-            this.handleError('getSentiment', error);
-            return null;
+            this.marketStats.data.updates.sentiment.failed++;
+            throw error;
+        } finally {
+            this.marketStats.data.updates.sentiment.total++;
         }
     }
 
     // Cache management
     getFromCache(key) {
         const cached = this.cache.get(key);
-        if (cached && Date.now() - cached.timestamp < this.config.cacheTimeout) {
-            this.stats.cacheHits++;
+        if (cached && Date.now() - cached.timestamp < this.config.cache.ttl) {
+            this.marketStats.cache.hits++;
             return cached.data;
         }
-        this.stats.cacheMisses++;
+        this.marketStats.cache.misses++;
         return null;
     }
 
@@ -332,58 +435,84 @@ class MarketDataService extends BaseService {
             data,
             timestamp: Date.now()
         });
+        this.marketStats.cache.size = this.cache.size;
+    }
+
+    startCleanupInterval() {
+        setInterval(() => {
+            this.cleanupCache();
+        }, this.config.cache.cleanupInterval);
     }
 
     cleanupCache() {
         const now = Date.now();
+        let cleaned = 0;
+        
         for (const [key, value] of this.cache) {
-            if (now - value.timestamp > this.config.cacheTimeout) {
+            if (now - value.timestamp > this.config.cache.ttl) {
                 this.cache.delete(key);
+                cleaned++;
             }
+        }
+        
+        if (cleaned > 0) {
+            this.marketStats.cache.size = this.cache.size;
+            this.marketStats.cache.lastCleanup = new Date().toISOString();
+            logApi.info(`Cleaned ${cleaned} expired entries from market data cache`);
         }
     }
 
     // Service health checks
     async checkServiceHealth() {
-        if (this.stats.marketData.circuitBreaker.isOpen) {
+        if (this.stats.circuitBreaker.isOpen) {
             throw ServiceError.unavailable('Circuit breaker is open');
         }
 
-        if (this.requestCount >= this.config.maxConcurrentRequests) {
+        if (this.requestCount >= this.config.limits.maxConcurrentRequests) {
+            this.marketStats.requests.rejected++;
             throw ServiceError.overloaded('Too many concurrent requests');
         }
 
         this.requestCount++;
-        setTimeout(() => this.requestCount--, 1000);
+        this.marketStats.requests.active++;
+        
+        const timeout = setTimeout(() => {
+            this.requestCount--;
+            this.marketStats.requests.active--;
+            this.marketStats.requests.timedOut++;
+        }, this.config.limits.requestTimeoutMs);
+        
+        this.requestTimeouts.add(timeout);
     }
 
-    // Error handling
-    handleError(operation, error) {
-        // If only one argument is passed, it's the error
-        if (!error) {
-            error = operation;
-            operation = 'unknown';
-        }
-
+    async stop() {
         try {
-            // Call parent error handler with the error
-            super.handleError(error);
+            await super.stop();
             
-            // Update our specific stats
-            this.stats.marketData.circuitBreaker.failures++;
-            this.stats.marketData.circuitBreaker.lastFailure = new Date().toISOString();
+            // Clear all timeouts
+            for (const timeout of this.requestTimeouts) {
+                clearTimeout(timeout);
+            }
+            this.requestTimeouts.clear();
             
-            if (error instanceof ServiceError) {
-                throw error;
-            }
-
-            throw ServiceError.operation(`${operation}: ${error.message}`);
-        } catch (err) {
-            // Ensure we throw a proper error even if something goes wrong in error handling
-            if (err instanceof ServiceError) {
-                throw err;
-            }
-            throw ServiceError.operation(`${operation}: ${error?.message || 'Unknown error'}`);
+            // Clear cache
+            this.cache.clear();
+            this.marketStats.cache.size = 0;
+            
+            // Final stats update
+            await ServiceManager.markServiceStopped(
+                this.name,
+                this.config,
+                {
+                    ...this.stats,
+                    marketStats: this.marketStats
+                }
+            );
+            
+            logApi.info('Market Data Service stopped successfully');
+        } catch (error) {
+            logApi.error('Error stopping Market Data Service:', error);
+            throw error;
         }
     }
 }
