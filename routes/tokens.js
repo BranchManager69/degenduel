@@ -23,8 +23,7 @@ const router = express.Router();
  *     TokenWithDetails:
  *       allOf:
  *         - $ref: '#/components/schemas/Token'
- *         - type: object
- *           properties:
+ *         - properties:
  *             token_prices:
  *               $ref: '#/components/schemas/TokenPrice'
  *             token_bucket_memberships:
@@ -32,7 +31,6 @@ const router = express.Router();
  *               items:
  *                 $ref: '#/components/schemas/TokenBucketMembership'
  */
-
 
 /* Tokens Routes */
 
@@ -241,22 +239,14 @@ router.get("/prices", async (req, res) => {
  *               allOf:
  *                 - $ref: '#/components/schemas/TokenPrice'
  *                 - type: object
- *                     properties:
- *                       tokens:
- *                         type: object
- *                         properties:
- *                           symbol:
- *                             type: string
- *                           name:
- *                             type: string
- *                           market_cap:
- *                             type: string
- *                           volume_24h:
- *                             type: string
- *                           change_24h:
- *                             type: string
- *       404:
- *         $ref: '#/components/responses/TokenNotFound'
+ *                   properties:
+ *                     tokens:
+ *                       type: object
+ *                       properties:
+ *                         symbol:
+ *                           type: string
+ *                         name:
+ *                           type: string
  */
 router.get("/prices/:tokenId", async (req, res) => {
   try {
@@ -449,7 +439,15 @@ router.post("/", async (req, res) => {
  *                   type: string
  *                   example: Superadmin role required
  *       404:
- *         $ref: '#/components/responses/TokenNotFound'
+ *         description: Token not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Token not found
  *       500:
  *         description: Server error
  *         content:
