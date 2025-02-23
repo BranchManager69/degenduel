@@ -7,18 +7,26 @@
  * 
  */
 
+// ** Service Auth **
+import { generateServiceAuthHeader } from '../config/service-auth.js';
+// ** Service Class **
+import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
-import { PrismaClient } from '@prisma/client';
-import { logApi } from '../utils/logger-suite/logger.js';
-import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { config } from '../config/config.js';
-import crypto from 'crypto';
-import bs58 from 'bs58';
-import { Decimal } from '@prisma/client/runtime/library';
-import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import { CircuitBreaker } from '../utils/circuit-breaker.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+// ** Service Manager (?) **
+import { ServiceManager } from '../utils/service-suite/service-manager.js';
+// Solana
+import crypto from 'crypto';
+import bs58 from 'bs58';
+import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+// Other
+import { Decimal } from '@prisma/client/runtime/library';
 
 const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
@@ -45,7 +53,7 @@ const CONTEST_EVALUATION_CONFIG = {
         maxRetries: 3,
         retryDelayMs: 5000
     },
-    autoCancelWindow: 3 * 24 * 60 * 60 * 1000, // 3 days in milliseconds
+    autoCancelWindow: (0 * 24 * 60 * 60 * 1000) + (0 * 60 * 60 * 1000) + (1 * 60 * 1000) + (29 * 1000),  // 0 days, 0 hours, 1 minutes, and 29 seconds
     states: {
         PENDING: 'pending',
         ACTIVE: 'active',
@@ -55,6 +63,7 @@ const CONTEST_EVALUATION_CONFIG = {
     platformFee: 0.10
 };
 
+// Contest Evaluation Service
 class ContestEvaluationService extends BaseService {
     constructor() {
         super(CONTEST_EVALUATION_CONFIG.name, CONTEST_EVALUATION_CONFIG);
@@ -463,28 +472,49 @@ class ContestEvaluationService extends BaseService {
                 await prisma.contests.update({
                     where: { id: contest.id },
                     data: { 
-                        status: 'completed',
-                        notes: 'Contest completed with no participants'
+                        status: 'completed'
                     }
                 });
+
+                await AdminLogger.logAction(
+                    'SYSTEM',
+                    AdminLogger.Actions.CONTEST.END,
+                    {
+                        contest_id: contest.id,
+                        reason: `${contest.contest_name} completed with no participants`
+                    }
+                );
+
                 return {
                     status: 'completed',
                     message: 'Contest had no participants'
                 };
             }
 
-            // Check minimum participants requirement (if specified in contest settings)
+            // Check minimum participants requirement
             const minParticipants = contest.settings?.minimum_participants || 1;
             if (participants.length < minParticipants) {
                 logApi.warn(`Insufficient participants for contest ${contest.id}. Required: ${minParticipants}, Got: ${participants.length}`);
-                // Update contest status to indicate insufficient participants
+                
                 await prisma.contests.update({
                     where: { id: contest.id },
                     data: { 
                         status: 'cancelled',
-                        notes: `Contest cancelled due to insufficient participants (${participants.length}/${minParticipants})`
+                        cancellation_reason: `Contest cancelled due to insufficient participants (${participants.length}/${minParticipants})`
                     }
                 });
+
+                await AdminLogger.logAction(
+                    'SYSTEM',
+                    AdminLogger.Actions.CONTEST.CANCEL,
+                    {
+                        contest_id: contest.id,
+                        required_participants: minParticipants,
+                        actual_participants: participants.length,
+                        reason: `Cancelled ${contest.contest_name} due to insufficient participants (${participants.length}/${minParticipants})`
+                    }
+                );
+
                 return {
                     status: 'cancelled',
                     message: `Insufficient participants (${participants.length}/${minParticipants})`
@@ -601,76 +631,85 @@ class ContestEvaluationService extends BaseService {
                 }
             }
 
-            // After all prizes are distributed, attempt to transfer platform fee
-            // If this fails, the rake service will collect it later
-            try {
-                const masterWallet = config.master_wallet.address;
-                const platformFeeSignature = await this.performBlockchainTransfer(
-                    contestWallet,
-                    masterWallet,
-                    platformFeeAmount.toNumber()
-                );
+            const autoTransfer = true;
 
-                // Log the platform fee transaction
-                await prisma.transactions.create({
-                    data: {
-                        wallet_address: contestWallet.wallet_address,
-                        type: config.transaction_types.PLATFORM_FEE,
-                        amount: platformFeeAmount,
-                        description: `Platform fee for contest ${contest.contest_code}`,
-                        status: config.transaction_statuses.COMPLETED,
-                        blockchain_signature: platformFeeSignature,
+            // After all prizes are distributed, attempt to transfer platform fee; if this fails, the rake service will collect it later
+            if (autoTransfer) {
+                try {
+                    const masterWallet = config.master_wallet.address;
+                    const platformFeeSignature = await this.performBlockchainTransfer(
+                        contestWallet,
+                        masterWallet,
+                        platformFeeAmount.toNumber()
+                    );
+
+                    // Log the platform fee transaction
+                    await prisma.transactions.create({
+                        data: {
+                            wallet_address: contestWallet.wallet_address,
+                            type: config.transaction_types.PLATFORM_FEE,
+                            amount: platformFeeAmount,
+                            description: `Platform fee for contest ${contest.contest_code}`,
+                            status: config.transaction_statuses.COMPLETED,
+                            blockchain_signature: platformFeeSignature,
+                            contest_id: contest.id,
+                            completed_at: new Date(),
+                            created_at: new Date()
+                        }
+                    });
+                } catch (error) {
+                    // Log the failed attempt to transfer platform fee, but continue with contest completion; the rake service will collect this fee later
+                    logApi.warn(`Platform fee transfer failed! Hopefully the rake service will collect it later`, {
                         contest_id: contest.id,
-                        completed_at: new Date(),
-                        created_at: new Date()
-                    }
-                });
+                        amount: platformFeeAmount.toString(),
+                        error: error.message
+                    });
+                }
 
+                // Log the successful platform fee transfer
                 logApi.info(`Platform fee transferred successfully`, {
                     contest_id: contest.id,
                     amount: platformFeeAmount.toString(),
                     signature: platformFeeSignature
                 });
-            } catch (error) {
-                // Log the failed attempt but continue with contest completion
-                // The rake service will collect this fee later
-                logApi.warn(`Platform fee transfer deferred to rake service`, {
-                    contest_id: contest.id,
-                    amount: platformFeeAmount.toString(),
-                    error: error.message
-                });
 
-                await prisma.transactions.create({
-                    data: {
-                        wallet_address: contestWallet.wallet_address,
-                        type: config.transaction_types.PLATFORM_FEE,
-                        amount: platformFeeAmount,
-                        description: `Deferred platform fee for contest ${contest.contest_code}`,
-                        status: config.transaction_statuses.PENDING,
-                        error_details: JSON.stringify(error),
-                        contest_id: contest.id,
-                        created_at: new Date()
-                    }
+            } else {
+                // Log the unattempted platform fee transfer, and continue with contest completion; the rake service will collect this fee later
+                logApi.warn(`Deferring platform fee transfer to rake service`, {
+                    contest_id: contest.id,
+                    amount: platformFeeAmount.toString()
                 });
             }
 
-            // Update the contest status - we complete it regardless of platform fee transfer
+            // Update the contest status regardless of platform fee transfer
             await prisma.contests.update({
                 where: { id: contest.id },
                 data: { 
                     status: 'completed',
-                    notes: prizeDistributionResults.some(r => r.status === 'failed') 
-                        ? 'Completed with some prize distribution failures'
-                        : 'Completed successfully',
                     platform_fee_amount: platformFeeAmount
                 }
             });
 
+            await AdminLogger.logAction(
+                'SYSTEM',
+                AdminLogger.Actions.CONTEST.END,
+                {
+                    contest_id: contest.id,
+                    prize_distributions: prizeDistributionResults,
+                    platform_fee: platformFeeAmount.toString(),
+                    status: prizeDistributionResults.some(r => r.status === 'failed') 
+                        ? 'completed_with_failures'
+                        : 'completed_successfully'
+                }
+            );
+
+            // Log the successful contest evaluation
             logApi.info(`Contest ${contest.id} evaluated successfully`, {
                 prizeDistributions: prizeDistributionResults,
                 platformFee: platformFeeAmount.toString()
             });
 
+            // Return the successful contest evaluation
             return {
                 status: 'success',
                 message: `Contest ${contest.id} evaluated and prizes distributed`,
@@ -791,6 +830,13 @@ class ContestEvaluationService extends BaseService {
 
             await this.validateContestWalletBalance(contestWallet, totalRefundAmount.toNumber());
 
+            // Log the contest refund validation
+            logApi.info(`Contest wallet balance validated as sufficient for refunds`, {
+                contest_id: contest.id,
+                wallet: contestWallet.wallet_address,
+                total_refund_amount: totalRefundAmount.toString()
+            });
+
             // Process refunds with retries
             const results = [];
             for (const participant of participants) {
@@ -863,24 +909,74 @@ class ContestEvaluationService extends BaseService {
                         where: { id: contest.id },
                         data: { 
                             status: this.config.states.ACTIVE,
-                            started_at: now,
-                            notes: `Contest started automatically with ${contest.contest_participants.length} participants`
+                            started_at: now
                         }
                     });
 
-                    logApi.info(`Contest ${contest.id} started automatically`);
-                } else if (contest.start_time < new Date(now.getTime() - this.config.autoCancelWindow)) {
+                    await AdminLogger.logAction(
+                        'SYSTEM',
+                        AdminLogger.Actions.CONTEST.START,
+                        {
+                            contest_id: contest.id,
+                            participant_count: contest.contest_participants.length
+                        }
+                    );
+
+                    logApi.info(`Contest ${contest.id} '${contest.contest_name}' started automatically`);
+                } else if (contest.contest_participants.length === 0) {
+                    // Immediately cancel contests with no participants
                     await prisma.contests.update({
                         where: { id: contest.id },
                         data: { 
                             status: this.config.states.CANCELLED,
-                            notes: `Contest auto-cancelled due to insufficient participants (${contest.contest_participants.length}/${minParticipants}) after 3 days`
+                            cancellation_reason: `Contest cancelled due to no participants at start time`
                         }
                     });
 
-                    await this.processContestRefunds(contest);
-                    
-                    logApi.info(`Contest ${contest.id} auto-cancelled and refunds processed`);
+                    await AdminLogger.logAction(
+                        'SYSTEM',
+                        AdminLogger.Actions.CONTEST.CANCEL,
+                        {
+                            contest_id: contest.id,
+                            required_participants: minParticipants,
+                            actual_participants: 0,
+                            reason: `'${contest.contest_name}' cancelled - no participants at start time`
+                        }
+                    );
+
+                    logApi.info(`Contest ${contest.id} cancelled due to no participants at start time`);
+                } else if (contest.start_time < new Date(now.getTime() - this.config.autoCancelWindow)) {
+                    // Auto-cancel contests that have at least 1 participant but have not met minimum participants after the auto-cancel wait period
+                    await prisma.contests.update({
+                        where: { id: contest.id },
+                        data: { 
+                            status: this.config.states.CANCELLED,
+                            cancellation_reason: `Contest auto-cancelled due to insufficient participants (${contest.contest_participants.length}/${minParticipants}) after waiting ${(this.config.autoCancelWindow/1000).toFixed(0)} seconds`
+                        }
+                    });
+
+                    await AdminLogger.logAction(
+                        'SYSTEM',
+                        AdminLogger.Actions.CONTEST.CANCEL,
+                        {
+                            contest_id: contest.id,
+                            required_participants: minParticipants,
+                            actual_participants: contest.contest_participants.length,
+                            reason: `'${contest.contest_name}' auto-cancelled - insufficient participants (${contest.contest_participants.length}/${minParticipants}) after waiting ${(this.config.autoCancelWindow/1000).toFixed(0)} seconds`
+                        }
+                    );
+
+                    const refundsProcessed = await this.processContestRefunds(contest);
+                    try {
+                        // If there was at least one processed refund
+                        if (refundsProcessed.refunded > 0) {
+                            logApi.info(`Contest ${contest.id} auto-cancelled. ${refundsProcessed.refunded} refunds were processed.`);
+                        } else {
+                            logApi.info(`Contest ${contest.id} auto-cancelled. No refunds were needed as there were no participants.`);
+                        }
+                    } catch (error) {
+                        logApi.error(`Failed to process refunds for contest ${contest.id}: ${error.message}`);
+                    }
                 }
             }
 

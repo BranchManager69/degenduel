@@ -1,4 +1,4 @@
-# Vanity Wallet System Reference
+# Vanity Wallet Service Reference
 
 ## Table of Contents
 1. [System Overview](#system-overview)

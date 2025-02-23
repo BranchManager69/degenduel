@@ -1,4 +1,4 @@
-# Token Sync System Reference
+# Token Sync Service Reference
 
 ## Table of Contents
 1. [System Overview](#system-overview)

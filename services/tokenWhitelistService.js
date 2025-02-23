@@ -1,11 +1,29 @@
+// services/tokenWhitelistService.js
+
+/*
+ * This service is responsible for managing the token whitelist.
+ * It allows the admin to add and remove tokens from the whitelist.
+ * 
+ */
+
+// ** Service Auth **
+import { generateServiceAuthHeader } from '../config/service-auth.js';
+// ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
+import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
+import { config } from '../config/config.js';
+import { CircuitBreaker } from '../utils/circuit-breaker.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+import AdminLogger from '../utils/admin-logger.js';
+import prisma from '../config/prisma.js';
+// ** Service Manager (?) **
+import { ServiceManager } from '../utils/service-suite/service-manager.js';
+// Solana
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { publicKey } from "@metaplex-foundation/umi";
-import prisma from '../config/prisma.js';
+// Other
 import { Decimal } from 'decimal.js';
 
 const WHITELIST_SERVICE_CONFIG = {
@@ -20,6 +38,7 @@ const WHITELIST_SERVICE_CONFIG = {
     }
 };
 
+// Token Whitelist Service
 class TokenWhitelistService extends BaseService {
     constructor() {
         super(WHITELIST_SERVICE_CONFIG.name, WHITELIST_SERVICE_CONFIG);

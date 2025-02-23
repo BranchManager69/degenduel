@@ -3,7 +3,9 @@
 </h1>
 <h2 align="center">
   Server Backend
+  v.0.1.2
 </h2>
+
 <p align="center"><i>Looking for the <a href="https://github.com/BranchManager69/degenduel-fe">Frontend</a> repo?</i></p>
 </br>
 
