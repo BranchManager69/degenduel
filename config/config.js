@@ -62,6 +62,9 @@ const config = {
     ////admin: process.env.DD_API_DEBUG_MODE || 'false',
     /////maintenance: process.env.DD_API_DEBUG_MODE || 'false',
   },
+  degendual_treasury_wallet: process.env.TREASURY_WALLET_ADDRESS,
+  token_submission_cost: process.env.TOKEN_SUBMISSION_COST,
+  token_submission_discount_percentage_per_level: process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,
   getEnvironment: (origin) => {
     if (!origin) return 'production'; // direct API calls default to prod
     return origin.includes('localhost') || origin.includes('127.0.0.1') ? 'development' : 'production';

@@ -1,3 +1,5 @@
+// /routes/admin/circuit-breaker.js
+
 import { Router } from 'express';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
