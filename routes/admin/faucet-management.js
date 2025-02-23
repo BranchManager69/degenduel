@@ -2,7 +2,7 @@
 
 import express from 'express';
 import { requireAdmin } from '../../middleware/auth.js';
-import { FaucetManager } from '../../services/faucetService.js';
+import FaucetManager  from '../../services/faucetService.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import rateLimit from 'express-rate-limit';
 

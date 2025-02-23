@@ -16,7 +16,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
-import { ServiceManager } from '../utils/service-suite/service-manager.js';
+import ServiceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const VANITY_WALLET_CONFIG = {

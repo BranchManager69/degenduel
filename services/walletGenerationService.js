@@ -7,17 +7,17 @@
  */
 
 // Services
-import { logApi } from '../logger-suite/logger.js';
-import prisma from '../../config/prisma.js';
+import { logApi } from '../utils/logger-suite/logger.js';
+import prisma from '../config/prisma.js';
 // Solana
 import { Keypair } from '@solana/web3.js';
 import crypto from 'crypto';
 import bs58 from 'bs58';
 // Other
 import LRUCache from 'lru-cache';
-import { BaseService } from '../service-suite/base-service.js';
-import { ServiceError } from '../service-suite/service-error.js';
-import { SERVICE_NAMES, getServiceMetadata } from '../service-suite/service-constants.js';
+import { BaseService } from '../utils/service-suite/base-service.js';
+import { ServiceError } from '../utils/service-suite/service-error.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
 const WALLET_SERVICE_CONFIG = {
     name: SERVICE_NAMES.WALLET_GENERATOR,
