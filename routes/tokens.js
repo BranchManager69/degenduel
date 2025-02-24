@@ -463,4 +463,14 @@ router.put("/:id", async (req, res) => {
   // Implementation of PUT request
 });
 
+router.get("/latest", async (req, res) => {
+    if (!global.lastTokenData) {
+        return res.status(404).json({ error: "No token data available yet" });
+    }
+    res.json({
+        data: global.lastTokenData,
+        timestamp: Date.now()
+    });
+});
+
 export default router;
