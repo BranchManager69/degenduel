@@ -156,16 +156,16 @@ class ContestEvaluationService extends BaseService {
             }
 
             // Load initial contest state
-            const [activeContests, completedContests, failedContests] = await Promise.all([
+            const [activeContests, completedContests, cancelledContests] = await Promise.all([
                 prisma.contests.count({ where: { status: 'active' } }),
                 prisma.contests.count({ where: { status: 'completed' } }),
-                prisma.contests.count({ where: { status: 'failed' } })
+                prisma.contests.count({ where: { status: 'cancelled' } })
             ]);
 
             this.evaluationStats.contests.total = await prisma.contests.count();
             this.evaluationStats.contests.active = activeContests;
             this.evaluationStats.contests.completed = completedContests;
-            this.evaluationStats.contests.failed = failedContests;
+            this.evaluationStats.contests.cancelled = cancelledContests;
 
             // Ensure stats are JSON-serializable for ServiceManager
             const serializableStats = JSON.parse(JSON.stringify({
@@ -182,7 +182,7 @@ class ContestEvaluationService extends BaseService {
             logApi.info('Contest Evaluation Service initialized', {
                 activeContests,
                 completedContests,
-                failedContests
+                cancelledContests
             });
 
             return true;
