@@ -37,7 +37,7 @@ const REFERRAL_SERVICE_CONFIG = {
         maxDelayMs: 30000,
         factor: 2
     },
-    dependencies: [SERVICE_NAMES.CONTEST_EVALUATION],
+    dependencies: [], // Removed hard dependency on Contest Evaluation
     referral: {
         batchSize: 100,
         maxParallelProcessing: 5,
@@ -113,10 +113,16 @@ class ReferralService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
-            // Check dependencies
+            // Check dependencies, but don't fail if contest eval is down
+            // This makes the service more resilient
             const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             if (!contestEvalStatus) {
-                throw ServiceError.initialization('Contest Evaluation Service not healthy');
+                logApi.warn('Contest Evaluation Service not healthy, but continuing initialization');
+                this.referralStats.dependencies.contestEvaluation = {
+                    status: 'unhealthy',
+                    lastCheck: new Date().toISOString(),
+                    errors: 1
+                };
             }
 
             // Load configuration from database
@@ -227,16 +233,17 @@ class ReferralService extends BaseService {
         const startTime = Date.now();
         
         try {
-            // Check dependency health
+            // Check dependency health but don't fail operations
             const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             this.referralStats.dependencies.contestEvaluation = {
                 status: contestEvalStatus ? 'healthy' : 'unhealthy',
                 lastCheck: new Date().toISOString(),
-                errors: contestEvalStatus ? 0 : this.referralStats.dependencies.contestEvaluation.errors + 1
+                errors: contestEvalStatus ? 0 : (this.referralStats.dependencies.contestEvaluation?.errors || 0) + 1
             };
 
             if (!contestEvalStatus) {
-                throw ServiceError.dependency('Contest Evaluation Service unhealthy');
+                logApi.warn('Contest Evaluation Service unhealthy, continuing with limited functionality');
+                // Continue execution instead of throwing an error
             }
 
             // Get current period
