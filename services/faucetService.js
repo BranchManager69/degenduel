@@ -63,7 +63,7 @@ class FaucetService extends BaseService {
         super(FAUCET_SERVICE_CONFIG);
         
         // Initialize Solana connection
-        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        this.connection = new Connection(config.rpc_urls.devnet_http, "confirmed");
         
         // Initialize cache for rate limiting
         this.transactionCache = new LRUCache({
