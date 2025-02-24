@@ -19,6 +19,12 @@
 
 <p align="center"><i>Looking for the <a href="https://github.com/BranchManager69/degenduel-fe">Frontend</a> repo?</i></p>
 
+<p align="center">
+<img src="https://img.shields.io/badge/UPDATED-Feb%202025-orange?style=for-the-badge" alt="Updated Feb 2025" />
+<img src="https://img.shields.io/badge/SERVICE-RESILIENCE-brightgreen?style=for-the-badge" alt="Service Resilience" />
+<img src="https://img.shields.io/badge/REAL--TIME-CHAT-blueviolet?style=for-the-badge" alt="Real-time Chat" />
+</p>
+
 </div>
 
 ---
@@ -60,16 +66,25 @@ This backend repository powers the DegenDuel platform with a microservice-inspir
 - **Solana Wallet Authentication** - Secure login using Web3 wallet signatures
 - **Crypto-Native Experience** - Designed for the degenerates of crypto
 - **On-Chain Verification** - Transparent contest results and rewards
+- **Wallet Balance Syncing** - Automatic balance tracking for contests and admins
 
 ### 📊 Real-Time Trading Simulation
 - **Live Token Prices** - Real-time market data via specialized WebSockets
 - **Portfolio Tracking** - Instant P&L updates and performance metrics
 - **Trading Competitions** - Regular contests with leaderboards and prizes
+- **Contest Chat** - Real-time communication between contest participants
 
 ### 📱 User Experience
 - **Achievement System** - Earn XP and level up your trader profile
+- **Referral System** - Refer friends for rewards with multi-tier tracking
 - **Real-time Updates** - Instant notifications for trades, contests, and events
 - **Leaderboards** - Compete against other traders for supremacy
+
+### 🔧 System Design
+- **Resilient Architecture** - Services with minimal dependencies for maximum uptime
+- **Circuit Breakers** - Automatic failure detection and recovery
+- **Service Monitoring** - Real-time health checks and performance metrics
+- **Scalable Infrastructure** - Designed for growth with service-based architecture
 
 ---
 
@@ -163,16 +178,16 @@ degenduel/
 
 ### 🔄 Service Architecture
 
-The backend is organized into specialized service domains:
+The backend is organized into specialized service domains with resilient dependencies:
 
 | Domain | Services |
 |--------|----------|
 | **Data Services** | Token synchronization, market data, liquidity |
-| **User Services** | Authentication, achievements, leveling |
+| **User Services** | Authentication, achievements, leveling, referrals |
 | **Contest Services** | Evaluation, wallets, portfolio management |
 | **Infrastructure** | Monitoring, health checks, circuit breakers |
 
-Each service follows a standardized pattern with consistent interfaces, error handling, and lifecycle management.
+Each service follows a standardized pattern with consistent interfaces, error handling, and lifecycle management. Services are designed with resilience in mind, minimizing hard dependencies to ensure the system remains operational even when individual components experience issues.
 
 ### ⚡ WebSocket Infrastructure
 
@@ -182,9 +197,10 @@ Multiple specialized WebSocket servers deliver real-time data streams:
 |-----------|---------|
 | **Token Data WS** | Real-time token price and metadata updates |
 | **Portfolio WS** | Live portfolio valuation and performance |
-| **Contest WS** | Contest updates and leaderboards |
+| **Contest WS** | Contest updates, leaderboards, and real-time chat |
 | **Market WS** | Market data streaming from exchanges |
 | **Monitor WS** | System health monitoring and metrics |
+| **Analytics WS** | Real-time user analytics and activity tracking |
 
 ### 🔐 Authentication System
 
@@ -317,16 +333,29 @@ The system includes robust health monitoring:
 - `GET /api/users/profile` - Get user profile
 - `POST /api/users/nickname` - Set/update nickname
 - `GET /api/users/achievements` - List user achievements
+- `GET /api/stats/user/:id` - Get user statistics and levels
 
 ### Contests
 - `GET /api/contests` - List active contests
 - `GET /api/contests/:id` - Get contest details
 - `GET /api/contests/:id/leaderboard` - View contest leaderboard
+- `POST /api/contests/:id/join` - Join a contest
 
 ### Trading
 - `GET /api/tokens` - List available tokens
+- `GET /api/v2/tokens/marketData/latest` - Get latest token market data
 - `POST /api/portfolio-trades` - Execute trade
 - `GET /api/portfolio-analytics` - Get portfolio analytics
+
+### WebSockets
+- `/api/v2/ws/contest` - Contest WebSocket (updates, chat, participants)
+- `/api/v2/ws/tokenData` - Token data WebSocket
+- `/api/v2/ws/portfolio` - Portfolio WebSocket
+
+### Referrals
+- `GET /api/referrals` - Get user's referral information
+- `POST /api/referrals/create` - Create a referral code
+- `GET /api/referrals/stats` - Get referral program statistics
 
 ---
 
@@ -344,14 +373,32 @@ graph TD
         E --> G[Contest Services]
         E --> H[Wallet Services]
         E --> I[User Services]
+        I --> I1[Achievement Service]
+        I --> I2[Leveling Service] 
+        I --> I3[Referral Service]
     end
     
     subgraph "WebSocket Components"
         D --> J[Token Data WS]
         D --> K[Portfolio WS]
         D --> L[Contest WS]
+        L --> L1[Chat System]
+        L --> L2[Participant Tracking]
         D --> M[Monitor WS]
+        D --> N[Analytics WS]
     end
+    
+    subgraph "Resilience Components"
+        O[Circuit Breakers]
+        P[Service Manager]
+        Q[Health Monitoring]
+        R[Dependency Graph]
+    end
+    
+    B --> O
+    B --> P
+    P --> R
+    O --> Q
 ```
 
 ---
