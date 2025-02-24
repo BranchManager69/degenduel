@@ -181,14 +181,21 @@ export class BaseService {
                     this.config.circuitBreaker
                 );
                 
-                logApi.info(`${this.name} circuit breaker recovery scheduled in ${nextAttemptDelay}ms`);
-                
-                // Schedule next recovery attempt
-                if (this.recoveryTimeout) clearTimeout(this.recoveryTimeout);
-                this.recoveryTimeout = setTimeout(
-                    () => this.attemptCircuitRecovery(),
-                    nextAttemptDelay
-                );
+                if (nextAttemptDelay && !isNaN(nextAttemptDelay)) {
+                    logApi.info(`${this.name} circuit breaker recovery scheduled in ${nextAttemptDelay}ms`);
+                    
+                    // Schedule next recovery attempt
+                    if (this.recoveryTimeout) clearTimeout(this.recoveryTimeout);
+                    this.recoveryTimeout = setTimeout(
+                        () => this.attemptCircuitRecovery(),
+                        nextAttemptDelay
+                    );
+                } else {
+                    logApi.error(`${this.name} invalid circuit breaker recovery delay calculated`, {
+                        recoveryAttempts: this.stats.circuitBreaker.recoveryAttempts,
+                        config: this.config.circuitBreaker
+                    });
+                }
                 
                 return;
             }
