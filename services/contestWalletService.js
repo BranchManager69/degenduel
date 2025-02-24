@@ -18,7 +18,7 @@ import prisma from '../config/prisma.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 // Solana
-import { Keypair } from '@solana/web3.js';
+import { Keypair, Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import crypto from 'crypto';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 
@@ -50,6 +50,9 @@ class ContestWalletService extends BaseService {
         ////super(CONTEST_WALLET_CONFIG.name, CONTEST_WALLET_CONFIG);
         super(CONTEST_WALLET_CONFIG);
         
+        // Initialize Solana connection
+        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        
         // Service-specific state
         this.walletStats = {
             operations: {
@@ -59,15 +62,24 @@ class ContestWalletService extends BaseService {
             },
             wallets: {
                 created: 0,
-                generated: 0
+                generated: 0,
+                updated: 0
+            },
+            balance_updates: {
+                total: 0,
+                successful: 0,
+                failed: 0,
+                last_update: null
             },
             errors: {
                 creation_failures: 0,
                 encryption_failures: 0,
+                balance_update_failures: 0,
                 last_error: null
             },
             performance: {
                 average_creation_time_ms: 0,
+                average_balance_update_time_ms: 0,
                 last_operation_time_ms: 0
             }
         };
@@ -166,7 +178,145 @@ class ContestWalletService extends BaseService {
         }
     }
 
-    // Main operation implementation - periodic health checks
+    // Fetch and update Solana balance for a wallet
+    async updateWalletBalance(wallet) {
+        try {
+            const startTime = Date.now();
+            
+            // Skip if no wallet address
+            if (!wallet.wallet_address) {
+                return {
+                    success: false,
+                    error: 'No wallet address provided'
+                };
+            }
+            
+            // Get current Solana balance
+            const publicKey = new PublicKey(wallet.wallet_address);
+            const lamports = await this.connection.getBalance(publicKey);
+            const solBalance = lamports / LAMPORTS_PER_SOL;
+            
+            // Update wallet in database
+            await prisma.contest_wallets.update({
+                where: { id: wallet.id },
+                data: {
+                    balance: solBalance,
+                    last_sync: new Date()
+                }
+            });
+            
+            // Update stats
+            this.walletStats.balance_updates.total++;
+            this.walletStats.balance_updates.successful++;
+            this.walletStats.balance_updates.last_update = new Date().toISOString();
+            this.walletStats.wallets.updated++;
+            
+            // Update performance metrics
+            const duration = Date.now() - startTime;
+            this.walletStats.performance.average_balance_update_time_ms = 
+                (this.walletStats.performance.average_balance_update_time_ms * 
+                 (this.walletStats.balance_updates.total - 1) + duration) / 
+                this.walletStats.balance_updates.total;
+            
+            return {
+                success: true,
+                wallet_address: wallet.wallet_address,
+                previous_balance: wallet.balance,
+                current_balance: solBalance,
+                difference: solBalance - wallet.balance
+            };
+        } catch (error) {
+            // Update error stats
+            this.walletStats.balance_updates.failed++;
+            this.walletStats.errors.balance_update_failures++;
+            this.walletStats.errors.last_error = error.message;
+            
+            logApi.error('Failed to update wallet balance', {
+                wallet_address: wallet.wallet_address,
+                error: error.message,
+                stack: error.stack
+            });
+            
+            return {
+                success: false,
+                wallet_address: wallet.wallet_address,
+                error: error.message
+            };
+        }
+    }
+    
+    // Bulk update all wallets' balances
+    async updateAllWalletBalances() {
+        const startTime = Date.now();
+        try {
+            // Get all contest wallets
+            const contestWallets = await prisma.contest_wallets.findMany({
+                include: {
+                    contests: {
+                        select: {
+                            status: true,
+                            id: true,
+                            contest_code: true
+                        }
+                    }
+                }
+            });
+            
+            const results = {
+                total: contestWallets.length,
+                updated: 0,
+                failed: 0,
+                active_contests: 0,
+                updates: []
+            };
+            
+            // Update each wallet's balance
+            for (const wallet of contestWallets) {
+                try {
+                    // Track active contests
+                    if (wallet.contests?.status === 'active') {
+                        results.active_contests++;
+                    }
+                    
+                    // Update balance
+                    const updateResult = await this.updateWalletBalance(wallet);
+                    
+                    if (updateResult.success) {
+                        results.updated++;
+                        
+                        // Only add significant balance changes to the results
+                        if (Math.abs(updateResult.difference) > 0.0001) {
+                            results.updates.push(updateResult);
+                        }
+                    } else {
+                        results.failed++;
+                    }
+                } catch (error) {
+                    results.failed++;
+                    logApi.error('Error updating individual wallet balance', {
+                        wallet_address: wallet.wallet_address,
+                        error: error.message
+                    });
+                }
+            }
+            
+            // Update overall performance stats
+            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
+            
+            return {
+                duration: Date.now() - startTime,
+                ...results
+            };
+        } catch (error) {
+            logApi.error('Failed to update wallet balances', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    }
+
+    // Main operation implementation - periodic health checks and balance updates
     async performOperation() {
         const startTime = Date.now();
         
@@ -205,10 +355,14 @@ class ContestWalletService extends BaseService {
                     });
                 }
             }
-
+            
+            // Update all wallet balances
+            const balanceUpdateResults = await this.updateAllWalletBalances();
+            
             return {
                 duration: Date.now() - startTime,
-                ...results
+                basic_check: results,
+                balance_updates: balanceUpdateResults
             };
         } catch (error) {
             // Let the base class handle the error and circuit breaker
