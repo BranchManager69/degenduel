@@ -837,4 +837,118 @@ const DEFAULT_SERVICE_CONFIG = {
     wallet_generator_service: { enabled: true }
 };
 
+// WebSocket Service Control Endpoints
+router.post('/websocket/:serviceId/start', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+        const validServices = ['analytics', 'base', 'circuit-breaker', 'contest', 'market', 'monitor', 'wallet', 'portfolio'];
+        
+        if (!validServices.includes(serviceId)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid service ID. Must be one of: ${validServices.join(', ')}`
+            });
+        }
+
+        const wsFile = `${serviceId}-ws.js`;
+        const wsPath = path.join(process.cwd(), 'websocket', wsFile);
+
+        // Check if service file exists
+        try {
+            await fs.access(wsPath);
+        } catch (err) {
+            return res.status(404).json({
+                success: false,
+                message: `WebSocket service file not found: ${wsFile}`
+            });
+        }
+
+        // Start the service with admin context
+        await serviceManager.startService(wsFile, {
+            adminAddress: req.user.wallet_address,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        res.json({
+            success: true,
+            message: `${serviceId} WebSocket service started successfully`
+        });
+    } catch (error) {
+        logApi.error(`Error starting WebSocket service: ${error.message}`);
+        res.status(500).json({
+            success: false,
+            message: `Failed to start service: ${error.message}`
+        });
+    }
+});
+
+router.post('/websocket/:serviceId/stop', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+        const validServices = ['analytics', 'base', 'circuit-breaker', 'contest', 'market', 'monitor', 'wallet', 'portfolio'];
+        
+        if (!validServices.includes(serviceId)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid service ID. Must be one of: ${validServices.join(', ')}`
+            });
+        }
+
+        const wsFile = `${serviceId}-ws.js`;
+        
+        // Stop the service with admin context
+        await serviceManager.stopService(wsFile, {
+            adminAddress: req.user.wallet_address,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        res.json({
+            success: true,
+            message: `${serviceId} WebSocket service stopped successfully`
+        });
+    } catch (error) {
+        logApi.error(`Error stopping WebSocket service: ${error.message}`);
+        res.status(500).json({
+            success: false,
+            message: `Failed to stop service: ${error.message}`
+        });
+    }
+});
+
+router.post('/websocket/:serviceId/restart', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+        const validServices = ['analytics', 'base', 'circuit-breaker', 'contest', 'market', 'monitor', 'wallet', 'portfolio'];
+        
+        if (!validServices.includes(serviceId)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid service ID. Must be one of: ${validServices.join(', ')}`
+            });
+        }
+
+        const wsFile = `${serviceId}-ws.js`;
+        
+        // Restart the service with admin context
+        await serviceManager.restartService(wsFile, {
+            adminAddress: req.user.wallet_address,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        res.json({
+            success: true,
+            message: `${serviceId} WebSocket service restarted successfully`
+        });
+    } catch (error) {
+        logApi.error(`Error restarting WebSocket service: ${error.message}`);
+        res.status(500).json({
+            success: false,
+            message: `Failed to restart service: ${error.message}`
+        });
+    }
+});
+
 export default router;

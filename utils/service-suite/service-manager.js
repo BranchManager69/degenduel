@@ -22,6 +22,8 @@ import {
 import { ServiceError } from './service-error.js';
 import serviceEvents from './service-events.js';
 import { BaseService } from './base-service.js';
+import path from 'path';
+import AdminLogger from '../admin-logger.js';
 
 /**
  * Consolidated service management system for DegenDuel
@@ -783,6 +785,197 @@ class ServiceManager {
         logApi.info(`Added dependencies for ${serviceName}:`, dependencies);
 
         return true;
+    }
+
+    /**
+     * Start a specific service by its file name
+     */
+    async startService(serviceFile, adminContext = null) {
+        try {
+            logApi.info(`[ServiceManager] Starting service from file: ${serviceFile}`);
+            
+            // Get service instance
+            const service = this.services.get(serviceFile);
+            if (!service) {
+                // If service doesn't exist, try to load it
+                const servicePath = path.join(process.cwd(), 'websocket', serviceFile);
+                try {
+                    const serviceModule = await import(servicePath);
+                    if (serviceModule && serviceModule.default) {
+                        this.services.set(serviceFile, serviceModule.default);
+                    }
+                } catch (error) {
+                    throw new Error(`Failed to load service ${serviceFile}: ${error.message}`);
+                }
+            }
+
+            const serviceInstance = this.services.get(serviceFile);
+            if (!serviceInstance) {
+                throw new Error(`Service ${serviceFile} not found or failed to load`);
+            }
+
+            // Initialize if needed
+            if (!serviceInstance.isInitialized) {
+                await serviceInstance.initialize();
+            }
+
+            // Start the service
+            await serviceInstance.start();
+            
+            // Update service state
+            await this.markServiceStarted(serviceFile, serviceInstance.config, serviceInstance.stats);
+
+            // Log admin action if context provided
+            if (adminContext?.adminAddress) {
+                await AdminLogger.logAction(
+                    adminContext.adminAddress,
+                    AdminLogger.Actions.SERVICE.START,
+                    { service: serviceFile, status: 'success' },
+                    {
+                        ip_address: adminContext.ip,
+                        user_agent: adminContext.userAgent
+                    }
+                );
+            }
+
+            logApi.info(`[ServiceManager] Service ${serviceFile} started successfully`);
+            return true;
+        } catch (error) {
+            // Log failed admin action if context provided
+            if (adminContext?.adminAddress) {
+                await AdminLogger.logAction(
+                    adminContext.adminAddress,
+                    AdminLogger.Actions.SERVICE.START,
+                    { 
+                        service: serviceFile, 
+                        status: 'failed',
+                        error: error.message 
+                    },
+                    {
+                        ip_address: adminContext.ip,
+                        user_agent: adminContext.userAgent
+                    }
+                );
+            }
+
+            logApi.error(`[ServiceManager] Failed to start service ${serviceFile}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Stop a specific service by its file name
+     */
+    async stopService(serviceFile, adminContext = null) {
+        try {
+            logApi.info(`[ServiceManager] Stopping service: ${serviceFile}`);
+            
+            const service = this.services.get(serviceFile);
+            if (!service) {
+                throw new Error(`Service ${serviceFile} not found`);
+            }
+
+            // Stop the service
+            await service.stop();
+            
+            // Update service state
+            await this.markServiceStopped(serviceFile, service.config, service.stats);
+
+            // Log admin action if context provided
+            if (adminContext?.adminAddress) {
+                await AdminLogger.logAction(
+                    adminContext.adminAddress,
+                    AdminLogger.Actions.SERVICE.STOP,
+                    { service: serviceFile, status: 'success' },
+                    {
+                        ip_address: adminContext.ip,
+                        user_agent: adminContext.userAgent
+                    }
+                );
+            }
+
+            logApi.info(`[ServiceManager] Service ${serviceFile} stopped successfully`);
+            return true;
+        } catch (error) {
+            // Log failed admin action if context provided
+            if (adminContext?.adminAddress) {
+                await AdminLogger.logAction(
+                    adminContext.adminAddress,
+                    AdminLogger.Actions.SERVICE.STOP,
+                    { 
+                        service: serviceFile, 
+                        status: 'failed',
+                        error: error.message 
+                    },
+                    {
+                        ip_address: adminContext.ip,
+                        user_agent: adminContext.userAgent
+                    }
+                );
+            }
+
+            logApi.error(`[ServiceManager] Failed to stop service ${serviceFile}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Restart a specific service by its file name
+     */
+    async restartService(serviceFile, adminContext = null) {
+        try {
+            logApi.info(`[ServiceManager] Restarting service: ${serviceFile}`);
+            
+            // Stop service if it exists
+            const service = this.services.get(serviceFile);
+            if (service) {
+                await this.stopService(serviceFile, adminContext);
+            }
+
+            // Start service
+            await this.startService(serviceFile, adminContext);
+
+            // Log admin action if context provided
+            if (adminContext?.adminAddress) {
+                await AdminLogger.logAction(
+                    adminContext.adminAddress,
+                    AdminLogger.Actions.SERVICE.CONFIGURE,
+                    { 
+                        service: serviceFile, 
+                        action: 'restart',
+                        status: 'success' 
+                    },
+                    {
+                        ip_address: adminContext.ip,
+                        user_agent: adminContext.userAgent
+                    }
+                );
+            }
+
+            logApi.info(`[ServiceManager] Service ${serviceFile} restarted successfully`);
+            return true;
+        } catch (error) {
+            // Log failed admin action if context provided
+            if (adminContext?.adminAddress) {
+                await AdminLogger.logAction(
+                    adminContext.adminAddress,
+                    AdminLogger.Actions.SERVICE.CONFIGURE,
+                    { 
+                        service: serviceFile, 
+                        action: 'restart',
+                        status: 'failed',
+                        error: error.message 
+                    },
+                    {
+                        ip_address: adminContext.ip,
+                        user_agent: adminContext.userAgent
+                    }
+                );
+            }
+
+            logApi.error(`[ServiceManager] Failed to restart service ${serviceFile}:`, error);
+            throw error;
+        }
     }
 }
 
