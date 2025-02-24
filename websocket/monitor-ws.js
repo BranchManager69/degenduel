@@ -138,7 +138,7 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
             path: '/api/superadmin/ws/monitor',
             maxPayload: 1024 * 16, // 16KB max payload
             requireAuth: true,
-            rateLimit: 60 // 1 update/second
+            rateLimit: 600 // 10 updates/second - much more reasonable for admin monitoring
         });
 
         this.monitorService = new WebSocketMonitorService();

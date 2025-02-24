@@ -273,6 +273,7 @@ model user_achievements {
   category         String    @default("CONTESTS") @db.VarChar(20)
   xp_awarded       Int       @default(0)
   context          Json?     @default("{}")
+  user             users?    @relation(fields: [wallet_address], references: [wallet_address], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([wallet_address], map: "idx_user_achievements_wallet")
   @@index([achievement_type], map: "idx_user_achievements_type")
@@ -362,6 +363,7 @@ model users {
   user_stats                user_stats?
   user_level                user_levels?                @relation(fields: [user_level_id], references: [id])
   websocket_messages        websocket_messages[]
+  user_achievements         user_achievements[]
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")

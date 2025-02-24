@@ -19,6 +19,7 @@ import prisma from '../config/prisma.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import levelingService from './levelingService.js';
 
 const REFERRAL_SERVICE_CONFIG = {
     name: SERVICE_NAMES.REFERRAL,
@@ -365,6 +366,24 @@ class ReferralService extends BaseService {
                     const rewardResult = await this.processRewards(referral.id);
                     result.reward_distributed = rewardResult.success;
                 }
+            }
+
+            // Award XP for successful referral
+            try {
+                await levelingService.awardXP(
+                    referral.referrer_id,
+                    250, // XP for successful referral
+                    {
+                        type: 'REFERRAL_QUALIFIED',
+                        referred_id: referral.referred_id
+                    }
+                );
+            } catch (error) {
+                logApi.error('Failed to award referral XP:', {
+                    referrer: referral.referrer_id,
+                    referred: referral.referred_id,
+                    error: error.message
+                });
             }
 
             return result;

@@ -20,6 +20,7 @@ import tokenWhitelistService from '../../services/tokenWhitelistService.js';
 import walletRakeService from '../../services/walletRakeService.js';
 import liquidityService from '../../services/liquidityService.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
+import levelingService from '../../services/levelingService.js';
 
 class ServiceInitializer {
     static async registerCoreServices() {
@@ -56,7 +57,9 @@ class ServiceInitializer {
             logApi.info('Attempting to register contestEvaluationService...');
             serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
             logApi.info('Attempting to register achievementService...');
-            serviceManager.register(achievementService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+            serviceManager.register(achievementService, []); // No hard dependencies
+            logApi.info('Attempting to register levelingService...');
+            serviceManager.register(levelingService, []); // No hard dependencies
             logApi.info('Attempting to register referralService...');
             serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
             logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ Contest Services Registered\x1b[0m');
@@ -103,7 +106,7 @@ class ServiceInitializer {
 
         // Contest Layer Dependencies
         serviceManager.addDependency(SERVICE_NAMES.CONTEST_EVALUATION, SERVICE_NAMES.MARKET_DATA);
-        serviceManager.addDependency(SERVICE_NAMES.ACHIEVEMENT, SERVICE_NAMES.CONTEST_EVALUATION);
+        // Removed hard dependency: serviceManager.addDependency(SERVICE_NAMES.ACHIEVEMENT, SERVICE_NAMES.CONTEST_EVALUATION);
         serviceManager.addDependency(SERVICE_NAMES.REFERRAL, SERVICE_NAMES.CONTEST_EVALUATION);
 
         // Wallet Layer Dependencies

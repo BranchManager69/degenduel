@@ -24,11 +24,12 @@ import bs58 from 'bs58';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
 //import marketDataService from './marketDataService.js';
+import levelingService from './levelingService.js';
 
 const CONTEST_EVALUATION_CONFIG = {
     name: SERVICE_NAMES.CONTEST_EVALUATION,
     description: getServiceMetadata(SERVICE_NAMES.CONTEST_EVALUATION).description,
-    checkIntervalMs: 60 * 1000, // Check every minute
+    checkIntervalMs: 30 * 1000, // Check every 30 seconds for better timing precision
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -725,6 +726,55 @@ class ContestEvaluationService extends BaseService {
 
             // Log completion
             await this.logContestCompletion(contest, prizeDistributionResults, platformFeeAmount);
+
+            // Award XP for participation
+            for (const participant of participants) {
+                try {
+                    await levelingService.awardXP(
+                        participant.wallet_address,
+                        100, // Base XP for participating
+                        {
+                            type: 'CONTEST_PARTICIPATION',
+                            contest_id: contest.id
+                        }
+                    );
+                } catch (error) {
+                    logApi.error('Failed to award participation XP:', {
+                        wallet: participant.wallet_address,
+                        contest_id: contest.id,
+                        error: error.message
+                    });
+                }
+            }
+
+            // Award XP for winners
+            const winners = participants.filter(p => p.final_rank <= 3);
+            for (const winner of winners) {
+                try {
+                    const winnerXP = {
+                        1: 500,  // 1st place
+                        2: 300,  // 2nd place
+                        3: 200   // 3rd place
+                    }[winner.final_rank];
+
+                    await levelingService.awardXP(
+                        winner.wallet_address,
+                        winnerXP,
+                        {
+                            type: 'CONTEST_WIN',
+                            contest_id: contest.id,
+                            rank: winner.final_rank
+                        }
+                    );
+                } catch (error) {
+                    logApi.error('Failed to award winner XP:', {
+                        wallet: winner.wallet_address,
+                        contest_id: contest.id,
+                        rank: winner.final_rank,
+                        error: error.message
+                    });
+                }
+            }
 
             return {
                 status: 'success',

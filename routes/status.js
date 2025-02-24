@@ -2,8 +2,45 @@
 
 import express from "express";
 import prisma from "../config/prisma.js";
+import { logApi } from "../utils/logger-suite/logger.js";
 
 const router = express.Router();
+
+/**
+ * Parse maintenance mode value safely
+ * @param {any} value The value to parse
+ * @returns {{enabled: boolean}} Parsed maintenance mode object
+ */
+function parseMaintenanceMode(value) {
+  try {
+    // If it's already an object with enabled property, return it
+    if (value && typeof value === 'object' && 'enabled' in value) {
+      return { enabled: Boolean(value.enabled) };
+    }
+
+    // If it's a string, try to parse it
+    if (typeof value === 'string') {
+      // Handle the [object Object] case
+      if (value === '[object Object]') {
+        return { enabled: false };
+      }
+      
+      try {
+        const parsed = JSON.parse(value);
+        return { enabled: Boolean(parsed?.enabled) };
+      } catch (e) {
+        // If parsing fails, assume it's not enabled
+        return { enabled: false };
+      }
+    }
+
+    // Default case
+    return { enabled: false };
+  } catch (error) {
+    logApi.error("Failed to parse maintenance mode value", { value, error });
+    return { enabled: false };
+  }
+}
 
 /**
  * @route GET /api/status
@@ -16,7 +53,10 @@ router.get("/", async (req, res) => {
       where: { key: "maintenance_mode" },
     });
 
-    if (setting?.value?.enabled) {
+    // Safely parse the maintenance mode value
+    const maintenanceMode = parseMaintenanceMode(setting?.value);
+    
+    if (maintenanceMode.enabled) {
       return res.status(503).json({
         maintenance: true,
         message: "System is under maintenance",
@@ -35,12 +75,21 @@ router.get("/", async (req, res) => {
 
     const degradedServices = serviceHealth
       .map((record) => {
-        const data = JSON.parse(record.value);
-        return {
-          name: data.service_name,
-          status: data.status,
-        };
+        try {
+          const data = typeof record.value === 'string' 
+            ? JSON.parse(record.value)
+            : record.value;
+            
+          return {
+            name: data.service_name,
+            status: data.status,
+          };
+        } catch (error) {
+          logApi.warn("Failed to parse service health record", { record, error });
+          return null;
+        }
       })
+      .filter(Boolean) // Remove null entries
       .filter(
         (service) =>
           service.status === "degraded" || service.status === "failed"
@@ -52,9 +101,21 @@ router.get("/", async (req, res) => {
       degraded_services: degradedServices,
     });
   } catch (error) {
-    // If we can't check maintenance status, assume system is not operational
-    return res.status(503).json({
-      maintenance: true,
+    // Log the error with full details
+    logApi.error("Failed to check maintenance status", {
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
+      path: req.path,
+      method: req.method,
+      ip: req.ip,
+    });
+
+    // Return a 500 error instead of falsely claiming maintenance mode
+    return res.status(500).json({
+      error: "Internal server error",
       message: "Unable to determine system status",
     });
   }
@@ -103,7 +164,16 @@ router.get("/maintenance", async (req, res) => {
       updated_at: maintenanceMode?.updated_at || new Date().toISOString(),
     });
   } catch (error) {
-    logApi.error("Failed to get public maintenance status", { error });
+    logApi.error("Failed to get public maintenance status", {
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
+      path: req.path,
+      method: req.method,
+      ip: req.ip,
+    });
     res.status(500).json({ error: "Failed to get maintenance status" });
   }
 });

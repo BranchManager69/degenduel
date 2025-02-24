@@ -19,6 +19,7 @@ import prisma from '../config/prisma.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import levelingService from './levelingService.js';
 
 const ACHIEVEMENT_SERVICE_CONFIG = {
     name: 'achievement_service',
@@ -36,7 +37,7 @@ const ACHIEVEMENT_SERVICE_CONFIG = {
         maxDelayMs: 30000,
         factor: 2
     },
-    dependencies: [SERVICE_NAMES.CONTEST_EVALUATION],
+    dependencies: [], // Removed dependency on CONTEST_EVALUATION
     achievement: {
         batchSize: 100,
         maxParallelChecks: 5,
@@ -100,10 +101,10 @@ class AchievementService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
-            // Check dependencies
+            // Soft check for contest evaluation service - no longer a hard dependency
             const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             if (!contestEvalStatus) {
-                throw ServiceError.initialization('Contest Evaluation Service not healthy');
+                logApi.warn('Contest Evaluation Service not healthy, but continuing initialization');
             }
 
             // Load configuration from database
@@ -194,16 +195,17 @@ class AchievementService extends BaseService {
         const startTime = Date.now();
         
         try {
-            // Check dependency health
+            // Soft check of contest evaluation - not a hard dependency anymore
             const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             this.achievementStats.dependencies.contestEvaluation = {
-                status: contestEvalStatus ? 'healthy' : 'unhealthy',
+                status: contestEvalStatus ? 'healthy' : 'degraded',
                 lastCheck: new Date().toISOString(),
                 errors: contestEvalStatus ? 0 : this.achievementStats.dependencies.contestEvaluation.errors + 1
             };
 
             if (!contestEvalStatus) {
-                throw ServiceError.dependency('Contest Evaluation Service unhealthy');
+                logApi.warn('Contest Evaluation Service unhealthy, operating in limited mode');
+                // Continue operation instead of throwing error
             }
 
             // Process achievements in batches
@@ -389,7 +391,7 @@ class AchievementService extends BaseService {
             
             if (meetsRequirements) {
                 try {
-                    // Award the achievement
+                    // Award the achievement and XP
                     await prisma.user_achievements.create({
                         data: {
                             user_id: user.id,
@@ -398,6 +400,25 @@ class AchievementService extends BaseService {
                             awarded_at: new Date()
                         }
                     });
+
+                    // Award XP based on tier
+                    const tierXP = {
+                        BRONZE: 100,
+                        SILVER: 250,
+                        GOLD: 500,
+                        PLATINUM: 1000,
+                        DIAMOND: 2500
+                    }[tier.name] || 100;
+
+                    await levelingService.awardXP(
+                        user.wallet_address,
+                        tierXP,
+                        {
+                            type: 'ACHIEVEMENT_EARNED',
+                            category: category.name,
+                            tier: tier.name
+                        }
+                    );
 
                     awarded++;
                     this.achievementStats.achievements.awarded++;
@@ -440,9 +461,104 @@ class AchievementService extends BaseService {
     }
 
     async checkRequirement(user, requirement) {
-        // Implementation will vary based on requirement type
-        // This is a placeholder for the actual implementation
-        return false;
+        const startTime = Date.now();
+        
+        try {
+            switch (requirement.type) {
+                case 'CONTESTS_ENTERED':
+                    const contestCount = await prisma.contest_participants.count({
+                        where: { wallet_address: user.wallet_address }
+                    });
+                    return contestCount >= requirement.value;
+
+                case 'CONTESTS_WON':
+                    const winCount = await prisma.contest_participants.count({
+                        where: {
+                            wallet_address: user.wallet_address,
+                            final_rank: 1
+                        }
+                    });
+                    return winCount >= requirement.value;
+
+                case 'TOTAL_PROFIT':
+                    const profitStats = await prisma.user_stats.findUnique({
+                        where: { wallet_address: user.wallet_address },
+                        select: { total_profit: true }
+                    });
+                    return profitStats?.total_profit >= requirement.value;
+
+                case 'TRADING_VOLUME':
+                    const volumeStats = await prisma.user_stats.findUnique({
+                        where: { wallet_address: user.wallet_address },
+                        select: { total_volume: true }
+                    });
+                    return volumeStats?.total_volume >= requirement.value;
+
+                case 'CONSECUTIVE_WINS':
+                    const recentContests = await prisma.contest_participants.findMany({
+                        where: { wallet_address: user.wallet_address },
+                        orderBy: { contest_end: 'desc' },
+                        take: requirement.value,
+                        select: { final_rank: true }
+                    });
+                    return recentContests.length >= requirement.value && 
+                           recentContests.every(c => c.final_rank === 1);
+
+                case 'SOCIAL_ENGAGEMENT':
+                    const socialProfiles = await prisma.user_social_profiles.count({
+                        where: {
+                            wallet_address: user.wallet_address,
+                            verified: true
+                        }
+                    });
+                    return socialProfiles >= requirement.value;
+
+                case 'REFERRALS':
+                    const referralCount = await prisma.referrals.count({
+                        where: {
+                            referrer_id: user.wallet_address,
+                            status: 'qualified'
+                        }
+                    });
+                    return referralCount >= requirement.value;
+
+                case 'TOKENS_TRADED':
+                    const uniqueTokens = await prisma.contest_portfolios.count({
+                        where: { wallet_address: user.wallet_address },
+                        distinct: ['token_id']
+                    });
+                    return uniqueTokens >= requirement.value;
+
+                case 'EXPERIENCE_POINTS':
+                    return user.experience_points >= requirement.value;
+
+                case 'ACHIEVEMENT_COUNT':
+                    const achievementCount = await prisma.user_achievements.count({
+                        where: {
+                            wallet_address: user.wallet_address,
+                            category: requirement.category
+                        }
+                    });
+                    return achievementCount >= requirement.value;
+
+                default:
+                    logApi.warn('Unknown achievement requirement type:', requirement.type);
+                    return false;
+            }
+        } catch (error) {
+            logApi.error('Achievement requirement check failed:', {
+                user_id: user.wallet_address,
+                requirement: requirement,
+                error: error.message
+            });
+            return false;
+        } finally {
+            // Update performance metrics
+            const duration = Date.now() - startTime;
+            this.achievementStats.performance.average_check_time_ms = 
+                (this.achievementStats.performance.average_check_time_ms * this.achievementStats.checks.total + duration) 
+                / (this.achievementStats.checks.total + 1);
+        }
     }
 
     async stop() {
