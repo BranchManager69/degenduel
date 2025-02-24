@@ -130,7 +130,7 @@ class AchievementService extends BaseService {
             // Load initial achievement state
             const [totalAchievements, activeAchievements, awardedCount] = await Promise.all([
                 prisma.achievement_categories.count(),
-                prisma.achievement_categories.count({ where: { is_active: true } }),
+                prisma.achievement_categories.count(),
                 prisma.user_achievements.count()
             ]);
 

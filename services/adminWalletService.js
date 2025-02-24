@@ -147,7 +147,7 @@ class AdminWalletService extends BaseService {
             // Load initial wallet state
             const [totalWallets, activeWallets] = await Promise.all([
                 prisma.managed_wallets.count(),
-                prisma.managed_wallets.count({ where: { is_active: true } })
+                prisma.managed_wallets.count({ where: { status: 'active' } })
             ]);
 
             this.walletStats.wallets.total = totalWallets;
@@ -237,7 +237,7 @@ class AdminWalletService extends BaseService {
         try {
             // Get active wallets
             const wallets = await prisma.managed_wallets.findMany({
-                where: { is_active: true }
+                where: { status: 'active' }
             });
 
             const results = {

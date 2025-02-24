@@ -823,6 +823,17 @@ const VALID_SERVICES = [
     'wallet_generator_service'
 ];
 
+const VALID_WEBSOCKET_SERVICES = [
+    'analytics',
+    'base',
+    'circuit-breaker',
+    'contest',
+    'market',
+    'monitor',
+    'wallet',
+    'portfolio'
+];
+
 const DEFAULT_SERVICE_CONFIG = {
     token_sync_service: { enabled: true },
     market_data_service: { enabled: true },
@@ -841,12 +852,11 @@ const DEFAULT_SERVICE_CONFIG = {
 router.post('/websocket/:serviceId/start', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
         const { serviceId } = req.params;
-        const validServices = ['analytics', 'base', 'circuit-breaker', 'contest', 'market', 'monitor', 'wallet', 'portfolio'];
         
-        if (!validServices.includes(serviceId)) {
+        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
             return res.status(400).json({
                 success: false,
-                message: `Invalid service ID. Must be one of: ${validServices.join(', ')}`
+                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
             });
         }
 
@@ -870,9 +880,17 @@ router.post('/websocket/:serviceId/start', requireAuth, requireSuperAdmin, async
             userAgent: req.get('user-agent')
         });
 
+        // Get current state after starting
+        const state = await serviceManager.getServiceState(wsFile);
+
         res.json({
             success: true,
-            message: `${serviceId} WebSocket service started successfully`
+            message: `${serviceId} WebSocket service started successfully`,
+            state: {
+                running: state?.running || true,
+                status: state?.status || 'active',
+                lastStarted: state?.last_started || new Date().toISOString()
+            }
         });
     } catch (error) {
         logApi.error(`Error starting WebSocket service: ${error.message}`);
@@ -886,12 +904,11 @@ router.post('/websocket/:serviceId/start', requireAuth, requireSuperAdmin, async
 router.post('/websocket/:serviceId/stop', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
         const { serviceId } = req.params;
-        const validServices = ['analytics', 'base', 'circuit-breaker', 'contest', 'market', 'monitor', 'wallet', 'portfolio'];
         
-        if (!validServices.includes(serviceId)) {
+        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
             return res.status(400).json({
                 success: false,
-                message: `Invalid service ID. Must be one of: ${validServices.join(', ')}`
+                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
             });
         }
 
@@ -904,9 +921,17 @@ router.post('/websocket/:serviceId/stop', requireAuth, requireSuperAdmin, async 
             userAgent: req.get('user-agent')
         });
 
+        // Get current state after stopping
+        const state = await serviceManager.getServiceState(wsFile);
+
         res.json({
             success: true,
-            message: `${serviceId} WebSocket service stopped successfully`
+            message: `${serviceId} WebSocket service stopped successfully`,
+            state: {
+                running: state?.running || false,
+                status: state?.status || 'stopped',
+                lastStopped: state?.last_stopped || new Date().toISOString()
+            }
         });
     } catch (error) {
         logApi.error(`Error stopping WebSocket service: ${error.message}`);
@@ -920,12 +945,11 @@ router.post('/websocket/:serviceId/stop', requireAuth, requireSuperAdmin, async 
 router.post('/websocket/:serviceId/restart', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
         const { serviceId } = req.params;
-        const validServices = ['analytics', 'base', 'circuit-breaker', 'contest', 'market', 'monitor', 'wallet', 'portfolio'];
         
-        if (!validServices.includes(serviceId)) {
+        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
             return res.status(400).json({
                 success: false,
-                message: `Invalid service ID. Must be one of: ${validServices.join(', ')}`
+                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
             });
         }
 
@@ -938,9 +962,18 @@ router.post('/websocket/:serviceId/restart', requireAuth, requireSuperAdmin, asy
             userAgent: req.get('user-agent')
         });
 
+        // Get current state after restarting
+        const state = await serviceManager.getServiceState(wsFile);
+
         res.json({
             success: true,
-            message: `${serviceId} WebSocket service restarted successfully`
+            message: `${serviceId} WebSocket service restarted successfully`,
+            state: {
+                running: state?.running || true,
+                status: state?.status || 'active',
+                lastStarted: state?.last_started || new Date().toISOString(),
+                lastStopped: state?.last_stopped
+            }
         });
     } catch (error) {
         logApi.error(`Error restarting WebSocket service: ${error.message}`);

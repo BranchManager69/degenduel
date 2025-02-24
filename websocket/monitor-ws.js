@@ -44,8 +44,6 @@ class WebSocketMonitorService {
         this.services = new Map();
         this.systemHealth = {
             status: 'initializing',
-            activeConnections: 0,
-            messageRate: 0,
             activeIncidents: 0,
             lastUpdate: new Date()
         };
@@ -64,34 +62,15 @@ class WebSocketMonitorService {
      * @param {Object} metrics - Service metrics
      */
     updateServiceMetrics(serviceName, metrics = null) {
-        if (!serviceName) {
-            logApi.warn('Attempted to update metrics without a service name');
-            return;
-        }
+        if (!serviceName) return;
 
         try {
-            // Ensure metrics has the correct structure
-            const validatedMetrics = {
+            // Store metrics as-is
+            this.services.set(serviceName, {
                 name: serviceName,
-                metrics: {
-                    totalConnections: metrics?.metrics?.totalConnections || 0,
-                    activeSubscriptions: metrics?.metrics?.activeSubscriptions || 0,
-                    messageCount: metrics?.metrics?.messageCount || 0,
-                    errorCount: metrics?.metrics?.errorCount || 0,
-                    lastUpdate: new Date().toISOString(),
-                    cacheHitRate: metrics?.metrics?.cacheHitRate || 0,
-                    averageLatency: metrics?.metrics?.averageLatency || 0
-                },
-                performance: {
-                    messageRate: metrics?.performance?.messageRate || 0,
-                    errorRate: metrics?.performance?.errorRate || 0,
-                    latencyTrend: metrics?.performance?.latencyTrend || []
-                },
+                ...metrics,
                 status: metrics?.status || 'operational'
-            };
-
-            // Store the complete metrics object
-            this.services.set(serviceName, validatedMetrics);
+            });
 
             // Update system health
             this.updateSystemHealth();
@@ -105,13 +84,9 @@ class WebSocketMonitorService {
      */
     updateSystemHealth() {
         try {
-            let totalConnections = 0;
-            let totalMessageRate = 0;
             let activeIncidents = 0;
 
             for (const service of this.services.values()) {
-                totalConnections += service.metrics.totalConnections;
-                totalMessageRate += service.performance.messageRate;
                 if (service.status !== 'operational') {
                     activeIncidents++;
                 }
@@ -120,8 +95,6 @@ class WebSocketMonitorService {
             this.systemHealth = {
                 status: activeIncidents === 0 ? 'operational' : 
                         activeIncidents < 2 ? 'degraded' : 'error',
-                activeConnections: totalConnections,
-                messageRate: totalMessageRate,
                 activeIncidents,
                 lastUpdate: new Date()
             };

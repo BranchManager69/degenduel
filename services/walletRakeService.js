@@ -139,7 +139,7 @@ class WalletRakeService extends BaseService {
             // Load initial rake state
             const [totalRaked, totalWallets] = await Promise.all([
                 prisma.transactions.aggregate({
-                    where: { type: config.transaction_types.CONTEST_WALLET_RAKE },
+                    where: { type: 'WITHDRAWAL' },
                     _sum: { amount: true }
                 }),
                 prisma.contest_wallets.count({
@@ -247,7 +247,7 @@ class WalletRakeService extends BaseService {
             const tx = await prisma.transactions.create({
                 data: {
                     wallet_address: fromKeypair.publicKey.toString(),
-                    type: config.transaction_types.CONTEST_WALLET_RAKE,
+                    type: 'WITHDRAWAL',
                     amount: amount / LAMPORTS_PER_SOL,
                     balance_before: currentBalance / LAMPORTS_PER_SOL,
                     balance_after: (currentBalance - amount) / LAMPORTS_PER_SOL,
@@ -270,7 +270,7 @@ class WalletRakeService extends BaseService {
             await prisma.transactions.create({
                 data: {
                     wallet_address: fromKeypair.publicKey.toString(),
-                    type: config.transaction_types.CONTEST_WALLET_RAKE,
+                    type: 'WITHDRAWAL',
                     amount: amount / LAMPORTS_PER_SOL,
                     description: `Failed rake operation: ${error.message}`,
                     status: config.transaction_statuses.FAILED,

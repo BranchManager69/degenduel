@@ -60,6 +60,9 @@ const server = createServer(app);
 logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔌 Initializing WebSocket Servers...\x1b[0m');
 
 try {
+    // Initialize results tracking
+    const initResults = {};
+    
     // Initialize WebSocket monitor first
     const wsMonitor = createWebSocketMonitor(server);
     if (!wsMonitor) {
@@ -106,8 +109,6 @@ try {
     // Default metrics for uninitialized services
     const defaultMetrics = {
         metrics: {
-            totalConnections: 0,
-            activeSubscriptions: 0,
             messageCount: 0,
             errorCount: 0,
             lastUpdate: new Date().toISOString(),
@@ -169,6 +170,54 @@ try {
 
     } catch (error) {
         logApi.warn('Failed to register initial WebSocket metrics:', error);
+    }
+
+    // Initialize Services Layer - Moved outside WebSocket try-catch
+    logApi.info('\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+    
+    // Initialize services
+    try {
+        // First try to register core services
+        logApi.info('Registering core services...');
+        await ServiceInitializer.registerCoreServices().catch(error => {
+            logApi.error('Failed to register core services:', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        });
+        
+        // Then try to initialize them
+        logApi.info('Initializing services...');
+        const results = await ServiceInitializer.initializeServices().catch(error => {
+            logApi.error('Failed to initialize services:', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        });
+
+        initResults.Services = {
+            initialized: Array.isArray(results?.initialized) ? results.initialized : [],
+            failed: Array.isArray(results?.failed) ? results.failed : []
+        };
+
+        logApi.info('Service initialization results:', {
+            initialized: initResults.Services.initialized,
+            failed: initResults.Services.failed
+        });
+
+    } catch (error) {
+        logApi.error('Service initialization failed:', {
+            error: error.message,
+            stack: error.stack,
+            phase: 'service_initialization'
+        });
+        initResults.Services = {
+            initialized: [],
+            failed: ['Service initialization failed: ' + error.message]
+        };
+        throw error;  // Re-throw to trigger full initialization failure
     }
 
 } catch (error) {
@@ -520,8 +569,6 @@ async function initializeServer() {
             // Default metrics for uninitialized services
             const defaultMetrics = {
                 metrics: {
-                    totalConnections: 0,
-                    activeSubscriptions: 0,
                     messageCount: 0,
                     errorCount: 0,
                     lastUpdate: new Date().toISOString(),
@@ -586,25 +633,53 @@ async function initializeServer() {
                 logApi.warn('Failed to register initial WebSocket metrics:', error);
             }
 
-            // Initialize Services Layer
+            // Initialize Services Layer - Moved outside WebSocket try-catch
             logApi.info('\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
             
             // Initialize services
             try {
-                const results = await ServiceInitializer.initializeServices();
+                // First try to register core services
+                logApi.info('Registering core services...');
+                await ServiceInitializer.registerCoreServices().catch(error => {
+                    logApi.error('Failed to register core services:', {
+                        error: error.message,
+                        stack: error.stack
+                    });
+                    throw error;
+                });
+                
+                // Then try to initialize them
+                logApi.info('Initializing services...');
+                const results = await ServiceInitializer.initializeServices().catch(error => {
+                    logApi.error('Failed to initialize services:', {
+                        error: error.message,
+                        stack: error.stack
+                    });
+                    throw error;
+                });
+
                 initResults.Services = {
                     initialized: Array.isArray(results?.initialized) ? results.initialized : [],
                     failed: Array.isArray(results?.failed) ? results.failed : []
                 };
+
+                logApi.info('Service initialization results:', {
+                    initialized: initResults.Services.initialized,
+                    failed: initResults.Services.failed
+                });
+
             } catch (error) {
-                logApi.error('Service initialization failed:', error);
+                logApi.error('Service initialization failed:', {
+                    error: error.message,
+                    stack: error.stack,
+                    phase: 'service_initialization'
+                });
                 initResults.Services = {
                     initialized: [],
                     failed: ['Service initialization failed: ' + error.message]
                 };
+                throw error;  // Re-throw to trigger full initialization failure
             }
-
-            // Rest of the initialization code...
 
         } catch (error) {
             logApi.error('\x1b[38;5;196m┃           ✗ WebSocket initialization failed:', error, '\x1b[0m');
