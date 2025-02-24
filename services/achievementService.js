@@ -19,6 +19,7 @@ import prisma from '../config/prisma.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import levelingService from './levelingService.js';
 
 const ACHIEVEMENT_SERVICE_CONFIG = {
     name: 'achievement_service',
@@ -389,7 +390,7 @@ class AchievementService extends BaseService {
             
             if (meetsRequirements) {
                 try {
-                    // Award the achievement
+                    // Award the achievement and XP
                     await prisma.user_achievements.create({
                         data: {
                             user_id: user.id,
@@ -398,6 +399,25 @@ class AchievementService extends BaseService {
                             awarded_at: new Date()
                         }
                     });
+
+                    // Award XP based on tier
+                    const tierXP = {
+                        BRONZE: 100,
+                        SILVER: 250,
+                        GOLD: 500,
+                        PLATINUM: 1000,
+                        DIAMOND: 2500
+                    }[tier.name] || 100;
+
+                    await levelingService.awardXP(
+                        user.wallet_address,
+                        tierXP,
+                        {
+                            type: 'ACHIEVEMENT_EARNED',
+                            category: category.name,
+                            tier: tier.name
+                        }
+                    );
 
                     awarded++;
                     this.achievementStats.achievements.awarded++;
