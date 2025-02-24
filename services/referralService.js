@@ -142,8 +142,8 @@ class ReferralService extends BaseService {
             // Load initial referral state
             const [totalReferrals, activeReferrals, convertedReferrals] = await Promise.all([
                 prisma.referrals.count(),
-                prisma.referrals.count({ where: { status: 'active' } }),
-                prisma.referrals.count({ where: { status: 'converted' } })
+                prisma.referrals.count({ where: { status: 'qualified' } }),
+                prisma.referrals.count({ where: { status: 'rewarded' } })
             ]);
 
             this.referralStats.referrals.total = totalReferrals;
