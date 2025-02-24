@@ -49,13 +49,12 @@ class WebSocketMonitorService {
             activeIncidents: 0,
             lastUpdate: new Date()
         };
-        this.updateInterval = 5000; // 5 seconds
         this.isInitialized = false;
         
-        // Start periodic updates after a short delay to allow services to register
+        // Mark as initialized after a short delay to allow services to register
         setTimeout(() => {
-            this.startPeriodicUpdates();
             this.isInitialized = true;
+            logApi.info('Monitor service ready');
         }, 2000);
     }
 
@@ -71,103 +70,33 @@ class WebSocketMonitorService {
         }
 
         try {
-            // Define default metrics structure
-            const defaultMetrics = {
-                metrics: {
-                    totalConnections: 0,
-                    activeSubscriptions: 0,
-                    messageCount: 0,
-                    errorCount: 0,
-                    lastUpdate: new Date().toISOString(),
-                    cacheHitRate: 0,
-                    averageLatency: 0
-                },
-                performance: {
-                    messageRate: 0,
-                    errorRate: 0,
-                    latencyTrend: []
-                },
-                status: this.isInitialized ? 'error' : 'initializing'
-            };
-
-            // If metrics is provided, validate and merge with defaults
-            let validatedMetrics = { ...defaultMetrics };
-            if (metrics) {
-                // Validate and coerce metric values
-                const incomingMetrics = metrics.metrics || {};
-                const incomingPerformance = metrics.performance || {};
-
-                validatedMetrics.metrics = {
-                    ...defaultMetrics.metrics,
-                    totalConnections: Number(incomingMetrics.totalConnections) || 0,
-                    activeSubscriptions: Number(incomingMetrics.activeSubscriptions) || 0,
-                    messageCount: Number(incomingMetrics.messageCount) || 0,
-                    errorCount: Number(incomingMetrics.errorCount) || 0,
-                    cacheHitRate: Number(incomingMetrics.cacheHitRate) || 0,
-                    averageLatency: Number(incomingMetrics.averageLatency) || 0,
-                    lastUpdate: new Date().toISOString()
-                };
-
-                validatedMetrics.performance = {
-                    ...defaultMetrics.performance,
-                    messageRate: Number(incomingPerformance.messageRate) || 0,
-                    errorRate: Number(incomingPerformance.errorRate) || 0,
-                    latencyTrend: Array.isArray(incomingPerformance.latencyTrend) 
-                        ? incomingPerformance.latencyTrend.slice(-10) // Keep last 10 data points
-                        : []
-                };
-
-                // Validate status
-                validatedMetrics.status = ['operational', 'degraded', 'error', 'initializing'].includes(metrics.status)
-                    ? metrics.status
-                    : defaultMetrics.status;
-            }
-
-            // Add metadata
-            validatedMetrics.name = serviceName;
-            validatedMetrics.lastUpdate = new Date();
-
-            // Update service metrics
-            this.services.set(serviceName, validatedMetrics);
-
-            // Log validation issues if any
-            if (metrics && JSON.stringify(metrics) !== JSON.stringify(validatedMetrics)) {
-                logApi.debug(`Metrics normalized for service ${serviceName}:`, {
-                    original: metrics,
-                    normalized: validatedMetrics
-                });
-            }
-
-            // Only update system health if we're initialized
-            if (this.isInitialized) {
-                this.updateSystemHealth();
-            }
-
-        } catch (error) {
-            logApi.error(`Error updating metrics for service ${serviceName}:`, error);
-            // Set error state metrics
-            this.services.set(serviceName, {
+            // Ensure metrics has the correct structure
+            const validatedMetrics = {
                 name: serviceName,
                 metrics: {
-                    totalConnections: 0,
-                    activeSubscriptions: 0,
-                    messageCount: 0,
-                    errorCount: 1,
+                    totalConnections: metrics?.metrics?.totalConnections || 0,
+                    activeSubscriptions: metrics?.metrics?.activeSubscriptions || 0,
+                    messageCount: metrics?.metrics?.messageCount || 0,
+                    errorCount: metrics?.metrics?.errorCount || 0,
                     lastUpdate: new Date().toISOString(),
-                    cacheHitRate: 0,
-                    averageLatency: 0
+                    cacheHitRate: metrics?.metrics?.cacheHitRate || 0,
+                    averageLatency: metrics?.metrics?.averageLatency || 0
                 },
                 performance: {
-                    messageRate: 0,
-                    errorRate: 1,
-                    latencyTrend: []
+                    messageRate: metrics?.performance?.messageRate || 0,
+                    errorRate: metrics?.performance?.errorRate || 0,
+                    latencyTrend: metrics?.performance?.latencyTrend || []
                 },
-                status: this.isInitialized ? 'error' : 'initializing',
-                lastUpdate: new Date()
-            });
-            if (this.isInitialized) {
-                this.updateSystemHealth();
-            }
+                status: metrics?.status || 'operational'
+            };
+
+            // Store the complete metrics object
+            this.services.set(serviceName, validatedMetrics);
+
+            // Update system health
+            this.updateSystemHealth();
+        } catch (error) {
+            logApi.error(`Error updating metrics for service ${serviceName}:`, error);
         }
     }
 
@@ -178,79 +107,27 @@ class WebSocketMonitorService {
         try {
             let totalConnections = 0;
             let totalMessageRate = 0;
-            let incidents = 0;
-            let activeServices = 0;
+            let activeIncidents = 0;
 
-            // Validate and aggregate metrics from each service
-            for (const [serviceName, service] of this.services.entries()) {
-                try {
-                    // Count active services
-                    activeServices++;
-
-                    // Safely extract metrics with fallbacks
-                    const metrics = service?.metrics || {};
-                    const performance = service?.performance || {};
-                    
-                    // Aggregate connection counts with safe defaults
-                    totalConnections += Number(metrics?.totalConnections) || 0;
-                    totalMessageRate += Number(performance?.messageRate) || 0;
-
-                    // Track incidents
-                    const serviceStatus = service?.status || 'unknown';
-                    switch (serviceStatus) {
-                        case 'error':
-                            incidents++;
-                            break;
-                        case 'degraded':
-                            incidents += 0.5;
-                            break;
-                        case 'unknown':
-                            incidents += 0.25;
-                            break;
-                    }
-
-                    // Log any services with invalid metrics
-                    if (!metrics?.totalConnections && metrics?.totalConnections !== 0) {
-                        logApi.warn(`Invalid metrics for service ${serviceName}:`, {
-                            service: serviceName,
-                            metrics: metrics
-                        });
-                    }
-                } catch (error) {
-                    logApi.error(`Error processing metrics for service ${serviceName}:`, error);
-                    incidents++;
+            for (const service of this.services.values()) {
+                totalConnections += service.metrics.totalConnections;
+                totalMessageRate += service.performance.messageRate;
+                if (service.status !== 'operational') {
+                    activeIncidents++;
                 }
             }
 
-            // Determine overall system status
-            let status = 'operational';
-            if (incidents > 0) {
-                status = incidents >= activeServices * 0.5 ? 'error' : 'degraded';
-            }
-
-            // Update system health with validated metrics
             this.systemHealth = {
-                status,
-                activeConnections: Math.max(0, totalConnections),
-                messageRate: Math.max(0, totalMessageRate),
-                activeIncidents: Math.round(incidents),
-                activeServices,
+                status: activeIncidents === 0 ? 'operational' : 
+                        activeIncidents < 2 ? 'degraded' : 'error',
+                activeConnections: totalConnections,
+                messageRate: totalMessageRate,
+                activeIncidents,
                 lastUpdate: new Date()
             };
-
-            logApi.debug('System health updated:', this.systemHealth);
-
         } catch (error) {
             logApi.error('Error updating system health:', error);
-            // Set error state if update fails
-            this.systemHealth = {
-                status: 'error',
-                activeConnections: 0,
-                messageRate: 0,
-                activeIncidents: 1,
-                activeServices: 0,
-                lastUpdate: new Date()
-            };
+            this.systemHealth.status = 'error';
         }
     }
 
@@ -268,30 +145,6 @@ class WebSocketMonitorService {
      */
     getSystemHealth() {
         return this.systemHealth;
-    }
-
-    /**
-     * Start periodic updates
-     */
-    startPeriodicUpdates() {
-        setInterval(() => {
-            try {
-                // Clean up stale services (no updates in 1 minute)
-                const now = Date.now();
-                for (const [name, service] of this.services.entries()) {
-                    if (now - new Date(service.lastUpdate).getTime() > 60000) {
-                        this.services.delete(name);
-                    }
-                }
-                
-                // Only update system health if we're initialized
-                if (this.isInitialized) {
-                    this.updateSystemHealth();
-                }
-            } catch (error) {
-                logApi.error('Error in periodic updates:', error);
-            }
-        }, this.updateInterval);
     }
 
     /**
@@ -316,8 +169,6 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
         });
 
         this.monitorService = new WebSocketMonitorService();
-        this.startMetricsBroadcast();
-        
         logApi.info('WebSocket Monitor server initialized');
     }
 
@@ -381,21 +232,6 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
                 timestamp: new Date().toISOString()
             }
         });
-    }
-
-    /**
-     * Start metrics broadcast
-     */
-    startMetricsBroadcast() {
-        setInterval(() => {
-            const health = this.monitorService.getSystemHealth();
-            
-            this.broadcast({
-                type: MESSAGE_TYPES.SYSTEM_HEALTH,
-                data: health,
-                timestamp: new Date().toISOString()
-            });
-        }, 5000);
     }
 
     /**
