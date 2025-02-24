@@ -29,7 +29,7 @@ import levelingService from './levelingService.js';
 const CONTEST_EVALUATION_CONFIG = {
     name: SERVICE_NAMES.CONTEST_EVALUATION,
     description: getServiceMetadata(SERVICE_NAMES.CONTEST_EVALUATION).description,
-    checkIntervalMs: 60 * 1000, // Check every minute
+    checkIntervalMs: 30 * 1000, // Check every 30 seconds for better timing precision
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
