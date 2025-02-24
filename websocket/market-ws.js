@@ -1,12 +1,278 @@
-// /websocket/market-ws.js
+// websocket/market-ws.js
 
-// THIS IS THE MARKET DATA WEBSOCKET SERVER
+/*
+ * This is the WebSocket server for the market data service.
+ * It handles real-time market data updates, price feeds, and trading volume information.
+ * 
+ * Features:
+ * - Symbol subscription/unsubscription
+ * - Real-time price updates
+ * - Volume and trading metrics
+ * - Market sentiment data
+ * - High-frequency updates (10/second)
+ * 
+ * Message Types:
+ * - SUBSCRIBE_SYMBOLS: Subscribe to market data for symbols
+ * - UNSUBSCRIBE_SYMBOLS: Unsubscribe from market data
+ * - MARKET_PRICE: Real-time price updates
+ * - MARKET_VOLUME: Trading volume updates
+ * - MARKET_SENTIMENT: Market sentiment indicators
+ * - ERROR: Error messages
+ */
 
-import { BaseWebSocketServer } from '../utils/websocket-suite/base-websocket.js';
+import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import marketDataService from '../services/marketDataService.js';
 
+// Message type constants
+const MESSAGE_TYPES = {
+    // Client -> Server
+    SUBSCRIBE_SYMBOLS: 'SUBSCRIBE_SYMBOLS',
+    UNSUBSCRIBE_SYMBOLS: 'UNSUBSCRIBE_SYMBOLS',
+    
+    // Server -> Client
+    MARKET_PRICE: 'MARKET_PRICE',
+    MARKET_VOLUME: 'MARKET_VOLUME',
+    MARKET_SENTIMENT: 'MARKET_SENTIMENT',
+    ERROR: 'ERROR'
+};
+
+// Error codes
+const ERROR_CODES = {
+    INVALID_SYMBOLS: 4041,
+    INVALID_MESSAGE: 4004,
+    SUBSCRIPTION_FAILED: 5002,
+    SERVER_ERROR: 5001,
+    RATE_LIMIT_EXCEEDED: 4029
+};
+
+/**
+ * Market Data Service class
+ * Handles market data operations and caching
+ */
+class MarketDataService {
+    constructor() {
+        this.priceCache = new Map();
+        this.volumeCache = new Map();
+        this.sentimentCache = new Map();
+        this.updateInterval = 100; // 100ms update interval
+        
+        this.startDataUpdates();
+    }
+
+    /**
+     * Get latest price data for a symbol
+     * @param {string} symbol - Token symbol
+     * @returns {Promise<Object>} Price data
+     */
+    async getPrice(symbol) {
+        try {
+            if (this.priceCache.has(symbol)) {
+                return this.priceCache.get(symbol);
+            }
+
+            const price = await prisma.token_prices.findFirst({
+                where: { symbol },
+                orderBy: { timestamp: 'desc' }
+            });
+
+            if (price) {
+                this.priceCache.set(symbol, {
+                    current: price.price,
+                    change_24h: price.change_24h,
+                    volume_24h: price.volume_24h,
+                    high_24h: price.high_24h,
+                    low_24h: price.low_24h,
+                    timestamp: price.timestamp
+                });
+            }
+
+            return this.priceCache.get(symbol);
+        } catch (error) {
+            logApi.error('Error fetching price data:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get latest volume data for a symbol
+     * @param {string} symbol - Token symbol
+     * @returns {Promise<Object>} Volume data
+     */
+    async getVolume(symbol) {
+        try {
+            if (this.volumeCache.has(symbol)) {
+                return this.volumeCache.get(symbol);
+            }
+
+            const volume = await prisma.token_volumes.findFirst({
+                where: { symbol },
+                orderBy: { timestamp: 'desc' }
+            });
+
+            if (volume) {
+                this.volumeCache.set(symbol, {
+                    total: volume.total_volume,
+                    trades_count: volume.trades_count,
+                    buy_volume: volume.buy_volume,
+                    sell_volume: volume.sell_volume,
+                    interval: '1h',
+                    timestamp: volume.timestamp
+                });
+            }
+
+            return this.volumeCache.get(symbol);
+        } catch (error) {
+            logApi.error('Error fetching volume data:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get latest sentiment data for a symbol
+     * @param {string} symbol - Token symbol
+     * @returns {Promise<Object>} Sentiment data
+     */
+    async getSentiment(symbol) {
+        try {
+            if (this.sentimentCache.has(symbol)) {
+                return this.sentimentCache.get(symbol);
+            }
+
+            const sentiment = await prisma.token_sentiment.findFirst({
+                where: { symbol },
+                orderBy: { timestamp: 'desc' }
+            });
+
+            if (sentiment) {
+                this.sentimentCache.set(symbol, {
+                    score: sentiment.sentiment_score,
+                    buy_pressure: sentiment.buy_pressure,
+                    sell_pressure: sentiment.sell_pressure,
+                    volume_trend: sentiment.volume_trend,
+                    timestamp: sentiment.timestamp
+                });
+            }
+
+            return this.sentimentCache.get(symbol);
+        } catch (error) {
+            logApi.error('Error fetching sentiment data:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Start periodic data updates
+     */
+    startDataUpdates() {
+        setInterval(async () => {
+            try {
+                const activeSymbols = Array.from(this.priceCache.keys());
+                
+                for (const symbol of activeSymbols) {
+                    await Promise.all([
+                        this.updatePrice(symbol),
+                        this.updateVolume(symbol),
+                        this.updateSentiment(symbol)
+                    ]);
+                }
+            } catch (error) {
+                logApi.error('Error updating market data:', error);
+            }
+        }, this.updateInterval);
+    }
+
+    /**
+     * Update price data for a symbol
+     * @param {string} symbol - Token symbol
+     */
+    async updatePrice(symbol) {
+        try {
+            const price = await prisma.token_prices.findFirst({
+                where: { symbol },
+                orderBy: { timestamp: 'desc' }
+            });
+
+            if (price) {
+                this.priceCache.set(symbol, {
+                    current: price.price,
+                    change_24h: price.change_24h,
+                    volume_24h: price.volume_24h,
+                    high_24h: price.high_24h,
+                    low_24h: price.low_24h,
+                    timestamp: price.timestamp
+                });
+            }
+        } catch (error) {
+            logApi.error('Error updating price:', error);
+        }
+    }
+
+    /**
+     * Update volume data for a symbol
+     * @param {string} symbol - Token symbol
+     */
+    async updateVolume(symbol) {
+        try {
+            const volume = await prisma.token_volumes.findFirst({
+                where: { symbol },
+                orderBy: { timestamp: 'desc' }
+            });
+
+            if (volume) {
+                this.volumeCache.set(symbol, {
+                    total: volume.total_volume,
+                    trades_count: volume.trades_count,
+                    buy_volume: volume.buy_volume,
+                    sell_volume: volume.sell_volume,
+                    interval: '1h',
+                    timestamp: volume.timestamp
+                });
+            }
+        } catch (error) {
+            logApi.error('Error updating volume:', error);
+        }
+    }
+
+    /**
+     * Update sentiment data for a symbol
+     * @param {string} symbol - Token symbol
+     */
+    async updateSentiment(symbol) {
+        try {
+            const sentiment = await prisma.token_sentiment.findFirst({
+                where: { symbol },
+                orderBy: { timestamp: 'desc' }
+            });
+
+            if (sentiment) {
+                this.sentimentCache.set(symbol, {
+                    score: sentiment.sentiment_score,
+                    buy_pressure: sentiment.buy_pressure,
+                    sell_pressure: sentiment.sell_pressure,
+                    volume_trend: sentiment.volume_trend,
+                    timestamp: sentiment.timestamp
+                });
+            }
+        } catch (error) {
+            logApi.error('Error updating sentiment:', error);
+        }
+    }
+
+    /**
+     * Clean up resources
+     */
+    cleanup() {
+        this.priceCache.clear();
+        this.volumeCache.clear();
+        this.sentimentCache.clear();
+    }
+}
+
+/**
+ * MarketDataWebSocketServer class
+ * Handles real-time market data distribution
+ */
 class MarketDataWebSocketServer extends BaseWebSocketServer {
     constructor(httpServer) {
         super(httpServer, {
@@ -16,33 +282,60 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
             rateLimit: 600 // 10 updates/second as per requirements
         });
 
-        this.symbolSubscriptions = new Map(); // clientId -> Set<symbol>
+        /** @type {Map<string, Set<string>>} userId -> Set<symbol> */
+        this.symbolSubscriptions = new Map();
+        
         this.marketDataService = new MarketDataService();
         this.startMarketDataStreams();
+        
+        logApi.info('Market Data WebSocket server initialized');
     }
 
+    /**
+     * Handle incoming client messages
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} message - Parsed message object
+     * @param {Object} clientInfo - Client information
+     */
     async handleClientMessage(ws, message, clientInfo) {
         try {
             const { type, symbols } = message;
 
             switch (type) {
-                case 'SUBSCRIBE_SYMBOLS':
+                case MESSAGE_TYPES.SUBSCRIBE_SYMBOLS:
                     await this.handleSymbolSubscription(ws, clientInfo, symbols);
                     break;
-                case 'UNSUBSCRIBE_SYMBOLS':
+                    
+                case MESSAGE_TYPES.UNSUBSCRIBE_SYMBOLS:
                     await this.handleSymbolUnsubscription(ws, clientInfo, symbols);
                     break;
+                    
                 default:
-                    this.sendError(ws, 'Unknown message type', 4004);
+                    this.sendError(ws, 'Unknown message type', ERROR_CODES.INVALID_MESSAGE);
+                    logApi.warn('Unknown market data message type received', {
+                        type,
+                        clientId: clientInfo.userId
+                    });
             }
         } catch (error) {
             logApi.error('Error handling market data message:', error);
-            this.sendError(ws, 'Failed to process market data request', 5001);
+            this.sendError(ws, 'Failed to process market data request', ERROR_CODES.SERVER_ERROR);
         }
     }
 
+    /**
+     * Handle symbol subscription request
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     * @param {string[]} symbols - Array of token symbols
+     */
     async handleSymbolSubscription(ws, clientInfo, symbols) {
         try {
+            if (!Array.isArray(symbols) || symbols.length === 0) {
+                this.sendError(ws, 'Invalid symbols format', ERROR_CODES.INVALID_MESSAGE);
+                return;
+            }
+
             // Validate symbols
             const validSymbols = await prisma.tokens.findMany({
                 where: {
@@ -57,7 +350,7 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
             });
 
             if (validSymbols.length === 0) {
-                this.sendError(ws, 'No valid symbols provided', 4004);
+                this.sendError(ws, 'No valid symbols provided', ERROR_CODES.INVALID_SYMBOLS);
                 return;
             }
 
@@ -69,23 +362,43 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
             validSymbols.forEach(({ symbol }) => userSubs.add(symbol));
 
             // Send initial state for each symbol
-            for (const { symbol } of validSymbols) {
-                await this.sendMarketData(ws, symbol);
-            }
+            await Promise.all(
+                validSymbols.map(({ symbol }) => this.sendMarketData(ws, symbol))
+            );
+
+            logApi.info('Client subscribed to symbols', {
+                userId: clientInfo.userId,
+                symbols: validSymbols.map(s => s.symbol)
+            });
 
         } catch (error) {
             logApi.error('Error in symbol subscription:', error);
-            this.sendError(ws, 'Failed to subscribe to market data', 5002);
+            this.sendError(ws, 'Failed to subscribe to market data', ERROR_CODES.SUBSCRIPTION_FAILED);
         }
     }
 
+    /**
+     * Handle symbol unsubscription request
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     * @param {string[]} symbols - Array of token symbols
+     */
     async handleSymbolUnsubscription(ws, clientInfo, symbols) {
         const userSubs = this.symbolSubscriptions.get(clientInfo.userId);
         if (userSubs) {
             symbols.forEach(symbol => userSubs.delete(symbol));
+            logApi.info('Client unsubscribed from symbols', {
+                userId: clientInfo.userId,
+                symbols
+            });
         }
     }
 
+    /**
+     * Send market data to client
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {string} symbol - Token symbol
+     */
     async sendMarketData(ws, symbol) {
         try {
             const [price, volume, sentiment] = await Promise.all([
@@ -97,14 +410,10 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
             // Send price data
             if (price) {
                 this.sendToClient(ws, {
-                    type: 'MARKET_PRICE',
+                    type: MESSAGE_TYPES.MARKET_PRICE,
                     data: {
                         symbol,
-                        price: price.current,
-                        change_24h: price.change_24h,
-                        volume_24h: price.volume_24h,
-                        high_24h: price.high_24h,
-                        low_24h: price.low_24h,
+                        ...price,
                         timestamp: new Date().toISOString()
                     }
                 });
@@ -113,14 +422,10 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
             // Send volume data
             if (volume) {
                 this.sendToClient(ws, {
-                    type: 'MARKET_VOLUME',
+                    type: MESSAGE_TYPES.MARKET_VOLUME,
                     data: {
                         symbol,
-                        volume: volume.total,
-                        trades_count: volume.trades_count,
-                        buy_volume: volume.buy_volume,
-                        sell_volume: volume.sell_volume,
-                        interval: volume.interval,
+                        ...volume,
                         timestamp: new Date().toISOString()
                     }
                 });
@@ -129,13 +434,10 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
             // Send sentiment data
             if (sentiment) {
                 this.sendToClient(ws, {
-                    type: 'MARKET_SENTIMENT',
+                    type: MESSAGE_TYPES.MARKET_SENTIMENT,
                     data: {
                         symbol,
-                        sentiment_score: sentiment.score,
-                        buy_pressure: sentiment.buy_pressure,
-                        sell_pressure: sentiment.sell_pressure,
-                        volume_trend: sentiment.volume_trend,
+                        ...sentiment,
                         timestamp: new Date().toISOString()
                     }
                 });
@@ -145,36 +447,85 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
         }
     }
 
+    /**
+     * Start market data streams
+     */
     startMarketDataStreams() {
-        // Update market data every 100ms (10 updates/second as per requirements)
+        // Update market data every 100ms (10 updates/second)
         setInterval(async () => {
-            const allSymbols = new Set();
-            this.symbolSubscriptions.forEach(symbols => {
-                symbols.forEach(symbol => allSymbols.add(symbol));
-            });
+            try {
+                const allSymbols = new Set();
+                this.symbolSubscriptions.forEach(symbols => {
+                    symbols.forEach(symbol => allSymbols.add(symbol));
+                });
 
-            for (const symbol of allSymbols) {
-                const clients = this._getConnectedClients()
-                    .filter(client => {
-                        const clientInfo = this._getClientInfo(client);
-                        return clientInfo && this.symbolSubscriptions.get(clientInfo.userId)?.has(symbol);
-                    });
+                for (const symbol of allSymbols) {
+                    const clients = this._getConnectedClients()
+                        .filter(client => {
+                            const clientInfo = this._getClientInfo(client);
+                            return clientInfo && this.symbolSubscriptions.get(clientInfo.userId)?.has(symbol);
+                        });
 
-                for (const client of clients) {
-                    await this.sendMarketData(client, symbol);
+                    await Promise.all(
+                        clients.map(client => this.sendMarketData(client, symbol))
+                    );
                 }
+            } catch (error) {
+                logApi.error('Error in market data stream:', error);
             }
         }, 100);
     }
 
+    /**
+     * Get server metrics
+     * @returns {Object} Server metrics
+     */
+    getMetrics() {
+        return {
+            metrics: {
+                totalConnections: this._getConnectedClients().length,
+                activeSubscriptions: Array.from(this.symbolSubscriptions.values()).reduce((total, symbols) => total + symbols.size, 0),
+                messageCount: 0,
+                errorCount: 0,
+                lastUpdate: new Date().toISOString(),
+                cacheHitRate: 0,
+                averageLatency: 0
+            },
+            performance: {
+                messageRate: 0,
+                errorRate: 0,
+                latencyTrend: []
+            },
+            status: 'operational'
+        };
+    }
+
+    /**
+     * Clean up resources
+     */
     cleanup() {
         this.symbolSubscriptions.clear();
+        this.marketDataService.cleanup();
         super.cleanup();
+        logApi.info('Market Data WebSocket server cleaned up');
     }
 }
 
+// Singleton instance
+let instance = null;
+
+/**
+ * Create or return existing MarketDataWebSocketServer instance
+ * @param {http.Server} httpServer - HTTP server instance
+ * @returns {MarketDataWebSocketServer} WebSocket server instance
+ */
 export function createMarketDataWebSocket(httpServer) {
-    return new MarketDataWebSocketServer(httpServer);
+    if (!instance) {
+        instance = new MarketDataWebSocketServer(httpServer);
+    }
+    return instance;
 }
 
-export default MarketDataWebSocketServer; 
+// Export both the class and the instance
+export { MarketDataWebSocketServer };
+export default instance; 

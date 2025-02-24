@@ -7,7 +7,7 @@
  */
 
 // Master Circuit Breaker
-import { createCircuitBreakerWebSocket } from '../websocket-suite/circuit-breaker-ws.js';
+import { createCircuitBreakerWebSocket } from '../../websocket/circuit-breaker-ws.js';
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
 import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';

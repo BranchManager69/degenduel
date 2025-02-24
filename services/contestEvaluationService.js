@@ -7,7 +7,7 @@
  */
 
 // ** Service Auth **
-import { generateServiceAuthHeader } from '../config/service-auth.js';
+//import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
@@ -23,7 +23,7 @@ import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transa
 import bs58 from 'bs58';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
-import marketDataService from './marketDataService.js';
+//import marketDataService from './marketDataService.js';
 
 const CONTEST_EVALUATION_CONFIG = {
     name: SERVICE_NAMES.CONTEST_EVALUATION,
@@ -663,37 +663,17 @@ class ContestEvaluationService extends BaseService {
 
             // Get all participants ordered by performance
             const participants = await prisma.contest_participants.findMany({
-                where: {
-                    contest_id: contest.id
-                },
+                where: { contest_id: contest.id },
                 include: {
                     trades: {
-                        orderBy: {
-                            created_at: 'asc'
-                        }
+                        orderBy: { created_at: 'asc' }
                     }
                 }
             });
 
+            // Handle no participants case
             if (participants.length === 0) {
-                logApi.warn(`No participants found for contest ${contest.id}`);
-                // Update contest status to indicate no participants
-                await prisma.contests.update({
-                    where: { id: contest.id },
-                    data: { 
-                        status: 'completed'
-                    }
-                });
-
-                await AdminLogger.logAction(
-                    'SYSTEM',
-                    AdminLogger.Actions.CONTEST.END,
-                    {
-                        contest_id: contest.id,
-                        reason: `${contest.contest_name} completed with no participants`
-                    }
-                );
-
+                await this.handleNoParticipants(contest);
                 return {
                     status: 'completed',
                     message: 'Contest had no participants'
@@ -703,27 +683,7 @@ class ContestEvaluationService extends BaseService {
             // Check minimum participants requirement
             const minParticipants = contest.settings?.minimum_participants || 1;
             if (participants.length < minParticipants) {
-                logApi.warn(`Insufficient participants for contest ${contest.id}. Required: ${minParticipants}, Got: ${participants.length}`);
-                
-                await prisma.contests.update({
-                    where: { id: contest.id },
-                    data: { 
-                        status: 'cancelled',
-                        cancellation_reason: `Contest cancelled due to insufficient participants (${participants.length}/${minParticipants})`
-                    }
-                });
-
-                await AdminLogger.logAction(
-                    'SYSTEM',
-                    AdminLogger.Actions.CONTEST.CANCEL,
-                    {
-                        contest_id: contest.id,
-                        required_participants: minParticipants,
-                        actual_participants: participants.length,
-                        reason: `Cancelled ${contest.contest_name} due to insufficient participants (${participants.length}/${minParticipants})`
-                    }
-                );
-
+                await this.handleInsufficientParticipants(contest, participants.length, minParticipants);
                 return {
                     status: 'cancelled',
                     message: `Insufficient participants (${participants.length}/${minParticipants})`
@@ -734,163 +694,27 @@ class ContestEvaluationService extends BaseService {
             const resolvedParticipants = await this.groupParticipantsByBalance(participants);
 
             // Store tie-break details for transparency
-            const tieBreakDetails = [];
-            let lastBalance = null;
-            
-            // Use Promise.all for parallel processing of tie-break stats
-            const tieBreakPromises = [];
-            resolvedParticipants.forEach((participant, index) => {
-                if (lastBalance && participant.current_balance.eq(lastBalance)) {
-                    tieBreakPromises.push(
-                        this.getParticipantTiebreakStats(participant, contest)
-                        .then(metrics => ({
-                            wallet_address: participant.wallet_address,
-                            rank: index + 1,
-                            metrics
-                        }))
-                    );
-                }
-                lastBalance = participant.current_balance;
-            });
+            await this.recordTieBreakDetails(contest, resolvedParticipants);
 
-            const tieBreakMetrics = await Promise.all(tieBreakPromises);
-            tieBreakDetails.push(...tieBreakMetrics);
+            // Calculate prize pool and platform fee
+            const { actualPrizePool, platformFeeAmount } = this.calculatePrizePoolAndFee(contest);
 
-            if (tieBreakDetails.length > 0) {
-                await prisma.contests.update({
-                    where: { id: contest.id },
-                    data: {
-                        tie_break_details: tieBreakDetails
-                    }
-                });
-            }
+            // Get and validate contest wallet
+            const contestWallet = await this.getAndValidateContestWallet(contest, actualPrizePool, platformFeeAmount);
 
-            // Get contest wallet and validate balance before proceeding
-            const contestWallet = await prisma.contest_wallets.findUnique({
-                where: { contest_id: contest.id }
-            });
-
-            if (!contestWallet) {
-                throw new Error(`No wallet found for contest ${contest.id}`);
-            }
-
-            // Calculate actual prize pool after DegenDuel platform fee
-            const platformFeePercentage = new Decimal(this.config.platformFee);
-            const actualPrizePool = contest.prize_pool.mul(new Decimal('1').sub(platformFeePercentage));
-            const platformFeeAmount = contest.prize_pool.mul(platformFeePercentage);
-
-            // Calculate total prize pool needed
-            let totalPrizeNeeded = new Decimal(0);
-            for (let i = 1; i <= Math.min(3, participants.length); i++) {
-                const placeKey = `place_${i}`;
-                const prizePercentage = payout_structure[placeKey] || 0;
-                totalPrizeNeeded = totalPrizeNeeded.add(actualPrizePool.mul(prizePercentage));
-            }
-
-            // Validate wallet has sufficient balance for prizes and platform fee
-            const balanceValidation = await this.validateContestWalletBalance(
+            // Distribute prizes to winners
+            const prizeDistributionResults = await this.distributePrizes(
+                contest,
                 contestWallet,
-                totalPrizeNeeded.add(platformFeeAmount).toNumber()
+                resolvedParticipants,
+                actualPrizePool,
+                payout_structure
             );
 
-            logApi.info(`Contest wallet balance validated`, {
-                contest_id: contest.id,
-                wallet: contestWallet.wallet_address,
-                actualPrizePool: actualPrizePool.toString(),
-                platformFee: platformFeeAmount.toString(),
-                ...balanceValidation
-            });
+            // Record platform fee for rake service to collect later
+            await this.recordPlatformFee(contest, platformFeeAmount);
 
-            // If contest involves SPL tokens, validate those balances too
-            if (contest.token_mint) {
-                await this.validateTokenBalance(
-                    contestWallet,
-                    contest.token_mint,
-                    totalPrizeNeeded.add(platformFeeAmount).toNumber()
-                );
-            }
-
-            // Calculate and distribute prizes using resolved order
-            const prizeDistributionResults = [];
-            for (let i = 0; i < Math.min(3, resolvedParticipants.length); i++) {
-                const participant = resolvedParticipants[i];
-                const place = i + 1;
-                const placeKey = `place_${place}`;
-                const prizePercentage = payout_structure[placeKey] || 0;
-                const prizeAmount = actualPrizePool.mul(prizePercentage);
-
-                if (prizeAmount.gt(0)) {
-                    try {
-                        await this.distributePrizeWithRetry(participant, place, prizeAmount, contest);
-                        prizeDistributionResults.push({
-                            place,
-                            wallet: participant.wallet_address,
-                            amount: prizeAmount.toString(),
-                            status: 'success'
-                        });
-                    } catch (error) {
-                        prizeDistributionResults.push({
-                            place,
-                            wallet: participant.wallet_address,
-                            amount: prizeAmount.toString(),
-                            status: 'failed',
-                            error: error.message
-                        });
-                    }
-                }
-            }
-
-            const autoTransfer = true;
-
-            // After all prizes are distributed, attempt to transfer platform fee; if this fails, the rake service will collect it later
-            if (autoTransfer) {
-                try {
-                    const masterWallet = config.master_wallet.address;
-                    const platformFeeSignature = await this.performBlockchainTransfer(
-                        contestWallet,
-                        masterWallet,
-                        platformFeeAmount.toNumber()
-                    );
-
-                    // Log the platform fee transaction
-                    await prisma.transactions.create({
-                        data: {
-                            wallet_address: contestWallet.wallet_address,
-                            type: config.transaction_types.PLATFORM_FEE,
-                            amount: platformFeeAmount,
-                            description: `Platform fee for contest ${contest.contest_code}`,
-                            status: config.transaction_statuses.COMPLETED,
-                            blockchain_signature: platformFeeSignature,
-                            contest_id: contest.id,
-                            completed_at: new Date(),
-                            created_at: new Date()
-                        }
-                    });
-                } catch (error) {
-                    // Log the failed attempt to transfer platform fee, but continue with contest completion; the rake service will collect this fee later
-                    logApi.warn(`Platform fee transfer failed! Hopefully the rake service will collect it later`, {
-                        contest_id: contest.id,
-                        amount: platformFeeAmount.toString(),
-                        error: error.message
-                    });
-                }
-
-                // Log the successful platform fee transfer
-                logApi.info(`Platform fee transferred successfully`, {
-                    contest_id: contest.id,
-                    amount: platformFeeAmount.toString(),
-                    signature: platformFeeSignature
-                });
-
-            } else {
-                // Log the unattempted platform fee transfer, and continue with contest completion; the rake service will collect this fee later
-                logApi.warn(`Deferring platform fee transfer to rake service`, {
-                    contest_id: contest.id,
-                    amount: platformFeeAmount.toString()
-                });
-            }
-
-            // Update the contest status regardless of platform fee transfer
+            // Update contest status to completed
             await prisma.contests.update({
                 where: { id: contest.id },
                 data: { 
@@ -899,26 +723,9 @@ class ContestEvaluationService extends BaseService {
                 }
             });
 
-            await AdminLogger.logAction(
-                'SYSTEM',
-                AdminLogger.Actions.CONTEST.END,
-                {
-                    contest_id: contest.id,
-                    prize_distributions: prizeDistributionResults,
-                    platform_fee: platformFeeAmount.toString(),
-                    status: prizeDistributionResults.some(r => r.status === 'failed') 
-                        ? 'completed_with_failures'
-                        : 'completed_successfully'
-                }
-            );
+            // Log completion
+            await this.logContestCompletion(contest, prizeDistributionResults, platformFeeAmount);
 
-            // Log the successful contest evaluation
-            logApi.info(`Contest ${contest.id} evaluated successfully`, {
-                prizeDistributions: prizeDistributionResults,
-                platformFee: platformFeeAmount.toString()
-            });
-
-            // Return the successful contest evaluation
             return {
                 status: 'success',
                 message: `Contest ${contest.id} evaluated and prizes distributed`,
@@ -929,6 +736,168 @@ class ContestEvaluationService extends BaseService {
             logApi.error(`Failed to evaluate contest ${contest.id}: ${error.message}`);
             throw error;
         }
+    }
+
+    // Helper methods for contest evaluation
+    async handleNoParticipants(contest) {
+        await prisma.contests.update({
+            where: { id: contest.id },
+            data: { status: 'completed' }
+        });
+
+        await AdminLogger.logAction(
+            'SYSTEM',
+            AdminLogger.Actions.CONTEST.END,
+            {
+                contest_id: contest.id,
+                reason: `${contest.contest_name} completed with no participants`
+            }
+        );
+    }
+
+    async handleInsufficientParticipants(contest, actualCount, requiredCount) {
+        await prisma.contests.update({
+            where: { id: contest.id },
+            data: { 
+                status: 'cancelled',
+                cancellation_reason: `Contest cancelled due to insufficient participants (${actualCount}/${requiredCount})`
+            }
+        });
+
+        await AdminLogger.logAction(
+            'SYSTEM',
+            AdminLogger.Actions.CONTEST.CANCEL,
+            {
+                contest_id: contest.id,
+                required_participants: requiredCount,
+                actual_participants: actualCount,
+                reason: `Cancelled ${contest.contest_name} due to insufficient participants (${actualCount}/${requiredCount})`
+            }
+        );
+    }
+
+    calculatePrizePoolAndFee(contest) {
+        const platformFeePercentage = new Decimal(this.config.platformFee);
+        const actualPrizePool = contest.prize_pool.mul(new Decimal('1').sub(platformFeePercentage));
+        const platformFeeAmount = contest.prize_pool.mul(platformFeePercentage);
+
+        return { actualPrizePool, platformFeeAmount };
+    }
+
+    async getAndValidateContestWallet(contest, actualPrizePool, platformFeeAmount) {
+        const contestWallet = await prisma.contest_wallets.findUnique({
+            where: { contest_id: contest.id }
+        });
+
+        if (!contestWallet) {
+            throw new Error(`No wallet found for contest ${contest.id}`);
+        }
+
+        // Calculate total prize pool needed
+        let totalPrizeNeeded = new Decimal(0);
+        for (let i = 1; i <= 3; i++) {
+            const placeKey = `place_${i}`;
+            const prizePercentage = contest.settings?.payout_structure[placeKey] || 0;
+            totalPrizeNeeded = totalPrizeNeeded.add(actualPrizePool.mul(prizePercentage));
+        }
+
+        // Validate wallet balance
+        const balanceValidation = await this.validateContestWalletBalance(
+            contestWallet,
+            totalPrizeNeeded.add(platformFeeAmount).toNumber()
+        );
+
+        logApi.info(`Contest wallet balance validated`, {
+            contest_id: contest.id,
+            wallet: contestWallet.wallet_address,
+            actualPrizePool: actualPrizePool.toString(),
+            platformFee: platformFeeAmount.toString(),
+            ...balanceValidation
+        });
+
+        // Validate SPL token balance if needed
+        if (contest.token_mint) {
+            await this.validateTokenBalance(
+                contestWallet,
+                contest.token_mint,
+                totalPrizeNeeded.add(platformFeeAmount).toNumber()
+            );
+        }
+
+        return contestWallet;
+    }
+
+    async distributePrizes(contest, contestWallet, resolvedParticipants, actualPrizePool, payout_structure) {
+        const prizeDistributionResults = [];
+
+        for (let i = 0; i < Math.min(3, resolvedParticipants.length); i++) {
+            const participant = resolvedParticipants[i];
+            const place = i + 1;
+            const placeKey = `place_${place}`;
+            const prizePercentage = payout_structure[placeKey] || 0;
+            const prizeAmount = actualPrizePool.mul(prizePercentage);
+
+            if (prizeAmount.gt(0)) {
+                try {
+                    await this.distributePrizeWithRetry(participant, place, prizeAmount, contest);
+                    prizeDistributionResults.push({
+                        place,
+                        wallet: participant.wallet_address,
+                        amount: prizeAmount.toString(),
+                        status: 'success'
+                    });
+                } catch (error) {
+                    prizeDistributionResults.push({
+                        place,
+                        wallet: participant.wallet_address,
+                        amount: prizeAmount.toString(),
+                        status: 'failed',
+                        error: error.message
+                    });
+                }
+            }
+        }
+
+        return prizeDistributionResults;
+    }
+
+    async recordPlatformFee(contest, platformFeeAmount) {
+        // Create a pending platform fee transaction record
+        await prisma.transactions.create({
+            data: {
+                type: config.transaction_types.PLATFORM_FEE,
+                amount: platformFeeAmount,
+                description: `Platform fee for contest ${contest.contest_code} (pending collection by rake service)`,
+                status: config.transaction_statuses.PENDING,
+                contest_id: contest.id,
+                created_at: new Date()
+            }
+        });
+
+        logApi.info(`Platform fee recorded for rake service collection`, {
+            contest_id: contest.id,
+            amount: platformFeeAmount.toString()
+        });
+    }
+
+    async logContestCompletion(contest, prizeDistributionResults, platformFeeAmount) {
+        await AdminLogger.logAction(
+            'SYSTEM',
+            AdminLogger.Actions.CONTEST.END,
+            {
+                contest_id: contest.id,
+                prize_distributions: prizeDistributionResults,
+                platform_fee: platformFeeAmount.toString(),
+                status: prizeDistributionResults.some(r => r.status === 'failed') 
+                    ? 'completed_with_failures'
+                    : 'completed_successfully'
+            }
+        );
+
+        logApi.info(`Contest ${contest.id} evaluated successfully`, {
+            prizeDistributions: prizeDistributionResults,
+            platformFee: platformFeeAmount.toString()
+        });
     }
 
     // Helper function to process refunds
@@ -1226,12 +1195,10 @@ class ContestEvaluationService extends BaseService {
     }
 }
 
+//// ----------------- old:
+//// Export service singleton
+////export default contestEvaluationService;
+
 // Create and export an instance of the service
 const contestEvaluationService = new ContestEvaluationService();
 export default contestEvaluationService;
-
-
-
-//// -------------------------------------
-//// Export service singleton
-////export default contestEvaluationService;
