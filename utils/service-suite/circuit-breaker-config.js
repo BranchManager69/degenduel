@@ -158,10 +158,17 @@ export function shouldReset(stats, config = DEFAULT_CIRCUIT_BREAKER_CONFIG) {
 }
 
 export function calculateBackoffDelay(recoveryAttempts, config = DEFAULT_CIRCUIT_BREAKER_CONFIG) {
-    return Math.min(
-        config.resetTimeoutMs * Math.pow(config.backoffMultiplier, recoveryAttempts),
-        config.monitoringWindowMs
+    // Ensure minimum delay of 1 second
+    const minDelay = 1000;
+    
+    // Calculate exponential backoff with minimum bound
+    const backoffDelay = Math.max(
+        minDelay,
+        config.resetTimeoutMs * Math.pow(config.backoffMultiplier || 2, recoveryAttempts || 0)
     );
+    
+    // Cap at monitoring window
+    return Math.min(backoffDelay, config.monitoringWindowMs || 300000);
 }
 
 export function getCircuitBreakerStatus(stats) {
