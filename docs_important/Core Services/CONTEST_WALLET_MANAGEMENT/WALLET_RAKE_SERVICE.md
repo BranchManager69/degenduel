@@ -217,7 +217,7 @@ if (rakeAmount < (config.wallet.min_rake_amount * LAMPORTS_PER_SOL)) {
 ```javascript
 {
     wallet_address: String,
-    type: "CONTEST_WALLET_RAKE",
+    type: "WITHDRAWAL",
     amount: Number,
     balance_before: Number,
     balance_after: Number,
