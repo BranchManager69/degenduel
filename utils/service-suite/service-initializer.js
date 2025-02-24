@@ -18,7 +18,7 @@ import referralService from '../../services/referralService.js';
 import tokenSyncService from '../../services/tokenSyncService.js';
 import tokenWhitelistService from '../../services/tokenWhitelistService.js';
 import walletRakeService from '../../services/walletRakeService.js';
-import faucetService from '../../services/faucetService.js';
+import liquidityService from '../../services/liquidityService.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
 
 class ServiceInitializer {
@@ -30,8 +30,8 @@ class ServiceInitializer {
             logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
             logApi.info('Attempting to register walletGeneratorService...');
             serviceManager.register(walletGeneratorService);
-            logApi.info('Attempting to register faucetService...');
-            serviceManager.register(faucetService, [SERVICE_NAMES.WALLET_GENERATOR]);
+            logApi.info('Attempting to register liquidityService...');
+            serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
             logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ Infrastructure Services Registered\x1b[0m');
 
             // Data Layer
@@ -96,7 +96,7 @@ class ServiceInitializer {
 
     static registerDependencies() {
         // Infrastructure Layer Dependencies
-        serviceManager.addDependency(SERVICE_NAMES.FAUCET, SERVICE_NAMES.WALLET_GENERATOR);
+        serviceManager.addDependency(SERVICE_NAMES.LIQUIDITY, SERVICE_NAMES.WALLET_GENERATOR);
 
         // Data Layer Dependencies
         serviceManager.addDependency(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
