@@ -36,6 +36,7 @@ import { createPortfolioWebSocket } from './websocket/portfolio-ws.js';
 import { createMarketDataWebSocket } from './websocket/market-ws.js';
 import { createWalletWebSocket } from './websocket/wallet-ws.js';
 import { createContestWebSocket } from './websocket/contest-ws.js';
+import { createTokenDataWebSocket } from './websocket/token-data-ws.js';
 // Import WebSocket test routes
 import websocketTestRoutes from './routes/admin/websocket-test.js';
 // Import Circuit Breaker routes
@@ -78,7 +79,8 @@ try {
         market: createMarketDataWebSocket(server),
         portfolio: createPortfolioWebSocket(server),
         wallet: createWalletWebSocket(server),
-        contest: createContestWebSocket(server)
+        contest: createContestWebSocket(server),
+        tokenData: createTokenDataWebSocket(server)
     };
 
     // Add debug logging for contest server
@@ -570,7 +572,8 @@ async function initializeServer() {
                 market: createMarketDataWebSocket(server),
                 portfolio: createPortfolioWebSocket(server),
                 wallet: createWalletWebSocket(server),
-                contest: createContestWebSocket(server)
+                contest: createContestWebSocket(server),
+                tokenData: createTokenDataWebSocket(server)
             };
 
             // Add debug logging for contest server
