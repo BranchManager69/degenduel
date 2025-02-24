@@ -170,10 +170,18 @@ class AdminWalletService extends BaseService {
                 wallets: {
                     total: totalWallets,
                     active: activeWallets,
-                    processing: 0
+                    processing: 0,
+                    updated: 0
+                },
+                balance_updates: {
+                    total: 0,
+                    successful: 0,
+                    failed: 0,
+                    last_update: null
                 },
                 performance: {
                     average_transfer_time_ms: 0,
+                    average_balance_update_time_ms: 0,
                     last_operation_time_ms: 0
                 }
             };
@@ -736,6 +744,192 @@ class AdminWalletService extends BaseService {
             logApi.info('Admin Wallet Service stopped successfully');
         } catch (error) {
             logApi.error('Error stopping Admin Wallet Service:', error);
+            throw error;
+        }
+    }
+    
+    // Fetch and update Solana balance for a managed wallet
+    async updateWalletBalance(wallet) {
+        try {
+            const startTime = Date.now();
+            
+            // Skip if no wallet address
+            if (!wallet.public_key) {
+                return {
+                    success: false,
+                    error: 'No wallet address provided'
+                };
+            }
+            
+            // Get current Solana balance
+            const publicKey = new PublicKey(wallet.public_key);
+            const lamports = await this.connection.getBalance(publicKey);
+            const solBalance = lamports / LAMPORTS_PER_SOL;
+            
+            // Update wallet metadata with balance info in database
+            const currentMetadata = wallet.metadata || {};
+            const updatedMetadata = {
+                ...currentMetadata,
+                balance: {
+                    sol: solBalance,
+                    last_updated: new Date().toISOString()
+                }
+            };
+            
+            await prisma.managed_wallets.update({
+                where: { id: wallet.id },
+                data: {
+                    metadata: updatedMetadata,
+                    updated_at: new Date()
+                }
+            });
+            
+            // Update stats
+            this.walletStats.balance_updates.total++;
+            this.walletStats.balance_updates.successful++;
+            this.walletStats.balance_updates.last_update = new Date().toISOString();
+            this.walletStats.wallets.updated++;
+            
+            // Update performance metrics
+            const duration = Date.now() - startTime;
+            this.walletStats.performance.average_balance_update_time_ms = 
+                (this.walletStats.performance.average_balance_update_time_ms * 
+                 (this.walletStats.balance_updates.total - 1) + duration) / 
+                this.walletStats.balance_updates.total;
+            
+            // Get previous balance for comparison
+            const previousBalance = currentMetadata?.balance?.sol || 0;
+            
+            return {
+                success: true,
+                wallet_id: wallet.id,
+                public_key: wallet.public_key,
+                label: wallet.label,
+                previous_balance: previousBalance,
+                current_balance: solBalance,
+                difference: solBalance - previousBalance
+            };
+        } catch (error) {
+            // Update error stats
+            this.walletStats.balance_updates.failed++;
+            
+            logApi.error('Failed to update admin wallet balance', {
+                wallet_id: wallet.id,
+                public_key: wallet.public_key,
+                error: error.message,
+                stack: error.stack
+            });
+            
+            return {
+                success: false,
+                wallet_id: wallet.id,
+                public_key: wallet.public_key,
+                error: error.message
+            };
+        }
+    }
+    
+    // Bulk update all managed wallets' balances
+    async updateAllWalletBalances() {
+        const startTime = Date.now();
+        try {
+            // Get all managed wallets
+            const managedWallets = await prisma.managed_wallets.findMany({
+                where: {
+                    status: 'active'
+                }
+            });
+            
+            const results = {
+                total: managedWallets.length,
+                updated: 0,
+                failed: 0,
+                updates: []
+            };
+            
+            // Update each wallet's balance
+            for (const wallet of managedWallets) {
+                try {
+                    // Update balance
+                    const updateResult = await this.updateWalletBalance(wallet);
+                    
+                    if (updateResult.success) {
+                        results.updated++;
+                        
+                        // Only add significant balance changes to the results
+                        if (Math.abs(updateResult.difference) > 0.001) {
+                            results.updates.push(updateResult);
+                        }
+                    } else {
+                        results.failed++;
+                    }
+                } catch (error) {
+                    results.failed++;
+                    logApi.error('Error updating individual admin wallet balance', {
+                        wallet_id: wallet.id,
+                        public_key: wallet.public_key,
+                        error: error.message
+                    });
+                }
+            }
+            
+            // Update overall performance stats
+            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
+            
+            return {
+                duration: Date.now() - startTime,
+                ...results
+            };
+        } catch (error) {
+            logApi.error('Failed to update admin wallet balances', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    }
+    
+    // Main operation implementation - periodic health checks and balance updates
+    async performOperation() {
+        const startTime = Date.now();
+        
+        try {
+            // Check dependency health
+            const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
+            this.walletStats.dependencies.contestWallet = {
+                status: contestWalletStatus ? 'healthy' : 'degraded',
+                lastCheck: new Date().toISOString(),
+                errors: contestWalletStatus ? 0 : this.walletStats.dependencies.contestWallet.errors + 1
+            };
+            
+            if (!contestWalletStatus) {
+                logApi.warn('Contest Wallet Service unhealthy, operating in limited mode');
+            }
+            
+            // Get managed wallets state
+            const [totalWallets, activeWallets] = await Promise.all([
+                prisma.managed_wallets.count(),
+                prisma.managed_wallets.count({ where: { status: 'active' } })
+            ]);
+            
+            // Update stats
+            this.walletStats.wallets.total = totalWallets;
+            this.walletStats.wallets.active = activeWallets;
+            
+            // Update all wallet balances
+            const balanceUpdateResults = await this.updateAllWalletBalances();
+            
+            return {
+                duration: Date.now() - startTime,
+                wallets: {
+                    total: totalWallets,
+                    active: activeWallets
+                },
+                balance_updates: balanceUpdateResults
+            };
+        } catch (error) {
+            logApi.error('Admin wallet service operation failed:', error);
+            await this.handleError(error);
             throw error;
         }
     }
