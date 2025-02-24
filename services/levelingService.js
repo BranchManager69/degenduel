@@ -16,7 +16,7 @@ const LEVELING_SERVICE_CONFIG = {
         resetTimeoutMs: 70000,
         minHealthyPeriodMs: 120000
     },
-    dependencies: [SERVICE_NAMES.ACHIEVEMENT]
+    dependencies: [] // Removed dependency on ACHIEVEMENT
 };
 
 class LevelingService extends BaseService {
