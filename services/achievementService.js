@@ -440,9 +440,104 @@ class AchievementService extends BaseService {
     }
 
     async checkRequirement(user, requirement) {
-        // Implementation will vary based on requirement type
-        // This is a placeholder for the actual implementation
-        return false;
+        const startTime = Date.now();
+        
+        try {
+            switch (requirement.type) {
+                case 'CONTESTS_ENTERED':
+                    const contestCount = await prisma.contest_participants.count({
+                        where: { wallet_address: user.wallet_address }
+                    });
+                    return contestCount >= requirement.value;
+
+                case 'CONTESTS_WON':
+                    const winCount = await prisma.contest_participants.count({
+                        where: {
+                            wallet_address: user.wallet_address,
+                            final_rank: 1
+                        }
+                    });
+                    return winCount >= requirement.value;
+
+                case 'TOTAL_PROFIT':
+                    const profitStats = await prisma.user_stats.findUnique({
+                        where: { wallet_address: user.wallet_address },
+                        select: { total_profit: true }
+                    });
+                    return profitStats?.total_profit >= requirement.value;
+
+                case 'TRADING_VOLUME':
+                    const volumeStats = await prisma.user_stats.findUnique({
+                        where: { wallet_address: user.wallet_address },
+                        select: { total_volume: true }
+                    });
+                    return volumeStats?.total_volume >= requirement.value;
+
+                case 'CONSECUTIVE_WINS':
+                    const recentContests = await prisma.contest_participants.findMany({
+                        where: { wallet_address: user.wallet_address },
+                        orderBy: { contest_end: 'desc' },
+                        take: requirement.value,
+                        select: { final_rank: true }
+                    });
+                    return recentContests.length >= requirement.value && 
+                           recentContests.every(c => c.final_rank === 1);
+
+                case 'SOCIAL_ENGAGEMENT':
+                    const socialProfiles = await prisma.user_social_profiles.count({
+                        where: {
+                            wallet_address: user.wallet_address,
+                            verified: true
+                        }
+                    });
+                    return socialProfiles >= requirement.value;
+
+                case 'REFERRALS':
+                    const referralCount = await prisma.referrals.count({
+                        where: {
+                            referrer_id: user.wallet_address,
+                            status: 'qualified'
+                        }
+                    });
+                    return referralCount >= requirement.value;
+
+                case 'TOKENS_TRADED':
+                    const uniqueTokens = await prisma.contest_portfolios.count({
+                        where: { wallet_address: user.wallet_address },
+                        distinct: ['token_id']
+                    });
+                    return uniqueTokens >= requirement.value;
+
+                case 'EXPERIENCE_POINTS':
+                    return user.experience_points >= requirement.value;
+
+                case 'ACHIEVEMENT_COUNT':
+                    const achievementCount = await prisma.user_achievements.count({
+                        where: {
+                            wallet_address: user.wallet_address,
+                            category: requirement.category
+                        }
+                    });
+                    return achievementCount >= requirement.value;
+
+                default:
+                    logApi.warn('Unknown achievement requirement type:', requirement.type);
+                    return false;
+            }
+        } catch (error) {
+            logApi.error('Achievement requirement check failed:', {
+                user_id: user.wallet_address,
+                requirement: requirement,
+                error: error.message
+            });
+            return false;
+        } finally {
+            // Update performance metrics
+            const duration = Date.now() - startTime;
+            this.achievementStats.performance.average_check_time_ms = 
+                (this.achievementStats.performance.average_check_time_ms * this.achievementStats.checks.total + duration) 
+                / (this.achievementStats.checks.total + 1);
+        }
     }
 
     async stop() {
