@@ -37,7 +37,7 @@ const ACHIEVEMENT_SERVICE_CONFIG = {
         maxDelayMs: 30000,
         factor: 2
     },
-    dependencies: [SERVICE_NAMES.CONTEST_EVALUATION],
+    dependencies: [], // Removed dependency on CONTEST_EVALUATION
     achievement: {
         batchSize: 100,
         maxParallelChecks: 5,
@@ -101,10 +101,10 @@ class AchievementService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
-            // Check dependencies
+            // Soft check for contest evaluation service - no longer a hard dependency
             const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             if (!contestEvalStatus) {
-                throw ServiceError.initialization('Contest Evaluation Service not healthy');
+                logApi.warn('Contest Evaluation Service not healthy, but continuing initialization');
             }
 
             // Load configuration from database
@@ -195,16 +195,17 @@ class AchievementService extends BaseService {
         const startTime = Date.now();
         
         try {
-            // Check dependency health
+            // Soft check of contest evaluation - not a hard dependency anymore
             const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             this.achievementStats.dependencies.contestEvaluation = {
-                status: contestEvalStatus ? 'healthy' : 'unhealthy',
+                status: contestEvalStatus ? 'healthy' : 'degraded',
                 lastCheck: new Date().toISOString(),
                 errors: contestEvalStatus ? 0 : this.achievementStats.dependencies.contestEvaluation.errors + 1
             };
 
             if (!contestEvalStatus) {
-                throw ServiceError.dependency('Contest Evaluation Service unhealthy');
+                logApi.warn('Contest Evaluation Service unhealthy, operating in limited mode');
+                // Continue operation instead of throwing error
             }
 
             // Process achievements in batches
