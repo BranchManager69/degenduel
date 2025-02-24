@@ -242,19 +242,11 @@ class AchievementService extends BaseService {
             // Get users who need achievement checks
             const users = await prisma.users.findMany({
                 where: {
-                    OR: [
-                        { last_achievement_check: null },
-                        {
-                            last_achievement_check: {
-                                lt: new Date(Date.now() - this.config.achievement.minCheckInterval)
-                            }
-                        }
-                    ]
+                    user_achievements: {
+                        none: {}
+                    }
                 },
-                take: this.config.achievement.batchSize,
-                orderBy: {
-                    last_achievement_check: 'asc'
-                }
+                take: this.config.achievement.batchSize
             });
 
             const results = {
