@@ -55,7 +55,9 @@ class MarketDataService {
         this.priceCache = new Map();
         this.volumeCache = new Map();
         this.sentimentCache = new Map();
-        this.updateInterval = 100; // 100ms update interval
+        this.updateInterval = 2000; // Reduced from 100ms to 2s to avoid hammering DD-serve
+        this.lastDDServError = null;
+        this.ddServFailedAttempts = 0;
         
         this.startDataUpdates();
     }
@@ -67,8 +69,18 @@ class MarketDataService {
      */
     async getPrice(symbol) {
         try {
-            if (this.priceCache.has(symbol)) {
+            // Always return cached data if available and DD-serve is having issues
+            if (this.lastDDServError && this.priceCache.has(symbol)) {
                 return this.priceCache.get(symbol);
+            }
+
+            // Check if we should attempt DD-serve request
+            if (this.lastDDServError) {
+                const timeSinceError = Date.now() - this.lastDDServError;
+                if (timeSinceError < Math.min(30000, Math.pow(2, this.ddServFailedAttempts) * 1000)) {
+                    // Still in backoff period, use cache
+                    return this.priceCache.get(symbol) || null;
+                }
             }
 
             const price = await prisma.token_prices.findFirst({
@@ -85,12 +97,23 @@ class MarketDataService {
                     low_24h: price.low_24h,
                     timestamp: price.timestamp
                 });
+                // Reset DD-serve error state on success
+                this.lastDDServError = null;
+                this.ddServFailedAttempts = 0;
             }
 
             return this.priceCache.get(symbol);
         } catch (error) {
-            logApi.error('Error fetching price data:', error);
-            return null;
+            // Track DD-serve failures for backoff
+            this.lastDDServError = Date.now();
+            this.ddServFailedAttempts++;
+            logApi.error('Error fetching price data:', {
+                error: error.message,
+                failedAttempts: this.ddServFailedAttempts,
+                nextRetryIn: Math.pow(2, this.ddServFailedAttempts)
+            });
+            // Return cached data if available
+            return this.priceCache.get(symbol) || null;
         }
     }
 
