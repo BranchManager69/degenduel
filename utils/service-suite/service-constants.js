@@ -28,16 +28,12 @@ export const SERVICE_NAMES = {
 
     // Wallet Layer Services
     CONTEST_WALLET: 'contest_wallet_service',
-    VANITY_WALLET: 'vanity_wallet_service',
     WALLET_RAKE: 'wallet_rake_service',
     ADMIN_WALLET: 'admin_wallet_service',
 
     // Infrastructure Layer Services
     FAUCET: 'faucet_service',
-    WALLET_GENERATOR: 'wallet_generator_service',
-
-    //// Auth Layer Services
-    ////AUTH: 'auth_service'
+    WALLET_GENERATOR: 'wallet_generator_service'
 };
 
 export const SERVICE_LAYERS = {
@@ -52,22 +48,22 @@ export const SERVICE_METADATA = {
     // Data Layer Services
     [SERVICE_NAMES.TOKEN_SYNC]: {
         layer: SERVICE_LAYERS.DATA,
-        description: 'External token data synchronization',
-        updateFrequency: '30s',
+        description: 'Token balance synchronization',
+        updateFrequency: '5m',
         criticalLevel: 'high',
         dependencies: []
     },
     [SERVICE_NAMES.MARKET_DATA]: {
         layer: SERVICE_LAYERS.DATA,
-        description: 'Internal market data provider',
-        updateFrequency: '100ms',
+        description: 'Market price data aggregation',
+        updateFrequency: '1m',
         criticalLevel: 'critical',
         dependencies: [SERVICE_NAMES.TOKEN_SYNC]
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         layer: SERVICE_LAYERS.DATA,
         description: 'Token whitelist management',
-        updateFrequency: 'on demand',
+        updateFrequency: '1h',
         criticalLevel: 'medium',
         dependencies: []
     },
@@ -75,22 +71,22 @@ export const SERVICE_METADATA = {
     // Contest Layer Services
     [SERVICE_NAMES.CONTEST_EVALUATION]: {
         layer: SERVICE_LAYERS.CONTEST,
-        description: 'Contest lifecycle and evaluation',
-        updateFrequency: 'on demand',
+        description: 'Contest evaluation and scoring',
+        updateFrequency: '1m',
         criticalLevel: 'critical',
         dependencies: [SERVICE_NAMES.MARKET_DATA]
     },
     [SERVICE_NAMES.ACHIEVEMENT]: {
         layer: SERVICE_LAYERS.CONTEST,
         description: 'User achievement tracking',
-        updateFrequency: 'on demand',
+        updateFrequency: '5m',
         criticalLevel: 'low',
         dependencies: [SERVICE_NAMES.CONTEST_EVALUATION]
     },
     [SERVICE_NAMES.REFERRAL]: {
         layer: SERVICE_LAYERS.CONTEST,
         description: 'Referral program management',
-        updateFrequency: '5m',
+        updateFrequency: '10m',
         criticalLevel: 'medium',
         dependencies: [SERVICE_NAMES.CONTEST_EVALUATION]
     },
@@ -101,14 +97,7 @@ export const SERVICE_METADATA = {
         description: 'Contest wallet management',
         updateFrequency: 'on demand',
         criticalLevel: 'critical',
-        dependencies: [SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.CONTEST_EVALUATION]
-    },
-    [SERVICE_NAMES.VANITY_WALLET]: {
-        layer: SERVICE_LAYERS.WALLET,
-        description: 'Vanity wallet pool management',
-        updateFrequency: 'continuous',
-        criticalLevel: 'high',
-        dependencies: [SERVICE_NAMES.WALLET_GENERATOR]
+        dependencies: [SERVICE_NAMES.CONTEST_EVALUATION]
     },
     [SERVICE_NAMES.WALLET_RAKE]: {
         layer: SERVICE_LAYERS.WALLET,
