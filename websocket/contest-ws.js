@@ -28,11 +28,19 @@ const MESSAGE_TYPES = {
     // Client -> Server
     SUBSCRIBE_CONTEST: 'SUBSCRIBE_CONTEST',
     UNSUBSCRIBE_CONTEST: 'UNSUBSCRIBE_CONTEST',
+    SEND_CHAT_MESSAGE: 'SEND_CHAT_MESSAGE',
+    PARTICIPANT_ACTIVITY: 'PARTICIPANT_ACTIVITY',
+    JOIN_ROOM: 'JOIN_ROOM',
+    LEAVE_ROOM: 'LEAVE_ROOM',
     
     // Server -> Client
     CONTEST_UPDATED: 'CONTEST_UPDATED',
     LEADERBOARD_UPDATED: 'LEADERBOARD_UPDATED',
+    CHAT_MESSAGE: 'CHAT_MESSAGE',
+    PARTICIPANT_JOINED: 'PARTICIPANT_JOINED',
+    PARTICIPANT_LEFT: 'PARTICIPANT_LEFT',
     PARTICIPANT_ACTIVITY: 'PARTICIPANT_ACTIVITY',
+    ROOM_STATE: 'ROOM_STATE',
     ERROR: 'ERROR'
 };
 
@@ -42,7 +50,11 @@ const ERROR_CODES = {
     INVALID_MESSAGE: 4004,
     SUBSCRIPTION_FAILED: 5002,
     SERVER_ERROR: 5001,
-    UNAUTHORIZED: 4003
+    UNAUTHORIZED: 4003,
+    ROOM_NOT_FOUND: 4045,
+    NOT_A_PARTICIPANT: 4032,
+    MESSAGE_TOO_LONG: 4003,
+    RATE_LIMITED: 4290
 };
 
 /**
@@ -61,10 +73,29 @@ class ContestWebSocketServer extends BaseWebSocketServer {
         /** @type {Map<string, Set<string>>} userId -> Set<contestId> */
         this.contestSubscriptions = new Map();
         
+        /** @type {Map<string, Set<WebSocket>>} contestId -> Set<WebSocket> */
+        this.contestRooms = new Map();
+        
+        /** @type {Map<string, Object>} contestId -> roomState */
+        this.roomStates = new Map();
+        
+        /** @type {Map<string, Map<string, Object>>} contestId -> Map<userId, participantInfo> */
+        this.roomParticipants = new Map();
+        
+        /** @type {Map<WebSocket, String>} ws -> contestId */
+        this.clientContestMap = new Map();
+        
+        // Message rate limiting for chat
+        this.chatRateLimits = new Map(); // userId -> {count, resetTime}
+        this.CHAT_RATE_LIMIT = 10; // messages per 10 seconds
+        this.CHAT_RATE_WINDOW = 10000; // 10 seconds
+        this.MAX_CHAT_LENGTH = 200; // characters
+        
         // Start periodic updates
         this.startPeriodicUpdates();
+        this.startChatRateLimitReset();
         
-        logApi.info('Contest WebSocket server initialized');
+        logApi.info('Contest WebSocket server initialized with room support');
     }
 
     /**
@@ -75,15 +106,37 @@ class ContestWebSocketServer extends BaseWebSocketServer {
      */
     async handleClientMessage(ws, message, clientInfo) {
         try {
-            const { type, contestId } = message;
+            const { type, contestId, roomId } = message;
+            const targetId = contestId || roomId;
+            
+            if (!type) {
+                this.sendError(ws, 'Message type is required', ERROR_CODES.INVALID_MESSAGE);
+                return;
+            }
 
             switch (type) {
                 case MESSAGE_TYPES.SUBSCRIBE_CONTEST:
-                    await this.handleContestSubscription(ws, clientInfo, contestId);
+                    await this.handleContestSubscription(ws, clientInfo, targetId);
                     break;
                     
                 case MESSAGE_TYPES.UNSUBSCRIBE_CONTEST:
-                    await this.handleContestUnsubscription(ws, clientInfo, contestId);
+                    await this.handleContestUnsubscription(ws, clientInfo, targetId);
+                    break;
+                
+                case MESSAGE_TYPES.JOIN_ROOM:
+                    await this.handleRoomJoin(ws, clientInfo, targetId);
+                    break;
+                    
+                case MESSAGE_TYPES.LEAVE_ROOM:
+                    await this.handleRoomLeave(ws, clientInfo, targetId);
+                    break;
+                    
+                case MESSAGE_TYPES.SEND_CHAT_MESSAGE:
+                    await this.handleChatMessage(ws, clientInfo, message);
+                    break;
+                    
+                case MESSAGE_TYPES.PARTICIPANT_ACTIVITY:
+                    await this.handleParticipantActivity(ws, clientInfo, message);
                     break;
                     
                 default:
@@ -342,8 +395,357 @@ class ContestWebSocketServer extends BaseWebSocketServer {
      */
     cleanup() {
         this.contestSubscriptions.clear();
+        this.contestRooms.clear();
+        this.roomParticipants.clear();
+        this.roomStates.clear();
+        this.clientContestMap.clear();
+        this.chatRateLimits.clear();
         super.cleanup();
         logApi.info('Contest WebSocket server cleaned up');
+    }
+    
+    /**
+     * Reset chat rate limits periodically
+     */
+    startChatRateLimitReset() {
+        setInterval(() => {
+            const now = Date.now();
+            for (const [userId, limitInfo] of this.chatRateLimits.entries()) {
+                if (now > limitInfo.resetTime) {
+                    this.chatRateLimits.delete(userId);
+                }
+            }
+        }, 10000); // Check every 10 seconds
+    }
+    
+    /**
+     * Handle room join request
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     * @param {string} contestId - Contest room to join
+     */
+    async handleRoomJoin(ws, clientInfo, contestId) {
+        try {
+            if (!contestId) {
+                this.sendError(ws, 'Contest ID is required', ERROR_CODES.INVALID_MESSAGE);
+                return;
+            }
+            
+            // Verify contest exists
+            const contest = await prisma.contests.findUnique({
+                where: { id: parseInt(contestId) },
+                include: {
+                    contest_participants: {
+                        where: { wallet_address: clientInfo.wallet }
+                    }
+                }
+            });
+            
+            if (!contest) {
+                this.sendError(ws, 'Contest not found', ERROR_CODES.CONTEST_NOT_FOUND);
+                return;
+            }
+            
+            // Verify user is a participant
+            const isParticipant = contest.contest_participants.length > 0;
+            const isAdmin = ['admin', 'superadmin'].includes(clientInfo.role);
+            
+            if (!isParticipant && !isAdmin) {
+                this.sendError(ws, 'You must be a participant to join this contest room', ERROR_CODES.NOT_A_PARTICIPANT);
+                return;
+            }
+            
+            // Add client to room
+            if (!this.contestRooms.has(contestId)) {
+                this.contestRooms.set(contestId, new Set());
+                this.roomParticipants.set(contestId, new Map());
+                this.roomStates.set(contestId, {
+                    contestId,
+                    participantCount: 0,
+                    lastActivity: new Date().toISOString(),
+                    status: contest.status
+                });
+            }
+            
+            const room = this.contestRooms.get(contestId);
+            room.add(ws);
+            
+            // Map this connection to the contest room
+            this.clientContestMap.set(ws, contestId);
+            
+            // Track participant in room state
+            const participants = this.roomParticipants.get(contestId);
+            const participantInfo = {
+                userId: clientInfo.userId,
+                wallet: clientInfo.wallet,
+                nickname: clientInfo.nickname || clientInfo.username || `User_${clientInfo.userId.substring(0, 6)}`,
+                joinedAt: new Date().toISOString(),
+                isAdmin: isAdmin
+            };
+            
+            participants.set(clientInfo.userId, participantInfo);
+            
+            // Update room state
+            const roomState = this.roomStates.get(contestId);
+            roomState.participantCount = participants.size;
+            roomState.lastActivity = new Date().toISOString();
+            
+            // Send room state to new participant
+            this.sendToClient(ws, {
+                type: MESSAGE_TYPES.ROOM_STATE,
+                contestId,
+                participants: Array.from(participants.values()),
+                roomState
+            });
+            
+            // Broadcast that a new participant joined
+            this.broadcastToRoom(contestId, {
+                type: MESSAGE_TYPES.PARTICIPANT_JOINED,
+                contestId,
+                participant: participantInfo
+            }, [ws]); // Exclude the client that just joined
+            
+            logApi.info('Client joined contest room', {
+                userId: clientInfo.userId,
+                contestId,
+                wallet: clientInfo.wallet,
+                isAdmin
+            });
+            
+        } catch (error) {
+            logApi.error('Error joining contest room:', error);
+            this.sendError(ws, 'Failed to join contest room', ERROR_CODES.SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Handle room leave request
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     * @param {string} contestId - Contest room to leave
+     */
+    async handleRoomLeave(ws, clientInfo, contestId) {
+        try {
+            // If no contestId provided, use the mapped one
+            if (!contestId) {
+                contestId = this.clientContestMap.get(ws);
+                if (!contestId) {
+                    return; // Not in any room
+                }
+            }
+            
+            // Remove from room
+            if (this.contestRooms.has(contestId)) {
+                const room = this.contestRooms.get(contestId);
+                room.delete(ws);
+                
+                // Remove client-room mapping
+                this.clientContestMap.delete(ws);
+                
+                // Remove participant from room state
+                const participants = this.roomParticipants.get(contestId);
+                if (participants && participants.has(clientInfo.userId)) {
+                    const participantInfo = participants.get(clientInfo.userId);
+                    participants.delete(clientInfo.userId);
+                    
+                    // Update room state
+                    const roomState = this.roomStates.get(contestId);
+                    roomState.participantCount = participants.size;
+                    roomState.lastActivity = new Date().toISOString();
+                    
+                    // Broadcast that participant left
+                    this.broadcastToRoom(contestId, {
+                        type: MESSAGE_TYPES.PARTICIPANT_LEFT,
+                        contestId,
+                        userId: clientInfo.userId,
+                        participantInfo
+                    });
+                    
+                    logApi.info('Client left contest room', {
+                        userId: clientInfo.userId,
+                        contestId
+                    });
+                }
+                
+                // If room is empty, clean up
+                if (room.size === 0) {
+                    this.contestRooms.delete(contestId);
+                    this.roomParticipants.delete(contestId);
+                    this.roomStates.delete(contestId);
+                    logApi.info('Contest room closed (empty)', { contestId });
+                }
+            }
+        } catch (error) {
+            logApi.error('Error leaving contest room:', error);
+        }
+    }
+    
+    /**
+     * Handle chat message from client
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     * @param {Object} message - Message data
+     */
+    async handleChatMessage(ws, clientInfo, message) {
+        try {
+            const { contestId, text } = message;
+            
+            // Verify parameters
+            if (!contestId || !text) {
+                this.sendError(ws, 'Contest ID and message text are required', ERROR_CODES.INVALID_MESSAGE);
+                return;
+            }
+            
+            // Check if in room
+            if (!this.contestRooms.has(contestId) || !this.contestRooms.get(contestId).has(ws)) {
+                this.sendError(ws, 'You must join the room before sending messages', ERROR_CODES.ROOM_NOT_FOUND);
+                return;
+            }
+            
+            // Check message length
+            if (text.length > this.MAX_CHAT_LENGTH) {
+                this.sendError(ws, `Message too long, maximum ${this.MAX_CHAT_LENGTH} characters`, ERROR_CODES.MESSAGE_TOO_LONG);
+                return;
+            }
+            
+            // Check rate limiting
+            const now = Date.now();
+            if (!this.chatRateLimits.has(clientInfo.userId)) {
+                this.chatRateLimits.set(clientInfo.userId, {
+                    count: 0,
+                    resetTime: now + this.CHAT_RATE_WINDOW
+                });
+            }
+            
+            const userLimit = this.chatRateLimits.get(clientInfo.userId);
+            userLimit.count++;
+            
+            if (userLimit.count > this.CHAT_RATE_LIMIT) {
+                this.sendError(ws, 'Rate limit exceeded for chat messages', ERROR_CODES.RATE_LIMITED);
+                return;
+            }
+            
+            // Get participant info
+            const participants = this.roomParticipants.get(contestId);
+            const participantInfo = participants.get(clientInfo.userId);
+            
+            if (!participantInfo) {
+                this.sendError(ws, 'Participant information not found', ERROR_CODES.SERVER_ERROR);
+                return;
+            }
+            
+            // Create chat message
+            const chatMessage = {
+                type: MESSAGE_TYPES.CHAT_MESSAGE,
+                contestId,
+                messageId: `${contestId}-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+                userId: clientInfo.userId,
+                nickname: participantInfo.nickname,
+                isAdmin: participantInfo.isAdmin,
+                text,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Broadcast to room
+            this.broadcastToRoom(contestId, chatMessage);
+            
+            // Update room activity timestamp
+            const roomState = this.roomStates.get(contestId);
+            roomState.lastActivity = new Date().toISOString();
+            
+            logApi.info('Chat message sent', {
+                userId: clientInfo.userId,
+                contestId,
+                messageLength: text.length
+            });
+            
+        } catch (error) {
+            logApi.error('Error sending chat message:', error);
+            this.sendError(ws, 'Failed to send chat message', ERROR_CODES.SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Handle participant activity update
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     * @param {Object} message - Activity data
+     */
+    async handleParticipantActivity(ws, clientInfo, message) {
+        try {
+            const { contestId, activity, data } = message;
+            
+            if (!contestId || !activity) {
+                this.sendError(ws, 'Contest ID and activity type are required', ERROR_CODES.INVALID_MESSAGE);
+                return;
+            }
+            
+            // Check if in room
+            if (!this.contestRooms.has(contestId)) {
+                this.sendError(ws, 'Contest room not found', ERROR_CODES.ROOM_NOT_FOUND);
+                return;
+            }
+            
+            // Get participant info
+            const participants = this.roomParticipants.get(contestId);
+            const participantInfo = participants.get(clientInfo.userId);
+            
+            if (!participantInfo) {
+                this.sendError(ws, 'You must join the room first', ERROR_CODES.NOT_A_PARTICIPANT);
+                return;
+            }
+            
+            // Broadcast activity to room
+            this.broadcastToRoom(contestId, {
+                type: MESSAGE_TYPES.PARTICIPANT_ACTIVITY,
+                contestId,
+                userId: clientInfo.userId,
+                nickname: participantInfo.nickname,
+                activity,
+                data: data || {},
+                timestamp: new Date().toISOString()
+            });
+            
+            // Update room activity timestamp
+            const roomState = this.roomStates.get(contestId);
+            roomState.lastActivity = new Date().toISOString();
+            
+        } catch (error) {
+            logApi.error('Error handling participant activity:', error);
+            this.sendError(ws, 'Failed to process activity', ERROR_CODES.SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Broadcast message to all clients in a room
+     * @param {string} contestId - Contest room ID
+     * @param {Object} message - Message to broadcast
+     * @param {Array<WebSocket>} exclude - Clients to exclude from broadcast
+     */
+    broadcastToRoom(contestId, message, exclude = []) {
+        if (!this.contestRooms.has(contestId)) return;
+        
+        const room = this.contestRooms.get(contestId);
+        for (const client of room) {
+            if (exclude.includes(client)) continue;
+            this.sendToClient(client, message);
+        }
+    }
+    
+    /**
+     * Clean up when a client disconnects
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     */
+    onClientDisconnect(ws, clientInfo) {
+        // Cleanup room membership if needed
+        const contestId = this.clientContestMap.get(ws);
+        if (contestId) {
+            this.handleRoomLeave(ws, clientInfo, contestId);
+        }
+        
+        // Call parent cleanup
+        super.onClientDisconnect?.(ws, clientInfo);
     }
 }
 
