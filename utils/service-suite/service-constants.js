@@ -25,6 +25,7 @@ export const SERVICE_NAMES = {
     CONTEST_EVALUATION: 'contest_evaluation_service',
     ACHIEVEMENT: 'achievement_service',
     REFERRAL: 'referral_service',
+    LEVELING: 'leveling_service',
 
     // Wallet Layer Services
     CONTEST_WALLET: 'contest_wallet_service',
@@ -89,6 +90,13 @@ export const SERVICE_METADATA = {
         updateFrequency: '10m',
         criticalLevel: 'medium',
         dependencies: [SERVICE_NAMES.CONTEST_EVALUATION]
+    },
+    [SERVICE_NAMES.LEVELING]: {
+        layer: SERVICE_LAYERS.CONTEST,
+        description: 'User XP and level progression management',
+        updateFrequency: '5m',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.ACHIEVEMENT]
     },
 
     // Wallet Layer Services
