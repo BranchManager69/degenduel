@@ -73,10 +73,10 @@ export const SERVICE_SPECIFIC_CONFIGS = {
     },
 
     // Infrastructure Layer Services
-    [SERVICE_NAMES.FAUCET]: {
+    [SERVICE_NAMES.LIQUIDITY]: {
         failureThreshold: 6,
         resetTimeoutMs: 75000,
-        description: getServiceMetadata(SERVICE_NAMES.FAUCET).description,
+        description: getServiceMetadata(SERVICE_NAMES.LIQUIDITY).description,
         reason: 'Test environment service, moderate tolerance'
     },
     [SERVICE_NAMES.WALLET_GENERATOR]: {
@@ -165,10 +165,28 @@ export function calculateBackoffDelay(recoveryAttempts, config = DEFAULT_CIRCUIT
 }
 
 export function getCircuitBreakerStatus(stats) {
-    if (!stats?.circuitBreaker) {
+    // Return default status if stats is undefined
+    if (!stats) {
+        return {
+            status: 'initializing',
+            details: 'Service initializing',
+            isOpen: false,
+            failures: 0,
+            lastFailure: null,
+            lastSuccess: null,
+            recoveryAttempts: 0
+        };
+    }
+
+    if (!stats.circuitBreaker) {
         return {
             status: 'unknown',
-            details: 'No circuit breaker stats available'
+            details: 'No circuit breaker stats available',
+            isOpen: false,
+            failures: 0,
+            lastFailure: null,
+            lastSuccess: null,
+            recoveryAttempts: 0
         };
     }
 
@@ -184,7 +202,10 @@ export function getCircuitBreakerStatus(stats) {
         return {
             status: 'open',
             details: `Circuit open after ${failures} failures. Recovery attempts: ${recoveryAttempts}`,
+            isOpen: true,
+            failures,
             lastFailure,
+            lastSuccess,
             recoveryAttempts
         };
     }
@@ -193,14 +214,21 @@ export function getCircuitBreakerStatus(stats) {
         return {
             status: 'degraded',
             details: `Service experiencing issues: ${failures} recent failures`,
+            isOpen: false,
             failures,
-            lastFailure
+            lastFailure,
+            lastSuccess,
+            recoveryAttempts
         };
     }
 
     return {
         status: 'closed',
         details: 'Circuit breaker healthy',
-        lastSuccess
+        isOpen: false,
+        failures: 0,
+        lastFailure: null,
+        lastSuccess,
+        recoveryAttempts: 0
     };
 } 

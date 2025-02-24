@@ -2,7 +2,7 @@
 
 import express from 'express';
 import { requireAdmin } from '../../middleware/auth.js';
-import FaucetManager  from '../../services/faucetService.js';
+import LiquidityService  from '../../services/liquidityService.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import rateLimit from 'express-rate-limit';
 
@@ -21,7 +21,7 @@ router.use(requireAdmin);
 // Get faucet dashboard data
 router.get('/dashboard', async (req, res) => {
     try {
-        const dashboard = await FaucetManager.getDashboardData();
+        const dashboard = await LiquidityManager.getDashboardData();
         res.json({ success: true, data: dashboard });
     } catch (error) {
         logApi.error('Failed to get faucet dashboard data:', error);
@@ -32,7 +32,7 @@ router.get('/dashboard', async (req, res) => {
 // Get faucet wallet status
 router.get('/wallet-status', async (req, res) => {
     try {
-        const status = await FaucetManager.getWalletStatus();
+        const status = await LiquidityManager.getWalletStatus();
         res.json({ success: true, data: status });
     } catch (error) {
         logApi.error('Failed to get faucet wallet status:', error);
@@ -44,7 +44,7 @@ router.get('/wallet-status', async (req, res) => {
 router.get('/transactions', async (req, res) => {
     try {
         const { limit = 20, offset = 0 } = req.query;
-        const transactions = await FaucetManager.getRecentTransactions(limit, offset);
+        const transactions = await LiquidityManager.getRecentTransactions(limit, offset);
         res.json({ success: true, data: transactions });
     } catch (error) {
         logApi.error('Failed to get faucet transactions:', error);

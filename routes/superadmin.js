@@ -11,7 +11,7 @@ import prisma from '../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import WalletGenerator from '../services/walletGenerationService.js';
-import FaucetManager  from '../services/faucetService.js';
+import LiquidityService  from '../services/liquidityService.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 
@@ -491,49 +491,49 @@ router.post('/reseed-database/:phase', requireAuth, requireSuperAdmin, async (re
     }
 });
 
-// Get faucet balance (SUPERADMIN ONLY)
-router.get('/faucet/balance', requireAuth, requireSuperAdmin, async (req, res) => {
+// Get liquidity balance (SUPERADMIN ONLY)
+router.get('/liquidity/balance', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
-        const balance = await FaucetManager.checkBalance();
+        const balance = await LiquidityManager.checkBalance();
         res.json({ 
             balance,
-            config: FaucetManager.config
+            config: LiquidityManager.config
         });
     } catch (error) {
-        logApi.error('Error checking faucet balance:', error);
+        logApi.error('Error checking liquidity balance:', error);
         res.status(500).json({ 
-            error: 'Failed to check faucet balance',
+            error: 'Failed to check liquidity balance',
             details: error.message 
         });
     }
 });
 
-// Configure faucet settings (SUPERADMIN ONLY)
-router.post('/faucet/config', requireAuth, requireSuperAdmin, async (req, res) => {
+// Configure liquidity settings (SUPERADMIN ONLY)
+router.post('/liquidity/config', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
-        const { defaultAmount, minFaucetBalance, maxTestUsers } = req.body;
-        FaucetManager.setConfig({
+        const { defaultAmount, minLiquidityBalance, maxTestUsers } = req.body;
+        LiquidityManager.setConfig({
             defaultAmount: parseFloat(defaultAmount),
-            minFaucetBalance: parseFloat(minFaucetBalance),
+            minLiquidityBalance: parseFloat(minLiquidityBalance),
             maxTestUsers: parseInt(maxTestUsers)
         });
         res.json({ 
-            message: 'Faucet configuration updated',
-            config: FaucetManager.config
+            message: 'Liquidity configuration updated',
+            config: LiquidityManager.config
         });
     } catch (error) {
-        logApi.error('Error updating faucet config:', error);
+        logApi.error('Error updating Liquidity config:', error);
         res.status(500).json({ 
-            error: 'Failed to update faucet configuration',
+            error: 'Failed to update Liquidity configuration',
             details: error.message 
         });
     }
 });
 
 // Recover SOL from test wallets (SUPERADMIN ONLY)
-router.post('/faucet/recover', requireAuth, requireSuperAdmin, async (req, res) => {
+router.post('/liquidity/recover', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
-        await FaucetManager.recoverFromTestWallets();
+        await LiquidityManager.recoverFromTestWallets();
         res.json({ 
             message: 'Recovery process completed successfully'
         });
@@ -547,7 +547,7 @@ router.post('/faucet/recover', requireAuth, requireSuperAdmin, async (req, res) 
 });
 
 // Nuclear recover SOL from test wallets - leaves minimal balance (SUPERADMIN ONLY)
-router.post('/faucet/recover-nuclear', requireAuth, requireSuperAdmin, async (req, res) => {
+router.post('/liquidity/recover-nuclear', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
         // Get all test users (created in the last 24 hours)
         const testUsers = await prisma.users.findMany({
@@ -565,9 +565,9 @@ router.post('/faucet/recover-nuclear', requireAuth, requireSuperAdmin, async (re
             }
         });
 
-        const faucetWallet = await FaucetManager.getFaucetWallet();
-        if (!faucetWallet) {
-            throw new Error('Failed to get test faucet wallet');
+        const liquidityWallet = await LiquidityManager.getLiquidityWallet();
+        if (!liquidityWallet) {
+            throw new Error('Failed to get test liquidity wallet');
         }
 
         let totalRecovered = 0;
@@ -596,7 +596,7 @@ router.post('/faucet/recover-nuclear', requireAuth, requireSuperAdmin, async (re
                 const transaction = new Transaction().add(
                     SystemProgram.transfer({
                         fromPubkey: userKeypair.publicKey,
-                        toPubkey: new PublicKey(faucetWallet.publicKey),
+                        toPubkey: new PublicKey(liquidityWallet.publicKey),
                         lamports: recoveryAmount
                     })
                 );
@@ -629,7 +629,7 @@ router.post('/faucet/recover-nuclear', requireAuth, requireSuperAdmin, async (re
             }
         }
 
-        await FaucetManager.checkBalance();
+        await LiquidityManager.checkBalance();
         res.json({ 
             message: 'Nuclear recovery process completed successfully',
             totalRecovered
@@ -819,7 +819,7 @@ const VALID_SERVICES = [
     'contest_wallet_service',
     'wallet_rake_service',
     'admin_wallet_service',
-    'faucet_service',
+    'liquidity_service',
     'wallet_generator_service'
 ];
 
@@ -844,7 +844,7 @@ const DEFAULT_SERVICE_CONFIG = {
     contest_wallet_service: { enabled: true },
     wallet_rake_service: { enabled: true },
     admin_wallet_service: { enabled: true },
-    faucet_service: { enabled: true },
+    liquidity_service: { enabled: true },
     wallet_generator_service: { enabled: true }
 };
 
