@@ -24,7 +24,6 @@ import referralScheduler from './scripts/referral-scheduler.js';
 import faucetManagementRoutes from "./routes/admin/faucet-management.js";
 import serviceMetricsRoutes from "./routes/admin/service-metrics.js";
 import tokenSyncRoutes from "./routes/admin/token-sync.js";
-import vanityWalletRoutes from "./routes/admin/vanity-wallet-management.js";
 import walletManagementRoutes from "./routes/admin/wallet-management.js";
 import contestEvaluationService from "./services/contestEvaluationService.js";
 import tokenSyncService from "./services/tokenSyncService.js";
@@ -40,6 +39,9 @@ import websocketTestRoutes from './routes/admin/websocket-test.js';
 import { createCircuitBreakerWebSocket } from './utils/websocket-suite/circuit-breaker-ws.js';
 // Import Circuit Breaker routes
 import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
+
+// Admin Routes
+import contestManagementRoutes from "./routes/admin/contest-management.js";
 
 dotenv.config();
 
@@ -112,8 +114,8 @@ app.use("/api/status", statusRoutes);
 app.use("/api/admin", prismaAdminRoutes);
 app.use("/api/admin/maintenance", maintenanceRoutes);
 app.use("/api/admin/token-sync", tokenSyncRoutes);
-app.use("/api/admin/vanity-wallets", vanityWalletRoutes);
 app.use("/api/admin/wallets", walletManagementRoutes);
+app.use("/api/admin/contests", contestManagementRoutes);
 app.use("/api/admin/faucet", faucetManagementRoutes);
 app.use("/api/admin/metrics", serviceMetricsRoutes);
 app.use("/api/superadmin", superadminRoutes);

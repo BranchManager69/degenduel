@@ -9,7 +9,6 @@
 // ** Service Auth **
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
-import VanityWalletService from './vanityWalletService.js'; // Service Subclass
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 import { config } from '../config/config.js';
@@ -60,7 +59,6 @@ class ContestWalletService extends BaseService {
             },
             wallets: {
                 created: 0,
-                vanity_used: 0,
                 generated: 0
             },
             errors: {
@@ -107,58 +105,32 @@ class ContestWalletService extends BaseService {
         }
     }
 
-    // Create a new contest wallet, trying vanity wallet first
-    async createContestWallet(contestId, preferredPattern = null, adminContext = null) {
+    // Create a new contest wallet
+    async createContestWallet(contestId, adminContext = null) {
         if (this.stats.circuitBreaker.isOpen) {
             throw ServiceError.operation('Circuit breaker is open for wallet creation');
         }
 
         const startTime = Date.now();
         try {
-            // First, try to get a vanity wallet
-            const vanityWallet = await VanityWalletService.getAvailableWallet(preferredPattern);
-            
-            let contestWallet;
-            if (vanityWallet) {
-                // Create contest wallet using vanity wallet
-                contestWallet = await prisma.contest_wallets.create({
-                    data: {
-                        contest_id: contestId,
-                        wallet_address: vanityWallet.wallet_address,
-                        private_key: vanityWallet.private_key,
-                        balance: 0,
-                        created_at: new Date()
-                    }
-                });
-
-                // Mark vanity wallet as used
-                await VanityWalletService.assignWalletToContest(vanityWallet.id, contestId);
-
-                this.walletStats.wallets.vanity_used++;
-                logApi.info('Created contest wallet using vanity wallet', {
+            // Generate a new wallet
+            const keypair = Keypair.generate();
+            const contestWallet = await prisma.contest_wallets.create({
+                data: {
                     contest_id: contestId,
-                    pattern: vanityWallet.pattern
-                });
-            } else {
-                // If no vanity wallet available, generate a new one
-                const keypair = Keypair.generate();
-                contestWallet = await prisma.contest_wallets.create({
-                    data: {
-                        contest_id: contestId,
-                        wallet_address: keypair.publicKey.toString(),
-                        private_key: this.encryptPrivateKey(
-                            Buffer.from(keypair.secretKey).toString('base64')
-                        ),
-                        balance: 0,
-                        created_at: new Date()
-                    }
-                });
+                    wallet_address: keypair.publicKey.toString(),
+                    private_key: this.encryptPrivateKey(
+                        Buffer.from(keypair.secretKey).toString('base64')
+                    ),
+                    balance: 0,
+                    created_at: new Date()
+                }
+            });
 
-                this.walletStats.wallets.generated++;
-                logApi.info('Created contest wallet with generated keypair', {
-                    contest_id: contestId
-                });
-            }
+            this.walletStats.wallets.generated++;
+            logApi.info('Created contest wallet with generated keypair', {
+                contest_id: contestId
+            });
 
             // Update statistics
             await this.recordSuccess();
@@ -176,8 +148,7 @@ class ContestWalletService extends BaseService {
                     'CONTEST_WALLET_CREATE',
                     {
                         contest_id: contestId,
-                        wallet_address: contestWallet.wallet_address,
-                        used_vanity: !!vanityWallet
+                        wallet_address: contestWallet.wallet_address
                     },
                     adminContext
                 );
