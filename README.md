@@ -1,511 +1,370 @@
-<h1 align="center">
-  ⚔️ DEGENDUEL ⚔️ 
-</h1>
-<h2 align="center">
-  Server Backend
-  v.0.1.2
-</h2>
+<div align="center">
+
+# ⚔️ DEGENDUEL ⚔️
+
+### *Battle for degenerate supremacy*
+
+<img src="https://img.shields.io/badge/Version-1.0.0-brightgreen?style=for-the-badge&logo=v&logoColor=white" alt="Version" />
+<img src="https://img.shields.io/badge/Node.js-20.x-success?style=for-the-badge&logo=node.js" alt="Node.js" />
+<img src="https://img.shields.io/badge/Express-4.x-lightgrey?style=for-the-badge&logo=express" alt="Express" />
+<img src="https://img.shields.io/badge/TypeScript-5.3-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
+<img src="https://img.shields.io/badge/PostgreSQL-16.x-informational?style=for-the-badge&logo=postgresql" alt="PostgreSQL" />
+<img src="https://img.shields.io/badge/Solana-Web3-blueviolet?style=for-the-badge&logo=solana" alt="Solana" />
+<img src="https://img.shields.io/badge/PM2-5.3-green?style=for-the-badge&logo=pm2" alt="PM2" />
+<img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" />
+
+<br />
+
+**Sharpen your trading skills while competing for rewards. Ape and jeet with zero risk.**
 
 <p align="center"><i>Looking for the <a href="https://github.com/BranchManager69/degenduel-fe">Frontend</a> repo?</i></p>
-</br>
 
-<div align="center">
-  <h1>
-    NOTE:
-  </h1>
-  <h2>
-    This README is old! Check the /docs_important folder for at least *mostly* updated working knowledge of this repo.
-  </h2>
-  <br>
 </div>
 
+---
+
+## 📚 Table of Contents
+
+- [📌 Overview](#-overview)
+- [🚀 Features](#-features)
+- [🏗️ Architecture](#️-architecture)
+- [💻 Tech Stack](#-tech-stack)
+- [🔧 Project Structure](#-project-structure)
+- [🛠️ System Components](#️-system-components)
+- [🛡️ Security](#️-security)
+- [⚙️ Getting Started](#️-getting-started)
+- [📊 Monitoring](#-monitoring)
+- [🧩 API Endpoints](#-api-endpoints)
+- [📈 System Diagram](#-system-diagram)
+- [📝 License](#-license)
+
+---
+
+## 📌 Overview
+
+**DegenDuel** is a high-octane trading simulation platform that brings the thrill of crypto trading to a competitive arena. Hunt for god candles, discover giga-alpha, and outperform other traders in pursuit of ultimate **degen supremacy**.
+
+This backend repository powers the DegenDuel platform with a microservice-inspired architecture, real-time data feeds, and a robust trading simulation engine.
 
 <div align="center">
-  <p>
-    DegenDuel is a hunt for god candles, giga-alpha, and cooks in pursuit of ultimate <b>degen supremacy.</b>
-    <br>
-    Sharpen your trading skills while competing for big bragging rights and <b>even bigger top payouts.</b>
-  </p>
+  <img src="https://img.shields.io/badge/ZERO-RISK-red?style=for-the-badge" alt="Zero Risk" />
+  <img src="https://img.shields.io/badge/REAL-COMPETITION-orange?style=for-the-badge" alt="Real Competition" />
+  <img src="https://img.shields.io/badge/MASSIVE-REWARDS-yellow?style=for-the-badge" alt="Massive Rewards" />
 </div>
 
-</br>
+---
 
-<h2 align="center">
-   📙 README
-</h2>
+## 🚀 Features
 
-</br>
+### 🌐 Web3 Integration
+- **Solana Wallet Authentication** - Secure login using Web3 wallet signatures
+- **Crypto-Native Experience** - Designed for the degenerates of crypto
+- **On-Chain Verification** - Transparent contest results and rewards
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
-  [![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org/)
-  [![Node.js](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org/)
-  [![Express](https://img.shields.io/badge/Express-4.x-lightgrey)](https://expressjs.com/)
-  [![PM2](https://img.shields.io/badge/PM2-5.3-green)](https://pm2.keymetrics.io/)
-  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-blue)](https://www.postgresql.org/)
+### 📊 Real-Time Trading Simulation
+- **Live Token Prices** - Real-time market data via specialized WebSockets
+- **Portfolio Tracking** - Instant P&L updates and performance metrics
+- **Trading Competitions** - Regular contests with leaderboards and prizes
 
-## 🌟 Features
-### Web3 Integration
-- Web3 ...
+### 📱 User Experience
+- **Achievement System** - Earn XP and level up your trader profile
+- **Real-time Updates** - Instant notifications for trades, contests, and events
+- **Leaderboards** - Compete against other traders for supremacy
 
-### Real-Time Trading Simulation
-- Live token prices ...
-- Real-time portfolio updates ...
+---
 
-### Portfolio Management
-- Trade ...
+## 🏗️ Architecture
 
-### ...
+DegenDuel follows a modern, service-based architecture with specialized components for different business domains.
 
-### User Experience
-- Real-time updates ...
-- Responsive design ...
+### Core Components
 
+- **Backend**: Node.js/Express with PostgreSQL and Prisma ORM
+- **Authentication**: Web3 wallet verification using Solana/Phantom
+- **Real-time**: Multiple WebSocket servers for dedicated data streams
+- **Infrastructure**: PM2 process management with service monitoring
 
-## 🚀 Quick Start
+<div align="center">
+  <img src="https://img.shields.io/badge/MICROSERVICE-INSPIRED-blue?style=for-the-badge" alt="Microservice Inspired" />
+  <img src="https://img.shields.io/badge/EVENT-DRIVEN-green?style=for-the-badge" alt="Event Driven" />
+  <img src="https://img.shields.io/badge/REAL--TIME-WEBSOCKETS-red?style=for-the-badge" alt="Real-time WebSockets" />
+</div>
+
+---
+
+## 💻 Tech Stack
+
+<table align="center">
+  <tr>
+    <td align="center"><b>Core</b></td>
+    <td align="center"><b>Database</b></td>
+    <td align="center"><b>Infrastructure</b></td>
+    <td align="center"><b>Web3</b></td>
+  </tr>
+  <tr>
+    <td>
+      <img src="https://img.shields.io/badge/Node.js-20.x-success?style=flat-square&logo=node.js" /><br/>
+      <img src="https://img.shields.io/badge/Express-4.x-lightgrey?style=flat-square&logo=express" /><br/>
+      <img src="https://img.shields.io/badge/TypeScript-5.3-blue?style=flat-square&logo=typescript" />
+    </td>
+    <td>
+      <img src="https://img.shields.io/badge/PostgreSQL-16.x-informational?style=flat-square&logo=postgresql" /><br/>
+      <img src="https://img.shields.io/badge/Prisma-ORM-blueviolet?style=flat-square&logo=prisma" /><br/>
+      <img src="https://img.shields.io/badge/SQLite-Leaderboards-blue?style=flat-square&logo=sqlite" />
+    </td>
+    <td>
+      <img src="https://img.shields.io/badge/PM2-Process_Manager-green?style=flat-square&logo=pm2" /><br/>
+      <img src="https://img.shields.io/badge/Winston-Logging-yellow?style=flat-square" /><br/>
+      <img src="https://img.shields.io/badge/Swagger-API_Docs-green?style=flat-square&logo=swagger" />
+    </td>
+    <td>
+      <img src="https://img.shields.io/badge/Solana-Web3-blueviolet?style=flat-square&logo=solana" /><br/>
+      <img src="https://img.shields.io/badge/Phantom-Wallet-purple?style=flat-square" /><br/>
+      <img src="https://img.shields.io/badge/JWT-Authentication-blue?style=flat-square" />
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🔧 Project Structure
+
+The codebase follows a domain-driven design with clear separation of concerns:
+
+```
+degenduel/
+├── config/                # Application configuration
+├── controllers/           # Request handlers & business logic
+├── middleware/            # Express middlewares
+├── routes/                # API route definitions
+├── services/              # Core business logic services
+├── websocket/             # WebSocket servers
+├── utils/                 # Utility functions
+├── types/                 # TypeScript type definitions
+├── prisma/                # Database schema and migrations
+├── scripts/               # Utility scripts
+└── docs_important/        # Architecture documentation
+```
+
+### Key Directories
+
+| Directory | Purpose |
+|-----------|---------|
+| `/services` | Core domain business logic encapsulated as services |
+| `/websocket` | Specialized WebSocket servers for real-time data |
+| `/routes` | API endpoint definitions organized by domain |
+| `/middleware` | Authentication, validation, and request processing |
+| `/controllers` | Request handling and orchestration logic |
+| `/config` | Application configuration by environment |
+
+---
+
+## 🛠️ System Components
+
+### 🔄 Service Architecture
+
+The backend is organized into specialized service domains:
+
+| Domain | Services |
+|--------|----------|
+| **Data Services** | Token synchronization, market data, liquidity |
+| **User Services** | Authentication, achievements, leveling |
+| **Contest Services** | Evaluation, wallets, portfolio management |
+| **Infrastructure** | Monitoring, health checks, circuit breakers |
+
+Each service follows a standardized pattern with consistent interfaces, error handling, and lifecycle management.
+
+### ⚡ WebSocket Infrastructure
+
+Multiple specialized WebSocket servers deliver real-time data streams:
+
+| WebSocket | Purpose |
+|-----------|---------|
+| **Token Data WS** | Real-time token price and metadata updates |
+| **Portfolio WS** | Live portfolio valuation and performance |
+| **Contest WS** | Contest updates and leaderboards |
+| **Market WS** | Market data streaming from exchanges |
+| **Monitor WS** | System health monitoring and metrics |
+
+### 🔐 Authentication System
+
+Secure Web3 wallet-based authentication:
+
+1. **Challenge Request**
+   ```
+   GET /api/auth/challenge?wallet=<wallet_address>
+   ```
+   - Generates unique nonce for wallet
+   - Stores nonce with expiration
+
+2. **Wallet Verification**
+   ```
+   POST /api/auth/verify-wallet
+   {
+     "wallet": "address",
+     "signature": [64-byte array],
+     "message": "DegenDuel Authentication\nNonce: <nonce>"
+   }
+   ```
+   - Verifies signature using Solana Web3.js
+   - Creates/updates user and issues JWT
+
+3. **Session Management**
+   - HTTP-only cookies for security
+   - Environment-specific configurations
+   - Role-based access control
+
+---
+
+## 🛡️ Security
+
+### API Security
+- Rate limiting
+- Input validation
+- CORS policies
+- Error sanitization
+
+### Wallet Security
+- Nonce-based challenge-response
+- One-time use nonces
+- Signature verification
+- Wallet address validation
+
+### Session Security
+- JWT with expiration
+- HTTP-only cookies
+- Secure flag in production
+- Domain-specific cookies
+
+---
+
+## ⚙️ Getting Started
 
 ### Prerequisites
-
 ```bash
 node -v  # Must be 20.x or higher
 npm -v   # Must be 8.x or higher
 ```
 
 ### Development Setup
-
-1. Clone and install:
+1. Clone the repository
+2. Install dependencies:
    ```bash
-   git clone https://github.com/yourusername/branchbet.git
-   cd branchbet
    npm install
    ```
-
-2. Initialize the database:
+3. Set up environment variables (copy from `.env.example`)
+4. Initialize the database:
    ```bash
    npm run init-db
    ```
-
-3. Start development servers:
+5. Start the development server:
    ```bash
-   npm run dev  # Starts both frontend and API servers
+   npm run dev
    ```
 
-4. Access the application:
-   - Frontend: [http://localhost:3002](http://localhost:3002)
-   - API: [http://localhost:3003](http://localhost:3003)
+### Environment Configuration
+Configuration adapts based on detected environment:
 
-### Production Deployment
+```javascript
+// Environment detection
+const environment = origin.includes('localhost') || origin.includes('127.0.0.1') 
+  ? 'development' 
+  : 'production';
+```
 
-1. Build and start:
-   ```bash
-   npm run build  # Build frontend
-   npm start      # Start PM2 processes
-   ```
+Required environment variables:
+```bash
+PORT=3003                   # API server port
+DD_API_DEBUG_MODE=false     # Enable/disable debug logging
+```
 
-2. Monitor services:
-   ```bash
-   npm run status  # Check PM2 status
-   npm run logs    # View application logs
-   ```
+---
 
-## 🏗️ Technical Architecture
+## 📊 Monitoring
 
-### System Overview
+Monitor and manage the application using PM2:
+
+```bash
+# View process status
+npm run status
+
+# Check logs
+npm run logs
+
+# Restart services
+npm run restart
+```
+
+### 🚨 Health Checks
+
+The system includes robust health monitoring:
+
+- **Service Health Checks** - Automatic status reporting
+- **WebSocket Monitoring** - Real-time service metrics
+- **Circuit Breakers** - Automatic failure detection and recovery
+
+---
+
+## 🧩 API Endpoints
+
+### Authentication
+- `GET /api/auth/challenge` - Request authentication challenge
+- `POST /api/auth/verify-wallet` - Verify wallet and establish session
+- `POST /api/auth/logout` - End session
+- `GET /api/auth/session` - Check session status
+
+### User Management
+- `GET /api/users/profile` - Get user profile
+- `POST /api/users/nickname` - Set/update nickname
+- `GET /api/users/achievements` - List user achievements
+
+### Contests
+- `GET /api/contests` - List active contests
+- `GET /api/contests/:id` - Get contest details
+- `GET /api/contests/:id/leaderboard` - View contest leaderboard
+
+### Trading
+- `GET /api/tokens` - List available tokens
+- `POST /api/portfolio-trades` - Execute trade
+- `GET /api/portfolio-analytics` - Get portfolio analytics
+
+---
+
+## 📈 System Diagram
 
 ```mermaid
 graph TD
-    A[Nginx Reverse Proxy] --> B[Frontend Server :3002]
-    A --> C[API Server :3003]
-    B --> D[DexScreener API]
-    C --> E[(PostgreSQL Database)]
+    A[Nginx Reverse Proxy] --> B[API Server]
+    B --> C[(PostgreSQL Database)]
+    B --> D[WebSocket Servers]
+    B --> E[Core Services]
     
-    subgraph "Frontend Services"
-        B --> F[Static Assets]
-        B --> G[React SPA]
-        G --> H[Zustand Store]
+    subgraph "Service Components"
+        E --> F[Token Services]
+        E --> G[Contest Services]
+        E --> H[Wallet Services]
+        E --> I[User Services]
     end
     
-    subgraph "Backend Services"
-        C --> I[Express API]
-        I --> J[PostgreSQL Models]
-        I --> K[Web3 Services]
+    subgraph "WebSocket Components"
+        D --> J[Token Data WS]
+        D --> K[Portfolio WS]
+        D --> L[Contest WS]
+        D --> M[Monitor WS]
     end
 ```
 
-### Key Technologies
+---
 
-- **Frontend Stack**
-  - React 18.3 with TypeScript
-  - Zustand for state management
-  - Tailwind CSS for styling
-  - Recharts for data visualization
-  - Vite for development/building
-  - Phantom Wallet SDK
+## 📝 License
 
-- **Backend Stack**
-  - Node.js with Express
-  - PostgreSQL for persistence
-  - Winston for logging
-  - PM2 for process management
-
-## 📁 Project Organization
-
-### Directory Structure
-
-```
-branchbet/
-├── src/                    # Frontend source
-│   ├── components/         # React components
-│   ├── hooks/             # React hooks
-│   ├── store/             # State management
-│   ├── types/             # TypeScript types
-│   └── utils/             # Utilities
-├── server/                 # Backend source
-│   ├── config/            # Configuration
-│   ├── controllers/       # Route handlers
-│   ├── middleware/        # Express middleware
-│   ├── models/            # Data models
-│   ├── routes/            # API routes
-│   ├── services/          # Business logic
-│   └── utils/             # Server utilities
-└── scripts/               # Tooling scripts
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-```bash
-# Frontend (.env)
-VITE_API_URL=http://localhost:3003
-VITE_WS_URL=ws://localhost:3003
-
-# Backend (.env)
-PORT=3003
-NODE_ENV=development
-DB_URL=postgresql://username:password@localhost:5432/dbname
-```
-
-### PM2 Configuration
-
-```javascript
-// ecosystem.config.js
-module.exports = {
-  apps: [{
-    name: 'frontend',
-    script: 'server/frontend.js',
-    env: {
-      PORT: 3002
-    }
-  }, {
-    name: 'api',
-    script: 'server/server.js',
-    env: {
-      PORT: 3003
-    }
-  }]
-};
-```
-
-## 🔍 Monitoring
-
-### Available Commands
-
-```bash
-# System Status
-npm run status    # PM2 process status
-npm run logs      # All application logs
-npm run logs:api  # API server logs only
-
-# Maintenance
-npm run rebuild   # Rebuild application
-npm run restart   # Restart services
-```
-
-## 🔒 Security
-
-### Implemented Measures
-
-1. **API Security**
-   - Rate limiting
-   - Input validation
-   - CORS policies
-   - Error sanitization
-
-2. **Frontend Security**
-   - XSS prevention
-   - Content Security Policy
-   - Secure dependencies
-   - Regular updates
-
-3. **Infrastructure**
-   - HTTPS enforcement
-   - Secure headers
-   - Database security
-   - Access controls
-
-4. **Wallet Security**
-   - Message signing
-   - Network validation
-   - Session management
-   - Connection pooling
-
-## 🔐 Authentication System
-
-### Overview
-DegenDuel implements a secure, role-based authentication system combining Phantom Wallet verification with session-based authentication:
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant Phantom
-    participant API
-    participant Database
-
-    User->>Frontend: Connect Wallet
-    Frontend->>API: Request Challenge
-    API->>Database: Generate Nonce
-    API->>Frontend: Return Nonce
-    Frontend->>Phantom: Sign Message
-    Phantom->>Frontend: Return Signature
-    Frontend->>API: Verify Wallet
-    API->>Database: Validate & Store User
-    API->>Frontend: Set Session Cookie
-```
-
-### Authentication Flow
-
-1. **Challenge Request**
-   ```http
-   GET /api/auth/challenge?wallet=<wallet_address>
-   ```
-   - Generates unique nonce for wallet
-   - Stores nonce in database with expiration
-   - Returns nonce to client
-
-2. **Wallet Verification**
-   ```http
-   POST /api/auth/verify-wallet
-   {
-     "wallet": "address",
-     "signature": [64-byte array],
-     "message": "DegenDuel Authentication\nWallet: <wallet>\nNonce: <nonce>"
-   }
-   ```
-   - Validates nonce existence and expiration
-   - Verifies signature using Solana Web3.js
-   - Creates/updates user in database
-   - Issues JWT session token
-
-3. **Session Management**
-   - HTTP-only cookie named 'session'
-   - Environment-aware configuration:
-     ```javascript
-     // Development
-     {
-       httpOnly: true,
-       sameSite: 'lax',
-       maxAge: 24 * 60 * 60 * 1000  // 24 hours
-     }
-     
-     // Production
-     {
-       httpOnly: true,
-       secure: true,
-       sameSite: 'lax',
-       domain: '.degenduel.me',
-       maxAge: 24 * 60 * 60 * 1000
-     }
-     ```
-
-### Role-Based Access Control
-
-1. **User Roles**
-   - `user`: Basic authenticated user
-   - `admin`: Administrative privileges
-   - `superadmin`: Full system access
-
-2. **Protected Routes**
-   ```javascript
-   // User Authentication
-   app.use('/api/profile', requireAuth);
-   
-   // Admin Access
-   app.use('/api/admin', requireAuth, requireAdmin);
-   
-   // Superadmin Access
-   app.use('/api/superadmin', requireAuth, requireSuperAdmin);
-   ```
-
-3. **Middleware Chain**
-   - `requireAuth`: Validates session token
-   - `requireAdmin`: Ensures admin/superadmin role
-   - `requireSuperAdmin`: Ensures superadmin role
-
-### Security Features
-
-1. **Session Security**
-   - JWT with 24-hour expiration
-   - HTTP-only cookies prevent XSS
-   - Secure flag in production
-   - Domain-specific cookies
-
-2. **Wallet Security**
-   - Nonce-based challenge-response
-   - One-time use nonces
-   - Signature verification using nacl
-   - Wallet address validation
-
-3. **Database Security**
-   - Prepared statements prevent SQL injection
-   - Role information stored securely
-   - Last login tracking
-   - Session invalidation on logout
-
-### Environment Detection
-
-The system automatically detects the environment and adjusts security settings:
-
-```javascript
-const environment = origin.includes('localhost') || 
-                   origin.includes('127.0.0.1') ? 
-                   'development' : 'production';
-```
-
-### API Endpoints
-
-1. **Authentication**
-   - `GET /api/auth/challenge`: Request authentication challenge
-   - `POST /api/auth/verify-wallet`: Verify wallet and establish session
-   - `POST /api/auth/disconnect`: Disconnect wallet
-   - `POST /api/auth/logout`: End session
-   - `GET /api/auth/session`: Check session status
-
-2. **Session Validation**
-   ```http
-   GET /api/auth/session
-   Headers: { "Cookie": "session=<jwt>" }
-   ```
-
-### Error Handling
-
-1. **Authentication Errors**
-   - Invalid signature
-   - Expired nonce
-   - Invalid wallet address
-   - Session expiration
-   - Insufficient permissions
-
-2. **Environment-Specific Responses**
-   ```javascript
-   // Development
-   {
-     error: 'Authentication failed',
-     message: error.message,
-     stack: error.stack
-   }
-   
-   // Production
-   {
-     error: 'Authentication failed'
-   }
-   ```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-### Development Workflow
-
-```bash
-git checkout -b feature/your-feature
-npm install
-npm run dev
-# Make changes
-npm run test
-git commit -m "feat: your feature"
-git push origin feature/your-feature
-```
-
-## 📞 Support
-
-- **Issues**: GitHub Issues
-- **Discussions**: GitHub Discussions
-- **Twitter**: [@BranchManager69](https://twitter.com/BranchManager69)
-- **Discord**: Join our server
-- **Blog**: [blog.branch.bet](https://blog.branch.bet)
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
 <div align="center">
-  <p><b>DEGENDUEL</b> | Battle for degenerate supremacy.</p>
-  <p>Sharpen your trading skills while competing to win real prizes. Ape and jeet with zero risk.</p>
-  <p><b>DEGENDUEL</b> is a Branch Manager production. All rights reserved.</p>
+  <h3>⚔️ DEGENDUEL ⚔️</h3>
+  <p>Sharpen your trading skills while competing for real prizes. <br/>Ape and jeet with zero risk.</p>
+  <p><b>© Branch Manager Productions.</b> All rights reserved.</p>
+  <img src="https://img.shields.io/badge/WINTER-IS%20COMING-blue?style=for-the-badge" alt="Winter is Coming" />
 </div>
-
-# Winter is coming.
-
-# Environment Configuration
-
-The API determines the environment based on the request origin:
-- Development environment: Requests from `localhost` or `127.0.0.1`
-- Production environment: All other origins
-
-This is configured in `config/config.js`:
-```javascript
-getEnvironment: (origin) => {
-  if (!origin) return 'production'; // Default to production for direct API calls
-  return origin.includes('localhost') || origin.includes('127.0.0.1') 
-    ? 'development' 
-    : 'production';
-}
-```
-
-## Environment Variables
-Required environment variables:
-```bash
-PORT=3003                    # API server port
-DD_API_DEBUG_MODE=false     # Enable/disable debug logging
-```
-
-# DegenDuel API
-
-## Development Setup
-
-### Quick Start
-
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Copy `.env.example` to `.env` and configure
-4. Start the development server: `npm run dev`
-
-### Services
-
-- Production API: [https://degenduel.me](https://degenduel.me)
-- Development API: [https://dev.degenduel.me](https://dev.degenduel.me)
-
-### Local Development
-
-- Production API: [http://localhost:3004](http://localhost:3004)
-- Development API: [http://localhost:3005](http://localhost:3005)
-
-### Environment Variables
-
-```env
-# Development
-VITE_API_URL=http://localhost:3005
-VITE_WS_URL=ws://localhost:3005
-NODE_ENV=development
-PORT=3005
-
-# Production
-VITE_API_URL=http://localhost:3004
-VITE_WS_URL=ws://localhost:3004
-NODE_ENV=production
-PORT=3004
-```
