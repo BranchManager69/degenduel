@@ -130,15 +130,29 @@ class MarketDataService extends BaseService {
             this.requestTimeouts.clear();
             this.requestCount = 0;
 
-            // Load initial market state
+            // Check for initial data but don't fail if not present
+            logApi.info('Checking for initial token data...');
             const [activeTokens, tokensWithPrices] = await Promise.all([
                 prisma.tokens.count({ where: { is_active: true } }),
                 prisma.token_prices.count()
             ]);
 
+            // Update stats regardless of data presence
             this.marketStats.data.tokens.total = await prisma.tokens.count();
             this.marketStats.data.tokens.active = activeTokens;
             this.marketStats.data.tokens.withPrices = tokensWithPrices;
+
+            if (activeTokens === 0 || tokensWithPrices === 0) {
+                logApi.info('No initial token data available - service will wait for data to arrive', {
+                    activeTokens,
+                    tokensWithPrices
+                });
+            } else {
+                logApi.info('Initial token data verified', {
+                    activeTokens,
+                    tokensWithPrices
+                });
+            }
 
             // Start cleanup interval
             this.startCleanupInterval();
@@ -150,8 +164,9 @@ class MarketDataService extends BaseService {
             };
 
             logApi.info('Market Data Service initialized', {
-                activeTokens,
-                withPrices: tokensWithPrices
+                activeTokens: this.marketStats.data.tokens.active,
+                withPrices: this.marketStats.data.tokens.withPrices,
+                status: 'ready'
             });
 
             this.isInitialized = true;

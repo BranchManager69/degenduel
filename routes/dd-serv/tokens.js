@@ -327,15 +327,82 @@ router.get('/tokens/list', async (req, res) => {
 router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
     const { tokenAddress } = req.params;
     try {
+        // First try to get from cache/database
+        const cachedPrices = await prisma.token_prices.findMany({
+            where: { 
+                token_address: tokenAddress,
+                timestamp: {
+                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24h
+                }
+            },
+            orderBy: { timestamp: 'desc' }
+        });
+
+        // If we have recent cached data, use it
+        if (cachedPrices.length > 0 && 
+            Date.now() - new Date(cachedPrices[0].timestamp).getTime() < 5 * 60 * 1000) { // Less than 5 min old
+            return res.json({
+                success: true,
+                data: cachedPrices,
+                source: 'cache'
+            });
+        }
+
+        // Try DD-serve with timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
         const response = await monitoredFetch(
             `https://data.degenduel.me/api/tokens/${tokenAddress}/price-history`,
-            {},
+            { signal: controller.signal },
             'price_history'
         );
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+            throw new Error(`DD-serve returned ${response.status}`);
+        }
+
         const priceHistory = await response.json();
-        res.json(priceHistory);
+
+        // Cache the new data
+        if (priceHistory.data?.length > 0) {
+            await prisma.token_prices.createMany({
+                data: priceHistory.data.map(p => ({
+                    token_address: tokenAddress,
+                    price: p.price,
+                    timestamp: new Date(p.timestamp)
+                })),
+                skipDuplicates: true
+            });
+        }
+
+        res.json({
+            success: true,
+            data: priceHistory.data,
+            source: 'dd-serve'
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        // If DD-serve failed, return cached data with warning
+        if (cachedPrices?.length > 0) {
+            return res.json({
+                success: true,
+                data: cachedPrices,
+                source: 'cache',
+                warning: 'Using cached data due to DD-serve error'
+            });
+        }
+
+        logApi.error('DD-serve price history error:', {
+            error: err.message,
+            token: tokenAddress
+        });
+        res.status(503).json({ 
+            success: false,
+            error: 'Price service temporarily unavailable',
+            retryAfter: 5
+        });
     }
 });
 
