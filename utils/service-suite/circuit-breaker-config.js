@@ -7,7 +7,7 @@
  */
 
 // Circuit breaker configuration and utilities
-import { SERVICE_NAMES, DEFAULT_CIRCUIT_BREAKER_CONFIG } from './service-constants.js';
+import { SERVICE_NAMES, DEFAULT_CIRCUIT_BREAKER_CONFIG, getServiceMetadata } from './service-constants.js';
 
 // Service-specific configurations
 export const SERVICE_SPECIFIC_CONFIGS = {
@@ -15,20 +15,20 @@ export const SERVICE_SPECIFIC_CONFIGS = {
     [SERVICE_NAMES.TOKEN_SYNC]: {
         failureThreshold: 4,
         resetTimeoutMs: 45000,
-        description: 'Token sync service with moderate recovery speed',
+        description: getServiceMetadata(SERVICE_NAMES.TOKEN_SYNC).description,
         reason: 'Handles external API calls, needs balanced error tolerance'
     },
     [SERVICE_NAMES.MARKET_DATA]: {
         failureThreshold: 3, // More sensitive to failures
         resetTimeoutMs: 30000, // Faster recovery for market data
         minHealthyPeriodMs: 60000, // Shorter health confirmation period
-        description: 'Real-time market data service requires faster recovery',
+        description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA).description,
         reason: 'Critical for real-time trading operations'
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         failureThreshold: 5,
         resetTimeoutMs: 60000,
-        description: 'Token whitelist management service',
+        description: getServiceMetadata(SERVICE_NAMES.TOKEN_WHITELIST).description,
         reason: 'Standard tolerance, non-critical real-time operations'
     },
 
@@ -37,19 +37,19 @@ export const SERVICE_SPECIFIC_CONFIGS = {
         failureThreshold: 10, // More tolerant of failures
         resetTimeoutMs: 120000, // Longer recovery time
         minHealthyPeriodMs: 180000, // Longer health confirmation
-        description: 'Contest evaluation requires careful recovery',
+        description: getServiceMetadata(SERVICE_NAMES.CONTEST_EVALUATION).description,
         reason: 'Handles critical financial operations, needs high stability'
     },
     [SERVICE_NAMES.ACHIEVEMENT]: {
         failureThreshold: 6,
         resetTimeoutMs: 70000,
-        description: 'Achievement tracking service',
+        description: getServiceMetadata(SERVICE_NAMES.ACHIEVEMENT).description,
         reason: 'Non-critical service, moderate error tolerance'
     },
     [SERVICE_NAMES.REFERRAL]: {
         failureThreshold: 5,
         resetTimeoutMs: 60000,
-        description: 'Referral program management',
+        description: getServiceMetadata(SERVICE_NAMES.REFERRAL).description,
         reason: 'Standard configuration, balanced recovery'
     },
 
@@ -57,25 +57,19 @@ export const SERVICE_SPECIFIC_CONFIGS = {
     [SERVICE_NAMES.CONTEST_WALLET]: {
         failureThreshold: 8,
         resetTimeoutMs: 90000,
-        description: 'Contest wallet management service',
+        description: getServiceMetadata(SERVICE_NAMES.CONTEST_WALLET).description,
         reason: 'Handles financial operations, needs higher stability'
-    },
-    [SERVICE_NAMES.VANITY_WALLET]: {
-        failureThreshold: 4,
-        resetTimeoutMs: 45000,
-        description: 'Vanity wallet pool management',
-        reason: 'Quick recovery needed for wallet availability'
     },
     [SERVICE_NAMES.WALLET_RAKE]: {
         failureThreshold: 8,
         resetTimeoutMs: 90000,
-        description: 'Wallet rake service with balanced recovery',
+        description: getServiceMetadata(SERVICE_NAMES.WALLET_RAKE).description,
         reason: 'Handles fund collection, needs careful error handling'
     },
     [SERVICE_NAMES.ADMIN_WALLET]: {
         failureThreshold: 7,
         resetTimeoutMs: 80000,
-        description: 'Administrative wallet operations',
+        description: getServiceMetadata(SERVICE_NAMES.ADMIN_WALLET).description,
         reason: 'Critical admin operations, needs high reliability'
     },
 
@@ -83,13 +77,13 @@ export const SERVICE_SPECIFIC_CONFIGS = {
     [SERVICE_NAMES.FAUCET]: {
         failureThreshold: 6,
         resetTimeoutMs: 75000,
-        description: 'Faucet service with standard recovery',
+        description: getServiceMetadata(SERVICE_NAMES.FAUCET).description,
         reason: 'Test environment service, moderate tolerance'
     },
     [SERVICE_NAMES.WALLET_GENERATOR]: {
         failureThreshold: 5,
         resetTimeoutMs: 60000,
-        description: 'Wallet generation service',
+        description: getServiceMetadata(SERVICE_NAMES.WALLET_GENERATOR).description,
         reason: 'Core infrastructure, standard configuration'
     }
 };
