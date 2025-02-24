@@ -1,7 +1,14 @@
+// websocket/circuit-breaker-ws.js
+
+/*
+ * This is the WebSocket server for the circuit breaker service.
+ * It handles the subscription and unsubscription of circuit breakers by clients.
+ */
+
 import { BaseWebSocketServer } from './base-websocket.js';
-import { logApi } from '../logger-suite/logger.js';
-import ServiceManager from '../service-suite/service-manager.js';
-import { isHealthy, getCircuitBreakerStatus } from '../service-suite/circuit-breaker-config.js';
+import { logApi } from '../utils/logger-suite/logger.js';
+import ServiceManager from '../utils/service-suite/service-manager.js';
+import { isHealthy, getCircuitBreakerStatus } from '../utils/service-suite/circuit-breaker-config.js';
 
 const HEARTBEAT_INTERVAL = 5000; // 5 seconds
 const CLIENT_TIMEOUT = 7000;     // 7 seconds
@@ -29,18 +36,21 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
     : DEFAULT_ALLOWED_ORIGINS;
 
-// Log configured origins on startup
-logApi.info('WebSocket allowed origins:', {
-    origins: ALLOWED_ORIGINS,
-    source: process.env.ALLOWED_ORIGINS ? 'Environment' : 'Default'
-});
+// Log configured origins on startup (im sick of seeing this)
+if (0===1) {
+    logApi.info('WebSocket allowed origins:', {
+        origins: ALLOWED_ORIGINS,
+        source: process.env.ALLOWED_ORIGINS ? 'Environment' : 'Default'
+    });
+}
 
+// Circuit Breaker WebSocket Server
 class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
     constructor(server) {
         // Create the configuration object
         const config = {
             path: '/api/v2/ws/circuit-breaker',
-            maxMessageSize: 16 * 1024, // 16KB
+            maxPayload: 1024 * 16, // 16KB
             rateLimit: 60, // 60 messages per minute
             requireAuth: true,
             allowedOrigins: ALLOWED_ORIGINS
@@ -54,11 +64,6 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
 
         // Start periodic state broadcasts
         this.startPeriodicUpdates();
-    }
-
-    initialize(server) {
-        // Initialize WebSocket server with server instance
-        super.initialize(server);
     }
 
     /**
@@ -305,6 +310,30 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
     }
 
     /**
+     * Get server metrics
+     * @returns {Object} Server metrics
+     */
+    getMetrics() {
+        return {
+            metrics: {
+                totalConnections: this._getConnectedClients().length,
+                activeSubscriptions: this.services.size,
+                messageCount: 0,
+                errorCount: 0,
+                lastUpdate: new Date().toISOString(),
+                cacheHitRate: 0,
+                averageLatency: 0
+            },
+            performance: {
+                messageRate: 0,
+                errorRate: 0,
+                latencyTrend: []
+            },
+            status: 'operational'
+        };
+    }
+
+    /**
      * Clean up resources
      */
     cleanup() {
@@ -327,12 +356,12 @@ let instance = null;
 export function createCircuitBreakerWebSocket(server) {
     if (!instance) {
         instance = new CircuitBreakerWebSocketServer(server);
-    } else if (server && !instance.wss) {
-        // If we have an instance but it wasn't initialized with a server yet
-        instance.initialize(server);
     }
     return instance;
 }
 
 // Export the class for testing
-export { CircuitBreakerWebSocketServer }; 
+export { CircuitBreakerWebSocketServer };
+
+// Export the singleton instance
+export default instance;

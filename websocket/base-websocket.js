@@ -1,9 +1,18 @@
-import { WebSocketServer } from 'ws';
-import { logApi } from '../logger-suite/logger.js';
-import jwt from 'jsonwebtoken';
-import { config } from '../../config/config.js';
-import prisma from '../../config/prisma.js';
+// websocket/base-websocket.js
 
+/*
+ * This is the base class for all WebSocket servers.
+ * It provides a common interface for all WebSocket servers and handles
+ * authentication, rate limiting, and message queuing.
+ */
+
+import { WebSocketServer } from 'ws';
+import { logApi } from '../utils/logger-suite/logger.js';
+import jwt from 'jsonwebtoken';
+import { config } from '../config/config.js';
+import prisma from '../config/prisma.js';
+
+// Base WebSocket Server
 export class BaseWebSocketServer {
     static instance = null;
     #wss = null;
@@ -257,7 +266,10 @@ export class BaseWebSocketServer {
                 }
             });
             
-            logApi.info(`Broadcast complete. Sent to ${sentCount} clients`);
+            if (sentCount > 0) {
+                logApi.info(`📢 Broadcasted to ${sentCount} clients`);
+            }
+        
         } catch (error) {
             logApi.error('Error broadcasting message:', error);
         }

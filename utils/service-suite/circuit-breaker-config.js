@@ -3,7 +3,6 @@
 /* 
  * This file is responsible for configuring the circuit breaker for each service.
  * It is used to configure the circuit breaker for each service.
- * 
  */
 
 // Circuit breaker configuration and utilities
