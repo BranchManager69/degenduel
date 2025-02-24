@@ -1,4 +1,6 @@
-import { BaseWebSocketServer } from '../utils/websocket-suite/base-websocket.js';
+// websocket/analytics-ws.js
+
+import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import jwt from 'jsonwebtoken';
@@ -7,7 +9,7 @@ import { config } from '../config/config.js';
 const WHALE_THRESHOLD = 100; // 100 SOL threshold for whale status
 const ACTIVE_SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
-// Verify token helper
+// Verify token helper (???)
 const verifyUserToken = (token) => {
   try {
     const decoded = jwt.verify(token, config.jwt.secret);
@@ -18,6 +20,7 @@ const verifyUserToken = (token) => {
   }
 };
 
+// Analytics WebSocket Server
 class AnalyticsWebSocketServer extends BaseWebSocketServer {
   constructor(httpServer) {
     super(httpServer, {
@@ -131,10 +134,47 @@ class AnalyticsWebSocketServer extends BaseWebSocketServer {
     this.flushEvents(); // Final flush
     super.cleanup();
   }
+
+  /**
+   * Get server metrics
+   * @returns {Object} Server metrics
+   */
+  getMetrics() {
+    return {
+      metrics: {
+        totalConnections: this._getConnectedClients().length,
+        activeSubscriptions: this.eventBuffer.size,
+        messageCount: 0,
+        errorCount: 0,
+        lastUpdate: new Date().toISOString(),
+        cacheHitRate: 0,
+        averageLatency: 0
+      },
+      performance: {
+        messageRate: 0,
+        errorRate: 0,
+        latencyTrend: []
+      },
+      status: 'operational'
+    };
+  }
 }
 
+// Singleton instance
+let instance = null;
+
+/**
+ * Create or return existing AnalyticsWebSocketServer instance
+ * @param {http.Server} httpServer - HTTP server instance
+ * @returns {AnalyticsWebSocketServer} WebSocket server instance
+ */
 export function createAnalyticsWebSocket(httpServer) {
-  return new AnalyticsWebSocketServer(httpServer);
+    if (!instance) {
+        instance = new AnalyticsWebSocketServer(httpServer);
+    }
+    return instance;
 }
 
-export default AnalyticsWebSocketServer; 
+// Export both the class and the instance
+export { AnalyticsWebSocketServer };
+export default instance;

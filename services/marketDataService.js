@@ -7,28 +7,26 @@
  */
 
 // ** Service Auth **
-import { generateServiceAuthHeader } from '../config/service-auth.js';
+//import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
-import { config } from '../config/config.js';
+//import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
-import AdminLogger from '../utils/admin-logger.js';
+//import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
-// Dependencies
-import tokenSyncService from './tokenSyncService.js';
 
 const MARKET_DATA_CONFIG = {
     name: SERVICE_NAMES.MARKET_DATA,
     description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA).description,
-    checkIntervalMs: 5000, // Slowed down to 5 seconds
+    checkIntervalMs: 5000,
     maxRetries: 3,
     retryDelayMs: 1000,
     circuitBreaker: {
-        failureThreshold: 10, // Increased threshold
+        failureThreshold: 10,
         resetTimeoutMs: 30000,
         minHealthyPeriodMs: 60000
     },
@@ -39,16 +37,16 @@ const MARKET_DATA_CONFIG = {
     },
     cache: {
         maxSize: 10000,
-        ttl: 10000, // Increased to 10 seconds
+        ttl: 10000,
         cleanupInterval: 1000
     },
-    dependencies: [SERVICE_NAMES.TOKEN_SYNC],
     limits: {
         maxConcurrentRequests: 1000,
         requestTimeoutMs: 2000
     }
 };
 
+// Market Data Service
 class MarketDataService extends BaseService {
     constructor() {
         ////super(MARKET_DATA_CONFIG.name, MARKET_DATA_CONFIG);
@@ -115,13 +113,6 @@ class MarketDataService extends BaseService {
                         }
                     }
                 },
-                dependencies: {
-                    tokenSync: {
-                        status: 'unknown',
-                        lastCheck: null,
-                        errors: 0
-                    }
-                },
                 performance: {
                     averageLatencyMs: 0,
                     lastOperationTimeMs: 0,
@@ -133,22 +124,6 @@ class MarketDataService extends BaseService {
                     failed: 0
                 }
             };
-
-            // Load config from database if exists
-            const dbConfig = await prisma.system_settings.findUnique({
-                where: { key: this.name }
-            });
-
-            if (dbConfig?.value?.config) {
-                this.config = {
-                    ...this.config,
-                    ...dbConfig.value.config,
-                    circuitBreaker: {
-                        ...this.config.circuitBreaker,
-                        ...(dbConfig.circuitBreaker || {})
-                    }
-                };
-            }
 
             // Initialize cache
             this.cache.clear();
@@ -179,6 +154,7 @@ class MarketDataService extends BaseService {
                 withPrices: tokensWithPrices
             });
 
+            this.isInitialized = true;
             return true;
         } catch (error) {
             logApi.error('Market Data Service initialization error:', error);
@@ -191,18 +167,6 @@ class MarketDataService extends BaseService {
         const startTime = Date.now();
         
         try {
-            // Check dependency health
-            const tokenSyncStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.TOKEN_SYNC);
-            this.marketStats.dependencies.tokenSync = {
-                status: tokenSyncStatus ? 'healthy' : 'unhealthy',
-                lastCheck: new Date().toISOString(),
-                errors: tokenSyncStatus ? 0 : this.marketStats.dependencies.tokenSync.errors + 1
-            };
-
-            if (!tokenSyncStatus) {
-                throw ServiceError.dependency('Token Sync Service unhealthy');
-            }
-
             // Perform maintenance
             this.cleanupCache();
             await this.checkServiceHealth();
