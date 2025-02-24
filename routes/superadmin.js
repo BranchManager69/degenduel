@@ -654,7 +654,6 @@ router.get('/services/states', requireAuth, requireSuperAdmin, async (req, res) 
                         'token_sync_service',
                         'admin_wallet_service',
                         'contest_wallet_service',
-                        'vanity_wallet_service',
                         'wallet_rake_service',
                         'balance_sync_service',
                         'notification_service'
@@ -669,7 +668,6 @@ router.get('/services/states', requireAuth, requireSuperAdmin, async (req, res) 
             token_sync_service: { enabled: true },
             admin_wallet_service: { enabled: true },
             contest_wallet_service: { enabled: true },
-            vanity_wallet_service: { enabled: true },
             wallet_rake_service: { enabled: true },
             balance_sync_service: { enabled: true },
             notification_service: { enabled: true }
@@ -810,5 +808,33 @@ router.post('/services/:serviceName/toggle', requireAuth, requireSuperAdmin, asy
         });
     }
 });
+
+const VALID_SERVICES = [
+    'token_sync_service',
+    'market_data_service',
+    'token_whitelist_service',
+    'contest_evaluation_service',
+    'achievement_service',
+    'referral_service',
+    'contest_wallet_service',
+    'wallet_rake_service',
+    'admin_wallet_service',
+    'faucet_service',
+    'wallet_generator_service'
+];
+
+const DEFAULT_SERVICE_CONFIG = {
+    token_sync_service: { enabled: true },
+    market_data_service: { enabled: true },
+    token_whitelist_service: { enabled: true },
+    contest_evaluation_service: { enabled: true },
+    achievement_service: { enabled: true },
+    referral_service: { enabled: true },
+    contest_wallet_service: { enabled: true },
+    wallet_rake_service: { enabled: true },
+    admin_wallet_service: { enabled: true },
+    faucet_service: { enabled: true },
+    wallet_generator_service: { enabled: true }
+};
 
 export default router;

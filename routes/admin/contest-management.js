@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import { requireAdmin } from '../../middleware/authMiddleware.js';
+import { requireAdmin } from '../../middleware/auth.js';
 import adminContestController from '../../controllers/adminContestController.js';
 import rateLimit from 'express-rate-limit';
 

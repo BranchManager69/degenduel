@@ -17,7 +17,6 @@ import marketDataService from '../../services/marketDataService.js';
 import referralService from '../../services/referralService.js';
 import tokenSyncService from '../../services/tokenSyncService.js';
 import tokenWhitelistService from '../../services/tokenWhitelistService.js';
-import vanityWalletService from '../../services/vanityWalletService.js';
 import walletRakeService from '../../services/walletRakeService.js';
 import faucetService from '../../services/faucetService.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
@@ -54,9 +53,8 @@ class ServiceInitializer {
         logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ Contest Services Registered\x1b[0m');
 
         // Wallet Layer
-        logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer (4/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        serviceManager.register(vanityWalletService, [SERVICE_NAMES.WALLET_GENERATOR]);
-        serviceManager.register(contestWalletService, [SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.CONTEST_EVALUATION]);
+        logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer (3/3) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+        serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
         serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
         serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
         logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ Wallet Services Registered\x1b[0m');
@@ -80,8 +78,7 @@ class ServiceInitializer {
         serviceManager.addDependency(SERVICE_NAMES.REFERRAL, SERVICE_NAMES.CONTEST_EVALUATION);
 
         // Wallet Layer Dependencies
-        serviceManager.addDependency(SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.WALLET_GENERATOR);
-        serviceManager.addDependency(SERVICE_NAMES.CONTEST_WALLET, [SERVICE_NAMES.VANITY_WALLET, SERVICE_NAMES.CONTEST_EVALUATION]);
+        serviceManager.addDependency(SERVICE_NAMES.CONTEST_WALLET, SERVICE_NAMES.CONTEST_EVALUATION);
         serviceManager.addDependency(SERVICE_NAMES.ADMIN_WALLET, SERVICE_NAMES.CONTEST_WALLET);
         serviceManager.addDependency(SERVICE_NAMES.WALLET_RAKE, SERVICE_NAMES.CONTEST_WALLET);
     }

@@ -2,23 +2,16 @@ import { Connection } from '@solana/web3.js';
 import os from 'os';
 import { validateSolanaConfig } from '../../config/config.js';
 import WalletGenerator from '../../services/walletGenerationService.js';
-import { VanityPool } from './vanity-pool.js';
 import FaucetManager from '../../services/faucetService.js';
 import { logApi } from '../logger-suite/logger.js';
 import serviceManager from '../service-suite/service-manager.js';
 import { SERVICE_NAMES, SERVICE_LAYERS } from '../service-suite/service-constants.js';
+//import { ContestWalletService } from '../../services/contestWalletService.js';
+//import { WalletRakeService } from '../../services/walletRakeService.js';
+//import { AdminWalletService } from '../../services/adminWalletService.js';
 
-const SOLANA_SERVICES = [
-    SERVICE_NAMES.WALLET_GENERATOR,
-    SERVICE_NAMES.FAUCET,
-    SERVICE_NAMES.TOKEN_SYNC,
-    SERVICE_NAMES.MARKET_DATA,
-    SERVICE_NAMES.TOKEN_WHITELIST,
-    SERVICE_NAMES.CONTEST_EVALUATION,
-    SERVICE_NAMES.ACHIEVEMENT,
-    SERVICE_NAMES.REFERRAL,
+export const SOLANA_SERVICES = [
     SERVICE_NAMES.CONTEST_WALLET,
-    SERVICE_NAMES.VANITY_WALLET,
     SERVICE_NAMES.WALLET_RAKE,
     SERVICE_NAMES.ADMIN_WALLET
 ];
@@ -30,7 +23,6 @@ class SolanaServiceManager {
     static connection = null;
     static isInitialized = false;
     static monitoringInterval = null;
-    static vanityPool = null;  // Add instance storage
 
     static async initialize() {
         if (this.isInitialized) return;
