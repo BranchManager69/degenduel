@@ -163,7 +163,7 @@ class ReferralService extends BaseService {
             // Load milestone stats
             const [totalMilestones, achievedMilestones] = await Promise.all([
                 prisma.referral_milestones.count(),
-                prisma.referral_milestones.count({ where: { achieved_at: { not: null } } })
+                prisma.referral_milestones.count({ where: { status: 'completed' } })
             ]);
 
             this.referralStats.milestones.total = totalMilestones;
@@ -171,13 +171,13 @@ class ReferralService extends BaseService {
 
             // Load level stats
             const levelStats = await prisma.referral_milestones.groupBy({
-                by: ['level'],
+                by: ['milestone_level'],
                 _count: true,
-                where: { achieved_at: { not: null } }
+                where: { status: 'completed' }
             });
 
             levelStats.forEach(stat => {
-                this.referralStats.milestones.by_level[stat.level] = stat._count;
+                this.referralStats.milestones.by_level[stat.milestone_level] = stat._count;
             });
 
             // Load period stats

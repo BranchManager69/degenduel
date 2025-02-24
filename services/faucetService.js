@@ -172,7 +172,7 @@ class FaucetService extends BaseService {
             // First try to find existing faucet wallet
             let wallet = await prisma.seed_wallets.findFirst({
                 where: {
-                    purpose: 'Seed wallet for faucet',
+                    purpose: 'faucet',
                     is_active: true
                 }
             });
@@ -190,7 +190,7 @@ class FaucetService extends BaseService {
                 // Verify the wallet was created
                 wallet = await prisma.seed_wallets.findFirst({
                     where: {
-                        purpose: 'Seed wallet for faucet',
+                        purpose: 'faucet',
                         is_active: true
                     }
                 });
