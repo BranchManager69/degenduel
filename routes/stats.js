@@ -229,6 +229,34 @@ router.get('/:wallet/history', async (req, res) => {
 //      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet/achievements', async (req, res) => {
     try {
+        // Get user achievements from the database
+        const userAchievements = await prisma.user_achievements.findMany({
+            where: {
+                wallet_address: req.params.wallet
+            },
+            include: {
+                achievement_categories: true,
+                achievement_tiers: true
+            },
+            orderBy: {
+                achieved_at: 'desc'
+            }
+        });
+
+        // Format the response
+        const achievements = userAchievements.map(achievement => ({
+            id: achievement.id,
+            achievement_type: achievement.achievement_type,
+            category: achievement.category,
+            tier: achievement.tier,
+            display_name: achievement.achievement_categories?.name || achievement.achievement_type,
+            tier_name: achievement.achievement_tiers?.name || achievement.tier,
+            achieved_at: achievement.achieved_at,
+            xp_awarded: achievement.xp_awarded,
+            value: achievement.value
+        }));
+
+        // Still include legacy achievements for backward compatibility
         // Get all contest participations for the user
         const participations = await prisma.contest_participants.findMany({
             where: {
@@ -242,37 +270,41 @@ router.get('/:wallet/achievements', async (req, res) => {
             }
         });
 
-        const achievements = [];
-
+        const legacyAchievements = [];
         if (participations.length > 0) {
             // First contest achievement
-            achievements.push({
+            legacyAchievements.push({
                 achievement: 'first_contest',
                 achieved_at: participations[0].joined_at,
-                display_name: 'First Contest Entry'
+                display_name: 'First Contest Entry',
+                legacy: true
             });
 
             // Multiple contests achievements
             if (participations.length >= 3) {
-                achievements.push({
+                legacyAchievements.push({
                     achievement: 'three_contests',
                     achieved_at: participations[2].joined_at,
-                    display_name: 'Participated in 3 Contests'
+                    display_name: 'Participated in 3 Contests',
+                    legacy: true
                 });
             }
 
             if (participations.length >= 5) {
-                achievements.push({
+                legacyAchievements.push({
                     achievement: 'five_contests',
                     achieved_at: participations[4].joined_at,
-                    display_name: 'Participated in 5 Contests'
+                    display_name: 'Participated in 5 Contests',
+                    legacy: true
                 });
             }
         }
 
-        res.json(achievements);
+        // Combine both achievement types
+        res.json([...achievements, ...legacyAchievements]);
     } catch (error) {
         logApi.error('Get achievements failed:', error);
+        logApi.error(error.stack);
         res.status(500).json({ error: error.message });
     }
 });
