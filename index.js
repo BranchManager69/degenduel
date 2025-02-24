@@ -319,14 +319,43 @@ app.use("/api/test", testRoutes);
 // Server health route (no maintenance check needed)
 app.get("/api/health", async (req, res) => {
   try {
+    // Check database connection
     await prisma.$queryRaw`SELECT 1 as connected`;
+    
+    // Get service statuses
+    const serviceStatuses = {};
+    if (serviceManager) {
+      const services = serviceManager.getServices();
+      for (const [name, service] of services) {
+        serviceStatuses[name] = {
+          initialized: service.isInitialized,
+          operational: service.isOperational,
+          lastError: service.stats?.history?.lastError
+        };
+      }
+    }
+
+    // Check WebSocket servers
+    const wsStatus = {};
+    if (global.wsServers) {
+      for (const [name, ws] of Object.entries(global.wsServers)) {
+        wsStatus[name] = {
+          connected: ws?.wss?.clients?.size || 0,
+          status: ws?.isInitialized ? 'ready' : 'initializing'
+        };
+      }
+    }
+
     res.status(200).json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      databases: {
-        postgresql: "connected",
-      },
       uptime: Math.floor(process.uptime()),
+      databases: {
+        postgresql: "connected"
+      },
+      services: serviceStatuses,
+      websockets: wsStatus,
+      memory: process.memoryUsage()
     });
   } catch (error) {
     logApi.error("Health check failed:", error);
@@ -759,10 +788,19 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 // Start the server
-initializeServer();
+initializeServer().then(() => {
+    // Start listening after successful initialization
+    server.listen(port, () => {
+        logApi.info(`Server listening on port ${port}`);
+        displayStartupAnimation(port);
+    });
+}).catch(error => {
+    logApi.error('Failed to initialize server:', error);
+    process.exit(1);
+});
 
 // Log startup info
 logApi.info("Starting DegenDuel API...", {
-  port: port,
-  debug_mode: process.env.DEBUG_MODE,
+    port: port,
+    debug_mode: process.env.DEBUG_MODE,
 });
