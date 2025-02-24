@@ -356,16 +356,19 @@ let instance = null;
  * @returns {ContestWebSocketServer} WebSocket server instance
  */
 export function createContestWebSocket(httpServer) {
-    if (!httpServer) {
-        logApi.error('HTTP server instance is required for WebSocket initialization');
+    try {
+        if (!instance && httpServer) {
+            instance = new ContestWebSocketServer(httpServer);
+            logApi.info('Contest WebSocket server instance created');
+        } else if (!httpServer) {
+            logApi.error('HTTP server instance is required for WebSocket initialization');
+            return null;
+        }
+        return instance;
+    } catch (error) {
+        logApi.error('Failed to create contest WebSocket server:', error);
         return null;
     }
-
-    if (!instance) {
-        instance = new ContestWebSocketServer(httpServer);
-        logApi.info('Contest WebSocket server instance created');
-    }
-    return instance;
 }
 
 // Export the class for testing
