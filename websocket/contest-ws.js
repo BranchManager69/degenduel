@@ -1,7 +1,54 @@
-import { BaseWebSocketServer } from '../utils/websocket-suite/base-websocket.js';
+// websocket/contest-ws.js
+
+/*
+ * This is the WebSocket server for the contest service.
+ * It handles real-time contest updates, leaderboard changes, and participant activities.
+ * 
+ * Features:
+ * - Contest state subscription/unsubscription
+ * - Real-time leaderboard updates
+ * - Participant activity broadcasting
+ * - Periodic state updates
+ * 
+ * Message Types:
+ * - SUBSCRIBE_CONTEST: Subscribe to contest updates
+ * - UNSUBSCRIBE_CONTEST: Unsubscribe from contest updates
+ * - CONTEST_UPDATED: Contest state update
+ * - LEADERBOARD_UPDATED: Leaderboard state update
+ * - PARTICIPANT_ACTIVITY: Real-time participant actions
+ * - ERROR: Error messages
+ */
+
+import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 
+// Message type constants
+const MESSAGE_TYPES = {
+    // Client -> Server
+    SUBSCRIBE_CONTEST: 'SUBSCRIBE_CONTEST',
+    UNSUBSCRIBE_CONTEST: 'UNSUBSCRIBE_CONTEST',
+    
+    // Server -> Client
+    CONTEST_UPDATED: 'CONTEST_UPDATED',
+    LEADERBOARD_UPDATED: 'LEADERBOARD_UPDATED',
+    PARTICIPANT_ACTIVITY: 'PARTICIPANT_ACTIVITY',
+    ERROR: 'ERROR'
+};
+
+// Error codes
+const ERROR_CODES = {
+    CONTEST_NOT_FOUND: 4044,
+    INVALID_MESSAGE: 4004,
+    SUBSCRIPTION_FAILED: 5002,
+    SERVER_ERROR: 5001,
+    UNAUTHORIZED: 4003
+};
+
+/**
+ * ContestWebSocketServer class
+ * Handles real-time contest updates and participant interactions
+ */
 class ContestWebSocketServer extends BaseWebSocketServer {
     constructor(httpServer) {
         super(httpServer, {
@@ -11,32 +58,60 @@ class ContestWebSocketServer extends BaseWebSocketServer {
             rateLimit: 120 // 2 updates/second as per requirements
         });
 
-        this.contestSubscriptions = new Map(); // clientId -> Set<contestId>
+        /** @type {Map<string, Set<string>>} userId -> Set<contestId> */
+        this.contestSubscriptions = new Map();
+        
+        // Start periodic updates
         this.startPeriodicUpdates();
+        
+        logApi.info('Contest WebSocket server initialized');
     }
 
+    /**
+     * Handle incoming client messages
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} message - Parsed message object
+     * @param {Object} clientInfo - Client information
+     */
     async handleClientMessage(ws, message, clientInfo) {
         try {
             const { type, contestId } = message;
 
             switch (type) {
-                case 'SUBSCRIBE_CONTEST':
+                case MESSAGE_TYPES.SUBSCRIBE_CONTEST:
                     await this.handleContestSubscription(ws, clientInfo, contestId);
                     break;
-                case 'UNSUBSCRIBE_CONTEST':
+                    
+                case MESSAGE_TYPES.UNSUBSCRIBE_CONTEST:
                     await this.handleContestUnsubscription(ws, clientInfo, contestId);
                     break;
+                    
                 default:
-                    this.sendError(ws, 'Unknown message type', 4004);
+                    this.sendError(ws, 'Unknown message type', ERROR_CODES.INVALID_MESSAGE);
+                    logApi.warn('Unknown contest message type received', {
+                        type,
+                        clientId: clientInfo.userId
+                    });
             }
         } catch (error) {
             logApi.error('Error handling contest message:', error);
-            this.sendError(ws, 'Failed to process contest request', 5001);
+            this.sendError(ws, 'Failed to process contest request', ERROR_CODES.SERVER_ERROR);
         }
     }
 
+    /**
+     * Handle contest subscription request
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     * @param {string} contestId - Contest ID to subscribe to
+     */
     async handleContestSubscription(ws, clientInfo, contestId) {
         try {
+            if (!contestId) {
+                this.sendError(ws, 'Contest ID is required', ERROR_CODES.INVALID_MESSAGE);
+                return;
+            }
+
             // Verify contest exists and user has access
             const contest = await prisma.contests.findUnique({
                 where: { id: contestId },
@@ -48,7 +123,7 @@ class ContestWebSocketServer extends BaseWebSocketServer {
             });
 
             if (!contest) {
-                this.sendError(ws, 'Contest not found', 4044);
+                this.sendError(ws, 'Contest not found', ERROR_CODES.CONTEST_NOT_FOUND);
                 return;
             }
 
@@ -59,22 +134,45 @@ class ContestWebSocketServer extends BaseWebSocketServer {
             this.contestSubscriptions.get(clientInfo.userId).add(contestId);
 
             // Send initial state
-            await this.sendContestState(ws, contestId);
-            await this.sendLeaderboardState(ws, contestId);
+            await Promise.all([
+                this.sendContestState(ws, contestId),
+                this.sendLeaderboardState(ws, contestId)
+            ]);
+
+            logApi.info('Client subscribed to contest', {
+                userId: clientInfo.userId,
+                contestId,
+                wallet: clientInfo.wallet
+            });
 
         } catch (error) {
             logApi.error('Error in contest subscription:', error);
-            this.sendError(ws, 'Failed to subscribe to contest', 5002);
+            this.sendError(ws, 'Failed to subscribe to contest', ERROR_CODES.SUBSCRIPTION_FAILED);
         }
     }
 
+    /**
+     * Handle contest unsubscription request
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} clientInfo - Client information
+     * @param {string} contestId - Contest ID to unsubscribe from
+     */
     async handleContestUnsubscription(ws, clientInfo, contestId) {
         const userSubs = this.contestSubscriptions.get(clientInfo.userId);
         if (userSubs) {
             userSubs.delete(contestId);
+            logApi.info('Client unsubscribed from contest', {
+                userId: clientInfo.userId,
+                contestId
+            });
         }
     }
 
+    /**
+     * Send contest state to client
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {string} contestId - Contest ID
+     */
     async sendContestState(ws, contestId) {
         try {
             const contest = await prisma.contests.findUnique({
@@ -89,14 +187,15 @@ class ContestWebSocketServer extends BaseWebSocketServer {
             if (!contest) return;
 
             this.sendToClient(ws, {
-                type: 'CONTEST_UPDATED',
+                type: MESSAGE_TYPES.CONTEST_UPDATED,
                 data: {
                     contest_id: contest.id,
                     status: contest.status,
                     current_round: contest.current_round,
                     time_remaining: contest.end_time ? new Date(contest.end_time).getTime() - Date.now() : null,
                     total_participants: contest._count.participants,
-                    total_prize_pool: contest.prize_pool
+                    total_prize_pool: contest.prize_pool,
+                    timestamp: new Date().toISOString()
                 }
             });
         } catch (error) {
@@ -104,6 +203,11 @@ class ContestWebSocketServer extends BaseWebSocketServer {
         }
     }
 
+    /**
+     * Send leaderboard state to client
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {string} contestId - Contest ID
+     */
     async sendLeaderboardState(ws, contestId) {
         try {
             const leaderboard = await prisma.$queryRaw`
@@ -124,7 +228,7 @@ class ContestWebSocketServer extends BaseWebSocketServer {
             `;
 
             this.sendToClient(ws, {
-                type: 'LEADERBOARD_UPDATED',
+                type: MESSAGE_TYPES.LEADERBOARD_UPDATED,
                 data: {
                     contest_id: contestId,
                     leaderboard,
@@ -136,28 +240,41 @@ class ContestWebSocketServer extends BaseWebSocketServer {
         }
     }
 
+    /**
+     * Start periodic updates for contest and leaderboard states
+     */
     startPeriodicUpdates() {
         // Update contest states every 5 seconds
         setInterval(async () => {
-            for (const [userId, contestIds] of this.contestSubscriptions) {
-                for (const contestId of contestIds) {
-                    const clients = this._getConnectedClients()
-                        .filter(client => this._getClientInfo(client)?.userId === userId);
-                    
-                    for (const client of clients) {
-                        await this.sendContestState(client, contestId);
-                        await this.sendLeaderboardState(client, contestId);
+            try {
+                for (const [userId, contestIds] of this.contestSubscriptions) {
+                    for (const contestId of contestIds) {
+                        const clients = this._getConnectedClients()
+                            .filter(client => this._getClientInfo(client)?.userId === userId);
+                        
+                        for (const client of clients) {
+                            await Promise.all([
+                                this.sendContestState(client, contestId),
+                                this.sendLeaderboardState(client, contestId)
+                            ]);
+                        }
                     }
                 }
+            } catch (error) {
+                logApi.error('Error in periodic updates:', error);
             }
         }, 5000);
     }
 
-    // Public methods for external use
+    /**
+     * Broadcast participant activity to subscribed clients
+     * @param {string} contestId - Contest ID
+     * @param {Object} activity - Activity data to broadcast
+     */
     broadcastParticipantActivity(contestId, activity) {
         this.broadcast(
             {
-                type: 'PARTICIPANT_ACTIVITY',
+                type: MESSAGE_TYPES.PARTICIPANT_ACTIVITY,
                 data: {
                     ...activity,
                     contest_id: contestId,
@@ -171,14 +288,88 @@ class ContestWebSocketServer extends BaseWebSocketServer {
         );
     }
 
+    /**
+     * Get server metrics
+     * @returns {Object} Server metrics
+     */
+    getMetrics() {
+        try {
+            const connectedClients = this._getConnectedClients()?.length || 0;
+            const activeSubscriptions = Array.from(this.contestSubscriptions.values())
+                .reduce((total, contests) => total + (contests?.size || 0), 0);
+
+            return {
+                metrics: {
+                    totalConnections: connectedClients,
+                    activeSubscriptions,
+                    messageCount: 0,
+                    errorCount: 0,
+                    lastUpdate: new Date().toISOString(),
+                    cacheHitRate: 0,
+                    averageLatency: 0
+                },
+                performance: {
+                    messageRate: 0,
+                    errorRate: 0,
+                    latencyTrend: []
+                },
+                status: connectedClients > 0 ? 'operational' : 'idle'
+            };
+        } catch (error) {
+            logApi.error('Error getting contest WebSocket metrics:', error);
+            return {
+                metrics: {
+                    totalConnections: 0,
+                    activeSubscriptions: 0,
+                    messageCount: 0,
+                    errorCount: 1,
+                    lastUpdate: new Date().toISOString(),
+                    cacheHitRate: 0,
+                    averageLatency: 0
+                },
+                performance: {
+                    messageRate: 0,
+                    errorRate: 1,
+                    latencyTrend: []
+                },
+                status: 'error'
+            };
+        }
+    }
+
+    /**
+     * Clean up resources
+     */
     cleanup() {
         this.contestSubscriptions.clear();
         super.cleanup();
+        logApi.info('Contest WebSocket server cleaned up');
     }
 }
 
+// Singleton instance
+let instance = null;
+
+/**
+ * Create or return existing ContestWebSocketServer instance
+ * @param {http.Server} httpServer - HTTP server instance
+ * @returns {ContestWebSocketServer} WebSocket server instance
+ */
 export function createContestWebSocket(httpServer) {
-    return new ContestWebSocketServer(httpServer);
+    if (!httpServer) {
+        logApi.error('HTTP server instance is required for WebSocket initialization');
+        return null;
+    }
+
+    if (!instance) {
+        instance = new ContestWebSocketServer(httpServer);
+        logApi.info('Contest WebSocket server instance created');
+    }
+    return instance;
 }
 
-export default ContestWebSocketServer; 
+// Export the class for testing
+export { ContestWebSocketServer };
+
+// Export the createContestWebSocket function as default
+export default createContestWebSocket; 
