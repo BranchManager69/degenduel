@@ -1,6 +1,23 @@
 # Node.js dependencies
 node_modules/
 
+# Code compilation
+code_compilation/
+
+# Archive
+archive/
+
+# Database
+data/
+db/
+
+# Logs
+logs/
+*/logs/
+
+# Scripts
+scripts/
+
 # Backups
 backups/
 
