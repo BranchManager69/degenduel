@@ -7,7 +7,7 @@
 
 import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
-import ServiceManager from '../utils/service-suite/service-manager.js';
+import serviceManager from '../utils/service-suite/service-manager.js';
 import { isHealthy, getCircuitBreakerStatus } from '../utils/service-suite/circuit-breaker-config.js';
 
 const HEARTBEAT_INTERVAL = 5000; // 5 seconds
@@ -72,7 +72,7 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
     async notifyServiceUpdate(serviceName, state) {
         if (!this.wss) return;
 
-        const service = ServiceManager.services.get(serviceName);
+        const service = serviceManager.services.get(serviceName);
         if (!service) return;
 
         const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
@@ -80,7 +80,7 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
             type: 'service:update',
             timestamp: new Date().toISOString(),
             service: serviceName,
-            status: ServiceManager.determineServiceStatus(service.stats),
+            status: serviceManager.determineServiceStatus(service.stats),
             circuit_breaker: {
                 status: circuitBreakerStatus.status,
                 details: circuitBreakerStatus.details,
@@ -122,14 +122,14 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
         super.onConnection(ws, request);
 
         // Send current state of all services
-        const services = Array.from(ServiceManager.services.entries());
+        const services = Array.from(serviceManager.services.entries());
         const states = await Promise.all(
             services.map(async ([name, service]) => {
-                const state = await ServiceManager.getServiceState(name);
+                const state = await serviceManager.getServiceState(name);
                 const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
                 return {
                     service: name,
-                    status: ServiceManager.determineServiceStatus(service.stats),
+                    status: serviceManager.determineServiceStatus(service.stats),
                     circuit_breaker: {
                         status: circuitBreakerStatus.status,
                         details: circuitBreakerStatus.details,
@@ -202,7 +202,7 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
      * Handle health check request
      */
     async handleHealthCheck(ws, serviceName) {
-        const service = ServiceManager.services.get(serviceName);
+        const service = serviceManager.services.get(serviceName);
         if (!service) {
             ws.send(JSON.stringify({
                 type: 'error',
@@ -213,7 +213,7 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
             return;
         }
 
-        const isServiceHealthy = await ServiceManager.checkServiceHealth(serviceName);
+        const isServiceHealthy = await serviceManager.checkServiceHealth(serviceName);
         const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
         
         ws.send(JSON.stringify({
@@ -221,7 +221,7 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
             timestamp: new Date().toISOString(),
             service: serviceName,
             healthy: isServiceHealthy,
-            status: ServiceManager.determineServiceStatus(service.stats),
+            status: serviceManager.determineServiceStatus(service.stats),
             circuit_breaker: {
                 status: circuitBreakerStatus.status,
                 details: circuitBreakerStatus.details,
@@ -235,7 +235,7 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
      * Handle circuit breaker reset request
      */
     async handleCircuitBreakerReset(ws, serviceName) {
-        const service = ServiceManager.services.get(serviceName);
+        const service = serviceManager.services.get(serviceName);
         if (!service) {
             ws.send(JSON.stringify({
                 type: 'error',
@@ -274,50 +274,87 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
      */
     startPeriodicUpdates() {
         setInterval(async () => {
-            const services = Array.from(ServiceManager.services.entries());
-            const states = await Promise.all(
-                services.map(async ([name, service]) => {
-                    const state = await ServiceManager.getServiceState(name);
-                    const circuitBreakerStatus = getCircuitBreakerStatus(service?.stats);
-                    
-                    // Safely access circuit breaker stats with defaults
-                    const circuitBreakerStats = service?.stats?.circuitBreaker || {
-                        isOpen: false,
-                        failures: 0,
-                        lastFailure: null,
-                        lastSuccess: null,
-                        recoveryAttempts: 0,
-                        lastRecoveryAttempt: null,
-                        lastReset: null
-                    };
+            try {
+                const services = Array.from(serviceManager.services.entries());
+                const states = await Promise.all(
+                    services.map(async ([name, service]) => {
+                        try {
+                            if (!service) {
+                                return {
+                                    service: name,
+                                    status: 'unknown',
+                                    circuit_breaker: {
+                                        status: 'unknown',
+                                        details: 'Service not found',
+                                        is_open: false,
+                                        failures: 0,
+                                        last_failure: null,
+                                        last_success: null,
+                                        recovery_attempts: 0,
+                                        last_recovery_attempt: null,
+                                        last_reset: null
+                                    },
+                                    operations: { total: 0, successful: 0, failed: 0 },
+                                    performance: { averageOperationTimeMs: 0, lastOperationTimeMs: 0 },
+                                    config: {}
+                                };
+                            }
 
-                    return {
-                        service: name,
-                        status: ServiceManager.determineServiceStatus(service?.stats),
-                        circuit_breaker: {
-                            status: circuitBreakerStatus.status,
-                            details: circuitBreakerStatus.details,
-                            is_open: circuitBreakerStats.isOpen,
-                            failures: circuitBreakerStats.failures,
-                            last_failure: circuitBreakerStats.lastFailure,
-                            last_success: circuitBreakerStats.lastSuccess,
-                            recovery_attempts: circuitBreakerStats.recoveryAttempts,
-                            last_recovery_attempt: circuitBreakerStats.lastRecoveryAttempt,
-                            last_reset: circuitBreakerStats.lastReset
-                        },
-                        operations: service?.stats?.operations || { total: 0, successful: 0, failed: 0 },
-                        performance: service?.stats?.performance || { averageOperationTimeMs: 0, lastOperationTimeMs: 0 },
-                        config: service?.config?.circuitBreaker || {},
-                        ...state
-                    };
-                })
-            );
+                            const state = await serviceManager.getServiceState(name);
+                            const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
+                            
+                            return {
+                                service: name,
+                                status: serviceManager.determineServiceStatus(service.stats),
+                                circuit_breaker: {
+                                    status: circuitBreakerStatus.status,
+                                    details: circuitBreakerStatus.details,
+                                    is_open: circuitBreakerStatus.isOpen,
+                                    failures: circuitBreakerStatus.failures,
+                                    last_failure: circuitBreakerStatus.lastFailure,
+                                    last_success: circuitBreakerStatus.lastSuccess,
+                                    recovery_attempts: circuitBreakerStatus.recoveryAttempts,
+                                    last_recovery_attempt: circuitBreakerStatus.lastRecoveryAttempt,
+                                    last_reset: circuitBreakerStatus.lastReset
+                                },
+                                operations: service.stats?.operations || { total: 0, successful: 0, failed: 0 },
+                                performance: service.stats?.performance || { averageOperationTimeMs: 0, lastOperationTimeMs: 0 },
+                                config: service.config?.circuitBreaker || {},
+                                ...state
+                            };
+                        } catch (error) {
+                            logApi.error(`Error getting state for service ${name}:`, error);
+                            return {
+                                service: name,
+                                status: 'error',
+                                error: error.message,
+                                circuit_breaker: {
+                                    status: 'unknown',
+                                    details: 'Error getting service state',
+                                    is_open: false,
+                                    failures: 0,
+                                    last_failure: null,
+                                    last_success: null,
+                                    recovery_attempts: 0,
+                                    last_recovery_attempt: null,
+                                    last_reset: null
+                                },
+                                operations: { total: 0, successful: 0, failed: 0 },
+                                performance: { averageOperationTimeMs: 0, lastOperationTimeMs: 0 },
+                                config: {}
+                            };
+                        }
+                    })
+                );
 
-            this.broadcast({
-                type: 'services:state',
-                timestamp: new Date().toISOString(),
-                services: states
-            });
+                this.broadcast({
+                    type: 'services:state',
+                    timestamp: new Date().toISOString(),
+                    services: states
+                });
+            } catch (error) {
+                logApi.error('Error in periodic update:', error);
+            }
         }, HEARTBEAT_INTERVAL);
     }
 
