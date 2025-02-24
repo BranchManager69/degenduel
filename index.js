@@ -202,10 +202,13 @@ try {
             failed: Array.isArray(results?.failed) ? results.failed : []
         };
 
-        logApi.info('Service initialization results:', {
-            initialized: initResults.Services.initialized,
-            failed: initResults.Services.failed
-        });
+        if (false) {
+            logApi.info('Service initialization results:', {
+                initialized: initResults.Services.initialized,
+                failed: initResults.Services.failed
+            });
+        } else {
+        }
 
     } catch (error) {
         logApi.error('Service initialization failed:', {

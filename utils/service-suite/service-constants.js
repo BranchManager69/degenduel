@@ -32,7 +32,7 @@ export const SERVICE_NAMES = {
     ADMIN_WALLET: 'admin_wallet_service',
 
     // Infrastructure Layer Services
-    FAUCET: 'faucet_service',
+    LIQUIDITY: 'liquidity_service',
     WALLET_GENERATOR: 'wallet_generator_service'
 };
 
@@ -115,7 +115,7 @@ export const SERVICE_METADATA = {
     },
 
     // Infrastructure Layer Services
-    [SERVICE_NAMES.FAUCET]: {
+    [SERVICE_NAMES.LIQUIDITY]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'Test user SOL distribution and recovery',
         updateFrequency: '1h',

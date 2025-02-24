@@ -278,24 +278,36 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
             const states = await Promise.all(
                 services.map(async ([name, service]) => {
                     const state = await ServiceManager.getServiceState(name);
-                    const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
+                    const circuitBreakerStatus = getCircuitBreakerStatus(service?.stats);
+                    
+                    // Safely access circuit breaker stats with defaults
+                    const circuitBreakerStats = service?.stats?.circuitBreaker || {
+                        isOpen: false,
+                        failures: 0,
+                        lastFailure: null,
+                        lastSuccess: null,
+                        recoveryAttempts: 0,
+                        lastRecoveryAttempt: null,
+                        lastReset: null
+                    };
+
                     return {
                         service: name,
-                        status: ServiceManager.determineServiceStatus(service.stats),
+                        status: ServiceManager.determineServiceStatus(service?.stats),
                         circuit_breaker: {
                             status: circuitBreakerStatus.status,
                             details: circuitBreakerStatus.details,
-                            is_open: service.stats.circuitBreaker.isOpen,
-                            failures: service.stats.circuitBreaker.failures,
-                            last_failure: service.stats.circuitBreaker.lastFailure,
-                            last_success: service.stats.circuitBreaker.lastSuccess,
-                            recovery_attempts: service.stats.circuitBreaker.recoveryAttempts,
-                            last_recovery_attempt: service.stats.circuitBreaker.lastRecoveryAttempt,
-                            last_reset: service.stats.circuitBreaker.lastReset
+                            is_open: circuitBreakerStats.isOpen,
+                            failures: circuitBreakerStats.failures,
+                            last_failure: circuitBreakerStats.lastFailure,
+                            last_success: circuitBreakerStats.lastSuccess,
+                            recovery_attempts: circuitBreakerStats.recoveryAttempts,
+                            last_recovery_attempt: circuitBreakerStats.lastRecoveryAttempt,
+                            last_reset: circuitBreakerStats.lastReset
                         },
-                        operations: service.stats.operations,
-                        performance: service.stats.performance,
-                        config: service.config.circuitBreaker,
+                        operations: service?.stats?.operations || { total: 0, successful: 0, failed: 0 },
+                        performance: service?.stats?.performance || { averageOperationTimeMs: 0, lastOperationTimeMs: 0 },
+                        config: service?.config?.circuitBreaker || {},
                         ...state
                     };
                 })
