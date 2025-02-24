@@ -41,6 +41,7 @@ import { createTokenDataWebSocket } from './websocket/token-data-ws.js';
 import websocketTestRoutes from './routes/admin/websocket-test.js';
 // Import Circuit Breaker routes
 import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
+import serviceManagementRoutes from './routes/admin/service-management.js';
 // Import (some) Admin Routes
 import contestManagementRoutes from "./routes/admin/contest-management.js";
 
@@ -292,6 +293,7 @@ app.use("/api/admin/wallets", walletManagementRoutes);
 app.use("/api/admin/contests", contestManagementRoutes);
 app.use("/api/admin/faucet", faucetManagementRoutes);
 app.use("/api/admin/metrics", serviceMetricsRoutes);
+app.use("/api/admin/service-management", serviceManagementRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use('/api/admin/websocket', websocketTestRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
