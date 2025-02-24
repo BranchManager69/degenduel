@@ -1188,8 +1188,8 @@ router.put('/:wallet', requireAuth, async (req, res) => {
  * @swagger
  * /api/users/{wallet}/achievements:
  *   get:
- *     summary: Get user achievements
- *     description: Retrieve all achievements for a specific user, ordered by achievement date (descending)
+ *     summary: Get user achievements with summary statistics
+ *     description: Returns user's earned achievements along with summary counts by tier and category
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -1197,52 +1197,294 @@ router.put('/:wallet', requireAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: User's wallet address to fetch achievements for
+ *         description: User's wallet address
  *     responses:
  *       200:
- *         description: List of user achievements
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/UserAchievement'
- *               example:
- *                 - id: 1
- *                   wallet_address: "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"
- *                   achievement_id: "first_win"
- *                   achieved_at: "2024-02-20T15:30:00Z"
- *                   metadata: { "contest_id": 123, "prize": 100 }
- *       404:
- *         $ref: '#/components/responses/UserNotFound'
- *       500:
- *         description: Server error
+ *         description: User achievements and summary statistics
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 error:
- *                   type: string
- *                   example: Failed to fetch achievements
- *                 message:
- *                   type: string
- *                   description: Detailed error message (only in development)
+ *                 achievements:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       type:
+ *                         type: string
+ *                       category:
+ *                         type: string
+ *                       tier:
+ *                         type: string
+ *                       achieved_at:
+ *                         type: string
+ *                         format: date-time
+ *                       xp_awarded:
+ *                         type: integer
+ *                       context:
+ *                         type: object
+ *                 summary:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     by_tier:
+ *                       type: object
+ *                       properties:
+ *                         BRONZE:
+ *                           type: integer
+ *                         SILVER:
+ *                           type: integer
+ *                         GOLD:
+ *                           type: integer
+ *                         PLATINUM:
+ *                           type: integer
+ *                         DIAMOND:
+ *                           type: integer
+ *                     by_category:
+ *                       type: object
+ *                       properties:
+ *                         CONTESTS:
+ *                           type: integer
+ *                         TRADING:
+ *                           type: integer
+ *                         SOCIAL:
+ *                           type: integer
+ *                         PROGRESSION:
+ *                           type: integer
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
  */
-// Get user achievements by wallet address (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/users/{wallet}/achievements
-//      headers: { "Cookie": "session=<jwt>" }
 router.get('/:wallet/achievements', async (req, res) => {
   try {
-    const achievements = await prisma.user_achievements.findMany({
-      where: { wallet_address: req.params.wallet },
-      orderBy: { achieved_at: 'desc' }
+    // First check if user exists
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: req.params.wallet }
     });
 
-    res.json(achievements);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get all achievements with their details and related info
+    const achievements = await prisma.user_achievements.findMany({
+      where: { wallet_address: req.params.wallet },
+      orderBy: { achieved_at: 'desc' },
+      include: {
+        achievement_categories: true,  // Get category details
+        achievement_tiers: true        // Get tier details
+      }
+    });
+
+    // Calculate summary statistics
+    const summary = {
+      total: achievements.length,
+      by_tier: {
+        BRONZE: 0,
+        SILVER: 0,
+        GOLD: 0,
+        PLATINUM: 0,
+        DIAMOND: 0
+      },
+      by_category: {
+        CONTESTS: 0,
+        TRADING: 0,
+        SOCIAL: 0,
+        PROGRESSION: 0
+      }
+    };
+
+    // Update summary counts
+    achievements.forEach(achievement => {
+      if (achievement.tier) {
+        summary.by_tier[achievement.tier] = (summary.by_tier[achievement.tier] || 0) + 1;
+      }
+      if (achievement.category) {
+        summary.by_category[achievement.category] = (summary.by_category[achievement.category] || 0) + 1;
+      }
+    });
+
+    res.json({
+      achievements,
+      summary
+    });
   } catch (error) {
-    logApi.error('Failed to fetch achievements:', error);
+    logApi.error('Failed to fetch achievements:', {
+      error: error.message,
+      wallet: req.params.wallet,
+      stack: error.stack
+    });
     res.status(500).json({ error: 'Failed to fetch achievements' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/{wallet}/level:
+ *   get:
+ *     summary: Get user's level and progression details
+ *     description: Returns current level, XP progress, and achievement requirements
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's wallet address
+ *     responses:
+ *       200:
+ *         description: User level and progression details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 current_level:
+ *                   type: object
+ *                   properties:
+ *                     level_number:
+ *                       type: integer
+ *                     class_name:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     icon_url:
+ *                       type: string
+ *                 experience:
+ *                   type: object
+ *                   properties:
+ *                     current:
+ *                       type: integer
+ *                     next_level_at:
+ *                       type: integer
+ *                     percentage:
+ *                       type: number
+ *                 achievements:
+ *                   type: object
+ *                   properties:
+ *                     bronze:
+ *                       type: object
+ *                       properties:
+ *                         current:
+ *                           type: integer
+ *                         required:
+ *                           type: integer
+ *                     silver:
+ *                       type: object
+ *                       properties:
+ *                         current:
+ *                           type: integer
+ *                         required:
+ *                           type: integer
+ *                     gold:
+ *                       type: object
+ *                       properties:
+ *                         current:
+ *                           type: integer
+ *                         required:
+ *                           type: integer
+ *                     platinum:
+ *                       type: object
+ *                       properties:
+ *                         current:
+ *                           type: integer
+ *                         required:
+ *                           type: integer
+ *                     diamond:
+ *                       type: object
+ *                       properties:
+ *                         current:
+ *                           type: integer
+ *                         required:
+ *                           type: integer
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:wallet/level', async (req, res) => {
+  try {
+    // Get user with their current level
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: req.params.wallet },
+      include: {
+        user_level: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get next level requirements
+    const nextLevel = await prisma.user_levels.findFirst({
+      where: {
+        level_number: (user.user_level?.level_number || 0) + 1
+      }
+    });
+
+    // Get achievement counts by tier
+    const achievements = await prisma.user_achievements.groupBy({
+      by: ['tier'],
+      where: { wallet_address: req.params.wallet },
+      _count: true
+    });
+
+    // Convert achievement counts to required format
+    const achievementCounts = {
+      bronze: { current: 0, required: user.user_level?.bronze_achievements_required || 0 },
+      silver: { current: 0, required: user.user_level?.silver_achievements_required || 0 },
+      gold: { current: 0, required: user.user_level?.gold_achievements_required || 0 },
+      platinum: { current: 0, required: user.user_level?.platinum_achievements_required || 0 },
+      diamond: { current: 0, required: user.user_level?.diamond_achievements_required || 0 }
+    };
+
+    achievements.forEach(achievement => {
+      const tier = achievement.tier.toLowerCase();
+      if (achievementCounts[tier]) {
+        achievementCounts[tier].current = achievement._count;
+      }
+    });
+
+    // Calculate XP progress
+    const currentXP = user.experience_points || 0;
+    const nextLevelXP = nextLevel?.min_exp || currentXP;
+    const currentLevelXP = user.user_level?.min_exp || 0;
+    const xpProgress = Math.min(100, Math.round(((currentXP - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100));
+
+    res.json({
+      current_level: {
+        level_number: user.user_level?.level_number || 1,
+        class_name: user.user_level?.class_name || 'NOVICE',
+        title: user.user_level?.title || 'Novice Trader',
+        icon_url: user.user_level?.icon_url || '/assets/levels/novice.svg'
+      },
+      next_level: nextLevel ? {
+        level_number: nextLevel.level_number,
+        class_name: nextLevel.class_name,
+        title: nextLevel.title,
+        icon_url: nextLevel.icon_url
+      } : null,
+      experience: {
+        current: currentXP,
+        next_level_at: nextLevelXP,
+        percentage: xpProgress
+      },
+      achievements: achievementCounts
+    });
+  } catch (error) {
+    logApi.error('Failed to fetch level info:', {
+      error: error.message,
+      wallet: req.params.wallet,
+      stack: error.stack
+    });
+    res.status(500).json({ error: 'Failed to fetch level info' });
   }
 });
 
