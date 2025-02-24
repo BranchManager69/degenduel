@@ -269,9 +269,15 @@ model user_achievements {
   achievement_type String
   value            Json?     @default("{}")
   achieved_at      DateTime? @default(now()) @db.Timestamptz(6)
+  tier             String    @default("BRONZE") @db.VarChar(20)
+  category         String    @default("CONTESTS") @db.VarChar(20)
+  xp_awarded       Int       @default(0)
+  context          Json?     @default("{}")
 
   @@index([wallet_address], map: "idx_user_achievements_wallet")
   @@index([achievement_type], map: "idx_user_achievements_type")
+  @@index([category], map: "idx_user_achievements_category")
+  @@index([tier], map: "idx_user_achievements_tier")
   @@map("user_achievements")
 }
 
@@ -336,6 +342,8 @@ model users {
   ban_reason                String?
   referral_code             String?                     @unique @db.VarChar(20)
   referred_by_code          String?                     @db.VarChar(20)
+  experience_points         Int                         @default(0)
+  last_level_up             DateTime?                   @db.Timestamptz(6)
   profile_image_url         String?                     @db.VarChar(255)
   profile_image_updated_at  DateTime?                   @db.Timestamptz(6)
   contest_participants      contest_participants[]
@@ -358,6 +366,7 @@ model users {
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
   @@index([role], map: "idx_users_role")
+  @@index([experience_points(sort: Desc)], map: "idx_users_experience_points")
   @@map("users")
 }
 

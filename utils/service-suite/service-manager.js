@@ -16,10 +16,10 @@ import {
     SERVICE_LAYERS, 
     getServiceMetadata,
     getServiceDependencies,
-    getServiceCriticalLevel,
+    //getServiceCriticalLevel,
     validateDependencyChain 
 } from './service-constants.js';
-import { ServiceError } from './service-error.js';
+//import { ServiceError } from './service-error.js';
 import serviceEvents from './service-events.js';
 import { BaseService } from './base-service.js';
 import path from 'path';
@@ -190,6 +190,11 @@ class ServiceManager {
                         metadata: getServiceMetadata(serviceName),
                         dependencies: this.dependencies.get(serviceName) || []
                     });
+                } else {
+                    logApi.info(`[SERVICE INIT] Attempting to initialize infrastructure service ${serviceName}`, {
+                        //metadata: getServiceMetadata(serviceName),
+                        //dependencies: this.dependencies.get(serviceName) || []
+                    });
                 }
 
                 const success = await this._initializeService(serviceName, initialized, failed);
@@ -207,7 +212,7 @@ class ServiceManager {
                     });
                 } else {
                     logApi.error(`[SERVICE INIT] Failed to initialize infrastructure service ${serviceName}:`, {
-                        error: error.message,
+                        //error: error.message,
                         //stack: error.stack,
                         //metadata: getServiceMetadata(serviceName)
                     });
@@ -252,7 +257,7 @@ class ServiceManager {
                     });
                 } else {
                     logApi.error(`[SERVICE INIT] Failed to initialize service ${serviceName}:`, {
-                        error: error.message,
+                        //error: error.message,
                         //stack: error.stack,
                         //metadata: getServiceMetadata(serviceName)
                     });
@@ -272,8 +277,8 @@ class ServiceManager {
             logApi.info('Service initialization completed:', summary);
         } else {
             logApi.info('Service initialization completed:', {
-                initialized: initialized.size,
-                failed: failed.size
+                //initialized: initialized.size,
+                //failed: failed.size
             });
         }
 
@@ -355,8 +360,8 @@ class ServiceManager {
                     });
                 } else {
                     logApi.error(`[SERVICE INIT] ${error.message}`, {
-                        availableServices: Array.from(this.services.keys()),
-                        metadata: getServiceMetadata(serviceName)
+                        //availableServices: Array.from(this.services.keys()),
+                        //metadata: getServiceMetadata(serviceName)
                     });
                 }
                 failed.add(serviceName);
@@ -394,7 +399,7 @@ class ServiceManager {
                                 logApi.error(`[SERVICE INIT] ${error.message}`, {
                                     service: serviceName,
                                     dependency: dep,
-                                    metadata: getServiceMetadata(dep)
+                                    //metadata: getServiceMetadata(dep)
                                 });
                             }
                             failed.add(serviceName);
@@ -419,7 +424,7 @@ class ServiceManager {
                                     logApi.error(`[SERVICE INIT] ${error.message}`, {
                                         service: serviceName,
                                         dependency: dep,
-                                        metadata: getServiceMetadata(dep)
+                                        //metadata: getServiceMetadata(dep)
                                     });
                                 }
                                 failed.add(serviceName);
@@ -437,7 +442,7 @@ class ServiceManager {
                             });
                         } else {
                             logApi.error(`[SERVICE INIT] Error initializing dependency ${dep} for ${serviceName}:`, {
-                                error: error.message,
+                                //error: error.message,
                                 //stack: error.stack,
                                 service: serviceName,
                                 dependency: dep,
@@ -460,8 +465,8 @@ class ServiceManager {
                     });
                 } else {
                     logApi.info(`[SERVICE INIT] Running initialize() for ${serviceName}`, {
-                        metadata: getServiceMetadata(serviceName),
-                        config: service.config
+                        //metadata: getServiceMetadata(serviceName),
+                        //config: service.config
                     });
                 }
 
@@ -492,7 +497,7 @@ class ServiceManager {
                         });
                     } else {
                         logApi.error(`[SERVICE INIT] ${error.message}`, {
-                            metadata: getServiceMetadata(serviceName)
+                            //metadata: getServiceMetadata(serviceName)
                         });
                     }
                     failed.add(serviceName);
@@ -504,15 +509,15 @@ class ServiceManager {
                         error: error.message,
                         stack: error.stack,
                         service: {
-                        name: serviceName,
-                        config: service.config,
-                        stats: service.stats
-                    },
-                    metadata: getServiceMetadata(serviceName)
+                            name: serviceName,
+                            config: service.config,
+                            stats: service.stats
+                        },
+                        metadata: getServiceMetadata(serviceName)
                     });
                 } else {
                     logApi.error(`[SERVICE INIT] ${error.message}`, {
-                        metadata: getServiceMetadata(serviceName)
+                        //metadata: getServiceMetadata(serviceName)
                     });
                 }
                 failed.add(serviceName);
@@ -527,7 +532,7 @@ class ServiceManager {
                 });
             } else {
                 logApi.error(`[SERVICE INIT] Unexpected error in _initializeService for ${serviceName}:`, {
-                    error: error.message,
+                    //error: error.message,
                     //metadata: getServiceMetadata(serviceName)
                 });
             }
