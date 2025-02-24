@@ -153,15 +153,30 @@ class AdminWalletService extends BaseService {
             this.walletStats.wallets.total = totalWallets;
             this.walletStats.wallets.active = activeWallets;
 
-            // Load wallet type stats
-            const typeStats = await prisma.managed_wallets.groupBy({
-                by: ['wallet_type'],
-                _count: true
-            });
-
-            typeStats.forEach(stat => {
-                this.walletStats.wallets.by_type[stat.wallet_type] = stat._count;
-            });
+            // Initialize stats
+            this.walletStats = {
+                operations: {
+                    total: 0,
+                    successful: 0,
+                    failed: 0
+                },
+                transfers: {
+                    total: 0,
+                    successful: 0,
+                    failed: 0,
+                    sol_amount: 0,
+                    token_amount: 0
+                },
+                wallets: {
+                    total: totalWallets,
+                    active: activeWallets,
+                    processing: 0
+                },
+                performance: {
+                    average_transfer_time_ms: 0,
+                    last_operation_time_ms: 0
+                }
+            };
 
             // Ensure stats are JSON-serializable for ServiceManager
             const serializableStats = JSON.parse(JSON.stringify({

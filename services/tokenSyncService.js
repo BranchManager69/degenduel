@@ -143,7 +143,23 @@ class TokenSyncService extends BaseService {
                 };
             }
 
-            // Load initial token state
+            // Perform immediate initial sync before counting tokens
+            logApi.info('Performing initial token sync...');
+            try {
+                // Fetch and update token metadata first
+                const fullData = await this.fetchFullDetails();
+                await this.updateMetadata(fullData);
+                
+                // Then fetch and update prices
+                await this.updatePrices();
+                
+                logApi.info('Initial token sync completed successfully');
+            } catch (error) {
+                logApi.error('Initial token sync failed:', error);
+                // Don't throw - we'll retry on normal interval
+            }
+
+            // Now load token state
             const [activeTokens, totalTokens] = await Promise.all([
                 prisma.tokens.count({ where: { is_active: true } }),
                 prisma.tokens.count()
@@ -167,7 +183,8 @@ class TokenSyncService extends BaseService {
 
             logApi.info('Token Sync Service initialized', {
                 activeTokens,
-                totalTokens
+                totalTokens,
+                hasInitialData: activeTokens > 0
             });
 
             return true;

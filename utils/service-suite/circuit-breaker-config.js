@@ -18,11 +18,11 @@ export const SERVICE_SPECIFIC_CONFIGS = {
         reason: 'Handles external API calls, needs balanced error tolerance'
     },
     [SERVICE_NAMES.MARKET_DATA]: {
-        failureThreshold: 3, // More sensitive to failures
-        resetTimeoutMs: 30000, // Faster recovery for market data
-        minHealthyPeriodMs: 60000, // Shorter health confirmation period
+        failureThreshold: 5,          // Increased from 3 to be more tolerant
+        resetTimeoutMs: 60000,        // Increased from 30000 to give more recovery time
+        minHealthyPeriodMs: 120000,   // Increased from 60000 to ensure stability
         description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA).description,
-        reason: 'Critical for real-time trading operations'
+        reason: 'Critical for real-time trading operations, balanced with stability'
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         failureThreshold: 5,
