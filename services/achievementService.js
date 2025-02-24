@@ -138,23 +138,14 @@ class AchievementService extends BaseService {
             this.achievementStats.achievements.active = activeAchievements;
             this.achievementStats.achievements.awarded = awardedCount;
 
-            // Load category and tier stats
-            const categoryStats = await prisma.user_achievements.groupBy({
-                by: ['category_id'],
+            // Load achievement type stats
+            const achievementTypeStats = await prisma.user_achievements.groupBy({
+                by: ['achievement_type'],
                 _count: true
             });
 
-            const tierStats = await prisma.user_achievements.groupBy({
-                by: ['tier_id'],
-                _count: true
-            });
-
-            categoryStats.forEach(stat => {
-                this.achievementStats.achievements.by_category[stat.category_id] = stat._count;
-            });
-
-            tierStats.forEach(stat => {
-                this.achievementStats.achievements.by_tier[stat.tier_id] = stat._count;
+            achievementTypeStats.forEach(stat => {
+                this.achievementStats.achievements.by_category[stat.achievement_type] = stat._count;
             });
 
             // Load user stats
@@ -162,7 +153,7 @@ class AchievementService extends BaseService {
                 prisma.users.count(),
                 prisma.users.count({
                     where: {
-                        achievements: {
+                        user_achievements: {
                             some: {}
                         }
                     }
