@@ -297,7 +297,9 @@ class TokenSyncService extends BaseService {
 
     async fetchTokenPrices(addresses) {
         logApi.info(`Fetching prices for ${addresses.length} tokens...`);
-        const data = await this.makeApiCall(this.config.api.endpoints.prices, {
+        // Get bulk token data from DD-serve
+        ////const data = await this.makeApiCall(this.config.api.endpoints.prices, {
+        const data = await this.makeApiCall('https://degenduel.me/api/prices/bulk', {
             method: 'POST',
             data: { addresses }
         });
@@ -342,7 +344,7 @@ class TokenSyncService extends BaseService {
             let updatedCount = 0;
             await prisma.$transaction(async (tx) => {
                 for (const token of priceData) {
-                    const tokenId = addressToId[token.address];
+                    const tokenId = addressToId[token.contractAddress];
                     if (!tokenId) continue;
 
                     await tx.token_prices.upsert({
