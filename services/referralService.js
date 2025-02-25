@@ -290,7 +290,7 @@ class ReferralService extends BaseService {
                 where: {
                     OR: [
                         { status: 'pending' },
-                        { status: 'active', last_check: { lt: new Date(Date.now() - this.config.referral.minProcessInterval) } }
+                        { status: 'qualified', updated_at: { lt: new Date(Date.now() - this.config.referral.minProcessInterval) } }
                     ]
                 },
                 take: this.config.referral.batchSize,
@@ -367,7 +367,7 @@ class ReferralService extends BaseService {
             }
 
             // Check milestones
-            if (referral.status === 'active') {
+            if (referral.status === 'qualified') {
                 const milestoneResult = await this.checkMilestones(referral.referrer_id);
                 if (milestoneResult.achieved) {
                     const rewardResult = await this.processRewards(referral.id);
@@ -413,14 +413,14 @@ class ReferralService extends BaseService {
             await prisma.referrals.update({
                 where: { id: referral.id },
                 data: {
-                    status: 'converted',
+                    status: 'qualified',
                     converted_at: new Date()
                 }
             });
 
             this.referralStats.referrals.converted++;
-            this.referralStats.referrals.by_status['converted'] = 
-                (this.referralStats.referrals.by_status['converted'] || 0) + 1;
+            this.referralStats.referrals.by_status['qualified'] = 
+                (this.referralStats.referrals.by_status['qualified'] || 0) + 1;
 
         } catch (error) {
             throw ServiceError.operation('Failed to convert referral', {
