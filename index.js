@@ -280,6 +280,8 @@ import v2TokenRoutes from "./routes/v2/tokens.js";
 import portfolioAnalyticsRouter from "./routes/portfolio-analytics.js";
 import portfolioTradesRouter from "./routes/portfolio-trades.js";
 import referralRoutes from "./routes/referrals.js";
+// Virtual Agent routes
+import virtualAgentRoutes from "./routes/virtual-agent.js";
 
 // 1. First mount public routes (no maintenance check needed)
 app.use("/api/auth", authRoutes);
@@ -317,6 +319,8 @@ app.use("/api/token-buckets", maintenanceCheck, tokenBucketRoutes);
 app.use("/api/portfolio", maintenanceCheck, portfolioTradesRouter);
 app.use("/api/portfolio-analytics", maintenanceCheck, portfolioAnalyticsRouter);
 app.use("/api/referrals", maintenanceCheck, referralRoutes);
+// Virtual Agent routes
+app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
 
 // Test routes (no maintenance check needed)
 app.use("/api/test", testRoutes);
