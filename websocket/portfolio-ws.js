@@ -30,6 +30,8 @@ import prisma from '../config/prisma.js';
 //import { config } from '../config/config.js';
 //import ReferralService from '../services/referralService.js';
 
+const VERBOSE_PORTFOLIO_WS_INIT = false;
+
 // Message type constants
 const MESSAGE_TYPES = {
     // Client -> Server
@@ -209,7 +211,9 @@ class PortfolioWebSocketServer extends BaseWebSocketServer {
         this.startPeriodicUpdates();
         this.startMetricsCollection();
         
-        logApi.info('Portfolio WebSocket server initialized');
+        if (VERBOSE_PORTFOLIO_WS_INIT) {
+            logApi.info('Portfolio WebSocket server initialized');
+        }
     }
 
     /**

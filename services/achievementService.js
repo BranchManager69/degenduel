@@ -185,7 +185,7 @@ class AchievementService extends BaseService {
 
             return true;
         } catch (error) {
-            logApi.error('Achievement Service initialization error:', error);
+            logApi.error('☠️ Achievement Service initialization error:', error);
             await this.handleError(error);
             throw error;
         }

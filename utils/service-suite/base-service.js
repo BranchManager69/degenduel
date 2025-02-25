@@ -12,6 +12,8 @@ import serviceManager from './service-manager.js';
 import serviceEvents from './service-events.js';
 import { ServiceError } from './service-error.js';
 
+const VERBOSE_SERVICE_INIT = false;
+
 /**
  * Base configuration template for all services
  */
@@ -91,13 +93,13 @@ export class BaseService {
     async initialize() {
         try {
             if (this.isInitialized) {
-                logApi.info(`${this.name} already initialized`);
+                logApi.warn(`${this.name} already initialized`);
                 return true;
             }
 
             const isEnabled = await this.checkEnabled();
             if (!isEnabled) {
-                logApi.info(`${this.name} is disabled`);
+                logApi.warn(`${this.name} is disabled`);
                 return false;
             }
 
@@ -159,7 +161,9 @@ export class BaseService {
                 stats: this.stats
             });
 
-            logApi.info(`${this.name} initialized successfully`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`${this.name} initialized successfully`);
+            }
             return true;
         } catch (error) {
             logApi.error(`${this.name} initialization error:`, error);
@@ -285,7 +289,9 @@ export class BaseService {
                 stats: this.stats
             });
 
-            logApi.info(`Service ${this.name} started successfully`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`Service ${this.name} started successfully`);
+            }
             return true;
         } catch (error) {
             logApi.error(`Failed to start service ${this.name}:`, error);
