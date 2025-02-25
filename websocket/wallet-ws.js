@@ -30,6 +30,8 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import prisma from '../config/prisma.js';
 import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.js';
 
+const VERBOSE_WALLET_WS_INIT = false;
+
 // Message type constants
 const MESSAGE_TYPES = {
     // Client -> Server
@@ -204,7 +206,9 @@ class WalletWebSocketServer extends BaseWebSocketServer {
 
         this.startMetricsCollection();
         
-        logApi.info('Wallet WebSocket server initialized');
+        if (VERBOSE_WALLET_WS_INIT) {
+            logApi.info('Wallet WebSocket server initialized');
+        }
     }
 
     /**

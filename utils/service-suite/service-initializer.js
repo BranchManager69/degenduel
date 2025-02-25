@@ -119,10 +119,8 @@ class ServiceInitializer {
         logApi.info('\n\x1b[38;5;199m╭───────────────── Initializing Services ─────────────────╮\x1b[0m');
 
         try {
-            // First register core services
-            logApi.info('Starting core service registration...');
-            await this.registerCoreServices();
-            logApi.info('Core service registration completed');
+            // Services should already be registered by now
+            logApi.info('Services already registered, proceeding to initialization...');
 
             // Get initialization order
             logApi.info('Calculating service initialization order...');

@@ -27,7 +27,7 @@ class LevelingService extends BaseService {
     async initialize() {
         try {
             await super.initialize();
-            logApi.info('Leveling Service initialized');
+            logApi.info('\t\tLeveling Service initialized');
             return true;
         } catch (error) {
             logApi.error('Leveling Service initialization error:', error);
