@@ -169,7 +169,7 @@ class WalletRakeService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('Wallet Rake Service initialized', {
+            logApi.info('\t\tWallet Rake Service initialized', {
                 totalRaked: this.rakeStats.amounts.total_raked,
                 totalWallets: this.rakeStats.wallets.total
             });

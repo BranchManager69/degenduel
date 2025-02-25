@@ -25,6 +25,8 @@ import { BaseService } from './base-service.js';
 import path from 'path';
 import AdminLogger from '../admin-logger.js';
 
+const VERBOSE_SERVICE_INIT = false;
+
 /**
  * Consolidated service management system for DegenDuel
  * Combines functionality from ServiceManager and ServiceRegistry
@@ -35,7 +37,7 @@ class ServiceManager {
         this.dependencies = new Map();
         this.state = new Map();
         this.circuitBreakerWs = null;
-        this.SUPER_VERBOSE = false; // Class property for verbose logging
+        ////this.SUPER_VERBOSE = false;
         this.initializeEventListeners();
     }
 
@@ -115,11 +117,13 @@ class ServiceManager {
             ? serviceOrName 
             : serviceOrName.config?.name || serviceOrName.name;
 
-        // Add logging for name resolution
-        logApi.info(`[ServiceManager] Name resolution:`, {
-            resolvedName: serviceName,
-            availableNames: Object.values(SERVICE_NAMES)
-        });
+        // Debug name resolution
+        if (VERBOSE_SERVICE_INIT) {
+            logApi.info(`[ServiceManager] Name resolution:`, {
+                resolvedName: serviceName,
+                availableNames: Object.values(SERVICE_NAMES)
+            });
+        }
 
         const service = typeof serviceOrName === 'string' ? null : serviceOrName;
 
@@ -148,12 +152,16 @@ class ServiceManager {
         }
         this.dependencies.set(serviceName, Array.from(allDependencies));
 
-        // Log registration
-        logApi.info(`Registered service: ${serviceName}`, {
-            layer: metadata.layer,
-            criticalLevel: metadata.criticalLevel,
-            dependencies: allDependencies.size ? Array.from(allDependencies) : []
-        });
+        // Debug registration
+        if (VERBOSE_SERVICE_INIT) {
+            logApi.info(`Registered service: ${serviceName}`, {
+                layer: metadata.layer,
+                criticalLevel: metadata.criticalLevel,
+                dependencies: allDependencies.size ? Array.from(allDependencies) : []
+            });
+        } else {
+            logApi.info(`Registered service: ${serviceName}`);
+        }
 
         return true;
     }
@@ -185,26 +193,28 @@ class ServiceManager {
 
         for (const serviceName of infraServices) {
             try {
-                if (this.SUPER_VERBOSE) {
+                if (VERBOSE_SERVICE_INIT) {
                     logApi.info(`[SERVICE INIT] Attempting to initialize infrastructure service ${serviceName}`, {
                         metadata: getServiceMetadata(serviceName),
                         dependencies: this.dependencies.get(serviceName) || []
                     });
                 } else {
-                    logApi.info(`[SERVICE INIT] Attempting to initialize infrastructure service ${serviceName}`, {
-                        //metadata: getServiceMetadata(serviceName),
-                        //dependencies: this.dependencies.get(serviceName) || []
-                    });
+                    //logApi.info(`[SERVICE INIT] Attempting to initialize infrastructure service ${serviceName}`, {
+                    //    metadata: getServiceMetadata(serviceName),
+                    //    dependencies: this.dependencies.get(serviceName) || []
+                    //});
                 }
 
                 const success = await this._initializeService(serviceName, initialized, failed);
                 if (success) {
-                    logApi.info(`[SERVICE INIT] Infrastructure service ${serviceName} initialization completed successfully`);
+                    if (VERBOSE_SERVICE_INIT) {
+                        logApi.info(`[SERVICE INIT] Infrastructure service ${serviceName} initialization completed successfully`);
+                    }
                 } else {
                     logApi.error(`[SERVICE INIT] Infrastructure service ${serviceName} initialization returned false`);
                 }
             } catch (error) {
-                if (this.SUPER_VERBOSE) {
+                if (VERBOSE_SERVICE_INIT) {
                     logApi.error(`[SERVICE INIT] Failed to initialize infrastructure service ${serviceName}:`, {
                         error: error.message,
                         stack: error.stack,
@@ -230,16 +240,16 @@ class ServiceManager {
 
         for (const serviceName of remainingServices) {
             try {
-                if (this.SUPER_VERBOSE) {
+                if (VERBOSE_SERVICE_INIT) {
                     logApi.info(`[SERVICE INIT] Attempting to initialize service ${serviceName}`, {
                         metadata: getServiceMetadata(serviceName),
                         dependencies: this.dependencies.get(serviceName) || []
                     });
                 } else {
-                    logApi.info(`[SERVICE INIT] Attempting to initialize service ${serviceName}`, {
-                        //metadata: getServiceMetadata(serviceName),
-                        //dependencies: this.dependencies.get(serviceName) || []
-                    });
+                    //logApi.info(`[SERVICE INIT] Attempting to initialize service ${serviceName}`, {
+                    //    metadata: getServiceMetadata(serviceName),
+                    //    dependencies: this.dependencies.get(serviceName) || []
+                    //});
                 }
 
                 const success = await this._initializeService(serviceName, initialized, failed);
@@ -249,7 +259,7 @@ class ServiceManager {
                     logApi.error(`[SERVICE INIT] Service ${serviceName} initialization returned false`);
                 }
             } catch (error) {
-                if (this.SUPER_VERBOSE) {
+                if (VERBOSE_SERVICE_INIT) {
                     logApi.error(`[SERVICE INIT] Failed to initialize service ${serviceName}:`, {
                         error: error.message,
                         stack: error.stack,
@@ -273,7 +283,7 @@ class ServiceManager {
             successRate: `${(initialized.size / initOrder.length * 100).toFixed(1)}%`
         };
 
-        if (this.SUPER_VERBOSE) {
+        if (VERBOSE_SERVICE_INIT) {
             logApi.info('Service initialization completed:', summary);
         } else {
             logApi.info('Service initialization completed:', {
@@ -339,21 +349,23 @@ class ServiceManager {
      */
     async _initializeService(serviceName, initialized, failed) {
         try {
-            logApi.info(`[SERVICE INIT] Starting initialization of service ${serviceName}`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`[SERVICE INIT] Starting initialization of service ${serviceName}`);
+            }
 
             if (initialized.has(serviceName)) {
-                logApi.info(`[SERVICE INIT] Service ${serviceName} already initialized`);
+                logApi.warn(`[SERVICE INIT] Service ${serviceName} already initialized`);
                 return true;
             }
             if (failed.has(serviceName)) {
-                logApi.info(`[SERVICE INIT] Service ${serviceName} previously failed`);
+                logApi.warn(`[SERVICE INIT] Service ${serviceName} previously failed`);
                 return false;
             }
 
             let service = this.services.get(serviceName);
             if (!service) {
                 const error = new Error(`Service ${serviceName} not found in registered services`);
-                if (this.SUPER_VERBOSE) {
+                if (VERBOSE_SERVICE_INIT) {
                     logApi.error(`[SERVICE INIT] ${error.message}`, {
                         availableServices: Array.from(this.services.keys()),
                         metadata: getServiceMetadata(serviceName)
@@ -370,26 +382,28 @@ class ServiceManager {
 
             // Check dependencies first
             const dependencies = this.dependencies.get(serviceName) || [];
-            if (this.SUPER_VERBOSE) {
+            if (VERBOSE_SERVICE_INIT) {
                 logApi.info(`[SERVICE INIT] Checking dependencies for ${serviceName}:`, {
                     dependencies,
                     metadata: getServiceMetadata(serviceName)
                 });
             } else {
-                logApi.info(`[SERVICE INIT] Checking dependencies for ${serviceName}:`, {
-                    //dependencies,
-                    //metadata: getServiceMetadata(serviceName)
-                });
+                //logApi.info(`[SERVICE INIT] Checking dependencies for ${serviceName}:`, {
+                //    dependencies,
+                //    metadata: getServiceMetadata(serviceName)
+                //});
             }
 
             for (const dep of dependencies) {
                 if (!initialized.has(dep)) {
                     try {
-                        logApi.info(`[SERVICE INIT] Initializing dependency ${dep} for ${serviceName}`);
+                        if (VERBOSE_SERVICE_INIT) {
+                            logApi.info(`[SERVICE INIT] Initializing dependency ${dep} for ${serviceName}`);
+                        }
                         const success = await this._initializeService(dep, initialized, failed);
                         if (!success) {
                             const error = new Error(`Cannot initialize ${serviceName} - dependency ${dep} failed to initialize`);
-                            if (this.SUPER_VERBOSE) {
+                            if (VERBOSE_SERVICE_INIT) {
                                 logApi.error(`[SERVICE INIT] ${error.message}`, {
                                     service: serviceName,
                                     dependency: dep,
@@ -409,12 +423,14 @@ class ServiceManager {
                         // Wait for dependency to be fully started
                         const depService = this.services.get(dep);
                         if (!depService.isStarted) {
-                            logApi.info(`[SERVICE INIT] Waiting for dependency ${dep} to start`);
+                            if (VERBOSE_SERVICE_INIT) {
+                                logApi.info(`[SERVICE INIT] Waiting for dependency ${dep} to start`);
+                            }
                             await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a bit
                             const depStatus = await this.checkServiceHealth(dep);
                             if (!depStatus) {
                                 const error = new Error(`Cannot initialize ${serviceName} - dependency ${dep} not healthy after start`);
-                                if (this.SUPER_VERBOSE) {
+                                if (VERBOSE_SERVICE_INIT) {
                                     logApi.error(`[SERVICE INIT] ${error.message}`, {
                                         service: serviceName,
                                         dependency: dep,
@@ -432,7 +448,7 @@ class ServiceManager {
                             }
                         }
                     } catch (error) {
-                        if (this.SUPER_VERBOSE) {
+                        if (VERBOSE_SERVICE_INIT) {
                             logApi.error(`[SERVICE INIT] Error initializing dependency ${dep} for ${serviceName}:`, {
                                 error: error.message,
                                 stack: error.stack,
@@ -442,56 +458,60 @@ class ServiceManager {
                             });
                         } else {
                             logApi.error(`[SERVICE INIT] Error initializing dependency ${dep} for ${serviceName}:`, {
-                                //error: error.message,
+                                error: error.message,
                                 //stack: error.stack,
                                 service: serviceName,
                                 dependency: dep,
-                                //metadata: getServiceMetadata(dep)
+                                metadata: getServiceMetadata(dep)
                             });
                         }
                         failed.add(serviceName);
                         return false;
                     }
                 } else {
-                    logApi.info(`[SERVICE INIT] Dependency ${dep} already initialized for ${serviceName}`);
+                    if (VERBOSE_SERVICE_INIT) {
+                        logApi.info(`[SERVICE INIT] Dependency ${dep} already initialized for ${serviceName}`);
+                    }
                 }
             }
 
             try {
-                if (this.SUPER_VERBOSE) {
+                if (VERBOSE_SERVICE_INIT) {
                     logApi.info(`[SERVICE INIT] Running initialize() for ${serviceName}`, {
                         metadata: getServiceMetadata(serviceName),
                         config: service.config
                     });
                 } else {
-                    logApi.info(`[SERVICE INIT] Running initialize() for ${serviceName}`, {
-                        //metadata: getServiceMetadata(serviceName),
-                        //config: service.config
-                    });
+                    //logApi.info(`[SERVICE INIT] Running initialize() for ${serviceName}`, {
+                    //    metadata: getServiceMetadata(serviceName),
+                    //    config: service.config
+                    //});
                 }
 
                 const success = await service.initialize();
                 if (success) {
-                    logApi.info(`[SERVICE INIT] Running start() for ${serviceName}`);
+                    if (VERBOSE_SERVICE_INIT) {
+                        logApi.info(`[SERVICE INIT] Running start() for ${serviceName}`);
+                    }
                     await service.start();
                     initialized.add(serviceName);
                     await this.markServiceStarted(serviceName, service.config, service.stats);
                     service.isStarted = true;
-                    if (this.SUPER_VERBOSE) {
+                    if (VERBOSE_SERVICE_INIT) {
                         logApi.info(`[SERVICE INIT] Service ${serviceName} initialized and started successfully`, {
                             config: service.config,
                             stats: service.stats
                         });
                     } else {
-                        logApi.info(`[SERVICE INIT] Service ${serviceName} initialized and started successfully`, {
-                            //config: service.config,
-                            //stats: service.stats
-                        });
+                        //logApi.info(`[SERVICE INIT] Service ${serviceName} initialized and started successfully`, {
+                        //    config: service.config,
+                        //    stats: service.stats
+                        //});
                     }
                     return true;
                 } else {
                     const error = new Error(`Service ${serviceName} initialization returned false`);
-                    if (this.SUPER_VERBOSE) {
+                    if (VERBOSE_SERVICE_INIT) {
                         logApi.error(`[SERVICE INIT] ${error.message}`, {
                             metadata: getServiceMetadata(serviceName)
                         });
@@ -504,7 +524,7 @@ class ServiceManager {
                     return false;
                 }
             } catch (error) {
-                if (this.SUPER_VERBOSE) {
+                if (VERBOSE_SERVICE_INIT) {
                     logApi.error(`[SERVICE INIT] Error initializing service ${serviceName}:`, {
                         error: error.message,
                         stack: error.stack,
@@ -524,7 +544,7 @@ class ServiceManager {
                 return false;
             }
         } catch (error) {
-            if (this.SUPER_VERBOSE) {
+            if (VERBOSE_SERVICE_INIT) {
                 logApi.error(`[SERVICE INIT] Unexpected error in _initializeService for ${serviceName}:`, {
                     error: error.message,
                     stack: error.stack,
@@ -893,7 +913,9 @@ class ServiceManager {
             // Clear local state
             this.state.clear();
 
-            logApi.info('Cleaned up all service states');
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info('Cleaned up all service states');
+            }
             return true;
         } catch (error) {
             logApi.error('Failed to clean up service states:', error);
@@ -952,7 +974,9 @@ class ServiceManager {
         this.dependencies.set(serviceName, Array.from(allDependencies));
 
         // Log dependency addition
-        logApi.info(`Added dependencies for ${serviceName}:`, dependencies);
+        if (VERBOSE_SERVICE_INIT) {
+            logApi.info(`Added dependencies for ${serviceName}:`, dependencies);
+        }
 
         return true;
     }
@@ -962,7 +986,9 @@ class ServiceManager {
      */
     async startService(serviceFile, adminContext = null) {
         try {
-            logApi.info(`[ServiceManager] Starting service from file: ${serviceFile}`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`[ServiceManager] Starting service from file: ${serviceFile}`);
+            }
             
             // Get service instance
             const service = this.services.get(serviceFile);
@@ -1008,7 +1034,9 @@ class ServiceManager {
                 );
             }
 
-            logApi.info(`[ServiceManager] Service ${serviceFile} started successfully`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`[ServiceManager] Service ${serviceFile} started successfully`);
+            }
             return true;
         } catch (error) {
             // Log failed admin action if context provided
@@ -1038,7 +1066,9 @@ class ServiceManager {
      */
     async stopService(serviceFile, adminContext = null) {
         try {
-            logApi.info(`[ServiceManager] Stopping service: ${serviceFile}`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`[ServiceManager] Stopping service: ${serviceFile}`);
+            }
             
             const service = this.services.get(serviceFile);
             if (!service) {
@@ -1094,7 +1124,9 @@ class ServiceManager {
      */
     async restartService(serviceFile, adminContext = null) {
         try {
-            logApi.info(`[ServiceManager] Restarting service: ${serviceFile}`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`[ServiceManager] Restarting service: ${serviceFile}`);
+            }
             
             // Stop service if it exists
             const service = this.services.get(serviceFile);
@@ -1122,7 +1154,9 @@ class ServiceManager {
                 );
             }
 
-            logApi.info(`[ServiceManager] Service ${serviceFile} restarted successfully`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`[ServiceManager] Service ${serviceFile} restarted successfully`);
+            }
             return true;
         } catch (error) {
             // Log failed admin action if context provided
