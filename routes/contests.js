@@ -2492,7 +2492,7 @@ router.get('/participations/:wallet', async (req, res) => {
         }
       },
       orderBy: [
-        { created_at: 'desc' }
+        { joined_at: 'desc' }
       ]
     });
     
@@ -2769,7 +2769,7 @@ router.get('/user-participations', async (req, res) => {
         }
       },
       orderBy: [
-        { created_at: 'desc' }
+        { joined_at: 'desc' }
       ]
     });
     
