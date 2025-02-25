@@ -8,6 +8,7 @@ import { ServiceError } from '../utils/service-suite/service-error.js';
 import prisma from '../config/prisma.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import walletGenerationService from './walletGenerationService.js';
 
 const LIQUIDITY_CONFIG = {
     name: SERVICE_NAMES.LIQUIDITY,
@@ -90,13 +91,41 @@ class LiquidityService extends BaseService {
             // Check if we can connect to Solana
             await this.connection.getRecentBlockhash();
             
-            // Find our wallet
-            const wallet = await prisma.seed_wallets.findFirst({
+            // Find the most recent active liquidity wallet
+            logApi.info('🔍 Checking for existing liquidity wallets...');
+            
+            // Find all liquidity wallets
+            const allLiquidityWallets = await prisma.seed_wallets.findMany({
+                where: { purpose: 'liquidity' },
+                orderBy: { created_at: 'desc' }
+            });
+            
+            // Get details about the wallets - remove debug messages
+            const walletsInfo = allLiquidityWallets.map(w => {
+                return {
+                    address: w.wallet_address.substring(0, 8) + '...',
+                    active: !!w.is_active,
+                    created: new Date(w.created_at).toLocaleTimeString()
+                };
+            });
+            
+            logApi.info(`📊 WALLET INVENTORY: Found ${allLiquidityWallets.length} total liquidity wallets`, {
+                wallets: walletsInfo
+            });
+            
+            // Now check for active ones
+            const existingWallets = await prisma.seed_wallets.findMany({
                 where: {
                     purpose: 'liquidity',
                     is_active: true
-                }
+                },
+                orderBy: { created_at: 'desc' }
             });
+            
+            logApi.info(`✅ Found ${existingWallets.length} active liquidity wallets${existingWallets.length > 0 ? 
+                ': ' + existingWallets[0].wallet_address : ''}`);
+            
+            const wallet = existingWallets[0]; // Take the most recent one
 
             if (wallet) {
                 this.wallet = wallet;
@@ -132,13 +161,69 @@ class LiquidityService extends BaseService {
                 return true;
             }
 
-            // No wallet found - let's create one using the wallet generator service
-            logApi.info('No active liquidity wallet found - creating a new one');
+            // No wallet found (or we need to create a new one)
+            // Check if we can reactivate the most recent wallet instead of creating a new one
+            if (allLiquidityWallets.length > 0) {
+                logApi.info('Reactivating most recent liquidity wallet instead of creating a new one');
+                
+                // Take the most recent wallet (already ordered by created_at desc)
+                const mostRecentWallet = allLiquidityWallets[0];
+                
+                // Reactivate it - mark this wallet as active while ensuring all others are inactive
+                // Let's use a transaction to ensure these operations are consistent
+                await prisma.$transaction(async (prismaTransaction) => {
+                    // First mark all as inactive to prevent multiple active wallets using raw SQL
+                    await prismaTransaction.$executeRaw`UPDATE seed_wallets SET is_active = false WHERE purpose = 'liquidity'`;
+                    
+                        // Then reactivate only the most recent one
+                    await prismaTransaction.$executeRaw`UPDATE seed_wallets SET is_active = true WHERE wallet_address = ${mostRecentWallet.wallet_address}`;
+                });
+                
+                // Record the activation in logs
+                logApi.info(`Activated wallet for liquidity: ${mostRecentWallet.wallet_address}`);
+                
+                
+                // Use this wallet
+                this.wallet = mostRecentWallet;
+                
+                // Get initial balance
+                const balance = await this.connection.getBalance(
+                    new PublicKey(mostRecentWallet.wallet_address)
+                );
+                
+                // Update stats
+                this.liquidityStats.wallets.total = 1;
+                this.liquidityStats.wallets.active = 1;
+                this.liquidityStats.wallets.balance_total = balance / 1000000000;
+                this.liquidityStats.wallets.by_purpose.liquidity = {
+                    count: 1,
+                    balance: balance / 1000000000
+                };
+                
+                // Log success with detailed information
+                logApi.info(`🔄 REACTIVATED WALLET: Using existing wallet instead of creating new one`, {
+                    wallet: mostRecentWallet.wallet_address,
+                    balance: balance / 1000000000,
+                    created: new Date(mostRecentWallet.created_at).toLocaleString()
+                });
+                
+                // Update ServiceManager state
+                await serviceManager.markServiceStarted(
+                    this.name,
+                    this.config,
+                    {
+                        ...this.stats,
+                        liquidityStats: this.liquidityStats
+                    }
+                );
+                
+                return true;
+            }
+            
+            // If no existing wallets at all, create a new one
+            logApi.info('No liquidity wallets found - creating a new one');
             
             try {
-                // Get the wallet generator service
-                const walletGenerator = serviceManager.getService(SERVICE_NAMES.WALLET_GENERATOR);
-                
                 // Generate a new wallet specifically for liquidity purposes
                 const walletIdentifier = `liquidity_wallet_${Date.now()}`;
                 
@@ -149,7 +234,7 @@ class LiquidityService extends BaseService {
                 const privateKey = Buffer.from(keypair.secretKey).toString('base64');
                 
                 // Encrypt the private key using the wallet generator's encryption method
-                const encryptedPrivateKey = walletGenerator.encryptPrivateKey(privateKey);
+                const encryptedPrivateKey = walletGenerationService.encryptPrivateKey(privateKey);
                 
                 // Save to database
                 const newWallet = await prisma.seed_wallets.create({

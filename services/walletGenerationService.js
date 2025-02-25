@@ -38,6 +38,10 @@ const WALLET_SERVICE_CONFIG = {
     cache: {
         maxSize: 1000,
         ttl: 15 * 60 * 1000  // 15 minutes
+    },
+    encryption: {
+        algorithm: 'aes-256-gcm',
+        ivLength: 16
     }
 };
 
@@ -447,9 +451,13 @@ class WalletService extends BaseService {
             this.cache.clear();
             this.walletStats.wallets.cached = 0;
             
-            // Update database to mark all wallets as inactive
+            // Update database to mark wallets as inactive, EXCEPT for liquidity wallets
+            // This ensures our liquidity wallet stays active between restarts
             await prisma.seed_wallets.updateMany({
-                where: { is_active: true },
+                where: { 
+                    is_active: true,
+                    purpose: { not: 'liquidity' } // Exclude liquidity wallets
+                },
                 data: { 
                     is_active: false,
                     updated_at: new Date(),
@@ -459,6 +467,16 @@ class WalletService extends BaseService {
                     }
                 }
             });
+            
+            // Log how many liquidity wallets are still active
+            const activeCount = await prisma.seed_wallets.count({
+                where: { 
+                    is_active: true,
+                    purpose: 'liquidity'
+                }
+            });
+            
+            logApi.info(`Preserved ${activeCount} active liquidity wallet(s) during cleanup`);
 
             logApi.info('Wallet generator cleanup completed successfully');
         } catch (error) {
