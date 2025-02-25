@@ -3,8 +3,8 @@
 /*
  * This service is responsible for managing administrative wallet operations.
  * It handles secure wallet management, SOL/token transfers, and mass operations
- * for contest wallets. It integrates with the Contest Wallet Service for
- * coordinated wallet operations.
+ * for admin wallets. This service is completely separate from Contest Wallet Service
+ * and manages platform-owned wallets for administrative purposes.
  */
 
 // ** Service Auth **
@@ -41,7 +41,7 @@ const ADMIN_WALLET_CONFIG = {
         maxDelayMs: 30000,
         factor: 2
     },
-    dependencies: [SERVICE_NAMES.CONTEST_WALLET],
+    dependencies: [], // No dependencies on other services
     wallet: {
         encryption: {
             algorithm: 'aes-256-gcm',
@@ -98,13 +98,7 @@ class AdminWalletService extends BaseService {
                 last_operation_time_ms: 0,
                 average_batch_time_ms: 0
             },
-            dependencies: {
-                contestWallet: {
-                    status: 'unknown',
-                    lastCheck: null,
-                    errors: 0
-                }
-            }
+            dependencies: {} // No dependencies on other services
         };
 
         // Active transfer tracking
@@ -117,11 +111,7 @@ class AdminWalletService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
-            // Check dependencies
-            const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
-            if (!contestWalletStatus) {
-                throw ServiceError.initialization('Contest Wallet Service not healthy');
-            }
+            // No dependency checks required for this service
 
             // Load configuration from database
             const settings = await prisma.system_settings.findUnique({
@@ -198,7 +188,7 @@ class AdminWalletService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('Admin Wallet Service initialized', {
+            logApi.info('\t\tAdmin Wallet Service initialized', {
                 totalWallets,
                 activeWallets
             });
@@ -211,50 +201,8 @@ class AdminWalletService extends BaseService {
         }
     }
 
-    async performOperation() {
-        const startTime = Date.now();
-        
-        try {
-            // Check dependency health
-            const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
-            this.walletStats.dependencies.contestWallet = {
-                status: contestWalletStatus ? 'healthy' : 'unhealthy',
-                lastCheck: new Date().toISOString(),
-                errors: contestWalletStatus ? 0 : this.walletStats.dependencies.contestWallet.errors + 1
-            };
-
-            if (!contestWalletStatus) {
-                throw ServiceError.dependency('Contest Wallet Service unhealthy');
-            }
-
-            // Check wallet states and balances
-            const results = await this.checkWalletStates();
-
-            // Update performance metrics
-            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
-            this.walletStats.performance.average_transfer_time_ms = 
-                (this.walletStats.performance.average_transfer_time_ms * this.walletStats.operations.total + 
-                (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
-
-            // Update ServiceManager state
-            await serviceManager.updateServiceHeartbeat(
-                this.name,
-                this.config,
-                {
-                    ...this.stats,
-                    walletStats: this.walletStats
-                }
-            );
-
-            return {
-                duration: Date.now() - startTime,
-                results
-            };
-        } catch (error) {
-            await this.handleError(error);
-            return false;
-        }
-    }
+    // First performOperation method removed to eliminate duplication
+    // See the implementation below at line ~890
 
     async checkWalletStates() {
         try {
@@ -894,17 +842,7 @@ class AdminWalletService extends BaseService {
         const startTime = Date.now();
         
         try {
-            // Check dependency health
-            const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
-            this.walletStats.dependencies.contestWallet = {
-                status: contestWalletStatus ? 'healthy' : 'degraded',
-                lastCheck: new Date().toISOString(),
-                errors: contestWalletStatus ? 0 : this.walletStats.dependencies.contestWallet.errors + 1
-            };
-            
-            if (!contestWalletStatus) {
-                logApi.warn('Contest Wallet Service unhealthy, operating in limited mode');
-            }
+            // This service has no dependencies to check
             
             // Get managed wallets state
             const [totalWallets, activeWallets] = await Promise.all([
@@ -928,7 +866,7 @@ class AdminWalletService extends BaseService {
                 balance_updates: balanceUpdateResults
             };
         } catch (error) {
-            logApi.error('Admin wallet service operation failed:', error);
+            logApi.error('☠️ Admin wallet service operation failed:', error);
             await this.handleError(error);
             throw error;
         }

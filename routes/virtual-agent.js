@@ -12,7 +12,7 @@ const router = express.Router();
 
 // Environment variables - NOTE: These need to be set in the server environment
 const VIRTUAL_API_KEY = process.env.VIRTUAL_API_KEY || '';
-const VIRTUAL_API_SECRET = process.env.VIRTUAL_API_SECRET || '';
+const VIRTUAL_API_SECRET = ''; // No longer needed with updated API
 const VIRTUAL_API_URL = 'https://api.virtual.xyz/v1/auth/token';
 
 // Token generation endpoint
@@ -65,14 +65,13 @@ router.post('/token', requireAuth, async (req, res) => {
         }
 
         // Validate API credentials
-        if (!VIRTUAL_API_KEY || !VIRTUAL_API_SECRET) {
-            throw new Error('Missing VIRTUAL API credentials');
+        if (!VIRTUAL_API_KEY) {
+            throw new Error('Missing VIRTUAL API key');
         }
 
         // Request new token from VIRTUAL API
         const virtualResponse = await axios.post(VIRTUAL_API_URL, {
             apiKey: VIRTUAL_API_KEY,
-            apiSecret: VIRTUAL_API_SECRET,
             virtualId,
             metadata: {
                 userUid,
@@ -144,10 +143,10 @@ router.post('/token', requireAuth, async (req, res) => {
 router.get('/health', async (req, res) => {
     try {
         // If we don't have API credentials, return a warning status
-        if (!VIRTUAL_API_KEY || !VIRTUAL_API_SECRET) {
+        if (!VIRTUAL_API_KEY) {
             return res.status(200).json({
                 status: 'warning',
-                message: 'Missing VIRTUAL API credentials',
+                message: 'Missing VIRTUAL API key',
                 timestamp: new Date().toISOString()
             });
         }
@@ -155,7 +154,6 @@ router.get('/health', async (req, res) => {
         // Simple check to see if the credentials are valid
         const response = await axios.post(VIRTUAL_API_URL, {
             apiKey: VIRTUAL_API_KEY,
-            apiSecret: VIRTUAL_API_SECRET,
             virtualId: 1, // Test with default virtual ID
             metadata: {
                 userUid: 'health-check',

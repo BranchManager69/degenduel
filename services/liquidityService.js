@@ -1,7 +1,7 @@
 // services/liquidityService.js
 
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from '../config/config.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
@@ -124,7 +124,7 @@ class LiquidityService extends BaseService {
                     }
                 );
                 
-                logApi.info('Liquidity Service initialized', {
+                logApi.info('\t\tLiquidity Service initialized', {
                     wallet: wallet.wallet_address,
                     balance: this.liquidityStats.wallets.balance_total
                 });
@@ -132,11 +132,91 @@ class LiquidityService extends BaseService {
                 return true;
             }
 
-            // Throw error if no wallet found - service cannot operate without it
-            throw new ServiceError.initialization('No active liquidity wallet found');
+            // No wallet found - let's create one using the wallet generator service
+            logApi.info('No active liquidity wallet found - creating a new one');
+            
+            try {
+                // Get the wallet generator service
+                const walletGenerator = serviceManager.getService(SERVICE_NAMES.WALLET_GENERATOR);
+                
+                // Generate a new wallet specifically for liquidity purposes
+                const walletIdentifier = `liquidity_wallet_${Date.now()}`;
+                
+                // Create the wallet in the database directly (since the generateWallet method
+                // has different purpose formatting)
+                const keypair = Keypair.generate();
+                const walletAddress = keypair.publicKey.toString();
+                const privateKey = Buffer.from(keypair.secretKey).toString('base64');
+                
+                // Encrypt the private key using the wallet generator's encryption method
+                const encryptedPrivateKey = walletGenerator.encryptPrivateKey(privateKey);
+                
+                // Save to database
+                const newWallet = await prisma.seed_wallets.create({
+                    data: {
+                        wallet_address: walletAddress,
+                        private_key: encryptedPrivateKey,
+                        purpose: 'liquidity',
+                        is_active: true,
+                        metadata: {
+                            created_by: 'liquidity_service_autorecovery',
+                            created_at: new Date().toISOString(),
+                            description: 'Automatically created liquidity wallet'
+                        }
+                    }
+                });
+                
+                // Store the wallet in our instance
+                this.wallet = newWallet;
+                
+                // Get initial balance (will be 0 for new wallet)
+                const balance = 0; // Empty wallet initially
+                
+                // Update stats
+                this.liquidityStats.wallets.total = 1;
+                this.liquidityStats.wallets.active = 1;
+                this.liquidityStats.wallets.balance_total = balance;
+                this.liquidityStats.wallets.by_purpose.liquidity = {
+                    count: 1,
+                    balance: balance
+                };
+                
+                // Update ServiceManager state
+                await serviceManager.markServiceStarted(
+                    this.name,
+                    this.config,
+                    {
+                        ...this.stats,
+                        liquidityStats: this.liquidityStats
+                    }
+                );
+                
+                logApi.info('Created new liquidity wallet successfully', {
+                    wallet: walletAddress
+                });
+                
+                return true;
+            } catch (error) {
+                // If we fail to create a wallet, fall back to degraded mode
+                logApi.error('Failed to create liquidity wallet:', error);
+                
+                // Update ServiceManager state with degraded status
+                await serviceManager.markServiceStarted(
+                    this.name,
+                    this.config,
+                    {
+                        ...this.stats,
+                        liquidityStats: this.liquidityStats,
+                        status: 'degraded',
+                        message: 'Failed to create liquidity wallet'
+                    }
+                );
+                
+                return true;
+            }
         } catch (error) {
             logApi.error('Liquidity Service initialization error:', error);
-            throw error instanceof ServiceError ? error : new ServiceError.initialization(error.message);
+            throw error instanceof ServiceError ? error : ServiceError.initialization(error.message);
         }
     }
 
@@ -158,7 +238,26 @@ class LiquidityService extends BaseService {
 
             // Check if we have a wallet configured
             if (!this.wallet) {
-                throw new ServiceError.operation('No active wallet configured');
+                // No wallet, operate in degraded mode
+                logApi.warn('Liquidity Service operating without an active wallet');
+                
+                // Update ServiceManager state with degraded status
+                await serviceManager.updateServiceHeartbeat(
+                    this.name,
+                    this.config,
+                    {
+                        ...this.stats,
+                        liquidityStats: this.liquidityStats,
+                        status: 'degraded',
+                        message: 'No active liquidity wallet'
+                    }
+                );
+                
+                return {
+                    duration: Date.now() - startTime,
+                    status: 'degraded',
+                    message: 'No active liquidity wallet'
+                };
             }
             
             // Check balance
