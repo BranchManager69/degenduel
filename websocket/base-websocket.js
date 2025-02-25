@@ -12,6 +12,8 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
 import prisma from '../config/prisma.js';
 
+const VERBOSE_WEBSOCKET_INIT = false;
+
 // Base WebSocket Server
 export class BaseWebSocketServer {
     static instance = null;
@@ -62,7 +64,9 @@ export class BaseWebSocketServer {
 
         this.#wss.on('connection', this.#handleConnection.bind(this));
         
-        logApi.info(`WebSocket server initialized on path: ${this.options.path}`);
+        if (VERBOSE_WEBSOCKET_INIT) {
+            logApi.info(`WebSocket server initialized on path: ${this.options.path}`);
+        }
     }
 
     async #verifyClient(request, callback) {

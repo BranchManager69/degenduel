@@ -29,14 +29,7 @@ import walletManagementRoutes from "./routes/admin/wallet-management.js";
 //import tokenSyncService from "./services/tokenSyncService.js";
 //import walletRakeService from "./services/walletRakeService.js";
 //import tokenWhitelistService from "./services/tokenWhitelistService.js";
-import { createWebSocketMonitor } from './websocket/monitor-ws.js';
-import { createCircuitBreakerWebSocket } from './websocket/circuit-breaker-ws.js';
-import { createAnalyticsWebSocket } from './websocket/analytics-ws.js';
-import { createPortfolioWebSocket } from './websocket/portfolio-ws.js';
-import { createMarketDataWebSocket } from './websocket/market-ws.js';
-import { createWalletWebSocket } from './websocket/wallet-ws.js';
-import { createContestWebSocket } from './websocket/contest-ws.js';
-import { createTokenDataWebSocket } from './websocket/token-data-ws.js';
+import WebSocketInitializer from './utils/websocket-suite/websocket-initializer.js';
 // Import WebSocket test routes
 import websocketTestRoutes from './routes/admin/websocket-test.js';
 // Import Circuit Breaker routes
@@ -58,178 +51,8 @@ const port = process.env.PORT || 3004; // Default to production port if not spec
 // Create HTTP server instance
 const server = createServer(app);
 
-// Initialize WebSocket servers
-logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔌 Initializing WebSocket Servers...\x1b[0m');
-
-try {
-    // Initialize results tracking
-    const initResults = {};
-    
-    // Initialize WebSocket monitor first
-    const wsMonitor = createWebSocketMonitor(server);
-    if (!wsMonitor) {
-        throw new Error('Failed to initialize WebSocket monitor');
-    }
-    logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Monitor WebSocket Ready\x1b[0m');
-
-    // Initialize service-specific WebSocket servers
-    const wsServers = {
-        monitor: wsMonitor,
-        circuitBreaker: createCircuitBreakerWebSocket(server),
-        analytics: createAnalyticsWebSocket(server),
-        market: createMarketDataWebSocket(server),
-        portfolio: createPortfolioWebSocket(server),
-        wallet: createWalletWebSocket(server),
-        contest: createContestWebSocket(server),
-        tokenData: createTokenDataWebSocket(server)
-    };
-
-    // Add debug logging for contest server
-    const contestServer = wsServers.contest;
-    if (!contestServer) {
-        logApi.error('Contest WebSocket server failed to initialize');
-    } else {
-        logApi.info('Contest WebSocket server initialized successfully');
-    }
-
-    // Verify WebSocket servers initialized correctly
-    const failedServers = Object.entries(wsServers)
-        .filter(([name, instance]) => !instance)
-        .map(([name]) => name);
-
-    if (failedServers.length > 0) {
-        throw new Error(`Failed to initialize WebSocket servers: ${failedServers.join(', ')}`);
-    }
-
-    logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Service WebSockets Ready\x1b[0m');
-
-    // Store WebSocket servers in global registry
-    global.wsServers = wsServers;
-
-    // Wait for WebSocket servers to fully initialize
-    await new Promise(resolve => setTimeout(resolve, 2500)); // Wait longer than monitor service's 2000ms
-
-    // Default metrics for uninitialized services
-    const defaultMetrics = {
-        metrics: {
-            messageCount: 0,
-            errorCount: 0,
-            lastUpdate: new Date().toISOString(),
-            cacheHitRate: 0,
-            averageLatency: 0
-        },
-        performance: {
-            messageRate: 0,
-            errorRate: 0,
-            latencyTrend: []
-        },
-        status: 'initializing'
-    };
-
-    // Register services with monitor
-    try {
-        // Wait for monitor service to be ready
-        while (!wsMonitor.monitorService.isInitialized) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        // Register each service's metrics
-        for (const [name, instance] of Object.entries(wsServers)) {
-            if (name !== 'monitor' && instance) {
-                try {
-                    const metrics = instance.getMetrics?.() || defaultMetrics;
-                    wsMonitor.monitorService.updateServiceMetrics(name, metrics);
-                } catch (error) {
-                    logApi.warn(`Failed to get metrics for ${name}:`, error);
-                    wsMonitor.monitorService.updateServiceMetrics(name, defaultMetrics);
-                }
-            }
-        }
-
-        logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ WebSocket Metrics Registered\x1b[0m');
-
-        // Set up periodic metrics updates only after initial registration is complete
-        setInterval(() => {
-            try {
-                // Update each service's metrics
-                for (const [name, instance] of Object.entries(wsServers)) {
-                    if (name !== 'monitor' && instance) {
-                        try {
-                            const metrics = instance.getMetrics?.() || defaultMetrics;
-                            wsMonitor.monitorService.updateServiceMetrics(name, metrics);
-                        } catch (error) {
-                            logApi.warn(`Failed to get metrics for ${name}:`, error);
-                            wsMonitor.monitorService.updateServiceMetrics(name, defaultMetrics);
-                        }
-                    }
-                }
-            } catch (error) {
-                logApi.warn('Failed to update WebSocket metrics:', error);
-            }
-        }, 5000);
-
-        InitLogger.logInit('Core', 'WebSocket Servers', 'success');
-        logApi.info('\x1b[38;5;208m┗━━━━━━━━━━━ ✓ WebSocket System Ready\x1b[0m\n');
-
-    } catch (error) {
-        logApi.warn('Failed to register initial WebSocket metrics:', error);
-    }
-
-    // Initialize Services Layer - Moved outside WebSocket try-catch
-    logApi.info('\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-    
-    // Initialize services
-    try {
-        // First try to register core services
-        logApi.info('Registering core services...');
-        await ServiceInitializer.registerCoreServices().catch(error => {
-            logApi.error('Failed to register core services:', {
-                error: error.message,
-                stack: error.stack
-            });
-            throw error;
-        });
-        
-        // Then try to initialize them
-        logApi.info('Initializing services...');
-        const results = await ServiceInitializer.initializeServices().catch(error => {
-            logApi.error('Failed to initialize services:', {
-                error: error.message,
-                stack: error.stack
-            });
-            throw error;
-        });
-
-        initResults.Services = {
-            initialized: Array.isArray(results?.initialized) ? results.initialized : [],
-            failed: Array.isArray(results?.failed) ? results.failed : []
-        };
-
-        if (false) {
-            logApi.info('Service initialization results:', {
-                initialized: initResults.Services.initialized,
-                failed: initResults.Services.failed
-            });
-        } else {
-        }
-
-    } catch (error) {
-        logApi.error('Service initialization failed:', {
-            error: error.message,
-            stack: error.stack,
-            phase: 'service_initialization'
-        });
-        initResults.Services = {
-            initialized: [],
-            failed: ['Service initialization failed: ' + error.message]
-        };
-        throw error;  // Re-throw to trigger full initialization failure
-    }
-
-} catch (error) {
-    logApi.error('\x1b[38;5;196m┃           ✗ WebSocket initialization failed:', error, '\x1b[0m');
-    throw error; // Re-throw to be caught by main error handler
-}
+// WebSocket servers and service initialization moved to the initializeServer() function
+// This ensures a single initialization path for all components
 
 // Trust proxy headers since we're behind a reverse proxy
 app.set("trust proxy", 1);
@@ -558,121 +381,10 @@ async function initializeServer() {
         InitLogger.logInit('Database', 'SQLite', 'success', { path: '/home/websites/degenduel/data/leaderboard.db' });
         logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ SQLite Ready\x1b[0m\n');
 
-        // Initialize WebSocket Layer
-        logApi.info('\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mWebSocket Layer\x1b[0m\x1b[38;5;208m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔌 Initializing WebSocket Servers...\x1b[0m');
-
+        // Initialize WebSocket Layer using the WebSocket Initializer
         try {
-            // Initialize WebSocket monitor first
-            const wsMonitor = createWebSocketMonitor(server);
-            if (!wsMonitor) {
-                throw new Error('Failed to initialize WebSocket monitor');
-            }
-            logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Monitor WebSocket Ready\x1b[0m');
-
-            // Initialize service-specific WebSocket servers
-            const wsServers = {
-                monitor: wsMonitor,
-                circuitBreaker: createCircuitBreakerWebSocket(server),
-                analytics: createAnalyticsWebSocket(server),
-                market: createMarketDataWebSocket(server),
-                portfolio: createPortfolioWebSocket(server),
-                wallet: createWalletWebSocket(server),
-                contest: createContestWebSocket(server),
-                tokenData: createTokenDataWebSocket(server)
-            };
-
-            // Add debug logging for contest server
-            const contestServer = wsServers.contest;
-            if (!contestServer) {
-                logApi.error('Contest WebSocket server failed to initialize');
-            } else {
-                logApi.info('Contest WebSocket server initialized successfully');
-            }
-
-            // Verify WebSocket servers initialized correctly
-            const failedServers = Object.entries(wsServers)
-                .filter(([name, instance]) => !instance)
-                .map(([name]) => name);
-
-            if (failedServers.length > 0) {
-                throw new Error(`Failed to initialize WebSocket servers: ${failedServers.join(', ')}`);
-            }
-
-            logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Service WebSockets Ready\x1b[0m');
-
-            // Store WebSocket servers in global registry
-            global.wsServers = wsServers;
-
-            // Wait for WebSocket servers to fully initialize
-            await new Promise(resolve => setTimeout(resolve, 2500)); // Wait longer than monitor service's 2000ms
-
-            // Default metrics for uninitialized services
-            const defaultMetrics = {
-                metrics: {
-                    messageCount: 0,
-                    errorCount: 0,
-                    lastUpdate: new Date().toISOString(),
-                    cacheHitRate: 0,
-                    averageLatency: 0
-                },
-                performance: {
-                    messageRate: 0,
-                    errorRate: 0,
-                    latencyTrend: []
-                },
-                status: 'initializing'
-            };
-
-            // Register services with monitor
-            try {
-                // Wait for monitor service to be ready
-                while (!wsMonitor.monitorService.isInitialized) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-
-                // Register each service's metrics
-                for (const [name, instance] of Object.entries(wsServers)) {
-                    if (name !== 'monitor' && instance) {
-                        try {
-                            const metrics = instance.getMetrics?.() || defaultMetrics;
-                            wsMonitor.monitorService.updateServiceMetrics(name, metrics);
-                        } catch (error) {
-                            logApi.warn(`Failed to get metrics for ${name}:`, error);
-                            wsMonitor.monitorService.updateServiceMetrics(name, defaultMetrics);
-                        }
-                    }
-                }
-
-                logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ WebSocket Metrics Registered\x1b[0m');
-
-                // Set up periodic metrics updates only after initial registration is complete
-                setInterval(() => {
-                    try {
-                        // Update each service's metrics
-                        for (const [name, instance] of Object.entries(wsServers)) {
-                            if (name !== 'monitor' && instance) {
-                                try {
-                                    const metrics = instance.getMetrics?.() || defaultMetrics;
-                                    wsMonitor.monitorService.updateServiceMetrics(name, metrics);
-                                } catch (error) {
-                                    logApi.warn(`Failed to get metrics for ${name}:`, error);
-                                    wsMonitor.monitorService.updateServiceMetrics(name, defaultMetrics);
-                                }
-                            }
-                        }
-                    } catch (error) {
-                        logApi.warn('Failed to update WebSocket metrics:', error);
-                    }
-                }, 5000);
-
-                InitLogger.logInit('Core', 'WebSocket Servers', 'success');
-                initResults.WebSocket = { success: true };
-                logApi.info('\x1b[38;5;208m┗━━━━━━━━━━━ ✓ WebSocket System Ready\x1b[0m\n');
-
-            } catch (error) {
-                logApi.warn('Failed to register initial WebSocket metrics:', error);
-            }
+            // Initialize all WebSocket servers with a single call to the dedicated initializer
+            await WebSocketInitializer.initializeWebSockets(server, initResults);
 
             // Initialize Services Layer - Moved outside WebSocket try-catch
             logApi.info('\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
@@ -745,16 +457,9 @@ async function shutdown() {
   try {
     logApi.info('\n\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Shutting Down ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
     
-    // Cleanup WebSocket servers
+    // Cleanup WebSocket servers using the WebSocket Initializer
     logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Cleaning up WebSocket servers...\x1b[0m');
-    for (const [name, ws] of Object.entries(global.wsServers)) {
-      try {
-        await ws.cleanup();
-        logApi.info(`\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ✓ ${name} WebSocket cleaned up\x1b[0m`);
-      } catch (error) {
-        logApi.error(`\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ✗ Failed to cleanup ${name} WebSocket:`, error);
-      }
-    }
+    await WebSocketInitializer.cleanupWebSockets();
 
     // Cleanup all services
     logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Cleaning up services...\x1b[0m');

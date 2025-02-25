@@ -24,6 +24,8 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 
+const VERBOSE_MARKET_WS_INIT = false;
+
 // Message type constants
 const MESSAGE_TYPES = {
     // Client -> Server
@@ -311,7 +313,9 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
         this.marketDataService = new MarketDataService();
         this.startMarketDataStreams();
         
-        logApi.info('Market Data WebSocket server initialized');
+        if (VERBOSE_MARKET_WS_INIT) {
+            logApi.info('Market Data WebSocket server initialized');
+        }
     }
 
     /**
