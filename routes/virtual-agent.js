@@ -2,6 +2,7 @@
 
 import express from 'express';
 import axios from 'axios';
+import crypto from 'crypto';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { colors } from '../utils/colors.js';
 import { requireAuth } from '../middleware/auth.js';
