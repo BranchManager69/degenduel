@@ -89,7 +89,13 @@ router.get('/global', async (req, res) => {
     const { limit, offset } = getLeaderboardSchema.parse(req.query);
 
     // Get total count for pagination and percentile calculation
-    const total = await prisma.users.count();
+    const total = await prisma.users.count({
+      where: {
+        user_stats: {
+          isNot: null
+        }
+      }
+    });
 
     // Get top users with their stats
     const rankings = await prisma.users.findMany({
@@ -102,6 +108,7 @@ router.get('/global', async (req, res) => {
             contests_won: true,
             total_prize_money: true,
             best_score: true,
+            highest_score: true,
             avg_score: true
           }
         },
@@ -116,6 +123,11 @@ router.get('/global', async (req, res) => {
           }
         }
       },
+      where: {
+        user_stats: {
+          isNot: null
+        }
+      },
       take: limit,
       skip: offset,
       orderBy: {
@@ -124,6 +136,29 @@ router.get('/global', async (req, res) => {
         }
       }
     });
+
+    // Find previous rankings for trend calculation
+    const previousRankings = await prisma.historical_rankings.findMany({
+      where: {
+        wallet_addresses: {
+          in: rankings.map(user => user.wallet_address)
+        },
+        ranking_type: 'global',
+        created_at: {
+          lt: new Date()
+        }
+      },
+      orderBy: {
+        created_at: 'desc'
+      },
+      take: rankings.length
+    });
+
+    // Create a map of wallet address to previous rank
+    const previousRankMap = previousRankings.reduce((map, record) => {
+      map[record.wallet_address] = record.rank;
+      return map;
+    }, {});
 
     // Add rank numbers and calculate additional metrics
     const rankedUsers = rankings.map((user, index) => {
@@ -135,15 +170,18 @@ router.get('/global', async (req, res) => {
         ? user.contest_participants.reduce((sum, p) => sum + (p.final_rank || 0), 0) / user.contest_participants.length
         : null;
 
+      // Get previous rank for trend calculation
+      const previousRank = previousRankMap[user.wallet_address] || null;
+
       return {
         rank: currentRank,
         wallet_address: user.wallet_address,
         nickname: user.nickname || 'Anonymous',
-        rank_score: user.user_stats?.best_score?.toString() || '0',
-        highest_rank_score: user.user_stats?.best_score?.toString() || '0',
-        percentile: percentile.toFixed(2),
-        trend: calculateTrend(currentRank, currentRank + 1),
-        avg_position: avgPosition ? avgPosition.toFixed(2) : null,
+        rank_score: user.user_stats?.best_score || 0,
+        highest_rank_score: user.user_stats?.highest_score || user.user_stats?.best_score || 0,
+        percentile: parseFloat(percentile.toFixed(2)),
+        trend: calculateTrend(currentRank, previousRank),
+        avg_position: avgPosition ? parseFloat(avgPosition.toFixed(2)) : null,
         total_contests: user.user_stats?.contests_entered || 0,
         total_earnings: user.user_stats?.total_prize_money?.toString() || '0'
       };
@@ -161,6 +199,14 @@ router.get('/global', async (req, res) => {
       return res.status(400).json({
         error: 'Invalid request parameters',
         details: error.errors
+      });
+    }
+
+    // Handle database errors
+    if (error.code && error.code.startsWith('P')) {
+      return res.status(500).json({
+        error: 'Database error',
+        message: 'An error occurred while querying the database'
       });
     }
 
