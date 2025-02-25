@@ -328,7 +328,6 @@ class AchievementService extends BaseService {
         try {
             // Get all achievement categories
             const categories = await prisma.achievement_categories.findMany({
-                where: { is_active: true },
                 include: {
                     tiers: {
                         include: {
