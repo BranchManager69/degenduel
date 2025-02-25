@@ -243,85 +243,6 @@ const { PrismaClientKnownRequestError } = Prisma;
  *                   type: string
  *                   example: "Missing wallet_address parameter"
  */
-// Get all contests that a user is participating in (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/contests/user-participations?wallet_address=BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
-  const startTime = Date.now();
-  const { wallet_address } = req.query;
-  
-  if (!wallet_address) {
-    return res.status(400).json({
-      error: 'Missing wallet_address parameter'
-    });
-  }
-  
-  try {
-    // Find all contest participations for this wallet
-    const participations = await prisma.contest_participants.findMany({
-      where: {
-        wallet_address
-      },
-      include: {
-        contests: {
-          select: {
-            id: true,
-            name: true,
-            contest_code: true,
-            description: true,
-            status: true,
-            start_time: true,
-            end_time: true,
-            entry_fee: true,
-            prize_pool: true,
-            participant_count: true
-          }
-        }
-      },
-      orderBy: [
-        { created_at: 'desc' }
-      ]
-    });
-    
-    logApi.info(`🔍 ${colors.cyan}User contest participations check${colors.reset}`, {
-      requestId,
-      wallet_address,
-      participationCount: participations.length,
-      duration: Date.now() - startTime
-    });
-    
-    return res.json({
-      participations: participations.map(p => ({
-        ...p,
-        // Convert Decimal fields to strings for JSON serialization
-        initial_balance: p.initial_balance.toString(),
-        current_balance: p.current_balance.toString(),
-        // Rename the contests field to contest for clearer naming
-        contest: {
-          ...p.contests,
-          // Convert Decimal fields
-          entry_fee: p.contests.entry_fee?.toString(),
-          prize_pool: p.contests.prize_pool?.toString(),
-        },
-        contests: undefined
-      }))
-    });
-    
-  } catch (error) {
-    logApi.error(`💥 ${colors.red}Error fetching user contest participations${colors.reset}`, {
-      requestId,
-      error: {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      },
-      duration: Date.now() - startTime
-    });
-    
-    res.status(500).json({
-      error: 'Failed to fetch user contest participations',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
-    });
-  }
-});
 
 // Get all contests with optional filters (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/contests?status=active&limit=10&offset=0
@@ -2816,6 +2737,8 @@ router.get('/:id/check-participation', async (req, res) => {
 //   example: GET https://degenduel.me/api/contests/user-participations?wallet_address=BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp
 router.get('/user-participations', async (req, res) => {
   const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  const { wallet_address } = req.query;
   
   if (!wallet_address) {
     return res.status(400).json({
