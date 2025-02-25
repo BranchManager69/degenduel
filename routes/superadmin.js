@@ -10,10 +10,12 @@ import logApi from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import WalletGenerator from '../services/walletGenerationService.js';
-import LiquidityService  from '../services/liquidityService.js';
+import walletGenerationService from '../services/walletGenerationService.js';
+import liquidityService from '../services/liquidityService.js';
+import adminWalletService from '../services/adminWalletService.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 
@@ -32,6 +34,807 @@ const requireSuperAdminMiddleware = (req, res, next) => {
     }
     next();
 };
+
+// ==== WALLET MANAGEMENT ENDPOINTS ====
+
+/**
+ * @swagger
+ * /api/superadmin/wallets:
+ *   get:
+ *     summary: Get all admin wallets
+ *     tags: [SuperAdmin, Wallets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [all, liquidity, faucet, admin]
+ *         description: Filter wallets by type
+ *       - in: query
+ *         name: active
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *     responses:
+ *       200:
+ *         description: List of wallets
+ */
+router.get('/wallets', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { type = 'all', active } = req.query;
+        
+        // Build where clause based on filters
+        const where = {};
+        
+        if (active !== undefined) {
+            where.is_active = active === 'true';
+        }
+        
+        if (type !== 'all') {
+            // Handle different wallet types
+            switch(type) {
+                case 'liquidity':
+                    where.purpose = 'liquidity';
+                    break;
+                case 'faucet':
+                    where.purpose = { contains: 'faucet' };
+                    break;
+                case 'admin':
+                    where.purpose = { contains: 'admin' };
+                    break;
+            }
+        }
+        
+        // Get wallets from database
+        const wallets = await prisma.seed_wallets.findMany({
+            where,
+            orderBy: [
+                { is_active: 'desc' },
+                { created_at: 'desc' }
+            ]
+        });
+        
+        // Get balances in parallel
+        const walletsWithBalance = await Promise.all(
+            wallets.map(async (wallet) => {
+                try {
+                    const balance = await connection.getBalance(new PublicKey(wallet.wallet_address));
+                    return {
+                        ...wallet,
+                        balance: balance / LAMPORTS_PER_SOL,
+                        balance_raw: balance
+                    };
+                } catch (error) {
+                    return {
+                        ...wallet,
+                        balance: 0,
+                        balance_raw: 0,
+                        error: 'Failed to fetch balance'
+                    };
+                }
+            })
+        );
+        
+        // Get service stats
+        const serviceStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.ADMIN_WALLET);
+        
+        return res.json({
+            wallets: walletsWithBalance,
+            total: walletsWithBalance.length,
+            active: walletsWithBalance.filter(w => w.is_active).length,
+            service_status: serviceStatus ? 'healthy' : 'unhealthy',
+            last_check: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error('Error getting wallets:', error);
+        return res.status(500).json({ error: 'Failed to get wallets' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/superadmin/wallets/generate:
+ *   post:
+ *     summary: Generate new wallets
+ *     tags: [SuperAdmin, Wallets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - count
+ *               - purpose
+ *             properties:
+ *               count:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 50
+ *                 description: Number of wallets to generate
+ *               purpose:
+ *                 type: string
+ *                 enum: [liquidity, faucet, admin]
+ *                 description: Purpose of the wallets
+ *               prefix:
+ *                 type: string
+ *                 description: Optional prefix for the wallet identifier
+ *     responses:
+ *       201:
+ *         description: Wallets generated successfully
+ */
+router.post('/wallets/generate', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { count = 1, purpose = 'admin', prefix = '' } = req.body;
+        
+        // Validate count
+        if (count < 1 || count > 50) {
+            return res.status(400).json({
+                error: 'Invalid count. Must be between 1 and 50'
+            });
+        }
+        
+        // Create wallets
+        const wallets = [];
+        
+        for (let i = 0; i < count; i++) {
+            const identifier = `${purpose}_${prefix}${Date.now()}_${i}`;
+            
+            // Generate the wallet
+            const wallet = await walletGenerationService.generateWallet(identifier, {
+                metadata: {
+                    purpose,
+                    created_by: req.user.wallet_address,
+                    created_at: new Date().toISOString()
+                }
+            });
+            
+            wallets.push({
+                public_key: wallet.publicKey,
+                identifier
+            });
+        }
+        
+        // Log the action
+        logApi.info(`Generated ${count} ${purpose} wallets`, {
+            admin: req.user.wallet_address,
+            count,
+            purpose
+        });
+        
+        return res.status(201).json({
+            message: `Generated ${count} wallets successfully`,
+            wallets,
+            count
+        });
+    } catch (error) {
+        logApi.error('Error generating wallets:', error);
+        return res.status(500).json({ error: 'Failed to generate wallets' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/superadmin/wallets/{address}:
+ *   get:
+ *     summary: Get wallet details
+ *     tags: [SuperAdmin, Wallets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: address
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Wallet address
+ *     responses:
+ *       200:
+ *         description: Wallet details
+ */
+router.get('/wallets/:address', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { address } = req.params;
+        
+        // Get wallet from database
+        const wallet = await prisma.seed_wallets.findUnique({
+            where: { wallet_address: address }
+        });
+        
+        if (!wallet) {
+            return res.status(404).json({ error: 'Wallet not found' });
+        }
+        
+        // Get balance
+        const balance = await connection.getBalance(new PublicKey(address));
+        
+        // Get recent transactions
+        const transactions = await prisma.transactions.findMany({
+            where: { wallet_address: address },
+            orderBy: { created_at: 'desc' },
+            take: 20
+        });
+        
+        return res.json({
+            wallet: {
+                ...wallet,
+                balance: balance / LAMPORTS_PER_SOL,
+                balance_raw: balance
+            },
+            transactions,
+            transactions_count: transactions.length
+        });
+    } catch (error) {
+        logApi.error('Error getting wallet details:', error);
+        return res.status(500).json({ error: 'Failed to get wallet details' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/superadmin/wallets/transfer:
+ *   post:
+ *     summary: Transfer SOL between wallets
+ *     tags: [SuperAdmin, Wallets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - from
+ *               - to
+ *               - amount
+ *             properties:
+ *               from:
+ *                 type: string
+ *                 description: Source wallet address
+ *               to:
+ *                 type: string
+ *                 description: Destination wallet address
+ *               amount:
+ *                 type: number
+ *                 description: Amount in SOL
+ *               description:
+ *                 type: string
+ *                 description: Optional description
+ *     responses:
+ *       200:
+ *         description: Transfer successful
+ */
+router.post('/wallets/transfer', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { from, to, amount, description = 'Admin transfer' } = req.body;
+        
+        // Validate parameters
+        if (!from || !to || !amount) {
+            return res.status(400).json({
+                error: 'Missing required parameters'
+            });
+        }
+        
+        if (amount <= 0) {
+            return res.status(400).json({
+                error: 'Amount must be greater than 0'
+            });
+        }
+        
+        // Get source wallet
+        const sourceWallet = await prisma.seed_wallets.findUnique({
+            where: { wallet_address: from }
+        });
+        
+        if (!sourceWallet) {
+            return res.status(404).json({ error: 'Source wallet not found' });
+        }
+        
+        // Execute transfer
+        const result = await adminWalletService.transferSOL(
+            sourceWallet.wallet_address,
+            to,
+            amount,
+            description,
+            {
+                adminId: req.user.wallet_address,
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            }
+        );
+        
+        return res.json({
+            message: 'Transfer successful',
+            signature: result.signature,
+            from,
+            to,
+            amount
+        });
+    } catch (error) {
+        logApi.error('Error transferring SOL:', error);
+        return res.status(500).json({ 
+            error: 'Failed to transfer SOL',
+            details: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/superadmin/wallets/{address}/activate:
+ *   post:
+ *     summary: Activate or deactivate a wallet
+ *     tags: [SuperAdmin, Wallets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: address
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Wallet address
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - active
+ *             properties:
+ *               active:
+ *                 type: boolean
+ *                 description: Whether to activate or deactivate the wallet
+ *     responses:
+ *       200:
+ *         description: Wallet status updated
+ */
+router.post('/wallets/:address/activate', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { address } = req.params;
+        const { active } = req.body;
+        
+        // Validate parameters
+        if (active === undefined) {
+            return res.status(400).json({
+                error: 'Missing required parameter: active'
+            });
+        }
+        
+        // Update wallet
+        const wallet = await prisma.seed_wallets.update({
+            where: { wallet_address: address },
+            data: { 
+                is_active: active,
+                metadata: {
+                    updated_by: req.user.wallet_address,
+                    updated_at: new Date().toISOString(),
+                    status_change: active ? 'activated' : 'deactivated'
+                }
+            }
+        });
+        
+        // Log the action
+        logApi.info(`${active ? 'Activated' : 'Deactivated'} wallet ${address}`, {
+            admin: req.user.wallet_address,
+            wallet: address,
+            status: active ? 'activated' : 'deactivated'
+        });
+        
+        return res.json({
+            message: `Wallet ${active ? 'activated' : 'deactivated'} successfully`,
+            wallet
+        });
+    } catch (error) {
+        logApi.error('Error updating wallet status:', error);
+        return res.status(500).json({ error: 'Failed to update wallet status' });
+    }
+});
+
+// ==== DIRECT WALLET TESTING ENDPOINTS ====
+
+/**
+ * @swagger
+ * /api/superadmin/wallet-test/direct-balance:
+ *   get:
+ *     summary: Direct test to check wallet balance
+ *     tags: [SuperAdmin, Testing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: address
+ *         schema:
+ *           type: string
+ *         description: Wallet address to check (defaults to active liquidity wallet)
+ *     responses:
+ *       200:
+ *         description: Current balance information
+ */
+router.get('/wallet-test/direct-balance', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { address } = req.query;
+        
+        // Default to active liquidity wallet if no address provided
+        const walletAddress = address || 'DEoSkiU8kmG2crkbyoQgwKVrASLaWhYMPVKa6mnA15xM';
+        
+        // Get balance directly from Solana
+        const balance = await connection.getBalance(new PublicKey(walletAddress));
+        
+        // Get wallet from database
+        const wallet = await prisma.seed_wallets.findUnique({
+            where: { wallet_address: walletAddress }
+        });
+        
+        return res.json({
+            wallet_address: walletAddress,
+            balance_sol: balance / LAMPORTS_PER_SOL,
+            balance_lamports: balance,
+            is_in_database: !!wallet,
+            wallet_info: wallet || null,
+            checked_at: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error('Error checking wallet balance:', error);
+        return res.status(500).json({ 
+            error: 'Failed to check wallet balance',
+            details: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/superadmin/wallet-test/transfer:
+ *   post:
+ *     summary: Direct test to transfer SOL
+ *     tags: [SuperAdmin, Testing]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - from
+ *               - to
+ *               - amount
+ *             properties:
+ *               from:
+ *                 type: string
+ *                 description: Source wallet address
+ *               to:
+ *                 type: string
+ *                 description: Destination wallet address
+ *               amount:
+ *                 type: number
+ *                 description: Amount in SOL
+ *     responses:
+ *       200:
+ *         description: Transfer result
+ */
+router.post('/wallet-test/transfer', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { from, to, amount } = req.body;
+        
+        if (!from || !to || !amount) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+        
+        // Get the source wallet
+        const sourceWallet = await prisma.seed_wallets.findUnique({
+            where: { wallet_address: from }
+        });
+        
+        if (!sourceWallet) {
+            return res.status(404).json({ error: 'Source wallet not found in database' });
+        }
+        
+        // Execute transfer using adminWalletService
+        try {
+            const result = await adminWalletService.transferSOL(
+                from,
+                to,
+                amount,
+                'Direct API test transfer',
+                {
+                    adminId: req.user.wallet_address,
+                    ip: req.ip,
+                    userAgent: req.headers['user-agent']
+                }
+            );
+            
+            // Get updated balances
+            const fromBalance = await connection.getBalance(new PublicKey(from));
+            const toBalance = await connection.getBalance(new PublicKey(to));
+            
+            return res.json({
+                success: true,
+                signature: result.signature,
+                source: {
+                    address: from,
+                    balance: fromBalance / LAMPORTS_PER_SOL
+                },
+                destination: {
+                    address: to,
+                    balance: toBalance / LAMPORTS_PER_SOL
+                },
+                amount,
+                timestamp: new Date().toISOString()
+            });
+        } catch (transferError) {
+            logApi.error('Transfer failed:', transferError);
+            return res.status(500).json({
+                error: 'Transfer failed',
+                details: transferError.message
+            });
+        }
+    } catch (error) {
+        logApi.error('Error processing transfer request:', error);
+        return res.status(500).json({ 
+            error: 'Failed to process transfer request',
+            details: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/superadmin/wallet-test/mass-check:
+ *   post:
+ *     summary: Perform mass balance check of all wallets
+ *     tags: [SuperAdmin, Testing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [all, active, liquidity, faucet]
+ *         description: Filter which wallets to check
+ *     responses:
+ *       200:
+ *         description: Balance check results
+ */
+router.post('/wallet-test/mass-check', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { filter = 'all' } = req.query;
+        
+        // Build where clause based on filter
+        const where = {};
+        
+        if (filter === 'active') {
+            where.is_active = true;
+        } else if (filter === 'liquidity') {
+            where.purpose = 'liquidity';
+        } else if (filter === 'faucet') {
+            where.purpose = { contains: 'faucet' };
+        }
+        
+        // Get wallets from database
+        const wallets = await prisma.seed_wallets.findMany({
+            where,
+            orderBy: [
+                { is_active: 'desc' },
+                { created_at: 'desc' }
+            ]
+        });
+        
+        // Check balances in parallel
+        const results = await Promise.allSettled(
+            wallets.map(async (wallet) => {
+                try {
+                    const balance = await connection.getBalance(new PublicKey(wallet.wallet_address));
+                    return {
+                        wallet_address: wallet.wallet_address,
+                        purpose: wallet.purpose,
+                        is_active: wallet.is_active,
+                        balance_sol: balance / LAMPORTS_PER_SOL,
+                        balance_lamports: balance,
+                        check_success: true
+                    };
+                } catch (error) {
+                    return {
+                        wallet_address: wallet.wallet_address,
+                        purpose: wallet.purpose,
+                        is_active: wallet.is_active,
+                        check_success: false,
+                        error: error.message
+                    };
+                }
+            })
+        );
+        
+        // Process results
+        const processedResults = results.map(result => 
+            result.status === 'fulfilled' ? result.value : result.reason
+        );
+        
+        // Calculate totals
+        const successCount = processedResults.filter(r => r.check_success).length;
+        const totalSOL = processedResults.reduce((sum, r) => sum + (r.balance_sol || 0), 0);
+        
+        return res.json({
+            wallets: processedResults,
+            summary: {
+                total_wallets: wallets.length,
+                checked_successfully: successCount,
+                failed_checks: wallets.length - successCount,
+                total_sol_balance: totalSOL,
+                check_time: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        logApi.error('Error during mass balance check:', error);
+        return res.status(500).json({ 
+            error: 'Failed to perform mass balance check',
+            details: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/superadmin/wallet-test/round-trip:
+ *   post:
+ *     summary: Perform a round-trip transfer test (send and return funds)
+ *     tags: [SuperAdmin, Testing]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               source:
+ *                 type: string
+ *                 description: Source wallet address (defaults to active liquidity wallet)
+ *               destination:
+ *                 type: string
+ *                 description: Destination wallet address
+ *               amount:
+ *                 type: number
+ *                 description: Amount in SOL (defaults to 0.001)
+ *               wait_time:
+ *                 type: number
+ *                 description: Time to wait between transfers in ms (defaults to 2000)
+ *     responses:
+ *       200:
+ *         description: Round-trip transfer results
+ */
+router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        // Get active liquidity wallet if no source provided
+        const activeWallet = await prisma.seed_wallets.findFirst({
+            where: { 
+                purpose: 'liquidity',
+                is_active: true
+            }
+        });
+        
+        if (!activeWallet && !req.body.source) {
+            return res.status(400).json({ 
+                error: 'No active liquidity wallet found and no source wallet provided' 
+            });
+        }
+        
+        // Use provided values or defaults
+        const source = req.body.source || activeWallet.wallet_address;
+        const { destination } = req.body;
+        const amount = req.body.amount || 0.001; // Very small amount by default (0.001 SOL)
+        const waitTime = req.body.wait_time || 2000; // 2 seconds by default
+        
+        if (!destination) {
+            return res.status(400).json({ error: 'Destination wallet address is required' });
+        }
+        
+        // Step 1: Get initial balances
+        const initialSourceBalance = await connection.getBalance(new PublicKey(source));
+        const initialDestBalance = await connection.getBalance(new PublicKey(destination));
+        
+        // Step 2: First transfer (source to destination)
+        const outboundTransfer = await adminWalletService.transferSOL(
+            source,
+            destination,
+            amount,
+            'Round-trip test - outbound',
+            {
+                adminId: req.user.wallet_address,
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            }
+        );
+        
+        // Step 3: Wait for transaction to confirm
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        
+        // Step 4: Get interim balances
+        const interimSourceBalance = await connection.getBalance(new PublicKey(source));
+        const interimDestBalance = await connection.getBalance(new PublicKey(destination));
+        
+        // Step 5: Calculate return amount (slightly less to account for fees)
+        // Keep 0.0001 SOL for return transfer fee
+        const returnAmount = Math.max(0, (amount - 0.0001));
+        
+        // Step 6: Return transfer (destination back to source)
+        const inboundTransfer = await adminWalletService.transferSOL(
+            destination,
+            source,
+            returnAmount,
+            'Round-trip test - inbound',
+            {
+                adminId: req.user.wallet_address,
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            }
+        );
+        
+        // Step 7: Wait for second transaction to confirm
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        
+        // Step 8: Get final balances
+        const finalSourceBalance = await connection.getBalance(new PublicKey(source));
+        const finalDestBalance = await connection.getBalance(new PublicKey(destination));
+        
+        // Step 9: Calculate statistics
+        const sourceDiff = (finalSourceBalance - initialSourceBalance) / LAMPORTS_PER_SOL;
+        const destDiff = (finalDestBalance - initialDestBalance) / LAMPORTS_PER_SOL;
+        const totalFees = amount - returnAmount - destDiff;
+        
+        return res.json({
+            success: true,
+            source: {
+                address: source,
+                initial_balance: initialSourceBalance / LAMPORTS_PER_SOL,
+                interim_balance: interimSourceBalance / LAMPORTS_PER_SOL,
+                final_balance: finalSourceBalance / LAMPORTS_PER_SOL,
+                net_change: sourceDiff
+            },
+            destination: {
+                address: destination,
+                initial_balance: initialDestBalance / LAMPORTS_PER_SOL,
+                interim_balance: interimDestBalance / LAMPORTS_PER_SOL,
+                final_balance: finalDestBalance / LAMPORTS_PER_SOL,
+                net_change: destDiff
+            },
+            transfers: {
+                outbound: {
+                    amount,
+                    signature: outboundTransfer.signature
+                },
+                inbound: {
+                    amount: returnAmount,
+                    signature: inboundTransfer.signature
+                }
+            },
+            fees: {
+                estimated_total: totalFees,
+                per_transaction: totalFees / 2
+            },
+            test_completed_at: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error('Error during round-trip test:', error);
+        return res.status(500).json({
+            error: 'Round-trip test failed',
+            details: error.message,
+            phase: error.phase || 'unknown'
+        });
+    }
+});
+
+// ==== LOG MANAGEMENT ENDPOINTS ====
 
 // Get available log files (SUPERADMIN ONLY)
 router.get('/logs/available', requireAuth, requireSuperAdmin, async (req, res) => {
