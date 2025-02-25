@@ -127,7 +127,7 @@ class WalletService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('Wallet Generator Service initialized');
+            logApi.info('\t\tWallet Generator Service initialized');
             return true;
         } catch (error) {
             logApi.error('Wallet Generator Service initialization error:', error);

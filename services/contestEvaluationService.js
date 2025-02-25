@@ -26,6 +26,8 @@ import { Decimal } from '@prisma/client/runtime/library';
 //import marketDataService from './marketDataService.js';
 import levelingService from './levelingService.js';
 
+const VERBOSE_CONTEST_EVALUATION_INIT = false;
+
 const CONTEST_EVALUATION_CONFIG = {
     name: SERVICE_NAMES.CONTEST_EVALUATION,
     description: getServiceMetadata(SERVICE_NAMES.CONTEST_EVALUATION).description,
@@ -55,19 +57,23 @@ const CONTEST_EVALUATION_CONFIG = {
 class ContestEvaluationService extends BaseService {
     constructor() {
         // Add logging before super call
-        logApi.info('Initializing Contest Evaluation Service with config:', {
-            name: SERVICE_NAMES.CONTEST_EVALUATION,
-            config: CONTEST_EVALUATION_CONFIG
-        });
+        if (VERBOSE_CONTEST_EVALUATION_INIT) {
+            logApi.info('Initializing Contest Evaluation Service with config:', {
+                name: SERVICE_NAMES.CONTEST_EVALUATION,
+                config: CONTEST_EVALUATION_CONFIG
+            });
+        }
         
         ////super(SERVICE_NAMES.CONTEST_EVALUATION, CONTEST_EVALUATION_CONFIG);
         super(CONTEST_EVALUATION_CONFIG);
         
         // Add logging after super call
-        logApi.info('Contest Evaluation Service base initialization complete:', {
-            name: this.name,
-            config: this.config
-        });
+        if (VERBOSE_CONTEST_EVALUATION_INIT) {
+            logApi.info('Contest Evaluation Service base initialization complete:', {
+                name: this.name,
+                config: this.config
+            });
+        }
         
         // Initialize Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
@@ -180,11 +186,13 @@ class ContestEvaluationService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('Contest Evaluation Service initialized', {
-                activeContests,
-                completedContests,
-                cancelledContests
-            });
+            if (VERBOSE_CONTEST_EVALUATION_INIT) {
+                logApi.info('\t\tContest Evaluation Service initialized', {
+                    activeContests,
+                    completedContests,
+                    cancelledContests
+                });
+            }
 
             return true;
         } catch (error) {

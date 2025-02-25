@@ -213,7 +213,7 @@ class ReferralService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('Referral Service initialized', {
+            logApi.info('\t\tReferral Service initialized', {
                 totalReferrals,
                 activeReferrals,
                 convertedReferrals,

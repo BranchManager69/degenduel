@@ -156,7 +156,7 @@ class TokenWhitelistService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('Token Whitelist Service initialized', {
+            logApi.info('\t\tToken Whitelist Service initialized', {
                 totalTokens,
                 activeTokens
             });

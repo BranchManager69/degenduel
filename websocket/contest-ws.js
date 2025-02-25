@@ -23,6 +23,8 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 
+const VERBOSE_CONTEST_WS_INIT = false;
+
 // Message type constants
 const MESSAGE_TYPES = {
     // Client -> Server
@@ -95,7 +97,9 @@ class ContestWebSocketServer extends BaseWebSocketServer {
         this.startPeriodicUpdates();
         this.startChatRateLimitReset();
         
-        logApi.info('Contest WebSocket server initialized with room support');
+        if (VERBOSE_CONTEST_WS_INIT) {
+            logApi.info('Contest WebSocket server initialized with room support');
+        }
     }
 
     /**

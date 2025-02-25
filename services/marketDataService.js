@@ -163,7 +163,7 @@ class MarketDataService extends BaseService {
                 marketStats: this.marketStats
             };
 
-            logApi.info('Market Data Service initialized', {
+            logApi.info('\t\tMarket Data Service initialized', {
                 activeTokens: this.marketStats.data.tokens.active,
                 withPrices: this.marketStats.data.tokens.withPrices,
                 status: 'ready'

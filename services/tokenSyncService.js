@@ -181,7 +181,7 @@ class TokenSyncService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('Token Sync Service initialized', {
+            logApi.info('\t\tToken Sync Service initialized', {
                 activeTokens,
                 totalTokens,
                 hasInitialData: activeTokens > 0
