@@ -173,15 +173,18 @@ router.get('/history/:walletAddress', requireAuth, requireSuperAdmin, async (req
       }
     });
     
+    // Format the response to match expected frontend format
+    const formattedHistory = history.map(record => ({
+      timestamp: record.timestamp.toISOString(),
+      balance: (parseFloat(record.balance_lamports.toString()) / 1_000_000_000).toFixed(2)
+    }));
+    
     return res.json({
       user: {
         ...user,
         last_known_balance: user?.last_known_balance?.toString()
       },
-      history: history.map(record => ({
-        ...record,
-        balance_lamports: record.balance_lamports.toString()
-      }))
+      history: formattedHistory
     });
   } catch (error) {
     logApi.error(`Error getting balance history for ${req.params.walletAddress}`, error);
@@ -212,11 +215,14 @@ router.post('/check/:walletAddress', requireAuth, requireSuperAdmin, async (req,
     const result = await userBalanceTrackingService.forceBalanceCheck(walletAddress);
     
     if (result.status === 'success') {
+      // Format the balance as SOL instead of lamports for the frontend
+      const balanceInSol = (parseFloat(result.balance.toString()) / 1_000_000_000).toFixed(2);
+      
       return res.json({
         status: 'success',
         walletAddress,
-        balance: result.balance.toString(),
-        timestamp: result.timestamp
+        balance: balanceInSol,
+        timestamp: result.timestamp.toISOString ? result.timestamp.toISOString() : new Date(result.timestamp).toISOString()
       });
     } else {
       return res.status(400).json({
@@ -354,11 +360,6 @@ router.get('/dashboard', requireAuth, requireSuperAdmin, async (req, res) => {
         wallet_address: true,
         balance_lamports: true,
         timestamp: true,
-        users: {
-          select: {
-            nickname: true
-          }
-        }
       },
       orderBy: {
         timestamp: 'desc'
@@ -366,33 +367,231 @@ router.get('/dashboard', requireAuth, requireSuperAdmin, async (req, res) => {
       take: 10
     });
     
+    // Fetch nicknames separately
+    const checksWithNicknames = await Promise.all(
+      recentChecks.map(async (check) => {
+        const user = await prisma.users.findUnique({
+          where: { wallet_address: check.wallet_address },
+          select: { nickname: true }
+        });
+        return {
+          ...check,
+          nickname: user?.nickname,
+          balance: check.balance_lamports.toString(),
+          status: 'success'
+        };
+      })
+    );
+    
     // Get service metrics
     const serviceStatus = userBalanceTrackingService.getServiceStatus();
     const metrics = userBalanceTrackingService.trackingStats;
+    
+    // Calculate SOL and USD totals
+    const totalBalanceSOL = topWallets.reduce((sum, wallet) => 
+      sum + (wallet.last_known_balance ? parseFloat(wallet.last_known_balance.toString()) / 1_000_000_000 : 0), 0);
+    const solPrice = 70.20; // Placeholder - in production would be fetched from a price service
+    const totalValueUSD = totalBalanceSOL * solPrice;
+    
+    // Create balance distribution
+    const balanceDistribution = [
+      { range: "0-1 SOL", count: 0, percentage: 0 },
+      { range: "1-10 SOL", count: 0, percentage: 0 },
+      { range: "10-100 SOL", count: 0, percentage: 0 },
+      { range: "100+ SOL", count: 0, percentage: 0 }
+    ];
+    
+    // Process wallet balances for distribution
+    topWallets.forEach(wallet => {
+      const balanceSOL = wallet.last_known_balance ? parseFloat(wallet.last_known_balance.toString()) / 1_000_000_000 : 0;
+      
+      if (balanceSOL < 1) {
+        balanceDistribution[0].count++;
+      } else if (balanceSOL < 10) {
+        balanceDistribution[1].count++;
+      } else if (balanceSOL < 100) {
+        balanceDistribution[2].count++;
+      } else {
+        balanceDistribution[3].count++;
+      }
+    });
+    
+    // Calculate percentages
+    const totalWallets = topWallets.length;
+    balanceDistribution.forEach(range => {
+      range.percentage = totalWallets > 0 ? parseFloat((range.count / totalWallets * 100).toFixed(1)) : 0;
+    });
     
     return res.json({
       summary: {
         totalUsers,
         trackedUsers,
         trackingCoverage: totalUsers > 0 ? Math.round((trackedUsers / totalUsers) * 100) : 0,
-        historyCount,
-        checkFrequencyMinutes: Math.round(userBalanceTrackingService.effectiveCheckIntervalMs / 1000 / 60),
+        totalWallets: trackedUsers,
+        totalBalanceSOL: parseFloat(totalBalanceSOL.toFixed(2)),
+        totalValueUSD: parseFloat(totalValueUSD.toFixed(2)),
         serviceStatus: serviceStatus.status,
-        lastOperationTime: new Date(Date.now() - metrics.performance.lastOperationTimeMs)
+        checksPerHour: metrics.balanceChecks.total || 0,
+        balanceCheckSuccess: metrics.balanceChecks.successful || 0,
+        balanceCheckTotal: metrics.balanceChecks.total || 0
       },
+      balanceDistribution,
       topWallets: topWallets.map(wallet => ({
-        ...wallet,
-        last_known_balance: wallet.last_known_balance?.toString()
+        walletAddress: wallet.wallet_address,
+        balance: (parseFloat(wallet.last_known_balance?.toString() || "0") / 1_000_000_000).toFixed(2),
+        lastUpdated: wallet.last_balance_check,
+        nickname: wallet.nickname,
+        isHighValue: parseFloat(wallet.last_known_balance?.toString() || "0") / 1_000_000_000 > 100
       })),
-      recentChecks: recentChecks.map(check => ({
-        ...check,
-        balance_lamports: check.balance_lamports.toString()
-      })),
-      metrics
+      recentChecks: checksWithNicknames,
+      settings: {
+        queriesPerHour: userBalanceTrackingService.config.rateLimit.queriesPerHour,
+        minCheckIntervalMs: userBalanceTrackingService.config.rateLimit.minCheckIntervalMs,
+        maxCheckIntervalMs: userBalanceTrackingService.config.rateLimit.maxCheckIntervalMs,
+        effectiveCheckIntervalMs: userBalanceTrackingService.effectiveCheckIntervalMs
+      }
     });
   } catch (error) {
     logApi.error('Error getting dashboard data', error);
     return res.status(500).json({ error: 'Failed to get dashboard data' });
+  }
+});
+
+/**
+ * @api {post} /api/admin/wallet-monitoring/start Start the wallet monitoring service
+ * @apiName StartWalletMonitoring
+ * @apiGroup AdminWalletMonitoring
+ * @apiPermission superadmin
+ * 
+ * @apiSuccess {Object} result Operation result
+ */
+router.post('/start', requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    // Get current service status
+    const currentStatus = userBalanceTrackingService.getServiceStatus();
+
+    // If service is already running, return success
+    if (currentStatus.isRunning) {
+      return res.json({
+        success: true,
+        message: 'Monitoring service is already running',
+        serviceStatus: 'running'
+      });
+    }
+
+    // Start the service
+    await userBalanceTrackingService.start();
+
+    // Update service status in database
+    await prisma.system_settings.upsert({
+      where: {
+        key: `${userBalanceTrackingService.config.name}_status`
+      },
+      update: {
+        value: {
+          status: 'running',
+          last_started: new Date().toISOString(),
+          started_by: req.user.wallet_address
+        },
+        updated_at: new Date(),
+        updated_by: req.user.wallet_address
+      },
+      create: {
+        key: `${userBalanceTrackingService.config.name}_status`,
+        value: {
+          status: 'running',
+          last_started: new Date().toISOString(),
+          started_by: req.user.wallet_address
+        },
+        description: 'User balance tracking service status',
+        updated_by: req.user.wallet_address
+      }
+    });
+
+    // Get updated status
+    const updatedStatus = userBalanceTrackingService.getServiceStatus();
+
+    return res.json({
+      success: true,
+      message: 'Monitoring service started',
+      serviceStatus: updatedStatus.status
+    });
+  } catch (error) {
+    logApi.error('Error starting wallet monitoring service', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Failed to start monitoring service',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * @api {post} /api/admin/wallet-monitoring/stop Stop the wallet monitoring service
+ * @apiName StopWalletMonitoring
+ * @apiGroup AdminWalletMonitoring
+ * @apiPermission superadmin
+ * 
+ * @apiSuccess {Object} result Operation result
+ */
+router.post('/stop', requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    // Get current service status
+    const currentStatus = userBalanceTrackingService.getServiceStatus();
+
+    // If service is already stopped, return success
+    if (!currentStatus.isRunning) {
+      return res.json({
+        success: true,
+        message: 'Monitoring service is already stopped',
+        serviceStatus: 'stopped'
+      });
+    }
+
+    // Stop the service
+    await userBalanceTrackingService.stop();
+
+    // Update service status in database
+    await prisma.system_settings.upsert({
+      where: {
+        key: `${userBalanceTrackingService.config.name}_status`
+      },
+      update: {
+        value: {
+          status: 'stopped',
+          last_stopped: new Date().toISOString(),
+          stopped_by: req.user.wallet_address
+        },
+        updated_at: new Date(),
+        updated_by: req.user.wallet_address
+      },
+      create: {
+        key: `${userBalanceTrackingService.config.name}_status`,
+        value: {
+          status: 'stopped',
+          last_stopped: new Date().toISOString(),
+          stopped_by: req.user.wallet_address
+        },
+        description: 'User balance tracking service status',
+        updated_by: req.user.wallet_address
+      }
+    });
+
+    // Get updated status
+    const updatedStatus = userBalanceTrackingService.getServiceStatus();
+
+    return res.json({
+      success: true,
+      message: 'Monitoring service stopped',
+      serviceStatus: updatedStatus.status
+    });
+  } catch (error) {
+    logApi.error('Error stopping wallet monitoring service', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Failed to stop monitoring service',
+      message: error.message
+    });
   }
 });
 
