@@ -7,7 +7,7 @@ module.exports = {
       name: 'degenduel-api',
       script: 'index.js',
       watch: false,
-      cwd: '/home/branchmanager/websites/degenduel',
+      cwd: '/home/websites/degenduel',
       wait_ready: true,
       node_args: [
         '--no-warnings',
@@ -19,7 +19,9 @@ module.exports = {
         PORT: 3004,
         DD_API_DEBUG_MODE: 'false',
         NODE_ENV: 'production',
-        NODE_OPTIONS: '--require ts-node/register'
+        NODE_OPTIONS: '--require ts-node/register',
+        SILENT_MODE: 'false',
+        CONSOLE_LOG_LEVEL: 'warn'
       },
       exp_backoff_restart_delay: 100,
       max_memory_restart: '2G',
@@ -29,7 +31,7 @@ module.exports = {
       name: 'degenduel-api-test',
       script: 'index.js',
       watch: false,
-      cwd: '/home/branchmanager/websites/degenduel',
+      cwd: '/home/websites/degenduel',
       wait_ready: true,
       node_args: [
         '--no-warnings',
@@ -41,7 +43,9 @@ module.exports = {
         PORT: 3005,
         DD_API_DEBUG_MODE: 'false',
         NODE_ENV: 'test',
-        NODE_OPTIONS: '--require ts-node/register'
+        NODE_OPTIONS: '--require ts-node/register',
+        SILENT_MODE: 'false',
+        CONSOLE_LOG_LEVEL: 'warn'
       },
       exp_backoff_restart_delay: 100,
       max_memory_restart: '2G',
@@ -52,7 +56,7 @@ module.exports = {
       script: 'npx',
       args: 'prisma studio',
       watch: false,
-      cwd: '/home/branchmanager/websites/degenduel',
+      cwd: '/home/websites/degenduel',
       env: {
         PORT: 5555
       }
@@ -62,7 +66,7 @@ module.exports = {
       script: 'npx',
       args: 'prisma studio',
       watch: false,
-      cwd: '/home/branchmanager/websites/degenduel',
+      cwd: '/home/websites/degenduel',
       env: {
         PORT: 5556,
         DATABASE_URL: process.env.DATABASE_URL_TEST // Will use test database

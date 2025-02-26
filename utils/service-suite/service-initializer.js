@@ -29,71 +29,106 @@ import solanaService from '../../services/solanaService.js';
 
 class ServiceInitializer {
     static async registerCoreServices() {
-        logApi.info('\x1b[38;5;199m╭───────────────<< REGISTERING CORE SERVICES >>───────────────╮\x1b[0m');
+        if (!VERBOSE_LOGS) {
+            logApi.info('Registering core services...');
+        } else {
+            logApi.info('\x1b[38;5;199m╭───────────────<< REGISTERING CORE SERVICES >>───────────────╮\x1b[0m');
+        }
         
         try {
             // Infrastructure Layer
-            logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-            
-            // Register Solana Service first (most fundamental)
-            if (VERBOSE_LOGS) logApi.info('Attempting to register solanaService...');
-            serviceManager.register(solanaService);
-            
-            // Register other infrastructure services
-            if (VERBOSE_LOGS) logApi.info('Attempting to register walletGeneratorService...');
-            serviceManager.register(walletGeneratorService);
-            if (VERBOSE_LOGS) logApi.info('Attempting to register liquidityService...');
-            serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
-            logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ Infrastructure Services Registered\x1b[0m');
+            if (!VERBOSE_LOGS) {
+                // Register in a less verbose way
+                serviceManager.register(solanaService);
+                serviceManager.register(walletGeneratorService);
+                serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
+            } else {
+                logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+                
+                // Register Solana Service first (most fundamental)
+                logApi.info('Attempting to register solanaService...');
+                serviceManager.register(solanaService);
+                
+                // Register other infrastructure services
+                logApi.info('Attempting to register walletGeneratorService...');
+                serviceManager.register(walletGeneratorService);
+                logApi.info('Attempting to register liquidityService...');
+                serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
+                logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ Infrastructure Services Registered\x1b[0m');
+            }
 
             // Data Layer
-            logApi.info('\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-            if (VERBOSE_LOGS) logApi.info('Attempting to register tokenSyncService...');
-            serviceManager.register(tokenSyncService);
-            if (VERBOSE_LOGS) logApi.info('Attempting to register marketDataService...');
-            serviceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
-            if (VERBOSE_LOGS) logApi.info('Attempting to register tokenWhitelistService...');
-            serviceManager.register(tokenWhitelistService);
-            logApi.info('\x1b[38;5;208m┗━━━━━━━━━━━ ✅ Data Services Registered\x1b[0m');
+            if (!VERBOSE_LOGS) {
+                // Register without verbose logging
+                serviceManager.register(tokenSyncService);
+                serviceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
+                serviceManager.register(tokenWhitelistService);
+            } else {
+                logApi.info('\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+                logApi.info('Attempting to register tokenSyncService...');
+                serviceManager.register(tokenSyncService);
+                logApi.info('Attempting to register marketDataService...');
+                serviceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
+                logApi.info('Attempting to register tokenWhitelistService...');
+                serviceManager.register(tokenWhitelistService);
+                logApi.info('\x1b[38;5;208m┗━━━━━━━━━━━ ✅ Data Services Registered\x1b[0m');
+            }
 
             // Contest Layer
-            logApi.info('\x1b[38;5;226m┏━━━━━━━━━━━━━━━━━━━━━━━ Contest Layer (3/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-            // Log service names before registration (only in verbose mode)
-            if (VERBOSE_LOGS) {
+            if (!VERBOSE_LOGS) {
+                // Register without verbose logging
+                serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
+                serviceManager.register(achievementService, []); // No hard dependencies
+                serviceManager.register(levelingService, []); // No hard dependencies
+                serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+            } else {
+                logApi.info('\x1b[38;5;226m┏━━━━━━━━━━━━━━━━━━━━━━━ Contest Layer (3/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+                // Log service names before registration (only in verbose mode)
                 logApi.info('Registering Contest Layer services:', {
                     contestEvaluation: SERVICE_NAMES.CONTEST_EVALUATION,
                     achievement: SERVICE_NAMES.ACHIEVEMENT,
                     referral: SERVICE_NAMES.REFERRAL
                 });
+                
+                logApi.info('Attempting to register contestEvaluationService...');
+                serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
+                logApi.info('Attempting to register achievementService...');
+                serviceManager.register(achievementService, []); // No hard dependencies
+                logApi.info('Attempting to register levelingService...');
+                serviceManager.register(levelingService, []); // No hard dependencies
+                logApi.info('Attempting to register referralService...');
+                serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+                logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ Contest Services Registered\x1b[0m');
             }
-            
-            if (VERBOSE_LOGS) logApi.info('Attempting to register contestEvaluationService...');
-            serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
-            if (VERBOSE_LOGS) logApi.info('Attempting to register achievementService...');
-            serviceManager.register(achievementService, []); // No hard dependencies
-            if (VERBOSE_LOGS) logApi.info('Attempting to register levelingService...');
-            serviceManager.register(levelingService, []); // No hard dependencies
-            if (VERBOSE_LOGS) logApi.info('Attempting to register referralService...');
-            serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-            logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ Contest Services Registered\x1b[0m');
 
             // Wallet Layer
-            logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer (4/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-            if (VERBOSE_LOGS) logApi.info('Attempting to register contestWalletService...');
-            serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-            if (VERBOSE_LOGS) logApi.info('Attempting to register adminWalletService...');
-            serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
-            if (VERBOSE_LOGS) logApi.info('Attempting to register walletRakeService...');
-            serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
-            
-            // Ensure schema exists for user balance tracking
-            if (VERBOSE_LOGS) logApi.info('Ensuring database schema for user balance tracking...');
-            await ensureSchemaExists();
-            
-            if (VERBOSE_LOGS) logApi.info('Attempting to register userBalanceTrackingService...');
-            serviceManager.register(userBalanceTrackingService, []);
-            
-            logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ Wallet Services Registered\x1b[0m');
+            if (!VERBOSE_LOGS) {
+                // Register wallet services without logging
+                serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+                serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
+                serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
+                
+                // Ensure schema exists for user balance tracking
+                await ensureSchemaExists();
+                serviceManager.register(userBalanceTrackingService, []);
+            } else {
+                logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer (4/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+                logApi.info('Attempting to register contestWalletService...');
+                serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+                logApi.info('Attempting to register adminWalletService...');
+                serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
+                logApi.info('Attempting to register walletRakeService...');
+                serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
+                
+                // Ensure schema exists for user balance tracking
+                logApi.info('Ensuring database schema for user balance tracking...');
+                await ensureSchemaExists();
+                
+                logApi.info('Attempting to register userBalanceTrackingService...');
+                serviceManager.register(userBalanceTrackingService, []);
+                
+                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ Wallet Services Registered\x1b[0m');
+            }
 
             // Register dependencies
             if (VERBOSE_LOGS) logApi.info('Registering service dependencies...');
@@ -141,14 +176,17 @@ class ServiceInitializer {
     }
 
     static async initializeServices() {
-        logApi.info('\n\x1b[38;5;199m╭───────────────── Initializing Services ─────────────────╮\x1b[0m');
+        if (!VERBOSE_LOGS) {
+            logApi.info('Initializing services...');
+        } else {
+            logApi.info('\n\x1b[38;5;199m╭───────────────── Initializing Services ─────────────────╮\x1b[0m');
+        }
 
         try {
             // Services should already be registered by now
             if (VERBOSE_LOGS) logApi.info('Services already registered, proceeding to initialization...');
 
             // Get initialization order
-            if (VERBOSE_LOGS) logApi.info('Calculating service initialization order...');
             const initOrder = serviceManager.calculateInitializationOrder();
             if (VERBOSE_LOGS) logApi.info('Service initialization order:', initOrder);
 
@@ -157,25 +195,33 @@ class ServiceInitializer {
             const results = await serviceManager.initializeAll();
             
             // Log initialization results
-            logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━ Initialization Results ━━━━━━━━━━━┓\x1b[0m');
-            if (results.initialized.length > 0) {
-                logApi.info(`\x1b[38;5;82m┃ Successfully initialized: ${results.initialized.length} services\x1b[0m`);
-                if (VERBOSE_LOGS) {
-                    results.initialized.forEach(service => {
-                        logApi.info(`\x1b[38;5;82m┃ ✓ ${service}\x1b[0m`);
+            if (!VERBOSE_LOGS) {
+                logApi.info(`Services initialization: ${results.initialized.length} succeeded, ${results.failed.length} failed`);
+                
+                // Always show failed services, even in non-verbose mode
+                if (results.failed.length > 0) {
+                    results.failed.forEach(service => {
+                        logApi.error(`Failed to initialize service: ${service}`);
                     });
                 }
             } else {
-                logApi.warn('\x1b[38;5;208m┃ No services were initialized!\x1b[0m');
+                logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━ Initialization Results ━━━━━━━━━━━┓\x1b[0m');
+                if (results.initialized.length > 0) {
+                    logApi.info(`\x1b[38;5;82m┃ Successfully initialized: ${results.initialized.length} services\x1b[0m`);
+                    results.initialized.forEach(service => {
+                        logApi.info(`\x1b[38;5;82m┃ ✓ ${service}\x1b[0m`);
+                    });
+                } else {
+                    logApi.warn('\x1b[38;5;208m┃ No services were initialized!\x1b[0m');
+                }
+                if (results.failed.length > 0) {
+                    logApi.error(`\x1b[38;5;196m┃ Failed to initialize: ${results.failed.length} services\x1b[0m`);
+                    results.failed.forEach(service => {
+                        logApi.error(`\x1b[38;5;196m┃ ✗ ${service}\x1b[0m`);
+                    });
+                }
+                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
             }
-            if (results.failed.length > 0) {
-                logApi.error(`\x1b[38;5;196m┃ Failed to initialize: ${results.failed.length} services\x1b[0m`);
-                // Always show failed services, even in non-verbose mode
-                results.failed.forEach(service => {
-                    logApi.error(`\x1b[38;5;196m┃ ✗ ${service}\x1b[0m`);
-                });
-            }
-            logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
 
             // Log to admin logger (admin logs are always kept for auditing)
             await AdminLogger.logAction(
