@@ -350,10 +350,11 @@ class AchievementService extends BaseService {
                 }
             }
 
-            // Update user's last check time
+            // Update user's last check time - we don't have this field in schema
+            // Updating timestamps through updated_at field instead
             await prisma.users.update({
                 where: { id: user.id },
-                data: { last_achievement_check: new Date() }
+                data: { updated_at: new Date() }
             });
 
             return results;

@@ -7,6 +7,9 @@ dotenv.config();
 const DD_SERV_API = 'https://degenduel.me/api/dd-serv/tokens';
 const DATA_API = 'https://data.degenduel.me/api';
 const GAME_API = 'https://game.degenduel.me'; // deprecated
+// Fallback API for when data service is unavailable
+const LOCAL_PORT = process.env.PORT || process.env.API_PORT || 3004;
+const LOCAL_FALLBACK_API = `http://localhost:${LOCAL_PORT}/api/dd-serv/tokens`;
 
 // helpful Solana RPC URLs:
 const RPC_URL_MAINNET_HTTP = process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com';
@@ -50,6 +53,7 @@ const config = {
     dd_serv: DD_SERV_API,
     data: DATA_API,
     game: GAME_API,
+    fallback: LOCAL_FALLBACK_API,
   },
   debug_mode: process.env.DD_API_DEBUG_MODE || 'false',
   debug_modes: {

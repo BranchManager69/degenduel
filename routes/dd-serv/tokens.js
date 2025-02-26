@@ -236,78 +236,204 @@ router.get('/tokens/list', async (req, res) => {
     try {
         const { detail = 'simple' } = req.query;
         
-        const response = await monitoredFetch(
-            'https://data.degenduel.me/api/tokens',
-            {},
-            'tokens_list'
-        );
+        // Try to get cached data first
+        const cachedData = await redisManager.get(TOKENS_CACHE_KEY);
+        if (cachedData) {
+            logApi.info('[dd-serv] Using cached token data for tokens/list endpoint');
+            
+            // Process cached data according to detail level
+            if (!cachedData || !cachedData.data || !Array.isArray(cachedData.data)) {
+                throw new Error('Invalid cached data format');
+            }
+            
+            if (detail === 'simple') {
+                const simpleTokens = cachedData.data.map(token => ({
+                    contractAddress: token.contractAddress || null,
+                    name: token.name || 'Unknown',
+                    symbol: token.symbol || 'UNKNOWN'
+                }));
+                return res.json(simpleTokens);
+            }
+            
+            // Return full flattened token data with null checks
+            const flattenedTokens = cachedData.data.map(token => ({
+                timestamp: cachedData.timestamp || new Date().toISOString(),
+                id: token.id,
+                symbol: token.symbol || 'UNKNOWN',
+                name: token.name || 'Unknown',
+                contractAddress: token.contractAddress,
+                chain: token.chain,
+                createdAt: token.createdAt,
+                updatedAt: token.updatedAt,
+                marketCap: token.marketCap || 0,
+                price: token.price || 0,
+                volume24h: token.volume24h || 0,
+                change_h1: token.changesJson?.h1 || 0,
+                change_h6: token.changesJson?.h6 || 0,
+                change_m5: token.changesJson?.m5 || 0,
+                change_h24: token.changesJson?.h24 || 0,
+                imageUrl: token.imageUrl || null,
+                liquidity_usd: token.liquidity?.usd || 0,
+                liquidity_base: token.liquidity?.base || 0,
+                liquidity_quote: token.liquidity?.quote || 0,
+                pairUrl: token.pairUrl || null,
+                transactions_h1_buys: token.transactionsJson?.h1?.buys || 0,
+                transactions_h1_sells: token.transactionsJson?.h1?.sells || 0,
+                transactions_h6_buys: token.transactionsJson?.h6?.buys || 0,
+                transactions_h6_sells: token.transactionsJson?.h6?.sells || 0,
+                transactions_m5_buys: token.transactionsJson?.m5?.buys || 0,
+                transactions_m5_sells: token.transactionsJson?.m5?.sells || 0,
+                transactions_h24_buys: token.transactionsJson?.h24?.buys || 0,
+                transactions_h24_sells: token.transactionsJson?.h24?.sells || 0,
+                baseToken_name: token.baseToken?.name || null,
+                baseToken_symbol: token.baseToken?.symbol || null,
+                baseToken_address: token.baseToken?.address || null,
+                headerImage: token.headerImage || null,
+                openGraphImage: token.openGraphImage || null,
+                quoteToken_name: token.quoteToken?.name || null,
+                quoteToken_symbol: token.quoteToken?.symbol || null,
+                quoteToken_address: token.quoteToken?.address || null,
+                websites: token.websites || [],
+                coingeckoId: token.coingeckoId || null,
+                priceChanges: token.priceChanges || {},
+                socials: token.socials || {}
+            }));
+            
+            return res.json(flattenedTokens);
+        }
         
-        const tokenDataJson = await response.json();
+        // If no cache, try to get data from external API
+        try {
+            logApi.info('[dd-serv] Fetching fresh token data for tokens/list endpoint');
+            const response = await monitoredFetch(
+                'https://data.degenduel.me/api/tokens',
+                {},
+                'tokens_list'
+            );
+            
+            const tokenDataJson = await response.json();
+            
+            // Cache the new data
+            await redisManager.set(TOKENS_CACHE_KEY, tokenDataJson, CACHE_TTL);
+            
+            // Validate response structure
+            if (!tokenDataJson || !tokenDataJson.data || !Array.isArray(tokenDataJson.data)) {
+                throw new Error('Invalid response format from data service');
+            }
+            
+            if (detail === 'simple') {
+                const simpleTokens = tokenDataJson.data.map(token => ({
+                    contractAddress: token.contractAddress || null,
+                    name: token.name || 'Unknown',
+                    symbol: token.symbol || 'UNKNOWN'
+                }));
+                return res.json(simpleTokens);
+            }
+            
+            // Return full flattened token data with null checks
+            const flattenedTokens = tokenDataJson.data.map(token => ({
+                timestamp: tokenDataJson.timestamp || new Date().toISOString(),
+                id: token.id,
+                symbol: token.symbol || 'UNKNOWN',
+                name: token.name || 'Unknown',
+                contractAddress: token.contractAddress,
+                chain: token.chain,
+                createdAt: token.createdAt,
+                updatedAt: token.updatedAt,
+                marketCap: token.marketCap || 0,
+                price: token.price || 0,
+                volume24h: token.volume24h || 0,
+                change_h1: token.changesJson?.h1 || 0,
+                change_h6: token.changesJson?.h6 || 0,
+                change_m5: token.changesJson?.m5 || 0,
+                change_h24: token.changesJson?.h24 || 0,
+                imageUrl: token.imageUrl || null,
+                liquidity_usd: token.liquidity?.usd || 0,
+                liquidity_base: token.liquidity?.base || 0,
+                liquidity_quote: token.liquidity?.quote || 0,
+                pairUrl: token.pairUrl || null,
+                transactions_h1_buys: token.transactionsJson?.h1?.buys || 0,
+                transactions_h1_sells: token.transactionsJson?.h1?.sells || 0,
+                transactions_h6_buys: token.transactionsJson?.h6?.buys || 0,
+                transactions_h6_sells: token.transactionsJson?.h6?.sells || 0,
+                transactions_m5_buys: token.transactionsJson?.m5?.buys || 0,
+                transactions_m5_sells: token.transactionsJson?.m5?.sells || 0,
+                transactions_h24_buys: token.transactionsJson?.h24?.buys || 0,
+                transactions_h24_sells: token.transactionsJson?.h24?.sells || 0,
+                baseToken_name: token.baseToken?.name || null,
+                baseToken_symbol: token.baseToken?.symbol || null,
+                baseToken_address: token.baseToken?.address || null,
+                headerImage: token.headerImage || null,
+                openGraphImage: token.openGraphImage || null,
+                quoteToken_name: token.quoteToken?.name || null,
+                quoteToken_symbol: token.quoteToken?.symbol || null,
+                quoteToken_address: token.quoteToken?.address || null,
+                websites: token.websites || [],
+                coingeckoId: token.coingeckoId || null,
+                priceChanges: token.priceChanges || {},
+                socials: token.socials || {}
+            }));
+            
+            return res.json(flattenedTokens);
+        } catch (fetchErr) {
+            logApi.warn(`[dd-serv] External API fetch failed: ${fetchErr.message}`);
+            // Continue to fallback mechanisms
+        }
         
-        // Validate response structure
-        if (!tokenDataJson || !tokenDataJson.data || !Array.isArray(tokenDataJson.data)) {
-            throw new Error('Invalid response format from data service');
+        // No cache and external API failed, use database as direct source
+        logApi.info('[dd-serv] Using database as direct source for tokens/list');
+        const dbTokens = await prisma.tokens.findMany({
+            where: { is_active: true },
+            include: { token_prices: true }
+        });
+        
+        if (!dbTokens || dbTokens.length === 0) {
+            throw new Error('No tokens found in database');
         }
         
         if (detail === 'simple') {
-            const simpleTokens = tokenDataJson.data.map(token => ({
-                contractAddress: token.contractAddress || null,
-                name: token.name || 'Unknown',
-                symbol: token.symbol || 'UNKNOWN'
+            const simpleTokens = dbTokens.map(token => ({
+                contractAddress: token.address,
+                name: token.name,
+                symbol: token.symbol
             }));
             return res.json(simpleTokens);
         }
         
-        // Return full flattened token data with null checks
-        const flattenedTokens = tokenDataJson.data.map(token => ({
-            timestamp: tokenDataJson.timestamp || new Date().toISOString(),
+        const flattenedTokens = dbTokens.map(token => ({
             id: token.id,
-            symbol: token.symbol || 'UNKNOWN',
-            name: token.name || 'Unknown',
-            contractAddress: token.contractAddress,
-            chain: token.chain,
-            createdAt: token.createdAt,
-            updatedAt: token.updatedAt,
-            marketCap: token.marketCap || 0,
-            price: token.price || 0,
-            volume24h: token.volume24h || 0,
-            change_h1: token.changesJson?.h1 || 0,
-            change_h6: token.changesJson?.h6 || 0,
-            change_m5: token.changesJson?.m5 || 0,
-            change_h24: token.changesJson?.h24 || 0,
-            imageUrl: token.imageUrl || null,
-            liquidity_usd: token.liquidity?.usd || 0,
-            liquidity_base: token.liquidity?.base || 0,
-            liquidity_quote: token.liquidity?.quote || 0,
-            pairUrl: token.pairUrl || null,
-            transactions_h1_buys: token.transactionsJson?.h1?.buys || 0,
-            transactions_h1_sells: token.transactionsJson?.h1?.sells || 0,
-            transactions_h6_buys: token.transactionsJson?.h6?.buys || 0,
-            transactions_h6_sells: token.transactionsJson?.h6?.sells || 0,
-            transactions_m5_buys: token.transactionsJson?.m5?.buys || 0,
-            transactions_m5_sells: token.transactionsJson?.m5?.sells || 0,
-            transactions_h24_buys: token.transactionsJson?.h24?.buys || 0,
-            transactions_h24_sells: token.transactionsJson?.h24?.sells || 0,
-            baseToken_name: token.baseToken?.name || null,
-            baseToken_symbol: token.baseToken?.symbol || null,
-            baseToken_address: token.baseToken?.address || null,
-            headerImage: token.headerImage || null,
-            openGraphImage: token.openGraphImage || null,
-            quoteToken_name: token.quoteToken?.name || null,
-            quoteToken_symbol: token.quoteToken?.symbol || null,
-            quoteToken_address: token.quoteToken?.address || null,
-            websites: token.websites || [],
-            coingeckoId: token.coingeckoId || null,
-            priceChanges: token.priceChanges || {},
-            socials: token.socials || {}
+            symbol: token.symbol,
+            name: token.name,
+            contractAddress: token.address,
+            chain: "solana",
+            createdAt: token.created_at,
+            updatedAt: token.updated_at,
+            marketCap: token.market_cap || 0,
+            price: token.token_prices?.price || 0,
+            volume24h: token.volume_24h || 0,
+            change_h24: token.change_24h || 0,
+            imageUrl: token.image_url,
+            changesJson: { h24: token.change_24h || 0 },
+            // Default values for required properties
+            baseToken: { name: null, symbol: null, address: null },
+            quoteToken: { name: null, symbol: null, address: null },
+            websites: [token.website_url].filter(Boolean),
+            socials: {
+                twitter: token.twitter_url,
+                telegram: token.telegram_url,
+                discord: token.discord_url
+            }
         }));
         
-        res.json(flattenedTokens);
+        return res.json(flattenedTokens);
     } catch (err) {
+        // All sources failed, return a minimal response with error info
+        logApi.error('[dd-serv] All token data sources failed:', err.message);
         res.status(503).json({
-            error: err.message,
+            error: "Token data service unavailable",
+            message: "Unable to retrieve token data from any source",
             timestamp: new Date().toISOString(),
-            endpoint: 'tokens_list'
+            details: err.message
         });
     }
 });
