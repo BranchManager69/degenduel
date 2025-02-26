@@ -264,12 +264,22 @@ class TokenSyncService extends BaseService {
     }
 
     validateAddress(address) {
-        // Ensure the pattern is properly created as a RegExp object
-        const pattern = new RegExp(this.config.validation.ADDRESS.SOLANA_PATTERN);
-        if (!pattern.test(address)) {
-            throw ServiceError.validation(`Invalid Solana address format: ${address}`);
+        // Skip validation if no address provided
+        if (!address) return null;
+        
+        try {
+            // Ensure the pattern is properly created as a RegExp object
+            const pattern = new RegExp(this.config.validation.ADDRESS.SOLANA_PATTERN);
+            if (!pattern.test(address)) {
+                // Log warning but don't throw so we can continue processing other tokens
+                logApi.warn(`Invalid Solana address format: ${address}`);
+                return address; // Still return the address but with a warning
+            }
+            return address;
+        } catch (error) {
+            logApi.warn(`Error validating address: ${address}`, error);
+            return address; // Return the address anyway rather than failing
         }
-        return address;
     }
 
     // API calls with circuit breaker protection
@@ -336,7 +346,8 @@ class TokenSyncService extends BaseService {
         } catch (error) {
             logApi.warn(`Error fetching token data from primary source: ${error.message}`);
             
-            // Try local fallback endpoint first
+            // Try local fallback endpoint first if the URL is valid
+        if (this.config.api.endpoints.fallback) {
             try {
                 logApi.info('Attempting to fetch from local fallback endpoint...');
                 const fallbackResult = await this.makeApiCall(this.config.api.endpoints.fallback);
@@ -344,10 +355,16 @@ class TokenSyncService extends BaseService {
                 if (fallbackResult && Array.isArray(fallbackResult)) {
                     logApi.info(`Received ${fallbackResult.length} tokens from local fallback`);
                     return fallbackResult;
+                } else if (fallbackResult && fallbackResult.data && Array.isArray(fallbackResult.data)) {
+                    logApi.info(`Received ${fallbackResult.data.length} tokens from local fallback (data property)`);
+                    return fallbackResult.data;
                 }
             } catch (fallbackError) {
                 logApi.warn(`Fallback endpoint also failed: ${fallbackError.message}`);
             }
+        } else {
+            logApi.warn('No valid fallback endpoint configured, skipping fallback attempt');
+        }
             
             // If fallback also fails, try to use database
             const existingTokens = await prisma.tokens.findMany({
@@ -465,30 +482,48 @@ class TokenSyncService extends BaseService {
             await prisma.$transaction(async (tx) => {
                 for (const token of fullData) {
                     try {
+                        // Skip tokens with missing essential data
                         if (!token?.contractAddress || !token?.symbol || !token?.name) {
-                            throw ServiceError.validation('Missing required fields', {
+                            logApi.warn('Skipping token with missing required fields', {
                                 address: token?.contractAddress,
                                 symbol: token?.symbol,
                                 name: token?.name
                             });
+                            continue; // Skip to the next token instead of throwing
                         }
 
-                        const validatedData = {
-                            address: this.validateAddress(token.contractAddress),
-                            symbol: this.validateSymbol(token.symbol),
-                            name: this.validateName(token.name),
-                            decimals: 9,
-                            is_active: true,
-                            market_cap: token.marketCap ? new Decimal(token.marketCap) : null,
-                            change_24h: token.change_h24 ? new Decimal(token.change_h24) : null,
-                            volume_24h: token.volume24h ? new Decimal(token.volume24h) : null,
-                            image_url: this.validateUrl(token.imageUrl),
-                            description: this.validateDescription(token.description),
-                            twitter_url: this.validateUrl(token.socials?.twitter),
-                            telegram_url: this.validateUrl(token.socials?.telegram),
-                            discord_url: this.validateUrl(token.socials?.discord),
-                            website_url: this.validateUrl(token.websites?.[0])
-                        };
+                        // Try to validate all fields but don't fail if some validation fails
+                        let validatedData;
+                        try {
+                            validatedData = {
+                                address: this.validateAddress(token.contractAddress),
+                                symbol: this.validateSymbol(token.symbol),
+                                name: this.validateName(token.name),
+                                decimals: 9,
+                                is_active: true,
+                                market_cap: token.marketCap ? new Decimal(token.marketCap) : null,
+                                change_24h: token.change_h24 ? new Decimal(token.change_h24) : null,
+                                volume_24h: token.volume24h ? new Decimal(token.volume24h) : null,
+                                image_url: this.validateUrl(token.imageUrl),
+                                description: this.validateDescription(token.description),
+                                twitter_url: this.validateUrl(token.socials?.twitter),
+                                telegram_url: this.validateUrl(token.socials?.telegram),
+                                discord_url: this.validateUrl(token.socials?.discord),
+                                website_url: this.validateUrl(token.websites?.[0])
+                            };
+                        } catch (validationError) {
+                            // Log but continue with best effort
+                            logApi.warn(`Validation error for token ${token.contractAddress}: ${validationError.message}`);
+                            
+                            // Fall back to minimal valid data
+                            validatedData = {
+                                address: token.contractAddress,
+                                symbol: token.symbol?.slice(0, 10) || 'UNKNOWN', // Ensure not too long
+                                name: token.name?.slice(0, 50) || 'Unknown Token', // Ensure not too long
+                                decimals: 9,
+                                is_active: true
+                            };
+                        }
 
                         const existingToken = await tx.tokens.findUnique({
                             where: { address: token.contractAddress }

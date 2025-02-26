@@ -9,7 +9,7 @@ const DATA_API = 'https://data.degenduel.me/api';
 const GAME_API = 'https://game.degenduel.me'; // deprecated
 // Fallback API for when data service is unavailable
 const LOCAL_PORT = process.env.PORT || process.env.API_PORT || 3004;
-const LOCAL_FALLBACK_API = `http://localhost:${LOCAL_PORT}/api/dd-serv/tokens`;
+const LOCAL_FALLBACK_API = null; // Disabling local fallback during startup to avoid circular dependency
 
 // helpful Solana RPC URLs:
 const RPC_URL_MAINNET_HTTP = process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com';
