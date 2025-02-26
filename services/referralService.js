@@ -290,7 +290,7 @@ class ReferralService extends BaseService {
                 where: {
                     OR: [
                         { status: 'pending' },
-                        { status: 'qualified', updated_at: { lt: new Date(Date.now() - this.config.referral.minProcessInterval) } }
+                        { status: 'qualified', created_at: { lt: new Date(Date.now() - this.config.referral.minProcessInterval) } }
                     ]
                 },
                 take: this.config.referral.batchSize,
