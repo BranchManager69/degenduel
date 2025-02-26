@@ -71,7 +71,7 @@ function discoverRoutes(directory) {
           } else if (file.endsWith('.js') && !file.includes('.test.js') && !file.includes('.spec.js')) {
             // Add JS files (excluding test files)
             totalFiles++;
-            if (filePath.includes('/routes/')) {
+            if (filePath.includes('/routes/') || filePath.includes('/docs/swagger/')) {
               routes.push(filePath);
             }
           }
@@ -95,9 +95,22 @@ function discoverRoutes(directory) {
   return routes;
 }
 
+// Add manually defined API docs for items that are not in route files
+// These include server health API and WebSocket documentation
+const additionalApiDocs = [
+  path.join(rootDir, 'docs/swagger/websocket-api.js'),
+  path.join(rootDir, 'docs/swagger/server-health-api.js'),
+  path.join(rootDir, 'docs/swagger/admin-service-metrics.js'),
+  path.join(rootDir, 'docs/swagger/admin-websocket-test.js'),
+  path.join(rootDir, 'docs/swagger/admin-circuit-breaker.js'),
+  path.join(rootDir, 'docs/swagger/admin-service-management.js'),
+  path.join(rootDir, 'docs/swagger/admin-maintenance.js'),
+  path.join(rootDir, 'docs/swagger/admin-contest-management.js')
+];
+
 const options = {
   definition: swaggerDefinition, // Swagger definition
-  apis: discoverRoutes(rootDir) // Automatically discover all route files
+  apis: [...discoverRoutes(rootDir), ...additionalApiDocs] // Auto-discovered routes + manually added docs
 };
 
 // Initialize Swagger specification
