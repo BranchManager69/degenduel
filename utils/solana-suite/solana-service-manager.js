@@ -1,15 +1,18 @@
-import { Connection } from '@solana/web3.js';
-//import os from 'os';
-import { validateSolanaConfig } from '../../config/config.js';
-//import WalletGenerator from '../../services/walletGenerationService.js';
-//import FaucetManager from '../../services/faucetService.js';
-import { logApi } from '../logger-suite/logger.js';
-//import serviceManager from '../service-suite/service-manager.js';
-import { SERVICE_NAMES, SERVICE_LAYERS } from '../service-suite/service-constants.js';
-//import { ContestWalletService } from '../../services/contestWalletService.js';
-//import { WalletRakeService } from '../../services/walletRakeService.js';
-//import { AdminWalletService } from '../../services/adminWalletService.js';
+/**
+ * COMPATIBILITY LAYER - Adapter for the new SolanaService
+ * 
+ * This file maintains backward compatibility with existing code while
+ * using the new service-based implementation. It's a transitional adapter.
+ * 
+ * @deprecated This adapter is maintained for backward compatibility. 
+ * New code should use SolanaService directly.
+ */
 
+import solanaService from '../../services/solanaService.js';
+import { logApi } from '../logger-suite/logger.js';
+import { SERVICE_NAMES } from '../service-suite/service-constants.js';
+
+// Keep this for backward compatibility
 export const SOLANA_SERVICES = [
     SERVICE_NAMES.CONTEST_WALLET,
     SERVICE_NAMES.WALLET_RAKE,
@@ -17,105 +20,66 @@ export const SOLANA_SERVICES = [
 ];
 
 /**
- * Manages Solana-specific functionality and coordinates with the main ServiceManager
+ * Adapter class that forwards calls to the new SolanaService implementation
+ * @deprecated Use solanaService directly in new code
  */
 class SolanaServiceManager {
-    static connection = null;
-    static isInitialized = false;
-    static monitoringInterval = null;
-
+    // Forward properties to the actual service
+    static get connection() {
+        return solanaService.connection;
+    }
+    
+    static get isInitialized() {
+        return solanaService.isInitialized;
+    }
+    
+    // Forward methods to the actual service
     static async initialize() {
-        if (this.isInitialized) return;
-
-        try {
-            // Validate configuration
-            validateSolanaConfig();
-
-            // Initialize Solana connection with failover
-            this.connection = new Connection(
-                process.env.QUICKNODE_MAINNET_HTTP,
-                {
-                    commitment: 'confirmed',
-                    confirmTransactionInitialTimeout: 120000,
-                    wsEndpoint: process.env.QUICKNODE_MAINNET_WSS
-                }
-            );
-
-            // Test connection
-            await this.connection.getVersion();
-
-            // Start monitoring connection
-            this.startConnectionMonitoring();
-
-            this.isInitialized = true;
-            logApi.info('Solana Service Manager initialized successfully');
-
-        } catch (error) {
-            logApi.error('Failed to initialize Solana Service Manager:', error);
-            await this.cleanup();
-            throw error;
-        }
-    }
-
-    static async cleanup() {
-        try {
-            logApi.info('Starting Solana Service Manager cleanup...');
-
-            // Clear monitoring interval
-            if (this.monitoringInterval) {
-                clearInterval(this.monitoringInterval);
-                this.monitoringInterval = null;
-            }
-
-            // Clear connection
-            this.connection = null;
-            this.isInitialized = false;
-
-            logApi.info('Solana Service Manager cleanup completed');
-        } catch (error) {
-            logApi.error('Error during Solana Service Manager cleanup:', error);
-            throw error;
-        }
-    }
-
-    static startConnectionMonitoring() {
-        if (this.monitoringInterval) {
-            clearInterval(this.monitoringInterval);
-        }
-
-        this.monitoringInterval = setInterval(async () => {
+        logApi.warn('SolanaServiceManager.initialize is deprecated. Using solanaService instead.');
+        
+        if (!solanaService.isInitialized) {
             try {
-                await this.connection.getVersion();
-            } catch (error) {
-                logApi.error('Solana connection error:', error);
-                await this.reconnect();
-            }
-        }, 30000); // Check every 30 seconds
-    }
-
-    static async reconnect() {
-        try {
-            this.connection = new Connection(
-                process.env.QUICKNODE_MAINNET_HTTP,
-                {
-                    commitment: 'confirmed',
-                    confirmTransactionInitialTimeout: 120000,
-                    wsEndpoint: process.env.QUICKNODE_MAINNET_WSS
+                await solanaService.initialize();
+                
+                // If the service isn't automatically started, start it
+                if (!solanaService.isStarted) {
+                    await solanaService.start();
                 }
-            );
-            await this.connection.getVersion();
-            logApi.info('Solana connection re-established');
-        } catch (error) {
-            logApi.error('Failed to reconnect to Solana:', error);
+                
+                return solanaService.isInitialized;
+            } catch (error) {
+                logApi.error('Failed to initialize Solana via new service:', error);
+                throw error;
+            }
         }
+        
+        return solanaService.isInitialized;
     }
-
+    
+    static async cleanup() {
+        logApi.warn('SolanaServiceManager.cleanup is deprecated. Using solanaService.stop instead.');
+        return solanaService.stop();
+    }
+    
+    static startConnectionMonitoring() {
+        logApi.warn('SolanaServiceManager.startConnectionMonitoring is deprecated. Connection monitoring is now handled automatically by the service.');
+        // No action needed - the service handles monitoring
+        return true;
+    }
+    
+    static async reconnect() {
+        logApi.warn('SolanaServiceManager.reconnect is deprecated. Using solanaService.reconnect instead.');
+        return solanaService.reconnect();
+    }
+    
     static getConnection() {
-        if (!this.connection) {
+        try {
+            return solanaService.getConnection();
+        } catch (error) {
+            // Maintain original error format for compatibility
             throw new Error('Solana Service Manager not initialized');
         }
-        return this.connection;
     }
 }
 
-export default SolanaServiceManager; 
+export default SolanaServiceManager;
