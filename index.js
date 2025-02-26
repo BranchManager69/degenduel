@@ -38,6 +38,10 @@ import serviceManagementRoutes from './routes/admin/service-management.js';
 // Import (some) Admin Routes
 import contestManagementRoutes from "./routes/admin/contest-management.js";
 
+// Hard-code both logging flags to false to reduce verbosity
+const VERBOSE_EXPRESS_LOGS = false;
+const SHOW_STARTUP_ANIMATION = true; // Keep animations but reduce service logs
+
 dotenv.config();
 
 /* DegenDuel API Server */
@@ -55,33 +59,43 @@ const server = createServer(app);
 // This ensures a single initialization path for all components
 
 // Trust proxy headers since we're behind a reverse proxy
-app.set("trust proxy", 1);
 logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔒 Configuring Server Security...\x1b[0m');
+app.set("trust proxy", 1);
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Server Security Configured\x1b[0m');
 
 // Cookies setup
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🍪 Configuring Cookies...\x1b[0m');
 app.use(cookieParser());
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Cookies Configured\x1b[0m');
 
 // Swagger setup
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 📚 Configuring API Documentation...\x1b[0m');
 setupSwagger(app);
 logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ API Documentation Ready\x1b[0m');
 
 // Middleware setup
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔧 Configuring Middleware...\x1b[0m');
 configureMiddleware(app);
 logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Middleware Configured\x1b[0m');
 
 // Add response time tracking middleware
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 📊 Configuring Response Time Tracking...\x1b[0m');
 app.use(memoryMonitoring.setupResponseTimeTracking());
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Response Time Tracking Ready\x1b[0m');
 
-/* Routes Setup */
+/* Import Routes */
 
-// Default API route (https://degenduel.me/api)
+// Start with DegenDuel API root route (https://degenduel.me/api)
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🌐 Configuring DegenDuel API Root Route...\x1b[0m');
 app.get("/", (req, res) => {
   res.send(`
     Welcome to the DegenDuel API! You probably should not be here.
   `);
 });
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ DegenDuel API Root Route Configured\x1b[0m');
 
-// Import routes
+// Import Main DegenDuel API routes
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 📂 Importing Main DegenDuel API Routes...\x1b[0m');
 import testRoutes from "./archive/test-routes.js";
 import maintenanceRoutes from "./routes/admin/maintenance.js";
 import authRoutes from "./routes/auth.js";
@@ -106,11 +120,24 @@ import referralRoutes from "./routes/referrals.js";
 // Virtual Agent routes
 import virtualAgentRoutes from "./routes/virtual-agent.js";
 
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Main DegenDuel API Routes Imported\x1b[0m');
+
+// Done importing routes
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Routes Imported\x1b[0m');
+
+/* Mount Routes */
+
+// Start mounting routes
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Routes...\x1b[0m');
+
 // 1. First mount public routes (no maintenance check needed)
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Public Routes...\x1b[0m');
 app.use("/api/auth", authRoutes);
 app.use("/api/status", statusRoutes);
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Public Routes Mounted\x1b[0m');
 
-// 2. Mount admin routes (no maintenance check needed)
+// 2. Mount admin and superadmin routes (no maintenance check needed)
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Admin and Superadmin Routes...\x1b[0m');
 app.use("/api/admin", prismaAdminRoutes);
 app.use("/api/admin/maintenance", maintenanceRoutes);
 app.use("/api/admin/token-sync", tokenSyncRoutes);
@@ -122,16 +149,19 @@ app.use("/api/admin/service-management", serviceManagementRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use('/api/admin/websocket', websocketTestRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Admin and Superadmin Routes Mounted\x1b[0m');
 
-// 3. Apply maintenance check to all other routes
-// Prisma-enabled routes (inaccessible when in maintenance mode)
+// 3. Apply maintenance check to all routes that need to be restricted from public access while maintenance mode is active
+// Protected routes (inaccessible when in maintenance mode)
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Maintenance-Protected Routes...\x1b[0m');
+// earliest protected routes
 app.use("/api/balance", maintenanceCheck, prismaBalanceRoutes);
 app.use("/api/stats", maintenanceCheck, prismaStatsRoutes);
 app.use("/api/leaderboard", maintenanceCheck, leaderboardRoutes);
 app.use("/api/activity", maintenanceCheck, prismaActivityRoutes);
-// DD-Serv-enabled routes (inaccessible when in maintenance mode)
+// DD-Serv-enabled protected routes (inaccessible when in maintenance mode)
 app.use("/api/dd-serv", maintenanceCheck, ddServRoutes);
-// Protected routes (inaccessible when in maintenance mode)
+// more protected routes (inaccessible when in maintenance mode)
 app.use("/api/users", maintenanceCheck, userRoutes);
 app.use("/api/contests", maintenanceCheck, contestRoutes);
 app.use("/api/trades", maintenanceCheck, tradeRoutes);
@@ -142,12 +172,17 @@ app.use("/api/token-buckets", maintenanceCheck, tokenBucketRoutes);
 app.use("/api/portfolio", maintenanceCheck, portfolioTradesRouter);
 app.use("/api/portfolio-analytics", maintenanceCheck, portfolioAnalyticsRouter);
 app.use("/api/referrals", maintenanceCheck, referralRoutes);
-// Virtual Agent routes
+// Virtual Agent routes (inaccessible when in maintenance mode)
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Maintenance-Protected Routes Mounted\x1b[0m');
 
 // Test routes (no maintenance check needed)
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Unprotected Test Routes...\x1b[0m');
 app.use("/api/test", testRoutes);
-// Server health route (no maintenance check needed)
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Unprotected Test Routes Mounted\x1b[0m');
+
+// Server health route (no maintenance check needed, but unique in that it is not mounted as middleware)
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Server Health Route...\x1b[0m');
 app.get("/api/health", async (req, res) => {
   try {
     // Check database connection
@@ -197,8 +232,10 @@ app.get("/api/health", async (req, res) => {
     });
   }
 });
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Server Health Route Mounted\x1b[0m');
 
 // Add direct market data route that forwards to v2 tokens
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Market Data Route...\x1b[0m');
 app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
   try {
     const response = await fetch(
@@ -214,11 +251,18 @@ app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
     });
   }
 });
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Market Data Route Mounted\x1b[0m');
 
 // Error handling setup
+logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Route Error Handling...\x1b[0m');
 app.use(errorHandler);
+logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Route Error Handling Mounted\x1b[0m');
 
 // Create epic startup animation function
+// TODO: Move this to a separate file and renovate it dramatically with our newest services, circuit breakers, routes, db summary of major metrics (For example, user count and tokens count, nothing too much at all, contests count, wallet's count, literally not even much more than this) etc.
+// But right now the data is almost completely uselessand I just don't even look at this part anymoreoh and then why the **** are we having a happy and sad start up animation how about we just keep it simple and flexible
+// There is no need for a sad startup animation, it's just a waste of time and space
+// If it's a quick fix then do it but if it's anything more than meets the eye just save it for later
 async function displayStartupAnimation(port, initResults = {}) {
     // Helper to get status indicators
     const getStatusIndicators = (serviceName) => {
@@ -357,18 +401,23 @@ async function displayStartupFailureAnimation(port, initResults = {}) {
     await sleep(300);
 }
 
-// Main
+// Main initialization function
+//    (This has been pretty darn reliable and is a greatstarting pointbut I think we have been working on it for a long time now and the formatting may not be quite as aligned as it once was with the Roy G Biv intent of services starting and also we've added many services so in organization might be in order)
+//    Namely this should makeextensive use of the verbosity flag that we've put in the initialization however it's in this file and it would need to then of course be communicated with whatever file you move this initialization to...that is if you ever move this function to another file, it you know it's up to you
+//    There are also just little colored issues throughout that aren't really that bad but you know here and there some color can get away fromus becausefor example a closing formatof one of the boxes that you're drawing might not becorrectly colored and it starts anyway I don't even want you to think about that too much but you know keep it in mind
 async function initializeServer() {
     // Add colors to initialization logs
     console.log('\n\x1b[38;5;199m╭───────────────── DegenDuel Initialization Starting ─────────────────╮\x1b[0m');
     console.log('\x1b[38;5;199m│\x1b[38;5;226m               🔍 Swagger docs available at /api-docs                \x1b[38;5;199m│\x1b[0m');
     console.log('\x1b[38;5;199m╰─────────────────────────────────────────────────────────────────────╯\x1b[0m\n');
 
+    // Start initialization logging
     InitLogger.startInitialization();
     const initResults = {};
 
+    // Initialize Databases
     try {
-        // Initialize Databases with colored logs - Start with Red (196)
+        // Colored logs - Start with Red (196)
         logApi.info('\n\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mDatabase Layer\x1b[0m\x1b[38;5;196m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
         logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ 🔄 Initializing PostgreSQL...\x1b[0m');
         await initPgDatabase();
@@ -376,6 +425,7 @@ async function initializeServer() {
         initResults.Database = { success: true };
         logApi.info('\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ☑️ PostgreSQL Ready\x1b[0m');
 
+        // Initialize SQLite
         logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ 🔄 Initializing SQLite...\x1b[0m');
         await initDatabase();
         InitLogger.logInit('Database', 'SQLite', 'success', { path: '/home/websites/degenduel/data/leaderboard.db' });
@@ -385,51 +435,80 @@ async function initializeServer() {
         try {
             // Initialize all WebSocket servers with a single call to the dedicated initializer
             await WebSocketInitializer.initializeWebSockets(server, initResults);
-
-            // Initialize Services Layer - Moved outside WebSocket try-catch
+            // Initialize Services Layer (Moved outside WebSocket try-catch)
             logApi.info('\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-            
-            // Solana Service Manager will be initialized through the service system
+            // (Solana Service Manager is now initialized through the service system)
             logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ 🔄 Note: Solana Service now initialized via service system...\x1b[0m');
 
-            // Initialize services
+            // Initialize grouped services // (Note: I'm not married to these groupings, I'm open to suggestions)
             try {
-                // First try to register core services
-                logApi.info('Registering core services...');
-                await ServiceInitializer.registerCoreServices().catch(error => {
-                    logApi.error('Failed to register core services:', {
-                        error: error.message,
-                        stack: error.stack
-                    });
+                // First try to register "core services"
+                if (VERBOSE_EXPRESS_LOGS) {
+                    logApi.info('Registering core services...');
+                }
+                const coreServices = await ServiceInitializer.registerCoreServices().catch(error => {
+                    logApi.error('Failed to register core services:', error.message);
+                    if (VERBOSE_EXPRESS_LOGS) {
+                        logApi.error('Error details:', {
+                            error: error.message,
+                            stack: error.stack
+                        });
+                    }
                     throw error;
                 });
                 
+                if (VERBOSE_EXPRESS_LOGS) {
+                    logApi.info('Core services registered:', coreServices);
+                } else {
+                    logApi.info(`✅ Registered ${Array.isArray(coreServices) ? coreServices.length : 'all'} core services`);
+                }
+                
                 // Then try to initialize them
-                logApi.info('Initializing services...');
+                if (VERBOSE_EXPRESS_LOGS) {
+                    logApi.info('Initializing services...');
+                }
+                
                 const results = await ServiceInitializer.initializeServices().catch(error => {
-                    logApi.error('Failed to initialize services:', {
-                        error: error.message,
-                        stack: error.stack
-                    });
+                    logApi.error('Failed to initialize services:', error.message);
+                    if (VERBOSE_EXPRESS_LOGS) {
+                        logApi.error('Error details:', {
+                            error: error.message,
+                            stack: error.stack
+                        });
+                    }
                     throw error;
                 });
 
+                // Store results but only log details when verbose
                 initResults.Services = {
                     initialized: Array.isArray(results?.initialized) ? results.initialized : [],
                     failed: Array.isArray(results?.failed) ? results.failed : []
                 };
+                
+                const successCount = initResults.Services.initialized.length;
+                const failedCount = initResults.Services.failed.length;
 
-                logApi.info('Service initialization results:', {
-                    initialized: initResults.Services.initialized,
-                    failed: initResults.Services.failed
-                });
+                logApi.info(`🚀 Services initialization: ${successCount} succeeded, ${failedCount} failed`);
+                
+                if (VERBOSE_EXPRESS_LOGS) {
+                    logApi.info('Service initialization details:', {
+                        initialized: initResults.Services.initialized,
+                        failed: initResults.Services.failed
+                    });
+                } else if (failedCount > 0) {
+                    // Always show failed services even in non-verbose mode
+                    logApi.warn('Failed services:', initResults.Services.failed);
+                }
 
             } catch (error) {
-                logApi.error('Service initialization failed:', {
-                    error: error.message,
-                    stack: error.stack,
-                    phase: 'service_initialization'
-                });
+                logApi.error('🚫 Service initialization failed:', error.message);
+                if (VERBOSE_EXPRESS_LOGS) {
+                    logApi.error('Detailed error information:', {
+                        error: error.message,
+                        stack: error.stack,
+                        phase: 'service_initialization'
+                    });
+                }
                 initResults.Services = {
                     initialized: [],
                     failed: ['Service initialization failed: ' + error.message]
@@ -438,19 +517,32 @@ async function initializeServer() {
             }
 
         } catch (error) {
-            logApi.error('\x1b[38;5;196m┃           ✗ WebSocket initialization failed:', error, '\x1b[0m');
+            logApi.error('\x1b[38;5;196m┃           ✗ WebSocket initialization failed:', error.message, '\x1b[0m');
+            if (VERBOSE_EXPRESS_LOGS) {
+                logApi.error('WebSocket error details:', error);
+            }
             initResults.WebSocket = { success: false, error: error.message };
             throw error;
         }
 
     } catch (error) {
-        // Display the sad startup failure animation
+        // Display server startup error and failure animation
         logApi.error('\n');
         logApi.error('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ ERROR ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
         logApi.error('\x1b[38;5;196m┃           ❌ Server Initialization Failed              ┃\x1b[0m');
         logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━ Error: ' + error.message + '\x1b[0m');
+        
+        if (VERBOSE_EXPRESS_LOGS) {
+            logApi.error('Full error details:', error);
+        }
+        
         logApi.error('\n');
-        await displayStartupFailureAnimation(port, initResults);
+        
+        // Only show animation if enabled
+        if (SHOW_STARTUP_ANIMATION) {
+            await displayStartupFailureAnimation(port, initResults);
+        }
+        
         process.exit(1);
     }
 }
@@ -512,15 +604,18 @@ initializeServer().then(() => {
     // Start listening after successful initialization
     server.listen(port, () => {
         logApi.info(`Server listening on port ${port}`);
-        displayStartupAnimation(port);
+        
+        // Only show animation if enabled
+        if (SHOW_STARTUP_ANIMATION) {
+            displayStartupAnimation(port);
+        } else {
+            logApi.info(`🚀 DegenDuel API Server ready on port ${port}`);
+        }
     });
 }).catch(error => {
-    logApi.error('Failed to initialize server:', error);
+    logApi.error('Failed to initialize server:', error.message);
+    if (VERBOSE_EXPRESS_LOGS) {
+        logApi.error('Error details:', error);
+    }
     process.exit(1);
-});
-
-// Log startup info
-logApi.info("Starting DegenDuel API...", {
-    port: port,
-    debug_mode: process.env.DEBUG_MODE,
 });

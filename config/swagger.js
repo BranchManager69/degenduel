@@ -5,13 +5,18 @@ import swaggerUi from 'swagger-ui-express';
 import { responses, schemas } from './swagger-schemas.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
+import { logApi } from '../utils/logger-suite/logger.js'; // new
+
+dotenv.config();
+
+const VERBOSE_SWAGGER_INIT = false;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-dotenv.config();
-
+// Swagger definition
 const swaggerDefinition = {
   openapi: '3.0.0',
   info: {
@@ -25,7 +30,7 @@ const swaggerDefinition = {
       description: 'Production server'
     },
     {
-      url: 'http://localhost:3003/api',
+      url: 'https://dev.degenduel.me/api',
       description: 'Development server'
     }
   ],
@@ -42,68 +47,130 @@ const swaggerDefinition = {
   }
 };
 
-// Start with just one route file for testing
-const options = {
-  definition: swaggerDefinition,
-  apis: [
-    // Admin routes
-    path.join(rootDir, 'routes/admin/faucet-management.js'),
-    path.join(rootDir, 'routes/admin/maintenance.js'),
-    path.join(rootDir, 'routes/admin/service-metrics.js'),
-    path.join(rootDir, 'routes/admin/token-sync.js'),
-    path.join(rootDir, 'routes/admin/vanity-wallet-management.js'),
-    path.join(rootDir, 'routes/admin/wallet-management.js'),
-    
-    // Core routes
-    path.join(rootDir, 'routes/auth.js'),
-    path.join(rootDir, 'routes/contests.js'),
-    path.join(rootDir, 'routes/dd-serv/tokens.js'),
-    path.join(rootDir, 'routes/portfolio-analytics.js'),
-    path.join(rootDir, 'routes/portfolio-trades.js'),
-    path.join(rootDir, 'routes/referrals.js'),
-    path.join(rootDir, 'routes/status.js'),
-    path.join(rootDir, 'routes/superadmin.js'),
-    path.join(rootDir, 'routes/tokenBuckets.js'),
-    path.join(rootDir, 'routes/tokens.js'),
-    path.join(rootDir, 'routes/trades.js'),
-    path.join(rootDir, 'routes/users.js'),
-    path.join(rootDir, 'routes/v2/tokens.js'),
+// *****
+// Automatically discover all route files
+function discoverRoutes(directory) {
+  const routes = [];
+  let totalFiles = 0;
+  
+  function scanDirectory(dir) {
+    try {
+      const files = fs.readdirSync(dir);
+      
+      for (const file of files) {
+        // Skip node_modules and hidden directories
+        if (file.startsWith('.') || file === 'node_modules') continue;
+        
+        const filePath = path.join(dir, file);
+        try {
+          const stat = fs.statSync(filePath);
+          
+          if (stat.isDirectory()) {
+            // Recursively scan subdirectories
+            scanDirectory(filePath);
+          } else if (file.endsWith('.js') && !file.includes('.test.js') && !file.includes('.spec.js')) {
+            // Add JS files (excluding test files)
+            totalFiles++;
+            if (filePath.includes('/routes/')) {
+              routes.push(filePath);
+            }
+          }
+        } catch (err) {
+          // Skip any files that can't be accessed
+          continue;
+        }
+      }
+    } catch (err) {
+      // Skip directories that can't be read
+      return;
+    }
+  }
+  
+  scanDirectory(directory);
+  
+  if (VERBOSE_SWAGGER_INIT) {
+    console.log(`Auto-discovered ${routes.length} route files (from ${totalFiles} total JS files)`);
+  }
+  
+  return routes;
+}
 
-    // Prisma routes
-    path.join(rootDir, 'routes/prisma/activity.js'),
-    path.join(rootDir, 'routes/prisma/admin.js'),
-    path.join(rootDir, 'routes/prisma/balance.js'),
-    path.join(rootDir, 'routes/prisma/leaderboard.js'),
-    path.join(rootDir, 'routes/prisma/stats.js')
-  ]
+const options = {
+  definition: swaggerDefinition, // Swagger definition
+  apis: discoverRoutes(rootDir) // Automatically discover all route files
 };
 
+// Initialize Swagger specification
 let swaggerSpec;
-try {
-  console.log('\n🔍 Initializing Swagger documentation...');
-  console.log('📁 Scanning the following route files:');
-  options.apis.forEach(file => console.log(`   - ${file}`));
+swaggerSpec = swaggerJsDoc(options);
   
-  swaggerSpec = swaggerJsDoc(options);
-  
-  if (!swaggerSpec.paths || Object.keys(swaggerSpec.paths).length === 0) {
-    console.warn('\n⚠️  Warning: No routes detected in documentation');
-    console.log('🔍 Debug information:');
-    console.log('   Schemas loaded:', Object.keys(swaggerSpec.components?.schemas || {}).length);
-    console.log('   Security schemes:', Object.keys(swaggerSpec.components?.securitySchemes || {}).length);
-  } else {
-    const routeCount = Object.keys(swaggerSpec.paths).length;
-    console.log('\n✅ Successfully loaded API documentation:');
-    console.log(`   - ${routeCount} unique endpoints documented`);
-    console.log('   - Routes found:');
+// Initialize Swagger documentation
+if (VERBOSE_SWAGGER_INIT) {
+  logApi.info('\n🔍 Initializing Swagger documentation...');
+  logApi.info('🗄️\t Scanning the following route files:');
+  options.apis.forEach(file => logApi.info(`🗃️\t\t ${file}`));
+}
+
+// Check if Swagger specification is empty
+if (!swaggerSpec.paths || Object.keys(swaggerSpec.paths).length === 0) {
+  logApi.warn('\n☠️ Error: No routes detected in documentation');
+  logApi.log('🪲\t Debug information:');
+  logApi.log('\t\t Schemas loaded:  ', Object.keys(swaggerSpec.components?.schemas || {}).length);
+  logApi.log('\t\t Security schemes:', Object.keys(swaggerSpec.components?.securitySchemes || {}).length);
+} else {
+  const routeCount = Object.keys(swaggerSpec.paths).length;
+  if (VERBOSE_SWAGGER_INIT) {
+    logApi.info('\n✅ Successfully loaded DegenDuel API documentation:');
+    logApi.info(`   - ${routeCount} unique endpoints documented`);
+    logApi.info('   - Routes found:');
+
+    // Iterate through all paths and methods
     Object.keys(swaggerSpec.paths).forEach(path => {
+      // Get operations from the current path
       const operations = swaggerSpec.paths[path];
-      console.log(`     ${path}:`);
-      Object.keys(operations).forEach(method => {
-        console.log(`       - ${method.toUpperCase()}`);
-      });
+      const operationCount = Object.keys(operations).length;
+      // Log paths and the operations within
+      logApi.info(`🟰🟰\t\t(${operationCount})\t${path}`);
+      if (VERBOSE_SWAGGER_INIT) {
+        // Log every operation from each path
+        Object.keys(operations).forEach(method => {
+          logApi.info(`\t\t\t➖ ${method.toUpperCase()}`);
+        });
+      }
     });
+    if (VERBOSE_SWAGGER_INIT) {
+      logApi.info('\n✅ Successfully loaded DegenDuel API documentation');    
+    }
+    if (routeCount > 0) {
+      logApi.info('\n⭐ Swagger API documentation successfully loaded! \n\tAvailable at [URL]/api-docs');
+    } else {
+      logApi.warn('\n⚠️ No routes found in the Swagger API documentation');
+    }
   }
+}
+
+// ????
+try {
+  console.error('\n❌ Failed to initialize Swagger documentation:', error);
+  if (error.mark) {
+    console.error('📍 YAML Error Details:');
+    console.error(`   Line ${error.mark.line}, Column ${error.mark.column}`);
+    console.error(`   Near: ${error.mark.snippet}`);
+  }
+  if (error.stack) {
+    console.error('\n🔍 Stack trace:');
+    console.error(error.stack);
+  }
+  // Fallback Swagger specification
+  swaggerSpec = {
+    openapi: '3.0.0',
+    info: {
+      title: 'DegenDuel API',
+      version: '1.0.0',
+      description: '⚠️ DegenDuel API documentation unavailable due to initialization error'
+    },
+    paths: {}
+  };
 } catch (error) {
   console.error('\n❌ Failed to initialize Swagger:', error);
   if (error.mark) {
@@ -115,21 +182,13 @@ try {
     console.error('\n🔍 Stack trace:');
     console.error(error.stack);
   }
-  swaggerSpec = {
-    openapi: '3.0.0',
-    info: {
-      title: 'DegenDuel API',
-      version: '1.0.0',
-      description: '⚠️ API documentation unavailable due to initialization error'
-    },
-    paths: {}
-  };
 }
 
+// Swagger setup options
 function setupSwagger(app) {
   const swaggerUiOptions = {
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: '⚔️ | DegenDuel API',
+    customSiteTitle: 'DegenDuel API | Documentation',
     customfavIcon: '/favicon.ico',
     explorer: true,
     swaggerOptions: {
@@ -138,13 +197,21 @@ function setupSwagger(app) {
     }
   };
 
-  app.get('/api-docs-json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(swaggerSpec);
-  });
+  try {
+    // Swagger main documentation endpoint
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+    logApi.info('\t\t🌐 Main API docs: \thttps://degenduel.me/api-docs');
 
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
-  console.log('Swagger docs available at /api-docs');
+    // Additional Swagger JSON docs endpoint (JSON version)
+    app.get('/api-docs-json', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(swaggerSpec);
+    });
+    logApi.info('\t\t🌐 JSON API docs: \thttps://degenduel.me/api-docs-json');
+  
+  } catch (error) {
+    logApi.error('\n\t❌ Failed to initialize Swagger:', error);
+  }
 }
 
 export default setupSwagger;
