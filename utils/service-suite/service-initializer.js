@@ -22,6 +22,7 @@ import liquidityService from '../../services/liquidityService.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
 import levelingService from '../../services/levelingService.js';
 import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
+import solanaService from '../../services/solanaService.js';
 
 class ServiceInitializer {
     static async registerCoreServices() {
@@ -30,6 +31,12 @@ class ServiceInitializer {
         try {
             // Infrastructure Layer
             logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+            
+            // Register Solana Service first (most fundamental)
+            logApi.info('Attempting to register solanaService...');
+            serviceManager.register(solanaService);
+            
+            // Register other infrastructure services
             logApi.info('Attempting to register walletGeneratorService...');
             serviceManager.register(walletGeneratorService);
             logApi.info('Attempting to register liquidityService...');

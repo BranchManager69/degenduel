@@ -389,17 +389,8 @@ async function initializeServer() {
             // Initialize Services Layer - Moved outside WebSocket try-catch
             logApi.info('\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
             
-            // Initialize Solana Service Manager
-            logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ 🔄 Initializing Solana Service Manager...\x1b[0m');
-            try {
-                await SolanaServiceManager.initialize();
-                initResults.SolanaServiceManager = { success: true };
-                logApi.info('\x1b[38;5;27m┃           ┗━━━━━━━━━━━ ☑️ Solana Service Manager Ready\x1b[0m');
-            } catch (error) {
-                logApi.error('\x1b[38;5;196m┃           ✗ Solana Service Manager initialization failed:', error, '\x1b[0m');
-                initResults.SolanaServiceManager = { success: false, error: error.message };
-                throw error;
-            }
+            // Solana Service Manager will be initialized through the service system
+            logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ 🔄 Note: Solana Service now initialized via service system...\x1b[0m');
 
             // Initialize services
             try {
@@ -478,10 +469,8 @@ async function shutdown() {
     await ServiceInitializer.cleanup();
     logApi.info('\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ✓ Services cleaned up\x1b[0m');
     
-    // Cleanup Solana Service Manager
-    logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Cleaning up Solana Service Manager...\x1b[0m');
-    await SolanaServiceManager.cleanup();
-    logApi.info('\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ✓ Solana Service Manager cleaned up\x1b[0m');
+    // Solana Service now cleaned up as part of service cleanup
+    logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Note: Solana Service now cleaned up via service system\x1b[0m');
 
     // Close databases
     logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Closing databases...\x1b[0m');
