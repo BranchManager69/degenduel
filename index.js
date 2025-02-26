@@ -43,7 +43,7 @@ import skyduelManagementRoutes from "./routes/admin/skyduel-management.js";
 const VERBOSE_EXPRESS_LOGS = false;
 const VERBOSE_SERVICE_LOGS = false;
 const SHOW_STARTUP_ANIMATION = true; // Keep animations but reduce service logs
-const QUIET_INITIALIZATION = true; // Dramatically reduce initialization logs
+const QUIET_INITIALIZATION = false; // Show detailed initialization logs
 
 dotenv.config();
 
