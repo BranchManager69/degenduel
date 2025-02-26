@@ -31,6 +31,7 @@ export const SERVICE_NAMES = {
     CONTEST_WALLET: 'contest_wallet_service',
     WALLET_RAKE: 'wallet_rake_service',
     ADMIN_WALLET: 'admin_wallet_service',
+    USER_BALANCE_TRACKING: 'user_balance_tracking_service',
 
     // Infrastructure Layer Services
     LIQUIDITY: 'liquidity_service',
@@ -120,6 +121,13 @@ export const SERVICE_METADATA = {
         updateFrequency: 'on demand',
         criticalLevel: 'critical',
         dependencies: [SERVICE_NAMES.CONTEST_WALLET]
+    },
+    [SERVICE_NAMES.USER_BALANCE_TRACKING]: {
+        layer: SERVICE_LAYERS.WALLET,
+        description: 'Track user Solana wallet balances',
+        updateFrequency: '1m',
+        criticalLevel: 'low',
+        dependencies: []
     },
 
     // Infrastructure Layer Services
