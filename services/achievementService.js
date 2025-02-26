@@ -248,7 +248,12 @@ class AchievementService extends BaseService {
                         none: {}
                     }
                 },
-                take: this.config.achievement.batchSize
+                take: this.config.achievement.batchSize,
+                select: {
+                    id: true,
+                    wallet_address: true,
+                    experience_points: true
+                }
             });
 
             const results = {
@@ -327,15 +332,11 @@ class AchievementService extends BaseService {
 
         try {
             // Get all achievement categories
-            const categories = await prisma.achievement_categories.findMany({
-                include: {
-                    tiers: {
-                        include: {
-                            requirements: true
-                        }
-                    }
-                }
-            });
+            const categories = await prisma.achievement_categories.findMany();
+            
+            // Get achievement tiers and requirements separately
+            const tiers = await prisma.achievement_tiers.findMany();
+            const requirements = await prisma.achievement_tier_requirements.findMany();
 
             // Check each category
             for (const category of categories) {
@@ -370,33 +371,49 @@ class AchievementService extends BaseService {
         // Get user's current tier in this category
         const currentAchievement = await prisma.user_achievements.findFirst({
             where: {
-                user_id: user.id,
-                category_id: category.id
+                wallet_address: user.wallet_address,
+                category: category.name
             },
             orderBy: {
-                awarded_at: 'desc'
+                achieved_at: 'desc'
+            }
+        });
+
+        // Get all tiers for processing
+        const tiers = await prisma.achievement_tiers.findMany({
+            orderBy: {
+                points: 'asc'
             }
         });
 
         // Check each tier in order
-        for (const tier of category.tiers) {
+        for (const tier of tiers) {
             // Skip if user already has this tier or higher
-            if (currentAchievement && currentAchievement.tier_id >= tier.id) {
+            if (currentAchievement && currentAchievement.tier === tier.name) {
                 continue;
             }
 
+            // Get requirements for this tier
+            const requirements = await prisma.achievement_tier_requirements.findMany({
+                where: {
+                    tier_id: tier.id
+                }
+            });
+
             // Check if user meets requirements
-            const meetsRequirements = await this.checkTierRequirements(user, tier);
+            const meetsRequirements = await this.checkTierRequirements(user, tier, requirements);
             
             if (meetsRequirements) {
                 try {
                     // Award the achievement and XP
                     await prisma.user_achievements.create({
                         data: {
-                            user_id: user.id,
-                            category_id: category.id,
-                            tier_id: tier.id,
-                            awarded_at: new Date()
+                            wallet_address: user.wallet_address,
+                            achievement_type: `${category.name.toUpperCase()}_ACHIEVEMENT`,
+                            tier: tier.name,
+                            category: category.name,
+                            achieved_at: new Date(),
+                            xp_awarded: tier.points
                         }
                     });
 
@@ -421,16 +438,16 @@ class AchievementService extends BaseService {
 
                     awarded++;
                     this.achievementStats.achievements.awarded++;
-                    this.achievementStats.achievements.by_category[category.id] = 
-                        (this.achievementStats.achievements.by_category[category.id] || 0) + 1;
-                    this.achievementStats.achievements.by_tier[tier.id] = 
-                        (this.achievementStats.achievements.by_tier[tier.id] || 0) + 1;
+                    this.achievementStats.achievements.by_category[category.name] = 
+                        (this.achievementStats.achievements.by_category[category.name] || 0) + 1;
+                    this.achievementStats.achievements.by_tier[tier.name] = 
+                        (this.achievementStats.achievements.by_tier[tier.name] || 0) + 1;
 
                 } catch (error) {
                     logApi.error(`Failed to award achievement:`, {
-                        user_id: user.id,
-                        category_id: category.id,
-                        tier_id: tier.id,
+                        wallet_address: user.wallet_address,
+                        category: category.name,
+                        tier: tier.name,
                         error: error.message
                     });
                     throw error;
@@ -441,15 +458,15 @@ class AchievementService extends BaseService {
         return awarded;
     }
 
-    async checkTierRequirements(user, tier) {
+    async checkTierRequirements(user, tier, requirements) {
         // Check each requirement
-        for (const requirement of tier.requirements) {
+        for (const requirement of requirements) {
             try {
                 const met = await this.checkRequirement(user, requirement);
                 if (!met) return false;
             } catch (error) {
                 logApi.error(`Failed to check requirement:`, {
-                    user_id: user.id,
+                    wallet_address: user.wallet_address,
                     requirement_id: requirement.id,
                     error: error.message
                 });
