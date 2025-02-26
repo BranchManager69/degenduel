@@ -238,8 +238,13 @@ export async function cleanupWebSockets() {
     logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Cleaning up WebSocket servers...\x1b[0m');
     for (const [name, ws] of Object.entries(global.wsServers)) {
         try {
-            await ws.cleanup();
-            logApi.info(`\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ✓ ${name} WebSocket cleaned up\x1b[0m`);
+            // Check if ws exists and has a cleanup method
+            if (ws && typeof ws.cleanup === 'function') {
+                await ws.cleanup();
+                logApi.info(`\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ✓ ${name} WebSocket cleaned up\x1b[0m`);
+            } else {
+                logApi.warn(`\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ⚠ ${name} WebSocket has no cleanup method\x1b[0m`);
+            }
         } catch (error) {
             logApi.error(`\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ✗ Failed to cleanup ${name} WebSocket:`, error);
         }

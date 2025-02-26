@@ -483,8 +483,14 @@ class MarketDataService extends BaseService {
             this.requestTimeouts.clear();
             
             // Clear cache
-            this.cache.clear();
-            this.marketStats.cache.size = 0;
+            if (this.cache) {
+                this.cache.clear();
+            }
+            
+            // Reset cache size in stats if it exists
+            if (this.marketStats && this.marketStats.cache) {
+                this.marketStats.cache.size = 0;
+            }
             
             // Final stats update
             await serviceManager.markServiceStopped(
