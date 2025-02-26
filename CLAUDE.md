@@ -58,6 +58,13 @@ The application follows a service-based architecture with:
 - Circuit breaker patterns for resilience
 - Service registration via ServiceManager
 
+Key services include:
+- `services/solanaService.js` - Fundamental blockchain connectivity
+- `services/tokenSyncService.js` - Token data synchronization
+- `services/achievementService.js` - Achievement tracking
+- `services/contestEvaluationService.js` - Contest management
+- `services/userBalanceTrackingService.js` - Wallet balance monitoring
+
 ### Achievement System
 The achievement system is implemented through:
 - `services/achievementService.js` - Core service for tracking achievements
