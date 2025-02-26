@@ -147,6 +147,16 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
             rateLimit: 600 // 10 updates/second - much more reasonable for admin monitoring
         });
 
+        // Initialize stats object that was missing
+        this.stats = {
+            totalConnections: 0,
+            messagesProcessed: 0,
+            errors: 0,
+            averageProcessingTime: 0,
+            messagesPerSecond: 0,
+            recentLatencies: []
+        };
+        
         this.monitorService = new WebSocketMonitorService();
         logApi.info('WebSocket Monitor server initialized');
     }
