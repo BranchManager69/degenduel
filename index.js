@@ -38,9 +38,11 @@ import serviceManagementRoutes from './routes/admin/service-management.js';
 // Import (some) Admin Routes
 import contestManagementRoutes from "./routes/admin/contest-management.js";
 
-// Hard-code both logging flags to false to reduce verbosity
+// Hard-code all logging flags to reduce verbosity
 const VERBOSE_EXPRESS_LOGS = false;
+const VERBOSE_SERVICE_LOGS = false;
 const SHOW_STARTUP_ANIMATION = true; // Keep animations but reduce service logs
+const QUIET_INITIALIZATION = true; // Dramatically reduce initialization logs
 
 dotenv.config();
 
@@ -58,44 +60,32 @@ const server = createServer(app);
 // WebSocket servers and service initialization moved to the initializeServer() function
 // This ensures a single initialization path for all components
 
-// Trust proxy headers since we're behind a reverse proxy
-logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔒 Configuring Server Security...\x1b[0m');
+// Basic Express configuration
+if (!QUIET_INITIALIZATION) {
+  logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔒 Configuring Server Security...\x1b[0m');
+}
 app.set("trust proxy", 1);
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Server Security Configured\x1b[0m');
-
-// Cookies setup
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🍪 Configuring Cookies...\x1b[0m');
 app.use(cookieParser());
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Cookies Configured\x1b[0m');
-
-// Swagger setup
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 📚 Configuring API Documentation...\x1b[0m');
 setupSwagger(app);
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ API Documentation Ready\x1b[0m');
-
-// Middleware setup
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔧 Configuring Middleware...\x1b[0m');
 configureMiddleware(app);
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Middleware Configured\x1b[0m');
-
-// Add response time tracking middleware
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 📊 Configuring Response Time Tracking...\x1b[0m');
 app.use(memoryMonitoring.setupResponseTimeTracking());
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Response Time Tracking Ready\x1b[0m');
+
+if (!QUIET_INITIALIZATION) {
+  logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Basic Express Configuration Complete\x1b[0m');
+}
 
 /* Import Routes */
 
 // Start with DegenDuel API root route (https://degenduel.me/api)
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🌐 Configuring DegenDuel API Root Route...\x1b[0m');
+if (!QUIET_INITIALIZATION) {
+  logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🌐 Configuring Routes...\x1b[0m');
+}
+
 app.get("/", (req, res) => {
-  res.send(`
-    Welcome to the DegenDuel API! You probably should not be here.
-  `);
+  res.send(`Welcome to the DegenDuel API! You probably should not be here.`);
 });
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ DegenDuel API Root Route Configured\x1b[0m');
 
 // Import Main DegenDuel API routes
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 📂 Importing Main DegenDuel API Routes...\x1b[0m');
 import testRoutes from "./archive/test-routes.js";
 import maintenanceRoutes from "./routes/admin/maintenance.js";
 import authRoutes from "./routes/auth.js";
@@ -120,24 +110,12 @@ import referralRoutes from "./routes/referrals.js";
 // Virtual Agent routes
 import virtualAgentRoutes from "./routes/virtual-agent.js";
 
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Main DegenDuel API Routes Imported\x1b[0m');
-
-// Done importing routes
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Routes Imported\x1b[0m');
-
 /* Mount Routes */
-
-// Start mounting routes
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Routes...\x1b[0m');
-
-// 1. First mount public routes (no maintenance check needed)
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Public Routes...\x1b[0m');
+// Public Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/status", statusRoutes);
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Public Routes Mounted\x1b[0m');
 
-// 2. Mount admin and superadmin routes (no maintenance check needed)
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Admin and Superadmin Routes...\x1b[0m');
+// Admin Routes
 app.use("/api/admin", prismaAdminRoutes);
 app.use("/api/admin/maintenance", maintenanceRoutes);
 app.use("/api/admin/token-sync", tokenSyncRoutes);
@@ -149,11 +127,8 @@ app.use("/api/admin/service-management", serviceManagementRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use('/api/admin/websocket', websocketTestRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Admin and Superadmin Routes Mounted\x1b[0m');
 
-// 3. Apply maintenance check to all routes that need to be restricted from public access while maintenance mode is active
-// Protected routes (inaccessible when in maintenance mode)
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Maintenance-Protected Routes...\x1b[0m');
+// Protected routes (with maintenance check)
 // earliest protected routes
 app.use("/api/balance", maintenanceCheck, prismaBalanceRoutes);
 app.use("/api/stats", maintenanceCheck, prismaStatsRoutes);
@@ -174,15 +149,10 @@ app.use("/api/portfolio-analytics", maintenanceCheck, portfolioAnalyticsRouter);
 app.use("/api/referrals", maintenanceCheck, referralRoutes);
 // Virtual Agent routes (inaccessible when in maintenance mode)
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Maintenance-Protected Routes Mounted\x1b[0m');
-
 // Test routes (no maintenance check needed)
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Unprotected Test Routes...\x1b[0m');
 app.use("/api/test", testRoutes);
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Unprotected Test Routes Mounted\x1b[0m');
 
-// Server health route (no maintenance check needed, but unique in that it is not mounted as middleware)
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Server Health Route...\x1b[0m');
+// Server health route (not using router)
 app.get("/api/health", async (req, res) => {
   try {
     // Check database connection
@@ -232,10 +202,7 @@ app.get("/api/health", async (req, res) => {
     });
   }
 });
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Server Health Route Mounted\x1b[0m');
-
-// Add direct market data route that forwards to v2 tokens
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Market Data Route...\x1b[0m');
+// Direct market data route
 app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
   try {
     const response = await fetch(
@@ -251,12 +218,12 @@ app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
     });
   }
 });
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Market Data Route Mounted\x1b[0m');
-
 // Error handling setup
-logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🔑 Mounting Route Error Handling...\x1b[0m');
 app.use(errorHandler);
-logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Route Error Handling Mounted\x1b[0m');
+
+if (!QUIET_INITIALIZATION) {
+  logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ All Routes Mounted\x1b[0m');
+}
 
 // Create epic startup animation function
 // TODO: Move this to a separate file and renovate it dramatically with our newest services, circuit breakers, routes, db summary of major metrics (For example, user count and tokens count, nothing too much at all, contests count, wallet's count, literally not even much more than this) etc.
