@@ -28,206 +28,671 @@ This is the heart of the system - a unified WebSocket server that provides:
 ```javascript
 // websocket/skyduel-ws.js
 
-import { BaseWebSocketServer } from './base-websocket.js';
+/**
+ * SkyDuel WebSocket Server
+ * 
+ * Unified service management system that provides real-time monitoring and control of services
+ * with detailed metrics, circuit breaker states, and dependency visualization.
+ * 
+ * Features:
+ * - Real-time monitoring of all services
+ * - Administrative control (start/stop/restart)
+ * - Circuit breaker management
+ * - Dependency visualization
+ * - Service state and config updates
+ */
+
+import WebSocket from 'ws';
+import jwt from 'jsonwebtoken';
 import { logApi } from '../utils/logger-suite/logger.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import AdminLogger from '../utils/admin-logger.js';
-import prisma from '../config/prisma.js';
+import { getCircuitBreakerConfig } from '../utils/service-suite/circuit-breaker-config.js';
 
-// SkyDuel WebSocket Server for managing all services
-class SkyDuelWebSocketServer extends BaseWebSocketServer {
+class SkyDuelWebSocketServer {
     constructor(server) {
-        // Create the configuration object
-        const config = {
-            path: '/api/v2/ws/admin',
-            maxPayload: 1024 * 64, // 64KB payload
-            rateLimit: 120, // 2 messages per second
-            requireAuth: true, // Require authentication
-            requireSuperAdmin: true, // Only superadmins can access
-            allowedOrigins: process.env.ALLOWED_ORIGINS 
-                ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-                : [
-                    'http://localhost:3000',
-                    'https://degenduel.me',
-                    'https://app.degenduel.me',
-                    'https://dev.degenduel.me'
-                ]
-        };
+        if (!server) {
+            throw new Error('HTTP server instance is required to initialize SkyDuel WebSocket');
+        }
 
-        // Initialize base class
-        super(server, config);
+        this.wss = new WebSocket.Server({ 
+            server, 
+            path: '/api/v2/ws/skyduel'
+        });
 
-        // Track connected admin sessions
-        this.adminSessions = new Map();
+        this.adminSessions = new Map(); // Map of active admin sessions
+        this.serviceSubscriptions = new Map(); // Map of service name to set of WebSocket connections
+        this.connectionHeartbeats = new Map(); // Map of WebSocket connections to last heartbeat time
         
-        // Track service subscriptions
-        this.serviceSubscriptions = new Map();
-        
-        // Set up periodic updates
+        this.initialize();
+        logApi.info('SkyDuel WebSocket server initialized');
+    }
+
+    initialize() {
+        this.wss.on('connection', this.handleConnection.bind(this));
+        this.wss.on('error', (error) => {
+            logApi.error('SkyDuel WebSocket server error:', error);
+        });
+
+        // Start heartbeat check interval
+        setInterval(() => {
+            this.checkHeartbeats();
+        }, 30000); // Check every 30 seconds
+
+        // Start periodic updates
         this.startPeriodicUpdates();
     }
 
-    // Authentication handler - ensures only superadmins can connect
-    async authenticate(req, token) {
-        try {
-            // Verify user exists and is superadmin
-            const user = await prisma.users.findFirst({
-                where: {
-                    auth_token: token,
-                    role: 'superadmin'
-                },
-                select: {
-                    id: true,
-                    wallet_address: true,
-                    role: true,
-                    nickname: true
+    async checkHeartbeats() {
+        const now = Date.now();
+        
+        // Check each connection's heartbeat
+        for (const [ws, lastHeartbeat] of this.connectionHeartbeats.entries()) {
+            if (now - lastHeartbeat > 60000) { // 60 seconds timeout
+                logApi.warn('SkyDuel connection timed out, terminating');
+                this.cleanupConnection(ws);
+                
+                try {
+                    ws.terminate();
+                } catch (error) {
+                    // Already closed
                 }
-            });
-
-            if (!user) {
-                return { authenticated: false, message: 'Unauthorized' };
             }
+        }
+    }
 
-            // Log the authentication
+    // Handle new WebSocket connections
+    async handleConnection(ws, req) {
+        try {
+            // Get token from query params
+            const url = new URL(req.url, `http://${req.headers.host}`);
+            const token = url.searchParams.get('token');
+            
+            // Validate token and get user information
+            const user = await this.validateToken(token);
+            
+            if (!user || !user.isSuperAdmin) {
+                logApi.warn('Unauthorized SkyDuel connection attempt', {
+                    ip: req.socket.remoteAddress,
+                    token_provided: !!token
+                });
+                
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    code: 'UNAUTHORIZED',
+                    message: 'Unauthorized access'
+                }));
+                
+                ws.close();
+                return;
+            }
+            
+            // Get client info for logging
+            const clientInfo = {
+                ip: req.socket.remoteAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                userId: user.id
+            };
+            
+            // Store admin session
+            this.adminSessions.set(ws, {
+                user,
+                authenticated: true,
+                clientInfo,
+                subscriptions: new Set()
+            });
+            
+            // Log admin connection
+            logApi.info('Admin connected to SkyDuel', { 
+                adminId: user.id, 
+                ip: clientInfo.ip, 
+                connections: this.adminSessions.size 
+            });
+            
+            // Register event handlers for this connection
+            ws.on('message', (message) => this.handleMessage(ws, message, user));
+            ws.on('close', () => this.handleClose(ws, user));
+            ws.on('error', (error) => this.handleError(ws, error, user));
+            
+            // Set initial heartbeat
+            this.connectionHeartbeats.set(ws, Date.now());
+            
+            // Send welcome message
+            this.sendToClient(ws, {
+                type: 'welcome',
+                message: 'SkyDuel service management connection established',
+                timestamp: new Date().toISOString(),
+                version: '1.0.0'
+            });
+            
+            // Log admin action
             await AdminLogger.logAction(
                 user.id,
-                'ADMIN_WS_CONNECT',
+                'SKYDUEL_CONNECTION',
                 {
                     action: 'connect',
-                    service: 'admin-master-ws'
+                    connectionTime: new Date().toISOString()
                 },
                 {
-                    ip_address: req.ip || req.socket.remoteAddress,
-                    user_agent: req.headers['user-agent']
+                    ip_address: clientInfo.ip,
+                    user_agent: clientInfo.userAgent
                 }
             );
-
-            return { 
-                authenticated: true, 
-                user: {
-                    id: user.id,
-                    wallet: user.wallet_address,
-                    role: user.role,
-                    nickname: user.nickname
-                }
-            };
+            
+            // Send initial service catalog
+            this.sendServiceCatalog(ws);
+            
+            // Send initial service states
+            this.sendAllServiceStates(ws);
+            
+            // Send dependency graph
+            this.sendDependencyGraph(ws);
         } catch (error) {
-            logApi.error('Admin WS authentication error:', error);
-            return { authenticated: false, message: 'Authentication error' };
-        }
-    }
-
-    // Handle new client connection
-    async onConnection(ws, request, user) {
-        // Store the user context
-        ws.user = user;
-        
-        // Add to admin sessions
-        this.adminSessions.set(ws, {
-            userId: user.id,
-            wallet: user.wallet,
-            connectedAt: new Date(),
-            subscriptions: new Set(),
-            lastActivity: new Date()
-        });
-
-        // Send welcome message with service catalog
-        await this.sendServiceCatalog(ws);
-        
-        // Send initial service states
-        await this.sendAllServiceStates(ws);
-    }
-
-    // Handle client disconnection
-    onClose(ws) {
-        // Clean up subscriptions
-        const session = this.adminSessions.get(ws);
-        if (session) {
-            for (const service of session.subscriptions) {
-                const subscribers = this.serviceSubscriptions.get(service) || new Set();
-                subscribers.delete(ws);
+            logApi.error('Error handling SkyDuel connection:', error);
+            
+            try {
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    code: 'CONNECTION_ERROR',
+                    message: 'Error establishing connection'
+                }));
                 
-                if (subscribers.size === 0) {
-                    this.serviceSubscriptions.delete(service);
-                } else {
-                    this.serviceSubscriptions.set(service, subscribers);
-                }
+                ws.close();
+            } catch (closeError) {
+                // Ignore errors during close
             }
         }
+    }
+
+    // Validate authentication token
+    async validateToken(token) {
+        if (!token) return null;
         
-        // Remove from admin sessions
-        this.adminSessions.delete(ws);
+        try {
+            // Verify the token
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+            
+            // Check if the user is a super admin
+            if (decoded && decoded.userRole === 'superadmin') {
+                return {
+                    id: decoded.userId,
+                    username: decoded.username,
+                    isSuperAdmin: true
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            logApi.error('Token validation error:', error);
+            return null;
+        }
     }
 
     // Handle incoming messages
-    async onMessage(ws, message) {
+    async handleMessage(ws, message, user) {
         try {
-            const session = this.adminSessions.get(ws);
-            if (!session) return; // No valid session
-
-            // Update last activity
-            session.lastActivity = new Date();
-            
-            // Parse the message
+            // Parse message
             const data = JSON.parse(message);
             
-            // Process based on message type
+            // Reset heartbeat
+            this.connectionHeartbeats.set(ws, Date.now());
+            
+            // Handle message by type
             switch (data.type) {
-                case 'ping':
-                    this.sendToClient(ws, { type: 'pong', timestamp: new Date().toISOString() });
+                case 'heartbeat':
+                    this.handleHeartbeat(ws);
                     break;
                     
-                case 'subscribe':
-                    await this.handleSubscribe(ws, session, data);
+                case 'service:subscribe':
+                    await this.handleServiceSubscribe(ws, data, user);
                     break;
                     
-                case 'unsubscribe':
-                    await this.handleUnsubscribe(ws, session, data);
+                case 'service:unsubscribe':
+                    await this.handleServiceUnsubscribe(ws, data, user);
                     break;
                     
                 case 'service:start':
-                    await this.handleServiceStart(ws, session, data);
+                    await this.handleServiceStart(ws, data, user);
                     break;
                     
                 case 'service:stop':
-                    await this.handleServiceStop(ws, session, data);
+                    await this.handleServiceStop(ws, data, user);
                     break;
                     
                 case 'service:restart':
-                    await this.handleServiceRestart(ws, session, data);
+                    await this.handleServiceRestart(ws, data, user);
                     break;
                     
                 case 'circuit-breaker:reset':
-                    await this.handleCircuitBreakerReset(ws, session, data);
-                    break;
-                    
-                case 'service:config-update':
-                    await this.handleServiceConfigUpdate(ws, session, data);
+                    await this.handleCircuitBreakerReset(ws, data, user);
                     break;
                     
                 case 'get:service-catalog':
                     await this.sendServiceCatalog(ws);
                     break;
                     
+                case 'get:service-state':
+                    await this.sendServiceState(ws, data.service);
+                    break;
+                    
+                case 'get:all-states':
+                    await this.sendAllServiceStates(ws);
+                    break;
+                    
                 case 'get:dependency-graph':
                     await this.sendDependencyGraph(ws);
                     break;
                     
-                case 'health:check-all':
-                    await this.handleHealthCheckAll(ws, session);
+                case 'service:config-update':
+                    await this.handleConfigUpdate(ws, data, user);
                     break;
                     
                 default:
-                    this.sendError(ws, 'INVALID_MESSAGE_TYPE', 'Unsupported message type');
+                    this.sendError(ws, 'UNKNOWN_COMMAND', `Unknown command: ${data.type}`);
             }
         } catch (error) {
-            logApi.error('Error handling admin WS message:', error);
-            this.sendError(ws, 'MESSAGE_PROCESSING_ERROR', error.message);
+            logApi.error('Error handling message:', error);
+            this.sendError(ws, 'MESSAGE_ERROR', 'Error processing message');
         }
     }
 
-    // Send an error message to client
+    // Handle connection close
+    handleClose(ws, user) {
+        try {
+            // Log admin disconnection
+            if (user) {
+                logApi.info('Admin disconnected from SkyDuel', {
+                    adminId: user.id,
+                    connections: this.adminSessions.size - 1
+                });
+            }
+            
+            // Clean up connection resources
+            this.cleanupConnection(ws);
+        } catch (error) {
+            logApi.error('Error handling connection close:', error);
+        }
+    }
+
+    // Handle connection errors
+    handleError(ws, error, user) {
+        logApi.error('SkyDuel connection error:', error);
+        
+        try {
+            // Clean up connection resources
+            this.cleanupConnection(ws);
+        } catch (cleanupError) {
+            logApi.error('Error cleaning up connection:', cleanupError);
+        }
+    }
+
+    // Handle client heartbeat messages
+    handleHeartbeat(ws) {
+        this.connectionHeartbeats.set(ws, Date.now());
+        
+        this.sendToClient(ws, {
+            type: 'heartbeat:ack',
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    // Handle service subscription
+    async handleServiceSubscribe(ws, data, user) {
+        try {
+            if (!data.service) {
+                return this.sendError(ws, 'MISSING_SERVICE', 'Service name is required');
+            }
+            
+            const serviceName = data.service;
+            const session = this.adminSessions.get(ws);
+            
+            if (!session) {
+                return this.sendError(ws, 'SESSION_ERROR', 'Session not found');
+            }
+            
+            // Add to service-specific subscriptions
+            let serviceSubscribers = this.serviceSubscriptions.get(serviceName);
+            if (!serviceSubscribers) {
+                serviceSubscribers = new Set();
+                this.serviceSubscriptions.set(serviceName, serviceSubscribers);
+            }
+            serviceSubscribers.add(ws);
+            
+            // Add to session subscriptions
+            session.subscriptions.add(serviceName);
+            
+            // Send current service state
+            await this.sendServiceState(ws, serviceName);
+            
+            // Log subscription
+            logApi.info(`Admin subscribed to service: ${serviceName}`, {
+                adminId: user.id,
+                subscribers: serviceSubscribers.size
+            });
+            
+            this.sendToClient(ws, {
+                type: 'subscription:success',
+                service: serviceName,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logApi.error('Error handling service subscription:', error);
+            this.sendError(ws, 'SUBSCRIPTION_ERROR', 'Error subscribing to service');
+        }
+    }
+
+    // Handle service unsubscription
+    async handleServiceUnsubscribe(ws, data, user) {
+        try {
+            if (!data.service) {
+                return this.sendError(ws, 'MISSING_SERVICE', 'Service name is required');
+            }
+            
+            const serviceName = data.service;
+            const session = this.adminSessions.get(ws);
+            
+            if (!session) {
+                return this.sendError(ws, 'SESSION_ERROR', 'Session not found');
+            }
+            
+            // Remove from service-specific subscriptions
+            const serviceSubscribers = this.serviceSubscriptions.get(serviceName);
+            if (serviceSubscribers) {
+                serviceSubscribers.delete(ws);
+                
+                if (serviceSubscribers.size === 0) {
+                    this.serviceSubscriptions.delete(serviceName);
+                }
+            }
+            
+            // Remove from session subscriptions
+            session.subscriptions.delete(serviceName);
+            
+            // Log unsubscription
+            logApi.info(`Admin unsubscribed from service: ${serviceName}`, {
+                adminId: user.id,
+                remainingSubscribers: (serviceSubscribers?.size || 0)
+            });
+            
+            this.sendToClient(ws, {
+                type: 'unsubscription:success',
+                service: serviceName,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logApi.error('Error handling service unsubscription:', error);
+            this.sendError(ws, 'UNSUBSCRIPTION_ERROR', 'Error unsubscribing from service');
+        }
+    }
+
+    // Handle service start request
+    async handleServiceStart(ws, data, user) {
+        try {
+            if (!data.service) {
+                return this.sendError(ws, 'MISSING_SERVICE', 'Service name is required');
+            }
+            
+            const serviceName = data.service;
+            const session = this.adminSessions.get(ws);
+            
+            if (!session) {
+                return this.sendError(ws, 'SESSION_ERROR', 'Session not found');
+            }
+            
+            // Get admin context for logging
+            const adminContext = {
+                adminAddress: user.id,
+                ip: session.clientInfo.ip,
+                userAgent: session.clientInfo.userAgent
+            };
+            
+            // Start the service
+            await serviceManager.startService(serviceName, adminContext);
+            
+            // Send updated state
+            await this.sendServiceState(ws, serviceName);
+            
+            this.sendToClient(ws, {
+                type: 'service:start:success',
+                service: serviceName,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logApi.error(`Error starting service: ${data.service}`, error);
+            this.sendError(ws, 'SERVICE_START_ERROR', `Error starting service: ${error.message}`);
+        }
+    }
+
+    // Handle service stop request
+    async handleServiceStop(ws, data, user) {
+        try {
+            if (!data.service) {
+                return this.sendError(ws, 'MISSING_SERVICE', 'Service name is required');
+            }
+            
+            const serviceName = data.service;
+            const session = this.adminSessions.get(ws);
+            
+            if (!session) {
+                return this.sendError(ws, 'SESSION_ERROR', 'Session not found');
+            }
+            
+            // Get admin context for logging
+            const adminContext = {
+                adminAddress: user.id,
+                ip: session.clientInfo.ip,
+                userAgent: session.clientInfo.userAgent
+            };
+            
+            // Stop the service
+            await serviceManager.stopService(serviceName, adminContext);
+            
+            // Send updated state
+            await this.sendServiceState(ws, serviceName);
+            
+            this.sendToClient(ws, {
+                type: 'service:stop:success',
+                service: serviceName,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logApi.error(`Error stopping service: ${data.service}`, error);
+            this.sendError(ws, 'SERVICE_STOP_ERROR', `Error stopping service: ${error.message}`);
+        }
+    }
+
+    // Handle service restart request
+    async handleServiceRestart(ws, data, user) {
+        try {
+            if (!data.service) {
+                return this.sendError(ws, 'MISSING_SERVICE', 'Service name is required');
+            }
+            
+            const serviceName = data.service;
+            const session = this.adminSessions.get(ws);
+            
+            if (!session) {
+                return this.sendError(ws, 'SESSION_ERROR', 'Session not found');
+            }
+            
+            // Get admin context for logging
+            const adminContext = {
+                adminAddress: user.id,
+                ip: session.clientInfo.ip,
+                userAgent: session.clientInfo.userAgent
+            };
+            
+            // Restart the service
+            await serviceManager.restartService(serviceName, adminContext);
+            
+            // Send updated state
+            await this.sendServiceState(ws, serviceName);
+            
+            this.sendToClient(ws, {
+                type: 'service:restart:success',
+                service: serviceName,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logApi.error(`Error restarting service: ${data.service}`, error);
+            this.sendError(ws, 'SERVICE_RESTART_ERROR', `Error restarting service: ${error.message}`);
+        }
+    }
+
+    // Handle circuit breaker reset request
+    async handleCircuitBreakerReset(ws, data, user) {
+        try {
+            if (!data.service) {
+                return this.sendError(ws, 'MISSING_SERVICE', 'Service name is required');
+            }
+            
+            const serviceName = data.service;
+            const session = this.adminSessions.get(ws);
+            
+            if (!session) {
+                return this.sendError(ws, 'SESSION_ERROR', 'Session not found');
+            }
+            
+            // Get service instance
+            const service = serviceManager.services.get(serviceName);
+            if (!service) {
+                return this.sendError(ws, 'SERVICE_NOT_FOUND', `Service ${serviceName} not found`);
+            }
+            
+            // Reset circuit breaker
+            if (service.resetCircuitBreaker) {
+                await service.resetCircuitBreaker();
+            } else {
+                // Manually reset stats if method doesn't exist
+                if (service.stats && service.stats.circuitBreaker) {
+                    service.stats.circuitBreaker.isOpen = false;
+                    service.stats.circuitBreaker.failures = 0;
+                    service.stats.circuitBreaker.lastReset = new Date().toISOString();
+                }
+                
+                // Call service manager to mark as recovered
+                await serviceManager.markServiceRecovered(serviceName);
+            }
+            
+            // Log admin action
+            await AdminLogger.logAction(
+                user.id,
+                'RESET_CIRCUIT_BREAKER',
+                {
+                    service: serviceName,
+                    action: 'reset',
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    ip_address: session.clientInfo.ip,
+                    user_agent: session.clientInfo.userAgent
+                }
+            );
+            
+            // Send updated state
+            await this.sendServiceState(ws, serviceName);
+            
+            this.sendToClient(ws, {
+                type: 'circuit-breaker:reset:success',
+                service: serviceName,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logApi.error(`Error resetting circuit breaker for service: ${data.service}`, error);
+            this.sendError(ws, 'CIRCUIT_BREAKER_RESET_ERROR', `Error resetting circuit breaker: ${error.message}`);
+        }
+    }
+
+    // Handle service configuration update
+    async handleConfigUpdate(ws, data, user) {
+        try {
+            if (!data.service) {
+                return this.sendError(ws, 'MISSING_SERVICE', 'Service name is required');
+            }
+            
+            if (!data.config) {
+                return this.sendError(ws, 'MISSING_CONFIG', 'Configuration is required');
+            }
+            
+            const serviceName = data.service;
+            const newConfig = data.config;
+            const session = this.adminSessions.get(ws);
+            
+            if (!session) {
+                return this.sendError(ws, 'SESSION_ERROR', 'Session not found');
+            }
+            
+            // Get service instance
+            const service = serviceManager.services.get(serviceName);
+            if (!service) {
+                return this.sendError(ws, 'SERVICE_NOT_FOUND', `Service ${serviceName} not found`);
+            }
+            
+            // Update configuration (if service supports it)
+            if (service.updateConfig) {
+                await service.updateConfig(newConfig);
+            } else {
+                // Fallback to manual config update
+                Object.assign(service.config, newConfig);
+            }
+            
+            // Log admin action
+            await AdminLogger.logAction(
+                user.id,
+                'UPDATE_SERVICE_CONFIG',
+                {
+                    service: serviceName,
+                    configUpdated: Object.keys(newConfig),
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    ip_address: session.clientInfo.ip,
+                    user_agent: session.clientInfo.userAgent
+                }
+            );
+            
+            // Send updated state
+            await this.sendServiceState(ws, serviceName);
+            
+            this.sendToClient(ws, {
+                type: 'service:config-update:success',
+                service: serviceName,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logApi.error(`Error updating configuration for service: ${data.service}`, error);
+            this.sendError(ws, 'CONFIG_UPDATE_ERROR', `Error updating configuration: ${error.message}`);
+        }
+    }
+
+    // Clean up connection resources
+    cleanupConnection(ws) {
+        // Get session
+        const session = this.adminSessions.get(ws);
+        
+        if (session) {
+            // Remove from service subscriptions
+            for (const serviceName of session.subscriptions) {
+                const subscribers = this.serviceSubscriptions.get(serviceName);
+                if (subscribers) {
+                    subscribers.delete(ws);
+                    
+                    if (subscribers.size === 0) {
+                        this.serviceSubscriptions.delete(serviceName);
+                    }
+                }
+            }
+            
+            // Remove from admin sessions
+            this.adminSessions.delete(ws);
+        }
+        
+        // Remove from heartbeats
+        this.connectionHeartbeats.delete(ws);
+    }
+
+    // Send error message to client
     sendError(ws, code, message) {
         this.sendToClient(ws, {
             type: 'error',
@@ -237,528 +702,157 @@ class SkyDuelWebSocketServer extends BaseWebSocketServer {
         });
     }
 
-    // Send complete service catalog
-    async sendServiceCatalog(ws) {
+    // Send message to client
+    sendToClient(ws, data) {
         try {
-            // Get all registered services
-            const services = Array.from(serviceManager.services.entries())
-                .map(([name, service]) => {
-                    const metadata = getServiceMetadata(name) || {};
-                    return {
-                        id: name,
-                        name: metadata.displayName || name,
-                        description: metadata.description || 'No description',
-                        layer: metadata.layer || 0,
-                        isOperational: service.isOperational,
-                        isInitialized: service.isInitialized,
-                        isStarted: service.isStarted || false,
-                        type: metadata.type || 'service',
-                        capabilities: metadata.capabilities || []
-                    };
-                });
-                
-            this.sendToClient(ws, {
-                type: 'service:catalog',
-                timestamp: new Date().toISOString(),
-                services
-            });
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(data));
+            }
         } catch (error) {
-            logApi.error('Error sending service catalog:', error);
-            this.sendError(ws, 'CATALOG_ERROR', 'Failed to retrieve service catalog');
+            logApi.error('Error sending message to client:', error);
         }
     }
 
-    // Send all service states
+    // Send service catalog to client
+    async sendServiceCatalog(ws) {
+        try {
+            // Get all service names
+            const serviceNames = Array.from(serviceManager.services.keys());
+            
+            // Build catalog entries
+            const catalog = [];
+            for (const name of serviceNames) {
+                const metadata = getServiceMetadata(name);
+                
+                catalog.push({
+                    id: name,
+                    displayName: metadata?.displayName || name,
+                    type: metadata?.type || 'service',
+                    layer: metadata?.layer || 'unknown',
+                    description: metadata?.description || '',
+                    category: metadata?.category || 'general',
+                    critical: metadata?.criticalLevel > 0 || false
+                });
+            }
+            
+            this.sendToClient(ws, {
+                type: 'service:catalog',
+                timestamp: new Date().toISOString(),
+                catalog
+            });
+        } catch (error) {
+            logApi.error('Error sending service catalog:', error);
+            this.sendError(ws, 'CATALOG_ERROR', 'Error retrieving service catalog');
+        }
+    }
+
+    // Send service state to client
+    async sendServiceState(ws, serviceName) {
+        try {
+            const service = serviceManager.services.get(serviceName);
+            if (!service) {
+                return this.sendError(ws, 'SERVICE_NOT_FOUND', `Service ${serviceName} not found`);
+            }
+            
+            const state = await serviceManager.getServiceState(serviceName);
+            
+            this.sendToClient(ws, {
+                type: 'service:state',
+                timestamp: new Date().toISOString(),
+                service: serviceName,
+                status: serviceManager.determineServiceStatus(service.stats),
+                isOperational: service.isOperational,
+                isInitialized: service.isInitialized,
+                isStarted: service.isStarted || false,
+                lastRun: service.stats?.lastRun || null,
+                lastAttempt: service.stats?.lastAttempt || null,
+                uptime: service.stats?.uptime || 0,
+                operations: service.stats?.operations || { total: 0, successful: 0, failed: 0 },
+                circuitBreaker: {
+                    isOpen: service.stats?.circuitBreaker?.isOpen || false,
+                    failures: service.stats?.circuitBreaker?.failures || 0,
+                    lastFailure: service.stats?.circuitBreaker?.lastFailure,
+                    lastSuccess: service.stats?.circuitBreaker?.lastSuccess,
+                    recoveryAttempts: service.stats?.circuitBreaker?.recoveryAttempts || 0
+                },
+                performance: service.stats?.performance || {},
+                metrics: service.stats?.metrics || {},
+                lastError: service.stats?.history?.lastError,
+                lastErrorTime: service.stats?.history?.lastErrorTime,
+                config: service.config,
+                ...state
+            });
+        } catch (error) {
+            logApi.error(`Error sending service state for ${serviceName}:`, error);
+            this.sendError(ws, 'STATE_ERROR', `Error retrieving service state for ${serviceName}`);
+        }
+    }
+
+    // Send all service states to client
     async sendAllServiceStates(ws) {
         try {
-            const states = await Promise.all(
-                Array.from(serviceManager.services.keys()).map(async (name) => {
-                    const service = serviceManager.services.get(name);
+            const states = [];
+            const services = Array.from(serviceManager.services.entries());
+            
+            for (const [name, service] of services) {
+                try {
                     const state = await serviceManager.getServiceState(name);
                     
-                    return {
+                    states.push({
                         id: name,
+                        displayName: getServiceMetadata(name)?.displayName || name,
                         status: serviceManager.determineServiceStatus(service.stats),
+                        isOperational: service.isOperational,
+                        isInitialized: service.isInitialized,
+                        isStarted: service.isStarted || false,
+                        lastRun: service.stats?.lastRun || null,
+                        lastAttempt: service.stats?.lastAttempt || null,
+                        uptime: service.stats?.uptime || 0,
                         operations: service.stats?.operations || { total: 0, successful: 0, failed: 0 },
                         circuitBreaker: {
                             isOpen: service.stats?.circuitBreaker?.isOpen || false,
-                            failures: service.stats?.circuitBreaker?.failures || 0,
-                            lastFailure: service.stats?.circuitBreaker?.lastFailure,
-                            lastSuccess: service.stats?.circuitBreaker?.lastSuccess,
-                            recoveryAttempts: service.stats?.circuitBreaker?.recoveryAttempts || 0
+                            failures: service.stats?.circuitBreaker?.failures || 0
                         },
-                        performance: service.stats?.performance || {},
+                        layer: getServiceMetadata(name)?.layer || 'unknown',
                         lastError: service.stats?.history?.lastError,
                         lastErrorTime: service.stats?.history?.lastErrorTime,
                         ...state
-                    };
-                })
-            );
+                    });
+                } catch (stateError) {
+                    logApi.error(`Error getting state for service ${name}:`, stateError);
+                    // Include minimal info for failed service
+                    states.push({
+                        id: name,
+                        displayName: getServiceMetadata(name)?.displayName || name,
+                        status: 'error',
+                        error: stateError.message,
+                        layer: getServiceMetadata(name)?.layer || 'unknown'
+                    });
+                }
+            }
             
             this.sendToClient(ws, {
-                type: 'service:all-states',
+                type: 'all-states',
                 timestamp: new Date().toISOString(),
                 states
             });
         } catch (error) {
             logApi.error('Error sending all service states:', error);
-            this.sendError(ws, 'STATE_ERROR', 'Failed to retrieve service states');
+            this.sendError(ws, 'ALL_STATES_ERROR', 'Error retrieving service states');
         }
     }
 
-    // Handle service subscription
-    async handleSubscribe(ws, session, data) {
-        try {
-            const { services } = data;
-            
-            if (!Array.isArray(services) || services.length === 0) {
-                return this.sendError(ws, 'INVALID_SUBSCRIPTION', 'Invalid service subscription list');
-            }
-            
-            const validServices = [];
-            const invalidServices = [];
-            
-            // Validate and process each service
-            for (const service of services) {
-                if (serviceManager.services.has(service)) {
-                    // Add to session subscriptions
-                    session.subscriptions.add(service);
-                    
-                    // Add to service subscribers
-                    const subscribers = this.serviceSubscriptions.get(service) || new Set();
-                    subscribers.add(ws);
-                    this.serviceSubscriptions.set(service, subscribers);
-                    
-                    validServices.push(service);
-                } else {
-                    invalidServices.push(service);
-                }
-            }
-            
-            // Send confirmation
-            this.sendToClient(ws, {
-                type: 'subscription:confirmed',
-                timestamp: new Date().toISOString(),
-                services: validServices,
-                invalid: invalidServices
-            });
-            
-            // Log the subscription
-            await AdminLogger.logAction(
-                ws.user.id,
-                'ADMIN_WS_SUBSCRIBE',
-                {
-                    action: 'subscribe',
-                    services: validServices,
-                    invalid: invalidServices
-                }
-            );
-            
-            // Send current state for these services
-            for (const service of validServices) {
-                await this.sendServiceState(service, ws);
-            }
-        } catch (error) {
-            logApi.error('Error handling subscription:', error);
-            this.sendError(ws, 'SUBSCRIPTION_ERROR', error.message);
-        }
-    }
-
-    // Handle service unsubscription
-    async handleUnsubscribe(ws, session, data) {
-        try {
-            const { services } = data;
-            
-            if (!Array.isArray(services) || services.length === 0) {
-                return this.sendError(ws, 'INVALID_UNSUBSCRIPTION', 'Invalid service unsubscription list');
-            }
-            
-            // Process each service
-            for (const service of services) {
-                // Remove from session subscriptions
-                session.subscriptions.delete(service);
-                
-                // Remove from service subscribers
-                const subscribers = this.serviceSubscriptions.get(service);
-                if (subscribers) {
-                    subscribers.delete(ws);
-                    
-                    if (subscribers.size === 0) {
-                        this.serviceSubscriptions.delete(service);
-                    } else {
-                        this.serviceSubscriptions.set(service, subscribers);
-                    }
-                }
-            }
-            
-            // Send confirmation
-            this.sendToClient(ws, {
-                type: 'unsubscription:confirmed',
-                timestamp: new Date().toISOString(),
-                services
-            });
-            
-            // Log the unsubscription
-            await AdminLogger.logAction(
-                ws.user.id,
-                'ADMIN_WS_UNSUBSCRIBE',
-                {
-                    action: 'unsubscribe',
-                    services
-                }
-            );
-        } catch (error) {
-            logApi.error('Error handling unsubscription:', error);
-            this.sendError(ws, 'UNSUBSCRIPTION_ERROR', error.message);
-        }
-    }
-
-    // Handle service start request
-    async handleServiceStart(ws, session, data) {
-        try {
-            const { service } = data;
-            
-            if (!service) {
-                return this.sendError(ws, 'INVALID_SERVICE', 'Invalid service name');
-            }
-            
-            // Validate service exists
-            if (!serviceManager.services.has(service)) {
-                return this.sendError(ws, 'SERVICE_NOT_FOUND', `Service ${service} not found`);
-            }
-            
-            // Create admin context for logging
-            const adminContext = {
-                adminAddress: ws.user.id,
-                ip: ws._socket.remoteAddress,
-                userAgent: ws.user.userAgent
-            };
-            
-            // Start the service
-            await serviceManager.startService(service, adminContext);
-            
-            // Send confirmation
-            this.sendToClient(ws, {
-                type: 'service:start-result',
-                timestamp: new Date().toISOString(),
-                service,
-                success: true
-            });
-            
-            // Update all subscribers with new state
-            await this.broadcastServiceState(service);
-        } catch (error) {
-            logApi.error(`Error starting service ${data.service}:`, error);
-            this.sendError(ws, 'SERVICE_START_ERROR', error.message);
-        }
-    }
-
-    // Handle service stop request
-    async handleServiceStop(ws, session, data) {
-        try {
-            const { service } = data;
-            
-            if (!service) {
-                return this.sendError(ws, 'INVALID_SERVICE', 'Invalid service name');
-            }
-            
-            // Validate service exists
-            if (!serviceManager.services.has(service)) {
-                return this.sendError(ws, 'SERVICE_NOT_FOUND', `Service ${service} not found`);
-            }
-            
-            // Create admin context for logging
-            const adminContext = {
-                adminAddress: ws.user.id,
-                ip: ws._socket.remoteAddress,
-                userAgent: ws.user.userAgent
-            };
-            
-            // Stop the service
-            await serviceManager.stopService(service, adminContext);
-            
-            // Send confirmation
-            this.sendToClient(ws, {
-                type: 'service:stop-result',
-                timestamp: new Date().toISOString(),
-                service,
-                success: true
-            });
-            
-            // Update all subscribers with new state
-            await this.broadcastServiceState(service);
-        } catch (error) {
-            logApi.error(`Error stopping service ${data.service}:`, error);
-            this.sendError(ws, 'SERVICE_STOP_ERROR', error.message);
-        }
-    }
-
-    // Handle service restart request
-    async handleServiceRestart(ws, session, data) {
-        try {
-            const { service } = data;
-            
-            if (!service) {
-                return this.sendError(ws, 'INVALID_SERVICE', 'Invalid service name');
-            }
-            
-            // Validate service exists
-            if (!serviceManager.services.has(service)) {
-                return this.sendError(ws, 'SERVICE_NOT_FOUND', `Service ${service} not found`);
-            }
-            
-            // Create admin context for logging
-            const adminContext = {
-                adminAddress: ws.user.id,
-                ip: ws._socket.remoteAddress,
-                userAgent: ws.user.userAgent
-            };
-            
-            // Restart the service
-            await serviceManager.restartService(service, adminContext);
-            
-            // Send confirmation
-            this.sendToClient(ws, {
-                type: 'service:restart-result',
-                timestamp: new Date().toISOString(),
-                service,
-                success: true
-            });
-            
-            // Update all subscribers with new state
-            await this.broadcastServiceState(service);
-        } catch (error) {
-            logApi.error(`Error restarting service ${data.service}:`, error);
-            this.sendError(ws, 'SERVICE_RESTART_ERROR', error.message);
-        }
-    }
-
-    // Handle circuit breaker reset
-    async handleCircuitBreakerReset(ws, session, data) {
-        try {
-            const { service } = data;
-            
-            if (!service) {
-                return this.sendError(ws, 'INVALID_SERVICE', 'Invalid service name');
-            }
-            
-            // Validate service exists
-            const serviceInstance = serviceManager.services.get(service);
-            if (!serviceInstance) {
-                return this.sendError(ws, 'SERVICE_NOT_FOUND', `Service ${service} not found`);
-            }
-            
-            // Reset the circuit breaker
-            await serviceInstance.attemptCircuitRecovery();
-            
-            // Send confirmation
-            this.sendToClient(ws, {
-                type: 'circuit-breaker:reset-result',
-                timestamp: new Date().toISOString(),
-                service,
-                success: true
-            });
-            
-            // Log the action
-            await AdminLogger.logAction(
-                ws.user.id,
-                'CIRCUIT_BREAKER_RESET',
-                {
-                    service,
-                    result: 'success'
-                }
-            );
-            
-            // Update all subscribers with new state
-            await this.broadcastServiceState(service);
-        } catch (error) {
-            logApi.error(`Error resetting circuit breaker for ${data.service}:`, error);
-            this.sendError(ws, 'CIRCUIT_BREAKER_RESET_ERROR', error.message);
-        }
-    }
-
-    // Handle service configuration update
-    async handleServiceConfigUpdate(ws, session, data) {
-        try {
-            const { service, config } = data;
-            
-            if (!service || !config) {
-                return this.sendError(ws, 'INVALID_CONFIG_UPDATE', 'Invalid service or configuration');
-            }
-            
-            // Validate service exists
-            const serviceInstance = serviceManager.services.get(service);
-            if (!serviceInstance) {
-                return this.sendError(ws, 'SERVICE_NOT_FOUND', `Service ${service} not found`);
-            }
-            
-            // Update configuration
-            const oldConfig = { ...serviceInstance.config };
-            
-            // Apply updates with validation
-            const newConfig = this.validateAndUpdateConfig(serviceInstance.config, config);
-            serviceInstance.config = newConfig;
-            
-            // Update state in database
-            await serviceManager.updateServiceState(
-                service,
-                { running: serviceInstance.isStarted, status: 'config_updated' },
-                newConfig,
-                serviceInstance.stats
-            );
-            
-            // Send confirmation
-            this.sendToClient(ws, {
-                type: 'service:config-update-result',
-                timestamp: new Date().toISOString(),
-                service,
-                success: true,
-                config: newConfig
-            });
-            
-            // Log the configuration change
-            await AdminLogger.logAction(
-                ws.user.id,
-                'SERVICE_CONFIG_UPDATE',
-                {
-                    service,
-                    oldConfig,
-                    newConfig,
-                    changes: this.getConfigChanges(oldConfig, newConfig)
-                }
-            );
-            
-            // Update all subscribers with new state
-            await this.broadcastServiceState(service);
-        } catch (error) {
-            logApi.error(`Error updating config for ${data.service}:`, error);
-            this.sendError(ws, 'CONFIG_UPDATE_ERROR', error.message);
-        }
-    }
-
-    // Validate and update configuration
-    validateAndUpdateConfig(oldConfig, updates) {
-        // Start with a copy of the old config
-        const newConfig = { ...oldConfig };
-        
-        // Apply updates to allowed fields
-        if (updates.checkIntervalMs !== undefined && typeof updates.checkIntervalMs === 'number') {
-            newConfig.checkIntervalMs = Math.max(1000, updates.checkIntervalMs);
-        }
-        
-        if (updates.maxRetries !== undefined && typeof updates.maxRetries === 'number') {
-            newConfig.maxRetries = Math.max(0, updates.maxRetries);
-        }
-        
-        if (updates.retryDelayMs !== undefined && typeof updates.retryDelayMs === 'number') {
-            newConfig.retryDelayMs = Math.max(100, updates.retryDelayMs);
-        }
-        
-        // Update circuit breaker config
-        if (updates.circuitBreaker) {
-            newConfig.circuitBreaker = {
-                ...newConfig.circuitBreaker
-            };
-            
-            if (updates.circuitBreaker.failureThreshold !== undefined) {
-                newConfig.circuitBreaker.failureThreshold = 
-                    Math.max(1, updates.circuitBreaker.failureThreshold);
-            }
-            
-            if (updates.circuitBreaker.resetTimeoutMs !== undefined) {
-                newConfig.circuitBreaker.resetTimeoutMs = 
-                    Math.max(1000, updates.circuitBreaker.resetTimeoutMs);
-            }
-            
-            if (updates.circuitBreaker.minHealthyPeriodMs !== undefined) {
-                newConfig.circuitBreaker.minHealthyPeriodMs = 
-                    Math.max(1000, updates.circuitBreaker.minHealthyPeriodMs);
-            }
-        }
-        
-        // Update backoff config
-        if (updates.backoff) {
-            newConfig.backoff = {
-                ...newConfig.backoff
-            };
-            
-            if (updates.backoff.initialDelayMs !== undefined) {
-                newConfig.backoff.initialDelayMs = 
-                    Math.max(100, updates.backoff.initialDelayMs);
-            }
-            
-            if (updates.backoff.maxDelayMs !== undefined) {
-                newConfig.backoff.maxDelayMs = 
-                    Math.max(1000, updates.backoff.maxDelayMs);
-            }
-            
-            if (updates.backoff.factor !== undefined) {
-                newConfig.backoff.factor = 
-                    Math.max(1.1, updates.backoff.factor);
-            }
-        }
-        
-        return newConfig;
-    }
-
-    // Handle health check for all services
-    async handleHealthCheckAll(ws, session) {
-        try {
-            const services = Array.from(serviceManager.services.entries());
-            const results = {};
-            
-            // Perform health checks in parallel
-            await Promise.all(services.map(async ([name, service]) => {
-                try {
-                    const isHealthy = await serviceManager.checkServiceHealth(name);
-                    results[name] = {
-                        healthy: isHealthy,
-                        error: null,
-                        timestamp: new Date().toISOString()
-                    };
-                } catch (error) {
-                    results[name] = {
-                        healthy: false,
-                        error: error.message,
-                        timestamp: new Date().toISOString()
-                    };
-                }
-            }));
-            
-            // Send health check results
-            this.sendToClient(ws, {
-                type: 'health:check-results',
-                timestamp: new Date().toISOString(),
-                results
-            });
-            
-            // Log the health check
-            await AdminLogger.logAction(
-                ws.user.id,
-                'SERVICE_HEALTH_CHECK',
-                {
-                    results
-                }
-            );
-            
-            // Update all services after health check
-            for (const name of Object.keys(results)) {
-                await this.broadcastServiceState(name);
-            }
-        } catch (error) {
-            logApi.error('Error performing health checks:', error);
-            this.sendError(ws, 'HEALTH_CHECK_ERROR', error.message);
-        }
-    }
-
-    // Send dependency graph
+    // Send service dependency graph
     async sendDependencyGraph(ws) {
         try {
             const graph = [];
             const services = Array.from(serviceManager.services.entries());
             
             for (const [name, service] of services) {
-                const dependencies = service.config.dependencies || [];
+                // Get direct dependencies
+                const dependencies = serviceManager.dependencies.get(name) || [];
+                
+                // Get dependents (services that depend on this one)
                 const dependents = services
                     .filter(([_, s]) => (s.config.dependencies || []).includes(name))
                     .map(([n, _]) => n);
@@ -888,7 +982,9 @@ import serviceManager from '../../utils/service-suite/service-manager.js';
 const router = express.Router();
 
 /**
- * Get quick status of all services for initial dashboard load
+ * @route GET /api/admin/skyduel/status
+ * @desc Get quick status of all services for initial dashboard load
+ * @access Super Admin
  */
 router.get('/status', requireSuperAdmin, async (req, res) => {
     try {
@@ -916,7 +1012,7 @@ router.get('/status', requireSuperAdmin, async (req, res) => {
             success: true,
             services: statuses,
             timestamp: new Date().toISOString(),
-            wsEndpoint: '/api/v2/ws/admin'
+            wsEndpoint: '/api/v2/ws/skyduel'
         });
     } catch (error) {
         logApi.error('Failed to get unified service status:', error);
@@ -928,7 +1024,9 @@ router.get('/status', requireSuperAdmin, async (req, res) => {
 });
 
 /**
- * Get a temporary auth token for WebSocket connection
+ * @route POST /api/admin/skyduel/websocket-auth
+ * @desc Get a temporary auth token for WebSocket connection
+ * @access Super Admin
  */
 router.post('/websocket-auth', requireSuperAdmin, async (req, res) => {
     try {
@@ -968,50 +1066,431 @@ router.post('/websocket-auth', requireSuperAdmin, async (req, res) => {
     }
 });
 
+/**
+ * @route GET /api/admin/skyduel/services
+ * @desc Get detailed information about all services
+ * @access Super Admin
+ */
+router.get('/services', requireSuperAdmin, async (req, res) => {
+    try {
+        const serviceDetails = [];
+        const services = Array.from(serviceManager.services.entries());
+        
+        for (const [name, service] of services) {
+            try {
+                const state = await serviceManager.getServiceState(name);
+                
+                serviceDetails.push({
+                    id: name,
+                    displayName: service.config?.displayName || name,
+                    status: serviceManager.determineServiceStatus(service.stats),
+                    isOperational: service.isOperational,
+                    isInitialized: service.isInitialized,
+                    isStarted: service.isStarted || false,
+                    lastRun: service.stats?.lastRun,
+                    lastAttempt: service.stats?.lastAttempt,
+                    uptime: service.stats?.uptime,
+                    circuitBreaker: {
+                        isOpen: service.stats?.circuitBreaker?.isOpen || false,
+                        failures: service.stats?.circuitBreaker?.failures || 0
+                    },
+                    operations: service.stats?.operations,
+                    state
+                });
+            } catch (error) {
+                logApi.error(`Error getting state for service ${name}:`, error);
+                serviceDetails.push({
+                    id: name,
+                    displayName: service.config?.displayName || name,
+                    status: 'error',
+                    error: error.message
+                });
+            }
+        }
+
+        // Log the admin action
+        await AdminLogger.logAction(
+            req.user.id,
+            'GET_DETAILED_SERVICE_STATUS',
+            {
+                count: serviceDetails.length
+            },
+            {
+                ip_address: req.ip
+            }
+        );
+
+        res.json({
+            success: true,
+            services: serviceDetails,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error('Failed to get detailed service information:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route GET /api/admin/skyduel/dependency-graph
+ * @desc Get service dependency graph
+ * @access Super Admin
+ */
+router.get('/dependency-graph', requireSuperAdmin, async (req, res) => {
+    try {
+        const graph = [];
+        const services = Array.from(serviceManager.services.entries());
+        
+        for (const [name, service] of services) {
+            // Get direct dependencies
+            const dependencies = serviceManager.dependencies.get(name) || [];
+            
+            // Get dependents (services that depend on this one)
+            const dependents = services
+                .filter(([_, s]) => (s.config.dependencies || []).includes(name))
+                .map(([n, _]) => n);
+                
+            graph.push({
+                service: name,
+                displayName: service.config?.displayName || name,
+                description: service.config?.description || '',
+                layer: service.config?.layer,
+                dependencies,
+                dependents,
+                operational: service.isOperational,
+                initialized: service.isInitialized,
+                started: service.isStarted
+            });
+        }
+
+        // Log the admin action
+        await AdminLogger.logAction(
+            req.user.id,
+            'GET_DEPENDENCY_GRAPH',
+            {
+                serviceCount: graph.length
+            },
+            {
+                ip_address: req.ip
+            }
+        );
+
+        res.json({
+            success: true,
+            graph,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error('Failed to generate dependency graph:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route POST /api/admin/skyduel/services/:serviceName/start
+ * @desc Start a specific service
+ * @access Super Admin
+ */
+router.post('/services/:serviceName/start', requireSuperAdmin, async (req, res) => {
+    const { serviceName } = req.params;
+    
+    try {
+        // Create admin context for logging
+        const adminContext = {
+            adminAddress: req.user.id,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'] || 'Unknown'
+        };
+        
+        // Start the service
+        await serviceManager.startService(serviceName, adminContext);
+        
+        res.json({
+            success: true,
+            service: serviceName,
+            action: 'start',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error(`Failed to start service ${serviceName}:`, error);
+        res.status(500).json({
+            success: false,
+            service: serviceName,
+            action: 'start',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route POST /api/admin/skyduel/services/:serviceName/stop
+ * @desc Stop a specific service
+ * @access Super Admin
+ */
+router.post('/services/:serviceName/stop', requireSuperAdmin, async (req, res) => {
+    const { serviceName } = req.params;
+    
+    try {
+        // Create admin context for logging
+        const adminContext = {
+            adminAddress: req.user.id,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'] || 'Unknown'
+        };
+        
+        // Stop the service
+        await serviceManager.stopService(serviceName, adminContext);
+        
+        res.json({
+            success: true,
+            service: serviceName,
+            action: 'stop',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error(`Failed to stop service ${serviceName}:`, error);
+        res.status(500).json({
+            success: false,
+            service: serviceName,
+            action: 'stop',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route POST /api/admin/skyduel/services/:serviceName/restart
+ * @desc Restart a specific service
+ * @access Super Admin
+ */
+router.post('/services/:serviceName/restart', requireSuperAdmin, async (req, res) => {
+    const { serviceName } = req.params;
+    
+    try {
+        // Create admin context for logging
+        const adminContext = {
+            adminAddress: req.user.id,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'] || 'Unknown'
+        };
+        
+        // Restart the service
+        await serviceManager.restartService(serviceName, adminContext);
+        
+        res.json({
+            success: true,
+            service: serviceName,
+            action: 'restart',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error(`Failed to restart service ${serviceName}:`, error);
+        res.status(500).json({
+            success: false,
+            service: serviceName,
+            action: 'restart',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route POST /api/admin/skyduel/services/:serviceName/reset-circuit-breaker
+ * @desc Reset circuit breaker for a specific service
+ * @access Super Admin
+ */
+router.post('/services/:serviceName/reset-circuit-breaker', requireSuperAdmin, async (req, res) => {
+    const { serviceName } = req.params;
+    
+    try {
+        // Get service instance
+        const service = serviceManager.services.get(serviceName);
+        if (!service) {
+            return res.status(404).json({
+                success: false,
+                service: serviceName,
+                action: 'reset-circuit-breaker',
+                error: `Service ${serviceName} not found`
+            });
+        }
+        
+        // Reset circuit breaker
+        if (service.resetCircuitBreaker) {
+            await service.resetCircuitBreaker();
+        } else {
+            // Manually reset stats if method doesn't exist
+            if (service.stats && service.stats.circuitBreaker) {
+                service.stats.circuitBreaker.isOpen = false;
+                service.stats.circuitBreaker.failures = 0;
+                service.stats.circuitBreaker.lastReset = new Date().toISOString();
+            }
+            
+            // Call service manager to mark as recovered
+            await serviceManager.markServiceRecovered(serviceName);
+        }
+        
+        // Log admin action
+        await AdminLogger.logAction(
+            req.user.id,
+            'RESET_CIRCUIT_BREAKER',
+            {
+                service: serviceName,
+                action: 'reset',
+                timestamp: new Date().toISOString()
+            },
+            {
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent'] || 'Unknown'
+            }
+        );
+        
+        res.json({
+            success: true,
+            service: serviceName,
+            action: 'reset-circuit-breaker',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logApi.error(`Failed to reset circuit breaker for service ${serviceName}:`, error);
+        res.status(500).json({
+            success: false,
+            service: serviceName,
+            action: 'reset-circuit-breaker',
+            error: error.message
+        });
+    }
+});
+
 export default router;
 ```
 
 ### 3. WebSocket Initializer Update 
 
-Update the existing WebSocket initializer to integrate our new WebSocket:
+Update the existing WebSocket initializer to integrate our SkyDuel WebSocket:
 
 ```javascript
-// In websocket-initializer.js
+// In utils/websocket-suite/websocket-initializer.js (partial update)
 
+import { logApi } from '../logger-suite/logger.js';
+import InitLogger from '../logger-suite/init-logger.js';
+import { createWebSocketMonitor } from '../../websocket/monitor-ws.js';
+import { createCircuitBreakerWebSocket } from '../../websocket/circuit-breaker-ws.js';
+import { createAnalyticsWebSocket } from '../../websocket/analytics-ws.js';
+import { createPortfolioWebSocket } from '../../websocket/portfolio-ws.js';
+import { createMarketDataWebSocket } from '../../websocket/market-ws.js';
+import { createWalletWebSocket } from '../../websocket/wallet-ws.js';
+import { createContestWebSocket } from '../../websocket/contest-ws.js';
+import { createTokenDataWebSocket } from '../../websocket/token-data-ws.js';
+import { createUserNotificationWebSocket } from '../../websocket/user-notification-ws.js';
 import { createSkyDuelWebSocket } from '../../websocket/skyduel-ws.js';
 
-// Inside initializeWebSockets function:
+// Inside initializeWebSockets function
 const wsServers = {
-    // ... existing WebSockets
+    // Standard names matching frontend expectations
+    'Monitor': wsMonitor,
+    'Circuit Breaker': createCircuitBreakerWebSocket(server),
+    'Analytics': createAnalyticsWebSocket(server),
+    'Market': createMarketDataWebSocket(server),
+    'Portfolio': createPortfolioWebSocket(server),
+    'Wallet': createWalletWebSocket(server), 
+    'Contest': createContestWebSocket(server),
     
-    // Add the SkyDuel WebSocket
-    'SkyDuel': createSkyDuelWebSocket(server)
+    // Additional services with formatted names
+    'Token Data': createTokenDataWebSocket(server),
+    'Notifications': createUserNotificationWebSocket(server),
+    
+    // Unified service management system
+    'SkyDuel': createSkyDuelWebSocket(server),
+    
+    // Include Base WebSocket reference for dependency tracking
+    'Base': null  // Base is a class, not an instance
 };
 ```
 
 ### 4. Main Index.js Update
 
-Mount the new routes:
+Mount the new routes in the main index.js:
 
 ```javascript
-// In index.js
+// In index.js (partial update)
 
-import skyduelManagementRoutes from './routes/admin/skyduel-management.js';
+// Import SkyDuel management routes
+import skyduelManagementRoutes from "./routes/admin/skyduel-management.js";
 
-// Mount the routes
-app.use('/api/admin/skyduel', skyduelManagementRoutes);
+// Mount the routes (in the Admin Routes section)
+app.use("/api/admin/skyduel", skyduelManagementRoutes);
 ```
 
 ## Frontend Integration
 
-TypeScript client for React dashboard:
+This section provides the TypeScript client and React components for the frontend team to integrate with the SkyDuel system.
+
+### TypeScript Client
 
 ```typescript
 /**
  * SkyDuelClient.ts
- * 
- * Client-side WebSocket manager for the SkyDuel Service dashboard
+ * Client-side WebSocket manager for the SkyDuel service dashboard
  */
+import { EventEmitter } from 'events';
+
+export interface ServiceState {
+  id: string;
+  displayName: string;
+  status: string;
+  isOperational: boolean;
+  isInitialized: boolean;
+  isStarted: boolean;
+  lastRun?: string;
+  lastAttempt?: string;
+  uptime: number;
+  operations: {
+    total: number;
+    successful: number;
+    failed: number;
+  };
+  circuitBreaker: {
+    isOpen: boolean;
+    failures: number;
+    lastFailure?: string;
+    lastSuccess?: string;
+    recoveryAttempts: number;
+  };
+  performance?: any;
+  metrics?: any;
+  lastError?: string;
+  lastErrorTime?: string;
+  config?: any;
+}
+
+export interface ServiceCatalogItem {
+  id: string;
+  displayName: string;
+  type: string;
+  layer: string;
+  description: string;
+  category: string;
+  critical: boolean;
+}
+
+export interface DependencyGraphNode {
+  service: string;
+  displayName: string;
+  description: string;
+  layer?: string;
+  dependencies: string[];
+  dependents: string[];
+  operational: boolean;
+  initialized: boolean;
+  started: boolean;
+}
+
 export class SkyDuelClient extends EventEmitter {
   private ws: WebSocket | null = null;
   private url: string;
@@ -1020,6 +1499,7 @@ export class SkyDuelClient extends EventEmitter {
   private heartbeatInterval: any = null;
   private services: Map<string, ServiceState> = new Map();
   private catalog: ServiceCatalogItem[] = [];
+  private dependencyGraph: DependencyGraphNode[] = [];
   private subscriptions: Set<string> = new Set();
   private isConnecting: boolean = false;
   private connectionAttempts: number = 0;
@@ -1027,10 +1507,13 @@ export class SkyDuelClient extends EventEmitter {
 
   constructor(baseUrl: string, token: string) {
     super();
-    this.url = `${baseUrl}/api/v2/ws/admin`;
+    this.url = `${baseUrl}/api/v2/ws/skyduel`; // Updated path
     this.token = token;
   }
 
+  /**
+   * Connect to the SkyDuel WebSocket server
+   */
   public connect(): void {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       return;
@@ -1059,7 +1542,59 @@ export class SkyDuelClient extends EventEmitter {
     }
   }
 
-  // Administrative actions
+  /**
+   * Disconnect from the WebSocket server
+   */
+  public disconnect(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.ws) {
+      try {
+        this.ws.close();
+      } catch (error) {
+        console.error('Error closing WebSocket:', error);
+      }
+      this.ws = null;
+    }
+  }
+
+  /**
+   * Subscribe to updates for specific services
+   */
+  public subscribeToService(service: string): void {
+    if (!this.subscriptions.has(service)) {
+      this.subscriptions.add(service);
+      this.send({
+        type: 'service:subscribe',
+        service
+      });
+    }
+  }
+
+  /**
+   * Unsubscribe from service updates
+   */
+  public unsubscribeFromService(service: string): void {
+    if (this.subscriptions.has(service)) {
+      this.subscriptions.delete(service);
+      this.send({
+        type: 'service:unsubscribe',
+        service
+      });
+    }
+  }
+
+  /**
+   * Start a service
+   */
   public startService(service: string): void {
     this.send({
       type: 'service:start',
@@ -1067,6 +1602,9 @@ export class SkyDuelClient extends EventEmitter {
     });
   }
 
+  /**
+   * Stop a service
+   */
   public stopService(service: string): void {
     this.send({
       type: 'service:stop',
@@ -1074,6 +1612,9 @@ export class SkyDuelClient extends EventEmitter {
     });
   }
 
+  /**
+   * Restart a service
+   */
   public restartService(service: string): void {
     this.send({
       type: 'service:restart',
@@ -1081,6 +1622,9 @@ export class SkyDuelClient extends EventEmitter {
     });
   }
 
+  /**
+   * Reset circuit breaker for a service
+   */
   public resetCircuitBreaker(service: string): void {
     this.send({
       type: 'circuit-breaker:reset',
@@ -1088,6 +1632,9 @@ export class SkyDuelClient extends EventEmitter {
     });
   }
 
+  /**
+   * Update service configuration
+   */
   public updateServiceConfig(service: string, config: any): void {
     this.send({
       type: 'service:config-update',
@@ -1096,17 +1643,185 @@ export class SkyDuelClient extends EventEmitter {
     });
   }
 
+  /**
+   * Request a dependency graph
+   */
   public requestDependencyGraph(): void {
     this.send({
       type: 'get:dependency-graph'
     });
   }
+
+  /**
+   * Request the current state of all services
+   */
+  public requestAllServiceStates(): void {
+    this.send({
+      type: 'get:all-states'
+    });
+  }
+
+  /**
+   * Request service catalog
+   */
+  public requestServiceCatalog(): void {
+    this.send({
+      type: 'get:service-catalog'
+    });
+  }
+
+  /**
+   * Request state for a specific service
+   */
+  public requestServiceState(service: string): void {
+    this.send({
+      type: 'get:service-state',
+      service
+    });
+  }
+
+  // Private methods
+
+  private handleOpen(): void {
+    this.isConnecting = false;
+    this.connectionAttempts = 0;
+    this.emit('connected');
+
+    // Set up heartbeat interval
+    this.heartbeatInterval = setInterval(() => {
+      this.send({ type: 'heartbeat' });
+    }, 30000);
+
+    // Re-subscribe to previous subscriptions
+    this.subscriptions.forEach(service => {
+      this.send({
+        type: 'service:subscribe',
+        service
+      });
+    });
+
+    // Request initial data
+    this.requestServiceCatalog();
+    this.requestAllServiceStates();
+    this.requestDependencyGraph();
+  }
+
+  private handleMessage(event: MessageEvent): void {
+    try {
+      const data = JSON.parse(event.data);
+      
+      switch (data.type) {
+        case 'welcome':
+          this.emit('welcome', data);
+          break;
+          
+        case 'service:catalog':
+          this.catalog = data.catalog;
+          this.emit('catalog', data.catalog);
+          break;
+          
+        case 'all-states':
+          data.states.forEach((state: ServiceState) => {
+            this.services.set(state.id, state);
+          });
+          this.emit('all-states', data.states);
+          break;
+          
+        case 'service:state':
+          this.services.set(data.service, data);
+          this.emit('service-update', data.service, data);
+          break;
+          
+        case 'dependency:graph':
+          this.dependencyGraph = data.graph;
+          this.emit('dependency-graph', data.graph);
+          break;
+          
+        case 'error':
+          this.emit('error', data);
+          break;
+          
+        case 'heartbeat:ack':
+          this.emit('heartbeat', data);
+          break;
+          
+        case 'subscription:success':
+          this.emit('subscription', data.service, true);
+          break;
+          
+        case 'unsubscription:success':
+          this.emit('subscription', data.service, false);
+          break;
+          
+        case 'service:start:success':
+        case 'service:stop:success':
+        case 'service:restart:success':
+          this.emit('service-control', data);
+          break;
+          
+        case 'circuit-breaker:reset:success':
+          this.emit('circuit-breaker-reset', data);
+          break;
+          
+        case 'service:config-update:success':
+          this.emit('config-update', data);
+          break;
+          
+        default:
+          console.log('Unknown message type:', data.type);
+      }
+    } catch (error) {
+      console.error('Error parsing message:', error);
+    }
+  }
+
+  private handleClose(event: CloseEvent): void {
+    this.isConnecting = false;
+    
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+    
+    this.emit('disconnected', event.code, event.reason);
+    this.scheduleReconnect();
+  }
+
+  private handleError(event: Event): void {
+    this.isConnecting = false;
+    this.emit('connection-error', event);
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+    }
+    
+    // Exponential backoff with jitter, capped at MAX_RECONNECT_DELAY
+    const delay = Math.min(
+      1000 * Math.pow(1.5, this.connectionAttempts) + Math.random() * 1000,
+      this.MAX_RECONNECT_DELAY
+    );
+    
+    this.reconnectTimeout = setTimeout(() => {
+      this.connect();
+    }, delay);
+    
+    this.emit('reconnecting', this.connectionAttempts, delay);
+  }
+
+  private send(data: any): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(data));
+    } else {
+      console.warn('WebSocket not open, message not sent:', data);
+    }
+  }
 }
 ```
 
-## React Dashboard Components
-
-Here's a high-level overview of the React components needed for the admin dashboard:
+### React Components
 
 ```jsx
 // ServiceDashboard.jsx
@@ -1114,12 +1829,13 @@ import React, { useEffect, useState } from 'react';
 import { SkyDuelClient } from './SkyDuelClient';
 import ServiceCard from './ServiceCard';
 import DependencyGraph from './DependencyGraph';
-import CircuitBreakerPanel from './CircuitBreakerPanel';
+import ServiceDetail from './ServiceDetail';
 
 function ServiceDashboard() {
   const [wsClient, setWsClient] = useState(null);
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
   
   useEffect(() => {
     // Get auth token from API
@@ -1135,7 +1851,15 @@ function ServiceDashboard() {
         const client = new SkyDuelClient(window.location.origin, data.token);
         
         client.on('connected', () => {
-          console.log('Connected to service management');
+          setConnectionStatus('connected');
+        });
+        
+        client.on('disconnected', () => {
+          setConnectionStatus('disconnected');
+        });
+        
+        client.on('reconnecting', (attempts, delay) => {
+          setConnectionStatus(`reconnecting (attempt ${attempts})`);
         });
         
         client.on('catalog', (catalog) => {
@@ -1157,6 +1881,11 @@ function ServiceDashboard() {
             
             return newServices;
           });
+          
+          // Update selected service if it's the one that changed
+          if (selectedService && selectedService.id === serviceId) {
+            setSelectedService(state);
+          }
         });
         
         client.connect();
@@ -1173,9 +1902,40 @@ function ServiceDashboard() {
     };
   }, []);
   
+  const handleServiceAction = (serviceId, action) => {
+    if (!wsClient) return;
+    
+    switch (action) {
+      case 'start':
+        wsClient.startService(serviceId);
+        break;
+      case 'stop':
+        wsClient.stopService(serviceId);
+        break;
+      case 'restart':
+        wsClient.restartService(serviceId);
+        break;
+      case 'reset-circuit-breaker':
+        wsClient.resetCircuitBreaker(serviceId);
+        break;
+      default:
+        console.warn('Unknown action:', action);
+    }
+  };
+  
+  const handleUpdateConfig = (serviceId, config) => {
+    if (!wsClient) return;
+    wsClient.updateServiceConfig(serviceId, config);
+  };
+  
   return (
     <div className="dashboard">
-      <h1>Service Management Dashboard</h1>
+      <header className="dashboard-header">
+        <h1>Service Management Dashboard</h1>
+        <div className={`connection-status ${connectionStatus}`}>
+          {connectionStatus}
+        </div>
+      </header>
       
       <div className="service-grid">
         {services.map(service => (
@@ -1183,20 +1943,17 @@ function ServiceDashboard() {
             key={service.id}
             service={service}
             onSelect={() => setSelectedService(service)}
-            onStart={() => wsClient.startService(service.id)}
-            onStop={() => wsClient.stopService(service.id)}
-            onRestart={() => wsClient.restartService(service.id)}
-            onResetCircuitBreaker={() => wsClient.resetCircuitBreaker(service.id)}
+            onAction={(action) => handleServiceAction(service.id, action)}
           />
         ))}
       </div>
       
       {selectedService && (
-        <div className="service-detail">
-          <h2>{selectedService.name}</h2>
-          <CircuitBreakerPanel service={selectedService} />
-          <pre>{JSON.stringify(selectedService, null, 2)}</pre>
-        </div>
+        <ServiceDetail 
+          service={selectedService}
+          onAction={(action) => handleServiceAction(selectedService.id, action)}
+          onUpdateConfig={(config) => handleUpdateConfig(selectedService.id, config)}
+        />
       )}
       
       <DependencyGraph wsClient={wsClient} />
@@ -1207,7 +1964,88 @@ function ServiceDashboard() {
 export default ServiceDashboard;
 ```
 
-## Integration Plan
+## WebSocket Message Types
+
+### Client → Server:
+
+```javascript
+// Heartbeat (keep connection alive)
+{ "type": "heartbeat" }
+
+// Service subscription
+{ "type": "service:subscribe", "service": "tokenSyncService" }
+
+// Service unsubscription
+{ "type": "service:unsubscribe", "service": "tokenSyncService" }
+
+// Service control
+{ "type": "service:start", "service": "tokenSyncService" }
+{ "type": "service:stop", "service": "tokenSyncService" }
+{ "type": "service:restart", "service": "tokenSyncService" }
+
+// Circuit breaker reset
+{ "type": "circuit-breaker:reset", "service": "tokenSyncService" }
+
+// Request information
+{ "type": "get:service-catalog" }
+{ "type": "get:service-state", "service": "tokenSyncService" }
+{ "type": "get:all-states" }
+{ "type": "get:dependency-graph" }
+
+// Service configuration update
+{ "type": "service:config-update", "service": "tokenSyncService", "config": {
+    "refreshInterval": 5000,
+    "maxRetries": 3,
+    "batchSize": 50
+}}
+```
+
+### Server → Client:
+
+```javascript
+// Welcome message on connection
+{ "type": "welcome", "message": "...", "timestamp": "..." }
+
+// Service catalog
+{ "type": "service:catalog", "catalog": [...], "timestamp": "..." }
+
+// Service state update
+{ "type": "service:state", "service": "...", "status": "...", ... }
+
+// All service states
+{ "type": "all-states", "states": [...], "timestamp": "..." }
+
+// Dependency graph
+{ "type": "dependency:graph", "graph": [...], "timestamp": "..." }
+
+// Success responses
+{ "type": "subscription:success", "service": "...", "timestamp": "..." }
+{ "type": "service:start:success", "service": "...", "timestamp": "..." }
+{ "type": "service:config-update:success", "service": "...", "timestamp": "..." }
+
+// Error responses
+{ "type": "error", "code": "...", "message": "...", "timestamp": "..." }
+
+// Heartbeat acknowledgment
+{ "type": "heartbeat:ack", "timestamp": "..." }
+```
+
+## REST API Endpoints
+
+### SkyDuel Management API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/skyduel/status` | GET | Get quick status of all services |
+| `/api/admin/skyduel/websocket-auth` | POST | Get a temporary auth token for WebSocket connection |
+| `/api/admin/skyduel/services` | GET | Get detailed information about all services |
+| `/api/admin/skyduel/dependency-graph` | GET | Get service dependency graph |
+| `/api/admin/skyduel/services/:serviceName/start` | POST | Start a specific service |
+| `/api/admin/skyduel/services/:serviceName/stop` | POST | Stop a specific service |
+| `/api/admin/skyduel/services/:serviceName/restart` | POST | Restart a specific service |
+| `/api/admin/skyduel/services/:serviceName/reset-circuit-breaker` | POST | Reset circuit breaker for a specific service |
+
+## Implementation Plan
 
 1. Create the `skyduel-ws.js` file in `/websocket/`
 2. Create the `skyduel-management.js` file in `/routes/admin/`
@@ -1215,14 +2053,6 @@ export default ServiceDashboard;
 4. Update `index.js` to mount the new routes
 5. Test connection with a simple client tool like Postman or WebSocket client
 6. Implement the frontend integration with the SkyDuelClient
-
-## Deployment Checklist
-
-- Backup existing service management code
-- Test with a subset of services before full deployment
-- Implement proper error handling and logging for each component
-- Monitor performance during initial deployment
-- Have fallback mechanisms ready in case of issues
 
 ## Key Features
 
