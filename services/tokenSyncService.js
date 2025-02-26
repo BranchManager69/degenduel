@@ -400,40 +400,39 @@ class TokenSyncService extends BaseService {
             logApi.warn('No valid fallback endpoint configured, skipping fallback attempt');
         }
             
-            // If fallback also fails, try to use database
-            const existingTokens = await prisma.tokens.findMany({
-                where: { is_active: true },
-                include: { token_prices: true }
-            });
+        // If fallback also fails, try to use database
+        const existingTokens = await prisma.tokens.findMany({
+            where: { is_active: true },
+            include: { token_prices: true }
+        });
+        
+        if (existingTokens.length > 0) {
+            logApi.info(`Using ${existingTokens.length} tokens from database as fallback`);
             
-            if (existingTokens.length > 0) {
-                logApi.info(`Using ${existingTokens.length} tokens from database as fallback`);
-                
-                // Transform to expected format
-                return existingTokens.map(token => ({
-                    id: token.id,
-                    symbol: token.symbol,
-                    name: token.name,
-                    contractAddress: token.address,
-                    price: token.token_prices?.price || 0,
-                    marketCap: token.market_cap,
-                    volume24h: token.volume_24h,
-                    chain: "solana",
-                    changesJson: { h24: token.change_24h },
-                    imageUrl: token.image_url,
-                    socials: {
-                        twitter: token.twitter_url,
-                        telegram: token.telegram_url,
-                        discord: token.discord_url
-                    },
-                    websites: token.website_url ? [token.website_url] : []
-                }));
-            }
-            
-            // If we have no data at all, return empty array rather than failing
-            logApi.error('All token data sources failed, returning empty array');
-            return [];
+            // Transform to expected format
+            return existingTokens.map(token => ({
+                id: token.id,
+                symbol: token.symbol,
+                name: token.name,
+                contractAddress: token.address,
+                price: token.token_prices?.price || 0,
+                marketCap: token.market_cap,
+                volume24h: token.volume_24h,
+                chain: "solana",
+                changesJson: { h24: token.change_24h },
+                imageUrl: token.image_url,
+                socials: {
+                    twitter: token.twitter_url,
+                    telegram: token.telegram_url,
+                    discord: token.discord_url
+                },
+                websites: token.website_url ? [token.website_url] : []
+            }));
         }
+        
+        // If we have no data at all, return empty array rather than failing
+        logApi.error('All token data sources failed, returning empty array');
+        return [];
     }
 
     // Core sync operations
