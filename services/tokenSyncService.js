@@ -45,8 +45,8 @@ const TOKEN_SYNC_CONFIG = {
         timeoutMs: 10000,
         endpoints: {
             prices: `${config.api_urls.data}/prices/bulk`,
-            simpleList: `${config.api_urls.dd_serv}/list?detail=simple`,
-            fullDetails: `${config.api_urls.dd_serv}/list?detail=full`
+            tokens: `${config.api_urls.data}/tokens`,
+            fallback: config.api_urls.fallback
         }
     }
 };
@@ -146,12 +146,18 @@ class TokenSyncService extends BaseService {
             // Perform immediate initial sync before counting tokens
             logApi.info('Performing initial token sync...');
             try {
-                // Fetch and update token metadata first
-                const fullData = await this.fetchFullDetails();
-                await this.updateMetadata(fullData);
+                // Fetch token data with fallback mechanism
+                const tokenData = await this.fetchTokenData();
                 
-                // Then fetch and update prices
-                await this.updatePrices();
+                // Update metadata first
+                await this.updateMetadata(tokenData);
+                
+                // Then update prices (only if we have tokens in the database)
+                if (tokenData.length > 0) {
+                    await this.updatePrices();
+                } else {
+                    logApi.warn('No tokens available for price update');
+                }
                 
                 logApi.info('Initial token sync completed successfully');
             } catch (error) {
@@ -312,18 +318,71 @@ class TokenSyncService extends BaseService {
         }
     }
 
-    async fetchSimpleList() {
-        logApi.info('Fetching simple token list...');
-        const data = await this.makeApiCall(this.config.api.endpoints.simpleList);
-        logApi.info(`Received simple list with ${data.length} tokens`);
-        return data;
-    }
-
-    async fetchFullDetails() {
-        logApi.info('Fetching full token details...');
-        const data = await this.makeApiCall(this.config.api.endpoints.fullDetails);
-        logApi.info(`Received full details for ${data.length} tokens`);
-        return data;
+    async fetchTokenData() {
+        logApi.info('Fetching token data from data service...');
+        try {
+            const result = await this.makeApiCall(this.config.api.endpoints.tokens);
+            
+            // Make sure we have a valid response with data array
+            if (!result || !result.data || !Array.isArray(result.data)) {
+                throw ServiceError.validation('Invalid data format from token API', { 
+                    endpoint: this.config.api.endpoints.tokens,
+                    result: JSON.stringify(result).substring(0, 100) + '...'
+                });
+            }
+            
+            logApi.info(`Received token data with ${result.data.length} tokens`);
+            return result.data;
+        } catch (error) {
+            logApi.warn(`Error fetching token data from primary source: ${error.message}`);
+            
+            // Try local fallback endpoint first
+            try {
+                logApi.info('Attempting to fetch from local fallback endpoint...');
+                const fallbackResult = await this.makeApiCall(this.config.api.endpoints.fallback);
+                
+                if (fallbackResult && Array.isArray(fallbackResult)) {
+                    logApi.info(`Received ${fallbackResult.length} tokens from local fallback`);
+                    return fallbackResult;
+                }
+            } catch (fallbackError) {
+                logApi.warn(`Fallback endpoint also failed: ${fallbackError.message}`);
+            }
+            
+            // If fallback also fails, try to use database
+            const existingTokens = await prisma.tokens.findMany({
+                where: { is_active: true },
+                include: { token_prices: true }
+            });
+            
+            if (existingTokens.length > 0) {
+                logApi.info(`Using ${existingTokens.length} tokens from database as fallback`);
+                
+                // Transform to expected format
+                return existingTokens.map(token => ({
+                    id: token.id,
+                    symbol: token.symbol,
+                    name: token.name,
+                    contractAddress: token.address,
+                    price: token.token_prices?.price || 0,
+                    marketCap: token.market_cap,
+                    volume24h: token.volume_24h,
+                    chain: "solana",
+                    changesJson: { h24: token.change_24h },
+                    imageUrl: token.image_url,
+                    socials: {
+                        twitter: token.twitter_url,
+                        telegram: token.telegram_url,
+                        discord: token.discord_url
+                    },
+                    websites: token.website_url ? [token.website_url] : []
+                }));
+            }
+            
+            // If we have no data at all, return empty array rather than failing
+            logApi.error('All token data sources failed, returning empty array');
+            return [];
+        }
     }
 
     // Core sync operations
@@ -515,9 +574,14 @@ class TokenSyncService extends BaseService {
             await this.updatePrices();
             
             // Then check if we need to update metadata (less frequent)
-            const fullData = await this.fetchFullDetails();
-            if (this.hasTokenListChanged(fullData)) {
-                await this.updateMetadata(fullData);
+            try {
+                const tokenData = await this.fetchTokenData();
+                if (this.hasTokenListChanged(tokenData)) {
+                    await this.updateMetadata(tokenData);
+                }
+            } catch (error) {
+                logApi.warn(`Skipping metadata update due to error: ${error.message}`);
+                // Continue with other operations even if metadata update fails
             }
 
             // Update performance metrics
