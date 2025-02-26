@@ -10,6 +10,7 @@ import { createMarketDataWebSocket } from '../../websocket/market-ws.js';
 import { createWalletWebSocket } from '../../websocket/wallet-ws.js';
 import { createContestWebSocket } from '../../websocket/contest-ws.js';
 import { createTokenDataWebSocket } from '../../websocket/token-data-ws.js';
+import { createUserNotificationWebSocket } from '../../websocket/user-notification-ws.js';
 
 /**
  * Initialize all WebSocket servers
@@ -38,7 +39,8 @@ export async function initializeWebSockets(server, initResults = {}) {
             portfolio: createPortfolioWebSocket(server),
             wallet: createWalletWebSocket(server),
             contest: createContestWebSocket(server),
-            tokenData: createTokenDataWebSocket(server)
+            tokenData: createTokenDataWebSocket(server),
+            notifications: createUserNotificationWebSocket(server)
         };
 
         // Add debug logging for contest server
