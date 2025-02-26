@@ -21,6 +21,7 @@ import walletRakeService from '../../services/walletRakeService.js';
 import liquidityService from '../../services/liquidityService.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
 import levelingService from '../../services/levelingService.js';
+import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
 
 class ServiceInitializer {
     static async registerCoreServices() {
@@ -72,6 +73,14 @@ class ServiceInitializer {
             serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
             logApi.info('Attempting to register walletRakeService...');
             serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
+            
+            // Ensure schema exists for user balance tracking
+            logApi.info('Ensuring database schema for user balance tracking...');
+            await ensureSchemaExists();
+            
+            logApi.info('Attempting to register userBalanceTrackingService...');
+            serviceManager.register(userBalanceTrackingService, []);
+            
             logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ Wallet Services Registered\x1b[0m');
 
             // Register dependencies

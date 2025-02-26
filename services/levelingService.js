@@ -247,6 +247,27 @@ class LevelingService extends BaseService {
             throw new ServiceError('level_check_failed', error.message);
         }
     }
+    
+    /**
+     * Implementation of the required performOperation method from BaseService
+     * This is called periodically to perform health checks and maintenance
+     */
+    async performOperation() {
+        try {
+            // For leveling service, perform a basic health check
+            // by querying the database to verify connection
+            const levelCount = await prisma.user_levels.count();
+            
+            logApi.debug(`Leveling service health check passed: ${levelCount} level definitions found`);
+            
+            // Record success in the service stats
+            await this.recordSuccess();
+            return true;
+        } catch (error) {
+            logApi.error('Leveling service health check failed:', error);
+            throw error;
+        }
+    }
 }
 
 // Export service singleton
