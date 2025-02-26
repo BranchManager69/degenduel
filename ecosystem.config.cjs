@@ -21,7 +21,7 @@ module.exports = {
         NODE_ENV: 'production',
         NODE_OPTIONS: '--require ts-node/register',
         SILENT_MODE: 'false',
-        CONSOLE_LOG_LEVEL: 'warn'
+        CONSOLE_LOG_LEVEL: 'info'
       },
       exp_backoff_restart_delay: 100,
       max_memory_restart: '2G',
@@ -45,7 +45,7 @@ module.exports = {
         NODE_ENV: 'test',
         NODE_OPTIONS: '--require ts-node/register',
         SILENT_MODE: 'false',
-        CONSOLE_LOG_LEVEL: 'warn'
+        CONSOLE_LOG_LEVEL: 'info'
       },
       exp_backoff_restart_delay: 100,
       max_memory_restart: '2G',
