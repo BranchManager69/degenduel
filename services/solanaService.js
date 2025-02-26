@@ -1,0 +1,179 @@
+// services/solanaService.js
+
+import { Connection } from '@solana/web3.js';
+import { validateSolanaConfig } from '../config/config.js';
+import { logApi } from '../utils/logger-suite/logger.js';
+import { BaseService } from '../utils/service-suite/base-service.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import { ServiceError } from '../utils/service-suite/service-error.js';
+
+// Configuration for Solana service
+const SOLANA_SERVICE_CONFIG = {
+    name: SERVICE_NAMES.SOLANA,
+    description: getServiceMetadata(SERVICE_NAMES.SOLANA).description,
+    layer: getServiceMetadata(SERVICE_NAMES.SOLANA).layer,
+    criticalLevel: getServiceMetadata(SERVICE_NAMES.SOLANA).criticalLevel,
+    checkIntervalMs: 30000, // 30 seconds - match current monitoring interval
+    maxRetries: 3,
+    retryDelayMs: 5000,
+    circuitBreaker: {
+        failureThreshold: 3,
+        resetTimeoutMs: 60000,
+        minHealthyPeriodMs: 120000
+    },
+    dependencies: []
+};
+
+/**
+ * Service that maintains and monitors Solana blockchain connection
+ * Provides a standardized interface for other services to access Solana
+ */
+class SolanaService extends BaseService {
+    constructor() {
+        super(SOLANA_SERVICE_CONFIG);
+        this.connection = null;
+    }
+
+    /**
+     * Initialize the Solana connection
+     */
+    async initialize() {
+        try {
+            // Call parent initialization first
+            await super.initialize();
+            
+            if (this.connection) {
+                logApi.info('Solana connection already initialized');
+                return true;
+            }
+            
+            // Validate Solana configuration
+            validateSolanaConfig();
+            
+            // Create Solana connection
+            this.connection = new Connection(
+                process.env.QUICKNODE_MAINNET_HTTP,
+                {
+                    commitment: 'confirmed',
+                    confirmTransactionInitialTimeout: 120000,
+                    wsEndpoint: process.env.QUICKNODE_MAINNET_WSS
+                }
+            );
+            
+            // Test connection with initial request
+            const versionInfo = await this.connection.getVersion();
+            logApi.info('Solana connection established successfully', {
+                version: versionInfo?.solana || 'unknown',
+                feature_set: versionInfo?.feature_set || 0
+            });
+            
+            return true;
+        } catch (error) {
+            logApi.error('Failed to initialize Solana service:', error);
+            throw new ServiceError('solana_init_failed', `Failed to initialize Solana service: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Regular operation - check connection health
+     */
+    async performOperation() {
+        try {
+            // Test Solana connection
+            const result = await this.connection.getVersion();
+            
+            // Record successful operation
+            await this.recordSuccess();
+            
+            return {
+                status: 'healthy',
+                version: result.solana ? `Solana Core ${result.solana}` : 'Unknown',
+                feature_set: result.feature_set || 0
+            };
+        } catch (error) {
+            // If connection is lost, attempt to reconnect
+            logApi.warn('Solana connection error detected, attempting reconnect...', error);
+            
+            try {
+                await this.reconnect();
+                return {
+                    status: 'reconnected',
+                    message: 'Connection re-established after error'
+                };
+            } catch (reconnectError) {
+                throw new ServiceError('solana_connection_error', `Solana connection error: ${error.message}`);
+            }
+        }
+    }
+    
+    /**
+     * Attempt to reconnect to Solana
+     */
+    async reconnect() {
+        try {
+            this.connection = new Connection(
+                process.env.QUICKNODE_MAINNET_HTTP,
+                {
+                    commitment: 'confirmed',
+                    confirmTransactionInitialTimeout: 120000,
+                    wsEndpoint: process.env.QUICKNODE_MAINNET_WSS
+                }
+            );
+            
+            await this.connection.getVersion();
+            logApi.info('Solana connection re-established');
+            return true;
+        } catch (error) {
+            logApi.error('Failed to reconnect to Solana:', error);
+            throw new ServiceError('solana_reconnect_failed', `Failed to reconnect to Solana: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Get the Solana connection
+     */
+    getConnection() {
+        if (!this.connection) {
+            throw new ServiceError('solana_not_initialized', 'Solana service not initialized');
+        }
+        return this.connection;
+    }
+    
+    /**
+     * Clean up resources
+     */
+    async stop() {
+        try {
+            await super.stop();
+            
+            // Clean up Solana connection if needed
+            this.connection = null;
+            
+            logApi.info('Solana service stopped successfully');
+            return true;
+        } catch (error) {
+            logApi.error('Error stopping Solana service:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Get detailed service status for monitoring
+     */
+    getServiceStatus() {
+        const baseStatus = super.getServiceStatus();
+        
+        return {
+            ...baseStatus,
+            connectionActive: !!this.connection,
+            metrics: {
+                ...this.stats,
+                serviceStartTime: this.stats.history.lastStarted
+            }
+        };
+    }
+}
+
+// Create and export the singleton instance
+const solanaService = new SolanaService();
+export default solanaService;
