@@ -31,20 +31,27 @@ export async function initializeWebSockets(server, initResults = {}) {
         logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Monitor WebSocket Ready\x1b[0m');
 
         // Initialize service-specific WebSocket servers
+        // Using formatted names as expected by the frontend
         const wsServers = {
-            monitor: wsMonitor,
-            circuitBreaker: createCircuitBreakerWebSocket(server),
-            analytics: createAnalyticsWebSocket(server),
-            market: createMarketDataWebSocket(server),
-            portfolio: createPortfolioWebSocket(server),
-            wallet: createWalletWebSocket(server),
-            contest: createContestWebSocket(server),
-            tokenData: createTokenDataWebSocket(server),
-            notifications: createUserNotificationWebSocket(server)
+            // Standard names matching frontend expectations
+            'Monitor': wsMonitor,
+            'Circuit Breaker': createCircuitBreakerWebSocket(server),
+            'Analytics': createAnalyticsWebSocket(server),
+            'Market': createMarketDataWebSocket(server),
+            'Portfolio': createPortfolioWebSocket(server),
+            'Wallet': createWalletWebSocket(server), 
+            'Contest': createContestWebSocket(server),
+            
+            // Additional services with formatted names
+            'Token Data': createTokenDataWebSocket(server),
+            'Notifications': createUserNotificationWebSocket(server),
+            
+            // Include Base WebSocket reference for dependency tracking
+            'Base': null  // Base is a class, not an instance
         };
 
         // Add debug logging for contest server
-        const contestServer = wsServers.contest;
+        const contestServer = wsServers['Contest'];
         if (!contestServer) {
             logApi.error('Contest WebSocket server failed to initialize');
         } else {
@@ -53,7 +60,7 @@ export async function initializeWebSockets(server, initResults = {}) {
 
         // Verify WebSocket servers initialized correctly
         const failedServers = Object.entries(wsServers)
-            .filter(([name, instance]) => !instance)
+            .filter(([name, instance]) => !instance && name !== 'Base') // Skip Base as it's just a reference
             .map(([name]) => name);
 
         if (failedServers.length > 0) {
@@ -96,11 +103,49 @@ export async function initializeWebSockets(server, initResults = {}) {
             for (const [name, instance] of Object.entries(wsServers)) {
                 if (name !== 'monitor' && instance) {
                     try {
-                        const metrics = instance.getMetrics?.() || defaultMetrics;
-                        wsMonitor.monitorService.updateServiceMetrics(name, metrics);
+                        // Skip Base as it's just a reference class
+                        if (name === 'Base') {
+                            // Add a base reference with dependencies
+                            wsMonitor.monitorService.updateServiceMetrics(name, {
+                                ...defaultMetrics,
+                                name: "Base WebSocket",
+                                dependencies: []
+                            });
+                        } else {
+                            const metrics = instance.getMetrics?.() || defaultMetrics;
+                            
+                            // Add dependency information based on service type
+                            let dependencies = [];
+                            if (name !== 'Monitor' && name !== 'Base') {
+                                dependencies.push('Base'); // All WebSockets depend on Base
+                            }
+                            
+                            // Add specific dependencies
+                            if (name === 'Token Data' || name === 'Market') {
+                                dependencies.push('Circuit Breaker');
+                            }
+                            if (name === 'Contest') {
+                                dependencies.push('Token Data');
+                            }
+                            if (name === 'Portfolio') {
+                                dependencies.push('Token Data');
+                                dependencies.push('Wallet');
+                            }
+                            
+                            // Create metrics with dependencies
+                            const metricsWithDependencies = {
+                                ...metrics,
+                                dependencies
+                            };
+                            
+                            wsMonitor.monitorService.updateServiceMetrics(name, metricsWithDependencies);
+                        }
                     } catch (error) {
                         logApi.warn(`Failed to get metrics for ${name}:`, error);
-                        wsMonitor.monitorService.updateServiceMetrics(name, defaultMetrics);
+                        wsMonitor.monitorService.updateServiceMetrics(name, {
+                            ...defaultMetrics,
+                            name: `${name} WebSocket`
+                        });
                     }
                 }
             }
@@ -114,11 +159,45 @@ export async function initializeWebSockets(server, initResults = {}) {
                     for (const [name, instance] of Object.entries(wsServers)) {
                         if (name !== 'monitor' && instance) {
                             try {
+                                // Skip Base as it's just a reference class
+                                if (name === 'Base') {
+                                    // Nothing to update, it's already registered
+                                    continue;
+                                }
+                                
                                 const metrics = instance.getMetrics?.() || defaultMetrics;
-                                wsMonitor.monitorService.updateServiceMetrics(name, metrics);
+                                
+                                // Add dependency information based on service type
+                                let dependencies = [];
+                                if (name !== 'Monitor' && name !== 'Base') {
+                                    dependencies.push('Base'); // All WebSockets depend on Base
+                                }
+                                
+                                // Add specific dependencies
+                                if (name === 'Token Data' || name === 'Market') {
+                                    dependencies.push('Circuit Breaker');
+                                }
+                                if (name === 'Contest') {
+                                    dependencies.push('Token Data');
+                                }
+                                if (name === 'Portfolio') {
+                                    dependencies.push('Token Data');
+                                    dependencies.push('Wallet');
+                                }
+                                
+                                // Create metrics with dependencies
+                                const metricsWithDependencies = {
+                                    ...metrics,
+                                    dependencies
+                                };
+                                
+                                wsMonitor.monitorService.updateServiceMetrics(name, metricsWithDependencies);
                             } catch (error) {
                                 logApi.warn(`Failed to get metrics for ${name}:`, error);
-                                wsMonitor.monitorService.updateServiceMetrics(name, defaultMetrics);
+                                wsMonitor.monitorService.updateServiceMetrics(name, {
+                                    ...defaultMetrics,
+                                    name: `${name} WebSocket`
+                                });
                             }
                         }
                     }
