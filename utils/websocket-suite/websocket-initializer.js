@@ -11,6 +11,7 @@ import { createWalletWebSocket } from '../../websocket/wallet-ws.js';
 import { createContestWebSocket } from '../../websocket/contest-ws.js';
 import { createTokenDataWebSocket } from '../../websocket/token-data-ws.js';
 import { createUserNotificationWebSocket } from '../../websocket/user-notification-ws.js';
+import { createSkyDuelWebSocket } from '../../websocket/skyduel-ws.js';
 
 /**
  * Initialize all WebSocket servers
@@ -45,6 +46,9 @@ export async function initializeWebSockets(server, initResults = {}) {
             // Additional services with formatted names
             'Token Data': createTokenDataWebSocket(server),
             'Notifications': createUserNotificationWebSocket(server),
+            
+            // Unified service management system
+            'SkyDuel': createSkyDuelWebSocket(server),
             
             // Include Base WebSocket reference for dependency tracking
             'Base': null  // Base is a class, not an instance
