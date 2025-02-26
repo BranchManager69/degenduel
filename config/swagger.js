@@ -149,40 +149,7 @@ if (!swaggerSpec.paths || Object.keys(swaggerSpec.paths).length === 0) {
   }
 }
 
-// ????
-try {
-  console.error('\n❌ Failed to initialize Swagger documentation:', error);
-  if (error.mark) {
-    console.error('📍 YAML Error Details:');
-    console.error(`   Line ${error.mark.line}, Column ${error.mark.column}`);
-    console.error(`   Near: ${error.mark.snippet}`);
-  }
-  if (error.stack) {
-    console.error('\n🔍 Stack trace:');
-    console.error(error.stack);
-  }
-  // Fallback Swagger specification
-  swaggerSpec = {
-    openapi: '3.0.0',
-    info: {
-      title: 'DegenDuel API',
-      version: '1.0.0',
-      description: '⚠️ DegenDuel API documentation unavailable due to initialization error'
-    },
-    paths: {}
-  };
-} catch (error) {
-  console.error('\n❌ Failed to initialize Swagger:', error);
-  if (error.mark) {
-    console.error('📍 YAML Error Details:');
-    console.error(`   Line ${error.mark.line}, Column ${error.mark.column}`);
-    console.error(`   Near: ${error.mark.snippet}`);
-  }
-  if (error.stack) {
-    console.error('\n🔍 Stack trace:');
-    console.error(error.stack);
-  }
-}
+// Error handling for swagger operations is handled in the setupSwagger function below
 
 // Swagger setup options
 function setupSwagger(app) {
