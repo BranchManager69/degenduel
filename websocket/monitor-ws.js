@@ -24,9 +24,15 @@ import { logApi } from '../utils/logger-suite/logger.js';
 const MESSAGE_TYPES = {
     // Server -> Client
     SYSTEM_HEALTH: 'system:health',
-    SERVICE_METRICS: 'service:metrics',
-    SERVICE_ALERT: 'service:alert',
-    ERROR: 'ERROR'
+    SERVICES_STATUS: 'services_status',   // Frontend expects this format
+    SERVICE_UPDATE: 'service_update',     // Frontend expects this format
+    SERVICE_METRICS: 'service:metrics',   // Legacy format
+    SERVICE_ALERT: 'alert',               // Frontend expects this format
+    ERROR: 'ERROR',
+    
+    // Client -> Server
+    GET_INITIAL_STATE: 'get_initial_state',
+    SERVICE_CONTROL: 'service_control'
 };
 
 // Error codes
@@ -159,12 +165,19 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
 
         super.onConnection(ws, request);
 
-        // Send initial state
+        // Send initial state in both formats (new frontend format and legacy format)
         this.sendToClient(ws, {
             type: MESSAGE_TYPES.SYSTEM_HEALTH,
             data: this.monitorService.getSystemHealth()
         });
 
+        // Send the services_status message that the frontend expects
+        this.sendToClient(ws, {
+            type: MESSAGE_TYPES.SERVICES_STATUS,
+            data: this.monitorService.getServiceMetrics()
+        });
+
+        // Send individual service updates too (legacy format)
         this.monitorService.getServiceMetrics().forEach(metrics => {
             this.sendToClient(ws, {
                 type: MESSAGE_TYPES.SERVICE_METRICS,
@@ -172,6 +185,151 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
                 data: metrics
             });
         });
+    }
+    
+    /**
+     * Handle client messages
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} message - Client message
+     */
+    async onMessage(ws, message) {
+        try {
+            if (!message || !message.type) {
+                return;
+            }
+            
+            // Process message based on type
+            switch (message.type) {
+                case MESSAGE_TYPES.GET_INITIAL_STATE:
+                    this.handleGetInitialState(ws);
+                    break;
+                
+                case MESSAGE_TYPES.SERVICE_CONTROL:
+                    await this.handleServiceControl(ws, message);
+                    break;
+                
+                default:
+                    // Unknown message type
+                    this.sendToClient(ws, {
+                        type: MESSAGE_TYPES.ERROR,
+                        error: 'Unknown message type',
+                        requestedType: message.type
+                    });
+            }
+        } catch (error) {
+            logApi.error('Error handling WebSocket message:', error);
+            this.sendToClient(ws, {
+                type: MESSAGE_TYPES.ERROR,
+                error: 'Failed to process message',
+                details: error.message
+            });
+        }
+    }
+    
+    /**
+     * Handle get_initial_state message
+     * @param {WebSocket} ws - WebSocket connection
+     */
+    handleGetInitialState(ws) {
+        // Send current system health
+        this.sendToClient(ws, {
+            type: MESSAGE_TYPES.SYSTEM_HEALTH,
+            data: this.monitorService.getSystemHealth()
+        });
+        
+        // Send all service metrics in the format the frontend expects
+        this.sendToClient(ws, {
+            type: MESSAGE_TYPES.SERVICES_STATUS,
+            data: this.monitorService.getServiceMetrics()
+        });
+    }
+    
+    /**
+     * Handle service_control message
+     * @param {WebSocket} ws - WebSocket connection
+     * @param {Object} message - Client message
+     */
+    async handleServiceControl(ws, message) {
+        if (!message.service || !message.action) {
+            this.sendToClient(ws, {
+                type: MESSAGE_TYPES.ERROR,
+                error: 'Invalid service control request',
+                details: 'Service name and action are required'
+            });
+            return;
+        }
+        
+        const { service, action } = message;
+        
+        // Check if service exists
+        if (!global.wsServers[service]) {
+            this.sendToClient(ws, {
+                type: MESSAGE_TYPES.ERROR,
+                error: 'Service not found',
+                service
+            });
+            return;
+        }
+        
+        try {
+            let result;
+            
+            // Execute requested action
+            switch (action) {
+                case 'restart':
+                    // Cleanup and reinitialize the service
+                    await global.wsServers[service].cleanup();
+                    // The service will be reinitialized by the initializer on next app restart
+                    result = { success: true, message: `Service ${service} restarting` };
+                    break;
+                    
+                case 'stop':
+                    // Just cleanup the service
+                    await global.wsServers[service].cleanup();
+                    result = { success: true, message: `Service ${service} stopped` };
+                    break;
+                    
+                default:
+                    result = { success: false, message: `Action ${action} not supported` };
+            }
+            
+            // Send the result
+            this.sendToClient(ws, {
+                type: MESSAGE_TYPES.SERVICE_UPDATE,
+                service,
+                data: {
+                    status: result.success ? 'success' : 'error',
+                    message: result.message,
+                    timestamp: new Date().toISOString()
+                }
+            });
+            
+            // Broadcast the service update to all clients
+            if (result.success) {
+                this.broadcastServiceAlert(service, {
+                    severity: 'info',
+                    message: `Service ${action} requested: ${result.message}`
+                });
+                
+                // Update the service metrics
+                const metrics = global.wsServers[service]?.getMetrics?.() || {
+                    status: action === 'stop' ? 'stopped' : 'restarting',
+                    metrics: {
+                        lastUpdate: new Date().toISOString()
+                    }
+                };
+                
+                this.updateServiceMetrics(service, metrics);
+            }
+            
+        } catch (error) {
+            logApi.error(`Error controlling service ${service}:`, error);
+            this.sendToClient(ws, {
+                type: MESSAGE_TYPES.ERROR,
+                error: `Failed to ${action} service ${service}`,
+                details: error.message
+            });
+        }
     }
 
     /**
@@ -182,12 +340,34 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
     updateServiceMetrics(serviceName, metrics) {
         this.monitorService.updateServiceMetrics(serviceName, metrics);
         
+        // Send in new frontend format
+        this.broadcast({
+            type: MESSAGE_TYPES.SERVICE_UPDATE,
+            service: serviceName,
+            data: metrics,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Also send in legacy format for backward compatibility
         this.broadcast({
             type: MESSAGE_TYPES.SERVICE_METRICS,
             service: serviceName,
             data: metrics,
             timestamp: new Date().toISOString()
         });
+        
+        // Periodically broadcast consolidated services_status
+        // This ensures all clients have the latest full picture
+        if (this._lastServicesStatusBroadcast === undefined || 
+            Date.now() - this._lastServicesStatusBroadcast > 5000) {
+            this._lastServicesStatusBroadcast = Date.now();
+            
+            this.broadcast({
+                type: MESSAGE_TYPES.SERVICES_STATUS,
+                data: this.monitorService.getServiceMetrics(),
+                timestamp: new Date().toISOString()
+            });
+        }
     }
 
     /**
@@ -196,6 +376,7 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
      * @param {Object} alert - Alert data
      */
     broadcastServiceAlert(serviceName, alert) {
+        // Use the alert format that the frontend expects
         this.broadcast({
             type: MESSAGE_TYPES.SERVICE_ALERT,
             service: serviceName,
@@ -205,6 +386,44 @@ class WebSocketMonitorServer extends BaseWebSocketServer {
                 timestamp: new Date().toISOString()
             }
         });
+    }
+    
+    /**
+     * Get metrics from the WebSocket server
+     * Uses the expected format for the frontend
+     * @returns {Object} Metrics data
+     */
+    getMetrics() {
+        const clients = this.wss ? this.wss.clients.size : 0;
+        const uptime = process.uptime();
+        
+        return {
+            name: "Monitor WebSocket",
+            status: "operational",
+            metrics: {
+                totalConnections: this.stats.totalConnections,
+                activeSubscriptions: clients,
+                messageCount: this.stats.messagesProcessed,
+                errorCount: this.stats.errors,
+                cacheHitRate: 100,  // No caching for monitor
+                averageLatency: this.stats.averageProcessingTime || 0,
+                lastUpdate: new Date().toISOString()
+            },
+            performance: {
+                messageRate: this.stats.messagesPerSecond || 0,
+                errorRate: this.stats.messagesProcessed > 0 
+                    ? (this.stats.errors / this.stats.messagesProcessed) * 100 
+                    : 0,
+                latencyTrend: this.stats.recentLatencies || []
+            },
+            config: {
+                maxMessageSize: this.maxPayload,
+                rateLimit: this.rateLimit,
+                requireAuth: this.requireAuth
+            },
+            // Adding dependency information for frontend visualization
+            dependencies: []
+        };
     }
 
     /**
