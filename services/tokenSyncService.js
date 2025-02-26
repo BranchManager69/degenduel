@@ -44,8 +44,9 @@ const TOKEN_SYNC_CONFIG = {
     api: {
         timeoutMs: 10000,
         endpoints: {
-            prices: `${config.api_urls.data}/prices/bulk`,
-            tokens: `${config.api_urls.data}/tokens`,
+            // Add fallback URLs in case the primary ones are misconfigured
+            prices: config.api_urls.data ? `${config.api_urls.data}/prices/bulk` : null,
+            tokens: config.api_urls.data ? `${config.api_urls.data}/tokens` : null,
             fallback: config.api_urls.fallback
         }
     }
@@ -284,6 +285,18 @@ class TokenSyncService extends BaseService {
 
     // API calls with circuit breaker protection
     async makeApiCall(endpoint, options = {}) {
+        // Validate the endpoint URL first
+        if (!endpoint) {
+            throw new Error('Missing endpoint URL');
+        }
+        
+        // Ensure endpoint is a valid URL
+        try {
+            new URL(endpoint);
+        } catch (urlError) {
+            throw new Error(`Invalid endpoint URL: ${endpoint}`);
+        }
+        
         try {
             const response = await axios({
                 ...options,
@@ -312,12 +325,25 @@ class TokenSyncService extends BaseService {
 
     async fetchTokenPrices(addresses) {
         logApi.info(`Fetching prices for ${addresses.length} tokens...`);
+        
+        // Check if price endpoint is configured
+        if (!this.config.api.endpoints.prices) {
+            logApi.warn('Price API endpoint not configured, using fallback data');
+            return [];
+        }
+        
         // Get bulk token data from DD-serve
         try {
             const data = await this.makeApiCall(this.config.api.endpoints.prices, {
                 method: 'POST',
                 data: { addresses }
             });
+            
+            if (!data || !data.data || !Array.isArray(data.data)) {
+                logApi.warn('Invalid price data format received');
+                return [];
+            }
+            
             logApi.info(`Received price data for ${data.data.length} tokens`);
             return data.data;
         } catch (error) {
@@ -330,23 +356,31 @@ class TokenSyncService extends BaseService {
 
     async fetchTokenData() {
         logApi.info('Fetching token data from data service...');
-        try {
-            const result = await this.makeApiCall(this.config.api.endpoints.tokens);
-            
-            // Make sure we have a valid response with data array
-            if (!result || !result.data || !Array.isArray(result.data)) {
-                throw ServiceError.validation('Invalid data format from token API', { 
-                    endpoint: this.config.api.endpoints.tokens,
-                    result: JSON.stringify(result).substring(0, 100) + '...'
-                });
+        
+        // Check if primary endpoint is valid
+        if (!this.config.api.endpoints.tokens) {
+            logApi.warn('Primary token data endpoint not configured or invalid');
+        } else {
+            try {
+                const result = await this.makeApiCall(this.config.api.endpoints.tokens);
+                
+                // Make sure we have a valid response with data array
+                if (!result || !result.data || !Array.isArray(result.data)) {
+                    throw ServiceError.validation('Invalid data format from token API', { 
+                        endpoint: this.config.api.endpoints.tokens,
+                        result: JSON.stringify(result).substring(0, 100) + '...'
+                    });
+                }
+                
+                logApi.info(`Received token data with ${result.data.length} tokens`);
+                return result.data;
+            } catch (error) {
+                logApi.warn(`Error fetching token data from primary source: ${error.message}`);
+                // Continue to fallbacks
             }
+        }
             
-            logApi.info(`Received token data with ${result.data.length} tokens`);
-            return result.data;
-        } catch (error) {
-            logApi.warn(`Error fetching token data from primary source: ${error.message}`);
-            
-            // Try local fallback endpoint first if the URL is valid
+        // Try local fallback endpoint if the URL is valid
         if (this.config.api.endpoints.fallback) {
             try {
                 logApi.info('Attempting to fetch from local fallback endpoint...');
