@@ -13,9 +13,11 @@ import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PE
 import walletGenerationService from '../services/walletGenerationService.js';
 import liquidityService from '../services/liquidityService.js';
 import adminWalletService from '../services/adminWalletService.js';
+import userBalanceTrackingService from '../services/userBalanceTrackingService.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
+import walletMonitoringRouter from './admin-api/wallet-monitoring.js';
 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 
@@ -1786,5 +1788,8 @@ router.post('/websocket/:serviceId/restart', requireAuth, requireSuperAdmin, asy
         });
     }
 });
+
+// Use wallet monitoring routes
+router.use('/wallet-monitoring', walletMonitoringRouter);
 
 export default router;
