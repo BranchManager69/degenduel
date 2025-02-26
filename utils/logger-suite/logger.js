@@ -487,6 +487,10 @@ const debugRotateFileTransport = new winston.transports.DailyRotateFile({
   format: winston.format.combine(winston.format.timestamp(), fileFormat),
 });
 
+// Check for silent mode flag
+const SILENT_MODE = process.env.SILENT_MODE === 'true';
+const CONSOLE_LEVEL = SILENT_MODE ? 'error' : (process.env.CONSOLE_LOG_LEVEL || "info");
+
 // Create the logger
 const logApi = winston.createLogger({
   level: process.env.LOG_LEVEL || "info",
@@ -497,7 +501,7 @@ const logApi = winston.createLogger({
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(winston.format.timestamp(), customFormat),
-      level: process.env.CONSOLE_LOG_LEVEL || "info",
+      level: CONSOLE_LEVEL,
     }),
     dailyRotateFileTransport,
     errorRotateFileTransport,
