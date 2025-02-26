@@ -35,7 +35,8 @@ export const SERVICE_NAMES = {
 
     // Infrastructure Layer Services
     LIQUIDITY: 'liquidity_service',
-    WALLET_GENERATOR: 'wallet_generator_service'
+    WALLET_GENERATOR: 'wallet_generator_service',
+    SOLANA: 'solana_service' // New Solana service
 };
 
 export const SERVICE_LAYERS = {
@@ -143,6 +144,15 @@ export const SERVICE_METADATA = {
         description: 'Wallet generation and encryption',
         updateFrequency: '5m',
         criticalLevel: 'high',
+        dependencies: []
+    },
+    
+    // New Solana service metadata
+    [SERVICE_NAMES.SOLANA]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'Solana blockchain connectivity service',
+        updateFrequency: '30s',
+        criticalLevel: 'critical',
         dependencies: []
     }
 };
