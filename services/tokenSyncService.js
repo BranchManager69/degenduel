@@ -123,6 +123,14 @@ class TokenSyncService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
+            // Log API configuration
+            logApi.info('Token Sync Service API configuration:', {
+                DATA_API: config.api_urls.data,
+                prices_endpoint: this.config.api.endpoints.prices,
+                tokens_endpoint: this.config.api.endpoints.tokens,
+                fallback_endpoint: this.config.api.endpoints.fallback
+            });
+            
             // Load configuration from database
             const settings = await prisma.system_settings.findUnique({
                 where: { key: this.name }
@@ -327,14 +335,17 @@ class TokenSyncService extends BaseService {
         logApi.info(`Fetching prices for ${addresses.length} tokens...`);
         
         // Check if price endpoint is configured
-        if (!this.config.api.endpoints.prices) {
+        const pricesEndpoint = this.config.api.endpoints.prices;
+        if (!pricesEndpoint) {
             logApi.warn('Price API endpoint not configured, using fallback data');
             return [];
         }
         
+        logApi.info(`Attempting to fetch prices from: ${pricesEndpoint}`);
+        
         // Get bulk token data from DD-serve
         try {
-            const data = await this.makeApiCall(this.config.api.endpoints.prices, {
+            const data = await this.makeApiCall(pricesEndpoint, {
                 method: 'POST',
                 data: { addresses }
             });
@@ -358,11 +369,13 @@ class TokenSyncService extends BaseService {
         logApi.info('Fetching token data from data service...');
         
         // Check if primary endpoint is valid
-        if (!this.config.api.endpoints.tokens) {
+        const tokensEndpoint = this.config.api.endpoints.tokens;
+        if (!tokensEndpoint) {
             logApi.warn('Primary token data endpoint not configured or invalid');
         } else {
+            logApi.info(`Attempting to fetch token data from: ${tokensEndpoint}`);
             try {
-                const result = await this.makeApiCall(this.config.api.endpoints.tokens);
+                const result = await this.makeApiCall(tokensEndpoint);
                 
                 // Make sure we have a valid response with data array
                 if (!result || !result.data || !Array.isArray(result.data)) {
