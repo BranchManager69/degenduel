@@ -273,7 +273,7 @@ model user_achievements {
   category         String    @default("CONTESTS") @db.VarChar(20)
   xp_awarded       Int       @default(0)
   context          Json?     @default("{}")
-  user             users?    @relation(fields: [wallet_address], references: [wallet_address], onDelete: SetNull, onUpdate: NoAction)
+  user             users?    @relation(fields: [wallet_address], references: [wallet_address], onUpdate: NoAction)
 
   @@index([wallet_address], map: "idx_user_achievements_wallet")
   @@index([achievement_type], map: "idx_user_achievements_type")
@@ -347,6 +347,8 @@ model users {
   last_level_up             DateTime?                   @db.Timestamptz(6)
   profile_image_url         String?                     @db.VarChar(255)
   profile_image_updated_at  DateTime?                   @db.Timestamptz(6)
+  last_balance_check        DateTime?                   @db.Timestamptz(6)
+  last_known_balance        BigInt?
   contest_participants      contest_participants[]
   contest_portfolio_trades  contest_portfolio_trades[]
   contest_portfolios        contest_portfolios[]
@@ -360,10 +362,11 @@ model users {
   referred_by               referrals[]                 @relation("ReferredByRelation")
   referrals_made            referrals[]                 @relation("ReferralsMadeRelation")
   transactions              transactions[]
+  user_achievements         user_achievements[]
   user_stats                user_stats?
   user_level                user_levels?                @relation(fields: [user_level_id], references: [id])
+  wallet_balances           wallet_balance_history[]
   websocket_messages        websocket_messages[]
-  user_achievements         user_achievements[]
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -722,6 +725,18 @@ model referral_milestones {
 
   @@unique([user_id, milestone_level])
   @@index([user_id])
+}
+
+model wallet_balance_history {
+  id               Int      @id @default(autoincrement())
+  wallet_address   String   @db.VarChar(44)
+  balance_lamports BigInt
+  timestamp        DateTime @default(now()) @db.Timestamptz(6)
+  users            users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: Cascade)
+
+  @@index([wallet_address], map: "idx_wallet_balance_wallet")
+  @@index([timestamp], map: "idx_wallet_balance_timestamp")
+  @@map("wallet_balance_history")
 }
 
 model circuit_breaker_states {
