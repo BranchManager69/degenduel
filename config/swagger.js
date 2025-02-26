@@ -105,7 +105,11 @@ const additionalApiDocs = [
   path.join(rootDir, 'docs/swagger/admin-circuit-breaker.js'),
   path.join(rootDir, 'docs/swagger/admin-service-management.js'),
   path.join(rootDir, 'docs/swagger/admin-maintenance.js'),
-  path.join(rootDir, 'docs/swagger/admin-contest-management.js')
+  path.join(rootDir, 'docs/swagger/admin-contest-management.js'),
+  path.join(rootDir, 'docs/swagger/admin-liquidity-management.js'),
+  path.join(rootDir, 'docs/swagger/admin-token-sync.js'),
+  path.join(rootDir, 'docs/swagger/admin-wallet-management.js'),
+  path.join(rootDir, 'docs/swagger/admin-analytics-dashboard.js')
 ];
 
 const options = {

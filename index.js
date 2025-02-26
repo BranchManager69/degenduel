@@ -37,6 +37,7 @@ import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
 import serviceManagementRoutes from './routes/admin/service-management.js';
 // Import (some) Admin Routes
 import contestManagementRoutes from "./routes/admin/contest-management.js";
+import skyduelManagementRoutes from "./routes/admin/skyduel-management.js";
 
 // Hard-code all logging flags to reduce verbosity
 const VERBOSE_EXPRESS_LOGS = false;
@@ -122,8 +123,10 @@ app.use("/api/admin/token-sync", tokenSyncRoutes);
 app.use("/api/admin/wallets", walletManagementRoutes);
 app.use("/api/admin/contests", contestManagementRoutes);
 app.use("/api/admin/faucet", faucetManagementRoutes);
+app.use("/api/admin/liquidity", faucetManagementRoutes);
 app.use("/api/admin/metrics", serviceMetricsRoutes);
 app.use("/api/admin/service-management", serviceManagementRoutes);
+app.use("/api/admin/skyduel", skyduelManagementRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use('/api/admin/websocket', websocketTestRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
