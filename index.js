@@ -38,6 +38,8 @@ import serviceManagementRoutes from './routes/admin/service-management.js';
 // Import (some) Admin Routes
 import contestManagementRoutes from "./routes/admin/contest-management.js";
 import skyduelManagementRoutes from "./routes/admin/skyduel-management.js";
+// Import Script Execution Routes
+import scriptExecutionRoutes from "./routes/admin/script-execution.js";
 
 // Hard-code all logging flags to reduce verbosity
 const VERBOSE_EXPRESS_LOGS = false;
@@ -127,6 +129,7 @@ app.use("/api/admin/liquidity", faucetManagementRoutes);
 app.use("/api/admin/metrics", serviceMetricsRoutes);
 app.use("/api/admin/service-management", serviceManagementRoutes);
 app.use("/api/admin/skyduel", skyduelManagementRoutes);
+app.use("/api/admin/scripts", scriptExecutionRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use('/api/admin/websocket', websocketTestRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
