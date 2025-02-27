@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node index.js",
     "test:api": "./tests/api-test.sh",
+    "test:services": "node scripts/service-status-report.js",
     "generate-swagger": "node scripts/generate-swagger.js",
     "start:api": "pm2 start ecosystem.config.cjs --only degenduel-api",
     "stop:api": "pm2 stop degenduel-api",

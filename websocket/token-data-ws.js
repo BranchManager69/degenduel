@@ -31,6 +31,14 @@ class TokenDataWebSocket extends BaseWebSocketServer {
             this.sendError(ws, error.message);
         }
     }
+
+    /**
+     * Clean up resources before shutdown
+     */
+    cleanup() {
+        super.cleanup();
+        logApi.info('Token Data WebSocket cleaned up');
+    }
 }
 
 export function createTokenDataWebSocket(server) {
