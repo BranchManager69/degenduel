@@ -114,9 +114,18 @@ router.post('/:scriptName', requireAuth, requireSuperAdmin, (req, res) => {
   
   // Add parameters if provided
   if (Object.keys(params).length > 0) {
-    const paramString = Object.entries(params)
-      .map(([key, value]) => `--${key}="${value}"`)
-      .join(' ');
+    let paramString;
+    
+    // Check if params is an array (for shell scripts with positional params)
+    if (Array.isArray(params)) {
+      paramString = params.join(' ');
+    } else {
+      // For named parameters (used by JS scripts)
+      paramString = Object.entries(params)
+        .map(([key, value]) => `--${key}="${value}"`)
+        .join(' ');
+    }
+    
     command += ` ${paramString}`;
   }
   
