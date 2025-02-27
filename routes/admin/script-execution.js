@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { authenticateToken } from '../../middleware/authMiddleware.js';
+import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -33,7 +33,7 @@ if (!fs.existsSync(SCRIPTS_DIR)) {
  *       401:
  *         description: Unauthorized
  */
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
   try {
     const files = fs.readdirSync(SCRIPTS_DIR)
       .filter(file => file.endsWith('.js') || file.endsWith('.sh'))
@@ -86,7 +86,7 @@ router.get('/', authenticateToken, (req, res) => {
  *       500:
  *         description: Script execution failed
  */
-router.post('/:scriptName', authenticateToken, (req, res) => {
+router.post('/:scriptName', requireAuth, requireSuperAdmin, (req, res) => {
   const { scriptName } = req.params;
   const { params = {} } = req.body;
   
