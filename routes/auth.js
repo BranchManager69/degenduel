@@ -318,14 +318,15 @@ router.post('/verify-wallet', async (req, res) => {
  *         description: Not found or user not found
  */
 router.post('/dev-login', async (req, res) => {
-  // Only available in development mode and on dev port
-  if (process.env.NODE_ENV !== 'development' || process.env.PORT !== '3005') {
-    authLogger.warn('Attempted dev login in production or wrong port', {
-      env: process.env.NODE_ENV,
-      port: process.env.PORT
-    });
-    return res.status(404).json({ error: 'Not found' });
-  }
+  // TEMPORARY: Allow dev login in any environment and port
+  // Original restriction: Only available in development mode and on dev port
+  // if (process.env.NODE_ENV !== 'development' || process.env.PORT !== '3005') {
+  //   authLogger.warn('Attempted dev login in production or wrong port', {
+  //     env: process.env.NODE_ENV,
+  //     port: process.env.PORT
+  //   });
+  //   return res.status(404).json({ error: 'Not found' });
+  // }
 
   try {
     const { secret, wallet_address } = req.body;

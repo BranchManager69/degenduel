@@ -19,6 +19,7 @@ import prisma from '../config/prisma.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 // Solana
 import { TOKEN_VALIDATION } from '../config/constants.js'; //TODO: Verify all is correct
+import { PublicKey } from '@solana/web3.js';
 // Other
 import axios from 'axios';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -277,17 +278,36 @@ class TokenSyncService extends BaseService {
         if (!address) return null;
         
         try {
-            // Ensure the pattern is properly created as a RegExp object
-            const pattern = new RegExp(this.config.validation.ADDRESS.SOLANA_PATTERN);
-            if (!pattern.test(address)) {
-                // Log warning but don't throw so we can continue processing other tokens
-                logApi.warn(`Invalid Solana address format: ${address}`);
-                return address; // Still return the address but with a warning
+            // Use the PublicKey imported at the top of the file
+            try {
+                // Attempt to create a PublicKey - this validates format and checksums
+                new PublicKey(address);
+                return address; // Address is valid
+            } catch (solanaError) {
+                // This is a REAL validation error from the Solana library
+                // We should throw a proper service error
+                throw ServiceError.validation(`Invalid Solana address: ${address}`, {
+                    address,
+                    error: solanaError.message,
+                    field: 'address'
+                });
             }
-            return address;
         } catch (error) {
-            logApi.warn(`Error validating address: ${address}`, error);
-            return address; // Return the address anyway rather than failing
+            // This catch only handles the case where we couldn't create the PublicKey
+            if (error.isServiceError) {
+                // This is our validation error from above, re-throw it
+                throw error;
+            }
+            
+            // Some other unexpected error occurred
+            logApi.error(`CRITICAL: Error validating Solana address: ${error.message}`);
+            
+            // Throw validation error to skip this token completely
+            throw ServiceError.validation(`Failed to validate Solana address: ${address}`, {
+                address,
+                error: error.message,
+                field: 'address'
+            });
         }
     }
 
@@ -538,11 +558,15 @@ class TokenSyncService extends BaseService {
                             continue; // Skip to the next token instead of throwing
                         }
 
-                        // Try to validate all fields but don't fail if some validation fails
+                        // Try to validate all fields
                         let validatedData;
                         try {
+                            // First validate the address since it's critical
+                            const validatedAddress = this.validateAddress(token.contractAddress);
+                            
+                            // If we got here, the address is valid, now validate the rest
                             validatedData = {
-                                address: this.validateAddress(token.contractAddress),
+                                address: validatedAddress,
                                 symbol: this.validateSymbol(token.symbol),
                                 name: this.validateName(token.name),
                                 decimals: 9,
@@ -558,7 +582,23 @@ class TokenSyncService extends BaseService {
                                 website_url: this.validateUrl(token.websites?.[0])
                             };
                         } catch (validationError) {
-                            // Log but continue with best effort
+                            // Check if this is an address validation error
+                            if (validationError.isServiceError && 
+                                validationError.type === ServiceErrorTypes.VALIDATION &&
+                                validationError.details?.field === 'address') {
+                                
+                                // For address errors, log clearly and skip this token
+                                logApi.warn(`SKIPPING TOKEN - Invalid Solana address: ${token.contractAddress}`, {
+                                    error: validationError.message,
+                                    details: validationError.details
+                                });
+                                // Track validation failures
+                                validationFailures++;
+                                this.syncStats.validation.failures.addresses++;
+                                continue; // Skip to next token
+                            }
+                            
+                            // For other validation errors, log but continue with best effort
                             logApi.warn(`Validation error for token ${token.contractAddress}: ${validationError.message}`);
                             
                             // Fall back to minimal valid data
