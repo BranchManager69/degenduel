@@ -24,6 +24,7 @@ import serviceEvents from './service-events.js';
 import { BaseService } from './base-service.js';
 import path from 'path';
 import AdminLogger from '../admin-logger.js';
+import SystemSettingsUtil from '../system-settings-util.js';
 
 const VERBOSE_SERVICE_INIT = false;
 
@@ -565,21 +566,7 @@ class ServiceManager {
      * Clean up problematic service state
      */
     async cleanupServiceState(serviceName) {
-        try {
-            // Delete existing state
-            await prisma.system_settings.delete({
-                where: { key: serviceName }
-            }).catch(() => {}); // Ignore if doesn't exist
-
-            // Clear from local state
-            this.state.delete(serviceName);
-
-            logApi.info(`Cleaned up state for service: ${serviceName}`);
-            return true;
-        } catch (error) {
-            logApi.error(`Failed to clean up state for ${serviceName}:`, error);
-            return false;
-        }
+        return SystemSettingsUtil.deleteSetting(serviceName);
     }
 
     /**
@@ -587,143 +574,33 @@ class ServiceManager {
      */
     async updateServiceState(serviceName, state, config, stats = null) {
         try {
-            // Get current circuit breaker config
-            const circuitBreakerConfig = getCircuitBreakerConfig(serviceName);
-            
-            // Helper to safely serialize values
-            const safeSerialize = (obj) => {
-                const seen = new WeakSet();
-                try {
-                    return JSON.parse(JSON.stringify(obj, (key, value) => {
-                        if (typeof value === 'bigint') return value.toString();
-                        if (value instanceof Date) return value.toISOString();
-                        if (value instanceof Set) return Array.from(value);
-                        if (value instanceof Map) return Object.fromEntries(value);
-                        if (typeof value === 'object' && value !== null) {
-                            if (seen.has(value)) {
-                                return '[Circular]';
-                            }
-                            seen.add(value);
-                        }
-                        return value;
-                    }));
-                } catch (err) {
-                    logApi.warn(`Failed to serialize object:`, err);
-                    return null;
-                }
-            };
-            
-            // Update state with circuit breaker status
+            // Create a service state object
             const serviceState = {
-                running: state.running,
-                status: this.determineServiceStatus(stats),
-                last_started: state.last_started,
-                last_stopped: state.last_stopped,
-                last_check: state.last_check,
-                last_error: state.last_error,
-                last_error_time: state.last_error_time
+                status: state.status || 'unknown',
+                running: !!state.running,
+                last_check: new Date().toISOString(),
+                config: config || {},
+                stats: stats || {}
             };
 
-            // Safely serialize config
-            const serializedConfig = safeSerialize({
-                ...config,
-                circuitBreaker: circuitBreakerConfig
-            });
-
-            if (serializedConfig) {
-                serviceState.config = serializedConfig;
-            } else {
-                // Fallback to basic config
-                serviceState.config = {
-                    circuitBreaker: circuitBreakerConfig
-                };
-            }
-
-            // Only include stats if they exist and can be safely serialized
-            if (stats) {
-                const serializedStats = safeSerialize(stats);
-                if (serializedStats) {
-                    serviceState.stats = serializedStats;
-                } else {
-                    // Include basic stats if full serialization fails
-                    serviceState.stats = {
-                        operations: {},
-                        performance: {},
-                        circuitBreaker: stats.circuitBreaker || {}
-                    };
-                }
-            }
-
-            // Try to update, if it fails due to recursion, clean up and try again
-            try {
-                // Update individual service state
-            await prisma.system_settings.upsert({
-                where: { key: serviceName },
-                update: {
-                        value: serviceState,
-                    updated_at: new Date()
-                },
-                create: {
-                    key: serviceName,
-                        value: serviceState,
-                    description: `${serviceName} status and configuration`,
-                    updated_at: new Date()
-                }
-            });
-
-                // Update consolidated service health record
-                await prisma.system_settings.upsert({
-                    where: { key: 'service_health' },
-                    update: {
-                        value: {
-                            service_name: serviceName,
-                            status: serviceState.status,
-                            running: serviceState.running,
-                            last_check: new Date().toISOString()
-                        },
-                        updated_at: new Date()
-                    },
-                    create: {
-                        key: 'service_health',
-                        value: {
-                            service_name: serviceName,
-                            status: serviceState.status,
-                            running: serviceState.running,
-                            last_check: new Date().toISOString()
-                        },
-                        description: 'Consolidated service health status',
-                        updated_at: new Date()
-                    }
-                });
-            } catch (error) {
-                if (error.message.includes('recursion limit exceeded')) {
-                    // Clean up and try again
-                    await this.cleanupServiceState(serviceName);
-                    await prisma.system_settings.create({
-                        data: {
-                            key: serviceName,
-                            value: serviceState,
-                            description: `${serviceName} status and configuration`,
-                            updated_at: new Date()
-                        }
-                    });
-                } else {
-                    throw error;
-                }
-            }
+            // Use the utility to safely upsert the setting
+            await SystemSettingsUtil.upsertSetting(
+                serviceName,
+                serviceState,
+                'Consolidated service health status',
+                null // No updated_by for system operations
+            );
 
             // Update local state
-            this.state.set(serviceName, serviceState);
+            this.state.set(serviceName, state);
 
             // Broadcast update if WebSocket is available
             if (this.circuitBreakerWs) {
-                this.circuitBreakerWs.notifyServiceUpdate(serviceName, serviceState);
+                this.circuitBreakerWs.notifyServiceUpdate(serviceName, state);
             }
-
-            return serviceState;
         } catch (error) {
-            logApi.error(`Failed to update service state for ${serviceName}:`, error);
-            throw error;
+            console.error(`Error in updateServiceState for ${serviceName}:`, error);
+            // Don't throw the error to prevent service initialization failures
         }
     }
 
@@ -736,17 +613,10 @@ class ServiceManager {
             const localState = this.state.get(serviceName);
             if (localState) return localState;
 
-            // Fallback to database
-            const setting = await prisma.system_settings.findUnique({
-                where: { key: serviceName }
-            });
+            // Fallback to database using our utility
+            const value = await SystemSettingsUtil.getSetting(serviceName);
             
-            if (!setting) return null;
-
-            // Parse value if it's a string
-            const value = typeof setting.value === 'string' 
-                ? JSON.parse(setting.value) 
-                : setting.value;
+            if (!value) return null;
 
             // Cache in local state
             this.state.set(serviceName, value);
@@ -754,7 +624,7 @@ class ServiceManager {
             return value;
         } catch (error) {
             logApi.error(`Failed to get service state for ${serviceName}:`, error);
-            throw error;
+            return null;
         }
     }
 

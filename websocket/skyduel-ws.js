@@ -48,7 +48,7 @@ class SkyDuelWebSocketServer {
         });
 
         // Start heartbeat check interval
-        setInterval(() => {
+        this._heartbeatInterval = setInterval(() => {
             this.checkHeartbeats();
         }, 30000); // Check every 30 seconds
 
@@ -898,7 +898,7 @@ class SkyDuelWebSocketServer {
     // Start periodic updates
     startPeriodicUpdates() {
         // Update service states every 3 seconds
-        setInterval(async () => {
+        this._periodicUpdateInterval = setInterval(async () => {
             const services = Array.from(serviceManager.services.keys());
             
             for (const service of services) {
@@ -918,6 +918,50 @@ class SkyDuelWebSocketServer {
             },
             status: 'operational'
         };
+    }
+
+    /**
+     * Clean up all resources before shutdown
+     */
+    cleanup() {
+        try {
+            // Clear periodic update interval
+            if (this._periodicUpdateInterval) {
+                clearInterval(this._periodicUpdateInterval);
+                this._periodicUpdateInterval = null;
+            }
+
+            // Clear heartbeat check interval
+            if (this._heartbeatInterval) {
+                clearInterval(this._heartbeatInterval);
+                this._heartbeatInterval = null;
+            }
+
+            // Close all connections
+            if (this.wss) {
+                this.wss.clients.forEach(ws => {
+                    try {
+                        ws.terminate();
+                    } catch (error) {
+                        // Ignore errors during termination
+                    }
+                });
+
+                // Close the WebSocket server
+                this.wss.close();
+            }
+
+            // Clear all maps
+            this.adminSessions.clear();
+            this.serviceSubscriptions.clear();
+            this.connectionHeartbeats.clear();
+
+            logApi.info('SkyDuel WebSocket server cleaned up');
+            return true;
+        } catch (error) {
+            logApi.error('Error cleaning up SkyDuel WebSocket server:', error);
+            return false;
+        }
     }
 }
 
