@@ -1,0 +1,1472 @@
+{
+  "generated_at": "2025-02-27T04:44:31.395Z",
+  "total_services": 14,
+  "services": {
+    "market_data_service": {
+      "name": "market_data_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:44:29.120Z",
+      "health": "error",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:44:29.120Z",
+      "config": {
+        "name": "market_data_service",
+        "cache": {
+          "ttl": 10000,
+          "maxSize": 10000,
+          "cleanupInterval": 1000
+        },
+        "limits": {
+          "requestTimeoutMs": 2000,
+          "maxConcurrentRequests": 1000
+        },
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 5000,
+          "initialDelayMs": 100
+        },
+        "maxRetries": 3,
+        "description": "Market price data aggregation",
+        "retryDelayMs": 1000,
+        "circuitBreaker": {
+          "resetTimeoutMs": 30000,
+          "failureThreshold": 10,
+          "minHealthyPeriodMs": 60000
+        },
+        "checkIntervalMs": 5000
+      },
+      "stats": {
+        "history": {
+          "lastError": "ServiceError.unavailable is not a function",
+          "lastStarted": null,
+          "lastStopped": null,
+          "lastErrorTime": "2025-02-27T04:44:29.119Z",
+          "consecutiveFailures": 929
+        },
+        "operations": {
+          "total": 929,
+          "failed": 929,
+          "successful": 0
+        },
+        "marketStats": {
+          "data": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]"
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": true,
+          "failures": 929,
+          "lastReset": null,
+          "lastFailure": "2025-02-27T04:44:29.119Z",
+          "lastSuccess": null,
+          "recoveryAttempts": 0,
+          "lastRecoveryAttempt": null
+        }
+      },
+      "status": "error",
+      "operations": {
+        "total": 929,
+        "failed": 929,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": true,
+        "failures": 929,
+        "lastReset": null,
+        "lastFailure": "2025-02-27T04:44:29.119Z",
+        "lastSuccess": null,
+        "recoveryAttempts": 0,
+        "lastRecoveryAttempt": null
+      }
+    },
+    "token_sync_service": {
+      "name": "token_sync_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:44:26.489Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:44:26.489Z",
+      "config": {
+        "api": {
+          "endpoints": "[Object]",
+          "timeoutMs": 10000
+        },
+        "name": "token_sync_service",
+        "stats": {
+          "history": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "circuitBreaker": "[Object]"
+        },
+        "config": {
+          "api": "[Object]",
+          "name": "token_sync_service",
+          "backoff": "[Object]",
+          "maxRetries": 3,
+          "validation": "[Object]",
+          "description": "Token balance synchronization",
+          "retryDelayMs": 5000,
+          "circuitBreaker": "[Object]",
+          "checkIntervalMs": 30000
+        },
+        "status": "active",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "running": true,
+        "last_check": "2025-02-27T03:26:43.710Z",
+        "maxRetries": 3,
+        "validation": {
+          "NAME": "[Object]",
+          "URLS": "[Object]",
+          "SYMBOL": "[Object]",
+          "ADDRESS": "[Object]",
+          "DESCRIPTION": "[Object]"
+        },
+        "description": "Token balance synchronization",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "resetTimeoutMs": 45000,
+          "failureThreshold": 4,
+          "minHealthyPeriodMs": 120000
+        },
+        "checkIntervalMs": 30000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:26:46.331Z",
+          "lastStopped": null,
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "syncStats": {
+          "api": "[Object]",
+          "prices": "[Object]",
+          "tokens": "[Object]",
+          "metadata": "[Object]",
+          "operations": "[Object]",
+          "validation": "[Object]",
+          "performance": "[Object]"
+        },
+        "operations": {
+          "total": 0,
+          "failed": 0,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:26:46.331Z",
+          "lastFailure": null,
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 0,
+        "failed": 0,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:26:46.331Z",
+        "lastFailure": null,
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "solana_service": {
+      "name": "solana_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:44:16.196Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:44:16.196Z",
+      "config": {
+        "name": "solana_service",
+        "layer": "infrastructure_layer",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "maxRetries": 3,
+        "description": "Solana blockchain connectivity service",
+        "dependencies": [],
+        "retryDelayMs": 5000,
+        "criticalLevel": "critical",
+        "circuitBreaker": {
+          "enabled": true,
+          "resetTimeoutMs": 60000,
+          "failureThreshold": 5,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 30000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:26:46.029Z",
+          "lastStopped": "2025-02-27T03:26:34.738Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "operations": {
+          "total": 3214,
+          "failed": 0,
+          "successful": 3214
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:26:46.029Z",
+          "lastFailure": null,
+          "lastSuccess": "2025-02-27T04:44:16.196Z",
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 3214,
+        "failed": 0,
+        "successful": 3214
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:26:46.029Z",
+        "lastFailure": null,
+        "lastSuccess": "2025-02-27T04:44:16.196Z",
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "user_balance_tracking_service": {
+      "name": "user_balance_tracking_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:44:06.866Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:44:06.866Z",
+      "config": {
+        "name": "user_balance_tracking_service",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "batchSize": 20,
+        "rateLimit": {
+          "queriesPerHour": 1000,
+          "maxCheckIntervalMs": 1800000,
+          "minCheckIntervalMs": 60000
+        },
+        "maxRetries": 3,
+        "description": "Tracks user wallet balances on Solana",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "enabled": true,
+          "resetTimeoutMs": 60000,
+          "failureThreshold": 5,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 60000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:27:06.746Z",
+          "lastStopped": "2025-02-27T03:26:35.005Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "operations": {
+          "total": 1640,
+          "failed": 0,
+          "successful": 1640
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:27:06.746Z",
+          "lastFailure": null,
+          "lastSuccess": "2025-02-27T04:44:06.866Z",
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 1640,
+        "failed": 0,
+        "successful": 1640
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:27:06.746Z",
+        "lastFailure": null,
+        "lastSuccess": "2025-02-27T04:44:06.866Z",
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "contest_evaluation_service": {
+      "name": "contest_evaluation_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:44:06.597Z",
+      "health": "error",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:44:06.596Z",
+      "config": {
+        "name": "contest_evaluation_service",
+        "stats": {
+          "history": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "circuitBreaker": "[Object]"
+        },
+        "config": {
+          "name": "contest_evaluation_service",
+          "stats": "[Object]",
+          "config": "[Object]",
+          "status": "stopped",
+          "backoff": "[Object]",
+          "running": false,
+          "evaluation": "[Object]",
+          "last_check": "2025-02-27T03:26:34.960Z",
+          "last_error": "Cannot read properties of undefined (reading 'PENDING')",
+          "maxRetries": 3,
+          "description": "Contest evaluation and scoring",
+          "dependencies": "[Array with 1 items]",
+          "last_started": "2025-02-26T11:31:57.535Z",
+          "last_stopped": "2025-02-26T11:31:52.247Z",
+          "retryDelayMs": 5000,
+          "circuitBreaker": "[Object]",
+          "checkIntervalMs": 30000,
+          "last_error_time": "2025-02-27T03:16:45.238Z"
+        },
+        "status": "active",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "running": true,
+        "evaluation": {
+          "timeoutMs": 300000,
+          "maxRetries": 3,
+          "retryDelayMs": 5000,
+          "minPrizeAmount": 0.001,
+          "maxParallelEvaluations": 5
+        },
+        "last_check": "2025-02-27T03:27:03.925Z",
+        "last_error": "Cannot read properties of undefined (reading 'PENDING')",
+        "maxRetries": 3,
+        "description": "Contest evaluation and scoring",
+        "dependencies": [
+          "market_data_service"
+        ],
+        "last_started": "2025-02-26T11:31:57.535Z",
+        "last_stopped": "2025-02-26T11:31:52.247Z",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "reason": "Handles critical financial operations, needs high stability",
+          "enabled": true,
+          "description": "Contest evaluation and scoring",
+          "resetTimeoutMs": 120000,
+          "failureThreshold": 10,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 180000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 30000,
+        "last_error_time": "2025-02-27T03:16:45.238Z"
+      },
+      "stats": {
+        "history": {
+          "lastError": "Cannot read properties of undefined (reading 'PENDING')",
+          "lastStarted": "2025-02-27T03:27:06.492Z",
+          "lastStopped": "2025-02-27T03:26:34.960Z",
+          "lastErrorTime": "2025-02-27T04:44:06.595Z",
+          "consecutiveFailures": 3938
+        },
+        "operations": {
+          "total": 3938,
+          "failed": 3938,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": true,
+          "failures": 154,
+          "lastReset": "2025-02-27T03:27:06.492Z",
+          "lastFailure": "2025-02-27T04:44:06.595Z",
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "error",
+      "operations": {
+        "total": 3938,
+        "failed": 3938,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": true,
+        "failures": 154,
+        "lastReset": "2025-02-27T03:27:06.492Z",
+        "lastFailure": "2025-02-27T04:44:06.595Z",
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "liquidity_service": {
+      "name": "liquidity_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:43:46.366Z",
+      "health": "degraded",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:43:46.366Z",
+      "config": {
+        "name": "liquidity_service",
+        "wallet": {
+          "minBalance": 0.05,
+          "masterWallet": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"
+        },
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "maxRetries": 3,
+        "description": "Test user SOL distribution and recovery",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "reason": "Test environment service, moderate tolerance",
+          "enabled": true,
+          "description": "Test user SOL distribution and recovery",
+          "resetTimeoutMs": 75000,
+          "failureThreshold": 6,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 60000
+      },
+      "stats": {
+        "history": {
+          "lastError": "ServiceError.operation is not a constructor",
+          "lastStarted": "2025-02-27T03:26:46.277Z",
+          "lastStopped": "2025-02-27T03:26:34.759Z",
+          "lastErrorTime": "2025-02-27T02:50:13.383Z",
+          "consecutiveFailures": 989
+        },
+        "operations": {
+          "total": 989,
+          "failed": 989,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:26:46.277Z",
+          "lastFailure": null,
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        },
+        "liquidityStats": {
+          "wallets": "[Object]",
+          "transfers": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "dependencies": "[Object]"
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 989,
+        "failed": 989,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:26:46.277Z",
+        "lastFailure": null,
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "achievement_service": {
+      "name": "achievement_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:42:06.867Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:42:06.867Z",
+      "config": {
+        "name": "achievement_service",
+        "stats": {
+          "history": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "circuitBreaker": "[Object]",
+          "achievementStats": "[Object]"
+        },
+        "config": {
+          "name": "achievement_service",
+          "stats": "[Object]",
+          "config": "[Object]",
+          "status": "stopped",
+          "backoff": "[Object]",
+          "running": false,
+          "last_check": "2025-02-27T03:26:34.968Z",
+          "maxRetries": 3,
+          "achievement": "[Object]",
+          "description": "User achievement tracking",
+          "dependencies": "[Array with 0 items]",
+          "last_stopped": "2025-02-27T03:05:15.205Z",
+          "retryDelayMs": 5000,
+          "circuitBreaker": "[Object]",
+          "checkIntervalMs": 300000
+        },
+        "status": "active",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "running": true,
+        "last_check": "2025-02-27T03:27:04.005Z",
+        "maxRetries": 3,
+        "achievement": {
+          "batchSize": 100,
+          "checkTimeoutMs": 30000,
+          "minCheckInterval": 60000,
+          "maxParallelChecks": 5
+        },
+        "description": "User achievement tracking",
+        "dependencies": [],
+        "last_stopped": "2025-02-27T03:05:15.205Z",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "reason": "Non-critical service, moderate error tolerance",
+          "enabled": true,
+          "description": "User achievement tracking",
+          "resetTimeoutMs": 70000,
+          "failureThreshold": 6,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 300000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:27:06.590Z",
+          "lastStopped": "2025-02-27T03:26:34.966Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "operations": {
+          "total": 0,
+          "failed": 0,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:27:06.590Z",
+          "lastFailure": null,
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        },
+        "achievementStats": {
+          "users": "[Object]",
+          "checks": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "achievements": "[Object]",
+          "dependencies": "[Object]"
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 0,
+        "failed": 0,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:27:06.590Z",
+        "lastFailure": null,
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "referral_service": {
+      "name": "referral_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:42:06.677Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:42:06.677Z",
+      "config": {
+        "name": "referral_service",
+        "stats": {
+          "history": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "referralStats": "[Object]",
+          "circuitBreaker": "[Object]"
+        },
+        "config": {
+          "name": "referral_service",
+          "stats": "[Object]",
+          "config": "[Object]",
+          "status": "stopped",
+          "backoff": "[Object]",
+          "running": false,
+          "referral": "[Object]",
+          "last_check": "2025-02-27T03:26:34.977Z",
+          "maxRetries": 3,
+          "description": "Referral program management",
+          "dependencies": "[Array with 0 items]",
+          "last_stopped": "2025-02-27T03:05:15.214Z",
+          "retryDelayMs": 5000,
+          "circuitBreaker": "[Object]",
+          "checkIntervalMs": 300000
+        },
+        "status": "active",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "running": true,
+        "referral": {
+          "batchSize": 100,
+          "cacheTimeout": 300000,
+          "periodLength": "weekly",
+          "minProcessInterval": 60000,
+          "processingTimeoutMs": 30000,
+          "maxParallelProcessing": 5,
+          "rankingUpdateInterval": 3600000
+        },
+        "last_check": "2025-02-27T03:27:04.057Z",
+        "maxRetries": 3,
+        "description": "Referral program management",
+        "dependencies": [],
+        "last_stopped": "2025-02-27T03:05:15.214Z",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "reason": "Standard configuration, balanced recovery",
+          "enabled": true,
+          "description": "Referral program management",
+          "resetTimeoutMs": 60000,
+          "failureThreshold": 5,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 300000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:27:06.642Z",
+          "lastStopped": "2025-02-27T03:26:34.977Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "operations": {
+          "total": 0,
+          "failed": 0,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "referralStats": {
+          "periods": "[Object]",
+          "rewards": "[Object]",
+          "referrals": "[Object]",
+          "milestones": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "dependencies": "[Object]"
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:27:06.642Z",
+          "lastFailure": null,
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 0,
+        "failed": 0,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:27:06.642Z",
+        "lastFailure": null,
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "leveling_service": {
+      "name": "leveling_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:42:06.641Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:42:06.641Z",
+      "config": {
+        "name": "leveling_service",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "maxRetries": 3,
+        "description": "Manages user XP and level progression",
+        "dependencies": [],
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "enabled": true,
+          "resetTimeoutMs": 60000,
+          "failureThreshold": 5,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 300000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:27:06.635Z",
+          "lastStopped": "2025-02-27T03:26:34.975Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "operations": {
+          "total": 26,
+          "failed": 0,
+          "successful": 26
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:27:06.635Z",
+          "lastFailure": null,
+          "lastSuccess": "2025-02-27T04:42:06.641Z",
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 26,
+        "failed": 0,
+        "successful": 26
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:27:06.635Z",
+        "lastFailure": null,
+        "lastSuccess": "2025-02-27T04:42:06.641Z",
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "token_whitelist_service": {
+      "name": "token_whitelist_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:42:06.538Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:42:06.538Z",
+      "config": {
+        "name": "token_whitelist_service",
+        "stats": {
+          "history": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "circuitBreaker": "[Object]",
+          "whitelistStats": "[Object]"
+        },
+        "config": {
+          "name": "token_whitelist_service",
+          "stats": "[Object]",
+          "config": "[Object]",
+          "status": "stopped",
+          "backoff": "[Object]",
+          "running": false,
+          "last_check": "2025-02-27T03:26:34.952Z",
+          "maxRetries": 3,
+          "submission": "[Object]",
+          "validation": "[Object]",
+          "description": "Token whitelist management",
+          "last_started": "2025-02-27T02:24:02.725Z",
+          "last_stopped": "2025-02-27T03:05:15.190Z",
+          "retryDelayMs": 5000,
+          "circuitBreaker": "[Object]",
+          "checkIntervalMs": 300000
+        },
+        "status": "active",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "running": true,
+        "last_check": "2025-02-27T03:27:03.858Z",
+        "maxRetries": 3,
+        "submission": {
+          "superAdminCost": 10000000,
+          "discountPerLevel": 1,
+          "minConfirmations": 2,
+          "baseSubmissionCost": 1000000000,
+          "submissionTimeoutMs": 60000,
+          "maxPendingSubmissions": 100
+        },
+        "validation": {
+          "allowedChains": "[Array with 1 items]",
+          "maxNameLength": 50,
+          "maxSymbolLength": 10,
+          "requiredMetadataFields": "[Array with 3 items]"
+        },
+        "description": "Token whitelist management",
+        "last_started": "2025-02-27T02:24:02.725Z",
+        "last_stopped": "2025-02-27T03:05:15.190Z",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "reason": "Standard tolerance, non-critical real-time operations",
+          "enabled": true,
+          "description": "Token whitelist management",
+          "resetTimeoutMs": 60000,
+          "failureThreshold": 5,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 300000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:27:06.439Z",
+          "lastStopped": "2025-02-27T03:26:34.950Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "operations": {
+          "total": 0,
+          "failed": 0,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:27:06.439Z",
+          "lastFailure": null,
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        },
+        "whitelistStats": {
+          "tokens": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "submissions": "[Object]",
+          "validations": "[Object]"
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 0,
+        "failed": 0,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:27:06.439Z",
+        "lastFailure": null,
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "wallet_generator_service": {
+      "name": "wallet_generator_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:41:46.227Z",
+      "health": "error",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:41:46.226Z",
+      "config": {
+        "name": "wallet_generator_service",
+        "cache": {
+          "ttl": 900000,
+          "maxSize": 1000
+        },
+        "stats": {
+          "history": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "walletStats": "[Object]",
+          "circuitBreaker": "[Object]"
+        },
+        "config": {
+          "name": "wallet_generator_service",
+          "cache": "[Object]",
+          "stats": "[Object]",
+          "config": "[Object]",
+          "status": "stopped",
+          "backoff": "[Object]",
+          "running": false,
+          "encryption": "[Object]",
+          "last_check": "2025-02-27T03:26:34.740Z",
+          "last_error": "Cannot set properties of undefined (setting 'last_operation_time_ms')",
+          "maxRetries": 3,
+          "last_started": "2025-02-27T02:23:52.038Z",
+          "last_stopped": "2025-02-27T03:05:15.143Z",
+          "retryDelayMs": 5000,
+          "circuitBreaker": "[Object]",
+          "checkIntervalMs": 300000,
+          "last_error_time": "2025-02-26T02:37:09.466Z"
+        },
+        "status": "active",
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "running": true,
+        "encryption": {
+          "ivLength": 16,
+          "algorithm": "aes-256-gcm"
+        },
+        "last_check": "2025-02-27T03:26:43.602Z",
+        "last_error": "Cannot set properties of undefined (setting 'last_operation_time_ms')",
+        "maxRetries": 3,
+        "last_started": "2025-02-27T02:23:52.038Z",
+        "last_stopped": "2025-02-27T03:05:15.143Z",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "reason": "Core infrastructure, standard configuration",
+          "enabled": true,
+          "description": "Wallet generation and encryption",
+          "resetTimeoutMs": 60000,
+          "failureThreshold": 5,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 300000,
+        "last_error_time": "2025-02-26T02:37:09.466Z"
+      },
+      "stats": {
+        "history": {
+          "lastError": "Cannot set properties of undefined (setting 'last_operation_time_ms')",
+          "lastStarted": "2025-02-27T03:26:46.146Z",
+          "lastStopped": "2025-02-27T03:26:34.740Z",
+          "lastErrorTime": "2025-02-27T04:41:46.225Z",
+          "consecutiveFailures": 365
+        },
+        "operations": {
+          "total": 365,
+          "failed": 365,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "walletStats": {
+          "wallets": "[Object]",
+          "encryption": "[Object]",
+          "operations": "[Object]"
+        },
+        "circuitBreaker": {
+          "isOpen": true,
+          "failures": 15,
+          "lastReset": "2025-02-27T03:26:46.146Z",
+          "lastFailure": "2025-02-27T04:41:46.225Z",
+          "recoveryTimeout": null,
+          "recoveryAttempts": 3,
+          "lastRecoveryAttempt": "2025-02-27T03:55:46.232Z"
+        }
+      },
+      "status": "error",
+      "operations": {
+        "total": 365,
+        "failed": 365,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": true,
+        "failures": 15,
+        "lastReset": "2025-02-27T03:26:46.146Z",
+        "lastFailure": "2025-02-27T04:41:46.225Z",
+        "recoveryTimeout": null,
+        "recoveryAttempts": 3,
+        "lastRecoveryAttempt": "2025-02-27T03:55:46.232Z"
+      }
+    },
+    "wallet_rake_service": {
+      "name": "wallet_rake_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T04:37:06.803Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T04:37:06.802Z",
+      "config": {
+        "name": "wallet_rake_service",
+        "stats": {
+          "history": "[Object]",
+          "rakeStats": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "circuitBreaker": "[Object]"
+        },
+        "config": {
+          "name": "wallet_rake_service",
+          "stats": "[Object]",
+          "config": "[Object]",
+          "status": "stopped",
+          "wallet": "[Object]",
+          "backoff": "[Object]",
+          "running": false,
+          "last_check": "2025-02-27T03:26:34.996Z",
+          "maxRetries": 3,
+          "processing": "[Object]",
+          "description": "Post-contest fund collection",
+          "last_stopped": "2025-02-27T03:05:15.231Z",
+          "retryDelayMs": 300000,
+          "circuitBreaker": "[Object]",
+          "checkIntervalMs": 600000
+        },
+        "status": "active",
+        "wallet": {
+          "master_wallet": "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp",
+          "min_balance_sol": 0.01,
+          "min_rake_amount": 0.001
+        },
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "running": true,
+        "last_check": "2025-02-27T03:27:04.129Z",
+        "maxRetries": 3,
+        "processing": {
+          "batchSize": 50,
+          "operationTimeoutMs": 60000,
+          "maxParallelOperations": 5
+        },
+        "description": "Post-contest fund collection",
+        "last_stopped": "2025-02-27T03:05:15.231Z",
+        "retryDelayMs": 300000,
+        "circuitBreaker": {
+          "reason": "Handles fund collection, needs careful error handling",
+          "enabled": true,
+          "description": "Post-contest fund collection",
+          "resetTimeoutMs": 90000,
+          "failureThreshold": 8,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 600000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:27:06.715Z",
+          "lastStopped": "2025-02-27T03:26:34.994Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "rakeStats": {
+          "amounts": "[Object]",
+          "batches": "[Object]",
+          "wallets": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "dependencies": "[Object]"
+        },
+        "operations": {
+          "total": 0,
+          "failed": 0,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:27:06.715Z",
+          "lastFailure": null,
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 0,
+        "failed": 0,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:27:06.715Z",
+        "lastFailure": null,
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "admin_wallet_service": {
+      "name": "admin_wallet_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T03:27:06.700Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T03:27:06.700Z",
+      "config": {
+        "name": "admin_wallet_service",
+        "stats": {
+          "history": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "walletStats": "[Object]",
+          "circuitBreaker": "[Object]"
+        },
+        "config": {
+          "name": "admin_wallet_service",
+          "stats": "[Object]",
+          "config": "[Object]",
+          "status": "stopped",
+          "wallet": "[Object]",
+          "backoff": "[Object]",
+          "running": false,
+          "last_check": "2025-02-27T03:26:34.986Z",
+          "maxRetries": 3,
+          "description": "Administrative wallet operations",
+          "dependencies": "[Array with 0 items]",
+          "last_stopped": "2025-02-27T03:05:15.222Z",
+          "retryDelayMs": 5000,
+          "circuitBreaker": "[Object]",
+          "checkIntervalMs": 60000
+        },
+        "status": "active",
+        "wallet": {
+          "encryption": "[Object]",
+          "operations": "[Object]"
+        },
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "running": true,
+        "last_check": "2025-02-27T03:27:04.101Z",
+        "maxRetries": 3,
+        "description": "Administrative wallet operations",
+        "dependencies": [],
+        "last_stopped": "2025-02-27T03:05:15.222Z",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "reason": "Critical admin operations, needs high reliability",
+          "enabled": true,
+          "description": "Administrative wallet operations",
+          "resetTimeoutMs": 80000,
+          "failureThreshold": 7,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 60000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:27:06.686Z",
+          "lastStopped": "2025-02-27T03:26:34.986Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "operations": {
+          "total": 0,
+          "failed": 0,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "walletStats": {
+          "wallets": "[Object]",
+          "transfers": "[Object]",
+          "operations": "[Object]",
+          "performance": "[Object]",
+          "balance_updates": "[Object]"
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:27:06.686Z",
+          "lastFailure": null,
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 0,
+        "failed": 0,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:27:06.686Z",
+        "lastFailure": null,
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    },
+    "contest_wallet_service": {
+      "name": "contest_wallet_service",
+      "description": "Consolidated service health status",
+      "updated_at": "2025-02-27T03:27:06.676Z",
+      "health": "healthy",
+      "running": true,
+      "dependencies": [],
+      "last_check": "2025-02-27T03:27:06.676Z",
+      "config": {
+        "name": "contest_wallet_service",
+        "wallet": {
+          "min_balance_sol": 0.01,
+          "encryption_algorithm": "aes-256-gcm"
+        },
+        "backoff": {
+          "factor": 2,
+          "maxDelayMs": 30000,
+          "initialDelayMs": 1000
+        },
+        "maxRetries": 3,
+        "description": "Contest wallet management",
+        "retryDelayMs": 5000,
+        "circuitBreaker": {
+          "reason": "Handles financial operations, needs higher stability",
+          "enabled": true,
+          "description": "Contest wallet management",
+          "resetTimeoutMs": 90000,
+          "failureThreshold": 8,
+          "backoffMultiplier": 2,
+          "minHealthyPeriodMs": 120000,
+          "monitoringWindowMs": 300000,
+          "maxRecoveryAttempts": 3,
+          "healthCheckIntervalMs": 30000
+        },
+        "checkIntervalMs": 60000
+      },
+      "stats": {
+        "history": {
+          "lastError": null,
+          "lastStarted": "2025-02-27T03:27:06.675Z",
+          "lastStopped": "2025-02-27T03:26:34.985Z",
+          "lastErrorTime": null,
+          "consecutiveFailures": 0
+        },
+        "operations": {
+          "total": 0,
+          "failed": 0,
+          "successful": 0
+        },
+        "performance": {
+          "lastOperationTimeMs": 0,
+          "averageOperationTimeMs": 0
+        },
+        "circuitBreaker": {
+          "isOpen": false,
+          "failures": 0,
+          "lastReset": "2025-02-27T03:27:06.675Z",
+          "lastFailure": null,
+          "recoveryTimeout": null,
+          "recoveryAttempts": 0
+        }
+      },
+      "status": "active",
+      "operations": {
+        "total": 0,
+        "failed": 0,
+        "successful": 0
+      },
+      "circuit_breaker": {
+        "isOpen": false,
+        "failures": 0,
+        "lastReset": "2025-02-27T03:27:06.675Z",
+        "lastFailure": null,
+        "recoveryTimeout": null,
+        "recoveryAttempts": 0
+      }
+    }
+  },
+  "service_health": {
+    "healthy": 10,
+    "degraded": 1,
+    "error": 3,
+    "unknown": 0
+  },
+  "maintenance_mode": false,
+  "most_recent_updates": [
+    {
+      "service": "market_data_service",
+      "time": "2025-02-27T04:44:29.120Z",
+      "by": "system"
+    },
+    {
+      "service": "token_sync_service",
+      "time": "2025-02-27T04:44:26.489Z",
+      "by": "system"
+    },
+    {
+      "service": "solana_service",
+      "time": "2025-02-27T04:44:16.196Z",
+      "by": "system"
+    },
+    {
+      "service": "user_balance_tracking_service",
+      "time": "2025-02-27T04:44:06.866Z",
+      "by": "system"
+    },
+    {
+      "service": "contest_evaluation_service",
+      "time": "2025-02-27T04:44:06.597Z",
+      "by": "system"
+    },
+    {
+      "service": "liquidity_service",
+      "time": "2025-02-27T04:43:46.366Z",
+      "by": "system"
+    },
+    {
+      "service": "achievement_service",
+      "time": "2025-02-27T04:42:06.867Z",
+      "by": "system"
+    },
+    {
+      "service": "referral_service",
+      "time": "2025-02-27T04:42:06.677Z",
+      "by": "system"
+    },
+    {
+      "service": "leveling_service",
+      "time": "2025-02-27T04:42:06.641Z",
+      "by": "system"
+    },
+    {
+      "service": "token_whitelist_service",
+      "time": "2025-02-27T04:42:06.538Z",
+      "by": "system"
+    }
+  ],
+  "most_recent_errors": []
+}
