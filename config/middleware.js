@@ -20,12 +20,13 @@ export function configureMiddleware(app) {
   // Allowed origins (CORS) - HTTPS only
   const allowedOrigins = [
     'https://degenduel.me', 
-    'https://api.degenduel.me',
     'https://data.degenduel.me', 
+    'https://talk.degenduel.me',
     'https://game.degenduel.me',
     'https://dev.degenduel.me',
     'https://manager.degenduel.me',
     'https://wallets.degenduel.me',
+    'https://reflections.degenduel.me',
     'https://branch.bet', 
     'https://app.branch.bet'
   ];
@@ -127,24 +128,26 @@ export function configureMiddleware(app) {
         connectSrc: [
           "'self'", 
           'wss://degenduel.me', 
-          'wss://api.degenduel.me', 
           'wss://game.degenduel.me',
           'wss://manager.degenduel.me',
+          'wss://talk.degenduel.me',
           'wss://wallets.degenduel.me',
           'wss://branch.bet',
           'wss://app.branch.bet',
+          'wss://reflections.degenduel.me',
           'wss://data.degenduel.me',
           'wss://dev.degenduel.me',
           'https://degenduel.me', 
           'https://admin.degenduel.me',
-          'https://api.degenduel.me', 
           'https://game.degenduel.me',
           'https://manager.degenduel.me',
+          'https://talk.degenduel.me',
           'https://wallets.degenduel.me',
           'https://branch.bet',
           'https://app.branch.bet',
           'https://data.degenduel.me',
-          'https://dev.degenduel.me'
+          'https://dev.degenduel.me',
+          'https://reflections.degenduel.me'
         ],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
