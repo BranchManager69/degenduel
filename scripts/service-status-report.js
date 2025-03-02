@@ -257,18 +257,24 @@ function outputReport(report) {
     fs.mkdirSync(dateDir);
   }
   
-  // Generate timestamp for filenames (HH-MM-SS) using local time
+  // Generate timestamp for run subfolder (HH-MM-SS) using local time
   const timeString = `${String(today.getHours()).padStart(2, '0')}-${String(today.getMinutes()).padStart(2, '0')}-${String(today.getSeconds()).padStart(2, '0')}`;
   
+  // Create a subfolder for this specific run
+  const runDir = path.join(dateDir, `run_${timeString}`);
+  if (!fs.existsSync(runDir)) {
+    fs.mkdirSync(runDir);
+  }
+  
   // Save as JSON
-  const jsonPath = path.join(dateDir, `service-status_${timeString}.json`);
+  const jsonPath = path.join(runDir, `service-status.json`);
   fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2));
-  console.log(`JSON report saved to: ${jsonPath}`);
   
   // Save as Markdown
-  const mdPath = path.join(dateDir, `service-status_${timeString}.md`);
+  const mdPath = path.join(runDir, `service-status.md`);
   fs.writeFileSync(mdPath, generateMarkdownReport(report));
-  console.log(`Markdown report saved to: ${mdPath}`);
+  
+  console.log(`Report saved to: ${runDir}/`);
   
   // Console summary
   printConsoleSummary(report);
@@ -437,7 +443,7 @@ function printConsoleSummary(report) {
   }
   
   console.log('╚══════════════════════════════════════════════════════════╝');
-  console.log(`\nDetailed reports saved to: /reports/service-reports/${new Date().toISOString().substring(0, 10)}/service-status_*.{json,md}`);
+  console.log(`\nDetailed reports saved to: ${path.join(process.cwd(), 'reports/service-reports')}/${dateString}/run_${timeString}/`);
 }
 
 /**
