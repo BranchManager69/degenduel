@@ -106,6 +106,38 @@ reports/
 
 ## Integration with Other Systems
 
+### API Access
+
+The reports can be accessed via the admin API. These endpoints require admin authentication:
+
+#### List Reports
+```
+GET /api/admin/system-reports
+```
+
+Query parameters:
+- `type` - Filter by report type (`service` or `db`)
+- `date` - Filter by date (YYYY-MM-DD)
+- `limit` - Limit number of results
+- `withAiOnly` - Only include reports with AI analysis (true/false)
+
+#### Get Report Content
+```
+GET /api/admin/system-reports/:reportId/:reportType
+```
+
+Path parameters:
+- `reportId` - Report ID (format: YYYY-MM-DD_run_HH-MM-SS)
+- `reportType` - Report type (`service` or `db`)
+
+#### Generate New Report
+```
+POST /api/admin/system-reports/generate
+```
+
+Request body:
+- `withAi` - Include AI analysis (true/false)
+
 ### Monitoring Pipeline
 
 The system status reports can be integrated into automated monitoring pipelines:

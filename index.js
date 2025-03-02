@@ -33,6 +33,8 @@ import WebSocketInitializer from './utils/websocket-suite/websocket-initializer.
 // Import WebSocket test & status routes
 import websocketTestRoutes from './routes/admin/websocket-test.js';
 import websocketStatusRoutes from './routes/admin/websocket-status.js';
+// Import System Reports routes
+import systemReportsRoutes from './routes/admin/system-reports.js';
 // Import Circuit Breaker routes
 import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
 import serviceManagementRoutes from './routes/admin/service-management.js';
@@ -134,6 +136,7 @@ app.use("/api/admin/scripts", scriptExecutionRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use('/api/admin/websocket-test', websocketTestRoutes);
 app.use('/api/admin/websocket', websocketStatusRoutes);
+app.use('/api/admin/system-reports', systemReportsRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
 
 // Protected routes (with maintenance check)
