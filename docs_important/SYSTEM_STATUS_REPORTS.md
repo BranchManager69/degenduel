@@ -17,10 +17,7 @@ npm run sys
 # System status with AI database analysis
 npm run sys:ai
 
-# System status with auto-open of report directories
-npm run sys:open
-
-# Complete report with AI analysis and auto-open
+# Complete report with AI analysis and clickable paths
 npm run sys:report
 ```
 
@@ -73,9 +70,10 @@ When using the `--ai` option, an additional AI analysis report is generated that
 
 The system status reporting tool (`tools/system-status.sh`) supports the following options:
 
-- `--open`: Automatically open report directories in file manager when complete
 - `--ai`: Run AI analysis on database comparison (requires OpenAI API key)
 - `--help`: Display help information and usage instructions
+
+Instead of trying to open directories automatically, the script now displays clickable file:// URLs that work with most IDEs and terminals.
 
 ## Implementation Details
 
@@ -102,8 +100,7 @@ reports/
 - **NPM Scripts**:
   - `npm run sys`: Basic system status report
   - `npm run sys:ai`: Include AI database analysis
-  - `npm run sys:open`: Open report directories when done
-  - `npm run sys:report`: Complete report with AI analysis and auto-open
+  - `npm run sys:report`: Complete report with AI analysis (recommended)
 
 ## Integration with Other Systems
 
