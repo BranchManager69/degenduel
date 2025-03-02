@@ -10,13 +10,14 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Path to the scripts directory (relative to this file)
-const SCRIPTS_DIR = path.join(__dirname, '../../scripts/shortcuts');
+// Path to the scripts directories (relative to this file)
+const SHORTCUTS_DIR = path.join(__dirname, '../../scripts/shortcuts');
+const MAIN_SCRIPTS_DIR = path.join(__dirname, '../../scripts');
 
 // Ensure the shortcuts directory exists
-if (!fs.existsSync(SCRIPTS_DIR)) {
-  fs.mkdirSync(SCRIPTS_DIR, { recursive: true });
-  logApi.info(`Created shortcuts scripts directory at ${SCRIPTS_DIR}`);
+if (!fs.existsSync(SHORTCUTS_DIR)) {
+  fs.mkdirSync(SHORTCUTS_DIR, { recursive: true });
+  logApi.info(`Created shortcuts scripts directory at ${SHORTCUTS_DIR}`);
 }
 
 /**
@@ -35,15 +36,33 @@ if (!fs.existsSync(SCRIPTS_DIR)) {
  */
 router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
   try {
-    const files = fs.readdirSync(SCRIPTS_DIR)
+    // Get scripts from shortcuts directory
+    const shortcutFiles = fs.readdirSync(SHORTCUTS_DIR)
       .filter(file => file.endsWith('.js') || file.endsWith('.sh'))
       .map(file => ({
         name: file,
-        path: path.join(SCRIPTS_DIR, file),
-        type: file.endsWith('.js') ? 'javascript' : 'shell'
+        path: path.join(SHORTCUTS_DIR, file),
+        type: file.endsWith('.js') ? 'javascript' : 'shell',
+        category: 'shortcuts'
       }));
     
-    res.json({ scripts: files });
+    // Get scripts from main scripts directory (excluding the shortcuts subdirectory)
+    const mainScriptFiles = fs.readdirSync(MAIN_SCRIPTS_DIR)
+      .filter(file => 
+        (file.endsWith('.js') || file.endsWith('.sh')) && 
+        !fs.lstatSync(path.join(MAIN_SCRIPTS_DIR, file)).isDirectory()
+      )
+      .map(file => ({
+        name: file,
+        path: path.join(MAIN_SCRIPTS_DIR, file),
+        type: file.endsWith('.js') ? 'javascript' : 'shell',
+        category: 'main'
+      }));
+    
+    // Combine both lists
+    const allScripts = [...shortcutFiles, ...mainScriptFiles];
+    
+    res.json({ scripts: allScripts });
   } catch (error) {
     logApi.error(`Error listing scripts: ${error.message}`);
     res.status(500).json({ error: 'Failed to list scripts' });
@@ -74,6 +93,10 @@ router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
  *               params:
  *                 type: object
  *                 description: Parameters to pass to the script
+ *               category:
+ *                 type: string
+ *                 description: Script category (shortcuts or main)
+ *                 default: shortcuts
  *     responses:
  *       200:
  *         description: Script execution result
@@ -88,18 +111,26 @@ router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
  */
 router.post('/:scriptName', requireAuth, requireSuperAdmin, (req, res) => {
   const { scriptName } = req.params;
-  const { params = {} } = req.body;
+  // Make 'shortcuts' the default category for backward compatibility
+  const { params = [], category = 'shortcuts' } = req.body;
   
   // Validate script name to prevent directory traversal
   if (scriptName.includes('/') || scriptName.includes('\\')) {
     return res.status(400).json({ error: 'Invalid script name' });
   }
   
-  const scriptPath = path.join(SCRIPTS_DIR, scriptName);
+  // Determine script path based on category
+  const scriptDir = category === 'main' ? MAIN_SCRIPTS_DIR : SHORTCUTS_DIR;
+  const scriptPath = path.join(scriptDir, scriptName);
   
   // Check if script exists
   if (!fs.existsSync(scriptPath)) {
-    return res.status(404).json({ error: 'Script not found' });
+    // If script not found in the specified category, log a detailed error
+    logApi.warn(`Script ${scriptName} not found in ${category} directory`);
+    return res.status(404).json({ 
+      error: 'Script not found',
+      details: `Script ${scriptName} not found in ${category} directory`
+    });
   }
   
   // Prepare command based on script type
@@ -113,7 +144,7 @@ router.post('/:scriptName', requireAuth, requireSuperAdmin, (req, res) => {
   }
   
   // Add parameters if provided
-  if (Object.keys(params).length > 0) {
+  if (params && (Array.isArray(params) ? params.length > 0 : Object.keys(params).length > 0)) {
     let paramString;
     
     // Check if params is an array (for shell scripts with positional params)

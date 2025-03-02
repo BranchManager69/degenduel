@@ -10,6 +10,9 @@ This document provides comprehensive documentation for the DegenDuel Script Exec
    - [Session Management](#session-management)
 3. [Available Scripts](#available-scripts)
 4. [Script Execution](#script-execution)
+   - [API Endpoint](#api-endpoint)
+   - [Script Categories](#script-categories)
+   - [Parameter Passing](#parameter-passing)
 5. [Test Client](#test-client)
 6. [Known Issues](#known-issues)
 7. [Troubleshooting](#troubleshooting)
@@ -22,6 +25,7 @@ Key features:
 - Authentication via wallet address
 - Execution of JavaScript and Shell scripts
 - Parameter passing to scripts
+- Support for scripts in multiple directories
 - Secure execution environment
 - Command-line test client
 
@@ -60,9 +64,9 @@ The session cookie can be:
 
 ## Available Scripts
 
-Scripts are stored in the `scripts/shortcuts/` directory and can be of two types:
-- JavaScript (`.js`) - Node.js scripts
-- Shell (`.sh`) - Bash scripts
+Scripts are stored in two directories:
+- `scripts/shortcuts/` - Contains scripts optimized for API execution
+- `scripts/` - Contains main scripts that can also be executed via API
 
 Currently available scripts:
 1. `manage-logs.js` - View and manage log files
@@ -70,7 +74,7 @@ Currently available scripts:
 3. `server-status.js` - Check server status
 4. `test-client.js` - Test client for script execution
 
-To list all available scripts, use the test client's `list` command.
+To list all available scripts, use the API endpoint `/api/admin/scripts` or the test client's `list` command.
 
 ## Script Execution
 
@@ -87,7 +91,8 @@ To list all available scripts, use the test client's `list` command.
 **Request Body:**
 ```json
 {
-  "params": ["param1", "param2"]  // For shell scripts
+  "params": ["param1", "param2"],  // For shell scripts
+  "category": "shortcuts"          // Optional: "shortcuts" (default) or "main"
 }
 ```
 
@@ -98,13 +103,28 @@ or
   "params": {
     "key1": "value1",
     "key2": "value2"
-  }  // For JavaScript scripts
+  },  // For JavaScript scripts
+  "category": "main"  // Optional: Use "main" to execute from the main scripts directory
 }
 ```
 
 **Response:**
 - Success: HTTP 200 with script output
 - Failure: HTTP 400, 401, 404, or 500 with error message
+
+### Script Categories
+
+The system supports two script categories:
+
+1. **shortcuts** (default) - Scripts in the `scripts/shortcuts/` directory
+   - Optimized for API execution
+   - Typically smaller and focused on specific tasks
+   - Default when no category is specified
+
+2. **main** - Scripts in the main `scripts/` directory
+   - Full-featured scripts that can also be run directly on the server
+   - May include more complex functionality
+   - Must be explicitly specified using the `category` parameter
 
 ### Parameter Passing
 
@@ -137,8 +157,11 @@ node scripts/shortcuts/test-client.js login YOUR_WALLET_ADDRESS
 # List available scripts
 node scripts/shortcuts/test-client.js list
 
-# Run a script
+# Run a script from shortcuts directory (default)
 node scripts/shortcuts/test-client.js run script-name.js param1 param2
+
+# Run a script from main scripts directory
+node scripts/shortcuts/test-client.js run script-name.js --category main param1 param2
 
 # Run a shell script
 node scripts/shortcuts/test-client.js run restart-app.sh degenduel-api
@@ -162,8 +185,97 @@ node scripts/shortcuts/test-client.js run restart-app.sh degenduel-api
 # Check server status
 node scripts/shortcuts/test-client.js run server-status.js
 
+# Run database tools from main scripts directory
+node scripts/shortcuts/test-client.js run db-tools.sh --category main status
+
+# Run database comparison with AI analysis
+node scripts/shortcuts/test-client.js run db-tools.sh --category main compare --ai-analysis
+
 # Manage logs
 node scripts/shortcuts/test-client.js run manage-logs.js --check
+```
+
+## Frontend Integration Examples
+
+### Listing Available Scripts
+
+```javascript
+// Function to list available scripts
+async function listScripts() {
+  try {
+    const response = await fetch('/api/admin/scripts', {
+      method: 'GET',
+      credentials: 'include' // Include session cookies
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.scripts;
+  } catch (error) {
+    console.error('Failed to list scripts:', error);
+    return [];
+  }
+}
+
+// Example usage
+listScripts().then(scripts => {
+  console.log('Available scripts:');
+  scripts.forEach(script => {
+    console.log(`- ${script.name} (${script.category})`);
+  });
+});
+```
+
+### Executing a Script
+
+```javascript
+// Function to execute a script
+async function executeScript(scriptName, params = [], category = 'shortcuts') {
+  try {
+    const response = await fetch(`/api/admin/scripts/${scriptName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include', // Include session cookies
+      body: JSON.stringify({
+        params,
+        category
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Error: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`Failed to execute script ${scriptName}:`, error);
+    throw error;
+  }
+}
+
+// Example: Run database status check
+executeScript('db-tools.sh', ['status'], 'main')
+  .then(result => {
+    console.log('Script output:', result.output);
+  })
+  .catch(error => {
+    console.error('Script execution failed:', error);
+  });
+
+// Example: Run database comparison with AI analysis
+executeScript('db-tools.sh', ['compare', '--ai-analysis'], 'main')
+  .then(result => {
+    console.log('Comparison report:', result.output);
+  })
+  .catch(error => {
+    console.error('Comparison failed:', error);
+  });
 ```
 
 ## Known Issues
@@ -220,6 +332,15 @@ For shell scripts that modify the server state (like `restart-app.sh`), be aware
 ### API URL Configuration
 
 If you're having trouble connecting to the API, ensure that the `API_URL` in your `.env` file is correct. The default is `https://degenduel.me`.
+
+### Script Category Issues
+
+If you encounter "Script not found" errors, check:
+1. That you're using the correct script name
+2. That you've specified the correct category (`shortcuts` or `main`)
+3. That the script exists in the specified directory
+
+Remember that the default category is `shortcuts`, so if you're trying to run a script from the main scripts directory, you must explicitly specify `category: "main"`.
 
 ---
 
