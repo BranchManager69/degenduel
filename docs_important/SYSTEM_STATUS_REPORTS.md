@@ -20,8 +20,8 @@ npm run sys:ai
 # System status with auto-open of report directories
 npm run sys:open
 
-# Combined options
-npm run sys:ai -- --open
+# Complete report with AI analysis and auto-open
+npm run sys:report
 ```
 
 ## Features
@@ -103,6 +103,7 @@ reports/
   - `npm run sys`: Basic system status report
   - `npm run sys:ai`: Include AI database analysis
   - `npm run sys:open`: Open report directories when done
+  - `npm run sys:report`: Complete report with AI analysis and auto-open
 
 ## Integration with Other Systems
 
