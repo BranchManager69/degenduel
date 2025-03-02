@@ -453,7 +453,6 @@ class ReferralService extends BaseService {
                 data: {
                     start_date: startTime,
                     end_date: endTime,
-                    period_type: this.config.referral.periodLength,
                     is_active: true,
                     status: 'active'
                 }

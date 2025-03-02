@@ -1,7 +1,7 @@
-import prisma from '../config/prisma.js';
 import express from 'express';
-import { logApi } from '../utils/logger-suite/logger.js';
-import AdminLogger from '../utils/admin-logger.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
+import AdminLogger from '../../utils/admin-logger.js';
+import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import fetch from 'node-fetch';
 
 const router = express.Router();
@@ -9,7 +9,7 @@ const router = express.Router();
 /**
  * Check a WebSocket endpoint's availability
  */
-router.post('/api/admin/websocket/status', async (req, res) => {
+router.post('/status', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { socketType, url, endpoint } = req.body;
     
@@ -36,7 +36,7 @@ router.post('/api/admin/websocket/status', async (req, res) => {
     );
 
     // Check the WebSocket endpoint availability
-    const isAvailable = await checkEndpointAvailability(url, endpoint);
+    const isAvailable = await checkEndpointAvailability(url, endpoint, socketType);
     
     return res.json({
       success: true,
@@ -56,7 +56,7 @@ router.post('/api/admin/websocket/status', async (req, res) => {
 /**
  * Test WebSocket message sending (for the testing panel)
  */
-router.post('/api/admin/websocket/test', async (req, res) => {
+router.post('/test', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { socketType, messageType, payload } = req.body;
     
@@ -139,7 +139,7 @@ router.post('/api/admin/websocket/test', async (req, res) => {
 /**
  * WebSocket health check endpoint (publicly accessible)
  */
-router.get('/api/admin/websocket/healthcheck', (req, res) => {
+router.get('/healthcheck', (req, res) => {
   try {
     const { endpoint } = req.query;
     
@@ -185,6 +185,43 @@ router.get('/api/admin/websocket/healthcheck', (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to check WebSocket health',
+    });
+  }
+});
+
+/**
+ * Get list of available WebSocket endpoints
+ */
+router.get('/endpoints', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const endpoints = [];
+    
+    // Get list of WebSocket servers
+    if (global.wsServers && Object.keys(global.wsServers).length > 0) {
+      for (const [serverName, server] of Object.entries(global.wsServers)) {
+        if (server && server.path) {
+          endpoints.push({
+            name: server.name || serverName,
+            type: serverName,
+            path: server.path,
+            status: server.isInitialized ? 'operational' : 'initializing',
+            clients: server.getConnectionsCount ? server.getConnectionsCount() : 0,
+            requiresAuth: server.requireAuth || false
+          });
+        }
+      }
+    }
+    
+    return res.json({
+      success: true,
+      endpoints,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logApi.error('[WebSocket Endpoints] Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get WebSocket endpoints',
     });
   }
 });
