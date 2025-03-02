@@ -21,10 +21,11 @@ ERROR_PREFIX="${BOLD}${RED}✗${NC}"
 WARNING_PREFIX="${BOLD}${YELLOW}⚠${NC}"
 INFO_PREFIX="${BOLD}${BLUE}ℹ${NC}"
 
-# Get current date for report paths
+# Get current date and time for report paths
 CURRENT_DATE=$(date +%Y-%m-%d)
-SERVICE_REPORT_DIR="reports/service-reports/$CURRENT_DATE"
-DB_REPORT_DIR="reports/db_comparisons/$CURRENT_DATE"
+CURRENT_TIME=$(date +%H-%M-%S)
+SERVICE_REPORT_DIR="reports/service-reports/$CURRENT_DATE/run_$CURRENT_TIME"
+DB_REPORT_DIR="reports/db_comparisons/$CURRENT_DATE/run_$CURRENT_TIME"
 
 # Create a trap to handle script interruption
 cleanup() {

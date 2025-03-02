@@ -42,7 +42,7 @@ Service status reports analyze the health and operational state of all DegenDuel
 - Service configuration details
 - Performance metrics
 
-**Location:** `reports/service-reports/YYYY-MM-DD/service-status_HH-MM-SS.{json,md}`
+**Location:** `reports/service-reports/YYYY-MM-DD/run_HH-MM-SS/service-status.{json,md}`
 
 ### 2. Database Comparison Reports
 
@@ -53,7 +53,7 @@ Database comparison reports analyze the differences between production and test 
 - Schema differences (tables, columns, constraints)
 - Recommendations for reconciliation
 
-**Location:** `reports/db_comparisons/YYYY-MM-DD/db_comparison_HH-MM-SS.{txt,plain.txt}`
+**Location:** `reports/db_comparisons/YYYY-MM-DD/run_HH-MM-SS/db_comparison.{txt,plain.txt}`
 
 #### AI Analysis
 
@@ -64,7 +64,7 @@ When using the `--ai` option, an additional AI analysis report is generated that
 - Prisma migration suggestions
 - Prioritized action plan
 
-**Location:** `reports/db_comparisons/YYYY-MM-DD/db_comparison_HH-MM-SS_plain_ai_analysis.txt`
+**Location:** `reports/db_comparisons/YYYY-MM-DD/run_HH-MM-SS/db_comparison_ai_analysis.txt`
 
 ## Command-line Options
 
@@ -83,13 +83,15 @@ Instead of trying to open directories automatically, the script now displays cli
 reports/
 ├── service-reports/
 │   └── YYYY-MM-DD/
-│       ├── service-status_HH-MM-SS.json
-│       └── service-status_HH-MM-SS.md
+│       └── run_HH-MM-SS/
+│           ├── service-status.json
+│           └── service-status.md
 └── db_comparisons/
     └── YYYY-MM-DD/
-        ├── db_comparison_HH-MM-SS.txt
-        ├── db_comparison_HH-MM-SS_plain.txt
-        └── db_comparison_HH-MM-SS_plain_ai_analysis.txt (when using --ai)
+        └── run_HH-MM-SS/
+            ├── db_comparison.txt
+            ├── db_comparison_plain.txt
+            └── db_comparison_ai_analysis.txt (when using --ai)
 ```
 
 ### Scripts and Tools
