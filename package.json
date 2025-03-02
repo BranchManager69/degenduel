@@ -6,8 +6,8 @@
   "scripts": {
     "db:help": "./scripts/db-tools.sh help",
     "db:status": "./scripts/db-tools.sh status",
-    "db:compare": "./scripts/db-tools.sh compare",
-    "db:ai-compare": "./scripts/db-tools.sh compare --ai-analysis",
+    "db:compare": "./scripts/db-tools.sh compare # Reports saved to reports/db_comparisons/YYYY-MM-DD/",
+    "db:ai-compare": "./scripts/db-tools.sh compare --ai-analysis # Reports and AI analysis saved to reports/db_comparisons/YYYY-MM-DD/",
     "db:backup": "./scripts/db-tools.sh backup",
     "db:safe-migrate": "npm run db:backup && npm run db:reset-test && npx prisma migrate dev",
     "db:reset-test": "./scripts/db-tools.sh reset-test",
@@ -16,7 +16,7 @@
     "db:compliment": "./scripts/db-tools.sh compliment",
     "db:money": "./scripts/db-tools.sh money",
 
-    "test:services": "node scripts/service-status-report.js",
+    "test:services": "node scripts/service-status-report.js # Reports saved to reports/service-reports/YYYY-MM-DD/",
     "test:websocket": "node scripts/test-websocket.js",
     "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
 
