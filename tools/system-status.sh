@@ -120,39 +120,25 @@ show_summary() {
     fi
 }
 
-# Function to open report directories if supported
-open_report_dirs() {
-    echo -e "${INFO_PREFIX} ${CYAN}Attempting to open report directories...${NC}"
+# Function to print clickable report directory paths
+print_report_paths() {
+    # Get the absolute paths to the report directories
+    SERVICE_REPORT_DIR_ABS=$(realpath "$SERVICE_REPORT_DIR")
+    DB_REPORT_DIR_ABS=$(realpath "$DB_REPORT_DIR")
     
-    # Determine the OS and open file manager accordingly
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        # Linux
-        xdg-open "$SERVICE_REPORT_DIR" 2>/dev/null || true
-        xdg-open "$DB_REPORT_DIR" 2>/dev/null || true
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        open "$SERVICE_REPORT_DIR" 2>/dev/null || true
-        open "$DB_REPORT_DIR" 2>/dev/null || true
-    elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-        # Windows Git Bash or Cygwin
-        explorer "$SERVICE_REPORT_DIR" 2>/dev/null || true
-        explorer "$DB_REPORT_DIR" 2>/dev/null || true
-    else
-        echo -e "${INFO_PREFIX} ${YELLOW}Auto-opening directories not supported on this platform.${NC}"
-    fi
+    echo -e "\n${BOLD}${CYAN}=== Clickable Report Paths ===${NC}"
+    echo -e "${INFO_PREFIX} ${CYAN}Service reports:${NC} ${BOLD}${WHITE}file://$SERVICE_REPORT_DIR_ABS${NC}"
+    echo -e "${INFO_PREFIX} ${CYAN}Database reports:${NC} ${BOLD}${WHITE}file://$DB_REPORT_DIR_ABS${NC}"
+    echo -e ""
+    echo -e "${INFO_PREFIX} ${YELLOW}Click on the paths above to open directly in your file manager/IDE${NC}"
 }
 
 # Parse command line arguments
-OPEN_DIRS=false
 AI_ANALYSIS=false
 
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-        --open)
-            OPEN_DIRS=true
-            shift
-            ;;
         --ai)
             AI_ANALYSIS=true
             shift
@@ -162,7 +148,6 @@ while [[ $# -gt 0 ]]; do
             echo -e "${BOLD}Usage:${NC} $0 [options]"
             echo -e ""
             echo -e "${BOLD}Options:${NC}"
-            echo -e "  --open      Open report directories in file manager when done"
             echo -e "  --ai        Run AI analysis on database comparison report"
             echo -e "  --help      Show this help message"
             exit 0
@@ -199,9 +184,9 @@ DB_SUCCESS=$?
 show_summary $SERVICE_SUCCESS $DB_SUCCESS
 OVERALL_SUCCESS=$?
 
-# Open directories if requested
-if [ "$OPEN_DIRS" = true ] && [ $OVERALL_SUCCESS -eq 0 ]; then
-    open_report_dirs
+# Always print clickable paths if reports were generated successfully
+if [ $OVERALL_SUCCESS -eq 0 ]; then
+    print_report_paths
 fi
 
 exit $OVERALL_SUCCESS

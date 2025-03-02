@@ -27,8 +27,7 @@
     
     "sys": "./tools/system-status.sh",
     "sys:ai": "./tools/system-status.sh --ai",
-    "sys:open": "./tools/system-status.sh --open",
-    "sys:report": "./tools/system-status.sh --ai --open",
+    "sys:report": "./tools/system-status.sh --ai",
 
     "generate-swagger": "node scripts/generate-swagger.js",
     "dev": "node index.js",
