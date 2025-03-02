@@ -21,6 +21,12 @@ scripts/
 # Backups
 backups/
 
+# Reports
+reports/
+
+# Shortcut Scripts
+scripts/shortcuts/
+
 # Archives
 archive/
 archive/**

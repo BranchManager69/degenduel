@@ -6,7 +6,7 @@ dotenv.config();
 // helpful DegenDuel API endpoints:
 const DD_SERV_API = 'https://degenduel.me/api/dd-serv/tokens';
 const DATA_API = 'https://data.degenduel.me/api';
-const GAME_API = 'https://game.degenduel.me'; // deprecated
+const GAME_API = 'https://game.degenduel.me'; // deprecating
 // Fallback API for when data service is unavailable
 const LOCAL_PORT = process.env.PORT || process.env.API_PORT || 3004;
 const LOCAL_FALLBACK_API = null; // Disabling local fallback during startup to avoid circular dependency
