@@ -1,4 +1,14 @@
 // /utils/logger-suite/logger.js
+
+/**
+ * 
+ * This is the main logger for the project.
+ * It is used to log messages to the console and to the file system.
+ * 
+ * Pretty colors, timestamps, and other formatting.
+ * 
+ */
+
 import chalk from "chalk";
 import path from "path";
 import winston from "winston";
