@@ -9,6 +9,7 @@ import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import { getReports, getReportContent } from '../../tools/report-index.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
+import { exec } from 'child_process';
 
 const router = express.Router();
 
@@ -151,7 +152,6 @@ router.post('/generate', requireAuth, requireAdmin, async (req, res) => {
     );
     
     // Execute the system-status.sh script
-    const { exec } = require('child_process');
     const command = withAi 
       ? 'npm run sys:report' 
       : 'npm run sys';
