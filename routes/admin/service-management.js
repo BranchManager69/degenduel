@@ -17,7 +17,7 @@ const serviceLogger = logApi.forService('SERVICE-MGMT');
  *     tags: [Admin]
  *     summary: Get status of all services
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Status of all services
@@ -88,7 +88,7 @@ router.get('/status', requireAuth, requireAdmin, async (req, res) => {
  *     tags: [Admin]
  *     summary: Start or restart a service
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: service
@@ -171,7 +171,7 @@ router.post('/start/:service', requireAuth, requireSuperAdmin, async (req, res) 
  *     tags: [Admin]
  *     summary: Stop a service
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: service
@@ -253,7 +253,7 @@ router.post('/stop/:service', requireAuth, requireSuperAdmin, async (req, res) =
  *     tags: [Admin]
  *     summary: Restart a service
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: service
@@ -334,7 +334,7 @@ router.post('/restart/:service', requireAuth, requireSuperAdmin, async (req, res
  *     tags: [Admin]
  *     summary: Get the service dependency graph
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Service dependency graph
@@ -384,7 +384,7 @@ router.get('/dependency-graph', requireAuth, requireAdmin, async (req, res) => {
  *     tags: [Admin]
  *     summary: Trigger a health check on all services
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Health check triggered

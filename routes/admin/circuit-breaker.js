@@ -14,7 +14,7 @@ const router = express.Router();
  *     tags: [Admin]
  *     summary: Get circuit breaker status for all services
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Circuit breaker status for all services
@@ -63,7 +63,7 @@ router.get('/status', requireAdmin, async (req, res) => {
  *     tags: [Admin]
  *     summary: Reset circuit breaker for a service
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: service
@@ -110,7 +110,7 @@ router.post('/reset/:service', requireAdmin, async (req, res) => {
  *     tags: [Admin]
  *     summary: Get circuit breaker configuration for a service
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: service
@@ -154,7 +154,7 @@ router.get('/config/:service', requireAdmin, async (req, res) => {
  *     tags: [Admin]
  *     summary: Update circuit breaker configuration for a service
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: service

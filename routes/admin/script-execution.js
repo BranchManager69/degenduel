@@ -4,7 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
+import { requireAuth, requireAdmin, requireSuperAdmin } from '../../middleware/auth.js';
+import { requireDeviceAuth } from '../../middleware/deviceAuth.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -27,12 +28,14 @@ if (!fs.existsSync(SHORTCUTS_DIR)) {
  *     summary: List available scripts
  *     tags: [Scripts]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: List of available scripts
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Failed to list scripts
  */
 router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
   try {
@@ -69,6 +72,26 @@ router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
   }
 });
 
+// Add a new middleware to check if the script requires device authentication
+const checkScriptDeviceAuth = async (req, res, next) => {
+    // List of scripts that require device authentication
+    const scriptsRequiringDeviceAuth = [
+        'restart-app.sh',
+        'manage-logs.js',
+        'server-status.js'
+    ];
+    
+    const scriptName = req.params.scriptName;
+    
+    if (scriptsRequiringDeviceAuth.includes(scriptName)) {
+        // This script requires device authentication
+        return requireDeviceAuth(req, res, next);
+    }
+    
+    // Script doesn't require device authentication
+    next();
+};
+
 /**
  * @swagger
  * /api/admin/scripts/{scriptName}:
@@ -76,7 +99,7 @@ router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
  *     summary: Execute a script
  *     tags: [Scripts]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: scriptName
@@ -91,8 +114,11 @@ router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
  *             type: object
  *             properties:
  *               params:
- *                 type: object
- *                 description: Parameters to pass to the script
+ *                 oneOf:
+ *                   - type: object
+ *                     description: Named parameters for JavaScript scripts (key-value pairs)
+ *                   - type: array
+ *                     description: Positional parameters for shell scripts
  *               category:
  *                 type: string
  *                 description: Script category (shortcuts or main)
@@ -101,7 +127,7 @@ router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
  *       200:
  *         description: Script execution result
  *       400:
- *         description: Invalid script name
+ *         description: Invalid script name or unsupported script type
  *       401:
  *         description: Unauthorized
  *       404:
@@ -109,7 +135,7 @@ router.get('/', requireAuth, requireSuperAdmin, (req, res) => {
  *       500:
  *         description: Script execution failed
  */
-router.post('/:scriptName', requireAuth, requireSuperAdmin, (req, res) => {
+router.post('/:scriptName', requireAuth, requireAdmin, checkScriptDeviceAuth, async (req, res) => {
   const { scriptName } = req.params;
   // Make 'shortcuts' the default category for backward compatibility
   const { params = [], category = 'shortcuts' } = req.body;
