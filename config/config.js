@@ -73,6 +73,12 @@ const config = {
     if (!origin) return 'production'; // direct API calls default to prod
     return origin.includes('localhost') || origin.includes('127.0.0.1') ? 'development' : 'production';
   },
+  // Device authentication settings
+  device_auth_enabled: process.env.DEVICE_AUTH_ENABLED === 'true' || false,
+  device_auth: {
+    max_devices_per_user: parseInt(process.env.MAX_DEVICES_PER_USER || '5'),
+    auto_authorize_first_device: process.env.AUTO_AUTHORIZE_FIRST_DEVICE === 'true' || true
+  },
 };
 
 export const validateSolanaConfig = () => {
