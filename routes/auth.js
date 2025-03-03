@@ -145,7 +145,7 @@ router.get('/challenge', async (req, res) => {
 // The front-end will send: { wallet, signature: Array(64), message: "...theNonceHere..." }
 router.post('/verify-wallet', async (req, res) => {
   try {
-    const { wallet, signature, message } = req.body;
+    const { wallet, signature, message, device_id, device_name, device_type } = req.body;
     authLogger.info('Verify wallet request received', { wallet });
 
     if (!wallet || !signature || !message) {
@@ -225,6 +225,83 @@ router.post('/verify-wallet', async (req, res) => {
       }
     });
 
+    // Handle device authorization if device_id is provided
+    let deviceInfo = null;
+    if (config.device_auth_enabled && device_id) {
+      try {
+        // Check if this is the first device for this user
+        const deviceCount = await prisma.authorized_devices.count({
+          where: { wallet_address: wallet }
+        });
+        
+        const shouldAutoAuthorize = config.device_auth.auto_authorize_first_device && deviceCount === 0;
+        
+        // Check if device is already authorized
+        let existingDevice = await prisma.authorized_devices.findUnique({
+          where: {
+            wallet_address_device_id: {
+              wallet_address: wallet,
+              device_id: device_id
+            }
+          }
+        });
+        
+        if (existingDevice) {
+          // Update existing device
+          deviceInfo = await prisma.authorized_devices.update({
+            where: { id: existingDevice.id },
+            data: {
+              device_name: device_name || existingDevice.device_name,
+              device_type: device_type || existingDevice.device_type,
+              last_used: new Date(),
+              is_active: existingDevice.is_active
+            }
+          });
+        } else if (shouldAutoAuthorize) {
+          // Auto-authorize first device
+          deviceInfo = await prisma.authorized_devices.create({
+            data: {
+              wallet_address: wallet,
+              device_id: device_id,
+              device_name: device_name || 'First Device',
+              device_type: device_type || 'Unknown',
+              is_active: true
+            }
+          });
+          
+          authLogger.info('Auto-authorized first device for user', {
+            wallet,
+            device_id,
+            device_name: deviceInfo.device_name
+          });
+        } else {
+          // Create unauthorized device record
+          deviceInfo = await prisma.authorized_devices.create({
+            data: {
+              wallet_address: wallet,
+              device_id: device_id,
+              device_name: device_name || 'Unknown Device',
+              device_type: device_type || 'Unknown',
+              is_active: false // Not authorized yet
+            }
+          });
+          
+          authLogger.info('Created unauthorized device record', {
+            wallet,
+            device_id,
+            device_name: deviceInfo.device_name
+          });
+        }
+      } catch (deviceError) {
+        authLogger.error('Error handling device authorization', {
+          wallet,
+          device_id,
+          error: deviceError.message
+        });
+        // Continue with login even if device handling fails
+      }
+    }
+
     // Track session with analytics
     authLogger.analytics.trackSession(user, {
       ...req.headers,
@@ -232,7 +309,8 @@ router.post('/verify-wallet', async (req, res) => {
       'x-forwarded-for': req.headers['x-forwarded-for'],
       'user-agent': req.headers['user-agent'],
       'sec-ch-ua-platform': req.headers['sec-ch-ua-platform'],
-      'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile']
+      'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile'],
+      'x-device-id': device_id
     });
 
     // 6) Create JWT
@@ -267,14 +345,22 @@ router.post('/verify-wallet', async (req, res) => {
       }
     });
 
+    // Return device authorization status
+    const deviceAuthStatus = deviceInfo ? {
+      device_authorized: deviceInfo.is_active,
+      device_id: deviceInfo.device_id,
+      device_name: deviceInfo.device_name,
+      requires_authorization: config.device_auth_enabled && !deviceInfo.is_active
+    } : null;
+
     return res.json({
       verified: true,
-      token,
       user: {
         wallet_address: user.wallet_address,
         role: user.role,
         nickname: user.nickname
-      }
+      },
+      device: deviceAuthStatus
     });
   } catch (error) {
     authLogger.error('Wallet verification failed', {
