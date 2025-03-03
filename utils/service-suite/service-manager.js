@@ -681,6 +681,14 @@ class ServiceManager {
             })
             .map(([name]) => name);
     }
+    
+    /**
+     * Get all registered services
+     * @returns {Map} Map of service names to service instances
+     */
+    getServices() {
+        return this.services;
+    }
 
     /**
      * Validate service dependencies
