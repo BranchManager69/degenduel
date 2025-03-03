@@ -1,4 +1,13 @@
 // index.js
+
+/**
+ * 
+ * This is the main entry point for the DegenDuel API.
+ * It is responsible for initializing the server (both Express and WebSocket)
+ * it also initializes the services and configures the routes.
+ * 
+ */
+
 //---------------------------------------------------.
 //  Main server initialization and configuration     |
 //---------------------------------------------------|
