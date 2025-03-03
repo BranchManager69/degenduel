@@ -119,6 +119,7 @@ class TokenSyncService extends BaseService {
         };
     }
 
+    // Initialize the service
     async initialize() {
         try {
             // Call parent initialize first
@@ -213,8 +214,10 @@ class TokenSyncService extends BaseService {
 
     // Validation utilities
     validateUrl(url) {
+        // Skip validation if no URL provided
         if (!url) return null;
         
+        // Handle URL objects
         if (typeof url === 'object') {
             url = url.href || url.url;
             if (!url) {
@@ -240,6 +243,7 @@ class TokenSyncService extends BaseService {
         }
     }
 
+    // Validate the description
     validateDescription(desc) {
         if (!desc) return null;
         const trimmed = desc.trim();
@@ -248,6 +252,7 @@ class TokenSyncService extends BaseService {
             : trimmed;
     }
 
+    // Validate the symbol
     validateSymbol(symbol) {
         if (!symbol) return null;
         
@@ -263,6 +268,7 @@ class TokenSyncService extends BaseService {
         return cleanSymbol.substring(0, this.config.validation.SYMBOL.MAX_LENGTH);
     }
 
+    // Validate the name
     validateName(name) {
         const trimmed = name?.trim();
         if (!trimmed) {
@@ -273,6 +279,7 @@ class TokenSyncService extends BaseService {
             : trimmed;
     }
 
+    // Validate the address
     validateAddress(address) {
         // Skip validation if no address provided
         if (!address) return null;
@@ -325,6 +332,7 @@ class TokenSyncService extends BaseService {
             throw new Error(`Invalid endpoint URL: ${endpoint}`);
         }
         
+        // Make the API call
         try {
             const response = await axios({
                 ...options,
@@ -351,6 +359,7 @@ class TokenSyncService extends BaseService {
         }
     }
 
+    // Fetch token prices
     async fetchTokenPrices(addresses) {
         logApi.info(`Fetching prices for ${addresses.length} tokens...`);
         
@@ -385,6 +394,7 @@ class TokenSyncService extends BaseService {
         }
     }
 
+    // Fetch token data
     async fetchTokenData() {
         logApi.info('Fetching token data from data service...');
         
@@ -534,6 +544,7 @@ class TokenSyncService extends BaseService {
         }
     }
 
+    // Update token metadata
     async updateMetadata(fullData) {
         const startTime = Date.now();
         
@@ -733,6 +744,7 @@ class TokenSyncService extends BaseService {
         }
     }
 
+    // Check if the token list has changed
     hasTokenListChanged(newTokens) {
         if (this.lastKnownTokens.size !== newTokens.length) {
             logApi.info(`Token list size changed: ${this.lastKnownTokens.size} -> ${newTokens.length}`);
@@ -757,6 +769,7 @@ class TokenSyncService extends BaseService {
         return false;
     }
 
+    // Stop the service
     async stop() {
         try {
             await super.stop();

@@ -15,7 +15,7 @@ const verifyUserToken = (token) => {
     const decoded = jwt.verify(token, config.jwt.secret);
     return decoded.wallet_address ? decoded : null;
   } catch (error) {
-    logApi.error('Token verification failed:', error);
+    logApi.error('User token verification failed:', error);
     return null;
   }
 };

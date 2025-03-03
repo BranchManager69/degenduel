@@ -1,9 +1,10 @@
 // services/tokenWhitelistService.js
 
 /*
- * This service is responsible for managing the token whitelist.
+ * This service is responsible for managing the DegenDuel Token Whitelist.
  * It handles token verification, submission fee processing, and whitelist management.
- * The service ensures only valid tokens are added to the platform and manages
+ * 
+ * This service ensures only valid tokens are added to the platform and manages
  * the submission process including payment verification and metadata validation.
  */
 
@@ -30,7 +31,7 @@ import { Decimal } from 'decimal.js';
 const TOKEN_WHITELIST_CONFIG = {
     name: SERVICE_NAMES.TOKEN_WHITELIST,
     description: getServiceMetadata(SERVICE_NAMES.TOKEN_WHITELIST).description,
-    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
+    checkIntervalMs: 2 * 60 * 1000, // Check every 2 minutes
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -59,12 +60,14 @@ const TOKEN_WHITELIST_CONFIG = {
     }
 };
 
+// ** Token Whitelist Service **
 class TokenWhitelistService extends BaseService {
     constructor() {
         ////super(TOKEN_WHITELIST_CONFIG.name, TOKEN_WHITELIST_CONFIG);
         super(TOKEN_WHITELIST_CONFIG);
         
         // Initialize Solana connection
+        // TODO: shouldnt we already have a connection in the solanaService by this point?
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         this.treasuryWallet = new PublicKey(config.degendual_treasury_wallet);
         this.umi = createUmi(config.rpc_urls.primary).use(mplTokenMetadata());
@@ -108,6 +111,7 @@ class TokenWhitelistService extends BaseService {
         this.submissionTimeouts = new Set();
     }
 
+    // Initialize the service
     async initialize() {
         try {
             // Call parent initialize first
@@ -124,6 +128,7 @@ class TokenWhitelistService extends BaseService {
                     : settings.value;
 
                 // Merge configs carefully preserving circuit breaker settings
+                // TODO: should we be merging configs here?
                 this.config = {
                     ...this.config,
                     ...dbConfig,
@@ -135,6 +140,7 @@ class TokenWhitelistService extends BaseService {
             }
 
             // Load initial whitelist state
+            // TODO: does this work as intended?
             const [totalTokens, activeTokens] = await Promise.all([
                 prisma.tokens.count(),
                 prisma.tokens.count({ where: { is_active: true } })
@@ -150,12 +156,14 @@ class TokenWhitelistService extends BaseService {
                 whitelistStats: this.whitelistStats
             }));
 
+            // Mark the service as started
             await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
             );
 
+            // Log the service as started
             logApi.info('\t\tToken Whitelist Service initialized', {
                 totalTokens,
                 activeTokens
@@ -169,6 +177,7 @@ class TokenWhitelistService extends BaseService {
         }
     }
 
+    // Get the user level discount
     async getUserLevelDiscount(userId) {
         try {
             const userStats = await prisma.user_stats.findUnique({
@@ -176,10 +185,12 @@ class TokenWhitelistService extends BaseService {
                 select: { level: true }
             });
 
+            // No discount if no level found
             if (!userStats || !userStats.level) {
-                return 0; // No discount if no level found
+                return 0; 
             }
 
+            // Calculate discount based on user level
             return userStats.level * this.config.submission.discountPerLevel;
         } catch (error) {
             logApi.error('Failed to get user level:', {
@@ -190,9 +201,11 @@ class TokenWhitelistService extends BaseService {
         }
     }
 
+    // Calculate submission cost
     async calculateSubmissionCost(user) {
         // Base cost depends on user role
-        const baseCost = user.role === 'SUPER_ADMIN' ? 
+        ////const baseCost = user.role === 'SUPER_ADMIN' ? 
+        const baseCost = user.role === 'SUPER_ADMIN' || user.role === 'SUPERADMIN' || user.role === 'ADMIN' ? 
             this.config.submission.superAdminCost : 
             this.config.submission.baseSubmissionCost;
 
@@ -203,9 +216,11 @@ class TokenWhitelistService extends BaseService {
         const discount = (discountPercent / 100) * baseCost;
         const finalCost = baseCost - discount;
 
-        return Math.max(finalCost, 0); // Ensure we don't go negative
+        // Ensure we don't go negative
+        return Math.max(finalCost, 0);
     }
 
+    // Verify token
     async verifyToken(contractAddress) {
         const startTime = Date.now();
         
@@ -218,6 +233,7 @@ class TokenWhitelistService extends BaseService {
                 where: { address: contractAddress }
             });
 
+            // Token already whitelisted
             if (existingToken) {
                 throw ServiceError.validation('Token already whitelisted');
             }
@@ -225,6 +241,7 @@ class TokenWhitelistService extends BaseService {
             // Fetch and validate token metadata
             const asset = await fetchDigitalAsset(this.umi, publicKey(contractAddress));
             
+            // Token metadata not found
             if (!asset) {
                 throw ServiceError.validation('Token metadata not found');
             }
@@ -245,6 +262,7 @@ class TokenWhitelistService extends BaseService {
                 throw ServiceError.validation('Symbol too long');
             }
 
+            // Validate name length
             if (asset.metadata.name.length > this.config.validation.maxNameLength) {
                 this.whitelistStats.validations.by_reason.name_too_long = 
                     (this.whitelistStats.validations.by_reason.name_too_long || 0) + 1;
@@ -259,6 +277,7 @@ class TokenWhitelistService extends BaseService {
                 (this.whitelistStats.validations.total - 1) + (Date.now() - startTime)) / 
                 this.whitelistStats.validations.total;
 
+            // Return token metadata
             return {
                 name: asset.metadata.name,
                 symbol: asset.metadata.symbol,
@@ -269,25 +288,31 @@ class TokenWhitelistService extends BaseService {
             this.whitelistStats.validations.total++;
             this.whitelistStats.validations.failed++;
             
+            // Log the error
             logApi.error('Token verification failed:', {
                 contractAddress,
                 error: error.message
             });
-            
+
+            // Throw error if it's a ServiceError
             if (error instanceof ServiceError) {
                 throw error;
             }
-            
+
+            // Throw error if it's not a ServiceError
             throw ServiceError.validation('Invalid token address');
         }
     }
 
+    // Verify payment
     async verifyPayment(signature, walletAddress, user) {
         try {
+            // Get the transaction
             const tx = await this.connection.getTransaction(signature, {
                 commitment: 'confirmed'
             });
 
+            // Transaction not found
             if (!tx) {
                 throw ServiceError.validation('Transaction not found');
             }
@@ -301,14 +326,17 @@ class TokenWhitelistService extends BaseService {
                 ix.parsed.type === 'transfer'
             );
 
+            // No transfer instruction found
             if (!transfer) {
                 throw ServiceError.validation('No transfer instruction found');
             }
 
+            // Invalid payment recipient
             if (transfer.parsed.info.destination !== this.treasuryWallet.toString()) {
                 throw ServiceError.validation('Invalid payment recipient');
             }
 
+            // Insufficient payment amount
             if (transfer.parsed.info.lamports < requiredAmount) {
                 const required = requiredAmount / LAMPORTS_PER_SOL;
                 const provided = transfer.parsed.info.lamports / LAMPORTS_PER_SOL;
@@ -321,8 +349,8 @@ class TokenWhitelistService extends BaseService {
                     wallet_address: walletAddress,
                     type: 'DEPOSIT',
                     amount: new Decimal(transfer.parsed.info.lamports.toString()),
-                    balance_before: new Decimal(0), // We don't track SOL balance
-                    balance_after: new Decimal(0),  // We don't track SOL balance
+                    balance_before: new Decimal(0), // We don't track SOL balance yet 
+                    balance_after: new Decimal(0),  // We don't track SOL balance yet 
                     description: 'Token whitelist submission fee',
                     status: 'completed',
                     metadata: {
@@ -341,8 +369,10 @@ class TokenWhitelistService extends BaseService {
             // Update submission stats
             this.whitelistStats.submissions.fees_collected += transfer.parsed.info.lamports / LAMPORTS_PER_SOL;
 
+            // Return true if payment is verified
             return true;
         } catch (error) {
+            // Log the error
             logApi.error('Payment verification failed:', {
                 signature,
                 error: error.message
@@ -351,6 +381,7 @@ class TokenWhitelistService extends BaseService {
         }
     }
 
+    // Add to whitelist
     async addToWhitelist(contractAddress, metadata, adminContext = null) {
         const startTime = Date.now();
         
@@ -370,9 +401,11 @@ class TokenWhitelistService extends BaseService {
                     metadata
                 });
             }, this.config.submission.submissionTimeoutMs);
-            
+
+            // Add timeout to submission timeouts
             this.submissionTimeouts.add(timeout);
 
+            // Create the token
             const token = await prisma.tokens.create({
                 data: {
                     address: contractAddress,
@@ -411,20 +444,26 @@ class TokenWhitelistService extends BaseService {
                 );
             }
 
+            // Log the token added to whitelist
             logApi.info('Token added to whitelist:', {
                 contractAddress,
                 tokenId: token.id
             });
 
+            // Return the token
             return token;
         } catch (error) {
+            // Update submission stats
             this.whitelistStats.submissions.total++;
             this.whitelistStats.submissions.failed++;
-            
+
+            // Log the error
             logApi.error('Failed to add token to whitelist:', {
                 contractAddress,
                 error: error.message
             });
+
+            // Throw error
             throw ServiceError.operation('Failed to add token to whitelist');
         } finally {
             // Update performance metrics
@@ -437,6 +476,7 @@ class TokenWhitelistService extends BaseService {
         }
     }
 
+    // Remove from whitelist
     async removeFromWhitelist(contractAddress, adminId, reason) {
         try {
             // Verify token exists
@@ -444,6 +484,7 @@ class TokenWhitelistService extends BaseService {
                 where: { address: contractAddress }
             });
 
+            // Token not found
             if (!token) {
                 throw ServiceError.validation('Token not found in whitelist');
             }
@@ -468,17 +509,22 @@ class TokenWhitelistService extends BaseService {
                 tokenSymbol: token.symbol
             });
 
-            return token;
+            // Return the token
+            return token;   
         } catch (error) {
+            // Log the error
             logApi.error('Failed to remove token from whitelist:', {
                 contractAddress,
                 adminId,
                 error: error.message
             });
+
+            // Throw error
             throw ServiceError.operation('Failed to remove token from whitelist');
         }
     }
 
+    // Perform operation
     async performOperation() {
         const startTime = Date.now();
         
@@ -487,6 +533,7 @@ class TokenWhitelistService extends BaseService {
             const stuckSubmissions = Array.from(this.activeSubmissions.entries())
                 .filter(([_, data]) => Date.now() - data.startTime > this.config.submission.submissionTimeoutMs);
 
+            // Clean up stuck submissions
             for (const [address] of stuckSubmissions) {
                 this.activeSubmissions.delete(address);
                 this.whitelistStats.submissions.failed++;
@@ -498,6 +545,7 @@ class TokenWhitelistService extends BaseService {
                 where: { is_active: true }
             });
 
+            // Initialize results
             const results = {
                 total: tokens.length,
                 verified: 0,
@@ -505,17 +553,34 @@ class TokenWhitelistService extends BaseService {
                 removed: 0
             };
 
+            // Only log a summary if we find issues
+            let foundIssues = false;
+
+            // Verify each token exists but don't use verifyToken() which is for new tokens
             for (const token of tokens) {
                 try {
-                    await this.verifyToken(token.address);
+                    // Just check if the token's metadata exists on chain
+                    const asset = await fetchDigitalAsset(this.umi, publicKey(token.address));
+                    
+                    if (!asset) {
+                        foundIssues = true;
+                        throw new Error('Token metadata not found');
+                    }
+                    
                     results.verified++;
                 } catch (error) {
+                    foundIssues = true;
+                    // Update results
                     results.failed++;
-                    logApi.error('Token verification failed during check:', {
-                        address: token.address,
-                        error: error.message
-                    });
-
+                    
+                    // Only log actual failures, not "already whitelisted" errors
+                    if (!error.message.includes('already whitelisted')) {
+                        logApi.error('Token verification failed during check:', {
+                            address: token.address,
+                            error: error.message
+                        });
+                    }
+                    
                     // If token doesn't exist anymore, remove it
                     if (error.message.includes('not found')) {
                         await this.removeFromWhitelist(
@@ -527,8 +592,17 @@ class TokenWhitelistService extends BaseService {
                     }
                 }
             }
+            
+            // Only log a summary message if there were problems or tokens were removed
+            if (foundIssues) {
+                logApi.info('Token whitelist periodic check completed:', results);
+            } else {
+                // Silent operation - just increment operation count for stats 
+                this.whitelistStats.operations.total++;
+                this.whitelistStats.operations.successful++;
+            }
 
-            // Update ServiceManager state
+            // Update ServiceManager state - always need to do this for service health monitoring
             await serviceManager.updateServiceHeartbeat(
                 this.name,
                 this.config,
@@ -538,6 +612,7 @@ class TokenWhitelistService extends BaseService {
                 }
             );
 
+            // Return results
             return {
                 duration: Date.now() - startTime,
                 ...results
@@ -548,8 +623,10 @@ class TokenWhitelistService extends BaseService {
         }
     }
 
+    // Stop the service
     async stop() {
         try {
+            // Call parent stop first
             await super.stop();
             
             // Clear all timeouts
@@ -571,8 +648,10 @@ class TokenWhitelistService extends BaseService {
                 }
             );
             
+            // Log the service stopped
             logApi.info('Token Whitelist Service stopped successfully');
         } catch (error) {
+            // Log the error
             logApi.error('Error stopping Token Whitelist Service:', error);
             throw error;
         }
