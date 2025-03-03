@@ -81,11 +81,13 @@ class ServiceManager {
      * @param {http.Server} server - The HTTP server instance
      */
     initializeWebSocket(server) {
+        // Check if the server is provided
         if (!server) {
             logApi.warn('Attempted to initialize circuit breaker WebSocket without server instance');
             return;
         }
 
+        // Initialize the circuit breaker WebSocket
         try {
             this.circuitBreakerWs = createCircuitBreakerWebSocket(server);
             logApi.info('Circuit breaker WebSocket initialized successfully');
@@ -97,8 +99,9 @@ class ServiceManager {
 
     /**
      * Register a service with its dependencies
-     */
+     */ 
     register(serviceOrName, dependencies = []) {
+        // Check if the service or name is provided
         if (!serviceOrName) {
             throw new Error('Attempted to register undefined service');
         }
@@ -126,8 +129,10 @@ class ServiceManager {
             });
         }
 
+        // Get service instance
         const service = typeof serviceOrName === 'string' ? null : serviceOrName;
 
+        // Get service metadata
         const metadata = getServiceMetadata(serviceName);
         if (!metadata) {
             throw new Error(`Service ${serviceName} not found in metadata. Available services: ${Object.values(SERVICE_NAMES).join(', ')}`);
@@ -164,6 +169,7 @@ class ServiceManager {
             logApi.info(`Registered service: ${serviceName}`);
         }
 
+        // Return true if the service was registered successfully
         return true;
     }
 
@@ -171,10 +177,14 @@ class ServiceManager {
      * Initialize all services in dependency order
      */
     async initializeAll() {
+        // Initialize the set of initialized services
         const initialized = new Set();
+        // Initialize the set of failed services
         const failed = new Set();
+        // Calculate the initialization order
         const initOrder = this.calculateInitializationOrder();
 
+        // Log the starting service initialization
         logApi.info('Starting service initialization in order:', {
             order: initOrder,
             totalServices: initOrder.length,
@@ -187,13 +197,17 @@ class ServiceManager {
             return metadata?.layer === SERVICE_LAYERS.INFRASTRUCTURE;
         });
 
+        // Log the infrastructure services to be initialized
         logApi.info('Initializing infrastructure services:', {
             services: infraServices,
             count: infraServices.length
         });
 
+        // Initialize the infrastructure services
         for (const serviceName of infraServices) {
+            // Try to initialize the infrastructure service
             try {
+                // Log the infrastructure service to be initialized
                 if (VERBOSE_SERVICE_INIT) {
                     logApi.info(`[SERVICE INIT] Attempting to initialize infrastructure service ${serviceName}`, {
                         metadata: getServiceMetadata(serviceName),
@@ -206,15 +220,19 @@ class ServiceManager {
                     //});
                 }
 
+                // Initialize the infrastructure service
                 const success = await this._initializeService(serviceName, initialized, failed);
                 if (success) {
+                    // Log the infrastructure service initialization completed successfully
                     if (VERBOSE_SERVICE_INIT) {
                         logApi.info(`[SERVICE INIT] Infrastructure service ${serviceName} initialization completed successfully`);
                     }
                 } else {
+                    // Log the infrastructure service initialization returned false
                     logApi.error(`[SERVICE INIT] Infrastructure service ${serviceName} initialization returned false`);
                 }
             } catch (error) {
+                // Log the infrastructure service initialization failed
                 if (VERBOSE_SERVICE_INIT) {
                     logApi.error(`[SERVICE INIT] Failed to initialize infrastructure service ${serviceName}:`, {
                         error: error.message,
@@ -222,6 +240,7 @@ class ServiceManager {
                         metadata: getServiceMetadata(serviceName)
                     });
                 } else {
+                    // Log the infrastructure service initialization failed
                     logApi.error(`[SERVICE INIT] Failed to initialize infrastructure service ${serviceName}:`, {
                         //error: error.message,
                         //stack: error.stack,
@@ -234,13 +253,16 @@ class ServiceManager {
 
         // Then initialize remaining services in dependency order
         const remainingServices = initOrder.filter(service => !infraServices.includes(service));
+        // Log the remaining services to be initialized
         logApi.info('Initializing remaining services:', {
             services: remainingServices,
             count: remainingServices.length
         });
 
+        // Initialize the remaining services
         for (const serviceName of remainingServices) {
             try {
+                // Log the remaining service to be initialized
                 if (VERBOSE_SERVICE_INIT) {
                     logApi.info(`[SERVICE INIT] Attempting to initialize service ${serviceName}`, {
                         metadata: getServiceMetadata(serviceName),
@@ -253,13 +275,17 @@ class ServiceManager {
                     //});
                 }
 
+                // Initialize the remaining service
                 const success = await this._initializeService(serviceName, initialized, failed);
                 if (success) {
+                    // Log the remaining service initialization completed successfully
                     logApi.info(`[SERVICE INIT] Service ${serviceName} initialization completed successfully`);
                 } else {
+                    // Log the remaining service initialization returned false
                     logApi.error(`[SERVICE INIT] Service ${serviceName} initialization returned false`);
                 }
             } catch (error) {
+                // Log the remaining service initialization failed
                 if (VERBOSE_SERVICE_INIT) {
                     logApi.error(`[SERVICE INIT] Failed to initialize service ${serviceName}:`, {
                         error: error.message,
@@ -267,6 +293,7 @@ class ServiceManager {
                         metadata: getServiceMetadata(serviceName)
                     });
                 } else {
+                    // Log the remaining service initialization failed
                     logApi.error(`[SERVICE INIT] Failed to initialize service ${serviceName}:`, {
                         //error: error.message,
                         //stack: error.stack,
@@ -277,6 +304,7 @@ class ServiceManager {
             }
         }
 
+        // Log the service initialization summary
         const summary = {
             initialized: Array.from(initialized),
             failed: Array.from(failed),
@@ -284,6 +312,7 @@ class ServiceManager {
             successRate: `${(initialized.size / initOrder.length * 100).toFixed(1)}%`
         };
 
+        // Log the service initialization summary
         if (VERBOSE_SERVICE_INIT) {
             logApi.info('Service initialization completed:', summary);
         } else {
@@ -293,6 +322,7 @@ class ServiceManager {
             });
         }
 
+        // Return the service initialization summary
         return {
             initialized: Array.from(initialized),
             failed: Array.from(failed)
@@ -303,29 +333,40 @@ class ServiceManager {
      * Calculate initialization order based on dependencies
      */
     calculateInitializationOrder() {
+        // Initialize the set of visited services
         const visited = new Set();
+        // Initialize the order of services to be initialized
         const order = [];
-        const dependencies = this.dependencies; // Store reference to instance dependencies
+        // Store reference to instance dependencies
+        const dependencies = this.dependencies;
 
         function visit(serviceName) {
+            // Return if the service has already been visited
             if (visited.has(serviceName)) return;
+            // Add the service to the visited set
             visited.add(serviceName);
-
+            // Get the dependencies of the service
             const serviceDeps = dependencies.get(serviceName) || [];
+            // Visit the dependencies
             for (const dep of serviceDeps) {
                 visit(dep);
             }
+            // Add the service to the order
             order.push(serviceName);
         }
 
         // Start with infrastructure layer
         const infraServices = this.getServicesInLayer(SERVICE_LAYERS.INFRASTRUCTURE);
+
+        // Visit the infrastructure services
         for (const service of infraServices) {
             visit(service);
         }
 
         // Then data layer
         const dataServices = this.getServicesInLayer(SERVICE_LAYERS.DATA);
+
+        // Visit the data services
         for (const service of dataServices) {
             visit(service);
         }
@@ -342,6 +383,7 @@ class ServiceManager {
             visit(service);
         }
 
+        // Return the order of services to be initialized
         return order;
     }
 
@@ -349,22 +391,29 @@ class ServiceManager {
      * Initialize a single service
      */
     async _initializeService(serviceName, initialized, failed) {
+        // Try to initialize the service
         try {
+            // Log the starting service initialization
             if (VERBOSE_SERVICE_INIT) {
                 logApi.info(`[SERVICE INIT] Starting initialization of service ${serviceName}`);
             }
 
+            // Return true if the service has already been initialized
             if (initialized.has(serviceName)) {
                 logApi.warn(`[SERVICE INIT] Service ${serviceName} already initialized`);
                 return true;
             }
+
+            // Return false if the service has previously failed
             if (failed.has(serviceName)) {
                 logApi.warn(`[SERVICE INIT] Service ${serviceName} previously failed`);
                 return false;
             }
 
+            // Get the service instance
             let service = this.services.get(serviceName);
             if (!service) {
+                // Log the service not found error
                 const error = new Error(`Service ${serviceName} not found in registered services`);
                 if (VERBOSE_SERVICE_INIT) {
                     logApi.error(`[SERVICE INIT] ${error.message}`, {
@@ -383,6 +432,8 @@ class ServiceManager {
 
             // Check dependencies first
             const dependencies = this.dependencies.get(serviceName) || [];
+
+            // Log the dependencies to be checked
             if (VERBOSE_SERVICE_INIT) {
                 logApi.info(`[SERVICE INIT] Checking dependencies for ${serviceName}:`, {
                     dependencies,
@@ -395,14 +446,22 @@ class ServiceManager {
                 //});
             }
 
+            // Check each dependency
             for (const dep of dependencies) {
+                // Return true if the dependency has already been initialized
                 if (!initialized.has(dep)) {
                     try {
+                        // Log the dependency to be initialized
                         if (VERBOSE_SERVICE_INIT) {
                             logApi.info(`[SERVICE INIT] Initializing dependency ${dep} for ${serviceName}`);
                         }
+
+                        // Initialize the dependency
                         const success = await this._initializeService(dep, initialized, failed);
+
+                        // Return false if the dependency initialization failed
                         if (!success) {
+                            // Log the dependency initialization failed
                             const error = new Error(`Cannot initialize ${serviceName} - dependency ${dep} failed to initialize`);
                             if (VERBOSE_SERVICE_INIT) {
                                 logApi.error(`[SERVICE INIT] ${error.message}`, {
@@ -449,6 +508,7 @@ class ServiceManager {
                             }
                         }
                     } catch (error) {
+                        // Log the dependency initialization failed
                         if (VERBOSE_SERVICE_INIT) {
                             logApi.error(`[SERVICE INIT] Error initializing dependency ${dep} for ${serviceName}:`, {
                                 error: error.message,
@@ -470,13 +530,16 @@ class ServiceManager {
                         return false;
                     }
                 } else {
+                    // Log the dependency already initialized
                     if (VERBOSE_SERVICE_INIT) {
                         logApi.info(`[SERVICE INIT] Dependency ${dep} already initialized for ${serviceName}`);
                     }
                 }
             }
 
+            // Try to initialize the service
             try {
+                // Log the running initialize() for the service
                 if (VERBOSE_SERVICE_INIT) {
                     logApi.info(`[SERVICE INIT] Running initialize() for ${serviceName}`, {
                         metadata: getServiceMetadata(serviceName),
@@ -489,15 +552,26 @@ class ServiceManager {
                     //});
                 }
 
+                // Initialize the service
                 const success = await service.initialize();
+
+                // Log the service initialization completed successfully
                 if (success) {
                     if (VERBOSE_SERVICE_INIT) {
                         logApi.info(`[SERVICE INIT] Running start() for ${serviceName}`);
                     }
+
+                    // Start the service
                     await service.start();
+
+                    // Add the service to the initialized set
                     initialized.add(serviceName);
+
+                    // Mark the service as started
                     await this.markServiceStarted(serviceName, service.config, service.stats);
                     service.isStarted = true;
+
+                    // Log the service initialization completed successfully
                     if (VERBOSE_SERVICE_INIT) {
                         logApi.info(`[SERVICE INIT] Service ${serviceName} initialized and started successfully`, {
                             config: service.config,
@@ -509,8 +583,11 @@ class ServiceManager {
                         //    stats: service.stats
                         //});
                     }
+
+                    // Return true if the service initialization completed successfully
                     return true;
                 } else {
+                    // Log the service initialization returned false
                     const error = new Error(`Service ${serviceName} initialization returned false`);
                     if (VERBOSE_SERVICE_INIT) {
                         logApi.error(`[SERVICE INIT] ${error.message}`, {
@@ -525,6 +602,7 @@ class ServiceManager {
                     return false;
                 }
             } catch (error) {
+                // Log the service initialization failed
                 if (VERBOSE_SERVICE_INIT) {
                     logApi.error(`[SERVICE INIT] Error initializing service ${serviceName}:`, {
                         error: error.message,
@@ -545,6 +623,7 @@ class ServiceManager {
                 return false;
             }
         } catch (error) {
+            // Log the unexpected error in _initializeService
             if (VERBOSE_SERVICE_INIT) {
                 logApi.error(`[SERVICE INIT] Unexpected error in _initializeService for ${serviceName}:`, {
                     error: error.message,
@@ -566,6 +645,7 @@ class ServiceManager {
      * Clean up problematic service state
      */
     async cleanupServiceState(serviceName) {
+        // Clean up the service state
         return SystemSettingsUtil.deleteSetting(serviceName);
     }
 
