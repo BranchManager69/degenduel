@@ -1,5 +1,9 @@
 // index.js
-
+//---------------------------------------------------.
+//  Main server initialization and configuration     |
+//---------------------------------------------------|
+//  This is the main entry point for DegenDuel API   |
+//---------------------------------------------------'
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
@@ -13,22 +17,18 @@ import maintenanceCheck from "./middleware/maintenanceMiddleware.js";
 import { errorHandler } from "./utils/errorHandler.js";
 import { logApi } from "./utils/logger-suite/logger.js";
 import InitLogger from './utils/logger-suite/init-logger.js';
-//import AdminLogger from './utils/admin-logger.js';
+import AdminLogger from './utils/admin-logger.js';
 import { memoryMonitoring } from "./scripts/monitor-memory.js";
-import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js";
+import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js"; // why is this not being used?
 import serviceManager from "./utils/service-suite/service-manager.js";
 import ServiceInitializer from "./utils/service-suite/service-initializer.js";
 import { createServer } from 'http';
-import referralScheduler from './scripts/referral-scheduler.js';
-// Services
+import referralScheduler from './scripts/referral-scheduler.js'; // why is this not being used?
+// Service-related routes
 import faucetManagementRoutes from "./routes/admin/faucet-management.js";
 import serviceMetricsRoutes from "./routes/admin/service-metrics.js";
 import tokenSyncRoutes from "./routes/admin/token-sync.js";
 import walletManagementRoutes from "./routes/admin/wallet-management.js";
-//import contestEvaluationService from "./services/contestEvaluationService.js";
-//import tokenSyncService from "./services/tokenSyncService.js";
-//import walletRakeService from "./services/walletRakeService.js";
-//import tokenWhitelistService from "./services/tokenWhitelistService.js";
 import WebSocketInitializer from './utils/websocket-suite/websocket-initializer.js';
 // Import WebSocket test & status routes
 import websocketTestRoutes from './routes/admin/websocket-test.js';
@@ -43,54 +43,6 @@ import contestManagementRoutes from "./routes/admin/contest-management.js";
 import skyduelManagementRoutes from "./routes/admin/skyduel-management.js";
 // Import Script Execution Routes
 import scriptExecutionRoutes from "./routes/admin/script-execution.js";
-
-// Hard-code all logging flags to reduce verbosity
-const VERBOSE_EXPRESS_LOGS = false;
-const VERBOSE_SERVICE_LOGS = false;
-const SHOW_STARTUP_ANIMATION = true; // Keep animations but reduce service logs
-const QUIET_INITIALIZATION = false; // Show detailed initialization logs
-
-dotenv.config();
-
-/* DegenDuel API Server */
-
-const app = express();
-
-// Use standard PORT environment variable
-const port = process.env.PORT || 3004; // Default to production port if not specified
-////const logsPort = process.env.LOGS_PORT || 3334; // Logs streaming port (stub)
-
-// Create HTTP server instance
-const server = createServer(app);
-
-// WebSocket servers and service initialization moved to the initializeServer() function
-// This ensures a single initialization path for all components
-
-// Basic Express configuration
-if (!QUIET_INITIALIZATION) {
-  logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔒 Configuring Server Security...\x1b[0m');
-}
-app.set("trust proxy", 1);
-app.use(cookieParser());
-setupSwagger(app);
-configureMiddleware(app);
-app.use(memoryMonitoring.setupResponseTimeTracking());
-
-if (!QUIET_INITIALIZATION) {
-  logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Basic Express Configuration Complete\x1b[0m');
-}
-
-/* Import Routes */
-
-// Start with DegenDuel API root route (https://degenduel.me/api)
-if (!QUIET_INITIALIZATION) {
-  logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🌐 Configuring Routes...\x1b[0m');
-}
-
-app.get("/", (req, res) => {
-  res.send(`Welcome to the DegenDuel API! You probably should not be here.`);
-});
-
 // Import Main DegenDuel API routes
 import testRoutes from "./archive/test-routes.js";
 import maintenanceRoutes from "./routes/admin/maintenance.js";
@@ -115,6 +67,60 @@ import portfolioTradesRouter from "./routes/portfolio-trades.js";
 import referralRoutes from "./routes/referrals.js";
 // Virtual Agent routes
 import virtualAgentRoutes from "./routes/virtual-agent.js";
+// Device authentication routes
+import deviceRoutes from "./routes/devices.js";
+
+// Hard-code all logging flags to reduce verbosity
+const VERBOSE_EXPRESS_LOGS = false;
+const VERBOSE_SERVICE_LOGS = false;
+const SHOW_STARTUP_ANIMATION = true; // Keep animations but reduce service logs
+const QUIET_INITIALIZATION = false; // Show detailed initialization logs
+
+dotenv.config();
+
+/* DegenDuel API Server */
+
+const app = express();
+
+// Use standard PORT environment variable
+const port = process.env.PORT || 3004; // Default to production port if not specified
+
+// Create HTTP server instance
+const server = createServer(app);
+
+//------------------------------------------------.
+//  WebSocket servers and service initialization   |
+//  moved to the initializeServer() function       |
+//-------------------------------------------------|
+//  This ensures a single initialization path      |
+//  for all components in the server               |
+//-------------------------------------------------'
+
+if (!QUIET_INITIALIZATION) {
+  logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔒 Configuring Server Security...\x1b[0m');
+}
+
+// Basic Express configuration
+app.set("trust proxy", 1);
+app.use(cookieParser());
+setupSwagger(app);
+configureMiddleware(app);
+app.use(memoryMonitoring.setupResponseTimeTracking());
+
+if (!QUIET_INITIALIZATION) {
+  logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Basic Express Configuration Complete\x1b[0m');
+}
+
+/* Import Routes */
+
+// Start with DegenDuel API root route (https://degenduel.me/api)
+if (!QUIET_INITIALIZATION) {
+  logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🌐 Configuring Routes...\x1b[0m');
+}
+
+app.get("/", (req, res) => {
+  res.send(`Welcome to the DegenDuel API! You probably should not be here.`);
+});
 
 /* Mount Routes */
 // Public Routes
@@ -149,6 +155,7 @@ app.use("/api/activity", maintenanceCheck, prismaActivityRoutes);
 app.use("/api/dd-serv", maintenanceCheck, ddServRoutes);
 // more protected routes (inaccessible when in maintenance mode)
 app.use("/api/users", maintenanceCheck, userRoutes);
+app.use("/api/devices", maintenanceCheck, deviceRoutes);
 app.use("/api/contests", maintenanceCheck, contestRoutes);
 app.use("/api/trades", maintenanceCheck, tradeRoutes);
 app.use("/api/tokens", maintenanceCheck, tokenRoutes); // v1 tokens
@@ -238,7 +245,7 @@ if (!QUIET_INITIALIZATION) {
 
 // Create epic startup animation function
 // TODO: Move this to a separate file and renovate it dramatically with our newest services, circuit breakers, routes, db summary of major metrics (For example, user count and tokens count, nothing too much at all, contests count, wallet's count, literally not even much more than this) etc.
-// But right now the data is almost completely uselessand I just don't even look at this part anymoreoh and then why the **** are we having a happy and sad start up animation how about we just keep it simple and flexible
+// But right now the data is almost completely useless, and I just don't even look at this part anymoreoh and then why the **** are we having a happy and sad start up animation how about we just keep it simple and flexible
 // There is no need for a sad startup animation, it's just a waste of time and space
 // If it's a quick fix then do it but if it's anything more than meets the eye just save it for later
 async function displayStartupAnimation(port, initResults = {}) {
@@ -384,6 +391,9 @@ async function displayStartupFailureAnimation(port, initResults = {}) {
 //    Namely this should makeextensive use of the verbosity flag that we've put in the initialization however it's in this file and it would need to then of course be communicated with whatever file you move this initialization to...that is if you ever move this function to another file, it you know it's up to you
 //    There are also just little colored issues throughout that aren't really that bad but you know here and there some color can get away fromus becausefor example a closing formatof one of the boxes that you're drawing might not becorrectly colored and it starts anyway I don't even want you to think about that too much but you know keep it in mind
 async function initializeServer() {
+    // Log server start action to DegenDuel admin logs
+    AdminLogger.logAction(process.env.BRANCH_MANAGER_WALLET_ADDRESS, 'SERVER', 'START');
+
     // Add colors to initialization logs
     console.log('\n\x1b[38;5;199m╭───────────────── DegenDuel Initialization Starting ─────────────────╮\x1b[0m');
     console.log('\x1b[38;5;199m│\x1b[38;5;226m               🔍 Swagger docs available at /api-docs                \x1b[38;5;199m│\x1b[0m');

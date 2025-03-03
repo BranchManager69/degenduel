@@ -46,7 +46,7 @@ const requireSuperAdminMiddleware = (req, res, next) => {
  *     summary: Get all admin wallets
  *     tags: [SuperAdmin, Wallets]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: type
@@ -142,7 +142,7 @@ router.get('/wallets', requireAuth, requireSuperAdmin, async (req, res) => {
  *     summary: Generate new wallets
  *     tags: [SuperAdmin, Wallets]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -226,7 +226,7 @@ router.post('/wallets/generate', requireAuth, requireSuperAdmin, async (req, res
  *     summary: Get wallet details
  *     tags: [SuperAdmin, Wallets]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: address
@@ -283,7 +283,7 @@ router.get('/wallets/:address', requireAuth, requireSuperAdmin, async (req, res)
  *     summary: Transfer SOL between wallets
  *     tags: [SuperAdmin, Wallets]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -373,7 +373,7 @@ router.post('/wallets/transfer', requireAuth, requireSuperAdmin, async (req, res
  *     summary: Activate or deactivate a wallet
  *     tags: [SuperAdmin, Wallets]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: address
@@ -448,7 +448,7 @@ router.post('/wallets/:address/activate', requireAuth, requireSuperAdmin, async 
  *     summary: Direct test to check wallet balance
  *     tags: [SuperAdmin, Testing]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: address
@@ -498,7 +498,7 @@ router.get('/wallet-test/direct-balance', requireAuth, requireSuperAdmin, async 
  *     summary: Direct test to transfer SOL
  *     tags: [SuperAdmin, Testing]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -595,7 +595,7 @@ router.post('/wallet-test/transfer', requireAuth, requireSuperAdmin, async (req,
  *     summary: Perform mass balance check of all wallets
  *     tags: [SuperAdmin, Testing]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: filter
@@ -691,7 +691,7 @@ router.post('/wallet-test/mass-check', requireAuth, requireSuperAdmin, async (re
  *     summary: Perform a round-trip transfer test (send and return funds)
  *     tags: [SuperAdmin, Testing]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:

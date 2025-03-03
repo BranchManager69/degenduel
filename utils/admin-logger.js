@@ -44,6 +44,21 @@ class AdminLogger {
             START: 'SERVICE_START',
             STOP: 'SERVICE_STOP',
             CONFIGURE: 'SERVICE_CONFIGURE'
+        },
+        WALLET: {
+            CREATE: 'WALLET_CREATE',
+            UPDATE: 'WALLET_UPDATE',
+            DELETE: 'WALLET_DELETE'
+        },
+        TOKEN: {
+            CREATE: 'TOKEN_CREATE',
+            UPDATE: 'TOKEN_UPDATE',
+            DELETE: 'TOKEN_DELETE'
+        },
+        SERVER: {
+            START: 'SERVER_START',
+            STOP: 'SERVER_STOP',
+            RESTART: 'SERVER_RESTART'
         }
     };
 }
