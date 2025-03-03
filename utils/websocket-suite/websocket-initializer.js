@@ -1,5 +1,17 @@
 // utils/websocket-suite/websocket-initializer.js
 
+/**
+ * 
+ * This file is responsible for initializing all WebSocket servers.
+ * 
+ * It is called by the service-initializer.js file.
+ * 
+ * It is also responsible for registering the WebSocket servers with the monitor service.
+ * 
+ * It is also responsible for updating the WebSocket servers with the latest metrics.
+ * 
+ */
+
 import { logApi } from '../logger-suite/logger.js';
 import InitLogger from '../logger-suite/init-logger.js';
 import { createWebSocketMonitor } from '../../websocket/monitor-ws.js';

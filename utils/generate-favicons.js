@@ -6,6 +6,14 @@ import { mkdirSync, existsSync, accessSync, constants, writeFileSync } from 'fs'
 import { colors } from './utils/colors.js';
 import { logStep, logSuccess, logError } from './utils/logger.js';
 
+/**
+ * Generate favicons for the project
+ * 
+ * WARNING: This script has not been used for a while, and may not work as expected.
+ * It's kept here for reference, but it's not actively maintained.
+ * 
+ */
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, '..');
 
