@@ -72,10 +72,9 @@ import virtualAgentRoutes from "./routes/virtual-agent.js";
 import deviceRoutes from "./routes/devices.js";
 
 // Hard-code all logging flags to reduce verbosity
-const VERBOSE_EXPRESS_LOGS = false;
-const VERBOSE_SERVICE_LOGS = false;
+const VERBOSE_SERVICE_INIT_LOGS = true; // Show detailed service initialization logs
 const SHOW_STARTUP_ANIMATION = true; // Keep animations but reduce service logs
-const QUIET_INITIALIZATION = false; // Show detailed initialization logs
+const QUIET_EXPRESS_SERVER_INITIALIZATION = false; // Show detailed Express server and Swagger docs initialization logs
 
 dotenv.config();
 
@@ -97,7 +96,7 @@ const server = createServer(app);
 //  for all components in the server               |
 //-------------------------------------------------'
 
-if (!QUIET_INITIALIZATION) {
+if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔒 Configuring Server Security...\x1b[0m');
 }
 
@@ -108,14 +107,14 @@ setupSwagger(app);
 configureMiddleware(app);
 app.use(memoryMonitoring.setupResponseTimeTracking());
 
-if (!QUIET_INITIALIZATION) {
+if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Basic Express Configuration Complete\x1b[0m');
 }
 
 /* Import Routes */
 
 // Start with DegenDuel API root route (https://degenduel.me/api)
-if (!QUIET_INITIALIZATION) {
+if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🌐 Configuring Routes...\x1b[0m');
 }
 
@@ -240,7 +239,7 @@ app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
 // Error handling setup
 app.use(errorHandler);
 
-if (!QUIET_INITIALIZATION) {
+if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ All Routes Mounted\x1b[0m');
 }
 
@@ -287,6 +286,7 @@ ${colors.border}╔════════════════════�
 ╚════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
 
     // Get core infrastructure services status
+    // TODO: Use the layers and service names we've already defined elsewhere
     const coreServices = {
         'Database': { name: 'Database Cluster', success: true },
         'API': { name: 'API Server', success: true },
@@ -322,6 +322,7 @@ ${colors.border}╔════════════════════�
 
     // If no services found but we're successful, create some defaults based on service names
     if (services.length === 0 && success) {
+        // TODO: Use the layers and service names we've already defined elsewhere
         const servicesList = SERVICE_NAMES ? Object.values(SERVICE_NAMES) : [];
         services = servicesList.map(name => {
             const displayName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -345,8 +346,11 @@ ${colors.blue}╔═════════════════════
         const status = service.success ? 'ONLINE ' : 'ERROR  ';
         const bars = service.success ? '■ ■ ■ ■ ■' : '□ □ □ □ □';
         
+        const nameLength = service.name.length; 
+        const maxNameLength = 50;
+        const namePadding = ' '.repeat(Math.max(0, maxNameLength - nameLength));
         statusDisplay += `
-${colors.blue}║${colors.reset} ${statusColor}${symbol} ${service.name.padEnd(20)}${colors.gray}|${colors.reset} ${statusColor}${status}${colors.gray}|${colors.reset} ${statusColor}${bars}${colors.reset} ${colors.blue}║${colors.reset}`;
+${colors.blue}║${colors.reset} ${statusColor}${symbol} ${service.name}${namePadding}${colors.gray}|${colors.reset} ${statusColor}${status}${colors.gray}|${colors.reset} ${statusColor}${bars}${colors.reset} ${colors.blue}║${colors.reset}`;
     });
 
     // Add service divider
@@ -354,7 +358,7 @@ ${colors.blue}║${colors.reset} ${statusColor}${symbol} ${service.name.padEnd(2
 ${colors.blue}╟────────────────────────────────────────────────────────────────────────────────╢${colors.reset}`;
 
     // Calculate number of columns based on services count
-    const numColumns = 2;
+    const numColumns = 1;
     const rows = Math.ceil(services.length / numColumns);
     
     // Add application services in multiple columns
@@ -408,14 +412,14 @@ ${colors.blue}╚═════════════════════
     // Create system summary
     const startupMessage = `
 ${colors.border}╔════════════════════════ ${success ? 'INITIALIZATION COMPLETE' : 'INITIALIZATION FAILED'} ═══════════════════════╗
-║                                                                                  ║
-║  ${colors.title}🚀 DEGEN DUEL ARENA ${success ? 'INITIALIZED' : 'STARTING'} ON PORT ${port}${colors.border}                           ║
-║  ${success ? colors.warning : colors.error}⚡ SYSTEM STATUS: ${systemState}${colors.border}                                   ║
-║  ${colors.success}💫 INITIALIZATION TIME: ${duration}${colors.border}                                          ║
-║  ${colors.accent}🌐 SERVICES: ${onlineServices}/${totalServices} ONLINE · ${failedServices} FAILED${colors.border}                                  ║
-║                                                                                  ║
-║  ${colors.warning}⚔️  ENTER THE ARENA  ⚔️${colors.border}                                                       ║
-║                                                                                  ║
+║ 
+║  ${colors.title}🚀 DEGEN DUEL ARENA ${success ? 'INITIALIZED' : 'STARTING'} ON PORT ${port}${colors.border}
+║  ${success ? colors.warning : colors.error}⚡ SYSTEM STATUS: ${systemState}${colors.border}
+║  ${colors.success}💫 INITIALIZATION TIME: ${duration}${colors.border}
+║  ${colors.accent}🌐 SERVICES: ${onlineServices}/${totalServices} ONLINE · ${failedServices} FAILED${colors.border}
+║ 
+║  ${colors.warning}⚔️  ENTER THE ARENA  ⚔️${colors.border}
+║ 
 ╚══════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
 
     // Clear console for dramatic effect
@@ -479,12 +483,12 @@ async function initializeServer() {
             // Initialize grouped services // (Note: I'm not married to these groupings, I'm open to suggestions)
             try {
                 // First try to register "core services"
-                if (VERBOSE_EXPRESS_LOGS) {
+                if (VERBOSE_SERVICE_INIT_LOGS) {
                     logApi.info('Registering core services...');
                 }
                 const coreServices = await ServiceInitializer.registerCoreServices().catch(error => {
                     logApi.error('Failed to register core services:', error.message);
-                    if (VERBOSE_EXPRESS_LOGS) {
+                    if (VERBOSE_SERVICE_INIT_LOGS) {
                         logApi.error('Error details:', {
                             error: error.message,
                             stack: error.stack
@@ -493,20 +497,20 @@ async function initializeServer() {
                     throw error;
                 });
                 
-                if (VERBOSE_EXPRESS_LOGS) {
+                if (VERBOSE_SERVICE_INIT_LOGS) {
                     logApi.info('Core services registered:', coreServices);
                 } else {
                     logApi.info(`✅ Registered ${Array.isArray(coreServices) ? coreServices.length : 'all'} core services`);
                 }
                 
                 // Then try to initialize them
-                if (VERBOSE_EXPRESS_LOGS) {
+                if (VERBOSE_SERVICE_INIT_LOGS) {
                     logApi.info('Initializing services...');
                 }
                 
                 const results = await ServiceInitializer.initializeServices().catch(error => {
                     logApi.error('Failed to initialize services:', error.message);
-                    if (VERBOSE_EXPRESS_LOGS) {
+                    if (VERBOSE_SERVICE_INIT_LOGS) {
                         logApi.error('Error details:', {
                             error: error.message,
                             stack: error.stack
@@ -526,7 +530,7 @@ async function initializeServer() {
 
                 logApi.info(`🚀 Services initialization: ${successCount} succeeded, ${failedCount} failed`);
                 
-                if (VERBOSE_EXPRESS_LOGS) {
+                if (VERBOSE_SERVICE_INIT_LOGS) {
                     logApi.info('Service initialization details:', {
                         initialized: initResults.Services.initialized,
                         failed: initResults.Services.failed
@@ -538,7 +542,7 @@ async function initializeServer() {
 
             } catch (error) {
                 logApi.error('🚫 Service initialization failed:', error.message);
-                if (VERBOSE_EXPRESS_LOGS) {
+                if (VERBOSE_SERVICE_INIT_LOGS) {
                     logApi.error('Detailed error information:', {
                         error: error.message,
                         stack: error.stack,
@@ -554,7 +558,7 @@ async function initializeServer() {
 
         } catch (error) {
             logApi.error('\x1b[38;5;196m┃           ✗ WebSocket initialization failed:', error.message, '\x1b[0m');
-            if (VERBOSE_EXPRESS_LOGS) {
+            if (VERBOSE_SERVICE_INIT_LOGS) {
                 logApi.error('WebSocket error details:', error);
             }
             initResults.WebSocket = { success: false, error: error.message };
@@ -568,7 +572,7 @@ async function initializeServer() {
         logApi.error('\x1b[38;5;196m┃           ❌ Server Initialization Failed              ┃\x1b[0m');
         logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━ Error: ' + error.message + '\x1b[0m');
         
-        if (VERBOSE_EXPRESS_LOGS) {
+        if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.error('Full error details:', error);
         }
         
@@ -683,7 +687,7 @@ initializeServer().then(() => {
     });
 }).catch(error => {
     logApi.error('Failed to initialize server:', error.message);
-    if (VERBOSE_EXPRESS_LOGS) {
+    if (VERBOSE_SERVICE_INIT_LOGS) {
         logApi.error('Error details:', error);
     }
     process.exit(1);
