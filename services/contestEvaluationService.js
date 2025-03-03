@@ -51,6 +51,19 @@ const CONTEST_EVALUATION_CONFIG = {
         maxRetries: 3,
         retryDelayMs: 5000,
         timeoutMs: 300000 // 5 minutes
+    },
+    // Auto-cancel window for contests with insufficient participants
+    // Time to wait before auto-cancelling contests that don't meet minimum participant requirements
+    autoCancelWindow: (0 * 24 * 60 * 60 * 1000) + (0 * 60 * 60 * 1000) + (1 * 60 * 1000) + (29 * 1000), // 0 days, 0 hours, 1 minutes, and 29 seconds
+    states: {
+        PENDING: 'pending',
+        ACTIVE: 'active',
+        COMPLETED: 'completed',
+        CANCELLED: 'cancelled'
+    },
+    refunds: {
+        maxRetries: 3,
+        retryDelayMs: 5000
     }
 };
 
@@ -796,40 +809,66 @@ class ContestEvaluationService extends BaseService {
         }
     }
 
+    // Common contest cancellation logic
+    async cancelContest(contest, status, reason, logAction, additionalData = {}) {
+        const contestId = contest.id;
+        const contestName = contest.contest_name || `Contest #${contestId}`;
+
+        try {
+            // Update contest status in database
+            await prisma.contests.update({
+                where: { id: contestId },
+                data: { 
+                    status: status,
+                    cancellation_reason: reason
+                }
+            });
+
+            // Log the action
+            await AdminLogger.logAction(
+                'SYSTEM',
+                logAction,
+                {
+                    contest_id: contestId,
+                    reason: `${reason}`,
+                    contest_name: contestName,
+                    ...additionalData
+                }
+            );
+
+            // Update service stats
+            if (status === this.config.states.CANCELLED) {
+                this.evaluationStats.contests.cancelled = (this.evaluationStats.contests.cancelled || 0) + 1;
+            }
+
+            logApi.info(`Contest ${contestId} ${status}: ${reason}`);
+            
+            return true;
+        } catch (error) {
+            logApi.error(`Failed to update contest ${contestId} status:`, error);
+            throw error;
+        }
+    }
+
     // Helper methods for contest evaluation
     async handleNoParticipants(contest) {
-        await prisma.contests.update({
-            where: { id: contest.id },
-            data: { status: 'completed' }
-        });
-
-        await AdminLogger.logAction(
-            'SYSTEM',
-            AdminLogger.Actions.CONTEST.END,
-            {
-                contest_id: contest.id,
-                reason: `${contest.contest_name} completed with no participants`
-            }
+        return this.cancelContest(
+            contest,
+            this.config.states.COMPLETED,
+            `${contest.contest_name} completed with no participants`,
+            AdminLogger.Actions.CONTEST.END
         );
     }
 
     async handleInsufficientParticipants(contest, actualCount, requiredCount) {
-        await prisma.contests.update({
-            where: { id: contest.id },
-            data: { 
-                status: 'cancelled',
-                cancellation_reason: `Contest cancelled due to insufficient participants (${actualCount}/${requiredCount})`
-            }
-        });
-
-        await AdminLogger.logAction(
-            'SYSTEM',
+        return this.cancelContest(
+            contest,
+            this.config.states.CANCELLED,
+            `Contest cancelled due to insufficient participants (${actualCount}/${requiredCount})`,
             AdminLogger.Actions.CONTEST.CANCEL,
             {
-                contest_id: contest.id,
                 required_participants: requiredCount,
-                actual_participants: actualCount,
-                reason: `Cancelled ${contest.contest_name} due to insufficient participants (${actualCount}/${requiredCount})`
+                actual_participants: actualCount
             }
         );
     }
@@ -1123,24 +1162,76 @@ class ContestEvaluationService extends BaseService {
         
         try {
             const now = new Date();
+            const results = {
+                contestsStarted: 0,
+                contestsEnded: 0,
+                contestsCancelled: 0,
+                failures: 0
+            };
+
+            this.evaluationStats.operations.total++;
 
             // Find and process contests that should start
             const contestsToStart = await this.findContestsToStart(now);
+            logApi.info(`Found ${contestsToStart.length} contests pending start`);
+            
             for (const contest of contestsToStart) {
-                await this.processContestStart(contest);
+                try {
+                    await this.processContestStart(contest);
+                    
+                    // Update result counters based on outcome
+                    if (contest.contest_participants.length >= (contest.settings?.minimum_participants || 1)) {
+                        results.contestsStarted++;
+                    } else if (contest.start_time < new Date(Date.now() - this.config.autoCancelWindow)) {
+                        results.contestsCancelled++;
+                    }
+                } catch (error) {
+                    logApi.error(`Failed to process contest ${contest.id} start:`, error);
+                    results.failures++;
+                    this.evaluationStats.operations.failed++;
+                }
             }
 
             // Find and process contests that should end
             const contestsToEnd = await this.findContestsToEnd(now);
+            logApi.info(`Found ${contestsToEnd.length} active contests due to end`);
+            
             for (const contest of contestsToEnd) {
-                await this.evaluateContest(contest);
+                try {
+                    await this.evaluateContest(contest);
+                    results.contestsEnded++;
+                } catch (error) {
+                    logApi.error(`Failed to evaluate contest ${contest.id}:`, error);
+                    results.failures++;
+                    this.evaluationStats.operations.failed++;
+                }
             }
 
+            // Update successful operations count
+            this.evaluationStats.operations.successful++;
+
             // Update performance metrics
-            this.evaluationStats.performance.last_operation_time_ms = Date.now() - startTime;
-            this.evaluationStats.performance.average_operation_time_ms = 
-                (this.evaluationStats.performance.average_operation_time_ms * this.evaluationStats.operations.total + 
-                (Date.now() - startTime)) / (this.evaluationStats.operations.total + 1);
+            const operationTime = Date.now() - startTime;
+            this.evaluationStats.performance.last_operation_time_ms = operationTime;
+            
+            // Calculate average operation time
+            const totalOps = this.evaluationStats.operations.total;
+            if (totalOps > 0) {
+                this.evaluationStats.performance.average_operation_time_ms = 
+                    ((this.evaluationStats.performance.average_operation_time_ms * (totalOps - 1)) + 
+                    operationTime) / totalOps;
+            }
+
+            // Get updated contest counts for stats
+            const [activeContests, completedContests, cancelledContests] = await Promise.all([
+                prisma.contests.count({ where: { status: this.config.states.ACTIVE } }),
+                prisma.contests.count({ where: { status: this.config.states.COMPLETED } }),
+                prisma.contests.count({ where: { status: this.config.states.CANCELLED } })
+            ]);
+
+            this.evaluationStats.contests.active = activeContests;
+            this.evaluationStats.contests.completed = completedContests;
+            this.evaluationStats.contests.cancelled = cancelledContests;
 
             // Update ServiceManager state
             await serviceManager.updateServiceHeartbeat(
@@ -1153,11 +1244,13 @@ class ContestEvaluationService extends BaseService {
             );
 
             return {
-                duration: Date.now() - startTime,
-                contestsStarted: contestsToStart.length,
-                contestsEnded: contestsToEnd.length
+                duration: operationTime,
+                ...results
             };
         } catch (error) {
+            // Still increment operations count on error
+            this.evaluationStats.operations.failed++;
+            
             // Let base class handle circuit breaker
             throw error;
         }
@@ -1203,15 +1296,107 @@ class ContestEvaluationService extends BaseService {
         });
     }
 
+    /**
+     * Starts a contest by updating its status to active
+     * @param {Object} contest - The contest object to start
+     * @returns {Promise<boolean>} - True if successful
+     */
+    async startContest(contest) {
+        try {
+            // Update contest status to active
+            await prisma.contests.update({
+                where: { id: contest.id },
+                data: { 
+                    status: this.config.states.ACTIVE,
+                    started_at: new Date() 
+                }
+            });
+
+            // Log the action
+            await AdminLogger.logAction(
+                'SYSTEM',
+                AdminLogger.Actions.CONTEST.START,
+                {
+                    contest_id: contest.id,
+                    contest_name: contest.contest_name,
+                    participant_count: contest.contest_participants.length
+                }
+            );
+
+            // Update service stats
+            this.evaluationStats.contests.active++;
+            
+            logApi.info(`Contest ${contest.id} started with ${contest.contest_participants.length} participants`);
+            
+            return true;
+        } catch (error) {
+            logApi.error(`Failed to start contest ${contest.id}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Cancels a contest that has no participants
+     * @param {Object} contest - The contest object to cancel
+     * @returns {Promise<boolean>} - True if successful
+     */
+    async cancelContestNoParticipants(contest) {
+        return this.cancelContest(
+            contest,
+            this.config.states.CANCELLED,
+            `Contest cancelled due to no participants`,
+            AdminLogger.Actions.CONTEST.CANCEL,
+            {
+                required_participants: contest.settings?.minimum_participants || 1,
+                actual_participants: 0,
+                auto_cancelled: true
+            }
+        );
+    }
+
+    /**
+     * Cancels a contest that has insufficient participants after waiting period
+     * @param {Object} contest - The contest object to cancel
+     * @returns {Promise<boolean>} - True if successful
+     */
+    async cancelContestInsufficientParticipants(contest) {
+        const minParticipants = contest.settings?.minimum_participants || 1;
+        const actualParticipants = contest.contest_participants.length;
+        
+        return this.cancelContest(
+            contest,
+            this.config.states.CANCELLED,
+            `Contest auto-cancelled due to insufficient participants after wait period (${actualParticipants}/${minParticipants})`,
+            AdminLogger.Actions.CONTEST.CANCEL,
+            {
+                required_participants: minParticipants,
+                actual_participants: actualParticipants,
+                auto_cancelled: true,
+                waited_for: this.config.autoCancelWindow
+            }
+        );
+    }
+
+    /**
+     * Process contest start by checking participant requirements
+     * @param {Object} contest - The contest to process
+     * @returns {Promise<void>}
+     */
     async processContestStart(contest) {
         const minParticipants = contest.settings?.minimum_participants || 1;
         
         if (contest.contest_participants.length >= minParticipants) {
+            // Enough participants, start the contest
             await this.startContest(contest);
         } else if (contest.contest_participants.length === 0) {
+            // No participants, cancel immediately
             await this.cancelContestNoParticipants(contest);
         } else if (contest.start_time < new Date(Date.now() - this.config.autoCancelWindow)) {
+            // Insufficient participants after grace period, cancel
             await this.cancelContestInsufficientParticipants(contest);
+        } else {
+            // Not enough participants yet, but still within grace period
+            logApi.info(`Contest ${contest.id} waiting for more participants: currently ${contest.contest_participants.length}/${minParticipants}`);
         }
     }
 

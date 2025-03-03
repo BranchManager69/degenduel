@@ -28,6 +28,13 @@ import userBalanceTrackingService, { ensureSchemaExists } from '../../services/u
 import solanaService from '../../services/solanaService.js';
 
 class ServiceInitializer {
+    /**
+     * Get all registered service names
+     * @returns {Array<string>} Array of service names
+     */
+    static getServiceNames() {
+        return Array.from(serviceManager.services.keys());
+    }
     static async registerCoreServices() {
         if (!VERBOSE_LOGS) {
             logApi.info('Registering core services...');

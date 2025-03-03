@@ -139,6 +139,31 @@ stateDiagram-v2
     }
 ```
 
+### Auto-Cancellation Mechanism
+
+The service automatically manages contest state transitions, including cancellation when requirements aren't met:
+
+1. **No Participants Cancellation**
+   - When a contest reaches its start time with 0 participants
+   - Cancellation happens immediately, no waiting period
+   - Status changes to "cancelled" with appropriate reason
+
+2. **Insufficient Participants Cancellation**
+   - When a contest has participants but fewer than the minimum required
+   - System waits for `autoCancelWindow` duration (default: 1 min 29 sec)
+   - If minimum not reached after waiting, status changes to "cancelled"
+
+3. **Waiting Period Logic**
+   ```javascript
+   if (contest.start_time < new Date(Date.now() - autoCancelWindow)) {
+       // Cancel contest - insufficient participants after waiting period
+   } else {
+       // Still in waiting period, check again on next service run
+   }
+   ```
+
+This mechanism allows for a brief period where late sign-ups can still occur before cancellation.
+
 ## Winner Determination
 
 ### Tiebreaker System
@@ -248,6 +273,36 @@ if (currentBalance < requiredBalance) {
 }
 ```
 
+### Service Management Integration
+
+The Contest Evaluation Service fully integrates with the platform's centralized service tracking system:
+
+1. **Health Reporting**
+   - Reports heartbeats at regular intervals using `serviceManager.updateServiceHeartbeat()`
+   - Includes detailed `evaluationStats` with each heartbeat
+   - Updates operation success/failure counts for circuit breaker monitoring
+   - Fetches current database counts to maintain accurate contest status statistics
+
+2. **Error Handling**
+   - Errors are properly tracked and reported to the service manager
+   - Each operation failure increments appropriate counters
+   - Consecutive failures properly trigger circuit breaker protection
+
+3. **Monitoring Dashboard Integration**
+   - Service health is visible in the admin service dashboard
+   - Key metrics include:
+     - Active/completed/cancelled contest counts
+     - Operation success rate
+     - Average evaluation time
+     - Prize distribution success rate
+
+4. **Circuit Breaker Protection**
+   - Automatically pauses operation after consecutive failures
+   - Self-recovers after configured reset timeouts
+   - Administrative override available via service management API
+
+All service state changes, including contest cancellations, are reflected in real-time in the service management system's monitoring dashboard.
+
 ### Performance Monitoring
 - Evaluation timing
 - Distribution success rates
@@ -342,12 +397,16 @@ async function manuallyEvaluate(contestId, adminId) {
 - Contests stuck in states
 - Missing state updates
 - Inconsistent timestamps
+- Contests not being automatically canceled
 
 **Resolution:**
 - Check state conditions
 - Verify timestamps
-- Review participant counts
+- Review participant counts 
 - Check automatic triggers
+- Verify `autoCancelWindow` configuration is appropriate
+- Check contest participant count against minimum requirements
+- Review logs for "waiting for more participants" messages
 
 ### Best Practices
 1. Regular state monitoring
@@ -360,5 +419,5 @@ async function manuallyEvaluate(contestId, adminId) {
 
 ---
 
-*Last Updated: February 2024*
+*Last Updated: March 2025*
 *Contact: DegenDuel Platform Team* 
