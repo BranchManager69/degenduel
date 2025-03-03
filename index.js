@@ -22,6 +22,7 @@ import { memoryMonitoring } from "./scripts/monitor-memory.js";
 import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js"; // why is this not being used?
 import serviceManager from "./utils/service-suite/service-manager.js";
 import ServiceInitializer from "./utils/service-suite/service-initializer.js";
+import { SERVICE_NAMES } from "./utils/service-suite/service-constants.js";
 import { createServer } from 'http';
 import referralScheduler from './scripts/referral-scheduler.js'; // why is this not being used?
 // Service-related routes
@@ -243,84 +244,179 @@ if (!QUIET_INITIALIZATION) {
   logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ All Routes Mounted\x1b[0m');
 }
 
-// Create epic startup animation function
-// TODO: Move this to a separate file and renovate it dramatically with our newest services, circuit breakers, routes, db summary of major metrics (For example, user count and tokens count, nothing too much at all, contests count, wallet's count, literally not even much more than this) etc.
-// But right now the data is almost completely useless, and I just don't even look at this part anymoreoh and then why the **** are we having a happy and sad start up animation how about we just keep it simple and flexible
-// There is no need for a sad startup animation, it's just a waste of time and space
-// If it's a quick fix then do it but if it's anything more than meets the eye just save it for later
-async function displayStartupAnimation(port, initResults = {}) {
-    // Helper to get status indicators
-    const getStatusIndicators = (serviceName) => {
-        const service = initResults[serviceName];
-        if (!service) return { status: 'UNKNOWN ', symbol: '?', bars: '□ □ □ □ □' };
-        return {
-            status: service.success ? 'ONLINE  ' : 'ERROR   ', // Fixed width with spaces
-            symbol: service.success ? '✓' : '✗',
-            bars: service.success ? '■ ■ ■ ■ ■' : '□ □ □ □ □'
-        };
+// Create unified startup animation function
+async function displayStartupAnimation(port, initResults = {}, success = true) {
+    // Helper to format time
+    const formatDuration = (seconds) => {
+        if (seconds < 60) return `${seconds.toFixed(2)}s`;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}m ${remainingSeconds.toFixed(0)}s`;
     };
 
-    // Create an epic ASCII art banner
-    const epicBanner = `
-\x1b[38;5;51m╔════════════════════════════════════════════════════════════════════════╗
+    // Colors
+    const colors = {
+        title: '\x1b[38;5;199m',     // Pink
+        border: '\x1b[38;5;51m',     // Cyan
+        success: '\x1b[38;5;82m',    // Green
+        error: '\x1b[38;5;196m',     // Red
+        warning: '\x1b[38;5;226m',   // Yellow
+        reset: '\x1b[0m',            // Reset
+        accent: '\x1b[38;5;213m',    // Purple
+        gray: '\x1b[38;5;247m',      // Gray
+        blue: '\x1b[38;5;39m'        // Blue
+    };
+
+    // Create banner
+    const banner = `
+${colors.border}╔════════════════════════════════════════════════════════════════════════╗
 ║                                                                                  ║
-║  \x1b[38;5;199m██████╗ ███████╗ ██████╗ ███████╗███╗   ██╗\x1b[38;5;51m                           ║
-║  \x1b[38;5;199m██╔══██╗██╔════╝██╔════╝ ██╔════╝████╗  ██║\x1b[38;5;51m                           ║
-║  \x1b[38;5;199m██║  ██║█████╗  ██║  ███╗█████╗  ██╔██╗ ██║\x1b[38;5;51m           \x1b[38;5;226m⚔️  ARENA\x1b[38;5;51m        ║
-║  \x1b[38;5;199m██║  ██║██╔══╝  ██║   ██║██╔══╝  ██║╚██╗██║\x1b[38;5;51m                        ║
-║  \x1b[38;5;199m██████╔╝███████╗╚██████╔╝███████╗██║ ╚████║\x1b[38;5;51m                        ║
-║  \x1b[38;5;199m╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝\x1b[38;5;51m                        ║
+║  ${colors.title}██████╗ ███████╗ ██████╗ ███████╗███╗   ██╗${colors.border}                           ║
+║  ${colors.title}██╔══██╗██╔════╝██╔════╝ ██╔════╝████╗  ██║${colors.border}                           ║
+║  ${colors.title}██║  ██║█████╗  ██║  ███╗█████╗  ██╔██╗ ██║${colors.border}           ${colors.warning}⚔️  ARENA${colors.border}        ║
+║  ${colors.title}██║  ██║██╔══╝  ██║   ██║██╔══╝  ██║╚██╗██║${colors.border}                        ║
+║  ${colors.title}██████╔╝███████╗╚██████╔╝███████╗██║ ╚████║${colors.border}                        ║
+║  ${colors.title}╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝${colors.border}                        ║
 ║                                                                                  ║
-║  \x1b[38;5;199m██████╗ ██╗   ██╗███████╗██╗\x1b[38;5;51m           \x1b[38;5;226m🏆 GLORY AWAITS\x1b[38;5;51m                 ║
-║  \x1b[38;5;199m██╔══██╗██║   ██║██╔════╝██║\x1b[38;5;51m                                          ║
-║  \x1b[38;5;199m██║  ██║██║   ██║█████╗  ██║\x1b[38;5;51m                                          ║
-║  \x1b[38;5;199m██║  ██║██║   ██║██╔══╝  ██║\x1b[38;5;51m                                          ║
-║  \x1b[38;5;199m██████╔╝╚██████╔╝███████╗███████╗\x1b[38;5;51m                                     ║
-║  \x1b[38;5;199m╚═════╝  ╚═════╝ ╚══════╝╚══════╝\x1b[38;5;51m                                     ║
-║                                                                        ║
-╚════════════════════════════════════════════════════════════════════════╝\x1b[0m`;
+║  ${colors.title}██████╗ ██╗   ██╗███████╗██╗${colors.border}           ${colors.warning}🏆 GLORY AWAITS${colors.border}                 ║
+║  ${colors.title}██╔══██╗██║   ██║██╔════╝██║${colors.border}                                          ║
+║  ${colors.title}██║  ██║██║   ██║█████╗  ██║${colors.border}                                          ║
+║  ${colors.title}██║  ██║██║   ██║██╔══╝  ██║${colors.border}                                          ║
+║  ${colors.title}██████╔╝╚██████╔╝███████╗███████╗${colors.border}                                     ║
+║  ${colors.title}╚═════╝  ╚═════╝ ╚══════╝╚══════╝${colors.border}                                     ║
+╚════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
 
-    // Get status for each core service
-    const dbStatus = getStatusIndicators('Database');
-    const apiStatus = getStatusIndicators('Core');
-    const wsStatus = getStatusIndicators('WebSocket');
-    const solanaStatus = getStatusIndicators('Solana Service Manager');
-    const contestStatus = getStatusIndicators('Contest Evaluation Service');
+    // Get core infrastructure services status
+    const coreServices = {
+        'Database': { name: 'Database Cluster', success: true },
+        'API': { name: 'API Server', success: true },
+        'WebSocket': { name: 'WebSocket Server', success: true },
+        'Solana': { name: 'Solana Connection', success: true }
+    };
 
-    // Create dynamic status display based on actual initialization results
-    const statusDisplay = `
-\x1b[38;5;39m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
-║\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.symbol} Database Cluster    \x1b[38;5;247m|\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${dbStatus.status.includes('ONLINE') ? '82' : '196m'}${dbStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.symbol} API Services        \x1b[38;5;247m|\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${apiStatus.status.includes('ONLINE') ? '82' : '196m'}${apiStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.symbol} WebSocket Server    \x1b[38;5;247m|\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${wsStatus.status.includes('ONLINE') ? '82' : '196m'}${wsStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.symbol} Solana Services     \x1b[38;5;247m|\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${solanaStatus.status.includes('ONLINE') ? '82' : '196m'}${solanaStatus.bars}\x1b[0m \x1b[38;5;39m\t\t\t\t║
-║\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.symbol} Contest Engine      \x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.status}\x1b[38;5;247m|\x1b[0m \x1b[38;5;${contestStatus.status.includes('ONLINE') ? '82' : '196m'}${contestStatus.bars}\x1b[0m \x1b[38;5;39m\t\t║
-╚════════════════════════════════════════════════════════════════════╝\x1b[0m`;
+    // Extract services from initResults
+    let services = [];
+    if (initResults && initResults.Services) {
+        // Get initialized services
+        const initialized = initResults.Services.initialized || [];
+        // Get failed services
+        const failed = initResults.Services.failed || [];
+        
+        // Create a service entry for each service
+        if (serviceManager && serviceManager.getServices) {
+            const servicesMap = serviceManager.getServices();
+            services = Array.from(servicesMap.entries()).map(([name, service]) => {
+                const isInitialized = initialized.includes(name);
+                const hasFailed = failed.includes(name);
+                const displayName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                return {
+                    name: displayName,
+                    status: isInitialized ? 'ONLINE' : (hasFailed ? 'ERROR' : 'WAITING'),
+                    symbol: isInitialized ? '✓' : (hasFailed ? '✗' : '⋯'),
+                    details: service.stats || {}
+                };
+            });
+        }
+    }
 
-    // Calculate overall system status
-    const allServices = [dbStatus, apiStatus, wsStatus, solanaStatus, contestStatus];
-    const allOnline = allServices.every(s => s.status.includes('ONLINE'));
-    const anyError = allServices.some(s => s.status.includes('ERROR'));
+    // If no services found but we're successful, create some defaults based on service names
+    if (services.length === 0 && success) {
+        const servicesList = SERVICE_NAMES ? Object.values(SERVICE_NAMES) : [];
+        services = servicesList.map(name => {
+            const displayName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return {
+                name: displayName,
+                status: 'UNKNOWN',
+                symbol: '?',
+                details: {}
+            };
+        });
+    }
+
+    // Create status display header
+    let statusDisplay = `
+${colors.blue}╔═══════════════════════════════ SERVICES STATUS ════════════════════════════════╗${colors.reset}`;
+
+    // Add core services first
+    Object.values(coreServices).forEach(service => {
+        const statusColor = service.success ? colors.success : colors.error;
+        const symbol = service.success ? '✓' : '✗';
+        const status = service.success ? 'ONLINE ' : 'ERROR  ';
+        const bars = service.success ? '■ ■ ■ ■ ■' : '□ □ □ □ □';
+        
+        statusDisplay += `
+${colors.blue}║${colors.reset} ${statusColor}${symbol} ${service.name.padEnd(20)}${colors.gray}|${colors.reset} ${statusColor}${status}${colors.gray}|${colors.reset} ${statusColor}${bars}${colors.reset} ${colors.blue}║${colors.reset}`;
+    });
+
+    // Add service divider
+    statusDisplay += `
+${colors.blue}╟────────────────────────────────────────────────────────────────────────────────╢${colors.reset}`;
+
+    // Calculate number of columns based on services count
+    const numColumns = 2;
+    const rows = Math.ceil(services.length / numColumns);
     
-    // Get service initialization status
-    const servicesStatus = initResults.servicesStatus || { total: 0, initialized: 0, failed: 0 };
-    const systemState = allOnline ? 'FULLY OPERATIONAL ✨' : (anyError ? 'DEGRADED PERFORMANCE ⚠️' : 'PARTIAL STARTUP ⏳');
+    // Add application services in multiple columns
+    for (let row = 0; row < rows; row++) {
+        let rowDisplay = `
+${colors.blue}║${colors.reset}`;
+        
+        for (let col = 0; col < numColumns; col++) {
+            const index = row * numColumns + col;
+            if (index < services.length) {
+                const service = services[index];
+                const statusColor = service.status === 'ONLINE' ? colors.success : 
+                                   (service.status === 'ERROR' ? colors.error : colors.warning);
+                
+                // Truncate name to 16 chars
+                const name = service.name.length > 16 ? service.name.substring(0, 14) + '...' : service.name;
+                rowDisplay += ` ${statusColor}${service.symbol} ${name.padEnd(16)}${colors.reset}`;
+                
+                if (col < numColumns - 1) {
+                    rowDisplay += ` ${colors.gray}|${colors.reset}`;
+                }
+            } else {
+                // Empty column
+                rowDisplay += ` ${''.padEnd(18)}`;
+                if (col < numColumns - 1) {
+                    rowDisplay += ` ${colors.gray}|${colors.reset}`;
+                }
+            }
+        }
+        
+        rowDisplay += ` ${colors.blue}║${colors.reset}`;
+        statusDisplay += rowDisplay;
+    }
 
-    // Format duration nicely
-    const duration = initResults.duration ? initResults.duration.toFixed(2) : 'N/A';
+    // Close status display
+    statusDisplay += `
+${colors.blue}╚════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
 
-    // Create dynamic startup message
+    // Get system metrics
+    const totalServices = services.length;
+    const onlineServices = services.filter(s => s.status === 'ONLINE').length;
+    const failedServices = services.filter(s => s.status === 'ERROR').length;
+    
+    // Calculate overall system status
+    const systemState = failedServices > 0 ? 'DEGRADED PERFORMANCE ⚠️' : 
+                        (onlineServices === totalServices ? 'FULLY OPERATIONAL ✨' : 'PARTIAL STARTUP ⏳');
+    
+    // Get duration
+    const duration = initResults.duration ? formatDuration(initResults.duration) : formatDuration(process.uptime());
+    
+    // Create system summary
     const startupMessage = `
-\x1b[38;5;51m╔══════════════════════════ INITIALIZATION COMPLETE ══════════════════════╗
-║                                                                         ║
-║  \x1b[38;5;199m🚀 DEGEN DUEL ARENA INITIALIZED ON PORT ${port}\x1b[38;5;51m                           ║
-║  \x1b[38;5;${allOnline ? '226' : '196m'}⚡ SYSTEM STATUS: ${systemState}\x1b[38;5;51m                                  ║
-║  \x1b[38;5;82m💫 INITIALIZATION DURATION: ${duration}s\x1b[38;5;51m                                      ║
-║  \x1b[38;5;213m🌐 SERVICES ONLINE: ${servicesStatus.initialized}/${servicesStatus.total}\x1b[38;5;51m                                               ║
-║                                                                        ║
-║  \x1b[38;5;226m⚔️  ENTER THE ARENA  ⚔️\x1b[38;5;51m                                                 ║
-║                                                                        ║
-╚════════════════════════════════════════════════════════════════════════╝\x1b[0m`;
+${colors.border}╔════════════════════════ ${success ? 'INITIALIZATION COMPLETE' : 'INITIALIZATION FAILED'} ═══════════════════════╗
+║                                                                                  ║
+║  ${colors.title}🚀 DEGEN DUEL ARENA ${success ? 'INITIALIZED' : 'STARTING'} ON PORT ${port}${colors.border}                           ║
+║  ${success ? colors.warning : colors.error}⚡ SYSTEM STATUS: ${systemState}${colors.border}                                   ║
+║  ${colors.success}💫 INITIALIZATION TIME: ${duration}${colors.border}                                          ║
+║  ${colors.accent}🌐 SERVICES: ${onlineServices}/${totalServices} ONLINE · ${failedServices} FAILED${colors.border}                                  ║
+║                                                                                  ║
+║  ${colors.warning}⚔️  ENTER THE ARENA  ⚔️${colors.border}                                                       ║
+║                                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
 
     // Clear console for dramatic effect
     console.clear();
@@ -328,62 +424,14 @@ async function displayStartupAnimation(port, initResults = {}) {
     // Add dramatic pause between elements
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     
-    // Display epic startup sequence
+    // Display startup sequence
     console.log('\n');
-    console.log(epicBanner);
-    await sleep(300);
+    console.log(banner);
+    await sleep(200);
     console.log(statusDisplay);
-    await sleep(300);
+    await sleep(200);
     console.log(startupMessage);
     console.log('\n');
-}
-
-// Create sad startup failure animation function
-async function displayStartupFailureAnimation(port, initResults = {}) {
-    // Helper to get status indicators
-    const getStatusIndicators = (serviceName) => {
-        const service = initResults[serviceName];
-        if (!service) return { status: 'UNKNOWN ', symbol: '?', bars: '□ □ □ □ □' };
-        return {
-            status: service.success ? 'ONLINE  ' : 'ERROR   ',
-            symbol: service.success ? '✓' : '✗',
-            bars: service.success ? '■ ■ ■ ■' : '□ □ □ □'
-        };
-    };
-
-    // Create a sad ASCII art banner
-    const sadBanner = `
-\x1b[38;5;196m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
-║                                                                         ║
-║  \x1b[38;5;199m🚨 DEGEN DUEL ARENA INITIALIZATION FAILED\x1b[38;5;51m                           ║
-║                                                                         ║
-╚════════════════════════════════════════════════════════════════════════╝\x1b[0m`;
-
-    // Get status for each core service
-    const dbStatus = getStatusIndicators('Database');
-    const apiStatus = getStatusIndicators('Core');
-    const wsStatus = getStatusIndicators('WebSocket');
-    const solanaStatus = getStatusIndicators('Solana Service Manager');
-    const contestStatus = getStatusIndicators('Contest Engine');
-
-    // Create status display
-    const statusDisplay = `
-\x1b[38;5;196m╔══════════════════════════ SYSTEM STATUS ═══════════════════════════╗
-║  Database Cluster    | ${dbStatus.status} |  ${dbStatus.bars}                              ║
-║  API Services        | ${apiStatus.status} |  ${apiStatus.bars}                              ║
-║  WebSocket Server    | ${wsStatus.status} | ${wsStatus.bars}                           ║
-║  Solana Services     | ${solanaStatus.status} |  ${solanaStatus.bars}                              ║
-║  Contest Engine      | ${contestStatus.status} | ${contestStatus.bars}           ║
-╚════════════════════════════════════════════════════════════════════════╝`;
-
-    // Add dramatic pause between elements
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-    // Display failure message
-    console.log(sadBanner);
-    await sleep(300);
-    console.log(statusDisplay);
-    await sleep(300);
 }
 
 // Main initialization function
@@ -528,7 +576,7 @@ async function initializeServer() {
         
         // Only show animation if enabled
         if (SHOW_STARTUP_ANIMATION) {
-            await displayStartupFailureAnimation(port, initResults);
+            await displayStartupAnimation(port, initResults, false);
         }
         
         process.exit(1);
@@ -590,12 +638,45 @@ process.on("unhandledRejection", (reason, promise) => {
 // Start the server
 initializeServer().then(() => {
     // Start listening after successful initialization
-    server.listen(port, () => {
+    server.listen(port, async () => {
         logApi.info(`Server listening on port ${port}`);
         
         // Only show animation if enabled
         if (SHOW_STARTUP_ANIMATION) {
-            displayStartupAnimation(port);
+            try {
+                // Get current services status for the animation
+                const servicesList = ServiceInitializer.getServiceNames();
+                const servicesStatus = {
+                    total: servicesList.length,
+                    initialized: servicesList.filter(name => {
+                        const service = serviceManager.services.get(name);
+                        return service && service.isInitialized;
+                    }).length
+                };
+                
+                // Create services list with status
+                const initializedServices = servicesList.filter(name => {
+                    const service = serviceManager.services.get(name);
+                    return service && service.isInitialized;
+                });
+                
+                // Pass the complete status data to the animation
+                await displayStartupAnimation(port, {
+                    Database: { success: true },
+                    Core: { success: true },
+                    WebSocket: { success: true },
+                    'Solana Service Manager': { success: true },
+                    Services: {
+                        initialized: initializedServices,
+                        failed: []
+                    },
+                    servicesStatus,
+                    duration: process.uptime()
+                }, true);
+            } catch (error) {
+                // Fallback to simpler animation if there's an error
+                await displayStartupAnimation(port, {}, true);
+            }
         } else {
             logApi.info(`🚀 DegenDuel API Server ready on port ${port}`);
         }
