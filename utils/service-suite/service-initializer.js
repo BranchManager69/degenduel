@@ -63,7 +63,7 @@ class ServiceInitializer {
                 serviceManager.register(walletGeneratorService);
                 serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
             } else {
-                logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+                logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━┓\x1b[0m');
                 
                 // Register Solana Service first (most fundamental)
                 logApi.info('Attempting to register solanaService...');
