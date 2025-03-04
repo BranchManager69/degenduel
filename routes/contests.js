@@ -1097,8 +1097,9 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
             data: {
               contest_id: contestId,
               wallet_address,
-              initial_balance: new Decimal(10000000),
-              current_balance: new Decimal(10000000),
+              // Use these fields for portfolio tracking and statistics displays
+              initial_dxd_points: new Decimal(10000000),
+              current_dxd_points: new Decimal(10000000),
               entry_transaction_id: transactionRecord.id
             }
           });
@@ -1536,12 +1537,13 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         requestId
       });
 
+      // Create participation record
       const participation = await prisma.contest_participants.create({
         data: {
           contest_id: contestId,
           wallet_address,
-          initial_balance: new Decimal(10000000),
-          current_balance: new Decimal(10000000),
+          initial_dxd_points: new Decimal(10000000), // TODO: (MIGHT NOT EVEN BE USED!)
+          current_dxd_points: new Decimal(10000000), // TODO: (MIGHT NOT EVEN BE USED!)
           entry_transaction_id: transaction.id
         }
       });
@@ -1550,7 +1552,6 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       logApi.debug(`📊 ${colors.cyan}Updating contest participant count${colors.reset}`, {
         requestId
       });
-
       await prisma.contests.update({
         where: { id: contestId },
         data: {
@@ -1569,6 +1570,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       await cache.del(participationCacheKey);
       await cache.del(walletParticipationsCacheKey);
       
+      // Log success
       logApi.info(`🎉 ${colors.green}Successfully joined contest${colors.reset}`, {
         requestId,
         contestId,
@@ -1581,6 +1583,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         cacheCleared: true
       });
 
+      // Return the participation and transaction
       return {
         participation,
         transaction: {
@@ -1592,9 +1595,11 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       };
     });
 
+    // Return the result
     res.json(result);
 
   } catch (error) {
+    // Log error
     const duration = Date.now() - startTime;
     logApi.error(`💥 ${colors.red}Error in join contest endpoint${colors.reset}`, {
       requestId,
@@ -1609,6 +1614,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       duration
     });
 
+    // Handle ContestError
     if (error instanceof ContestError) {
       return res.status(error.statusCode).json({
         error: error.message,
@@ -1616,6 +1622,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       });
     }
 
+    // Handle Prisma errors
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return res.status(400).json({
         error: 'Database operation failed',
@@ -1624,6 +1631,7 @@ router.post('/:id/join', requireAuth, async (req, res) => {
       });
     }
 
+    // Return a generic error message
     res.status(500).json({
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
@@ -1700,6 +1708,7 @@ router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
       cancellation_reason
     } = req.body;
 
+    // Log the request
     logApi.info('Contest update request received:', {
       requestId,
       contestId,
@@ -1775,12 +1784,14 @@ router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
       )
     });
 
+    // Attempt to update the contest
     try {
       const contest = await prisma.contests.update({
         where: { id: contestId },
         data: updateData
       });
 
+      // Log success
       logApi.info('Contest updated successfully:', {
         requestId,
         contestId,
@@ -1789,8 +1800,10 @@ router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
         )
       });
 
+      // Return the contest
       res.json(contest);
     } catch (prismaError) {
+      // Log error
       logApi.error('Prisma update failed:', {
         requestId,
         error: {
@@ -1806,6 +1819,7 @@ router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
     }
 
   } catch (error) {
+    // Log error
     logApi.error('Error in contest update:', {
       error: error instanceof Error ? {
         name: error.name,
@@ -1814,6 +1828,7 @@ router.put('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
       } : error
     });
 
+    // Return a generic error message
     res.status(500).json({
       error: 'Failed to update contest',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined,
@@ -1868,18 +1883,22 @@ router.post('/:id/start', requireAuth, requireAdmin, async (req, res) => {
       }
     });
 
+    // Check if contest exists
     if (!contest) {
       return res.status(404).json({ error: 'Contest not found' });
     }
 
+    // Check if contest is pending
     if (contest.status !== 'pending') {
       return res.status(400).json({ error: 'Contest cannot be started' });
     }
 
+    // Check if there are enough participants
     if (contest._count.contest_participants < (contest.min_participants || 2)) {
       return res.status(400).json({ error: 'Not enough participants' });
     }
 
+    // Update contest status
     const updatedContest = await prisma.contests.update({
       where: { id: parseInt(req.params.id) },
       data: {
@@ -1889,8 +1908,10 @@ router.post('/:id/start', requireAuth, requireAdmin, async (req, res) => {
       }
     });
 
+    // Return the updated contest
     res.json(updatedContest);
   } catch (error) {
+    // Log error
     logApi.error('Failed to start contest:', error);
     res.status(500).json({ error: 'Failed to start contest' });
   }
@@ -1946,7 +1967,9 @@ router.post('/:id/start', requireAuth, requireAdmin, async (req, res) => {
 // End a contest and calculate winners
 router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
   try {
+    // Start a transaction
     const result = await prisma.$transaction(async (prisma) => {
+      // Find the contest
       const contest = await prisma.contests.findUnique({
         where: { id: parseInt(req.params.id) },
         include: {
@@ -1956,14 +1979,16 @@ router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
         }
       });
 
+      // Check if contest exists
       if (!contest) {
         throw new Error('Contest not found');
       }
 
+      // Check if contest is active
       if (contest.status !== 'active') {
         throw new Error('Contest is not active');
       }
-
+      
       // Update participant rankings
       const participants = contest.contest_participants;
       for (let i = 0; i < participants.length; i++) {
@@ -1980,8 +2005,10 @@ router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
           }
         });
 
-        // Check for referral contest bonus if participant placed in top 3
-        if (i < 3) {
+        // Check for and award a referral contest bonus if participant placed in top N
+        const nTopN = 3;
+        const isTopN = i < nTopN;
+        if (isTopN) {
           await ReferralService.awardContestBonus(participant.wallet_address, contest.id);
         }
       }
@@ -1996,6 +2023,7 @@ router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
         }
       });
 
+      // Return the updated contest and rankings
       return {
         contest: updatedContest,
         rankings: participants.map((p, index) => ({
@@ -2006,8 +2034,10 @@ router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
       };
     });
 
+    // Return the result
     res.json(result);
   } catch (error) {
+    // Log error
     logApi.error('Failed to end contest:', error);
     res.status(500).json({ error: error.message });
   }
