@@ -1,5 +1,11 @@
 // services/liquidityService.js
 
+/** 
+ * This service is responsible for managing the liquidity of the platform.
+ * It handles the creation, activation, and maintenance of liquidity wallets.
+ * It also provides a standardized interface for other services to access liquidity.
+ */
+
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import { logApi } from '../utils/logger-suite/logger.js';
@@ -32,6 +38,7 @@ const LIQUIDITY_CONFIG = {
     }
 };
 
+// Liquidity Service
 class LiquidityService extends BaseService {
     constructor() {
         super(LIQUIDITY_CONFIG);
@@ -77,6 +84,7 @@ class LiquidityService extends BaseService {
         this.operationTimeouts = new Set();
     }
 
+    // Initialize the service
     async initialize() {
         try {
             // Call parent initialize first
@@ -305,6 +313,7 @@ class LiquidityService extends BaseService {
         }
     }
 
+    // Perform operation
     async performOperation() {
         const startTime = Date.now();
         
@@ -386,6 +395,7 @@ class LiquidityService extends BaseService {
         }
     }
 
+    // Stop the service
     async stop() {
         try {
             await super.stop();
