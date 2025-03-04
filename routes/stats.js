@@ -176,8 +176,8 @@ router.get('/:wallet/history', async (req, res) => {
             contest_name: entry.contest.name,
             start_time: entry.contest.start_time,
             end_time: entry.contest.end_time,
-            initial_balance: entry.initial_balance,
-            current_balance: entry.current_balance,
+            initial_balance: entry.initial_dxd_points,
+            current_balance: entry.current_dxd_points,
             rank: entry.rank
         }));
 
