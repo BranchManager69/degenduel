@@ -372,7 +372,7 @@ class TokenSyncService extends BaseService {
         }
 
         // Get bulk token data from DD-serve
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Attempting to fetch prices from:${fancyColors.RESET} ${fancyColors.GREEN}${pricesEndpoint}${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Attempting to fetch prices from:\n${fancyColors.RESET} ${fancyColors.GREEN}${pricesEndpoint}${fancyColors.RESET}`);
         logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Fetching prices from:${fancyColors.RESET} ${fancyColors.GREEN}${pricesEndpoint}${fancyColors.RESET}`);
         ////logApi.info(`\t${fancyColors.BLUE}Addresses:${fancyColors.RESET} ${fancyColors.WHITE}${addresses}${fancyColors.RESET}`);
         try {
