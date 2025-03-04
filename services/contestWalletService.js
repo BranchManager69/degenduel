@@ -22,6 +22,7 @@ import serviceManager from '../utils/service-suite/service-manager.js';
 import { Keypair, Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import crypto from 'crypto';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import { fa } from '@faker-js/faker';
 
 const CONTEST_WALLET_CONFIG = {
     name: SERVICE_NAMES.CONTEST_WALLET,
@@ -198,7 +199,9 @@ class ContestWalletService extends BaseService {
             const lamports = await this.connection.getBalance(publicKey);
             const solBalance = lamports / LAMPORTS_PER_SOL;
             
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Updating balance for contest ${wallet.contests?.id} (${wallet.contests?.contest_code})${fancyColors.RESET} \n\t${fancyColors.BLACK}${wallet.wallet_address}${fancyColors.RESET}\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLACK}Balance of wallet ${wallet.wallet_address} is ${lamports} lamports${fancyColors.RESET} (${solBalance} SOL)`);
+            
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Updating balance for ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET}`, {
                 contest_id: wallet.contests?.id,
                 contest_code: wallet.contests?.contest_code,
                 balance: solBalance
@@ -209,11 +212,12 @@ class ContestWalletService extends BaseService {
                 where: { id: wallet.id },
                 data: {
                     balance: solBalance,
-                    last_sync: new Date()
+                    last_sync: new Date(),
+                    updated_at: new Date() // duplicate of last_sync?
                 }
             });
 
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Updated balance for contest ${wallet.contests?.id} (${wallet.contests?.contest_code})${fancyColors.RESET} \n\t${fancyColors.BLACK}${wallet.wallet_address}${fancyColors.RESET}\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET}  ${fancyColors.GREEN}Updated balance for ${fancyColors.BOLD_GREEN}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_GREEN}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \t${fancyColors.BLACK}${wallet.wallet_address}${fancyColors.RESET}\n\t\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
                 contest_id: wallet.contests?.id,
                 contest_code: wallet.contests?.contest_code,
                 balance: solBalance
@@ -284,6 +288,9 @@ class ContestWalletService extends BaseService {
                 updates: []
             };
             
+            // Sort contest wallets by contest ID
+            contestWallets.sort((a, b) => a.contests?.id - b.contests?.id);
+            
             // Update each wallet's balance
             for (const wallet of contestWallets) {
                 try {
@@ -301,7 +308,7 @@ class ContestWalletService extends BaseService {
                         // Only add significant balance changes to the results  
                         if (Math.abs(updateResult.difference) > 0.0001) {
                             results.updates.push(updateResult);
-                            logApi.info(`${fancyColors.MAGENTA}[contestWalletService] ⚠️ ${fancyColors.RESET} ${fancyColors.ORANGE}${fancyColors.BOLD}Significant balance change${fancyColors.RESET} ${fancyColors.ORANGE}detected for contest ${wallet.contests?.id} (${wallet.contests?.contest_code})${fancyColors.RESET} \n\t${fancyColors.BLACK}${wallet.wallet_address}${fancyColors.RESET}\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
+                            logApi.info(`${fancyColors.MAGENTA}[contestWalletService] ⚠️ ${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}${fancyColors.BG_BROWN}Significant balance change${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}detected for ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \n\t\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
                                 contest_id: wallet.contests?.id,
                                 contest_code: wallet.contests?.contest_code,
                                 wallet_address: wallet.wallet_address,
@@ -312,7 +319,7 @@ class ContestWalletService extends BaseService {
                         }
                     } else {
                         results.failed++;
-                        logApi.warn(`Failed to update contest wallet balance`, {
+                        logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to update ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \n\t\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
                             contest_id: wallet.contests?.id,
                             contest_code: wallet.contests?.contest_code,
                             wallet_address: wallet.wallet_address,
@@ -321,7 +328,7 @@ class ContestWalletService extends BaseService {
                     }
                 } catch (error) {
                     results.failed++;
-                    logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Error updating individual wallet balance${fancyColors.RESET}`, {
+                    logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Error updating ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \n\t\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
                         wallet_address: wallet.wallet_address,
                         contest_id: wallet.contests?.id,
                         contest_code: wallet.contests?.contest_code,
@@ -334,7 +341,7 @@ class ContestWalletService extends BaseService {
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
             
             // Log completion summary
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \x1b[42mContest wallet balance update cycle completed${fancyColors.RESET}\n`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GALAXY}Contest wallet balance update cycle completed${fancyColors.RESET}\n`, {
                 duration_ms: Date.now() - startTime,
                 total_wallets: results.total,
                 successful_updates: results.updated,
@@ -348,7 +355,7 @@ class ContestWalletService extends BaseService {
                 ...results
             };
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \x1b[41mFailed to update wallet balances${fancyColors.RESET}`, {
+            logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to update wallet balances${fancyColors.RESET}`, {
                 error: error.message,
                 stack: error.stack
             });

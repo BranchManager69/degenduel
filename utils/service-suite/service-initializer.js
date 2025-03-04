@@ -282,10 +282,10 @@ class ServiceInitializer {
         }
 
         try {
-            const results = await serviceManager.cleanupAll();
+            const results = await serviceManager.cleanup();
             
             if (!VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${serviceColors.stopped}[SERVICE CLEANUP]${fancyColors.RESET} Services cleanup: ${results.cleaned.length} succeeded, ${results.failed.length} failed`);
+                logApi.info(`${serviceColors.stopped}[SERVICE CLEANUP]${fancyColors.RESET} Services cleanup: ${results.successful.length} succeeded, ${results.failed.length} failed`);
                 
                 // Always show failed cleanups, even in non-verbose mode
                 if (results.failed.length > 0) {
@@ -295,9 +295,9 @@ class ServiceInitializer {
                 }
             } else {
                 logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━ Cleanup Results ━━━━━━━━━━━┓\x1b[0m');
-                if (results.cleaned.length > 0) {
-                    logApi.info(`\x1b[38;5;82m┃ Successfully cleaned: ${results.cleaned.length} services\x1b[0m`);
-                    results.cleaned.forEach(service => {
+                if (results.successful.length > 0) {
+                    logApi.info(`\x1b[38;5;82m┃ Successfully cleaned: ${results.successful.length} services\x1b[0m`);
+                    results.successful.forEach(service => {
                         logApi.info(`\x1b[38;5;82m┃ ✓ ${service}\x1b[0m`);
                     });
                 } else {
@@ -317,7 +317,7 @@ class ServiceInitializer {
                 'SYSTEM',
                 AdminLogger.Actions.SERVICE.STOP,
                 {
-                    cleaned: results.cleaned,
+                    cleaned: results.successful,
                     failed: results.failed
                 }
             );
