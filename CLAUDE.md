@@ -75,3 +75,22 @@ The achievement system is implemented through:
   - `achievement_tiers`
   - `achievement_tier_requirements`
   - `user_levels`
+# WebSocket Testing
+
+We have created a dedicated tool for testing WebSockets across different implementations:
+
+```bash
+# Test SkyDuel WebSocket
+npm run ws skyduel <token>
+
+# Test Token Data WebSocket
+npm run ws token-data <token>
+
+# Test Circuit Breaker WebSocket
+npm run ws circuit-breaker <token>
+
+# Test Monitor WebSocket
+npm run ws monitor <token>
+```
+
+Currently only SkyDuel WebSocket is working properly, as it has a different authentication mechanism than the other WebSockets. The token-data WebSocket connects but then has issues with compressed frames.

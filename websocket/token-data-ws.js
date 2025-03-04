@@ -6,7 +6,8 @@ class TokenDataWebSocket extends BaseWebSocketServer {
         super(server, {
             path: '/api/ws/token-data',
             maxMessageSize: 5 * 1024 * 1024, // 5MB, plenty of room
-            requireAuth: false // We'll add auth later
+            requireAuth: false, // We'll add auth later
+            perMessageDeflate: false // Disable compression for this WebSocket
         });
 
         logApi.info('Token Data WebSocket initialized');
