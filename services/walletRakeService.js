@@ -54,6 +54,7 @@ const WALLET_RAKE_CONFIG = {
     }
 };
 
+// Wallet Rake Service
 class WalletRakeService extends BaseService {
     constructor() {
         ////super(WALLET_RAKE_CONFIG.name, WALLET_RAKE_CONFIG);
@@ -104,6 +105,7 @@ class WalletRakeService extends BaseService {
         this.operationTimeouts = new Set();
     }
 
+    // Initialize the service
     async initialize() {
         try {
             // Call parent initialize first
@@ -530,6 +532,7 @@ class WalletRakeService extends BaseService {
         }
     }
 
+    // Stop the service
     async stop() {
         try {
             await super.stop();

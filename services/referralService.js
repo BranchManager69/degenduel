@@ -49,6 +49,7 @@ const REFERRAL_SERVICE_CONFIG = {
     }
 };
 
+// Referral Service
 class ReferralService extends BaseService {
     constructor() {
         super(REFERRAL_SERVICE_CONFIG);
@@ -108,6 +109,7 @@ class ReferralService extends BaseService {
         this.rankingsCache = new Map();
     }
 
+    // Initialize the service
     async initialize() {
         try {
             // Call parent initialize first
@@ -229,6 +231,7 @@ class ReferralService extends BaseService {
         }
     }
 
+    // Perform operation
     async performOperation() {
         const startTime = Date.now();
         
@@ -281,6 +284,7 @@ class ReferralService extends BaseService {
         }
     }
 
+    // Process referrals
     async processReferrals() {
         const startTime = Date.now();
         
@@ -350,6 +354,7 @@ class ReferralService extends BaseService {
         }
     }
 
+    // Process referral
     async processReferral(referral) {
         try {
             const result = {
@@ -402,12 +407,14 @@ class ReferralService extends BaseService {
         }
     }
 
+    // Check conversion criteria
     async checkConversionCriteria(referral) {
         // Implementation will vary based on conversion criteria
         // This is a placeholder for the actual implementation
         return false;
     }
 
+    // Convert referral
     async convertReferral(referral) {
         try {
             await prisma.referrals.update({
@@ -430,6 +437,7 @@ class ReferralService extends BaseService {
         }
     }
 
+    // Get current period
     async getCurrentPeriod() {
         try {
             return await prisma.referral_periods.findFirst({
@@ -469,6 +477,7 @@ class ReferralService extends BaseService {
         }
     }
 
+    // Calculate period dates
     calculatePeriodDates(periodLength = 'weekly') {
         const now = new Date();
         const startTime = new Date(now);
@@ -494,6 +503,7 @@ class ReferralService extends BaseService {
         return { startTime, endTime };
     }
 
+    // Start ranking updates
     async startRankingUpdates() {
         setInterval(async () => {
             try {
@@ -504,6 +514,7 @@ class ReferralService extends BaseService {
         }, this.config.referral.rankingUpdateInterval);
     }
 
+    // Update rankings
     async updateRankings() {
         try {
             const currentPeriod = await this.getCurrentPeriod();
@@ -527,6 +538,7 @@ class ReferralService extends BaseService {
         }
     }
 
+    // Get cached period stats
     async getCachedPeriodStats() {
         const currentPeriod = await this.getCurrentPeriod();
         if (!currentPeriod) return null;
@@ -547,6 +559,7 @@ class ReferralService extends BaseService {
         return stats;
     }
 
+    // Get cached rankings
     async getCachedRankings() {
         const currentPeriod = await this.getCurrentPeriod();
         if (!currentPeriod) return null;
@@ -565,6 +578,7 @@ class ReferralService extends BaseService {
         return rankings;
     }
 
+    // Stop the service
     async stop() {
         try {
             await super.stop();
