@@ -7,6 +7,12 @@ import { logApi } from './logger-suite/logger.js';
  */
 class SystemSettingsUtil {
     /**
+     * Maximum size for any system setting value in characters
+     * Prevent extremely large objects from causing issues
+     */
+    static MAX_VALUE_SIZE = 50000;
+
+    /**
      * Safely serialize an object for storage in the database
      * Handles circular references and large objects
      * @param {any} obj - The object to serialize
@@ -14,34 +20,106 @@ class SystemSettingsUtil {
      */
     static safeSerialize(obj) {
         try {
-            // First attempt to stringify and parse to catch circular references
-            return JSON.parse(JSON.stringify(obj));
+            // First attempt to stringify 
+            const jsonStr = JSON.stringify(obj);
+            
+            // Check size - if it's too large, create a simplified version
+            if (jsonStr.length > this.MAX_VALUE_SIZE) {
+                return this.createSimplifiedObject(obj, "Object too large");
+            }
+            
+            // If size is acceptable, parse it back to an object
+            return JSON.parse(jsonStr);
         } catch (error) {
             // If circular reference is detected, create a simplified object
             if (error.message.includes('circular') || error.message.includes('recursion')) {
-                // For objects, create a simplified version
-                if (obj && typeof obj === 'object') {
-                    if (Array.isArray(obj)) {
-                        return [`Array with ${obj.length} items (simplified)`];
+                return this.createSimplifiedObject(obj, "Circular reference detected");
+            }
+            
+            // Return a basic representation if all else fails
+            return {
+                simplified: true,
+                message: "Failed to serialize: " + String(error).substring(0, 100),
+                timestamp: new Date().toISOString()
+            };
+        }
+    }
+    
+    /**
+     * Create a simplified version of a complex object
+     * @param {any} obj - The original object
+     * @param {string} reason - The reason for simplification
+     * @returns {object} A simplified representation of the object
+     */
+    static createSimplifiedObject(obj, reason) {
+        // Basic metadata about the original object
+        const simplified = {
+            simplified: true,
+            simplification_reason: reason,
+            original_type: typeof obj,
+            timestamp: new Date().toISOString()
+        };
+        
+        // If it's an array, add information about its length
+        if (Array.isArray(obj)) {
+            simplified.is_array = true;
+            simplified.length = obj.length;
+            
+            // Add sample of first few items if available
+            if (obj.length > 0) {
+                try {
+                    // Try to add up to 3 items as samples
+                    const samples = [];
+                    for (let i = 0; i < Math.min(3, obj.length); i++) {
+                        const sample = typeof obj[i] === 'object' && obj[i] !== null
+                            ? { type: Array.isArray(obj[i]) ? 'array' : 'object' }
+                            : obj[i];
+                        samples.push(sample);
                     }
-                    
-                    // Create a simplified object with just the keys
-                    const simplified = {};
-                    for (const key in obj) {
-                        if (typeof obj[key] === 'function') {
-                            simplified[key] = 'function (simplified)';
-                        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-                            simplified[key] = 'object (simplified)';
-                        } else {
-                            simplified[key] = obj[key];
-                        }
-                    }
-                    return simplified;
+                    simplified.samples = samples;
+                } catch (e) {
+                    simplified.samples_error = String(e).substring(0, 100);
                 }
             }
-            // Return a basic representation if all else fails
-            return String(obj).substring(0, 100) + '... (simplified)';
+            return simplified;
         }
+        
+        // For objects, create a simplified version with just the keys
+        if (obj && typeof obj === 'object') {
+            try {
+                const keys = Object.keys(obj);
+                simplified.key_count = keys.length;
+                simplified.keys = keys.slice(0, 10); // Only include first 10 keys
+                
+                // Try to preserve some primitive values
+                const preservedValues = {};
+                let preservedCount = 0;
+                
+                for (const key of keys) {
+                    if (preservedCount >= 5) break; // Limit to 5 preserved values
+                    
+                    const value = obj[key];
+                    if (value === null || 
+                        typeof value === 'string' || 
+                        typeof value === 'number' ||
+                        typeof value === 'boolean') {
+                        // For strings, truncate if too long
+                        preservedValues[key] = typeof value === 'string' && value.length > 100
+                            ? value.substring(0, 100) + '...'
+                            : value;
+                        preservedCount++;
+                    }
+                }
+                
+                if (preservedCount > 0) {
+                    simplified.preserved_values = preservedValues;
+                }
+            } catch (e) {
+                simplified.simplification_error = String(e).substring(0, 100);
+            }
+        }
+        
+        return simplified;
     }
 
     /**
@@ -54,7 +132,85 @@ class SystemSettingsUtil {
      */
     static async upsertSetting(key, value, description = null, updatedBy = null) {
         try {
-            // Safely serialize the value
+            // Skip attempt to update if key contains problematic services
+            // These services are known to have large state objects that can cause recursion issues
+            const problematicServices = [
+                'token_sync_service',
+                'wallet_generator_service',
+                'achievement_service'
+            ];
+            
+            // For problematic services, go straight to simplified storage
+            if (problematicServices.includes(key)) {
+                // Use a very basic representation for these services
+                const basicValue = {
+                    simplified: true,
+                    original_type: typeof value,
+                    service_name: key,
+                    timestamp: new Date().toISOString(),
+                    status: value?.status || 'unknown',
+                    running: !!value?.running,
+                    last_check: new Date().toISOString()
+                };
+                
+                // Try to preserve some essential stats if available
+                if (value?.stats) {
+                    try {
+                        const statsSample = {};
+                        // Cherry-pick important stats that won't cause recursion
+                        if (value.stats.circuitBreaker) {
+                            statsSample.circuitBreaker = {
+                                isOpen: value.stats.circuitBreaker.isOpen || false,
+                                failures: value.stats.circuitBreaker.failures || 0,
+                                lastFailure: value.stats.circuitBreaker.lastFailure || null
+                            };
+                        }
+                        basicValue.stats_sample = statsSample;
+                    } catch (e) {
+                        // Ignore errors when extracting stats
+                    }
+                }
+                
+                try {
+                    // First try to update if it exists
+                    await prisma.system_settings.updateMany({
+                        where: { key },
+                        data: {
+                            value: basicValue,
+                            description: description || `${key} (auto-simplified)`,
+                            updated_at: new Date(),
+                            updated_by: updatedBy
+                        }
+                    });
+                    
+                    // Check if it was updated
+                    const existing = await prisma.system_settings.findUnique({ where: { key } });
+                    
+                    if (!existing) {
+                        // If it doesn't exist, create it
+                        await prisma.system_settings.create({
+                            data: {
+                                key,
+                                value: basicValue,
+                                description: description || `${key} (auto-simplified)`,
+                                updated_at: new Date(),
+                                updated_by: updatedBy
+                            }
+                        });
+                    }
+                    
+                    return {
+                        key,
+                        value: basicValue,
+                        simplified: true
+                    };
+                } catch (directError) {
+                    logApi.error(`Direct simplified update failed for ${key}:`, directError);
+                    return null;
+                }
+            }
+            
+            // For normal services, safely serialize the value
             const safeValue = this.safeSerialize(value);
             
             // Try to update or create the setting
@@ -80,21 +236,26 @@ class SystemSettingsUtil {
             // If we still have issues, try with an extremely simplified value
             if (error.message.includes('recursion limit exceeded') || error.code === 'InvalidArg') {
                 try {
-                    // Clean up if needed
-                    await this.deleteSetting(key);
+                    // Try to delete existing record to avoid unique constraint issues
+                    try {
+                        await prisma.system_settings.delete({ where: { key } });
+                    } catch (deleteError) {
+                        // Ignore errors if the record doesn't exist
+                    }
                     
-                    // Create with basic info
+                    // Create with basic info using direct query to bypass JSON serialization issues
                     const basicValue = {
                         simplified: true,
                         original_type: typeof value,
-                        timestamp: new Date().toISOString()
+                        timestamp: new Date().toISOString(),
+                        error_recovery: true
                     };
                     
                     return await prisma.system_settings.create({
                         data: {
                             key,
                             value: basicValue,
-                            description: `${description || key} (simplified)`,
+                            description: `${description || key} (error recovery)`,
                             updated_at: new Date(),
                             updated_by: updatedBy
                         }

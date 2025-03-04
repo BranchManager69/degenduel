@@ -199,13 +199,13 @@ class ContestWalletService extends BaseService {
             const lamports = await this.connection.getBalance(publicKey);
             const solBalance = lamports / LAMPORTS_PER_SOL;
             
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLACK}Balance of wallet ${wallet.wallet_address} is ${lamports} lamports${fancyColors.RESET} (${solBalance} SOL)`);
-            
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Updating balance for ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET}`, {
-                contest_id: wallet.contests?.id,
-                contest_code: wallet.contests?.contest_code,
-                balance: solBalance
-            });
+            //// Log balance update
+            //logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLACK}Balance of wallet ${wallet.wallet_address} is ${lamports} lamports${fancyColors.RESET} (${solBalance} SOL)`);
+            //logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Updating balance for ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET}`, {
+            //    contest_id: wallet.contests?.id,
+            //    contest_code: wallet.contests?.contest_code,
+            //    balance: solBalance
+            //});
 
             // Update wallet in database
             await prisma.contest_wallets.update({
@@ -217,11 +217,14 @@ class ContestWalletService extends BaseService {
                 }
             });
 
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET}  ${fancyColors.GREEN}Updated balance for ${fancyColors.BOLD_GREEN}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_GREEN}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \t${fancyColors.BLACK}${wallet.wallet_address}${fancyColors.RESET}\n\t\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
-                contest_id: wallet.contests?.id,
-                contest_code: wallet.contests?.contest_code,
-                balance: solBalance
-            });
+            // Only log contest wallet balance update if there's been a change >= 0.01 SOL
+            if (solBalance !== wallet.balance && Math.abs(solBalance - wallet.balance) >= 0.01) {
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET}  ${fancyColors.GREEN}Updated balance for ${fancyColors.BOLD_GREEN}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BLACK}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \n\t${fancyColors.RAINBOW_BLUE}${fancyColors.BOLD}Change: ${(solBalance - wallet.balance).toFixed(4)} SOL${fancyColors.RESET} \t${fancyColors.BLUE}${fancyColors.UNDERLINE}www.solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}`, {
+                //    contest_id: wallet.contests?.id,
+                //    contest_code: wallet.contests?.contest_code,
+                //    balance: solBalance
+                });
+            }
             
             // Update stats
             this.walletStats.balance_updates.total++;
@@ -265,6 +268,15 @@ class ContestWalletService extends BaseService {
     
     // Bulk update all wallets' balances
     async updateAllWalletBalances() {
+        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GALAXY}Contest wallet balance refresh cycle starting...${fancyColors.RESET}`, {
+        //    duration_ms: Date.now() - startTime,
+        //    total_wallets: results.total,
+        //    successful_updates: results.updated,
+        //    failed_updates: results.failed,
+        //    active_contests: results.active_contests,
+        //    significant_changes: results.updates.length
+        });
+
         const startTime = Date.now();
         try {
             // Get all contest wallets
@@ -341,13 +353,13 @@ class ContestWalletService extends BaseService {
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
             
             // Log completion summary
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GALAXY}Contest wallet balance update cycle completed${fancyColors.RESET}\n`, {
-                duration_ms: Date.now() - startTime,
-                total_wallets: results.total,
-                successful_updates: results.updated,
-                failed_updates: results.failed,
-                active_contests: results.active_contests,
-                significant_changes: results.updates.length
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GALAXY}Contest wallet balance refresh cycle completed${fancyColors.RESET}`, {
+            //    duration_ms: Date.now() - startTime,
+            //    total_wallets: results.total,
+            //    successful_updates: results.updated,
+            //    failed_updates: results.failed,
+            //    active_contests: results.active_contests,
+            //    significant_changes: results.updates.length
             });
             
             return {
