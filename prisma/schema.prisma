@@ -15,9 +15,9 @@ model contest_participants {
   initial_dxd_points   Decimal?      @default(0) @db.Decimal(20, 0)
   current_dxd_points   Decimal?      @default(0) @db.Decimal(20, 0)
   rank                 Int?
-  prize_amount         Decimal?      @db.Decimal(20, 0)
+  prize_amount         Decimal?      @db.Decimal(20, 8)
   prize_paid_at        DateTime?     @db.Timestamptz(6)
-  refund_amount        Decimal?      @db.Decimal(20, 0)
+  refund_amount        Decimal?      @db.Decimal(20, 8)
   refunded_at          DateTime?     @db.Timestamptz(6)
   entry_transaction_id Int?
   entry_time           DateTime      @default(now()) @db.Timestamptz(6)
@@ -145,8 +145,8 @@ model contests {
   start_time                DateTime                    @db.Timestamptz(6)
   end_time                  DateTime                    @db.Timestamptz(6)
   entry_fee                 Decimal?                    @default(0) @db.Decimal(20, 8)
-  prize_pool                Decimal                     @default(0) @db.Decimal(20, 0)
-  current_prize_pool        Decimal                     @default(0) @db.Decimal(20, 0)
+  prize_pool                Decimal                     @default(0) @db.Decimal(20, 8)
+  current_prize_pool        Decimal                     @default(0) @db.Decimal(20, 8)
   status                    contest_status              @default(pending)
   settings                  Json?                       @default("{}")
   created_at                DateTime                    @default(now()) @db.Timestamptz(6)
@@ -242,9 +242,9 @@ model transactions {
   id                                                                           Int                    @id @default(autoincrement())
   wallet_address                                                               String?
   type                                                                         transaction_type
-  amount                                                                       Decimal                @db.Decimal(20, 0)
-  balance_before                                                               Decimal                @db.Decimal(20, 0)
-  balance_after                                                                Decimal                @db.Decimal(20, 0)
+  amount                                                                       Decimal                @db.Decimal(20, 8)
+  balance_before                                                               Decimal                @db.Decimal(20, 8)
+  balance_after                                                                Decimal                @db.Decimal(20, 8)
   contest_id                                                                   Int?
   description                                                                  String?
   status                                                                       transaction_status?    @default(completed)
@@ -440,7 +440,7 @@ model blockchain_transactions {
   tx_hash      String             @unique @db.VarChar
   wallet_from  String             @db.VarChar
   wallet_to    String             @db.VarChar
-  amount       Decimal            @db.Decimal(20, 0)
+  amount       Decimal            @db.Decimal(20, 8)
   token_type   TokenType          @default(SOL)
   chain        Chain              @default(SOLANA)
   status       transaction_status @default(pending)
@@ -465,7 +465,7 @@ model contest_wallets {
   contest_id     Int       @unique
   wallet_address String    @db.VarChar
   private_key    String    @db.VarChar
-  balance        Decimal   @db.Decimal(20, 0)
+  balance        Decimal   @db.Decimal(20, 8)
   created_at     DateTime  @default(now()) @db.Timestamptz(6)
   updated_at     DateTime? @db.Timestamptz(6)
   last_sync      DateTime? @db.Timestamptz(6)
