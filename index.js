@@ -332,7 +332,6 @@ ${colors.border}╔════════════════════�
 
     // If no services found but we're successful, create some defaults based on service names
     if (services.length === 0 && success) {
-        // TODO: Use the layers and service names we've already defined elsewhere
         const servicesList = SERVICE_NAMES ? Object.values(SERVICE_NAMES) : [];
         services = servicesList.map(name => {
             const displayName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -428,7 +427,7 @@ ${colors.border}╔════════════════════�
 ║  ${colors.success}💫 INITIALIZATION TIME: ${duration}${colors.border}
 ║  ${colors.accent}🌐 SERVICES: ${onlineServices}/${totalServices} ONLINE · ${failedServices} FAILED${colors.border}
 ║ 
-║  ${colors.warning}⚔️  ENTER THE ARENA  ⚔️${colors.border}
+║  ${colors.warning}⚔️  ${success ? `${colors.success}MAKE PvP GREAT AGAIN!${colors.border}` : `${colors.error}MAKE PvP GREAT AGAIN!${colors.border}`}  ⚔️${colors.border}
 ║ 
 ╚══════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
 
@@ -490,12 +489,14 @@ async function initializeServer() {
             // (Solana Service Manager is now initialized through the service system)
             logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ 🔄 Note: Solana Service now initialized via service system...\x1b[0m');
 
-            // Initialize grouped services // (Note: I'm not married to these groupings, I'm open to suggestions)
+            // Initialize grouped services 
+            // (Note: I'm not married to these groupings, I'm open to suggestions)
             try {
-                // First try to register "core services"
+                // First try to register core services
                 if (VERBOSE_SERVICE_INIT_LOGS) {
                     logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Registering core services...${fancyColors.RESET} \n`);
                 }
+                // Register core services
                 const coreServices = await ServiceInitializer.registerCoreServices().catch(error => {
                     logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Failed to register core services:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
                     if (VERBOSE_SERVICE_INIT_LOGS) {
