@@ -452,9 +452,11 @@ router.get('/tokens/list', async (req, res) => {
  */
 router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
     const { tokenAddress } = req.params;
+    let cachedPrices = []; // Define at the top level so it's available in the catch block
+    
     try {
         // First try to get from cache/database
-        const cachedPrices = await prisma.token_prices.findMany({
+        cachedPrices = await prisma.token_prices.findMany({
             where: { 
                 token_address: tokenAddress,
                 timestamp: {

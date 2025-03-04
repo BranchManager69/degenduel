@@ -29,7 +29,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 const WALLET_RAKE_CONFIG = {
     name: SERVICE_NAMES.WALLET_RAKE,
     description: getServiceMetadata(SERVICE_NAMES.WALLET_RAKE).description,
-    checkIntervalMs: 10 * 60 * 1000, // Check every 10 minutes
+    checkIntervalMs: 0.5 * 60 * 1000, // Check every 30 seconds
     maxRetries: 3,
     retryDelayMs: 5 * 60 * 1000, // 5 minutes between retries
     circuitBreaker: {
