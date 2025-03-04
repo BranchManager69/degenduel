@@ -67,6 +67,7 @@ const CONTEST_EVALUATION_CONFIG = {
     }
 };
 
+// Contest Evaluation Service
 class ContestEvaluationService extends BaseService {
     constructor() {
         // Add logging before super call
@@ -484,7 +485,27 @@ class ContestEvaluationService extends BaseService {
     }
 
     async getParticipantTiebreakStats(participant, contest) {
-        const trades = await prisma.trades.findMany({
+        // Default stats for no-trade scenario
+        const defaultStats = {
+            wallet_address: participant.wallet_address,
+            final_balance: participant.current_dxd_points || new Decimal(0),
+            profitable_trades: 0,
+            total_trades: 0,
+            win_rate: 0,
+            biggest_win: new Decimal(0),
+            avg_profit_per_trade: new Decimal(0),
+            time_in_profitable_positions: 0,
+            earliest_profit_time: null,
+            total_profit: new Decimal(0)
+        };
+
+        // If participant has no initial points (shouldn't happen but let's be safe)
+        if (!participant.initial_dxd_points) {
+            return defaultStats;
+        }
+
+        // Get all trades for this participant in this contest
+        const trades = await prisma.contest_portfolio_trades.findMany({
             where: {
                 contest_id: contest.id,
                 wallet_address: participant.wallet_address
@@ -494,7 +515,16 @@ class ContestEvaluationService extends BaseService {
             }
         });
 
-        // Calculate various tie-breaking metrics
+        // If no trades were made, calculate basic stats based on points difference
+        if (trades.length === 0) {
+            const profitLoss = participant.current_dxd_points.sub(participant.initial_dxd_points);
+            return {
+                ...defaultStats,
+                total_profit: profitLoss.gt(0) ? profitLoss : new Decimal(0)
+            };
+        }
+
+        // If there are trades, calculate detailed stats
         let profitableTrades = 0;
         let totalTrades = trades.length;
         let biggestWin = new Decimal(0);
@@ -505,7 +535,8 @@ class ContestEvaluationService extends BaseService {
 
         for (let i = 0; i < trades.length; i++) {
             const trade = trades[i];
-            const profit = trade.exit_value.sub(trade.entry_value);
+            // Calculate profit based on price_at_trade and virtual_amount
+            const profit = new Decimal(trade.price_at_trade).mul(trade.virtual_amount);
             
             if (profit.gt(0)) {
                 profitableTrades++;
@@ -518,8 +549,8 @@ class ContestEvaluationService extends BaseService {
                 }
 
                 // Calculate time in profitable position
-                if (trade.exit_time) {
-                    timeInProfitablePositions += trade.exit_time.getTime() - trade.entry_time.getTime();
+                if (trade.executed_at) {
+                    timeInProfitablePositions += trade.executed_at.getTime() - trade.created_at.getTime();
                 }
             }
         }
@@ -528,7 +559,7 @@ class ContestEvaluationService extends BaseService {
 
         return {
             wallet_address: participant.wallet_address,
-            final_balance: participant.current_balance,
+            final_balance: participant.current_dxd_points,
             profitable_trades: profitableTrades,
             total_trades: totalTrades,
             win_rate: totalTrades > 0 ? (profitableTrades / totalTrades) : 0,
@@ -593,7 +624,9 @@ class ContestEvaluationService extends BaseService {
         const balanceGroups = new Map();
         
         participants.forEach(participant => {
-            const balanceKey = participant.current_balance.toString();
+            // Use current_dxd_points
+            const balance = participant.current_dxd_points || 0;
+            const balanceKey = balance.toString();
             if (!balanceGroups.has(balanceKey)) {
                 balanceGroups.set(balanceKey, []);
             }
@@ -676,20 +709,31 @@ class ContestEvaluationService extends BaseService {
 
     async evaluateContest(contest) {
         try {
+            const previousStatus = contest.status;
             // Get the contest's settings for payout structure
-            const payout_structure = contest.settings?.payout_structure;
+            let payout_structure = contest.settings?.payout_structure;
 
+            // If no payout structure is defined, create a default one
             if (!payout_structure) {
-                throw new Error(`No payout structure found for contest ${contest.id}`);
+                logApi.warn(`No payout structure found for contest ${contest.id}, using default structure`, {
+                    contest_id: contest.id,
+                    settings: contest.settings
+                });
+                
+                // Default structure pays top 3 participants
+                payout_structure = {
+                    "place_1": 0.69,  // 69% to first place
+                    "place_2": 0.20,  // 20% to second place
+                    "place_3": 0.11   // 11% to third place
+                };
             }
 
-            // Get all participants ordered by performance
+            // Get all participants
             const participants = await prisma.contest_participants.findMany({
                 where: { contest_id: contest.id },
                 include: {
-                    trades: {
-                        orderBy: { created_at: 'asc' }
-                    }
+                    // No need for trades - those would be tracked in contest_portfolio_trades
+                    // but we don't need them for simple evaluation
                 }
             });
 
@@ -734,19 +778,8 @@ class ContestEvaluationService extends BaseService {
             );
 
             // Record platform fee for rake service to collect later
+            // TODO: Nonsensical; platform fee should not be recorded until it is collected, I would think... But it's fine
             await this.recordPlatformFee(contest, platformFeeAmount);
-
-            // Update contest status to completed
-            await prisma.contests.update({
-                where: { id: contest.id },
-                data: { 
-                    status: 'completed',
-                    platform_fee_amount: platformFeeAmount
-                }
-            });
-
-            // Log completion
-            await this.logContestCompletion(contest, prizeDistributionResults, platformFeeAmount);
 
             // Award XP for participation
             for (const participant of participants) {
@@ -765,6 +798,7 @@ class ContestEvaluationService extends BaseService {
                         contest_id: contest.id,
                         error: error.message
                     });
+                    // Continue execution - non-critical error
                 }
             }
 
@@ -773,20 +807,22 @@ class ContestEvaluationService extends BaseService {
             for (const winner of winners) {
                 try {
                     const winnerXP = {
-                        1: 500,  // 1st place
-                        2: 300,  // 2nd place
-                        3: 200   // 3rd place
-                    }[winner.final_rank];
+                        1: 1000,  // 1st place
+                        2: 500,  // 2nd place
+                        3: 250   // 3rd place
+                    }[winner.final_rank] || 0;
 
-                    await levelingService.awardXP(
-                        winner.wallet_address,
-                        winnerXP,
-                        {
-                            type: 'CONTEST_WIN',
-                            contest_id: contest.id,
-                            rank: winner.final_rank
-                        }
-                    );
+                    if (winnerXP > 0) {
+                        await levelingService.awardXP(
+                            winner.wallet_address,
+                            winnerXP,
+                            {
+                                type: 'CONTEST_WIN',
+                                contest_id: contest.id,
+                                rank: winner.final_rank
+                            }
+                        );
+                    }
                 } catch (error) {
                     logApi.error('Failed to award winner XP:', {
                         wallet: winner.wallet_address,
@@ -794,8 +830,28 @@ class ContestEvaluationService extends BaseService {
                         rank: winner.final_rank,
                         error: error.message
                     });
+                    // Continue execution - non-critical error
                 }
             }
+
+            // Update contest status to completed
+            await prisma.contests.update({
+                where: { id: contest.id },
+                data: { 
+                    status: 'completed',
+                }
+            });
+            // Log contest completion
+            await this.logContestCompletion(contest, prizeDistributionResults, platformFeeAmount);
+            // Log contest status change
+            logApi.info(`Contest Status Change: ${contest.contest_name || `Contest #${contest.id}`}`, {
+                contest_id: contest.id,
+                previous_status: `\x1b[33m${previousStatus}\x1b[0m`, // yellow for previous
+                new_status: `\x1b[36mcompleted\x1b[0m`, // cyan for completed
+                prize_distributions: prizeDistributionResults,
+                platform_fee: platformFeeAmount.toString(),
+                message: `Contest evaluation completed successfully`
+            });
 
             return {
                 status: 'success',
@@ -813,6 +869,7 @@ class ContestEvaluationService extends BaseService {
     async cancelContest(contest, status, reason, logAction, additionalData = {}) {
         const contestId = contest.id;
         const contestName = contest.contest_name || `Contest #${contestId}`;
+        const previousStatus = contest.status;
 
         try {
             // Update contest status in database
@@ -824,7 +881,23 @@ class ContestEvaluationService extends BaseService {
                 }
             });
 
-            // Log the action
+            // Log the action with colored status
+            const statusColor = {
+                'pending': '\x1b[33m', // yellow
+                'active': '\x1b[32m',  // green
+                'completed': '\x1b[36m', // cyan
+                'cancelled': '\x1b[31m'  // red
+            }[status] || '\x1b[0m';     // default/reset
+
+            logApi.info(`Contest Status Change: ${contestName}`, {
+                contest_id: contestId,
+                previous_status: `${statusColor}${previousStatus}\x1b[0m`,
+                new_status: `${statusColor}${status}\x1b[0m`,
+                reason: reason,
+                ...additionalData
+            });
+
+            // Log the admin action
             await AdminLogger.logAction(
                 'SYSTEM',
                 logAction,
@@ -832,6 +905,8 @@ class ContestEvaluationService extends BaseService {
                     contest_id: contestId,
                     reason: `${reason}`,
                     contest_name: contestName,
+                    previous_status: previousStatus,
+                    new_status: status,
                     ...additionalData
                 }
             );
@@ -840,8 +915,6 @@ class ContestEvaluationService extends BaseService {
             if (status === this.config.states.CANCELLED) {
                 this.evaluationStats.contests.cancelled = (this.evaluationStats.contests.cancelled || 0) + 1;
             }
-
-            logApi.info(`Contest ${contestId} ${status}: ${reason}`);
             
             return true;
         } catch (error) {
@@ -874,9 +947,13 @@ class ContestEvaluationService extends BaseService {
     }
 
     calculatePrizePoolAndFee(contest) {
-        const platformFeePercentage = new Decimal(this.config.platformFee);
-        const actualPrizePool = contest.prize_pool.mul(new Decimal('1').sub(platformFeePercentage));
-        const platformFeeAmount = contest.prize_pool.mul(platformFeePercentage);
+        // Use current_prize_pool instead of prize_pool for actual prize calculations
+        const prizePool = contest.current_prize_pool ? new Decimal(contest.current_prize_pool) : new Decimal(0);
+        const platformFeePercentage = new Decimal(this.config.platformFee || 0);
+
+        // Calculate actual prize pool and fee
+        const actualPrizePool = prizePool.mul(new Decimal('1').sub(platformFeePercentage));
+        const platformFeeAmount = prizePool.mul(platformFeePercentage);
 
         return { actualPrizePool, platformFeeAmount };
     }
@@ -892,10 +969,16 @@ class ContestEvaluationService extends BaseService {
 
         // Calculate total prize pool needed
         let totalPrizeNeeded = new Decimal(0);
+        const payout_structure = contest.settings?.payout_structure || {
+            "place_1": 0.69,  // 69% to first place
+            "place_2": 0.20,  // 20% to second place
+            "place_3": 0.11   // 11% to third place
+        };
+
         for (let i = 1; i <= 3; i++) {
             const placeKey = `place_${i}`;
-            const prizePercentage = contest.settings?.payout_structure[placeKey] || 0;
-            totalPrizeNeeded = totalPrizeNeeded.add(actualPrizePool.mul(prizePercentage));
+            const percentage = payout_structure[placeKey] || 0;
+            totalPrizeNeeded = totalPrizeNeeded.add(actualPrizePool.mul(percentage));
         }
 
         // Validate wallet balance
@@ -927,6 +1010,7 @@ class ContestEvaluationService extends BaseService {
     async distributePrizes(contest, contestWallet, resolvedParticipants, actualPrizePool, payout_structure) {
         const prizeDistributionResults = [];
 
+        // Distribute prizes to top 3 participants
         for (let i = 0; i < Math.min(3, resolvedParticipants.length); i++) {
             const participant = resolvedParticipants[i];
             const place = i + 1;
@@ -934,8 +1018,10 @@ class ContestEvaluationService extends BaseService {
             const prizePercentage = payout_structure[placeKey] || 0;
             const prizeAmount = actualPrizePool.mul(prizePercentage);
 
+            // Distribute prize to participant
             if (prizeAmount.gt(0)) {
                 try {
+                    // Distribute prize to participant
                     await this.distributePrizeWithRetry(participant, place, prizeAmount, contest);
                     prizeDistributionResults.push({
                         place,
@@ -944,6 +1030,7 @@ class ContestEvaluationService extends BaseService {
                         status: 'success'
                     });
                 } catch (error) {
+                    // Log failed prize distribution
                     prizeDistributionResults.push({
                         place,
                         wallet: participant.wallet_address,
@@ -955,15 +1042,19 @@ class ContestEvaluationService extends BaseService {
             }
         }
 
+        // Return results
         return prizeDistributionResults;
     }
 
+    // Record platform fee at time of evaluation (contest end)
     async recordPlatformFee(contest, platformFeeAmount) {
         // Create a pending platform fee transaction record
         await prisma.transactions.create({
             data: {
-                type: config.transaction_types.PLATFORM_FEE,
+                type: 'WITHDRAWAL',
                 amount: platformFeeAmount,
+                balance_before: contest.current_prize_pool, // TODO: this is non-sensical, but it's what we have
+                balance_after: contest.current_prize_pool.sub(platformFeeAmount), // TODO: this is non-sensical, but it's what we have
                 description: `Platform fee for contest ${contest.contest_code} (pending collection by rake service)`,
                 status: config.transaction_statuses.PENDING,
                 contest_id: contest.id,
@@ -971,7 +1062,8 @@ class ContestEvaluationService extends BaseService {
             }
         });
 
-        logApi.info(`Platform fee recorded for rake service collection`, {
+        // Log platform fee recording
+        logApi.info(`Platform fee recorded for Contest ${contest.id}. The Solana balance is awaiting collection by the Rake Service`, {
             contest_id: contest.id,
             amount: platformFeeAmount.toString()
         });
@@ -1006,8 +1098,8 @@ class ContestEvaluationService extends BaseService {
                     wallet_address: participant.wallet_address,
                     type: config.transaction_types.CONTEST_REFUND,
                     amount: participant.entry_amount,
-                    balance_before: participant.current_balance,
-                    balance_after: participant.current_balance.add(participant.entry_amount),
+                    balance_before: participant.initial_dxd_points, // TODO: **THE NAME 'balance_before' IS DANGEROUSLY CONFUSING!**  POINTS AT START OF CONTEST HAS NO RELATIONSHIP TO REFUND AMOUNT OR BALANCE!
+                    balance_after: participant.current_dxd_points, // TODO: **THE NAME 'balance_after' IS DANGEROUSLY CONFUSING!**  POINTS AT END OF CONTEST HAS NO RELATIONSHIP TO REFUND AMOUNT OR BALANCE!
                     contest_id: contest.id,
                     description: `Refund for cancelled contest ${contest.contest_code}`,
                     status: config.transaction_statuses.PENDING,
@@ -1173,7 +1265,11 @@ class ContestEvaluationService extends BaseService {
 
             // Find and process contests that should start
             const contestsToStart = await this.findContestsToStart(now);
-            logApi.info(`Found ${contestsToStart.length} contests pending start`);
+            if (contestsToStart.length > 0) {
+                logApi.info(`${fancyColors.ORANGE}Found ${contestsToStart.length} contests pending start${fancyColors.RESET}`);
+            } else {
+                logApi.info(`${fancyColors.GREEN}No contests pending start${fancyColors.RESET}`);
+            }
             
             for (const contest of contestsToStart) {
                 try {
@@ -1186,7 +1282,7 @@ class ContestEvaluationService extends BaseService {
                         results.contestsCancelled++;
                     }
                 } catch (error) {
-                    logApi.error(`Failed to process contest ${contest.id} start:`, error);
+                    logApi.error(`${fancyColors.RED}Failed to process contest ${contest.id} start:${fancyColors.RESET}`, error);
                     results.failures++;
                     this.evaluationStats.operations.failed++;
                 }
@@ -1194,14 +1290,18 @@ class ContestEvaluationService extends BaseService {
 
             // Find and process contests that should end
             const contestsToEnd = await this.findContestsToEnd(now);
-            logApi.info(`Found ${contestsToEnd.length} active contests due to end`);
+            if (contestsToEnd.length > 0) {
+                logApi.info(`${fancyColors.ORANGE}Found ${contestsToEnd.length} active contests due to end${fancyColors.RESET}`);
+            } else {
+                logApi.info(`${fancyColors.GREEN}No active contests due to end${fancyColors.RESET}`);
+            }
             
             for (const contest of contestsToEnd) {
                 try {
                     await this.evaluateContest(contest);
                     results.contestsEnded++;
                 } catch (error) {
-                    logApi.error(`Failed to evaluate contest ${contest.id}:`, error);
+                    logApi.error(`${fancyColors.RED}Failed to evaluate contest ${contest.id}:${fancyColors.RESET}`, error);
                     results.failures++;
                     this.evaluationStats.operations.failed++;
                 }
@@ -1303,30 +1403,41 @@ class ContestEvaluationService extends BaseService {
      */
     async startContest(contest) {
         try {
+            const previousStatus = contest.status;
+            
             // Update contest status to active
             await prisma.contests.update({
                 where: { id: contest.id },
                 data: { 
                     status: this.config.states.ACTIVE,
-                    started_at: new Date() 
+                    start_time: new Date() 
                 }
             });
 
-            // Log the action
+            // Log status change with color
+            logApi.info(`${fancyColors.BLUE}Contest Status Change:${fancyColors.RESET} ${fancyColors.BOLD}${contest.contest_name || `Contest #${contest.id}`}${fancyColors.RESET}`, {
+                contest_id: contest.id,
+                previous_status: `\x1b[33m${previousStatus}\x1b[0m`, // yellow for previous
+                new_status: `\x1b[32mactive\x1b[0m`, // green for active
+                participant_count: contest.contest_participants.length,
+                message: `Contest started with ${contest.contest_participants.length} participants`
+            });
+
+            // Log the admin action
             await AdminLogger.logAction(
                 'SYSTEM',
                 AdminLogger.Actions.CONTEST.START,
                 {
                     contest_id: contest.id,
                     contest_name: contest.contest_name,
+                    previous_status: previousStatus,
+                    new_status: 'active',
                     participant_count: contest.contest_participants.length
                 }
             );
 
             // Update service stats
             this.evaluationStats.contests.active++;
-            
-            logApi.info(`Contest ${contest.id} started with ${contest.contest_participants.length} participants`);
             
             return true;
         } catch (error) {
@@ -1433,6 +1544,41 @@ class ContestEvaluationService extends BaseService {
             };
         } catch (error) {
             logApi.error('Manual contest evaluation failed:', error);
+            throw error;
+        }
+    }
+
+    async recordTieBreakDetails(contest, resolvedParticipants) {
+        try {
+            // For each participant, log their tiebreak metrics
+            for (const participant of resolvedParticipants) {
+                const tiebreakStats = await this.getParticipantTiebreakStats(participant, contest);
+                
+                logApi.info(`Tiebreak details for participant in contest ${contest.id}`, {
+                    contest_id: contest.id,
+                    wallet_address: participant.wallet_address,
+                    tiebreak_metrics: {
+                        profitable_trades: tiebreakStats.profitable_trades,
+                        total_trades: tiebreakStats.total_trades,
+                        win_rate: tiebreakStats.win_rate,
+                        biggest_win: tiebreakStats.biggest_win.toString(),
+                        avg_profit_per_trade: tiebreakStats.avg_profit_per_trade.toString(),
+                        time_in_profitable_positions: tiebreakStats.time_in_profitable_positions,
+                        earliest_profit_time: tiebreakStats.earliest_profit_time?.toISOString(),
+                        total_profit: tiebreakStats.total_profit.toString()
+                    },
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            logApi.info(`Completed logging tiebreak details for contest ${contest.id}`, {
+                contest_id: contest.id,
+                participant_count: resolvedParticipants.length
+            });
+
+            return true;
+        } catch (error) {
+            logApi.error(`Failed to log tiebreak details for contest ${contest.id}:`, error);
             throw error;
         }
     }
