@@ -45,6 +45,7 @@ const WALLET_SERVICE_CONFIG = {
     }
 };
 
+// Wallet Generation Service
 class WalletService extends BaseService {
     constructor() {
         super(WALLET_SERVICE_CONFIG);
@@ -73,6 +74,7 @@ class WalletService extends BaseService {
         this.cacheOrder = [];
     }
 
+    // Initialize the service
     async initialize() {
         try {
             // Call parent initialize first
@@ -140,6 +142,7 @@ class WalletService extends BaseService {
         }
     }
 
+    // Perform operation
     async performOperation() {
         const startTime = Date.now();
         
@@ -233,6 +236,7 @@ class WalletService extends BaseService {
         }
     }
 
+    // Generate wallet
     async generateWallet(identifier, options = {}) {
         const startTime = Date.now();
         
@@ -312,6 +316,7 @@ class WalletService extends BaseService {
         }
     }
 
+    // Get wallet
     async getWallet(identifier) {
         try {
             // Check cache first
@@ -352,6 +357,7 @@ class WalletService extends BaseService {
         }
     }
 
+    // Verify wallet
     async verifyWallet(identifier) {
         try {
             const wallet = await this.getWallet(identifier);
@@ -385,6 +391,7 @@ class WalletService extends BaseService {
         }
     }
 
+    // Verify all wallets
     async verifyAllWallets() {
         const results = {
             total: this.cache.size,
@@ -417,6 +424,7 @@ class WalletService extends BaseService {
         return results;
     }
 
+    // Cleanup cache
     cleanupCache() {
         const now = Date.now();
         let cleaned = 0;
@@ -434,6 +442,7 @@ class WalletService extends BaseService {
         }
     }
 
+    // Stop the service
     async stop() {
         try {
             await super.stop();
@@ -445,6 +454,7 @@ class WalletService extends BaseService {
         }
     }
 
+    // Cleanup
     async cleanup() {
         try {
             // Clear the cache

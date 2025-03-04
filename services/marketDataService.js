@@ -94,6 +94,7 @@ class MarketDataService extends BaseService {
         };
     }
 
+    // Initialize the service
     async initialize() {
         try {
             // Initialize market stats structure
@@ -178,6 +179,7 @@ class MarketDataService extends BaseService {
         }
     }
 
+    // Perform operation
     async performOperation() {
         const startTime = Date.now();
         
@@ -212,6 +214,7 @@ class MarketDataService extends BaseService {
         }
     }
 
+    // Get price
     async getPrice(symbol) {
         const startTime = Date.now();
         
@@ -290,6 +293,7 @@ class MarketDataService extends BaseService {
         }
     }
 
+    // Get volume
     async getVolume(symbol) {
         const startTime = Date.now();
         
@@ -341,6 +345,7 @@ class MarketDataService extends BaseService {
         }
     }
 
+    // Get sentiment
     async getSentiment(symbol) {
         const startTime = Date.now();
         
@@ -417,6 +422,7 @@ class MarketDataService extends BaseService {
         return null;
     }
 
+    // Set the cache
     setCache(key, data) {
         this.cache.set(key, {
             data,
@@ -425,12 +431,14 @@ class MarketDataService extends BaseService {
         this.marketStats.cache.size = this.cache.size;
     }
 
+    // Start the cleanup interval
     startCleanupInterval() {
         setInterval(() => {
             this.cleanupCache();
         }, this.config.cache.cleanupInterval);
     }
 
+    // Cleanup the cache
     cleanupCache() {
         const now = Date.now();
         let cleaned = 0;
@@ -472,6 +480,7 @@ class MarketDataService extends BaseService {
         this.requestTimeouts.add(timeout);
     }
 
+    // Stop the service
     async stop() {
         try {
             await super.stop();

@@ -12,7 +12,7 @@ import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 const BALANCE_TRACKING_CONFIG = {
     name: SERVICE_NAMES.USER_BALANCE_TRACKING || 'user_balance_tracking',
     description: 'Tracks user wallet balances on Solana',
-    checkIntervalMs: 60 * 1000, // Check every minute for new users/scheduling
+    checkIntervalMs: 1 * 60 * 1000, // Check every 1 minute for new users/scheduling
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -182,6 +182,7 @@ class UserBalanceTrackingService extends BaseService {
      * Update user count and recalculate check interval if needed
      */
     async updateUserCount() {
+        // Get the active user count
         const activeUsers = await prisma.users.count({
             where: { is_banned: false }
         });
@@ -214,6 +215,7 @@ class UserBalanceTrackingService extends BaseService {
         
         // Add new users to schedule
         for (const user of allUsers) {
+            // Check if the user is already tracked
             if (!this.trackingStats.users.trackedUsers.has(user.wallet_address)) {
                 // Add to tracking set
                 this.trackingStats.users.trackedUsers.add(user.wallet_address);

@@ -24,7 +24,7 @@ import levelingService from './levelingService.js';
 const ACHIEVEMENT_SERVICE_CONFIG = {
     name: 'achievement_service',
     description: getServiceMetadata('achievement_service').description,
-    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
+    checkIntervalMs: 2 * 60 * 1000, // Check every 2 minutes
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -560,6 +560,7 @@ class AchievementService extends BaseService {
 
                 default:
                     logApi.warn('Unknown achievement requirement type:', requirement.type);
+                    logApi.warn('\tRequirement:', requirement);
                     return false;
             }
         } catch (error) {

@@ -557,17 +557,42 @@ class TokenWhitelistService extends BaseService {
             let foundIssues = false;
 
             // Verify each token exists but don't use verifyToken() which is for new tokens
+    
+            // Set of token addresses with known metadata issues to skip verification for
+            // This can be populated from database or config in the future
+            const knownNonStandardTokens = new Set([
+                "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC" // ai16z (AI16Z) - Meteora-based token with non-standard metadata
+            ]);
+
             for (const token of tokens) {
+                // Skip verification for tokens with known metadata issues
+                if (knownNonStandardTokens.has(token.address)) {
+                    logApi.info(`Skipping metadata verification for known non-standard token: ${token.symbol} (${token.address.substring(0, 8)}...)`);
+                    results.verified++;
+                    continue;
+                }
                 try {
                     // Just check if the token's metadata exists on chain
-                    const asset = await fetchDigitalAsset(this.umi, publicKey(token.address));
-                    
-                    if (!asset) {
-                        foundIssues = true;
-                        throw new Error('Token metadata not found');
+                    // Try catch inside to add more context before throwing
+                    try {
+                        const asset = await fetchDigitalAsset(this.umi, publicKey(token.address));
+                        
+                        if (!asset) {
+                            foundIssues = true;
+                            throw new Error('Token metadata not found');
+                        }
+                        
+                        // Log successful verification with minimal information
+                        logApi.debug(`Token verified: ${token.symbol} (${token.address.substring(0, 8)}...)`);
+                        results.verified++;
+                    } catch (metaplexError) {
+                        // Add more context to the error
+                        const enhancedError = new Error(`Metadata fetch failed: ${metaplexError.message}`);
+                        enhancedError.originalError = metaplexError;
+                        enhancedError.name = metaplexError.name;
+                        enhancedError.source = 'Metaplex SDK';
+                        throw enhancedError;
                     }
-                    
-                    results.verified++;
                 } catch (error) {
                     foundIssues = true;
                     // Update results
@@ -575,10 +600,24 @@ class TokenWhitelistService extends BaseService {
                     
                     // Only log actual failures, not "already whitelisted" errors
                     if (!error.message.includes('already whitelisted')) {
+                        // Enhanced logging for troubleshooting metadata issues
                         logApi.error('Token verification failed during check:', {
                             address: token.address,
-                            error: error.message
+                            token_name: token.name,
+                            token_symbol: token.symbol,
+                            error: error.message,
+                            created_at: token.created_at,
+                            metadata_error: error.name || 'Unknown error type'
                         });
+                        
+                        // Add debug log with more technical details if available
+                        if (error.source || error.stack) {
+                            logApi.debug('Token verification technical details:', {
+                                address: token.address,
+                                error_source: error.source || 'Not available',
+                                stack_trace: error.stack || 'Not available'
+                            });
+                        }
                     }
                     
                     // If token doesn't exist anymore, remove it

@@ -1,5 +1,10 @@
 // services/solanaService.js
 
+/*
+ * This service manages the Solana blockchain connection and provides a standardized interface for other services to access Solana.
+ * It also handles the connection health monitoring and automatic reconnection.
+ */
+
 import { Connection } from '@solana/web3.js';
 import { validateSolanaConfig } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
