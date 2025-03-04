@@ -13,7 +13,7 @@ import { isHealthy, getCircuitBreakerStatus } from '../utils/service-suite/circu
 const HEARTBEAT_INTERVAL = 5000; // 5 seconds
 const CLIENT_TIMEOUT = 7000;     // 7 seconds
 
-// Get allowed origins from environment variables or use defaults
+// TODO: Use the allowed origins list defined elsewhere; this one is missing MANY subdomains.
 const DEFAULT_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:3001',
@@ -31,11 +31,9 @@ const DEFAULT_ALLOWED_ORIGINS = [
     'https://data.degenduel.me',
     'https://dev.degenduel.me',
 ];
-
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
     ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
     : DEFAULT_ALLOWED_ORIGINS;
-
 // Log configured origins on startup (im sick of seeing this)
 if (0===1) {
     logApi.info('WebSocket allowed origins:', {

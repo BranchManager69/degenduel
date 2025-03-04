@@ -33,6 +33,13 @@ class AnalyticsWebSocketServer extends BaseWebSocketServer {
     this.flushInterval = setInterval(() => this.flushEvents(), 5000); // Flush every 5 seconds
   }
 
+  // Add initialize method to support the WebSocket initialization process
+  async initialize() {
+    // Any specific initialization logic for analytics WebSocket
+    logApi.info('Analytics WebSocket server initialized');
+    return true;
+  }
+
   async handleClientMessage(client, message) {
     try {
       const { type, data } = message;

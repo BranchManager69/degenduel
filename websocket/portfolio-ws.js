@@ -216,6 +216,13 @@ class PortfolioWebSocketServer extends BaseWebSocketServer {
         }
     }
 
+    // Add initialize method to support the WebSocket initialization process
+    async initialize() {
+        // Any specific initialization logic for portfolio WebSocket
+        logApi.info('Portfolio WebSocket server initialized');
+        return true;
+    }
+
     /**
      * Handle client messages
      * @param {WebSocket} ws - WebSocket connection

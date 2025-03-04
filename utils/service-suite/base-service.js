@@ -11,7 +11,7 @@ import { EventEmitter } from 'events';
 import serviceManager from './service-manager.js';
 import serviceEvents from './service-events.js';
 import { ServiceError } from './service-error.js';
-import { fancyColors } from '../colors.js';
+import { fancyColors, serviceColors, logColors } from '../colors.js';
 const VERBOSE_SERVICE_INIT = false;
 
 /**
@@ -93,13 +93,13 @@ export class BaseService {
     async initialize() {
         try {
             if (this.isInitialized) {
-                logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}${this.name} already initialized${fancyColors.RESET} \n`);
+                logApi.warn(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} ${this.name} already initialized`);
                 return true;
             }
 
             const isEnabled = await this.checkEnabled();
             if (!isEnabled) {
-                logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}${this.name} is disabled${fancyColors.RESET} \n`);
+                logApi.warn(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} ${this.name} is disabled`);
                 return false;
             }
 
@@ -162,11 +162,11 @@ export class BaseService {
             });
 
             if (VERBOSE_SERVICE_INIT) {
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}${this.name} initialized successfully${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.initialized}[SERVICE INIT]${fancyColors.RESET} Service ${this.name} initialized successfully`);
             }
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}${this.name} initialization error:${fancyColors.RESET}`, error);
+            logApi.error(`${serviceColors.failed}[SERVICE INIT]${fancyColors.RESET} Failed to initialize service ${this.name}:`, error);
             throw error;
         }
     }
@@ -188,7 +188,7 @@ export class BaseService {
                 // Ensure we have a valid delay value
                 const validDelay = Math.max(1000, nextAttemptDelay || 5000);
                 
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}${this.name} circuit breaker recovery scheduled in ${validDelay}ms${fancyColors.RESET} \n`);
+                logApi.info(`${fancyColors.MATRIX}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${this.name} circuit breaker recovery scheduled in ${validDelay}ms`);
                 
                 // Schedule next recovery attempt
                 if (this.recoveryTimeout) clearTimeout(this.recoveryTimeout);
@@ -200,7 +200,7 @@ export class BaseService {
             }
 
             // Perform health check
-            logApi.info(`${fancyColors.MAGENTA}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}${this.name} attempting circuit breaker recovery${fancyColors.RESET} \n`);
+            logApi.info(`${fancyColors.MATRIX}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${this.name} attempting circuit breaker recovery`);
             
             // Temporarily disable circuit breaker for health check
             const tempOpen = this.stats.circuitBreaker.isOpen;
@@ -216,32 +216,31 @@ export class BaseService {
             if (this.stats.circuitBreaker.failures < this.config.circuitBreaker.failureThreshold) {
                 this.stats.circuitBreaker.isOpen = false;
                 this.stats.circuitBreaker.lastReset = new Date().toISOString();
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}${this.name} circuit breaker reset successful${fancyColors.RESET} \n`, {
+                logApi.info(`${fancyColors.MATRIX}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${serviceColors.initialized}${this.name} circuit breaker reset successful${fancyColors.RESET}`, {
                     newFailureCount: this.stats.circuitBreaker.failures
                 });
             } else {
                 this.stats.circuitBreaker.isOpen = tempOpen;
-                logApi.warn(`${fancyColors.MAGENTA}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}${this.name} circuit breaker recovery failed - maintaining open state${fancyColors.RESET} \n`, {
+                logApi.warn(`${fancyColors.MATRIX}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${serviceColors.failed}${this.name} circuit breaker recovery failed - maintaining open state${fancyColors.RESET}`, {
                     failures: this.stats.circuitBreaker.failures,
                     threshold: this.config.circuitBreaker.failureThreshold
                 });
             }
 
             // Emit circuit breaker state change
-            this.events.emit('service:circuit_breaker', {
+            this.events.emit('service:circuitBreaker', {
                 name: this.name,
-                status: getCircuitBreakerStatus(this.stats),
-                config: this.config,
-                stats: this.stats
+                isOpen: this.stats.circuitBreaker.isOpen,
+                stats: this.stats.circuitBreaker
             });
-
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}${this.name} circuit breaker recovery failed:${fancyColors.RESET}`, error);
-            this.stats.circuitBreaker.failures++;
-            this.stats.circuitBreaker.lastFailure = new Date().toISOString();
-            this.stats.circuitBreaker.recoveryAttempts++;
+            logApi.error(`${fancyColors.MATRIX}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${serviceColors.failed}${this.name} circuit breaker recovery error:${fancyColors.RESET}`, error);
             
-            // Schedule next recovery attempt
+            // If we get an error during recovery, increment failures
+            this.stats.circuitBreaker.failures++;
+            this.stats.circuitBreaker.isOpen = true;
+            
+            // Schedule next recovery attempt with backoff
             const nextAttemptDelay = calculateBackoffDelay(
                 this.stats.circuitBreaker.recoveryAttempts,
                 this.config.circuitBreaker
@@ -265,7 +264,7 @@ export class BaseService {
             }
 
             if (this.isStarted) {
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE START]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}${this.name} already started${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.running}[SERVICE START]${fancyColors.RESET} ${this.name} already started`);
                 return true;
             }
 
@@ -290,11 +289,11 @@ export class BaseService {
             });
 
             if (VERBOSE_SERVICE_INIT) {
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE START]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Service ${this.name} started successfully${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.running}[SERVICE START]${fancyColors.RESET} Service ${this.name} started successfully`);
             }
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[SERVICE START]${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}Failed to start service ${this.name}:${fancyColors.RESET}`, error);
+            logApi.error(`${serviceColors.failed}[SERVICE START]${fancyColors.RESET} Failed to start service ${this.name}:`, error);
             throw error;
         }
     }
@@ -310,14 +309,13 @@ export class BaseService {
                 this.operationInterval = null;
             }
 
-            // Clear any recovery timeouts
+            // Clear the recovery timeout
             if (this.recoveryTimeout) {
                 clearTimeout(this.recoveryTimeout);
                 this.recoveryTimeout = null;
             }
 
             this.isStarted = false;
-            this.stats.history.lastStopped = new Date().toISOString();
 
             // Emit service stopped event
             this.events.emit('service:stopped', {
@@ -326,10 +324,12 @@ export class BaseService {
                 stats: this.stats
             });
 
-            logApi.info(`${fancyColors.MAGENTA}[SERVICE STOP]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Service ${this.name} stopped successfully${fancyColors.RESET} \n`);
+            if (VERBOSE_SERVICE_INIT) {
+                logApi.info(`${serviceColors.stopped}[SERVICE STOP]${fancyColors.RESET} Service ${this.name} stopped successfully`);
+            }
             return true;
         } catch (error) {
-            logApi.error(`Failed to stop service ${this.name}:`, error);
+            logApi.error(`${serviceColors.failed}[SERVICE STOP]${fancyColors.RESET} Failed to stop service ${this.name}:`, error);
             throw error;
         }
     }
@@ -407,9 +407,24 @@ export class BaseService {
     }
 
     /**
-     * Main operation method - must be implemented by child classes
+     * Perform the service's main operation
      */
     async performOperation() {
-        throw new Error('performOperation must be implemented by child class');
+        try {
+            // Check if circuit breaker is open
+            if (this.stats.circuitBreaker.isOpen) {
+                if (VERBOSE_SERVICE_INIT) {
+                    logApi.warn(`${fancyColors.MATRIX}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} ${this.name} circuit breaker is open, skipping operation`);
+                }
+                return;
+            }
+
+            // Perform the operation
+            await this.onPerformOperation();
+            await this.recordSuccess();
+        } catch (error) {
+            await this.handleError(error);
+            throw error;
+        }
     }
 } 

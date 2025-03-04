@@ -12,7 +12,7 @@ import { logApi } from '../logger-suite/logger.js';
 import AdminLogger from '../admin-logger.js';
 import serviceManager from './service-manager.js';
 import { SERVICE_NAMES, SERVICE_LAYERS } from './service-constants.js';
-import { fancyColors } from '../colors.js';
+import { fancyColors, serviceColors, logColors } from '../colors.js';
 /* Import all services (14 at the time of writing) */
 // VERIFIED TO BE IN INITIALIZATION INFO LOGS:
 import solanaService from '../../services/solanaService.js'; // #1 of 7
@@ -51,9 +51,9 @@ class ServiceInitializer {
      */
     static async registerCoreServices() {
         if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Registering core services...${fancyColors.RESET} \n`);
+            logApi.info(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} Registering core services...`);
         } else {
-            logApi.info('\x1b[38;5;199m╭───────────────<< REGISTERING CORE SERVICES >>───────────────╮\x1b[0m');
+            logApi.info(`${fancyColors.NEON}╭───────────────<< REGISTERING CORE SERVICES >>───────────────╮${fancyColors.RESET}`);
         }
         
         try {
@@ -64,18 +64,18 @@ class ServiceInitializer {
                 serviceManager.register(walletGeneratorService);
                 serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
             } else {
-                logApi.info('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+                logApi.info(`${fancyColors.RED}┏━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
                 
                 // Register Solana Service first (most fundamental)
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register solanaService...${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} Attempting to register solanaService...`);
                 serviceManager.register(solanaService);
                 
                 // Register other infrastructure services
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register walletGeneratorService...${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} Attempting to register walletGeneratorService...`);
                 serviceManager.register(walletGeneratorService);
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register liquidityService...${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} Attempting to register liquidityService...`);
                 serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
-                logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ Infrastructure Services Registered\x1b[0m');
+                logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ Infrastructure Services Registered${fancyColors.RESET}`);
             }
 
             // Data Layer
@@ -85,14 +85,14 @@ class ServiceInitializer {
                 serviceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
                 serviceManager.register(tokenWhitelistService);
             } else {
-                logApi.info('\x1b[38;5;208m┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register tokenSyncService...${fancyColors.RESET} \n`);
+                logApi.info(`${fancyColors.ORANGE}┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
+                logApi.info(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} Attempting to register tokenSyncService...`);
                 serviceManager.register(tokenSyncService);
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register marketDataService...${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} Attempting to register marketDataService...`);
                 serviceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register tokenWhitelistService...${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} Attempting to register tokenWhitelistService...`);
                 serviceManager.register(tokenWhitelistService);
-                logApi.info('\x1b[38;5;208m┗━━━━━━━━━━━ ✅ Data Services Registered\x1b[0m');
+                logApi.info(`${fancyColors.ORANGE}┗━━━━━━━━━━━ ✅ Data Services Registered${fancyColors.RESET}`);
             }
 
             // Contest Layer
@@ -159,24 +159,24 @@ class ServiceInitializer {
             // Log registered services summary with count only in normal mode
             const registeredServices = Array.from(serviceManager.services.keys());
             if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Successfully registered services:${fancyColors.RESET} \n`, {
+                logApi.info(`${serviceColors.initialized}[SERVICE INIT]${fancyColors.RESET} Successfully registered services:`, {
                     total: registeredServices.length,
                     services: registeredServices
                 });
             } else {
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Successfully registered ${registeredServices.length} services${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.initialized}[SERVICE INIT]${fancyColors.RESET} Successfully registered ${registeredServices.length} services`);
             }
 
         } catch (error) {
             // Log the service registration failed
-            logApi.error('\x1b[38;5;196m┏━━━━━━━━━━━ Service Registration Failed ━━━━━━━━━━━┓\x1b[0m');
-            logApi.error(`\x1b[38;5;196m┃ Error: ${error.message}\x1b[0m`);
-            logApi.error(`\x1b[38;5;196m┃ Stack: ${error.stack}\x1b[0m`);
-            logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
+            logApi.error(`${serviceColors.failed}┏━━━━━━━━━━━ Service Registration Failed ━━━━━━━━━━━┓${fancyColors.RESET}`);
+            logApi.error(`${serviceColors.failed}┃ Error: ${error.message}${fancyColors.RESET}`);
+            logApi.error(`${serviceColors.failed}┃ Stack: ${error.stack}${fancyColors.RESET}`);
+            logApi.error(`${serviceColors.failed}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${fancyColors.RESET}`);
             throw error;
         }
 
-        logApi.info('\x1b[38;5;199m╰─────────────────────────────────────────────────────────────╯\x1b[0m\n');
+        logApi.info(`${fancyColors.NEON}╰─────────────────────────────────────────────────────────────╯${fancyColors.RESET}\n`);
     }
 
     /**
@@ -205,9 +205,9 @@ class ServiceInitializer {
      */
     static async initializeServices() {
         if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Initializing services...${fancyColors.RESET} \n`);
+            logApi.info(`${serviceColors.initializing}[SERVICE INIT]${fancyColors.RESET} Initializing services...`);
         } else {
-            logApi.info('\n\x1b[38;5;199m╭───────────────── Initializing Services ─────────────────╮\x1b[0m');
+            logApi.info(`\n${fancyColors.NEON}╭───────────────── Initializing Services ─────────────────╮${fancyColors.RESET}`);
         }
 
         try {
@@ -226,12 +226,12 @@ class ServiceInitializer {
             
             // Log initialization results
             if (!VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Services initialization: ${results.initialized.length} succeeded, ${results.failed.length} failed${fancyColors.RESET} \n`);
+                logApi.info(`${serviceColors.initialized}[SERVICE INIT]${fancyColors.RESET} Services initialization: ${results.initialized.length} succeeded, ${results.failed.length} failed`);
                 
                 // Always show failed services, even in non-verbose mode
                 if (results.failed.length > 0) {
                     results.failed.forEach(service => {
-                        logApi.error(`Failed to initialize service: ${service}`);
+                        logApi.error(`${serviceColors.failed}Failed to initialize service: ${service}${fancyColors.RESET}`);
                     });
                 }
             } else {
@@ -266,69 +266,67 @@ class ServiceInitializer {
 
             return results;
         } catch (error) {
-            logApi.error('\x1b[38;5;196m┏━━━━━━━━━━━ Service Initialization Failed ━━━━━━━━━━━┓\x1b[0m');
-            logApi.error(`\x1b[38;5;196m┃ Error: ${error.message}\x1b[0m`);
-            if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.error(`\x1b[38;5;196m┃ Stack: ${error.stack}\x1b[0m`);
-            }
-            logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
+            logApi.error(`${serviceColors.failed}[SERVICE INIT] Error initializing services: ${error.message}${fancyColors.RESET}`);
             throw error;
         }
-
-        logApi.info('\x1b[38;5;199m╰─────────────────────────────────────────────────────────────╯\x1b[0m\n');
     }
 
     /**
-     * Clean up the services
+     * Cleanup all services
      */
     static async cleanup() {
-        logApi.info('\n\x1b[38;5;199m╭───────────────── Cleaning Up Services ─────────────────╮\x1b[0m');
+        if (!VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${serviceColors.stopping}[SERVICE CLEANUP]${fancyColors.RESET} Cleaning up services...`);
+        } else {
+            logApi.info(`\n${fancyColors.NEON}╭───────────────── Cleaning Up Services ─────────────────╮${fancyColors.RESET}`);
+        }
 
         try {
-            // Clean up the services
-            const results = await serviceManager.cleanup();
+            const results = await serviceManager.cleanupAll();
             
-            // Log the cleanup results
-            logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━ Cleanup Results ━━━━━━━━━━━┓\x1b[0m');
-            logApi.info(`\x1b[38;5;82m┃ Successfully cleaned: ${results.successful.length} services\x1b[0m`);
-            if (VERBOSE_SERVICE_INIT_LOGS && results.successful.length > 0) {
-                // Log the successful cleanups in verbose mode
-                results.successful.forEach(service => {
-                    logApi.info(`\x1b[38;5;82m┃ ✓ ${service}\x1b[0m`);
-                });
+            if (!VERBOSE_SERVICE_INIT_LOGS) {
+                logApi.info(`${serviceColors.stopped}[SERVICE CLEANUP]${fancyColors.RESET} Services cleanup: ${results.cleaned.length} succeeded, ${results.failed.length} failed`);
+                
+                // Always show failed cleanups, even in non-verbose mode
+                if (results.failed.length > 0) {
+                    results.failed.forEach(service => {
+                        logApi.error(`${serviceColors.failed}Failed to cleanup service: ${service}${fancyColors.RESET}`);
+                    });
+                }
+            } else {
+                logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━ Cleanup Results ━━━━━━━━━━━┓\x1b[0m');
+                if (results.cleaned.length > 0) {
+                    logApi.info(`\x1b[38;5;82m┃ Successfully cleaned: ${results.cleaned.length} services\x1b[0m`);
+                    results.cleaned.forEach(service => {
+                        logApi.info(`\x1b[38;5;82m┃ ✓ ${service}\x1b[0m`);
+                    });
+                } else {
+                    logApi.warn('\x1b[38;5;208m┃ No services were cleaned!\x1b[0m');
+                }
+                if (results.failed.length > 0) {
+                    logApi.error(`\x1b[38;5;196m┃ Failed to clean: ${results.failed.length} services\x1b[0m`);
+                    results.failed.forEach(failure => {
+                        logApi.error(`\x1b[38;5;196m┃ - ${failure.service}: ${failure.error}\x1b[0m`);
+                    });
+                }
+                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
             }
-            
-            if (results.failed.length > 0) {
-                // Log the failed cleanups, even in non-verbose mode
-                logApi.error(`\x1b[38;5;196m┃ Failed to clean: ${results.failed.length} services\x1b[0m`);
-                results.failed.forEach(failure => {
-                    logApi.error(`\x1b[38;5;196m┃ - ${failure.service}: ${failure.error}\x1b[0m`);
-                });
-            }
-            logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
 
             // Log to admin logger (admin logs are always kept for auditing)
             await AdminLogger.logAction(
                 'SYSTEM',
                 AdminLogger.Actions.SERVICE.STOP,
                 {
-                    successful: results.successful,
+                    cleaned: results.cleaned,
                     failed: results.failed
                 }
             );
 
+            return results;
         } catch (error) {
-            logApi.error('\x1b[38;5;196m┏━━━━━━━━━━━ Service Cleanup Failed ━━━━━━━━━━━┓\x1b[0m');
-            logApi.error(`\x1b[38;5;196m┃ Error: ${error.message}\x1b[0m`);
-            // Log the stack trace in verbose mode
-            if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.error(`\x1b[38;5;196m┃ Stack: ${error.stack}\x1b[0m`);
-            }
-            logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
+            logApi.error(`${serviceColors.failed}[SERVICE CLEANUP] Error cleaning up services: ${error.message}${fancyColors.RESET}`);
             throw error;
         }
-
-        logApi.info('\x1b[38;5;199m╰─────────────────────────────────────────────────────────────╯\x1b[0m\n');
     }
 }
 

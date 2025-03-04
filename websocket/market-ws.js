@@ -318,6 +318,13 @@ class MarketDataWebSocketServer extends BaseWebSocketServer {
         }
     }
 
+    // Add initialize method to support the WebSocket initialization process
+    async initialize() {
+        // Any specific initialization logic for market data WebSocket
+        logApi.info('Market Data WebSocket server initialized');
+        return true;
+    }
+
     /**
      * Handle incoming client messages
      * @param {WebSocket} ws - WebSocket connection

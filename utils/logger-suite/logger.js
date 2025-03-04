@@ -1,12 +1,17 @@
 // /utils/logger-suite/logger.js
 
 /**
+ * DegenDuel Logging System
  * 
  * This is the main logger for the project.
- * It is used to log messages to the console and to the file system.
+ * It handles logging to:
+ * - Console (with colors and formatting)
+ * - Daily rotating log files:
+ *   - api-YYYY-MM-DD.log (all logs)
+ *   - error-YYYY-MM-DD.log (error logs only)
+ *   - debug-YYYY-MM-DD.log (debug logs only)
  * 
- * Pretty colors, timestamps, and other formatting.
- * 
+ * Log files are stored in the /logs directory.
  */
 
 import chalk from "chalk";
@@ -15,7 +20,13 @@ import winston from "winston";
 import "winston-daily-rotate-file";
 import { Socket } from 'net';
 import { Stream } from 'stream';
-import { fancyColors } from '../colors.js';
+import { fancyColors, logColors, serviceColors } from '../colors.js';
+
+// Constants
+const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs");
+const SILENT_MODE = process.env.SILENT_MODE === 'true';
+const CONSOLE_LEVEL = SILENT_MODE ? 'error' : (process.env.CONSOLE_LOG_LEVEL || "info");
+const FILE_LOG_LEVEL = process.env.FILE_LOG_LEVEL || "info";
 
 // Helper function to handle circular references in objects
 const getCircularReplacer = () => {
@@ -56,9 +67,6 @@ const safeStringify = (obj) => {
   });
 };
 
-// Define log directory
-const LOG_DIR = path.join(process.cwd(), "logs");
-
 // Log patterns (matching frontend patterns)
 const LOG_PATTERNS = {
   USER_QUERY: "👤 User query result:",
@@ -80,44 +88,51 @@ const ANALYTICS_PATTERNS = {
   FEATURE_USAGE: "🎯 Feature usage:",
 };
 
-// Service-specific colors and icons
-const SERVICE_COLORS = {
-  CONTEST: { color: "#6A0DAD", icon: "🎯" },     // Changed from 🏆 to 🎯
-  WALLET: { color: "#228B22", icon: "💎" },      // Changed from 💰 to 💎
-  TOKEN_SYNC: { color: "#4169E1", icon: "🔄" },  // Changed from 💫 to 🔄
-  AUTH: { color: "#FF6B6B", icon: "🔑" },        // Changed from 🔐 to 🔑
-  PORTFOLIO: { color: "#20B2AA", icon: "📈" },   // Changed from 📊 to 📈
-  ADMIN: { color: "#FFD700", icon: "⭐" },       // Changed from ⚡ to ⭐
-  DEFAULT: { color: "#A9A9A9", icon: "🔹" }      // Changed from 📌 to 🔹
-};
-
-// Level-specific colors and formatting
+// Level styles using our standardized colors
 const LEVEL_STYLES = {
   error: {
-    badge: chalk.bgRed.white.bold(" ERROR "),
-    color: chalk.red,
-    icon: "❌",
+    badge: `${logColors.error}[ERROR]${fancyColors.RESET}`,
+    color: (text) => `${logColors.error}${text}${fancyColors.RESET}`,
+    icon: "🔴",
   },
   warn: {
-    badge: chalk.bgYellow.black.bold(" WARN "),
-    color: chalk.yellow,
+    badge: `${logColors.warn}[WARN]${fancyColors.RESET}`,
+    color: (text) => `${logColors.warn}${text}${fancyColors.RESET}`,
     icon: "⚠️",
   },
   info: {
-    badge: chalk.bgBlue.white.bold(" INFO "),
-    color: chalk.blue,
+    badge: `${logColors.info}[INFO]${fancyColors.RESET}`,
+    color: (text) => `${logColors.info}${text}${fancyColors.RESET}`,
     icon: "ℹ️",
   },
   debug: {
-    badge: chalk.bgGray.white(" DEBUG "),
-    color: chalk.gray,
+    badge: `${logColors.trace}[DEBUG]${fancyColors.RESET}`,
+    color: (text) => `${logColors.trace}${text}${fancyColors.RESET}`,
     icon: "🔧",
   },
   http: {
-    badge: chalk.bgGreen.white(" HTTP "),
-    color: chalk.green,
+    badge: `${fancyColors.CYAN}[HTTP]${fancyColors.RESET}`,
+    color: (text) => `${fancyColors.CYAN}${text}${fancyColors.RESET}`,
     icon: "🌐",
   },
+};
+
+// Service colors using our standardized colors
+const SERVICE_COLORS = {
+  DEFAULT: { color: "#FFFFFF", icon: "🔹" },
+  API: { color: "#4CAF50", icon: "🚀" },
+  AUTH: { color: "#2196F3", icon: "🔒" },
+  DB: { color: "#9C27B0", icon: "💾" },
+  SOLANA: { color: "#673AB7", icon: "⚡" },
+  CONTEST: { color: "#FF9800", icon: "🏆" },
+  WALLET: { color: "#795548", icon: "💰" },
+  MARKET: { color: "#607D8B", icon: "📊" },
+  WEBSOCKET: { color: "#E91E63", icon: "🔌" },
+  SYSTEM: { color: "#F44336", icon: "⚙️" },
+  ADMIN: { color: "#FFEB3B", icon: "👑" },
+  USER: { color: "#03A9F4", icon: "👤" },
+  ANALYTICS: { color: "#8BC34A", icon: "📈" },
+  NOTIFICATION: { color: "#FF5722", icon: "🔔" },
 };
 
 // Helper to format timestamp in EST
@@ -471,13 +486,14 @@ const fileFormat = winston.format.printf(
   }
 );
 
-// Create transports
+// Create transports with clear descriptions
 const dailyRotateFileTransport = new winston.transports.DailyRotateFile({
   filename: path.join(LOG_DIR, "api-%DATE%.log"),
   datePattern: "YYYY-MM-DD",
   maxSize: "20m",
   maxFiles: "14d",
   format: winston.format.combine(winston.format.timestamp(), fileFormat),
+  level: FILE_LOG_LEVEL,
 });
 
 const errorRotateFileTransport = new winston.transports.DailyRotateFile({
@@ -498,11 +514,7 @@ const debugRotateFileTransport = new winston.transports.DailyRotateFile({
   format: winston.format.combine(winston.format.timestamp(), fileFormat),
 });
 
-// Check for silent mode flag
-const SILENT_MODE = process.env.SILENT_MODE === 'true';
-const CONSOLE_LEVEL = SILENT_MODE ? 'error' : (process.env.CONSOLE_LOG_LEVEL || "info");
-
-// Create the logger
+// Create the logger with clear transport descriptions
 const logApi = winston.createLogger({
   level: process.env.LOG_LEVEL || "info",
   format: winston.format.combine(
@@ -510,15 +522,27 @@ const logApi = winston.createLogger({
     winston.format.json()
   ),
   transports: [
+    // Console transport (colorized, human-readable)
     new winston.transports.Console({
       format: winston.format.combine(winston.format.timestamp(), customFormat),
       level: CONSOLE_LEVEL,
     }),
-    dailyRotateFileTransport,
-    errorRotateFileTransport,
-    debugRotateFileTransport,
+    // File transports (JSON formatted for parsing)
+    dailyRotateFileTransport,     // All logs
+    errorRotateFileTransport,     // Error logs only
+    debugRotateFileTransport,     // Debug logs only
   ],
 });
+
+// Log where logs are being written to on startup
+console.log(`${fancyColors.BOLD}${fancyColors.CYAN}DegenDuel Logger Initialized${fancyColors.RESET}`);
+console.log(`${fancyColors.CYAN}Console log level: ${CONSOLE_LEVEL}${fancyColors.RESET}`);
+console.log(`${fancyColors.CYAN}File log level: ${FILE_LOG_LEVEL}${fancyColors.RESET}`);
+console.log(`${fancyColors.CYAN}Log files directory: ${LOG_DIR}${fancyColors.RESET}`);
+console.log(`${fancyColors.CYAN}Log files:${fancyColors.RESET}`);
+console.log(`  ${fancyColors.CYAN}- api-YYYY-MM-DD.log (all logs)${fancyColors.RESET}`);
+console.log(`  ${fancyColors.CYAN}- error-YYYY-MM-DD.log (error logs only)${fancyColors.RESET}`);
+console.log(`  ${fancyColors.CYAN}- debug-YYYY-MM-DD.log (debug logs only)${fancyColors.RESET}`);
 
 // Helper method to log with service context
 logApi.forService = (serviceName) => ({

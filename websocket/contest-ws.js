@@ -101,7 +101,14 @@ class ContestWebSocketServer extends BaseWebSocketServer {
             logApi.info('Contest WebSocket server initialized with room support');
         }
     }
-
+  
+    // Add initialize method to support the WebSocket initialization process
+    async initialize() {
+        // Any specific initialization logic for contest WebSocket
+        logApi.info('Contest WebSocket server initialized');
+        return true;
+    }
+    
     /**
      * Handle incoming client messages
      * @param {WebSocket} ws - WebSocket connection
@@ -765,7 +772,7 @@ export function createContestWebSocket(httpServer) {
     try {
         if (!instance && httpServer) {
             instance = new ContestWebSocketServer(httpServer);
-            logApi.info('Contest WebSocket server instance created');
+            logApi.info('Contest WebSocket server initialized');
         } else if (!httpServer) {
             logApi.error('HTTP server instance is required for WebSocket initialization');
             return null;
