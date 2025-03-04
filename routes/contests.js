@@ -6,7 +6,7 @@ import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth
 import { logApi } from '../utils/logger-suite/logger.js';
 import { createContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import { verifyTransaction } from '../utils/solana-suite/solana-connection.js';
-import { colors } from '../utils/colors.js';
+import { colors, fancyColors } from '../utils/colors.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import prisma from '../config/prisma.js';
 import ReferralService from '../services/referralService.js';
@@ -2489,7 +2489,7 @@ router.get('/participations/:wallet', async (req, res) => {
     const cachedResult = await cache.get(cacheKey);
     
     if (cachedResult) {
-      logApi.info(`🔍 ${colors.cyan}User contest participations check (CACHE HIT)${colors.reset}\n`, {
+      logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.CYAN}User contest participations check ${fancyColors.GREEN}(CACHE HIT)${fancyColors.RESET}\n`, {
         requestId,
         wallet_address,
         participationCount: cachedResult.participations.length,
@@ -2547,7 +2547,7 @@ router.get('/participations/:wallet', async (req, res) => {
     // Cache the result for 5 minutes (300 seconds)
     await cache.set(cacheKey, responseData, 300);
     
-    logApi.info(`🔍 ${colors.cyan}User contest participations check (DB HIT)${colors.reset}\n`, {
+    logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.CYAN}User contest participations check ${fancyColors.YELLOW}(DB HIT)${fancyColors.RESET}\n`, {
       requestId,
       wallet_address,
       participationCount: participations.length,
@@ -2637,13 +2637,13 @@ router.get('/:id/check-participation', async (req, res) => {
     const cachedResult = await cache.get(cacheKey);
     
     if (cachedResult) {
-      logApi.info(`🔍 ${colors.cyan}Contest participation check (CACHE HIT)${colors.reset}\n`, {
-        requestId,
-        contestId,
-        wallet_address,
-        isParticipating: cachedResult.is_participating,
-        duration: Date.now() - startTime,
-        fromCache: true
+      logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.CYAN}Contest participation check ${fancyColors.GREEN}(CACHE HIT)${fancyColors.RESET}`, {
+      //  requestId,
+      //  contestId,
+      //  wallet_address,
+      //  isParticipating: cachedResult.is_participating,
+      //  duration: Date.now() - startTime,
+      //  fromCache: true
       });
       
       return res.json(cachedResult);
@@ -2654,13 +2654,14 @@ router.get('/:id/check-participation', async (req, res) => {
       where: { id: contestId }
     });
     
+    // If contest not found, return 404
     if (!contest) {
       return res.status(404).json({
         error: 'Contest not found'
       });
     }
     
-    // Check if user is participating
+    // Check if user is a participant
     const participant = await prisma.contest_participants.findUnique({
       where: {
         contest_id_wallet_address: {
@@ -2677,14 +2678,15 @@ router.get('/:id/check-participation', async (req, res) => {
     };
     
     // Cache the result for 5 minutes (300 seconds)
-    await cache.set(cacheKey, responseData, 300);
+    const cacheDuration = 5 * 60; // 5 minutes in seconds
+    await cache.set(cacheKey, responseData, cacheDuration);
     
-    logApi.info(`🔍 ${colors.cyan}Contest participation check (DB HIT)${colors.reset}\n`, {
-      requestId,
-      contestId,
-      wallet_address,
-      isParticipating: !!participant,
-      duration: Date.now() - startTime
+    logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.CYAN}Contest participation check ${fancyColors.YELLOW}(DB HIT)${fancyColors.RESET}`, {
+      //  requestId,
+      //  contestId,
+      //  wallet_address,
+      //  isParticipating: !!participant,
+      //  duration: Date.now() - startTime
     });
     
     return res.json(responseData);

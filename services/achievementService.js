@@ -467,7 +467,7 @@ class AchievementService extends BaseService {
                 const met = await this.checkRequirement(user, requirement);
                 if (!met) return false;
             } catch (error) {
-                logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Failed to check requirement:${fancyColors.RESET}`, {
+                logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Failed to check requirement:${fancyColors.RESET}\n`, {
                     wallet_address: user.wallet_address,
                     requirement_id: requirement.id,
                     error: error.message
@@ -482,12 +482,16 @@ class AchievementService extends BaseService {
         const startTime = Date.now();
         
         try {
-            switch (requirement.type) {
+            // Extract the actual value from the requirement_value JSON
+            const value = requirement.requirement_value?.value;
+            const category = requirement.requirement_value?.category;
+            
+            switch (requirement.achievement_type) {
                 case 'CONTESTS_ENTERED':
                     const contestCount = await prisma.contest_participants.count({
                         where: { wallet_address: user.wallet_address }
                     });
-                    return contestCount >= requirement.value;
+                    return contestCount >= value;
 
                 case 'CONTESTS_WON':
                     const winCount = await prisma.contest_participants.count({
@@ -496,30 +500,30 @@ class AchievementService extends BaseService {
                             final_rank: 1
                         }
                     });
-                    return winCount >= requirement.value;
+                    return winCount >= value;
 
                 case 'TOTAL_PROFIT':
                     const profitStats = await prisma.user_stats.findUnique({
                         where: { wallet_address: user.wallet_address },
                         select: { total_profit: true }
                     });
-                    return profitStats?.total_profit >= requirement.value;
+                    return profitStats?.total_profit >= value;
 
                 case 'TRADING_VOLUME':
                     const volumeStats = await prisma.user_stats.findUnique({
                         where: { wallet_address: user.wallet_address },
                         select: { total_volume: true }
                     });
-                    return volumeStats?.total_volume >= requirement.value;
+                    return volumeStats?.total_volume >= value;
 
                 case 'CONSECUTIVE_WINS':
                     const recentContests = await prisma.contest_participants.findMany({
                         where: { wallet_address: user.wallet_address },
                         orderBy: { contest_end: 'desc' },
-                        take: requirement.value,
+                        take: value,
                         select: { final_rank: true }
                     });
-                    return recentContests.length >= requirement.value && 
+                    return recentContests.length >= value && 
                            recentContests.every(c => c.final_rank === 1);
 
                 case 'SOCIAL_ENGAGEMENT':
@@ -529,7 +533,7 @@ class AchievementService extends BaseService {
                             verified: true
                         }
                     });
-                    return socialProfiles >= requirement.value;
+                    return socialProfiles >= value;
 
                 case 'REFERRALS':
                     const referralCount = await prisma.referrals.count({
@@ -538,34 +542,34 @@ class AchievementService extends BaseService {
                             status: 'qualified'
                         }
                     });
-                    return referralCount >= requirement.value;
+                    return referralCount >= value;
 
                 case 'TOKENS_TRADED':
                     const uniqueTokens = await prisma.contest_portfolios.count({
                         where: { wallet_address: user.wallet_address },
                         distinct: ['token_id']
                     });
-                    return uniqueTokens >= requirement.value;
+                    return uniqueTokens >= value;
 
                 case 'EXPERIENCE_POINTS':
-                    return user.experience_points >= requirement.value;
+                    return user.experience_points >= value;
 
                 case 'ACHIEVEMENT_COUNT':
                     const achievementCount = await prisma.user_achievements.count({
                         where: {
                             wallet_address: user.wallet_address,
-                            category: requirement.category
+                            category: category
                         }
                     });
-                    return achievementCount >= requirement.value;
+                    return achievementCount >= value;
 
                 default:
-                    logApi.warn(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Unknown achievement requirement type:${fancyColors.RESET}`, requirement.type);
-                    logApi.warn(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Requirement:${fancyColors.RESET}`, requirement);
+                    logApi.warn(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Unknown achievement requirement type:${fancyColors.RESET}`, requirement.achievement_type);
+                    logApi.warn(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Requirement:${fancyColors.RESET}\n`, requirement);
                     return false;
             }
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Achievement requirement check failed:${fancyColors.RESET}`, {
+            logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Achievement requirement check failed:${fancyColors.RESET}\n`, {
                 user_id: user.wallet_address,
                 requirement: requirement,
                 error: error.message

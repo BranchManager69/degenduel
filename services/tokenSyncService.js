@@ -393,7 +393,7 @@ class TokenSyncService extends BaseService {
             return data.data;
         } catch (error) {
             // Handle 404 error by using fallback mock data
-            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Price API unavailable!${fancyColors.RESET} \n\t${fancyColors.RED}Trying fallback data...${fancyColors.RESET} \n\t${fancyColors.ORANGE}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
+            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}${fancyColors.BOLD}Price API unavailable!${fancyColors.RESET} ${fancyColors.RED}Trying fallback token data...${fancyColors.RESET} \n\t${fancyColors.ORANGE}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
             // Return empty array for now to prevent initialization failure
             return [];
         }
@@ -487,8 +487,12 @@ class TokenSyncService extends BaseService {
     // Core sync operations
     async updatePrices() {
         const startTime = Date.now();
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Price update cycle started${fancyColors.RESET}\n`, {
+            startTime: startTime,
+        });
         
         try {
+            // Get all tokens that are currently active in DegenDuel
             const activeTokens = await prisma.tokens.findMany({
                 where: { is_active: true },
                 select: { address: true, id: true }
@@ -499,17 +503,21 @@ class TokenSyncService extends BaseService {
                 return;
             }
 
+            // Map addresses to their corresponding IDs
             const addresses = activeTokens.map(token => token.address);
             const addressToId = Object.fromEntries(activeTokens.map(token => [token.address, token.id]));
 
+            // Fetch prices for all active tokens
             const priceData = await this.fetchTokenPrices(addresses);
             
+            // Update prices in the database
             let updatedCount = 0;
             await prisma.$transaction(async (tx) => {
                 for (const token of priceData) {
                     const tokenId = addressToId[token.contractAddress];
                     if (!tokenId) continue;
 
+                    // Upsert the price data into the database
                     await tx.token_prices.upsert({
                         where: { token_id: tokenId },
                         create: {
@@ -526,23 +534,25 @@ class TokenSyncService extends BaseService {
                 }
             });
 
+            // Update performance metrics
             const duration = Date.now() - startTime;
+            this.syncStats.performance.lastPriceUpdateMs = duration;
+            this.syncStats.performance.averageOperationTimeMs = 
+                (this.syncStats.performance.averageOperationTimeMs * this.syncStats.operations.total + duration) / 
+                (this.syncStats.operations.total + 1);
+
+            // Log the results
             logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Price update cycle completed${fancyColors.RESET}\n`, {
                 totalTokens: activeTokens.length,
                 pricesReceived: priceData.length,
                 pricesUpdated: updatedCount,
                 duration: `${duration}ms`
             });
-
-            // Update performance metrics
-            this.syncStats.performance.lastPriceUpdateMs = duration;
-            this.syncStats.performance.averageOperationTimeMs = 
-                (this.syncStats.performance.averageOperationTimeMs * this.syncStats.operations.total + duration) / 
-                (this.syncStats.operations.total + 1);
-
         } catch (error) {
             if (error.isServiceError) throw error;
             
+            // Log the error
+            logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Error updating token prices:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
             throw ServiceError.operation('Failed to update token prices', {
                 duration: Date.now() - startTime,
                 error: error.message
@@ -562,6 +572,7 @@ class TokenSyncService extends BaseService {
             let unchanged = 0;
             let validationFailures = 0;
 
+            // Start a transaction to ensure atomicity
             await prisma.$transaction(async (tx) => {
                 for (const token of fullData) {
                     try {
@@ -676,6 +687,7 @@ class TokenSyncService extends BaseService {
                     ])
             );
 
+            // Log the results
             const duration = Date.now() - startTime;
             logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Metadata update completed${fancyColors.RESET}\n`, {
                 totalTokens: fullData.length,
@@ -696,6 +708,8 @@ class TokenSyncService extends BaseService {
         } catch (error) {
             if (error.isServiceError) throw error;
             
+            // Log the error
+            logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Error updating token metadata:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
             throw ServiceError.operation('Failed to update token metadata', {
                 duration: Date.now() - startTime,
                 error: error.message

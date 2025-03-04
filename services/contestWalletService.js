@@ -198,7 +198,7 @@ class ContestWalletService extends BaseService {
             const lamports = await this.connection.getBalance(publicKey);
             const solBalance = lamports / LAMPORTS_PER_SOL;
             
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Updating balance for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Updating balance for contest ${wallet.contests?.id} (${wallet.contests?.contest_code})${fancyColors.RESET} \n\t${fancyColors.BLACK}${wallet.wallet_address}${fancyColors.RESET}\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
                 contest_id: wallet.contests?.id,
                 contest_code: wallet.contests?.contest_code,
                 balance: solBalance
@@ -213,7 +213,7 @@ class ContestWalletService extends BaseService {
                 }
             });
 
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Updated balance for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Updated balance for contest ${wallet.contests?.id} (${wallet.contests?.contest_code})${fancyColors.RESET} \n\t${fancyColors.BLACK}${wallet.wallet_address}${fancyColors.RESET}\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
                 contest_id: wallet.contests?.id,
                 contest_code: wallet.contests?.contest_code,
                 balance: solBalance
@@ -298,10 +298,10 @@ class ContestWalletService extends BaseService {
                     if (updateResult.success) {
                         results.updated++;
                         
-                        // Only add significant balance changes to the results
+                        // Only add significant balance changes to the results  
                         if (Math.abs(updateResult.difference) > 0.0001) {
                             results.updates.push(updateResult);
-                            logApi.info(`${fancyColors.ORANGE}${fancyColors.BOLD}Significant balance change${fancyColors.RESET} ${fancyColors.ORANGE}detected for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
+                            logApi.info(`${fancyColors.MAGENTA}[contestWalletService] ⚠️ ${fancyColors.RESET} ${fancyColors.ORANGE}${fancyColors.BOLD}Significant balance change${fancyColors.RESET} ${fancyColors.ORANGE}detected for contest ${wallet.contests?.id} (${wallet.contests?.contest_code})${fancyColors.RESET} \n\t${fancyColors.BLACK}${wallet.wallet_address}${fancyColors.RESET}\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
                                 contest_id: wallet.contests?.id,
                                 contest_code: wallet.contests?.contest_code,
                                 wallet_address: wallet.wallet_address,
@@ -334,7 +334,7 @@ class ContestWalletService extends BaseService {
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
             
             // Log completion summary
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \x1b[42mContest wallet balance update cycle completed${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \x1b[42mContest wallet balance update cycle completed${fancyColors.RESET}\n`, {
                 duration_ms: Date.now() - startTime,
                 total_wallets: results.total,
                 successful_updates: results.updated,
