@@ -527,7 +527,7 @@ class TokenSyncService extends BaseService {
             });
 
             const duration = Date.now() - startTime;
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Price update cycle completed${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Price update cycle completed${fancyColors.RESET}\n`, {
                 totalTokens: activeTokens.length,
                 pricesReceived: priceData.length,
                 pricesUpdated: updatedCount,
@@ -677,7 +677,7 @@ class TokenSyncService extends BaseService {
             );
 
             const duration = Date.now() - startTime;
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Metadata update completed${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Metadata update completed${fancyColors.RESET}\n`, {
                 totalTokens: fullData.length,
                 created,
                 updated,

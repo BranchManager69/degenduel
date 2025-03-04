@@ -2489,7 +2489,7 @@ router.get('/participations/:wallet', async (req, res) => {
     const cachedResult = await cache.get(cacheKey);
     
     if (cachedResult) {
-      logApi.info(`🔍 ${colors.cyan}User contest participations check (CACHE HIT)${colors.reset}`, {
+      logApi.info(`🔍 ${colors.cyan}User contest participations check (CACHE HIT)${colors.reset}\n`, {
         requestId,
         wallet_address,
         participationCount: cachedResult.participations.length,
@@ -2547,7 +2547,7 @@ router.get('/participations/:wallet', async (req, res) => {
     // Cache the result for 5 minutes (300 seconds)
     await cache.set(cacheKey, responseData, 300);
     
-    logApi.info(`🔍 ${colors.cyan}User contest participations check (DB HIT)${colors.reset}`, {
+    logApi.info(`🔍 ${colors.cyan}User contest participations check (DB HIT)${colors.reset}\n`, {
       requestId,
       wallet_address,
       participationCount: participations.length,
@@ -2557,7 +2557,7 @@ router.get('/participations/:wallet', async (req, res) => {
     return res.json(responseData);
     
   } catch (error) {
-    logApi.error(`💥 ${colors.red}Error fetching user contest participations${colors.reset}`, {
+    logApi.error(`💥 ${colors.red}Error fetching user contest participations${colors.reset}\n`, {
       requestId,
       error: {
         name: error.name,
@@ -2637,7 +2637,7 @@ router.get('/:id/check-participation', async (req, res) => {
     const cachedResult = await cache.get(cacheKey);
     
     if (cachedResult) {
-      logApi.info(`🔍 ${colors.cyan}Contest participation check (CACHE HIT)${colors.reset}`, {
+      logApi.info(`🔍 ${colors.cyan}Contest participation check (CACHE HIT)${colors.reset}\n`, {
         requestId,
         contestId,
         wallet_address,
@@ -2679,7 +2679,7 @@ router.get('/:id/check-participation', async (req, res) => {
     // Cache the result for 5 minutes (300 seconds)
     await cache.set(cacheKey, responseData, 300);
     
-    logApi.info(`🔍 ${colors.cyan}Contest participation check (DB HIT)${colors.reset}`, {
+    logApi.info(`🔍 ${colors.cyan}Contest participation check (DB HIT)${colors.reset}\n`, {
       requestId,
       contestId,
       wallet_address,
@@ -2690,7 +2690,7 @@ router.get('/:id/check-participation', async (req, res) => {
     return res.json(responseData);
     
   } catch (error) {
-    logApi.error(`💥 ${colors.red}Error checking contest participation${colors.reset}`, {
+    logApi.error(`💥 ${colors.red}Error checking contest participation${colors.reset}\n`, {
       requestId,
       error: {
         name: error.name,
@@ -2803,7 +2803,7 @@ router.get('/user-participations', async (req, res) => {
       ]
     });
     
-    logApi.info(`🔍 ${colors.cyan}User contest participations check${colors.reset}`, {
+    logApi.info(`🔍 ${colors.cyan}User contest participations check${colors.reset}\n`, {
       requestId,
       wallet_address,
       participationCount: participations.length,
@@ -2828,7 +2828,7 @@ router.get('/user-participations', async (req, res) => {
     });
     
   } catch (error) {
-    logApi.error(`💥 ${colors.red}Error fetching user contest participations${colors.reset}`, {
+    logApi.error(`💥 ${colors.red}Error fetching user contest participations${colors.reset}\n`, {
       requestId,
       error: {
         name: error.name,
