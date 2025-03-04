@@ -652,16 +652,28 @@ class ServiceManager {
 
     /**
      * Update service state and broadcast changes
+     * Modified to prevent recursive embedding and limit state size
      */
     async updateServiceState(serviceName, state, config, stats = null) {
         try {
-            // Create a service state object
+            // Create a safe, minimized version of the config object
+            const safeConfig = this._createSafeConfig(config);
+            
+            // Create a safe version of the stats object
+            const safeStats = this._createSafeStats(stats);
+            
+            // Create a clean service state object with only essential info
             const serviceState = {
                 status: state.status || 'unknown',
                 running: !!state.running,
                 last_check: new Date().toISOString(),
-                config: config || {},
-                stats: stats || {}
+                update_count: ((this.state.get(serviceName)?.update_count || 0) + 1),
+                last_started: state.last_started || this.state.get(serviceName)?.last_started,
+                last_stopped: state.last_stopped || this.state.get(serviceName)?.last_stopped,
+                last_error: state.last_error || this.state.get(serviceName)?.last_error,
+                last_error_time: state.last_error_time || this.state.get(serviceName)?.last_error_time,
+                config: safeConfig,
+                stats: safeStats
             };
 
             // Use the utility to safely upsert the setting
@@ -672,16 +684,120 @@ class ServiceManager {
                 null // No updated_by for system operations
             );
 
-            // Update local state
-            this.state.set(serviceName, state);
+            // Update local state (full version for runtime use)
+            this.state.set(serviceName, {
+                ...state,
+                config: config || {},
+                stats: stats || {},
+                update_count: serviceState.update_count
+            });
 
             // Broadcast update if WebSocket is available
             if (this.circuitBreakerWs) {
                 this.circuitBreakerWs.notifyServiceUpdate(serviceName, state);
             }
         } catch (error) {
-            console.error(`Error in updateServiceState for ${serviceName}:`, error);
+            logApi.error(`Error in updateServiceState for ${serviceName}:`, error);
             // Don't throw the error to prevent service initialization failures
+        }
+    }
+    
+    /**
+     * Create a minimized safe version of config object for storage
+     * Removes circular references and duplicate data
+     * @private
+     */
+    _createSafeConfig(config) {
+        if (!config) return {};
+        
+        try {
+            // Extract only essential configuration data
+            const safeConfig = {
+                name: config.name,
+                description: config.description,
+                dependencies: Array.isArray(config.dependencies) ? [...config.dependencies] : [],
+                layer: config.layer,
+                criticalLevel: config.criticalLevel,
+                // Keep basic service settings
+                checkIntervalMs: config.checkIntervalMs,
+                maxRetries: config.maxRetries,
+                retryDelayMs: config.retryDelayMs
+            };
+            
+            // Include circuit breaker config if present (without stats)
+            if (config.circuitBreaker) {
+                safeConfig.circuitBreaker = {
+                    enabled: config.circuitBreaker.enabled,
+                    failureThreshold: config.circuitBreaker.failureThreshold,
+                    resetTimeoutMs: config.circuitBreaker.resetTimeoutMs,
+                    healthCheckIntervalMs: config.circuitBreaker.healthCheckIntervalMs,
+                    description: config.circuitBreaker.description
+                };
+            }
+            
+            // Include backoff settings if present
+            if (config.backoff) {
+                safeConfig.backoff = { ...config.backoff };
+            }
+            
+            // Return the safe config
+            return safeConfig;
+        } catch (error) {
+            logApi.warn(`Error creating safe config object: ${error.message}`);
+            return { name: config.name || "unknown" };
+        }
+    }
+    
+    /**
+     * Create a minimized safe version of stats object for storage
+     * Keeps only current essential metrics, not the full history
+     * @private
+     */
+    _createSafeStats(stats) {
+        if (!stats) return {};
+        
+        try {
+            // Create a minimal stats object with just essential data
+            const safeStats = {};
+            
+            // Handle circuit breaker status
+            if (stats.circuitBreaker) {
+                safeStats.circuitBreaker = {
+                    isOpen: stats.circuitBreaker.isOpen || false,
+                    failures: stats.circuitBreaker.failures || 0,
+                    lastFailure: stats.circuitBreaker.lastFailure,
+                    lastReset: stats.circuitBreaker.lastReset,
+                    recoveryAttempts: stats.circuitBreaker.recoveryAttempts || 0
+                };
+            }
+            
+            // Include operation counts if present (without details)
+            if (stats.operations) {
+                safeStats.operations = {
+                    total: stats.operations.total || 0,
+                    successful: stats.operations.successful || 0,
+                    failed: stats.operations.failed || 0
+                };
+            }
+            
+            // Include very basic performance metrics if present
+            if (stats.performance) {
+                safeStats.performance = {
+                    lastOperationTimeMs: stats.performance.lastOperationTimeMs,
+                    averageOperationTimeMs: stats.performance.averageOperationTimeMs
+                };
+            }
+            
+            // Service-specific safe stats extraction
+            if (stats.specialStats) {
+                safeStats.specialStats = { ...stats.specialStats };
+            }
+            
+            // Return the safe stats
+            return safeStats;
+        } catch (error) {
+            logApi.warn(`Error creating safe stats object: ${error.message}`);
+            return {};
         }
     }
 

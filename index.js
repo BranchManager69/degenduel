@@ -494,9 +494,10 @@ async function initializeServer() {
             try {
                 // First try to register core services
                 if (VERBOSE_SERVICE_INIT_LOGS) {
-                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Registering core services...${fancyColors.RESET} \n`);
+                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}Registering Core Services...${fancyColors.RESET} \n`);
                 }
                 // Register core services
+                // TODO: I don't think this returns anything
                 const coreServices = await ServiceInitializer.registerCoreServices().catch(error => {
                     logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Failed to register core services:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
                     if (VERBOSE_SERVICE_INIT_LOGS) {
@@ -509,17 +510,17 @@ async function initializeServer() {
                 });
                 
                 if (VERBOSE_SERVICE_INIT_LOGS) {
-                    logApi.info(`✅ Registered ${Array.isArray(coreServices) ? coreServices.length : 'all'} core services`);
-                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Core services:${fancyColors.RESET} \n`, {
-                        services: coreServices
-                    });
+                    logApi.info(`┗━━━━━━━━━━━✅ Registered ${Array.isArray(coreServices) ? coreServices.length : 'all'} Core Services`);
+                    //logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Core services:${fancyColors.RESET} \n`, {
+                    //    services: coreServices
+                    //});
                 } else {
                     logApi.info(`✅ Registered ${Array.isArray(coreServices) ? coreServices.length : 'all'} core services`);
                 }
                 
                 // Then try to initialize them
                 if (VERBOSE_SERVICE_INIT_LOGS) {
-                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Initializing services...${fancyColors.RESET} \n`);
+                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}Initializing services...${fancyColors.RESET} \n`);
                 }
                 
                 const results = await ServiceInitializer.initializeServices().catch(error => {
@@ -542,17 +543,16 @@ async function initializeServer() {
                 const successCount = initResults.Services.initialized.length;
                 const failedCount = initResults.Services.failed.length;
 
-                logApi.info(`🚀 ${fancyColors.BLACK}${fancyColors.BOLD}Services initialization:${fancyColors.RESET} ${fancyColors.GREEN}${successCount} succeeded${fancyColors.RESET}, ${fancyColors.RED}${failedCount} failed${fancyColors.RESET}`);
-                
                 if (VERBOSE_SERVICE_INIT_LOGS) {
-                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BLUE}Service initialization details:${fancyColors.RESET}`, {
-                        initialized: initResults.Services.initialized,
-                        failed: initResults.Services.failed
-                    });
+                    //logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BLUE}Service initialization details:${fancyColors.RESET}`, {
+                    //    initialized: initResults.Services.initialized,
+                    //    failed: initResults.Services.failed
+                    //});
                 } else if (failedCount > 0) {
                     // Always show failed services even in non-verbose mode
                     logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Failed services:${fancyColors.RESET} ${fancyColors.RED}${initResults.Services.failed}${fancyColors.RESET}`);
                 }
+                logApi.info(`🚀 ${fancyColors.BLACK}${fancyColors.BOLD}Services initialization:${fancyColors.RESET} ${fancyColors.GREEN}${successCount} succeeded${fancyColors.RESET}, ${fancyColors.RED}${failedCount} failed${fancyColors.RESET}`);
 
             } catch (error) {
                 logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Service initialization failed:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);

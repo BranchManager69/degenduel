@@ -347,7 +347,7 @@ class TokenSyncService extends BaseService {
             return response.data;
         } catch (error) {
             if (error.code === 'ECONNABORTED') {
-                throw ServiceError.network(`API timeout after ${this.config.api.timeoutMs}ms`, {
+                throw ServiceError.network(`API timeout after ${this.config.api.timeoutMs/1000} seconds`, {
                     endpoint,
                     timeout: this.config.api.timeoutMs
                 });
@@ -362,7 +362,7 @@ class TokenSyncService extends BaseService {
 
     // Fetch token prices
     async fetchTokenPrices(addresses) {
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Fetching prices for ${addresses.length} tokens...${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLACK}Fetching prices for ${addresses.length} tokens...${fancyColors.RESET}`);
         
         // Check if price endpoint is configured
         const pricesEndpoint = this.config.api.endpoints.prices;
@@ -372,8 +372,7 @@ class TokenSyncService extends BaseService {
         }
 
         // Get bulk token data from DD-serve
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Attempting to fetch prices from:\n${fancyColors.RESET} ${fancyColors.GREEN}${pricesEndpoint}${fancyColors.RESET}`);
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Fetching prices from:${fancyColors.RESET} ${fancyColors.GREEN}${pricesEndpoint}${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLACK}Trying to fetch bulk token prices from: \n\t\t${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.BLUE}${pricesEndpoint}${fancyColors.RESET}`);
         ////logApi.info(`\t${fancyColors.BLUE}Addresses:${fancyColors.RESET} ${fancyColors.WHITE}${addresses}${fancyColors.RESET}`);
         try {
             // Make the API call
@@ -389,11 +388,11 @@ class TokenSyncService extends BaseService {
             }
             
             // Log the response
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Received price data for ${data.data.length} tokens${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Received price data for ${fancyColors.BOLD_GREEN}${data.data.length}${fancyColors.RESET} ${fancyColors.GREEN}tokens${fancyColors.RESET}`);
             return data.data;
         } catch (error) {
             // Handle 404 error by using fallback mock data
-            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}${fancyColors.BOLD}Price API unavailable!${fancyColors.RESET} ${fancyColors.RED}Trying fallback token data...${fancyColors.RESET} \n\t${fancyColors.ORANGE}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
+            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.BOLD}API UNAVAILABLE${fancyColors.RESET}${fancyColors.LIGHT_RED} No prices fetched.${fancyColors.RESET} \n\t\t${fancyColors.LIGHT_RED}${error.message}${fancyColors.RESET} \t${fancyColors.LIGHT_RED}Trying fallback token data...${fancyColors.RESET}`);
             // Return empty array for now to prevent initialization failure
             return [];
         }
@@ -401,14 +400,12 @@ class TokenSyncService extends BaseService {
 
     // Fetch token data
     async fetchTokenData() {
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Fetching token data from data service...${fancyColors.RESET}`);
-        
         // Check if primary endpoint is valid
         const tokensEndpoint = this.config.api.endpoints.tokens;
         if (!tokensEndpoint) {
             logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Primary token data endpoint not configured or invalid${fancyColors.RESET}`);
         } else {
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Attempting to fetch token data from: ${tokensEndpoint}${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLACK}Attempting to fetch token data from: \n\t\t${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.BLUE}${tokensEndpoint}${fancyColors.RESET}`);
             try {
                 const result = await this.makeApiCall(tokensEndpoint);
                 
@@ -421,7 +418,7 @@ class TokenSyncService extends BaseService {
                 }
                 
                 // Log the response
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Received token data with ${result.data.length} tokens.${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLACK}Database currently contains ${fancyColors.GRAY}${result.data.length}${fancyColors.RESET} ${fancyColors.BLACK}tokens.${fancyColors.RESET}`);
                 return result.data;
             } catch (error) {
                 logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Error fetching token data from primary source:${fancyColors.RESET} \n\t${fancyColors.ORANGE}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
@@ -446,7 +443,7 @@ class TokenSyncService extends BaseService {
                 logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Fallback endpoint also failed:${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}${fallbackError.message}${fancyColors.RESET}`);
             }
         } else {
-            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}No valid fallback endpoint configured.${fancyColors.RESET} \n\t${fancyColors.ORANGE}Skipping fallback attempt.${fancyColors.RESET}`);
+            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.ORANGE}No valid fallback endpoint configured.${fancyColors.RESET} \n\t${fancyColors.ORANGE}${fancyColors.ITALIC}Skipping fallback attempt.${fancyColors.RESET}`);
         }
             
         // If fallback also fails, try to use database
@@ -456,7 +453,7 @@ class TokenSyncService extends BaseService {
         });
         
         if (existingTokens.length > 0) {
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Using ${existingTokens.length} tokens from database as fallback${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.ORANGE}Using ${fancyColors.BOLD_YELLOW}${existingTokens.length}${fancyColors.RESET} ${fancyColors.ORANGE}tokens from database as fallback${fancyColors.RESET}`);
             
             // Transform to expected format
             return existingTokens.map(token => ({
@@ -487,8 +484,8 @@ class TokenSyncService extends BaseService {
     // Core sync operations
     async updatePrices() {
         const startTime = Date.now();
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Price update cycle started${fancyColors.RESET}\n`, {
-            startTime: startTime,
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}Price update cycle starting...${fancyColors.RESET}`, {
+        //    startTime: startTime,
         });
         
         try {
@@ -542,11 +539,11 @@ class TokenSyncService extends BaseService {
                 (this.syncStats.operations.total + 1);
 
             // Log the results
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Price update cycle completed${fancyColors.RESET}\n`, {
-                totalTokens: activeTokens.length,
-                pricesReceived: priceData.length,
-                pricesUpdated: updatedCount,
-                duration: `${duration}ms`
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}Price update cycle completed${fancyColors.RESET}`, {
+            //    totalTokens: activeTokens.length,
+            //    pricesReceived: priceData.length,
+            //    pricesUpdated: updatedCount,
+            //    duration: `${duration}ms`
             });
         } catch (error) {
             if (error.isServiceError) throw error;
@@ -565,7 +562,7 @@ class TokenSyncService extends BaseService {
         const startTime = Date.now();
         
         try {
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Starting metadata update for ${fullData.length} tokens...${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLACK}Starting metadata update for ${fullData.length} tokens...${fancyColors.RESET}`);
 
             let created = 0;
             let updated = 0;

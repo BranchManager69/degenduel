@@ -212,7 +212,7 @@ class ServiceInitializer {
 
         try {
             // Services should already be registered by now
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Services already registered, proceeding to initialization...${fancyColors.RESET} \n`);
+            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.ORANGE}${fancyColors.ITALIC}Services already registered, proceeding to initialization...${fancyColors.RESET} \n`);
 
             // Get initialization order
             const initOrder = serviceManager.calculateInitializationOrder();

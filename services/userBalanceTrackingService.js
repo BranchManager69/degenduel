@@ -7,6 +7,7 @@ import prisma from '../config/prisma.js';
 import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.js';
 import { PublicKey } from '@solana/web3.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
+import { fancyColors } from '../utils/colors.js';
 
 // Rate limit configuration
 const BALANCE_TRACKING_CONFIG = {
@@ -100,8 +101,8 @@ class UserBalanceTrackingService extends BaseService {
             // Calculate check interval based on user count
             this.calculateCheckInterval(activeUsers);
             
-            logApi.info(`User Balance Tracking Service initialized with ${activeUsers} users`);
-            logApi.info(`Checking each user every ${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} minutes`);
+            logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.DARK_CYAN}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.DARK_CYAN}users${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}Checking each user every ${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} minutes${fancyColors.RESET}`);
             
             return true;
         } catch (error) {
@@ -133,7 +134,7 @@ class UserBalanceTrackingService extends BaseService {
             Math.min(calculatedIntervalMs, maxCheckIntervalMs)
         );
         
-        logApi.info(`Balance check interval calculated: ${Math.round(this.effectiveCheckIntervalMs / 1000)} seconds`);
+        logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}Balance check interval calculated:${fancyColors.RESET} ${fancyColors.DARK_CYAN}${Math.round(this.effectiveCheckIntervalMs / 1000)} seconds${fancyColors.RESET}`);
     }
     
     /**

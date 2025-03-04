@@ -365,11 +365,11 @@ function formatPerformanceStats(metrics) {
   const { total_requests, avg_response_time, max_response_time, routes } = metrics;
   
   // Format the header
-  const header = `${fancyColors.YELLOW}📊 API Performance ${fancyColors.RESET}| Total: ${total_requests} | Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms${fancyColors.RESET}`;
+  const header = `${fancyColors.UNDERLINE}📊 ${fancyColors.BOLD}${fancyColors.BG_DARK_YELLOW}API Performance ${fancyColors.RESET}${fancyColors.UNDERLINE}${fancyColors.BOLD}${fancyColors.DARK_YELLOW}| Total: ${total_requests} | Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms${fancyColors.RESET}`;
   
   // Format routes if they exist
   if (!routes || Object.keys(routes).length === 0) {
-    return header;
+    return `${header}${fancyColors.RESET}`;
   }
 
   // Get the longest route name for padding
@@ -380,11 +380,11 @@ function formatPerformanceStats(metrics) {
     .sort(([,a], [,b]) => b.requests - a.requests)  // Sort by most requests first
     .map(([route, stats]) => {
       const padding = ' '.repeat(maxRouteLength - route.length);
-      return `    ${route}${padding} | ${stats.requests.toString().padStart(3)} reqs | ${Math.round(stats.avg_response_time).toString().padStart(4)}ms avg | ${Math.round(stats.max_response_time).toString().padStart(4)}ms max`;
+      return `${fancyColors.UNDERLINE}${fancyColors.BOLD}${fancyColors.DARK_YELLOW}\t${route}${padding}${fancyColors.RESET} ${fancyColors.GRAY}|${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${stats.requests.toString().padStart(3)}${fancyColors.RESET} ${fancyColors.GRAY}reqs${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.avg_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms avg${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.max_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms max${fancyColors.RESET}`;
     })
     .join('\n');
 
-  return `${header}\n${routeStats}`;
+  return `${header}${fancyColors.RESET}\n${routeStats}`;
 }
 
 function formatEventLoopLag(lagMs) {
@@ -403,9 +403,7 @@ function formatAdminAction(details) {
     .map(line => '    ' + line)
     .join('\n');
   
-  return `👑 Admin Action: ${action}
-  By: ${admin}
-  Details:${formattedDetails}`;
+  return `👑 \t${fancyColors.BG_DARK_WHITE}Admin Action Log:${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.BG_WHITE}${action}${fancyColors.RESET} ${fancyColors.ITALIC}${fancyColors.CYAN}by ${fancyColors.RESET} ${fancyColors.ITALIC}${fancyColors.UNDERLINE}${fancyColors.CYAN}${admin}${fancyColors.RESET}`;
 }
 
 // Modify the customFormat to properly handle these special cases
@@ -441,23 +439,28 @@ const customFormat = winston.format.printf(
     // Sanitize any error objects in metadata
     const cleanMetadata = sanitizeError(metadata);
 
+    // Format circuit breaker logs
     if (message.includes('Circuit breaker opened')) {
       return `${ts} ${LEVEL_STYLES.error.badge} ${formatCircuitBreaker(service, metadata)}`;
     }
 
+    // Format user interaction logs
     if (message === ANALYTICS_PATTERNS.USER_INTERACTION) {
       const { user, action, details } = metadata;
       return `${ts} ${levelStyle.badge} ${formatUserInteraction(user, action, details)}`;
     }
 
+    // Format event loop lag logs
     if (message.includes('Event loop lag detected')) {
       return `${ts} ${levelStyle.badge} ${formatEventLoopLag(metadata.lag_ms)}`;
     }
 
+    // Format admin action logs
     if (message.includes('Admin action logged')) {
       return `${ts} ${levelStyle.badge} ${formatAdminAction(metadata)}`;
     }
 
+    // Default format
     return `${ts} ${levelStyle.badge} ${formattedMessage}${meta ? " " + meta : ""}`;
   }
 );

@@ -118,8 +118,8 @@ class LiquidityService extends BaseService {
                 };
             });
             
-            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.BLUE}📊 WALLET INVENTORY: Found ${allLiquidityWallets.length} total liquidity wallets${fancyColors.RESET}`, {
-                wallets: walletsInfo
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} 📊 ${fancyColors.BG_LIGHT_CYAN}WALLET INVENTORY:${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}${allLiquidityWallets.length}${fancyColors.RESET} ${fancyColors.BG_LIGHT_CYAN}total liquidity wallets${fancyColors.RESET}`, {
+            //    wallets: walletsInfo
             });
             
             // Now check for active ones
@@ -132,7 +132,7 @@ class LiquidityService extends BaseService {
             });
             
             logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}✅ Found ${existingWallets.length} active liquidity wallets${fancyColors.RESET}${existingWallets.length > 0 ? 
-                ': ' + existingWallets[0].wallet_address : ''}`);
+                `\n\t\t${fancyColors.HIGHLIGHT_CYAN}${existingWallets[0].wallet_address}${fancyColors.RESET}` : ''}`);
             
             const wallet = existingWallets[0]; // Take the most recent one
 

@@ -13,6 +13,7 @@ import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
 //import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+import { fancyColors } from '../utils/colors.js';
 //import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 // ** Service Manager **
@@ -132,7 +133,7 @@ class MarketDataService extends BaseService {
             this.requestCount = 0;
 
             // Check for initial data but don't fail if not present
-            logApi.info('Checking for initial token data...');
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_YELLOW}Checking for initial token data...${fancyColors.RESET}`);
             const [activeTokens, tokensWithPrices] = await Promise.all([
                 prisma.tokens.count({ where: { is_active: true } }),
                 prisma.token_prices.count()
@@ -144,12 +145,12 @@ class MarketDataService extends BaseService {
             this.marketStats.data.tokens.withPrices = tokensWithPrices;
 
             if (activeTokens === 0 || tokensWithPrices === 0) {
-                logApi.info('No initial token data available - service will wait for data to arrive', {
+                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}No initial token data available${fancyColors.RESET} ${fancyColors.LIGHT_RED} | Service will wait for data to arrive${fancyColors.RESET}`, {
                     activeTokens,
                     tokensWithPrices
                 });
             } else {
-                logApi.info('Initial token data verified', {
+                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}Initial token data verified${fancyColors.RESET}`, {
                     activeTokens,
                     tokensWithPrices
                 });
@@ -164,7 +165,7 @@ class MarketDataService extends BaseService {
                 marketStats: this.marketStats
             };
 
-            logApi.info('\t\tMarket Data Service initialized', {
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.GREEN}Market Data Service initialized${fancyColors.RESET}`, {
                 activeTokens: this.marketStats.data.tokens.active,
                 withPrices: this.marketStats.data.tokens.withPrices,
                 status: 'ready'
@@ -173,7 +174,7 @@ class MarketDataService extends BaseService {
             this.isInitialized = true;
             return true;
         } catch (error) {
-            logApi.error('Market Data Service initialization error:', error);
+            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Market Data Service initialization error:${fancyColors.RESET}`, error);
             await this.handleError(error);
             throw error;
         }
