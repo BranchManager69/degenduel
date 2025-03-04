@@ -123,5 +123,10 @@
   },
   "prisma": {
     "seed": "node prisma/seed.js"
+  },
+  "scripts": {
+    "test:websocket": "node scripts/test-websocket.js",
+    "test:base-websocket": "node scripts/test-base-websocket.js",
+    "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js"
   }
 }
