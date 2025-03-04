@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
-
+import { fancyColors } from '../utils/colors.js';
 const prisma = new PrismaClient();
 
 /**
@@ -273,8 +273,9 @@ function outputReport(report) {
   // Save as Markdown
   const mdPath = path.join(runDir, `service-status.md`);
   fs.writeFileSync(mdPath, generateMarkdownReport(report));
-  
-  console.log(`Report saved to: ${runDir}/`);
+
+  // Print the report path (doesn't work since called from within the function)
+  console.log(`${fancyColors.CYAN}${fancyColors.BOLD}Report saved to:${fancyColors.RESET} ${fancyColors.CYAN}${runDir}/${fancyColors.RESET}`);
   
   // Console summary
   printConsoleSummary(report);
@@ -356,14 +357,13 @@ function generateMarkdownReport(report) {
  * Print a console summary of the report
  */
 function printConsoleSummary(report) {
-  console.log('\n╔════════════ DegenDuel Service Status Report ════════════╗');
-  console.log(`║ Generated: ${report.generated_at.padEnd(44)} ║`);
-  console.log(`║ Total Services: ${report.total_services.toString().padEnd(39)} ║`);
+  console.log(`\n╔════════════ ${fancyColors.BLACK}${fancyColors.BOLD}${fancyColors.UNDERLINE}DegenDuel${fancyColors.RESET}${fancyColors.BLACK}${fancyColors.UNDERLINE} Service Status Report${fancyColors.RESET} ═════════════╗`);
+  console.log(`║ ${fancyColors.CYAN}${fancyColors.BOLD}Generated:${fancyColors.RESET}         ${fancyColors.BLACK}${report.generated_at.padEnd(44)}${fancyColors.RESET} `);
+  console.log(`║ ${fancyColors.CYAN}${fancyColors.BOLD}Total Services:${fancyColors.RESET}    ${fancyColors.BLACK}${report.total_services.toString().padEnd(39)}${fancyColors.RESET} `);
+  console.log(`║ ${fancyColors.CYAN}${fancyColors.BOLD}Maintenance Mode:${fancyColors.RESET} ${report.maintenance_mode ? `${fancyColors.RED}ENABLED 🔧${fancyColors.RESET}` : `${fancyColors.GREEN} Disabled${fancyColors.RESET}`}${' '.repeat(31)} `);
   console.log('╟──────────────────────────────────────────────────────────╢');
-  console.log(`║ 🟢 ${report.service_health.healthy.toString().padEnd(2)} healthy   🟠 ${report.service_health.degraded.toString().padEnd(2)} degraded   🔴 ${report.service_health.error.toString().padEnd(2)} error   ⚪ ${report.service_health.unknown.toString().padEnd(2)} unknown  ║`);
-  console.log(`║ Maintenance Mode: ${report.maintenance_mode ? '🔧 ENABLED' : '✅ Disabled'}${' '.repeat(31)} ║`);
-  console.log('╠══════════════════════════════════════════════════════════╣');
-  console.log('║ SERVICE STATUS SUMMARY                                   ║');
+  console.log(`║ ${fancyColors.CYAN}${fancyColors.BOLD}Service Status Summary:${fancyColors.RESET}                                  ║`);
+  console.log(`║  🟢 ${fancyColors.GREEN}${report.service_health.healthy.toString().padEnd(2)}${fancyColors.RESET}${fancyColors.GREEN}Healthy${fancyColors.RESET}   🟠 ${fancyColors.ORANGE}${report.service_health.degraded.toString().padEnd(2)}${fancyColors.RESET}${fancyColors.ORANGE}Degraded${fancyColors.RESET}   🔴 ${fancyColors.RED}${report.service_health.error.toString().padEnd(2)}${fancyColors.RESET}${fancyColors.RED}Error${fancyColors.RESET}   🟡 ${fancyColors.YELLOW}${report.service_health.unknown.toString().padEnd(2)}${fancyColors.RESET}${fancyColors.YELLOW}Unknown${fancyColors.RESET}║ `);
   console.log('╟──────────────────────────────────────────────────────────╢');
 
   // Group services by health status
@@ -386,28 +386,28 @@ function printConsoleSummary(report) {
   
   // Print error services first
   errorServices.forEach(({ statusInfo }) => {
-    console.log(`║ 🔴 ${statusInfo.padEnd(56)} ║`);
+    console.log(`║ 🔴 ${fancyColors.RED}${statusInfo}${fancyColors.RESET.padEnd(56)} `);
   });
   
   // Print degraded services
   degradedServices.forEach(({ statusInfo }) => {
-    console.log(`║ 🟠 ${statusInfo.padEnd(56)} ║`);
+    console.log(`║ 🟠 ${fancyColors.ORANGE}${statusInfo}${fancyColors.RESET.padEnd(56)} `);
   });
   
-  // Print up to 5 healthy services (prioritize showing problem services)
-  const healthyToShow = Math.min(5, healthyServices.length);
+  // Print up to 20 healthy services (prioritize showing problem services)
+  const healthyToShow = Math.min(20, healthyServices.length);
   healthyServices.slice(0, healthyToShow).forEach(({ statusInfo }) => {
-    console.log(`║ 🟢 ${statusInfo.padEnd(56)} ║`);
+    console.log(`║ 🟢 ${fancyColors.GREEN}${statusInfo}${fancyColors.RESET.padEnd(56)} `);
   });
   
   if (healthyServices.length > healthyToShow) {
-    console.log(`║ ... and ${healthyServices.length - healthyToShow} more healthy services${' '.repeat(26)} ║`);
+    console.log(`║ ... and ${fancyColors.GREEN}${healthyServices.length - healthyToShow} more healthy services${fancyColors.RESET}${' '.repeat(26)} `);
   }
   
   // Show error details if any
   if (errorServices.length > 0) {
     console.log('╠══════════════════════════════════════════════════════════╣');
-    console.log('║ ERROR DETAILS                                            ║');
+    console.log(`║ ${fancyColors.RED}${fancyColors.BOLD}ERROR DETAILS${fancyColors.RESET}                                            ║`);
     console.log('╟──────────────────────────────────────────────────────────╢');
     
     errorServices.forEach(({ name, service }) => {
@@ -415,8 +415,8 @@ function printConsoleSummary(report) {
       
       // Circuit breaker info
       if (service.circuit_breaker?.isOpen) {
-        const cbInfo = `Circuit breaker OPEN - ${service.circuit_breaker.failures} failures`;
-        console.log(`║ ${shortName.padEnd(25)} │ ${cbInfo.padEnd(29)} ║`);
+        const cbInfo = `${fancyColors.RED}${fancyColors.BOLD}Circuit breaker ${fancyColors.UNDERLINE}OPEN${fancyColors.RESET} - ${fancyColors.RED}${service.circuit_breaker.failures} failures${fancyColors.RESET}`;
+        console.log(`║ ${fancyColors.RED}${shortName.padEnd(25)}${fancyColors.RESET} │ ${cbInfo.padEnd(29)} `);
       }
       
       // Show error if available
@@ -424,7 +424,7 @@ function printConsoleSummary(report) {
         const errorMsg = service.last_error.length > 40 
           ? service.last_error.substring(0, 37) + '...' 
           : service.last_error;
-        console.log(`║ └─ Error: ${errorMsg.padEnd(48)} ║`);
+        console.log(`║ └─ ${fancyColors.RED}${errorMsg}${fancyColors.RESET.padEnd(48)} `);
       }
     });
   }
@@ -432,18 +432,17 @@ function printConsoleSummary(report) {
   // Add recent updates as well
   if (report.most_recent_updates.length > 0) {
     console.log('╠══════════════════════════════════════════════════════════╣');
-    console.log('║ RECENT UPDATES                                           ║');
+    console.log(`║ ${fancyColors.BLUE}${fancyColors.BOLD}RECENT UPDATES${fancyColors.RESET}                                           ║`);
     console.log('╟──────────────────────────────────────────────────────────╢');
     
-    report.most_recent_updates.slice(0, 3).forEach(update => {
+    report.most_recent_updates.slice(0, 20).forEach(update => {
       const shortName = update.service.length > 25 ? update.service.substring(0, 22) + '...' : update.service;
       const timeAgo = getTimeAgo(update.time);
-      console.log(`║ ${shortName.padEnd(25)} │ ${timeAgo.padEnd(29)} ║`);
+      console.log(`║ ${fancyColors.BLUE}${shortName.padEnd(25)}${fancyColors.RESET} │ ${fancyColors.BLUE}${timeAgo.padEnd(29)}${fancyColors.RESET} `);
     });
   }
   
   console.log('╚══════════════════════════════════════════════════════════╝');
-  console.log(`\nDetailed reports saved to: ${path.join(process.cwd(), 'reports/service-reports')}/${dateString}/run_${timeString}/`);
 }
 
 /**
