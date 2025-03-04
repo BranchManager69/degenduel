@@ -23,19 +23,17 @@ const router = express.Router();
  */
 router.get('/status', requireAuth, requireSuperAdmin, async (req, res) => {
   try {
-    // Get service status and metrics
-    const serviceStatus = userBalanceTrackingService.getServiceStatus();
-    const metrics = userBalanceTrackingService.trackingStats;
-    
+    // Get service status from base properties and stats
     return res.json({
-      status: serviceStatus.status,
-      isRunning: serviceStatus.isRunning,
-      metrics,
+      status: userBalanceTrackingService.isStarted ? 'running' : 'stopped',
+      isRunning: userBalanceTrackingService.isStarted,
+      metrics: userBalanceTrackingService.trackingStats,
       effectiveCheckIntervalMs: userBalanceTrackingService.effectiveCheckIntervalMs,
       rateLimit: userBalanceTrackingService.config.rateLimit,
-      lastOperationTime: new Date(Date.now() - metrics.performance.lastOperationTimeMs),
+      lastOperationTime: new Date(Date.now() - userBalanceTrackingService.trackingStats.performance.lastOperationTimeMs),
       activeChecks: Array.from(userBalanceTrackingService.activeChecks),
       trackedWallets: userBalanceTrackingService.trackingStats.users.trackedUsers.size,
+      baseStats: userBalanceTrackingService.stats
     });
   } catch (error) {
     logApi.error('Error getting wallet tracking status', error);
