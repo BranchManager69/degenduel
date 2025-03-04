@@ -1,9 +1,16 @@
+// services/levelingService.js
+
+/*
+ * This service is responsible for managing the leveling of users.
+ * It handles the awarding of XP, the checking of level progress, and the creation of websocket notifications.
+ */
+
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import serviceManager from '../utils/service-suite/service-manager.js';
-import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import serviceManager from '../utils/service-suite/service-manager.js'; // why is this not being used?
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js'; // why is this not being used?
 
 const LEVELING_SERVICE_CONFIG = {
     name: 'leveling_service',
@@ -19,6 +26,7 @@ const LEVELING_SERVICE_CONFIG = {
     dependencies: [] // Removed dependency on ACHIEVEMENT
 };
 
+// Leveling Service
 class LevelingService extends BaseService {
     constructor() {
         super(LEVELING_SERVICE_CONFIG);
