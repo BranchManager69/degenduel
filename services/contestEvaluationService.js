@@ -6,6 +6,9 @@
  * accurate evaluation of contest results.
  */
 
+// ** Global Configuration Flags **
+const REFUND_SINGLE_PARTICIPANT_CONTESTS = true; // When true, contests with only one participant will be cancelled and refunded
+
 // ** Service Auth **
 //import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
@@ -1454,6 +1457,7 @@ class ContestEvaluationService extends BaseService {
      * @returns {Promise<boolean>} - True if successful
      */
     async cancelContestNoParticipants(contest) {
+        // No need to process refunds for contests with no participants
         return this.cancelContest(
             contest,
             this.config.states.CANCELLED,
@@ -1476,7 +1480,7 @@ class ContestEvaluationService extends BaseService {
         const minParticipants = contest.settings?.minimum_participants || 1;
         const actualParticipants = contest.contest_participants.length;
         
-        return this.cancelContest(
+        const cancellationResult = await this.cancelContest(
             contest,
             this.config.states.CANCELLED,
             `Contest auto-cancelled due to insufficient participants after wait period (${actualParticipants}/${minParticipants})`,
@@ -1488,6 +1492,54 @@ class ContestEvaluationService extends BaseService {
                 waited_for: this.config.autoCancelWindow
             }
         );
+        
+        // Process refunds if there are participants
+        if (cancellationResult && contest.contest_participants && contest.contest_participants.length > 0) {
+            logApi.info(`Initiating refund process for auto-cancelled insufficient-participants contest ${contest.id}`);
+            this.processContestRefunds(contest)
+                .catch(error => {
+                    logApi.error(`Failed to process refunds for auto-cancelled insufficient-participants contest ${contest.id}:`, {
+                        error: error.message,
+                        contest_id: contest.id
+                    });
+                });
+        }
+        
+        return cancellationResult;
+    }
+    
+    /**
+     * Cancels a contest that has only one participant
+     * @param {Object} contest - The contest object to cancel
+     * @returns {Promise<boolean>} - True if successful
+     */
+    async cancelContestSingleParticipant(contest) {
+        const cancellationResult = await this.cancelContest(
+            contest,
+            this.config.states.CANCELLED,
+            `Contest auto-cancelled due to having only one participant (based on REFUND_SINGLE_PARTICIPANT_CONTESTS setting)`,
+            AdminLogger.Actions.CONTEST.CANCEL,
+            {
+                required_participants: 2, // At least 2 participants needed for competition
+                actual_participants: 1,
+                auto_cancelled: true,
+                single_participant_policy: true
+            }
+        );
+        
+        // Process refunds if there are participants
+        if (cancellationResult && contest.contest_participants && contest.contest_participants.length > 0) {
+            logApi.info(`Initiating refund process for auto-cancelled single-participant contest ${contest.id}`);
+            this.processContestRefunds(contest)
+                .catch(error => {
+                    logApi.error(`Failed to process refunds for auto-cancelled single-participant contest ${contest.id}:`, {
+                        error: error.message,
+                        contest_id: contest.id
+                    });
+                });
+        }
+        
+        return cancellationResult;
     }
 
     /**
@@ -1497,6 +1549,13 @@ class ContestEvaluationService extends BaseService {
      */
     async processContestStart(contest) {
         const minParticipants = contest.settings?.minimum_participants || 1;
+        
+        // Handle the case where there's exactly one participant
+        if (contest.contest_participants.length === 1 && REFUND_SINGLE_PARTICIPANT_CONTESTS) {
+            // Cancel contest with single participant based on the config flag
+            await this.cancelContestSingleParticipant(contest);
+            return;
+        }
         
         if (contest.contest_participants.length >= minParticipants) {
             // Enough participants, start the contest

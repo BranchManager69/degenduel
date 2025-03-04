@@ -28,6 +28,14 @@ const CONTEST_WALLET_CONFIG = {
     name: SERVICE_NAMES.CONTEST_WALLET,
     description: getServiceMetadata(SERVICE_NAMES.CONTEST_WALLET).description,
     checkIntervalMs: 1 * 60 * 1000, // Check every 1 minute
+    treasury: {
+        walletAddress: process.env.TREASURY_WALLET_ADDRESS || 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp'
+    },
+    reclaim: {
+        minimumBalanceToReclaim: 0.001, // SOL - minimum balance to consider reclaiming
+        minimumAmountToTransfer: 0.0005, // SOL - don't transfer if amount is too small
+        contestStatuses: ['completed', 'cancelled'] // Only reclaim from these statuses
+    },
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -56,6 +64,9 @@ class ContestWalletService extends BaseService {
         // TODO: Shouldn't this use our existing Solana service?
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         
+        // Set treasury wallet address from config
+        this.treasuryWalletAddress = CONTEST_WALLET_CONFIG.treasury.walletAddress;
+        
         // Service-specific state
         this.walletStats = {
             operations: {
@@ -73,6 +84,13 @@ class ContestWalletService extends BaseService {
                 successful: 0,
                 failed: 0,
                 last_update: null
+            },
+            reclaimed_funds: {
+                total_operations: 0,
+                successful_operations: 0,
+                failed_operations: 0,
+                total_amount: 0,
+                last_reclaim: null
             },
             errors: {
                 creation_failures: 0,
@@ -431,6 +449,293 @@ class ContestWalletService extends BaseService {
     }
 }
 
+    /**
+     * Decrypt private key from encrypted storage
+     * @param {string} encryptedData - The encrypted private key data
+     * @returns {string} - The decrypted private key
+     */
+    decryptPrivateKey(encryptedData) {
+        try {
+            const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
+            const decipher = crypto.createDecipheriv(
+                this.config.wallet.encryption_algorithm,
+                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
+                Buffer.from(iv, 'hex')
+            );
+            
+            decipher.setAuthTag(Buffer.from(tag, 'hex'));
+            if (aad) decipher.setAAD(Buffer.from(aad));
+            
+            const decrypted = Buffer.concat([
+                decipher.update(Buffer.from(encrypted, 'hex')),
+                decipher.final()
+            ]);
+            
+            return decrypted.toString();
+        } catch (error) {
+            throw ServiceError.operation('Failed to decrypt private key', {
+                error: error.message,
+                type: 'DECRYPTION_ERROR'
+            });
+        }
+    }
+
+    /**
+     * Perform a blockchain transfer from a contest wallet to a destination address
+     * @param {Object} sourceWallet - The source wallet object containing encrypted private key
+     * @param {string} destinationAddress - The destination wallet address
+     * @param {number} amount - The amount to transfer in SOL
+     * @returns {Promise<string>} - The transaction signature
+     */
+    async performBlockchainTransfer(sourceWallet, destinationAddress, amount) {
+        try {
+            const decryptedPrivateKey = this.decryptPrivateKey(sourceWallet.private_key);
+            const privateKeyBytes = bs58.decode(decryptedPrivateKey);
+            const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
+
+            const transaction = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey: fromKeypair.publicKey,
+                    toPubkey: new PublicKey(destinationAddress),
+                    lamports: Math.floor(amount * LAMPORTS_PER_SOL),
+                })
+            );
+
+            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
+            await this.connection.confirmTransaction(signature);
+
+            return signature;
+        } catch (error) {
+            throw ServiceError.blockchain('Blockchain transfer failed', {
+                error: error.message,
+                sourceWallet: sourceWallet.wallet_address,
+                destination: destinationAddress,
+                amount
+            });
+        }
+    }
+
+    /**
+     * Reclaims funds from completed or cancelled contest wallets back to the treasury
+     * 
+     * @param {Object} options Optional parameters
+     * @param {string[]} options.statusFilter Contest statuses to filter by (default: ['completed', 'cancelled'])
+     * @param {number} options.minBalance Minimum balance to consider reclaiming (default: 0.001 SOL)
+     * @param {number} options.minTransfer Minimum amount to transfer (default: 0.0005 SOL)
+     * @param {string} options.specificContestId Optional specific contest ID to reclaim from
+     * @param {string} options.adminAddress Admin wallet address for logging
+     * @returns {Promise<Object>} Result summary
+     */
+    async reclaimUnusedFunds(options = {}) {
+        const {
+            statusFilter = this.config.reclaim.contestStatuses,
+            minBalance = this.config.reclaim.minimumBalanceToReclaim,
+            minTransfer = this.config.reclaim.minimumAmountToTransfer,
+            specificContestId = null,
+            adminAddress = 'SYSTEM'
+        } = options;
+
+        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}Starting reclaim operation for unused contest funds${fancyColors.RESET}`);
+        
+        try {
+            // Get eligible contest wallets based on filters
+            const query = {
+                include: {
+                    contests: {
+                        select: {
+                            id: true,
+                            contest_code: true,
+                            status: true
+                        }
+                    }
+                },
+                where: {}
+            };
+            
+            // Add filters
+            if (specificContestId) {
+                query.where.contest_id = parseInt(specificContestId);
+            } else {
+                query.where.contests = {
+                    status: { in: statusFilter }
+                };
+            }
+            
+            const eligibleWallets = await prisma.contest_wallets.findMany(query);
+            
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Found ${eligibleWallets.length} eligible wallets to check for reclaiming`);
+            
+            // Track results
+            const results = {
+                totalWallets: eligibleWallets.length,
+                walletsThatMeetCriteria: 0,
+                successfulTransfers: 0,
+                failedTransfers: 0,
+                totalAmountReclaimed: 0,
+                details: []
+            };
+            
+            // Process each wallet
+            for (const wallet of eligibleWallets) {
+                try {
+                    // Get latest balance
+                    const publicKey = new PublicKey(wallet.wallet_address);
+                    const balance = await this.connection.getBalance(publicKey);
+                    const solBalance = balance / LAMPORTS_PER_SOL;
+                    
+                    // Update wallet balance in database
+                    await prisma.contest_wallets.update({
+                        where: { id: wallet.id },
+                        data: {
+                            balance: solBalance,
+                            last_sync: new Date()
+                        }
+                    });
+                    
+                    // Check if balance meets minimum criteria
+                    if (solBalance < minBalance) {
+                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping wallet ${wallet.wallet_address} with low balance: ${solBalance.toFixed(6)} SOL`);
+                        results.details.push({
+                            contest_id: wallet.contest_id,
+                            contest_code: wallet.contests?.contest_code,
+                            wallet_address: wallet.wallet_address,
+                            balance: solBalance,
+                            status: 'skipped_low_balance'
+                        });
+                        continue;
+                    }
+                    
+                    // Reserve a small amount for fees, approximately 0.0005 SOL (5000 lamports)
+                    const reserveAmount = 0.0005;
+                    const transferAmount = solBalance - reserveAmount;
+                    
+                    // Skip if transfer amount is too small
+                    if (transferAmount < minTransfer) {
+                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping transfer from ${wallet.wallet_address}, amount too small: ${transferAmount.toFixed(6)} SOL`);
+                        results.details.push({
+                            contest_id: wallet.contest_id,
+                            contest_code: wallet.contests?.contest_code,
+                            wallet_address: wallet.wallet_address,
+                            balance: solBalance,
+                            transferAmount: transferAmount,
+                            status: 'skipped_small_transfer'
+                        });
+                        continue;
+                    }
+                    
+                    results.walletsThatMeetCriteria++;
+                    
+                    // Perform the transfer
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Transferring ${transferAmount.toFixed(6)} SOL from contest ${wallet.contest_id} (${wallet.contests?.contest_code || 'Unknown'}) to treasury${fancyColors.RESET}`);
+                    
+                    try {
+                        // Create a transaction record
+                        const transaction = await prisma.transactions.create({
+                            data: {
+                                wallet_address: wallet.wallet_address,
+                                type: config.transaction_types.WITHDRAWAL,
+                                amount: transferAmount,
+                                balance_before: solBalance,
+                                balance_after: solBalance - transferAmount,
+                                contest_id: wallet.contest_id,
+                                description: `Reclaiming unused funds from ${wallet.contests?.contest_code || `Contest #${wallet.contest_id}`} wallet to treasury`,
+                                status: 'PENDING',
+                                created_at: new Date()
+                            }
+                        });
+                        
+                        // Perform blockchain transaction
+                        const signature = await this.performBlockchainTransfer(
+                            wallet,
+                            this.treasuryWalletAddress,
+                            transferAmount
+                        );
+                        
+                        // Update transaction with success
+                        await prisma.transactions.update({
+                            where: { id: transaction.id },
+                            data: {
+                                status: 'COMPLETED',
+                                blockchain_signature: signature,
+                                completed_at: new Date()
+                            }
+                        });
+                        
+                        // Log success
+                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Successfully transferred ${transferAmount.toFixed(6)} SOL to treasury${fancyColors.RESET}
+             Signature: ${signature}
+             Explorer: https://solscan.io/tx/${signature}`);
+                        
+                        results.successfulTransfers++;
+                        results.totalAmountReclaimed += transferAmount;
+                        results.details.push({
+                            contest_id: wallet.contest_id,
+                            contest_code: wallet.contests?.contest_code,
+                            wallet_address: wallet.wallet_address,
+                            balance: solBalance,
+                            transferAmount: transferAmount,
+                            signature: signature,
+                            status: 'success'
+                        });
+                        
+                        // Update service stats
+                        this.walletStats.reclaimed_funds.total_operations++;
+                        this.walletStats.reclaimed_funds.successful_operations++;
+                        this.walletStats.reclaimed_funds.total_amount += transferAmount;
+                        this.walletStats.reclaimed_funds.last_reclaim = new Date().toISOString();
+                        
+                        // Log admin action
+                        await AdminLogger.logAction(
+                            adminAddress,
+                            AdminLogger.Actions.WALLET.RECLAIM_FUNDS || 'WALLET_RECLAIM_FUNDS',
+                            {
+                                contest_id: wallet.contest_id,
+                                contest_code: wallet.contests?.contest_code,
+                                wallet_address: wallet.wallet_address,
+                                amount: transferAmount.toString(),
+                                signature: signature
+                            }
+                        );
+                    } catch (error) {
+                        logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to transfer funds from ${wallet.wallet_address}:${fancyColors.RESET}`, error);
+                        
+                        results.failedTransfers++;
+                        this.walletStats.reclaimed_funds.failed_operations++;
+                        results.details.push({
+                            contest_id: wallet.contest_id,
+                            contest_code: wallet.contests?.contest_code,
+                            wallet_address: wallet.wallet_address,
+                            balance: solBalance,
+                            transferAmount: transferAmount,
+                            error: error.message,
+                            status: 'failed'
+                        });
+                    }
+                } catch (error) {
+                    logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to process wallet ${wallet.wallet_address}:${fancyColors.RESET}`, error);
+                    
+                    results.failedTransfers++;
+                    results.details.push({
+                        contest_id: wallet.contest_id,
+                        contest_code: wallet.contests?.contest_code || null,
+                        wallet_address: wallet.wallet_address,
+                        error: error.message,
+                        status: 'failed'
+                    });
+                }
+            }
+            
+            // Summary log
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}Reclaim operation completed:${fancyColors.RESET} ${results.successfulTransfers}/${results.walletsThatMeetCriteria} transfers successful, total reclaimed: ${results.totalAmountReclaimed.toFixed(6)} SOL`);
+            
+            return results;
+        } catch (error) {
+            logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to reclaim unused funds:${fancyColors.RESET}`, error);
+            throw error;
+        }
+    }
+}
+
 // Export service singleton
 const contestWalletService = new ContestWalletService();
-export default contestWalletService; 
+export default contestWalletService;
