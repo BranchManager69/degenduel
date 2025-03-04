@@ -15,6 +15,7 @@ import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 // Solana
@@ -141,7 +142,7 @@ class ContestWalletService extends BaseService {
             });
 
             this.walletStats.wallets.generated++;
-            logApi.info('Created contest wallet with generated keypair', {
+            logApi.info(`[contestWalletService] ${fancyColors.GREEN}Created contest wallet with generated keypair${fancyColors.RESET}`, {
                 contest_id: contestId
             });
 
@@ -197,6 +198,12 @@ class ContestWalletService extends BaseService {
             const lamports = await this.connection.getBalance(publicKey);
             const solBalance = lamports / LAMPORTS_PER_SOL;
             
+            logApi.info(`[contestWalletService] ${fancyColors.BLUE}Updating balance for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
+                contest_id: wallet.contests?.id,
+                contest_code: wallet.contests?.contest_code,
+                balance: solBalance
+            });
+
             // Update wallet in database
             await prisma.contest_wallets.update({
                 where: { id: wallet.id },
@@ -204,6 +211,12 @@ class ContestWalletService extends BaseService {
                     balance: solBalance,
                     last_sync: new Date()
                 }
+            });
+
+            logApi.info(`[contestWalletService] ${fancyColors.GREEN}Updated balance for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
+                contest_id: wallet.contests?.id,
+                contest_code: wallet.contests?.contest_code,
+                balance: solBalance
             });
             
             // Update stats
@@ -321,7 +334,7 @@ class ContestWalletService extends BaseService {
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
             
             // Log completion summary
-            logApi.info('Contest wallet balance update cycle completed', {
+            logApi.info(`\x1b[42mContest wallet balance update cycle completed${fancyColors.RESET}`, {
                 duration_ms: Date.now() - startTime,
                 total_wallets: results.total,
                 successful_updates: results.updated,
@@ -335,7 +348,7 @@ class ContestWalletService extends BaseService {
                 ...results
             };
         } catch (error) {
-            logApi.error('Failed to update wallet balances', {
+            logApi.error(`${fancyColors.RED}Failed to update wallet balances${fancyColors.RESET}`, {
                 error: error.message,
                 stack: error.stack
             });

@@ -15,6 +15,7 @@ import prisma from '../config/prisma.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import walletGenerationService from './walletGenerationService.js';
+import { fancyColors } from '../utils/colors.js';
 
 const LIQUIDITY_CONFIG = {
     name: SERVICE_NAMES.LIQUIDITY,
@@ -100,7 +101,7 @@ class LiquidityService extends BaseService {
             await this.connection.getRecentBlockhash();
             
             // Find the most recent active liquidity wallet
-            logApi.info('🔍 Checking for existing liquidity wallets...');
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.BLUE}🔍 Checking for existing liquidity wallets...${fancyColors.RESET}`);
             
             // Find all liquidity wallets
             const allLiquidityWallets = await prisma.seed_wallets.findMany({
@@ -117,7 +118,7 @@ class LiquidityService extends BaseService {
                 };
             });
             
-            logApi.info(`📊 WALLET INVENTORY: Found ${allLiquidityWallets.length} total liquidity wallets`, {
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.BLUE}📊 WALLET INVENTORY: Found ${allLiquidityWallets.length} total liquidity wallets${fancyColors.RESET}`, {
                 wallets: walletsInfo
             });
             
@@ -130,7 +131,7 @@ class LiquidityService extends BaseService {
                 orderBy: { created_at: 'desc' }
             });
             
-            logApi.info(`✅ Found ${existingWallets.length} active liquidity wallets${existingWallets.length > 0 ? 
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}✅ Found ${existingWallets.length} active liquidity wallets${fancyColors.RESET}${existingWallets.length > 0 ? 
                 ': ' + existingWallets[0].wallet_address : ''}`);
             
             const wallet = existingWallets[0]; // Take the most recent one
@@ -161,7 +162,7 @@ class LiquidityService extends BaseService {
                     }
                 );
                 
-                logApi.info('\t\tLiquidity Service initialized', {
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}Liquidity Service initialized${fancyColors.RESET}`, {
                     wallet: wallet.wallet_address,
                     balance: this.liquidityStats.wallets.balance_total
                 });
@@ -172,7 +173,7 @@ class LiquidityService extends BaseService {
             // No wallet found (or we need to create a new one)
             // Check if we can reactivate the most recent wallet instead of creating a new one
             if (allLiquidityWallets.length > 0) {
-                logApi.info('Reactivating most recent liquidity wallet instead of creating a new one');
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.ORANGE}Reactivating most recent liquidity wallet instead of creating a new one${fancyColors.RESET}`);
                 
                 // Take the most recent wallet (already ordered by created_at desc)
                 const mostRecentWallet = allLiquidityWallets[0];
@@ -188,7 +189,7 @@ class LiquidityService extends BaseService {
                 });
                 
                 // Record the activation in logs
-                logApi.info(`Activated wallet for liquidity: ${mostRecentWallet.wallet_address}`);
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}Activated wallet for liquidity:${fancyColors.RESET} ${fancyColors.BLUE}${mostRecentWallet.wallet_address}${fancyColors.RESET}`);
                 
                 
                 // Use this wallet
@@ -209,7 +210,7 @@ class LiquidityService extends BaseService {
                 };
                 
                 // Log success with detailed information
-                logApi.info(`🔄 REACTIVATED WALLET: Using existing wallet instead of creating new one`, {
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.ORANGE}REACTIVATED WALLET:${fancyColors.RESET} ${fancyColors.GREEN}Using existing wallet instead of creating new one${fancyColors.RESET}`, {
                     wallet: mostRecentWallet.wallet_address,
                     balance: balance / 1000000000,
                     created: new Date(mostRecentWallet.created_at).toLocaleString()
@@ -229,7 +230,7 @@ class LiquidityService extends BaseService {
             }
             
             // If no existing wallets at all, create a new one
-            logApi.info('No liquidity wallets found - creating a new one');
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.ORANGE}No liquidity wallets found.${fancyColors.RESET} ${fancyColors.GREEN}Creating a new one...${fancyColors.RESET}`);
             
             try {
                 // Generate a new wallet specifically for liquidity purposes
@@ -254,7 +255,7 @@ class LiquidityService extends BaseService {
                         metadata: {
                             created_by: 'liquidity_service_autorecovery',
                             created_at: new Date().toISOString(),
-                            description: 'Automatically created liquidity wallet'
+                            description: 'Name: ${walletIdentifier} (automatically created liquidity wallet)'
                         }
                     }
                 });
@@ -284,14 +285,14 @@ class LiquidityService extends BaseService {
                     }
                 );
                 
-                logApi.info('Created new liquidity wallet successfully', {
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}Created new liquidity wallet successfully${fancyColors.RESET}`, {
                     wallet: walletAddress
                 });
                 
                 return true;
             } catch (error) {
                 // If we fail to create a wallet, fall back to degraded mode
-                logApi.error('Failed to create liquidity wallet:', error);
+                logApi.error(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.RED}Failed to create liquidity wallet:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
                 
                 // Update ServiceManager state with degraded status
                 await serviceManager.markServiceStarted(
@@ -308,7 +309,7 @@ class LiquidityService extends BaseService {
                 return true;
             }
         } catch (error) {
-            logApi.error('Liquidity Service initialization error:', error);
+            logApi.error(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.RED}Liquidity Service initialization error:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
             throw error instanceof ServiceError ? error : ServiceError.initialization(error.message);
         }
     }
@@ -333,7 +334,7 @@ class LiquidityService extends BaseService {
             // Check if we have a wallet configured
             if (!this.wallet) {
                 // No wallet, operate in degraded mode
-                logApi.warn('Liquidity Service operating without an active wallet');
+                logApi.warn('${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.RED}Liquidity Service operating without an active wallet${fancyColors.RESET}');
                 
                 // Update ServiceManager state with degraded status
                 await serviceManager.updateServiceHeartbeat(
@@ -419,9 +420,9 @@ class LiquidityService extends BaseService {
                 }
             );
             
-            logApi.info('Liquidity Service stopped successfully');
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}Liquidity Service stopped successfully${fancyColors.RESET}`);
         } catch (error) {
-            logApi.error('Error stopping Liquidity Service:', error);
+            logApi.error(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.RED}Error stopping Liquidity Service:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
             throw error;
         }
     }

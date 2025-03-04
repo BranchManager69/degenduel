@@ -25,6 +25,7 @@ import setupSwagger from "./config/swagger.js";
 import maintenanceCheck from "./middleware/maintenanceMiddleware.js";
 import { errorHandler } from "./utils/errorHandler.js";
 import { logApi } from "./utils/logger-suite/logger.js";
+import { fancyColors } from './utils/colors.js';
 import InitLogger from './utils/logger-suite/init-logger.js';
 import AdminLogger from './utils/admin-logger.js';
 import { memoryMonitoring } from "./scripts/monitor-memory.js";
@@ -485,7 +486,7 @@ async function initializeServer() {
             // Initialize all WebSocket servers with a single call to the dedicated initializer
             await WebSocketInitializer.initializeWebSockets(server, initResults);
             // Initialize Services Layer (Moved outside WebSocket try-catch)
-            logApi.info('\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+            logApi.info('\n\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
             // (Solana Service Manager is now initialized through the service system)
             logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ 🔄 Note: Solana Service now initialized via service system...\x1b[0m');
 
@@ -540,19 +541,19 @@ async function initializeServer() {
                 logApi.info(`🚀 Services initialization: ${successCount} succeeded, ${failedCount} failed`);
                 
                 if (VERBOSE_SERVICE_INIT_LOGS) {
-                    logApi.info('Service initialization details:', {
+                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BLUE}Service initialization details:${fancyColors.RESET}`, {
                         initialized: initResults.Services.initialized,
                         failed: initResults.Services.failed
                     });
                 } else if (failedCount > 0) {
                     // Always show failed services even in non-verbose mode
-                    logApi.warn('Failed services:', initResults.Services.failed);
+                    logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Failed services:${fancyColors.RESET} ${fancyColors.RED}${initResults.Services.failed}${fancyColors.RESET}`);
                 }
 
             } catch (error) {
-                logApi.error('🚫 Service initialization failed:', error.message);
+                logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Service initialization failed:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
                 if (VERBOSE_SERVICE_INIT_LOGS) {
-                    logApi.error('Detailed error information:', {
+                    logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Detailed error information:${fancyColors.RESET}`, {
                         error: error.message,
                         stack: error.stack,
                         phase: 'service_initialization'
@@ -566,9 +567,9 @@ async function initializeServer() {
             }
 
         } catch (error) {
-            logApi.error('\x1b[38;5;196m┃           ✗ WebSocket initialization failed:', error.message, '\x1b[0m');
+            logApi.error(`${fancyColors.MAGENTA}[WEBSOCKET INIT]${fancyColors.RESET} ${fancyColors.RED}WebSocket initialization failed:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
             if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.error('WebSocket error details:', error);
+                logApi.error(`${fancyColors.MAGENTA}[WEBSOCKET INIT]${fancyColors.RESET} ${fancyColors.RED}WebSocket error details:${fancyColors.RESET}`, error);
             }
             initResults.WebSocket = { success: false, error: error.message };
             throw error;
@@ -582,7 +583,7 @@ async function initializeServer() {
         logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━ Error: ' + error.message + '\x1b[0m');
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.error('Full error details:', error);
+            logApi.error(`${fancyColors.MAGENTA}[SERVER INIT]${fancyColors.RESET} ${fancyColors.RED}Full error details:${fancyColors.RESET}`, error);
         }
         
         logApi.error('\n');
@@ -652,7 +653,7 @@ process.on("unhandledRejection", (reason, promise) => {
 initializeServer().then(() => {
     // Start listening after successful initialization
     server.listen(port, async () => {
-        logApi.info(`Server listening on port ${port}`);
+        logApi.info(`${fancyColors.MAGENTA}[SERVER]${fancyColors.RESET} ${fancyColors.GREEN}Server listening on port ${port}${fancyColors.RESET}`);
         
         // Only show animation if enabled
         if (SHOW_STARTUP_ANIMATION) {
@@ -691,13 +692,13 @@ initializeServer().then(() => {
                 await displayStartupAnimation(port, {}, true);
             }
         } else {
-            logApi.info(`🚀 DegenDuel API Server ready on port ${port}`);
+            logApi.info(`${fancyColors.MAGENTA}[SERVER]${fancyColors.RESET} ${fancyColors.GREEN}DegenDuel API Server ready on port ${port}${fancyColors.RESET}`);
         }
     });
 }).catch(error => {
-    logApi.error('Failed to initialize server:', error.message);
+    logApi.error(`${fancyColors.MAGENTA}[SERVER]${fancyColors.RESET} ${fancyColors.RED}Failed to initialize server:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
     if (VERBOSE_SERVICE_INIT_LOGS) {
-        logApi.error('Error details:', error);
+        logApi.error(`${fancyColors.MAGENTA}[SERVER]${fancyColors.RESET} ${fancyColors.RED}Error details:${fancyColors.RESET}`, error);
     }
     process.exit(1);
 });

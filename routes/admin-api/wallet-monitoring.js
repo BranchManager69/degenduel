@@ -10,6 +10,7 @@ import userBalanceTrackingService from '../../services/userBalanceTrackingServic
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
+import { fancyColors } from '../../utils/colors.js';
 
 const router = express.Router();
 
