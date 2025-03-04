@@ -12,6 +12,13 @@ class TokenDataWebSocket extends BaseWebSocketServer {
         logApi.info('Token Data WebSocket initialized');
     }
 
+    // Add initialize method to support the WebSocket initialization process
+    async initialize() {
+        // Any specific initialization logic for token data WebSocket
+        logApi.info('Token Data WebSocket server initialized');
+        return true;
+    }
+
     async handleClientMessage(ws, message, clientInfo) {
         try {
             // Just log what we get for now

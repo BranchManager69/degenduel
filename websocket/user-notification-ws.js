@@ -57,6 +57,13 @@ class UserNotificationWebSocketServer extends BaseWebSocketServer {
         
         logApi.info('User Notification WebSocket Server initialized');
     }
+
+    // Add initialize method to support the WebSocket initialization process
+    async initialize() {
+        // Any specific initialization logic for user notification WebSocket
+        logApi.info('User Notification WebSocket server initialized');
+        return true;
+    }
     
     /**
      * Start polling for undelivered messages

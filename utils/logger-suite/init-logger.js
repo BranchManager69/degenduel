@@ -1,12 +1,12 @@
 import { logApi } from './logger.js';
-
+import { fancyColors } from '../colors.js';
 class InitLogger {
     static services = new Map();
     static startTime = null;
 
     static startInitialization() {
         this.startTime = Date.now();
-        logApi.info('\n=== DegenDuel Initialization Starting ===\n');
+        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}DegenDuel Initialization Starting${fancyColors.RESET} \n`);
     }
 
     static logInit(category, service, status, details = null) {
