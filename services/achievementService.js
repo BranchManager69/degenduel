@@ -16,6 +16,7 @@ import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
@@ -104,7 +105,7 @@ class AchievementService extends BaseService {
             // Soft check for contest evaluation service - no longer a hard dependency
             const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             if (!contestEvalStatus) {
-                logApi.warn('Contest Evaluation Service not healthy, but continuing initialization');
+                logApi.warn(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Contest Evaluation Service not healthy, but continuing initialization${fancyColors.RESET}`);
             }
 
             // Load configuration from database
@@ -176,7 +177,7 @@ class AchievementService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('Achievement Service initialized', {
+            logApi.info(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.GREEN}Achievement Service initialized${fancyColors.RESET}`, {
                 totalAchievements,
                 activeAchievements,
                 awardedCount,
@@ -185,7 +186,7 @@ class AchievementService extends BaseService {
 
             return true;
         } catch (error) {
-            logApi.error('☠️ Achievement Service initialization error:', error);
+            logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Achievement Service initialization error:${fancyColors.RESET}`, error);
             await this.handleError(error);
             throw error;
         }
@@ -204,7 +205,7 @@ class AchievementService extends BaseService {
             };
 
             if (!contestEvalStatus) {
-                logApi.warn('Contest Evaluation Service unhealthy, operating in limited mode');
+                logApi.warn(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Contest Evaluation Service unhealthy, operating in limited mode${fancyColors.RESET}`);
                 // Continue operation instead of throwing error
             }
 
@@ -304,7 +305,7 @@ class AchievementService extends BaseService {
 
                 } catch (error) {
                     results.failed++;
-                    logApi.error(`Failed to process achievements for user ${user.id}:`, error);
+                    logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Failed to process achievements for user ${user.id}:${fancyColors.RESET}`, error);
                 }
             }
 
@@ -346,7 +347,7 @@ class AchievementService extends BaseService {
                     results.by_category[category.id] = awarded;
                 } catch (error) {
                     results.failed++;
-                    logApi.error(`Failed to check category ${category.id} for user ${user.id}:`, error);
+                    logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Failed to check category ${category.id} for user ${user.id}:${fancyColors.RESET}`, error);
                 }
             }
 
@@ -445,7 +446,7 @@ class AchievementService extends BaseService {
                         (this.achievementStats.achievements.by_tier[tier.name] || 0) + 1;
 
                 } catch (error) {
-                    logApi.error(`Failed to award achievement:`, {
+                    logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Failed to award achievement:${fancyColors.RESET}`, {
                         wallet_address: user.wallet_address,
                         category: category.name,
                         tier: tier.name,
@@ -466,7 +467,7 @@ class AchievementService extends BaseService {
                 const met = await this.checkRequirement(user, requirement);
                 if (!met) return false;
             } catch (error) {
-                logApi.error(`Failed to check requirement:`, {
+                logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Failed to check requirement:${fancyColors.RESET}`, {
                     wallet_address: user.wallet_address,
                     requirement_id: requirement.id,
                     error: error.message
@@ -559,12 +560,12 @@ class AchievementService extends BaseService {
                     return achievementCount >= requirement.value;
 
                 default:
-                    logApi.warn('Unknown achievement requirement type:', requirement.type);
-                    logApi.warn('\tRequirement:', requirement);
+                    logApi.warn(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Unknown achievement requirement type:${fancyColors.RESET}`, requirement.type);
+                    logApi.warn(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Requirement:${fancyColors.RESET}`, requirement);
                     return false;
             }
         } catch (error) {
-            logApi.error('Achievement requirement check failed:', {
+            logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Achievement requirement check failed:${fancyColors.RESET}`, {
                 user_id: user.wallet_address,
                 requirement: requirement,
                 error: error.message
@@ -602,9 +603,9 @@ class AchievementService extends BaseService {
                 }
             );
             
-            logApi.info('Achievement Service stopped successfully');
+            logApi.info(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.GREEN}Achievement Service stopped successfully${fancyColors.RESET}`);
         } catch (error) {
-            logApi.error('Error stopping Achievement Service:', error);
+            logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Error stopping Achievement Service:${fancyColors.RESET}`, error);
             throw error;
         }
     }

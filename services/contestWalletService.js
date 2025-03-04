@@ -142,7 +142,7 @@ class ContestWalletService extends BaseService {
             });
 
             this.walletStats.wallets.generated++;
-            logApi.info(`[contestWalletService] ${fancyColors.GREEN}Created contest wallet with generated keypair${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.GREEN}Created contest wallet with generated keypair${fancyColors.RESET}`, {
                 contest_id: contestId
             });
 
@@ -198,7 +198,7 @@ class ContestWalletService extends BaseService {
             const lamports = await this.connection.getBalance(publicKey);
             const solBalance = lamports / LAMPORTS_PER_SOL;
             
-            logApi.info(`[contestWalletService] ${fancyColors.BLUE}Updating balance for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Updating balance for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
                 contest_id: wallet.contests?.id,
                 contest_code: wallet.contests?.contest_code,
                 balance: solBalance
@@ -213,7 +213,7 @@ class ContestWalletService extends BaseService {
                 }
             });
 
-            logApi.info(`[contestWalletService] ${fancyColors.GREEN}Updated balance for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Updated balance for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
                 contest_id: wallet.contests?.id,
                 contest_code: wallet.contests?.contest_code,
                 balance: solBalance
@@ -245,7 +245,7 @@ class ContestWalletService extends BaseService {
             this.walletStats.errors.balance_update_failures++;
             this.walletStats.errors.last_error = error.message;
             
-            logApi.error('Failed to update wallet balance', {
+            logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to update wallet balance${fancyColors.RESET}`, {
                 wallet_address: wallet.wallet_address,
                 error: error.message,
                 stack: error.stack
@@ -321,7 +321,7 @@ class ContestWalletService extends BaseService {
                     }
                 } catch (error) {
                     results.failed++;
-                    logApi.error('Error updating individual wallet balance', {
+                    logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Error updating individual wallet balance${fancyColors.RESET}`, {
                         wallet_address: wallet.wallet_address,
                         contest_id: wallet.contests?.id,
                         contest_code: wallet.contests?.contest_code,
@@ -334,7 +334,7 @@ class ContestWalletService extends BaseService {
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
             
             // Log completion summary
-            logApi.info(`\x1b[42mContest wallet balance update cycle completed${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \x1b[42mContest wallet balance update cycle completed${fancyColors.RESET}`, {
                 duration_ms: Date.now() - startTime,
                 total_wallets: results.total,
                 successful_updates: results.updated,
@@ -348,7 +348,7 @@ class ContestWalletService extends BaseService {
                 ...results
             };
         } catch (error) {
-            logApi.error(`${fancyColors.RED}Failed to update wallet balances${fancyColors.RESET}`, {
+            logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \x1b[41mFailed to update wallet balances${fancyColors.RESET}`, {
                 error: error.message,
                 stack: error.stack
             });
@@ -380,6 +380,7 @@ class ContestWalletService extends BaseService {
                 issues: []
             };
 
+            // Check each wallet's state
             for (const wallet of contestWallets) {
                 try {
                     if (wallet.contests?.status === 'active') {
