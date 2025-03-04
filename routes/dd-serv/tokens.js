@@ -452,31 +452,35 @@ router.get('/tokens/list', async (req, res) => {
  */
 router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
     const { tokenAddress } = req.params;
-    let cachedPrices = []; // Define at the top level so it's available in the catch block
+    let currentPrice = null;
     
     try {
-        // First try to get from cache/database
-        cachedPrices = await prisma.token_prices.findMany({
-            where: { 
-                token_address: tokenAddress,
-                timestamp: {
-                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24h
-                }
-            },
-            orderBy: { timestamp: 'desc' }
+        // First try to get the current price from the database
+        const token = await prisma.tokens.findUnique({
+            where: { address: tokenAddress },
+            select: { 
+                id: true,
+                token_prices: true
+            }
         });
-
-        // If we have recent cached data, use it
-        if (cachedPrices.length > 0 && 
-            Date.now() - new Date(cachedPrices[0].timestamp).getTime() < 5 * 60 * 1000) { // Less than 5 min old
-            return res.json({
-                success: true,
-                data: cachedPrices,
-                source: 'cache'
+        
+        if (!token) {
+            return res.status(404).json({
+                success: false,
+                error: 'Token not found'
             });
         }
+        
+        // Get current price if available
+        if (token.token_prices) {
+            currentPrice = {
+                token_address: tokenAddress,
+                price: token.token_prices.price,
+                timestamp: token.token_prices.updated_at
+            };
+        }
 
-        // Try DD-serve with timeout
+        // Try DD-serve with timeout for historical data
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
@@ -494,15 +498,24 @@ router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
 
         const priceHistory = await response.json();
 
-        // Cache the new data
+        // Update the current price in the database if we got new data
         if (priceHistory.data?.length > 0) {
-            await prisma.token_prices.createMany({
-                data: priceHistory.data.map(p => ({
-                    token_address: tokenAddress,
-                    price: p.price,
-                    timestamp: new Date(p.timestamp)
-                })),
-                skipDuplicates: true
+            const latestPrice = priceHistory.data[0];
+            
+            // Update the token_prices record (upsert since there's only one record per token)
+            await prisma.token_prices.upsert({
+                where: { 
+                    token_id: token.id 
+                },
+                update: {
+                    price: latestPrice.price,
+                    updated_at: new Date(latestPrice.timestamp)
+                },
+                create: {
+                    token_id: token.id,
+                    price: latestPrice.price,
+                    updated_at: new Date(latestPrice.timestamp)
+                }
             });
         }
 
@@ -512,11 +525,11 @@ router.get('/tokens/:tokenAddress/price-history', async (req, res) => {
             source: 'dd-serve'
         });
     } catch (err) {
-        // If DD-serve failed, return cached data with warning
-        if (cachedPrices?.length > 0) {
+        // If DD-serve failed, return current price with warning if available
+        if (currentPrice) {
             return res.json({
                 success: true,
-                data: cachedPrices,
+                data: [currentPrice],
                 source: 'cache',
                 warning: 'Using cached data due to DD-serve error'
             });
@@ -560,6 +573,38 @@ router.post('/tokens/bulk-price-history', async (req, res) => {
     }
 
     try {
+        // First get current prices from database for all tokens
+        const tokens = await prisma.tokens.findMany({
+            where: {
+                address: {
+                    in: addresses
+                }
+            },
+            select: {
+                id: true,
+                address: true,
+                token_prices: true
+            }
+        });
+        
+        // Create a map of address to current price
+        const currentPrices = {};
+        tokens.forEach(token => {
+            if (token.token_prices) {
+                currentPrices[token.address] = {
+                    token_address: token.address,
+                    price: token.token_prices.price,
+                    timestamp: token.token_prices.updated_at
+                };
+            }
+        });
+        
+        // Create a map of address to token_id for updating prices later
+        const tokenIdMap = {};
+        tokens.forEach(token => {
+            tokenIdMap[token.address] = token.id;
+        });
+
         // Fetch price histories in parallel
         const priceHistories = await Promise.all(
             addresses.map(async (address) => {
@@ -570,18 +615,57 @@ router.post('/tokens/bulk-price-history', async (req, res) => {
                         'bulk_price_history'
                     );
                     const data = await response.json();
+                    
+                    // Update current price in database if we have new data
+                    if (data.data?.length > 0 && tokenIdMap[address]) {
+                        const latestPrice = data.data[0];
+                        
+                        // Update the token_prices record
+                        await prisma.token_prices.upsert({
+                            where: { 
+                                token_id: tokenIdMap[address]
+                            },
+                            update: {
+                                price: latestPrice.price,
+                                updated_at: new Date(latestPrice.timestamp)
+                            },
+                            create: {
+                                token_id: tokenIdMap[address],
+                                price: latestPrice.price,
+                                updated_at: new Date(latestPrice.timestamp)
+                            }
+                        });
+                    }
+                    
                     return { [address]: data };
                 } catch (err) {
+                    // If external service fails, use current price from database if available
+                    if (currentPrices[address]) {
+                        return { 
+                            [address]: {
+                                success: true,
+                                data: [currentPrices[address]],
+                                source: 'cache',
+                                warning: 'Using cached data due to DD-serve error'
+                            }
+                        };
+                    }
+                    
                     return { [address]: { error: err.message } };
                 }
             })
         );
 
-        // Combine all results into a single object
-        const result = Object.assign({}, ...priceHistories);
+        // Combine results
+        const result = {};
+        priceHistories.forEach(history => {
+            Object.assign(result, history);
+        });
+
         res.json(result);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logApi.error('Bulk price history error:', err);
+        res.status(500).json({ error: 'Failed to fetch bulk price history' });
     }
 });
 

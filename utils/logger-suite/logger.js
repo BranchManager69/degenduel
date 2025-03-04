@@ -15,6 +15,7 @@ import winston from "winston";
 import "winston-daily-rotate-file";
 import { Socket } from 'net';
 import { Stream } from 'stream';
+import { fancyColors } from '../colors.js';
 
 // Helper function to handle circular references in objects
 const getCircularReplacer = () => {
@@ -349,7 +350,7 @@ function formatPerformanceStats(metrics) {
   const { total_requests, avg_response_time, max_response_time, routes } = metrics;
   
   // Format the header
-  const header = `📊 API Performance | Total: ${total_requests} | Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms`;
+  const header = `${fancyColors.YELLOW}📊 API Performance ${fancyColors.RESET}| Total: ${total_requests} | Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms${fancyColors.RESET}`;
   
   // Format routes if they exist
   if (!routes || Object.keys(routes).length === 0) {
