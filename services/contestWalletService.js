@@ -25,7 +25,7 @@ import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/servic
 const CONTEST_WALLET_CONFIG = {
     name: SERVICE_NAMES.CONTEST_WALLET,
     description: getServiceMetadata(SERVICE_NAMES.CONTEST_WALLET).description,
-    checkIntervalMs: 60 * 1000, // Check every minute
+    checkIntervalMs: 1 * 60 * 1000, // Check every 1 minute
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -51,6 +51,7 @@ class ContestWalletService extends BaseService {
         super(CONTEST_WALLET_CONFIG);
         
         // Initialize Solana connection
+        // TODO: Shouldn't this use our existing Solana service?
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         
         // Service-specific state
@@ -287,14 +288,30 @@ class ContestWalletService extends BaseService {
                         // Only add significant balance changes to the results
                         if (Math.abs(updateResult.difference) > 0.0001) {
                             results.updates.push(updateResult);
+                            logApi.info(`${fancyColors.ORANGE}${fancyColors.BOLD}Significant balance change${fancyColors.RESET} ${fancyColors.ORANGE}detected for contest wallet${fancyColors.RESET} ${fancyColors.BLUE}${wallet.wallet_address}${fancyColors.RESET}`, {
+                                contest_id: wallet.contests?.id,
+                                contest_code: wallet.contests?.contest_code,
+                                wallet_address: wallet.wallet_address,
+                                previous_balance: updateResult.previous_balance,
+                                current_balance: updateResult.current_balance,
+                                difference: updateResult.difference
+                            });
                         }
                     } else {
                         results.failed++;
+                        logApi.warn(`Failed to update contest wallet balance`, {
+                            contest_id: wallet.contests?.id,
+                            contest_code: wallet.contests?.contest_code,
+                            wallet_address: wallet.wallet_address,
+                            error: updateResult.error
+                        });
                     }
                 } catch (error) {
                     results.failed++;
                     logApi.error('Error updating individual wallet balance', {
                         wallet_address: wallet.wallet_address,
+                        contest_id: wallet.contests?.id,
+                        contest_code: wallet.contests?.contest_code,
                         error: error.message
                     });
                 }
@@ -302,6 +319,16 @@ class ContestWalletService extends BaseService {
             
             // Update overall performance stats
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
+            
+            // Log completion summary
+            logApi.info('Contest wallet balance update cycle completed', {
+                duration_ms: Date.now() - startTime,
+                total_wallets: results.total,
+                successful_updates: results.updated,
+                failed_updates: results.failed,
+                active_contests: results.active_contests,
+                significant_changes: results.updates.length
+            });
             
             return {
                 duration: Date.now() - startTime,

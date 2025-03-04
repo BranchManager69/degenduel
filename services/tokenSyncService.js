@@ -24,6 +24,7 @@ import { PublicKey } from '@solana/web3.js';
 import axios from 'axios';
 import { Decimal } from '@prisma/client/runtime/library';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import { fancyColors } from '../utils/colors.js';
 
 const TOKEN_SYNC_CONFIG = {
     name: SERVICE_NAMES.TOKEN_SYNC,
@@ -369,26 +370,30 @@ class TokenSyncService extends BaseService {
             logApi.warn('Price API endpoint not configured, using fallback data');
             return [];
         }
-        
-        logApi.info(`Attempting to fetch prices from: ${pricesEndpoint}`);
-        
+
         // Get bulk token data from DD-serve
+        logApi.info(`${fancyColors.BLUE}Attempting to fetch prices from:${fancyColors.RESET} ${fancyColors.GREEN}${pricesEndpoint}${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.BLUE}Fetching prices from:${fancyColors.RESET} ${fancyColors.GREEN}${pricesEndpoint}${fancyColors.RESET}`);
+        logApi.info(`\t${fancyColors.BLUE}Addresses:${fancyColors.RESET} ${fancyColors.WHITE}${addresses}${fancyColors.RESET}`);
         try {
+            // Make the API call
             const data = await this.makeApiCall(pricesEndpoint, {
                 method: 'POST',
                 data: { addresses }
             });
             
+            // Validate the response format
             if (!data || !data.data || !Array.isArray(data.data)) {
                 logApi.warn('Invalid price data format received');
                 return [];
             }
             
+            // Log the response
             logApi.info(`Received price data for ${data.data.length} tokens`);
             return data.data;
         } catch (error) {
             // Handle 404 error by using fallback mock data
-            logApi.warn(`Price API unavailable, using fallback data: ${error.message}`);
+            logApi.warn(`[tokenSyncService] ${fancyColors.RED}Price API unavailable!${fancyColors.RESET} \n\t${fancyColors.RED}Trying fallback data...${fancyColors.RESET} \n\t${fancyColors.ORANGE}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
             // Return empty array for now to prevent initialization failure
             return [];
         }
@@ -415,10 +420,11 @@ class TokenSyncService extends BaseService {
                     });
                 }
                 
-                logApi.info(`Received token data with ${result.data.length} tokens`);
+                // Log the response
+                logApi.info(`[tokenSyncService] ${fancyColors.GREEN}Received token data with ${result.data.length} tokens.${fancyColors.RESET}`);
                 return result.data;
             } catch (error) {
-                logApi.warn(`Error fetching token data from primary source: ${error.message}`);
+                logApi.error(`[tokenSyncService] ${fancyColors.RED}Error fetching token data from primary source:${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
                 // Continue to fallbacks
             }
         }
@@ -437,10 +443,10 @@ class TokenSyncService extends BaseService {
                     return fallbackResult.data;
                 }
             } catch (fallbackError) {
-                logApi.warn(`Fallback endpoint also failed: ${fallbackError.message}`);
+                logApi.warn(`${fancyColors.RED}Fallback endpoint also failed:${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}${fallbackError.message}${fancyColors.RESET}`);
             }
         } else {
-            logApi.warn('No valid fallback endpoint configured, skipping fallback attempt');
+            logApi.warn(`[tokenSyncService] ${fancyColors.RED}No valid fallback endpoint configured.${fancyColors.RESET} \n${fancyColors.ORANGE}Skipping fallback attempt.${fancyColors.RESET}`);
         }
             
         // If fallback also fails, try to use database

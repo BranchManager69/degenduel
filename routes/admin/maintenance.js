@@ -5,6 +5,8 @@ import prisma from "../../config/prisma.js";
 import { requireAdmin, requireAuth } from "../../middleware/auth.js";
 import { logApi } from "../../utils/logger-suite/logger.js";
 
+const VERBOSE_MAINTENANCE = false;
+
 const router = express.Router();
 
 /**
@@ -45,7 +47,9 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
   const startTime = Date.now();
   const adminName = req.user.nickname || req.user.username || 'Admin';
 
-  logApi.info(`🔧 Maintenance check by ${adminName}`);
+  if (VERBOSE_MAINTENANCE) {
+    logApi.info(`🔧 ${fancyColors.BLUE}Maintenance Mode check by admin${fancyColors.RESET} \n\t${fancyColors.BLUE}${fancyColors.BOLD}${adminName}${fancyColors.RESET}`);
+  }
 
   try {
     const setting = await prisma.system_settings.findUnique({
@@ -62,7 +66,9 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    logApi.info(`✅ Maintenance status fetched (${Date.now() - startTime}ms)`);
+    if (VERBOSE_MAINTENANCE) {
+      logApi.info(`✅ \t${fancyColors.GREEN}Maintenance status fetched by${fancyColors.RESET} ${fancyColors.BLUE}${fancyColors.BOLD}${adminName}${fancyColors.RESET} \n\t${fancyColors.BLUE}${Date.now() - startTime}ms${fancyColors.RESET}`);
+    }
 
     return res.json(setting.value);
   } catch (error) {

@@ -188,7 +188,7 @@ export class BaseService {
                 // Ensure we have a valid delay value
                 const validDelay = Math.max(1000, nextAttemptDelay || 5000);
                 
-                logApi.info(`${this.name} circuit breaker recovery scheduled in ${validDelay}ms`);
+                logApi.info(`\x1b[45m${this.name} circuit breaker recovery scheduled in ${validDelay}ms\x1b[0m`);
                 
                 // Schedule next recovery attempt
                 if (this.recoveryTimeout) clearTimeout(this.recoveryTimeout);
@@ -200,7 +200,7 @@ export class BaseService {
             }
 
             // Perform health check
-            logApi.info(`${this.name} attempting circuit breaker recovery`);
+            logApi.info(`\x1b[43m${this.name} attempting circuit breaker recovery\x1b[0m`);
             
             // Temporarily disable circuit breaker for health check
             const tempOpen = this.stats.circuitBreaker.isOpen;
@@ -216,12 +216,12 @@ export class BaseService {
             if (this.stats.circuitBreaker.failures < this.config.circuitBreaker.failureThreshold) {
                 this.stats.circuitBreaker.isOpen = false;
                 this.stats.circuitBreaker.lastReset = new Date().toISOString();
-                logApi.info(`${this.name} circuit breaker reset successful`, {
+                logApi.info(`\x1b[42m${this.name} circuit breaker reset successful\x1b[0m`, {
                     newFailureCount: this.stats.circuitBreaker.failures
                 });
             } else {
                 this.stats.circuitBreaker.isOpen = tempOpen;
-                logApi.warn(`${this.name} circuit breaker recovery failed - maintaining open state`, {
+                logApi.warn(`\x1b[41m${this.name} circuit breaker recovery failed - maintaining open state\x1b[0m`, {
                     failures: this.stats.circuitBreaker.failures,
                     threshold: this.config.circuitBreaker.failureThreshold
                 });
@@ -236,7 +236,7 @@ export class BaseService {
             });
 
         } catch (error) {
-            logApi.error(`${this.name} circuit breaker recovery failed:`, error);
+            logApi.error(`\x1b[41m${this.name} circuit breaker recovery failed:${error}\x1b[0m`);
             this.stats.circuitBreaker.failures++;
             this.stats.circuitBreaker.lastFailure = new Date().toISOString();
             this.stats.circuitBreaker.recoveryAttempts++;

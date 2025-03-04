@@ -48,6 +48,28 @@ class LevelingService extends BaseService {
      */
     async awardXP(wallet_address, amount, source) {
         try {
+            // Validate XP amount
+            if (!amount || amount <= 0) {
+                logApi.warn('Invalid XP amount provided:', {
+                    wallet_address,
+                    amount,
+                    source,
+                    message: 'XP amount must be a positive number'
+                });
+                return null;
+            }
+
+            // For contest wins, validate rank
+            if (source?.type === 'CONTEST_WIN' && (!source.rank || source.rank > 3 || source.rank < 1)) {
+                logApi.warn('Invalid contest rank for XP award:', {
+                    wallet_address,
+                    amount,
+                    source,
+                    message: 'Contest win XP requires valid rank (1-3)'
+                });
+                return null;
+            }
+
             // Start transaction
             const result = await prisma.$transaction(async (tx) => {
                 // Get user with their current level

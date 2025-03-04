@@ -431,6 +431,25 @@ class UserBalanceTrackingService extends BaseService {
         this.trackingStats.users.trackedUsers.clear();
         logApi.info('User Balance Tracking Service stopped');
     }
+
+    /**
+     * Get detailed service status for monitoring
+     */
+    getServiceStatus() {
+        // TODO: Implement this
+        // const baseStatus = super.getServiceStatus();
+
+        // Instead, return our own status
+        return {
+            isRunning: this.isStarted,
+            status: this.isStarted ? 'running' : 'stopped',
+            metrics: {
+                ...this.stats,
+                trackingStats: this.trackingStats,
+                serviceStartTime: this.stats.history.lastStarted
+            }
+        };
+    }
 }
 
 // Verify Prisma schema is properly set up for wallet balance tracking

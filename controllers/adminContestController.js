@@ -139,7 +139,7 @@ async function updateContestState(req, res) {
                     });
                 }
                 updateData.status = 'active';
-                updateData.started_at = new Date();
+                updateData.start_time = new Date();
                 break;
 
             case 'END':

@@ -263,7 +263,7 @@ class TokenDataSocket {
                 };
             });
         } catch (error) {
-            logger.error('Error fetching token data:', error);
+            logger.error('[tokenDataSocket 🔌] Error fetching token data:', error);
             throw error;
         }
     }

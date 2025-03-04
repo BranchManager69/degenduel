@@ -2531,8 +2531,8 @@ router.get('/participations/:wallet', async (req, res) => {
       participations: participations.map(p => ({
         ...p,
         // Convert Decimal fields to strings for JSON serialization
-        initial_balance: p.initial_balance.toString(),
-        current_balance: p.current_balance.toString(),
+        initial_balance: p.initial_dxd_points.toString(),
+        current_balance: p.current_dxd_points.toString(),
         // Rename the contests field to contest for clearer naming
         contest: {
           ...p.contests,
@@ -2814,8 +2814,8 @@ router.get('/user-participations', async (req, res) => {
       participations: participations.map(p => ({
         ...p,
         // Convert Decimal fields to strings for JSON serialization
-        initial_balance: p.initial_balance.toString(),
-        current_balance: p.current_balance.toString(),
+        initial_balance: p.initial_dxd_points.toString(),
+        current_balance: p.current_dxd_points.toString(),
         // Rename the contests field to contest for clearer naming
         contest: {
           ...p.contests,
