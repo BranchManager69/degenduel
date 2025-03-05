@@ -101,7 +101,7 @@ class LiquidityService extends BaseService {
             await this.connection.getRecentBlockhash();
             
             // Find the most recent active liquidity wallet
-            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.BLUE}🔍 Checking for existing liquidity wallets...${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.CYAN} 🔍 ${fancyColors.DARK_BLUE}Checking for existing liquidity wallets...${fancyColors.RESET}`);
             
             // Find all liquidity wallets
             const allLiquidityWallets = await prisma.seed_wallets.findMany({
@@ -118,7 +118,7 @@ class LiquidityService extends BaseService {
                 };
             });
             
-            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_DARK_CYAN} 📊 ${fancyColors.LIGHT_CYAN} WALLET INVENTORY ${fancyColors.RESET}${fancyColors.LIGHT_CYAN}${fancyColors.BOLD_BLUE} ${fancyColors.BG_LIGHT_CYAN}${allLiquidityWallets.length}${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} total liquidity wallets${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_DARK_CYAN} 📊 ${fancyColors.LIGHT_CYAN} WALLET INVENTORY ${fancyColors.RESET}${fancyColors.LIGHT_CYAN}${fancyColors.BOLD_BLUE}${fancyColors.BG_YELLOW}${allLiquidityWallets.length}${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} total liquidity wallets${fancyColors.RESET}`, {
             //    wallets: walletsInfo
             });
             
@@ -131,7 +131,7 @@ class LiquidityService extends BaseService {
                 orderBy: { created_at: 'desc' }
             });
             
-            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}✅ Found ${existingWallets.length} active liquidity wallets${fancyColors.RESET}${existingWallets.length > 0 ? 
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} ✅ ${fancyColors.BOLD_GREEN}Found ${existingWallets.length} active liquidity wallet(s)${fancyColors.RESET}${existingWallets.length > 0 ? 
                 `\n\t\t${fancyColors.HIGHLIGHT_CYAN}${existingWallets[0].wallet_address}${fancyColors.RESET}` : ''}`);
             
             const wallet = existingWallets[0]; // Take the most recent one

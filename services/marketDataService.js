@@ -133,7 +133,7 @@ class MarketDataService extends BaseService {
             this.requestCount = 0;
 
             // Check for initial data but don't fail if not present
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}${fancyColors.BOLD} Checking for initial token data... ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.BOLD} Checking for initial token data... ${fancyColors.RESET}`);
             const [activeTokens, tokensWithPrices] = await Promise.all([
                 prisma.tokens.count({ where: { is_active: true } }),
                 prisma.token_prices.count()
