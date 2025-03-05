@@ -36,7 +36,7 @@ const VERBOSE_CONTEST_EVALUATION_INIT = false;
 const CONTEST_EVALUATION_CONFIG = {
     name: SERVICE_NAMES.CONTEST_EVALUATION,
     description: getServiceMetadata(SERVICE_NAMES.CONTEST_EVALUATION).description,
-    checkIntervalMs: 30 * 1000, // Check every 30 seconds for better timing precision
+    checkIntervalMs: 30 * 1000, // Check every 30 seconds for contests to evaluate
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -59,7 +59,7 @@ const CONTEST_EVALUATION_CONFIG = {
     },
     // Auto-cancel window for contests with insufficient participants
     // Time to wait before auto-cancelling contests that don't meet minimum participant requirements
-    autoCancelWindow: (0 * 24 * 60 * 60 * 1000) + (0 * 60 * 60 * 1000) + (1 * 60 * 1000) + (29 * 1000), // 0 days, 0 hours, 1 minutes, and 29 seconds
+    autoCancelWindow: (0 * 24 * 60 * 60 * 1000) + (0 * 60 * 60 * 1000) + (0 * 60 * 1000) + (59 * 1000), // 0 days, 0 hours, 0 minutes, and 59 seconds
     states: {
         PENDING: 'pending',
         ACTIVE: 'active',
@@ -77,7 +77,7 @@ class ContestEvaluationService extends BaseService {
     constructor() {
         // Add logging before super call
         if (VERBOSE_CONTEST_EVALUATION_INIT) {
-            logApi.info('Initializing Contest Evaluation Service with config:', {
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Initializing Contest Evaluation Service with config:${fancyColors.RESET}`, {
                 name: SERVICE_NAMES.CONTEST_EVALUATION,
                 config: CONTEST_EVALUATION_CONFIG
             });
@@ -88,7 +88,7 @@ class ContestEvaluationService extends BaseService {
         
         // Add logging after super call
         if (VERBOSE_CONTEST_EVALUATION_INIT) {
-            logApi.info('Contest Evaluation Service base initialization complete:', {
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest Evaluation Service base initialization complete:${fancyColors.RESET}`, {
                 name: this.name,
                 config: this.config
             });
@@ -97,6 +97,9 @@ class ContestEvaluationService extends BaseService {
         // Initialize Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         
+        // Connection is ready immediately - log success
+        logApi.info(`${fancyColors.BG_GREEN}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Solana connection initialized${fancyColors.RESET}`);
+
         // Initialize service-specific stats
         this.evaluationStats = {
             operations: {
@@ -149,6 +152,7 @@ class ContestEvaluationService extends BaseService {
         this.evaluationTimeouts = new Set();
     }
 
+    // Initialize the service
     async initialize() {
         try {
             // Call parent initialize first
@@ -165,12 +169,13 @@ class ContestEvaluationService extends BaseService {
                 where: { key: this.name }
             });
 
+            // Load configuration from database, if it exists
             if (settings?.value) {
                 const dbConfig = typeof settings.value === 'string' 
                     ? JSON.parse(settings.value)
                     : settings.value;
 
-                // Merge configs carefully preserving circuit breaker settings
+                // Merge configs carefully preserving circuit breaker setting // TODO: Fix this mess
                 this.config = {
                     ...this.config,
                     ...dbConfig,
@@ -199,14 +204,16 @@ class ContestEvaluationService extends BaseService {
                 evaluationStats: this.evaluationStats
             }));
 
+            // Mark the service as started
             await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
             );
 
+            // Log initialization details
             if (VERBOSE_CONTEST_EVALUATION_INIT) {
-                logApi.info('\t\tContest Evaluation Service initialized', {
+                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest Evaluation Service initialized:${fancyColors.RESET}`, {
                     activeContests,
                     completedContests,
                     cancelledContests
@@ -215,98 +222,26 @@ class ContestEvaluationService extends BaseService {
 
             return true;
         } catch (error) {
-            logApi.error('Contest Evaluation Service initialization error:', error);
+            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Contest Evaluation Service initialization error:${fancyColors.RESET}`, {
+                error: error.message
+            });
             await this.handleError(error);
             throw error;
         }
     }
 
-    async performOperation() {
-        const startTime = Date.now();
-        
-        try {
-            // Check dependency health
-            const marketDataStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.MARKET_DATA);
-            this.evaluationStats.dependencies.marketData = {
-                status: marketDataStatus ? 'healthy' : 'unhealthy',
-                lastCheck: new Date().toISOString(),
-                errors: marketDataStatus ? 0 : this.evaluationStats.dependencies.marketData.errors + 1
-            };
-
-            if (!marketDataStatus) {
-                throw ServiceError.dependency('Market Data Service unhealthy');
-            }
-
-            // Find contests that need attention
-            const now = new Date();
-            const [contestsToStart, contestsToEnd] = await Promise.all([
-                this.findContestsToStart(now),
-                this.findContestsToEnd(now)
-            ]);
-
-            // Process contests
-            const results = {
-                started: [],
-                ended: [],
-                failed: []
-            };
-
-            // Start new contests
-            for (const contest of contestsToStart) {
-                try {
-                    await this.processContestStart(contest);
-                    results.started.push(contest.id);
-                } catch (error) {
-                    results.failed.push({
-                        contest: contest.id,
-                        operation: 'start',
-                        error: error.message
-                    });
-                }
-            }
-
-            // End completed contests
-            for (const contest of contestsToEnd) {
-                try {
-                    await this.evaluateContest(contest);
-                    results.ended.push(contest.id);
-                } catch (error) {
-                    results.failed.push({
-                        contest: contest.id,
-                        operation: 'end',
-                        error: error.message
-                    });
-                }
-            }
-
-            // Update performance metrics
-            this.evaluationStats.performance.last_operation_time_ms = Date.now() - startTime;
-            this.evaluationStats.performance.average_evaluation_time_ms = 
-                (this.evaluationStats.performance.average_evaluation_time_ms * this.evaluationStats.operations.total + 
-                (Date.now() - startTime)) / (this.evaluationStats.operations.total + 1);
-
-            // Update ServiceManager state
-            await serviceManager.updateServiceHeartbeat(
-                this.name,
-                this.config,
-                {
-                    ...this.stats,
-                    evaluationStats: this.evaluationStats
-                }
-            );
-
-            return {
-                duration: Date.now() - startTime,
-                results
-            };
-        } catch (error) {
-            await this.handleError(error);
-            return false;
-        }
+    /**
+     * Implementation of service's main operation
+     */
+    async onPerformOperation() {
+        // Original implementation - don't modify
+        return this.performOperationImpl();
     }
 
+    // Stop the service
     async stop() {
         try {
+            // Call parent stop first
             await super.stop();
             
             // Clear all timeouts
@@ -328,9 +263,11 @@ class ContestEvaluationService extends BaseService {
                 }
             );
             
-            logApi.info('Contest Evaluation Service stopped successfully');
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest Evaluation Service stopped successfully${fancyColors.RESET}`);
         } catch (error) {
-            logApi.error('Error stopping Contest Evaluation Service:', error);
+            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Error stopping Contest Evaluation Service:${fancyColors.RESET}`, {
+                error: error.message
+            });
             throw error;
         }
     }
@@ -362,6 +299,7 @@ class ContestEvaluationService extends BaseService {
         }
     }
 
+    // Perform a blockchain transfer
     async performBlockchainTransfer(contestWallet, recipientAddress, amount) {
         try {
             const decryptedPrivateKey = this.decryptPrivateKey(contestWallet.private_key);
@@ -390,6 +328,7 @@ class ContestEvaluationService extends BaseService {
         }
     }
 
+    // Distribute a prize with retry logic
     async distributePrizeWithRetry(participant, place, prizeAmount, contest) {
         for (let attempt = 1; attempt <= this.config.prizeDistribution.maxRetries; attempt++) {
             let transaction;
@@ -489,6 +428,7 @@ class ContestEvaluationService extends BaseService {
         return false;
     }
 
+    // Get participant tie-break stats
     async getParticipantTiebreakStats(participant, contest) {
         // Default stats for no-trade scenario
         const defaultStats = {
@@ -576,6 +516,7 @@ class ContestEvaluationService extends BaseService {
         };
     }
 
+    // Resolve ties between participants
     async resolveTies(tiedParticipants, contest) {
         // Get detailed stats for all tied participants
         const participantStats = await Promise.all(
@@ -624,6 +565,7 @@ class ContestEvaluationService extends BaseService {
         });
     }
 
+    // Group participants by their current balance
     async groupParticipantsByBalance(participants) {
         // Group participants by their current balance
         const balanceGroups = new Map();
@@ -661,6 +603,7 @@ class ContestEvaluationService extends BaseService {
         });
     }
 
+    // Validate the contest wallet balance
     async validateContestWalletBalance(contestWallet, totalPrizePool) {
         try {
             const balance = await this.connection.getBalance(new PublicKey(contestWallet.wallet_address));
@@ -683,6 +626,7 @@ class ContestEvaluationService extends BaseService {
         }
     }
 
+    // Validate the token balance
     async validateTokenBalance(wallet, mint, amount) {
         try {
             const associatedTokenAddress = await getAssociatedTokenAddress(
@@ -712,6 +656,7 @@ class ContestEvaluationService extends BaseService {
         }
     }
 
+    // Evaluate a contest
     async evaluateContest(contest) {
         try {
             const previousStatus = contest.status;
@@ -776,7 +721,6 @@ class ContestEvaluationService extends BaseService {
             // Distribute prizes to winners
             const prizeDistributionResults = await this.distributePrizes(
                 contest,
-                contestWallet,
                 resolvedParticipants,
                 actualPrizePool,
                 payout_structure
@@ -894,7 +838,7 @@ class ContestEvaluationService extends BaseService {
                 'cancelled': '\x1b[31m'  // red
             }[status] || '\x1b[0m';     // default/reset
 
-            logApi.info(`Contest Status Change: ${contestName}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest Status Change: ${contestName}${fancyColors.RESET}`, {
                 contest_id: contestId,
                 previous_status: `${statusColor}${previousStatus}\x1b[0m`,
                 new_status: `${statusColor}${status}\x1b[0m`,
@@ -923,7 +867,9 @@ class ContestEvaluationService extends BaseService {
             
             return true;
         } catch (error) {
-            logApi.error(`Failed to update contest ${contestId} status:`, error);
+            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Failed to update contest ${contestId} status:${fancyColors.RESET}`, {
+                error: error.message
+            });
             throw error;
         }
     }
@@ -933,7 +879,7 @@ class ContestEvaluationService extends BaseService {
         return this.cancelContest(
             contest,
             this.config.states.COMPLETED,
-            `${contest.contest_name} completed with no participants`,
+            `${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest ${contest.contest_name} completed with no participants${fancyColors.RESET}`,
             AdminLogger.Actions.CONTEST.END
         );
     }
@@ -942,7 +888,7 @@ class ContestEvaluationService extends BaseService {
         return this.cancelContest(
             contest,
             this.config.states.CANCELLED,
-            `Contest cancelled due to insufficient participants (${actualCount}/${requiredCount})`,
+            `${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest cancelled due to insufficient participants (${actualCount}/${requiredCount})${fancyColors.RESET}`,
             AdminLogger.Actions.CONTEST.CANCEL,
             {
                 required_participants: requiredCount,
@@ -992,7 +938,7 @@ class ContestEvaluationService extends BaseService {
             totalPrizeNeeded.add(platformFeeAmount).toNumber()
         );
 
-        logApi.info(`Contest wallet balance validated`, {
+        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON} Contest wallet balance validated ${fancyColors.RESET}`, {
             contest_id: contest.id,
             wallet: contestWallet.wallet_address,
             actualPrizePool: actualPrizePool.toString(),
@@ -1012,7 +958,7 @@ class ContestEvaluationService extends BaseService {
         return contestWallet;
     }
 
-    async distributePrizes(contest, contestWallet, resolvedParticipants, actualPrizePool, payout_structure) {
+    async distributePrizes(contest, resolvedParticipants, actualPrizePool, payout_structure) {
         const prizeDistributionResults = [];
 
         // Distribute prizes to top 3 participants
@@ -1068,7 +1014,7 @@ class ContestEvaluationService extends BaseService {
         });
 
         // Log platform fee recording
-        logApi.info(`Platform fee recorded for Contest ${contest.id}. The Solana balance is awaiting collection by the Rake Service`, {
+        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Platform fee recorded for Contest ${contest.id}. The Solana balance is awaiting collection by the Rake Service${fancyColors.RESET}`, {
             contest_id: contest.id,
             amount: platformFeeAmount.toString()
         });
@@ -1088,7 +1034,7 @@ class ContestEvaluationService extends BaseService {
             }
         );
 
-        logApi.info(`Contest ${contest.id} evaluated successfully`, {
+        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest ${contest.id} evaluated successfully${fancyColors.RESET}`, {
             prizeDistributions: prizeDistributionResults,
             platformFee: platformFeeAmount.toString()
         });
@@ -1147,7 +1093,7 @@ class ContestEvaluationService extends BaseService {
 
             return { success: true, signature };
         } catch (error) {
-            logApi.error('Refund failed:', {
+            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Refund failed:${fancyColors.RESET}`, {
                 error: error.message,
                 participant: participant.wallet_address,
                 contest: contest.id,
@@ -1160,7 +1106,9 @@ class ContestEvaluationService extends BaseService {
     // Process refunds for a cancelled contest
     async processContestRefunds(contest, adminAddress = null, context = {}) {
         try {
+            // Admin is processing a refund
             if (adminAddress) {
+                // Log the admin action and context
                 await AdminLogger.logAction(
                     adminAddress,
                     AdminLogger.Actions.CONTEST.CANCEL,
@@ -1172,16 +1120,17 @@ class ContestEvaluationService extends BaseService {
                 );
             }
 
-            // Get contest wallet
+            // Get a contest wallet
             const contestWallet = await prisma.contest_wallets.findUnique({
                 where: { contest_id: contest.id }
             });
 
+            // If no wallet is found, throw an error
             if (!contestWallet) {
                 throw new Error(`No wallet found for contest ${contest.id}`);
             }
 
-            // Get all participants
+            // Get all contest participants who have not been refunded
             const participants = await prisma.contest_participants.findMany({
                 where: {
                     contest_id: contest.id,
@@ -1189,21 +1138,21 @@ class ContestEvaluationService extends BaseService {
                 }
             });
 
+            // If there are no contest participants to refund, return
             if (participants.length === 0) {
                 logApi.info(`No participants to refund for contest ${contest.id}`);
                 return { status: 'completed', refunded: 0 };
             }
 
-            // Validate wallet has sufficient balance
+            // Validate contest wallet has sufficient balance to refund all participants
             const totalRefundAmount = participants.reduce(
                 (sum, p) => sum.add(p.entry_amount),
                 new Decimal(0)
             );
-
             await this.validateContestWalletBalance(contestWallet, totalRefundAmount.toNumber());
 
             // Log the contest refund validation
-            logApi.info(`Contest wallet balance validated as sufficient for refunds`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.NEON}${fancyColors.BOLD}Contest wallet balance${fancyColors.RESET}${fancyColors.NEON} validated as sufficient to issue ${fancyColors.BOLD}${participants.length}${fancyColors.RESET} ${fancyColors.NEON}refunds${fancyColors.BG_YELLOW}${fancyColors.RESET}`, {
                 contest_id: contest.id,
                 wallet: contestWallet.wallet_address,
                 total_refund_amount: totalRefundAmount.toString()
@@ -1248,131 +1197,139 @@ class ContestEvaluationService extends BaseService {
                 results
             };
         } catch (error) {
-            logApi.error('Failed to process contest refunds:', error);
+            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Failed to process contest refunds:${fancyColors.RESET}`, {
+                error: error.message
+            });
             throw error;
         }
     }
 
     // Main operation implementation
-    async performOperation() {
+    async performOperationImpl() {
         const startTime = Date.now();
         
-        try {
-            const now = new Date();
-            const results = {
-                contestsStarted: 0,
-                contestsEnded: 0,
-                contestsCancelled: 0,
-                failures: 0
-            };
+        const now = new Date();
+        const results = {
+            contestsStarted: 0,
+            contestsEnded: 0,
+            contestsCancelled: 0,
+            failures: 0
+        };
 
-            this.evaluationStats.operations.total++;
+        // Increment the total operations count
+        this.evaluationStats.operations.total++;
 
-            // Find and process contests that should start
-            const contestsToStart = await this.findContestsToStart(now);
-            if (contestsToStart.length > 0) {
-                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}Found ${fancyColors.BOLD}${contestsToStart.length}${fancyColors.RESET}${fancyColors.BG_LIGHT_GREEN} contests pending start${fancyColors.RESET}`);
-            } else {
-                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}No contests pending start${fancyColors.RESET}`);
-            }
-            
-            for (const contest of contestsToStart) {
-                try {
-                    await this.processContestStart(contest);
-                    
-                    // Update result counters based on outcome
-                    if (contest.contest_participants.length >= (contest.settings?.minimum_participants || 1)) {
-                        results.contestsStarted++;
-                    } else if (contest.start_time < new Date(Date.now() - this.config.autoCancelWindow)) {
-                        results.contestsCancelled++;
-                    }
-                } catch (error) {
-                    logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to process contest ${contest.id} start:${fancyColors.RESET}`, error);
-                    results.failures++;
-                    this.evaluationStats.operations.failed++;
-                }
-            }
-
-            // Find and process contests that should end
-            const contestsToEnd = await this.findContestsToEnd(now);
-            if (contestsToEnd.length > 0) {
-                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}Found ${fancyColors.BOLD}${contestsToEnd.length}${fancyColors.RESET}${fancyColors.BG_LIGHT_GREEN} active contests due to end${fancyColors.RESET}`);
-            } else {
-                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}No active contests due to end${fancyColors.RESET}`);
-            }
-            
-            for (const contest of contestsToEnd) {
-                try {
-                    await this.evaluateContest(contest);
-                    results.contestsEnded++;
-                } catch (error) {
-                    logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to evaluate contest ${contest.id}:${fancyColors.RESET}`, error);
-                    results.failures++;
-                    this.evaluationStats.operations.failed++;
-                }
-            }
-
-            // Update successful operations count
-            this.evaluationStats.operations.successful++;
-
-            // Update performance metrics
-            const operationTime = Date.now() - startTime;
-            this.evaluationStats.performance.last_operation_time_ms = operationTime;
-            
-            // Calculate average operation time
-            const totalOps = this.evaluationStats.operations.total;
-            if (totalOps > 0) {
-                this.evaluationStats.performance.average_operation_time_ms = 
-                    ((this.evaluationStats.performance.average_operation_time_ms * (totalOps - 1)) + 
-                    operationTime) / totalOps;
-            }
-
-            // Get updated contest counts for stats
-            const [activeContests, completedContests, cancelledContests] = await Promise.all([
-                prisma.contests.count({ where: { status: this.config.states.ACTIVE } }),
-                prisma.contests.count({ where: { status: this.config.states.COMPLETED } }),
-                prisma.contests.count({ where: { status: this.config.states.CANCELLED } })
-            ]);
-
-            this.evaluationStats.contests.active = activeContests;
-            this.evaluationStats.contests.completed = completedContests;
-            this.evaluationStats.contests.cancelled = cancelledContests;
-
-            // Update ServiceManager state
-            await serviceManager.updateServiceHeartbeat(
-                this.name,
-                this.config,
-                {
-                    ...this.stats,
-                    evaluationStats: this.evaluationStats
-                }
-            );
-
-            return {
-                duration: operationTime,
-                ...results
-            };
-        } catch (error) {
-            // Still increment operations count on error
-            this.evaluationStats.operations.failed++;
-            
-            // Let base class handle circuit breaker
-            throw error;
+        // Find and process contests that should start
+        const contestsToStart = await this.findContestsToStart(now);
+        if (contestsToStart.length > 0) {
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Found ${fancyColors.BOLD}${contestsToStart.length}${fancyColors.RESET}${fancyColors.BG_NEON} pending contests${fancyColors.RESET}`);
+        } else {
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA} No pending contests to ${fancyColors.GREEN}start ${fancyColors.RESET}`);
         }
+        
+        // Process each contest that should start
+        for (const contest of contestsToStart) {
+            try {
+                // Process the contest start
+                await this.processContestStart(contest);
+                
+                // Update result counters based on outcome
+                if (contest.contest_participants.length >= (contest.settings?.minimum_participants || 1)) {
+                    // Contest started successfully
+                    results.contestsStarted++;
+                } else if (contest.start_time < new Date(Date.now() - this.config.autoCancelWindow)) {
+                    // Contest was auto-cancelled due to insufficient participants after waiting period
+                    results.contestsCancelled++;
+                }
+            } catch (error) {
+                // Log the error
+                logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to process contest ${contest.id} start:${fancyColors.RESET}`, error);
+                // Increment the failures count
+                results.failures++;
+                // Increment the failed operations count
+                this.evaluationStats.operations.failed++;
+            }
+        }
+
+        // Find and process contests that should end
+        const contestsToEnd = await this.findContestsToEnd(now);
+        if (contestsToEnd.length > 0) {
+            // Log the number of active contests due to end
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Found ${fancyColors.BOLD}${contestsToEnd.length}${fancyColors.RESET}${fancyColors.BG_NEON} active contests due to end${fancyColors.RESET}`);
+        } else {
+            // No active contests due to end
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA} No active contests to ${fancyColors.DARK_RED}end ${fancyColors.RESET}`);
+        }
+        
+        for (const contest of contestsToEnd) {
+            try {
+                // Evaluate the contest
+                await this.evaluateContest(contest);
+                // Increment the successful operations count
+                results.contestsEnded++;
+            } catch (error) {
+                // Log the error
+                logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to evaluate contest ${contest.id}:${fancyColors.RESET}`, error);
+                // Increment the failures count
+                results.failures++;
+                // Increment the failed operations count
+                this.evaluationStats.operations.failed++;
+            }
+        }
+
+        // Update successful operations count
+        this.evaluationStats.operations.successful++;
+
+        // Update performance metrics
+        const operationTime = Date.now() - startTime;
+        this.evaluationStats.performance.last_operation_time_ms = operationTime;
+        
+        // Calculate average operation time
+        const totalOps = this.evaluationStats.operations.total;
+        if (totalOps > 0) {
+            // Update the average operation time
+            this.evaluationStats.performance.average_operation_time_ms = 
+                ((this.evaluationStats.performance.average_operation_time_ms * (totalOps - 1)) + 
+                operationTime) / totalOps;
+        }
+
+        // Get updated contest counts for stats
+        const [activeContests, completedContests, cancelledContests] = await Promise.all([
+            prisma.contests.count({ where: { status: this.config.states.ACTIVE } }),
+            prisma.contests.count({ where: { status: this.config.states.COMPLETED } }),
+            prisma.contests.count({ where: { status: this.config.states.CANCELLED } })
+        ]);
+
+        // Update the contest counts
+        this.evaluationStats.contests.active = activeContests;
+        this.evaluationStats.contests.completed = completedContests;
+        this.evaluationStats.contests.cancelled = cancelledContests;
+
+        // Update ServiceManager state
+        await serviceManager.updateServiceHeartbeat(
+            this.name,
+            this.config,
+            {
+                ...this.stats,
+                evaluationStats: this.evaluationStats
+            }
+        );
+
+        // Return the operation results
+        return {
+            duration: operationTime,
+            ...results
+        };
     }
 
-    async stop() {
-        try {
-            await super.stop();
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}Contest Evaluation Service stopped successfully${fancyColors.RESET}`);
-        } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}Error stopping Contest Evaluation Service:${fancyColors.RESET}`, error);
-            throw error;
-        }
+    // This is just a helper method for logging
+    logCompletionMessage() {
+        return `${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA}Contest Evaluation Service completed task${fancyColors.RESET}`;
     }
 
     // Helper methods for performOperation
     async findContestsToStart(now) {
+        // Find contests that should start
         return await prisma.contests.findMany({
             where: {
                 status: this.config.states.PENDING,
@@ -1386,7 +1343,9 @@ class ContestEvaluationService extends BaseService {
         });
     }
 
+    // Helper method to find contests that should end
     async findContestsToEnd(now) {
+        // Find contests that should end ('active' status despite an end time in the past)
         return await prisma.contests.findMany({
             where: {
                 status: this.config.states.ACTIVE,
@@ -1408,6 +1367,7 @@ class ContestEvaluationService extends BaseService {
      */
     async startContest(contest) {
         try {
+            // Get the previous status
             const previousStatus = contest.status;
             
             // Update contest status to active
@@ -1419,8 +1379,8 @@ class ContestEvaluationService extends BaseService {
                 }
             });
 
-            // Log status change with color
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}Contest Status Change:${fancyColors.RESET} ${fancyColors.BOLD}${contest.contest_name || `Contest #${contest.id}`}${fancyColors.RESET}`, {
+            // Log contest status change (start)
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA}Contest Status Change:${fancyColors.RESET} ${fancyColors.BOLD}${contest.contest_name || `Contest #${contest.id}`}${fancyColors.RESET}`, {
                 contest_id: contest.id,
                 previous_status: `\x1b[33m${previousStatus}\x1b[0m`, // yellow for previous
                 new_status: `\x1b[32mactive\x1b[0m`, // green for active
@@ -1428,7 +1388,7 @@ class ContestEvaluationService extends BaseService {
                 message: `Contest started with ${contest.contest_participants.length} participants`
             });
 
-            // Log the admin action
+            // Log the system/admin action
             await AdminLogger.logAction(
                 'SYSTEM',
                 AdminLogger.Actions.CONTEST.START,
@@ -1443,9 +1403,11 @@ class ContestEvaluationService extends BaseService {
 
             // Update service stats
             this.evaluationStats.contests.active++;
-            
+
+            // Return true if successful in starting the contest
             return true;
         } catch (error) {
+            // Log the error
             logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to start contest ${contest.id}:${fancyColors.RESET}`, error);
             throw error;
         }
@@ -1477,9 +1439,12 @@ class ContestEvaluationService extends BaseService {
      * @returns {Promise<boolean>} - True if successful
      */
     async cancelContestInsufficientParticipants(contest) {
+        // Get the minimum participants required
         const minParticipants = contest.settings?.minimum_participants || 1;
+        // Get the actual participants in the contest
         const actualParticipants = contest.contest_participants.length;
         
+        // Cancel the contest
         const cancellationResult = await this.cancelContest(
             contest,
             this.config.states.CANCELLED,
@@ -1493,18 +1458,22 @@ class ContestEvaluationService extends BaseService {
             }
         );
         
-        // Process refunds if there are participants
+        // Process refunds if there were participants
         if (cancellationResult && contest.contest_participants && contest.contest_participants.length > 0) {
-            logApi.info(`Initiating refund process for auto-cancelled insufficient-participants contest ${contest.id}`);
+            // Log the refund initiation
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Initiating refund process for auto-cancelled insufficient-participants contest ${contest.id}${fancyColors.RESET}`);
+            // Process the refunds
             this.processContestRefunds(contest)
                 .catch(error => {
+                    // Log the error
                     logApi.error(`Failed to process refunds for auto-cancelled insufficient-participants contest ${contest.id}:`, {
                         error: error.message,
                         contest_id: contest.id
                     });
                 });
         }
-        
+
+        // Return the cancellation result
         return cancellationResult;
     }
     
@@ -1514,6 +1483,7 @@ class ContestEvaluationService extends BaseService {
      * @returns {Promise<boolean>} - True if successful
      */
     async cancelContestSingleParticipant(contest) {
+        // Get the cancellation result
         const cancellationResult = await this.cancelContest(
             contest,
             this.config.states.CANCELLED,
@@ -1526,10 +1496,12 @@ class ContestEvaluationService extends BaseService {
                 single_participant_policy: true
             }
         );
-        
+
         // Process refunds if there are participants
         if (cancellationResult && contest.contest_participants && contest.contest_participants.length > 0) {
-            logApi.info(`Initiating refund process for auto-cancelled single-participant contest ${contest.id}`);
+            // Log the refund initiation
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Initiating refund process for auto-cancelled single-participant contest ${contest.id}${fancyColors.RESET}`);
+            // Process the refunds
             this.processContestRefunds(contest)
                 .catch(error => {
                     logApi.error(`Failed to process refunds for auto-cancelled single-participant contest ${contest.id}:`, {
@@ -1538,7 +1510,8 @@ class ContestEvaluationService extends BaseService {
                     });
                 });
         }
-        
+
+        // Return the cancellation result
         return cancellationResult;
     }
 
@@ -1548,15 +1521,17 @@ class ContestEvaluationService extends BaseService {
      * @returns {Promise<void>}
      */
     async processContestStart(contest) {
+        // Get the minimum participants required
         const minParticipants = contest.settings?.minimum_participants || 1;
         
-        // Handle the case where there's exactly one participant
+        // Handle cases where there's exactly one participant
         if (contest.contest_participants.length === 1 && REFUND_SINGLE_PARTICIPANT_CONTESTS) {
             // Cancel contest with single participant based on the config flag
             await this.cancelContestSingleParticipant(contest);
             return;
         }
         
+        // Handle cases where there are enough participants
         if (contest.contest_participants.length >= minParticipants) {
             // Enough participants, start the contest
             await this.startContest(contest);
@@ -1575,11 +1550,13 @@ class ContestEvaluationService extends BaseService {
     // Admin operations
     async manuallyEvaluateContest(contestId, adminAddress, context = {}) {
         try {
+            // Get the contest
             const contest = await prisma.contests.findUnique({
                 where: { id: contestId },
                 include: { participants: true }
             });
 
+            // If the contest is not found, throw an error
             if (!contest) {
                 throw ServiceError.validation('Contest not found');
             }
@@ -1599,22 +1576,26 @@ class ContestEvaluationService extends BaseService {
             // Perform evaluation
             await this.evaluateContest(contest);
 
+            // Return success
             return {
                 success: true,
                 message: 'Contest evaluated successfully'
             };
         } catch (error) {
+            // Log the error
             logApi.error('Manual contest evaluation failed:', error);
             throw error;
         }
     }
 
+    // Justify tiebreak details for a contest
     async recordTieBreakDetails(contest, resolvedParticipants) {
         try {
             // For each participant, log their tiebreak metrics
             for (const participant of resolvedParticipants) {
                 const tiebreakStats = await this.getParticipantTiebreakStats(participant, contest);
                 
+                // Log the tiebreak details
                 logApi.info(`Tiebreak details for participant in contest ${contest.id}`, {
                     contest_id: contest.id,
                     wallet_address: participant.wallet_address,
@@ -1632,6 +1613,7 @@ class ContestEvaluationService extends BaseService {
                 });
             }
 
+            // Log completion of tiebreak details logging
             logApi.info(`Completed logging tiebreak details for contest ${contest.id}`, {
                 contest_id: contest.id,
                 participant_count: resolvedParticipants.length
@@ -1639,15 +1621,12 @@ class ContestEvaluationService extends BaseService {
 
             return true;
         } catch (error) {
+            // Log the error
             logApi.error(`Failed to log tiebreak details for contest ${contest.id}:`, error);
             throw error;
         }
     }
 }
-
-//// ----------------- old:
-//// Export service singleton
-////export default contestEvaluationService;
 
 // Create and export an instance of the service
 const contestEvaluationService = new ContestEvaluationService();

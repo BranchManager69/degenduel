@@ -17,7 +17,7 @@ const MIDDLEWARE_DEBUG_MODE = false;
 // Master middleware config
 export function configureMiddleware(app) {  
 
-  // Allowed origins (CORS) - HTTPS only
+  // Allowed origins (CORS) - HTTPS only, plus localhost for development
   const allowedOrigins = [
     'https://degenduel.me', 
     'https://data.degenduel.me', 
@@ -28,7 +28,30 @@ export function configureMiddleware(app) {
     'https://wallets.degenduel.me',
     'https://reflections.degenduel.me',
     'https://branch.bet', 
-    'https://app.branch.bet'
+    'https://app.branch.bet',
+    // Development origins
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://localhost:3004',
+    'http://localhost:3005',
+    'http://localhost:3006',
+    'http://localhost:3007',
+    'http://localhost:3008',
+    'http://localhost:3009',
+    'http://localhost:3010',
+    'http://localhost:3011',
+    'http://localhost:3012',
+    'http://localhost:3013',
+    'http://localhost:3014',
+    'http://localhost:3015',
+    'http://localhost:4173',
+    'http://localhost:5000',
+    'http://localhost:5001',
+    'http://localhost:6000',
+    'http://localhost:6001',
+    'http://localhost:56347'
   ];
 
   // Basic middleware
