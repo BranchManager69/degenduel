@@ -133,7 +133,7 @@ class MarketDataService extends BaseService {
             this.requestCount = 0;
 
             // Check for initial data but don't fail if not present
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_YELLOW}Checking for initial token data...${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_GREEN}${fancyColors.BOLD} Checking for initial token data... ${fancyColors.RESET}`);
             const [activeTokens, tokensWithPrices] = await Promise.all([
                 prisma.tokens.count({ where: { is_active: true } }),
                 prisma.token_prices.count()
@@ -145,12 +145,12 @@ class MarketDataService extends BaseService {
             this.marketStats.data.tokens.withPrices = tokensWithPrices;
 
             if (activeTokens === 0 || tokensWithPrices === 0) {
-                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}No initial token data available${fancyColors.RESET} ${fancyColors.LIGHT_RED} | Service will wait for data to arrive${fancyColors.RESET}`, {
+                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED} No initial token data available ${fancyColors.RESET}`, {
                     activeTokens,
                     tokensWithPrices
                 });
             } else {
-                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}Initial token data verified${fancyColors.RESET}`, {
+                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Initial token data validated ${fancyColors.RESET} \n\t\t`, {
                     activeTokens,
                     tokensWithPrices
                 });
@@ -454,7 +454,7 @@ class MarketDataService extends BaseService {
         if (cleaned > 0) {
             this.marketStats.cache.size = this.cache.size;
             this.marketStats.cache.lastCleanup = new Date().toISOString();
-            logApi.info(`Cleaned ${cleaned} expired entries from market data cache`);
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_RED}${fancyColors.BOLD}Cleaned ${cleaned} expired entries from market data cache${fancyColors.RESET}`);
         }
     }
 

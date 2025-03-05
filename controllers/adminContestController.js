@@ -1,6 +1,5 @@
 // controllers/adminContestController.js
 
-import { PrismaClient } from '@prisma/client';
 import { logApi } from '../utils/logger-suite/logger.js';
 import contestEvaluationService from '../services/contestEvaluationService.js';
 import AdminLogger from '../utils/admin-logger.js';
@@ -8,7 +7,6 @@ import walletRakeService from '../services/walletRakeService.js';
 import prisma from '../config/prisma.js';
 
 /* 
- * 
  * I am unclear on the current state of this controller.
  * It is imported by contest-management.js for 
  */
@@ -110,6 +108,7 @@ async function updateContestState(req, res) {
             });
         }
 
+        // Update contest notes with admin action
         let updateData = {
             notes: `${action} manually by ${req.user.username}${reason ? `: ${reason}` : ''}`
         };
@@ -130,6 +129,7 @@ async function updateContestState(req, res) {
             }
         );
 
+        // Update contest status based on action
         switch (action.toUpperCase()) {
             case 'START':
                 if (contest.status !== 'pending') {
@@ -175,10 +175,10 @@ async function updateContestState(req, res) {
             where: { id: parseInt(contestId) },
             data: updateData
         });
-
-        // If cancelling, process refunds
+        
+        // If cancelling a contest, process refunds if applicable
         if (action.toUpperCase() === 'CANCEL' && contest.participants.length > 0) {
-            // Process refunds with admin context
+            // Process refunds using admin context
             contestEvaluationService.processContestRefunds(
                 contest,
                 adminAddress,
@@ -187,19 +187,21 @@ async function updateContestState(req, res) {
                     user_agent: req.headers['user-agent']
                 }
             ).catch(error => {
-                logApi.error('Failed to process refunds for cancelled contest:', {
+                logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Failed to process refunds for cancelled contest:${fancyColors.RESET}`, {
                     contest_id: contestId,
                     error: error.message
                 });
             });
         }
 
+        // Update contest notes with admin action
         res.json({
             success: true,
             data: updatedContest,
             message: `Contest ${action.toLowerCase()}ed successfully${action.toUpperCase() === 'CANCEL' ? '. Refunds are being processed.' : ''}`
         });
     } catch (error) {
+        // Log error and return 500 error
         logApi.error('Failed to update contest state:', error);
         res.status(500).json({
             success: false,
@@ -274,7 +276,7 @@ async function retryFailedTransaction(req, res) {
     }
 }
 
-// Add this new endpoint for manual wallet rake
+// Endpoint for manual wallet rake (outdated by now)
 async function rakeWallet(req, res) {
     try {
         const { walletAddress } = req.params;

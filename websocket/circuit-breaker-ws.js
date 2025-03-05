@@ -47,11 +47,13 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
     constructor(server) {
         // Create the configuration object
         const config = {
-            path: '/api/v2/ws/circuit-breaker',
+            path: '/api/ws/circuit-breaker',
             maxPayload: 1024 * 16, // 16KB
             rateLimit: 60, // 60 messages per minute
             requireAuth: true,
-            allowedOrigins: ALLOWED_ORIGINS
+            allowedOrigins: ALLOWED_ORIGINS,
+            perMessageDeflate: false, // Disable compression to avoid RSV1 flag issues
+            useCompression: false     // Also set the alias property for clarity
         };
 
         // Initialize base class with server and config
@@ -114,56 +116,28 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
     }
 
     /**
-     * Handle client connection
+     * Add initialize method to support the WebSocket initialization process
      */
-    async onConnection(ws, request) {
-        super.onConnection(ws, request);
-
-        // Send current state of all services
-        const services = Array.from(serviceManager.services.entries());
-        const states = await Promise.all(
-            services.map(async ([name, service]) => {
-                const state = await serviceManager.getServiceState(name);
-                const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
-                return {
-                    service: name,
-                    status: serviceManager.determineServiceStatus(service.stats),
-                    circuit_breaker: {
-                        status: circuitBreakerStatus.status,
-                        details: circuitBreakerStatus.details,
-                        is_open: service.stats.circuitBreaker.isOpen,
-                        failures: service.stats.circuitBreaker.failures,
-                        last_failure: service.stats.circuitBreaker.lastFailure,
-                        last_success: service.stats.circuitBreaker.lastSuccess,
-                        recovery_attempts: service.stats.circuitBreaker.recoveryAttempts,
-                        last_recovery_attempt: service.stats.circuitBreaker.lastRecoveryAttempt,
-                        last_reset: service.stats.circuitBreaker.lastReset
-                    },
-                    operations: service.stats.operations,
-                    performance: service.stats.performance,
-                    config: service.config.circuitBreaker,
-                    ...state
-                };
-            })
-        );
-
-        ws.send(JSON.stringify({
-            type: 'services:state',
-            timestamp: new Date().toISOString(),
-            services: states
-        }));
+    async initialize() {
+        // Any specific initialization logic for circuit breaker WebSocket
+        logApi.info('Circuit Breaker WebSocket server initialized');
+        return true;
     }
 
     /**
-     * Handle client message
+     * Handle client message - renamed to match base class method
      */
-    onMessage(ws, message) {
+    async handleClientMessage(ws, data, clientInfo) {
         try {
-            const data = JSON.parse(message);
-
             switch (data.type) {
+                case 'subscribe_all':
                 case 'subscribe:services':
                     // Already handled by default behavior
+                    this.sendToClient(ws, {
+                        type: 'subscription:success',
+                        message: 'Subscribed to all service updates',
+                        timestamp: new Date().toISOString()
+                    });
                     break;
 
                 case 'service:health_check':
@@ -179,20 +153,55 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
                     break;
 
                 default:
-                    ws.send(JSON.stringify({
-                        type: 'error',
-                        code: 4004,
-                        message: 'Invalid message type',
-                        timestamp: new Date().toISOString()
-                    }));
+                    this.sendError(ws, 'Invalid message type', 4004);
             }
         } catch (error) {
-            ws.send(JSON.stringify({
-                type: 'error',
-                code: 4004,
-                message: 'Invalid message format',
-                timestamp: new Date().toISOString()
-            }));
+            logApi.error('Error handling client message:', error);
+            this.sendError(ws, 'Invalid message format', 4004);
+        }
+    }
+
+    /**
+     * Send the current state of all services to a client
+     * Use after connection to provide initial state
+     */
+    async sendAllServicesState(ws) {
+        try {
+            const services = Array.from(serviceManager.services.entries());
+            const states = await Promise.all(
+                services.map(async ([name, service]) => {
+                    const state = await serviceManager.getServiceState(name);
+                    const circuitBreakerStatus = getCircuitBreakerStatus(service.stats);
+                    return {
+                        service: name,
+                        status: serviceManager.determineServiceStatus(service.stats),
+                        circuit_breaker: {
+                            status: circuitBreakerStatus.status,
+                            details: circuitBreakerStatus.details,
+                            is_open: service.stats.circuitBreaker.isOpen,
+                            failures: service.stats.circuitBreaker.failures,
+                            last_failure: service.stats.circuitBreaker.lastFailure,
+                            last_success: service.stats.circuitBreaker.lastSuccess,
+                            recovery_attempts: service.stats.circuitBreaker.recoveryAttempts,
+                            last_recovery_attempt: service.stats.circuitBreaker.lastRecoveryAttempt,
+                            last_reset: service.stats.circuitBreaker.lastReset
+                        },
+                        operations: service.stats.operations,
+                        performance: service.stats.performance,
+                        config: service.config.circuitBreaker,
+                        ...state
+                    };
+                })
+            );
+
+            this.sendToClient(ws, {
+                type: 'services:state',
+                timestamp: new Date().toISOString(),
+                services: states
+            });
+        } catch (error) {
+            logApi.error('Error sending services state:', error);
+            this.sendError(ws, 'Error fetching services state', 5000);
         }
     }
 

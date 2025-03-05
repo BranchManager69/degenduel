@@ -365,7 +365,7 @@ function formatPerformanceStats(metrics) {
   const { total_requests, avg_response_time, max_response_time, routes } = metrics;
   
   // Format the header
-  const header = `${fancyColors.UNDERLINE}📊 ${fancyColors.BOLD}${fancyColors.BG_DARK_YELLOW}API Performance ${fancyColors.RESET}${fancyColors.UNDERLINE}${fancyColors.BOLD}${fancyColors.DARK_YELLOW}| Total: ${total_requests} | Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms${fancyColors.RESET}`;
+  const header = `${fancyColors.BG_DARK_YELLOW}${fancyColors.UNDERLINE}📊 ${fancyColors.BOLD}API Performance ${fancyColors.RESET}${fancyColors.UNDERLINE}${fancyColors.BOLD}${fancyColors.BLACK}| Total: ${total_requests} | Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms${fancyColors.RESET}`;
   
   // Format routes if they exist
   if (!routes || Object.keys(routes).length === 0) {
@@ -380,7 +380,7 @@ function formatPerformanceStats(metrics) {
     .sort(([,a], [,b]) => b.requests - a.requests)  // Sort by most requests first
     .map(([route, stats]) => {
       const padding = ' '.repeat(maxRouteLength - route.length);
-      return `${fancyColors.UNDERLINE}${fancyColors.BOLD}${fancyColors.DARK_YELLOW}\t${route}${padding}${fancyColors.RESET} ${fancyColors.GRAY}|${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${stats.requests.toString().padStart(3)}${fancyColors.RESET} ${fancyColors.GRAY}reqs${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.avg_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms avg${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.max_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms max${fancyColors.RESET}`;
+      return `\t${fancyColors.BLACK}${fancyColors.BG_DARK_YELLOW}${fancyColors.UNDERLINE}${fancyColors.BOLD}\t${route}${padding}${fancyColors.RESET} ${fancyColors.GRAY}|${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.BLACK}${stats.requests.toString().padStart(3)}${fancyColors.RESET} ${fancyColors.GRAY}reqs${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.avg_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms avg${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.max_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms max${fancyColors.RESET}`;
     })
     .join('\n');
 

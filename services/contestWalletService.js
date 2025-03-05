@@ -447,8 +447,7 @@ class ContestWalletService extends BaseService {
             throw error;
         }
     }
-}
-
+    
     /**
      * Decrypt private key from encrypted storage
      * @param {string} encryptedData - The encrypted private key data

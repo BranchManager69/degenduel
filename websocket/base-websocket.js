@@ -11,8 +11,9 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
 import prisma from '../config/prisma.js';
+import { fancyColors } from '../utils/colors.js';
 
-const VERBOSE_WEBSOCKET_INIT = false;
+const VERBOSE_WEBSOCKET_INIT = true;
 
 // Base WebSocket Server
 export class BaseWebSocketServer {
@@ -40,9 +41,13 @@ export class BaseWebSocketServer {
     }
 
     #initializeWSS(server) {
+        // Create WebSocketServer with compression settings from options
+        // Compression is disabled by default - you must explicitly enable it
+        // This is important because compression causes RSV1 flag issues
         this.#wss = new WebSocketServer({
             noServer: true,
-            maxPayload: this.options.maxMessageSize
+            maxPayload: this.options.maxMessageSize,
+            perMessageDeflate: false // Always disable compression to avoid RSV1 flag issues
         });
 
         // Handle upgrade requests
@@ -65,7 +70,7 @@ export class BaseWebSocketServer {
         this.#wss.on('connection', this.#handleConnection.bind(this));
         
         if (VERBOSE_WEBSOCKET_INIT) {
-            logApi.info(`WebSocket server initialized on path: ${this.options.path}`);
+            logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BOLD} WebSocket server initialized on path: ${this.options.path} ${fancyColors.RESET}`);
         }
     }
 
@@ -90,7 +95,9 @@ export class BaseWebSocketServer {
             request.user = user;
             callback(true);
         } catch (error) {
-            logApi.error('WebSocket authentication error:', error);
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.BOLD} WebSocket authentication error ${fancyColors.RESET}`, {
+                error: error.message
+            });
             callback(false, 401, 'Authentication failed');
         }
     }
@@ -122,7 +129,7 @@ export class BaseWebSocketServer {
             this.#clients.set(ws, clientInfo);
             this.#setupMessageQueue(clientInfo.userId);
             
-            logApi.info('New WebSocket connection:', {
+            logApi.info(`${fancyColors.BG_WHITE}${fancyColors.BOLD_GREEN} New WebSocket connection ${fancyColors.RESET}`, {
                 path: this.options.path,
                 client: clientInfo
             });
@@ -135,7 +142,7 @@ export class BaseWebSocketServer {
 
             ws.on('close', () => {
                 this.#clients.delete(ws);
-                logApi.info('WebSocket connection closed:', {
+                logApi.info(`${fancyColors.BG_WHITE}${fancyColors.BOLD_RED} WebSocket connection closed ${fancyColors.RESET}`, {
                     path: this.options.path,
                     client: clientInfo
                 });
@@ -271,11 +278,13 @@ export class BaseWebSocketServer {
             });
             
             if (sentCount > 0) {
-                logApi.info(`📢 Broadcasted to ${sentCount} clients`);
+                logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BOLD} Broadcasted to ${sentCount} clients ${fancyColors.RESET}`);
             }
         
         } catch (error) {
-            logApi.error('Error broadcasting message:', error);
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.BOLD} Error broadcasting message ${fancyColors.RESET}`, {
+                error: error.message
+            });
         }
     }
 
@@ -285,7 +294,9 @@ export class BaseWebSocketServer {
                 ws.send(JSON.stringify(message));
             }
         } catch (error) {
-            logApi.error('Error sending message to client:', error);
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.BOLD} Error sending message to client ${fancyColors.RESET}`, {
+                error: error.message
+            });
         }
     }
 
