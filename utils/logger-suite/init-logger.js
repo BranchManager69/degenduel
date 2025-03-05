@@ -6,7 +6,7 @@ class InitLogger {
 
     static startInitialization() {
         this.startTime = Date.now();
-        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}DegenDuel Initialization Starting${fancyColors.RESET} \n`);
+        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}DegenDuel Initialization Starting${fancyColors.RESET}`);
     }
 
     static logInit(category, service, status, details = null) {

@@ -561,7 +561,7 @@ class TokenSyncService extends BaseService {
         const startTime = Date.now();
         
         try {
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}Starting metadata update${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_DARK_GREEN}${fancyColors.WHITE} ${fullData.length} ${fancyColors.RESET}${fancyColors.BG_DARK_GREEN}tokens to process${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Starting metadata update ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_DARK_GREEN}${fancyColors.WHITE} ${fullData.length} ${fancyColors.RESET}${fancyColors.BG_DARK_GREEN}tokens to process${fancyColors.RESET}`);
 
             let created = 0;
             let updated = 0;
