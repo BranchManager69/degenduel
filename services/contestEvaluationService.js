@@ -1255,10 +1255,10 @@ class ContestEvaluationService extends BaseService {
         const contestsToEnd = await this.findContestsToEnd(now);
         if (contestsToEnd.length > 0) {
             // Log the number of active contests due to end
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Found ${fancyColors.BOLD}${contestsToEnd.length}${fancyColors.RESET}${fancyColors.BG_NEON} active contests due to end${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Found ${fancyColors.BOLD}${contestsToEnd.length}${fancyColors.RESET}${fancyColors.BG_NEON} active contests due to end ${fancyColors.RESET}`);
         } else {
             // No active contests due to end
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA} No active contests to ${fancyColors.DARK_RED}end ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA} No active contests to ${fancyColors.DARK_RED}end    ${fancyColors.RESET}`);
         }
         
         for (const contest of contestsToEnd) {

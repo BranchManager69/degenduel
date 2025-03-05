@@ -286,7 +286,7 @@ class ContestWalletService extends BaseService {
     
     // Bulk update all wallets' balances
     async updateAllWalletBalances() {
-        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GALAXY}Contest wallet balance refresh cycle starting...${fancyColors.RESET}`, {
+        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET}${fancyColors.GALAXY} Contest wallet balance refresh cycle starting  ${fancyColors.RESET}`, {
         //    duration_ms: Date.now() - startTime,
         //    total_wallets: results.total,
         //    successful_updates: results.updated,
@@ -371,7 +371,7 @@ class ContestWalletService extends BaseService {
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
             
             // Log completion summary
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GALAXY}Contest wallet balance refresh cycle completed${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET}${fancyColors.GALAXY} Contest wallet balance refresh cycle completed ${fancyColors.RESET}`, {
             //    duration_ms: Date.now() - startTime,
             //    total_wallets: results.total,
             //    successful_updates: results.updated,

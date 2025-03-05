@@ -420,7 +420,7 @@ class TokenSyncService extends BaseService {
                 logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Database currently contains ${fancyColors.GRAY}${result.data.length}${fancyColors.RESET} ${fancyColors.DARK_GREEN}tokens.${fancyColors.RESET}`);
                 return result.data;
             } catch (error) {
-                logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Error fetching token data from primary source:${fancyColors.RESET} \n\t${fancyColors.ORANGE}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
+                logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Error fetching token data from primary source:${fancyColors.RESET} ${fancyColors.BLACK}${error.message}${fancyColors.RESET}`);
                 // Continue to fallbacks
             }
         }
@@ -428,18 +428,18 @@ class TokenSyncService extends BaseService {
         // Try local fallback endpoint if the URL is valid
         if (this.config.api.endpoints.fallback) {
             try {
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BLUE}Attempting to fetch from local fallback endpoint...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.ORANGE}Attempting to fetch from local fallback endpoint${fancyColors.RESET}`);
                 const fallbackResult = await this.makeApiCall(this.config.api.endpoints.fallback);
                 
                 if (fallbackResult && Array.isArray(fallbackResult)) {
-                    logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Received ${fallbackResult.length} tokens from local fallback${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.YELLOW}Received ${fallbackResult.length} tokens from local fallback${fancyColors.RESET}`);
                     return fallbackResult;
                 } else if (fallbackResult && fallbackResult.data && Array.isArray(fallbackResult.data)) {
-                    logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Received ${fallbackResult.data.length} tokens from local fallback (data property)${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.YELLOW}Received ${fallbackResult.data.length} tokens from local fallback (data property)${fancyColors.RESET}`);
                     return fallbackResult.data;
                 }
             } catch (fallbackError) {
-                logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Fallback endpoint also failed:${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}${fallbackError.message}${fancyColors.RESET}`);
+                logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_RED}Fallback endpoint also failed:${fancyColors.RESET} ${fancyColors.DARK_RED}${fancyColors.ITALIC}${fallbackError.message}${fancyColors.RESET}`);
             }
         } else {
             logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.LIGHT_RED}No valid fallback endpoint configured.${fancyColors.RESET} \n\t${fancyColors.LIGHT_RED}${fancyColors.ITALIC}Skipping fallback attempt.${fancyColors.RESET}`);
@@ -476,14 +476,14 @@ class TokenSyncService extends BaseService {
         }
         
         // If we have no data at all, return empty array rather than failing
-        logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}${fancyColors.BOLD}All token data sources failed.${fancyColors.RESET} ${fancyColors.RED}Returning empty array...${fancyColors.RESET}`);
+        logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD}All token data sources failed.${fancyColors.RESET} ${fancyColors.BG_DARK_RED}Returning empty array...${fancyColors.RESET}`);
         return [];
     }
 
     // Core sync operations
     async updatePrices() {
         const startTime = Date.now();
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Price update cycle starting... ${fancyColors.RESET}`, {
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Price update cycle starting ${fancyColors.RESET}`, {
         //    startTime: startTime,
         });
         
