@@ -118,7 +118,7 @@ class LiquidityService extends BaseService {
                 };
             });
             
-            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} 📊 ${fancyColors.BG_LIGHT_CYAN}WALLET INVENTORY:${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}${allLiquidityWallets.length}${fancyColors.RESET} ${fancyColors.BG_LIGHT_CYAN}total liquidity wallets${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_DARK_CYAN} 📊 ${fancyColors.LIGHT_CYAN} WALLET INVENTORY ${fancyColors.RESET}${fancyColors.LIGHT_CYAN}${fancyColors.BOLD_BLUE} ${fancyColors.BG_LIGHT_CYAN}${allLiquidityWallets.length}${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} total liquidity wallets${fancyColors.RESET}`, {
             //    wallets: walletsInfo
             });
             
