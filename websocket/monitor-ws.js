@@ -18,6 +18,9 @@
 
 import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+import { fancyColors } from '../utils/colors.js';
+////import { BaseService } from '../utils/service-suite/base-service.js';
+
 //import prisma from '../config/prisma.js';
 
 // Message type constants
@@ -58,7 +61,7 @@ class WebSocketMonitorService {
         // Mark as initialized after a short delay to allow services to register
         setTimeout(() => {
             this.isInitialized = true;
-            logApi.info('Monitor service ready');
+            logApi.info(`${fancyColors.BG_LIGHT_CYAN} WebSocketMonitorService ${fancyColors.RESET} ${fancyColors.BG_LIGHT_BLACK}${fancyColors.BOLD}${fancyColors.WHITE} Monitor service ready ${fancyColors.RESET}`);
         }, 2000);
     }
 

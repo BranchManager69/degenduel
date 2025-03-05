@@ -159,12 +159,12 @@ class ServiceInitializer {
             // Log registered services summary with count only in normal mode
             const registeredServices = Array.from(serviceManager.services.keys());
             if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${serviceColors.initialized}[SERVICE INIT]${fancyColors.RESET} Successfully registered services:`, {
+                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Successfully registered services:${fancyColors.RESET}`, {
                     total: registeredServices.length,
                     services: registeredServices
                 });
             } else {
-                logApi.info(`${serviceColors.initialized}[SERVICE INIT]${fancyColors.RESET} Successfully registered ${registeredServices.length} services`);
+                logApi.info(`${fancyColors.BG_LIGHT_CYAN}[SERVICE INIT]${fancyColors.RESET} Successfully registered ${registeredServices.length} services`);
             }
 
         } catch (error) {
