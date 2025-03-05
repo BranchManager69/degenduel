@@ -403,7 +403,7 @@ function formatAdminAction(details) {
     .map(line => '    ' + line)
     .join('\n');
   
-  return `👑 \t${fancyColors.BG_DARK_WHITE}Admin Action Log:${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.BG_WHITE}${action}${fancyColors.RESET} ${fancyColors.ITALIC}${fancyColors.CYAN}by ${fancyColors.RESET} ${fancyColors.ITALIC}${fancyColors.UNDERLINE}${fancyColors.CYAN}${admin}${fancyColors.RESET}`;
+  return `👑 \t${fancyColors.BG_BLACK}${fancyColors.BOLD_YELLOW}Admin Action Log:${fancyColors.RESET}${fancyColors.UNDERLINE}${fancyColors.WHITE}${fancyColors.BG_BLACK} ${action} ${fancyColors.RESET} ${fancyColors.CYAN}by${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.DARK_YELLOW}${admin}${fancyColors.RESET}`;
 }
 
 // Modify the customFormat to properly handle these special cases
@@ -538,7 +538,7 @@ const logApi = winston.createLogger({
 });
 
 // Log where logs are being written to on startup
-console.log(`${fancyColors.BOLD}${fancyColors.BG_DARK_CYAN}${fancyColors.BOLD}DegenDuel Logger Initialized${fancyColors.RESET}`);
+console.log(`${fancyColors.BOLD}${fancyColors.BG_DARK_CYAN}${fancyColors.DARK_BLACK}DegenDuel Logger Initialized${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}Console log level: ${fancyColors.UNDERLINE}${CONSOLE_LEVEL}${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}File log level: ${FILE_LOG_LEVEL}${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}Log files directory: ${LOG_DIR}${fancyColors.RESET}`);

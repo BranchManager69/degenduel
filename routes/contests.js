@@ -2547,7 +2547,7 @@ router.get('/participations/:wallet', async (req, res) => {
     // Cache the result for 5 minutes (300 seconds)
     await cache.set(cacheKey, responseData, 300);
     
-    logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.BOLD}${fancyColors.BLACK}User contest participations check ${fancyColors.RESET}${fancyColors.YELLOW}(DB HIT)${fancyColors.RESET}`, {
+    logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.BOLD}${fancyColors.BLACK}User contest participations check ${fancyColors.RESET}${fancyColors.ORANGE}(DB HIT)${fancyColors.RESET}`, {
     //  requestId,
     //  wallet_address,
     //  participationCount: participations.length,

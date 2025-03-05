@@ -494,7 +494,7 @@ export class BaseService {
 
         // Check if we should open the circuit
         if (this.stats.circuitBreaker.failures >= this.config.circuitBreaker.failureThreshold) {
-            logApi.warn(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET} \n\t\t${fancyColors.LIGHT_GRAY}${fancyColors.ITALIC}${this.config.description}.${fancyColors.RESET} \t${fancyColors.DARK_RED}${fancyColors.BOLD}${this.stats.circuitBreaker.failures}${fancyColors.RESET}${fancyColors.DARK_RED} consecutive failures${fancyColors.RESET}`);
+            logApi.warn(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET} \n\t\t${fancyColors.RAINBOW_BLUE}${fancyColors.BG_LIGHT_WHITE}${fancyColors.BOLD} ${this.config.description} ${fancyColors.RESET}\t${fancyColors.LIGHT_RED}${fancyColors.BOLD}${this.stats.circuitBreaker.failures}${fancyColors.RESET}${fancyColors.LIGHT_RED} consecutive failures${fancyColors.RESET}`);
             this.stats.circuitBreaker.isOpen = true;
             // Schedule recovery attempt
             await this.attemptCircuitRecovery();
