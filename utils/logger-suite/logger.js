@@ -365,7 +365,7 @@ function formatPerformanceStats(metrics) {
   const { total_requests, avg_response_time, max_response_time, routes } = metrics;
   
   // Format the header
-  const header = `${fancyColors.BG_DARK_YELLOW}${fancyColors.UNDERLINE}📊 ${fancyColors.BOLD}API Performance ${fancyColors.RESET}${fancyColors.UNDERLINE}${fancyColors.BOLD}${fancyColors.BLACK}| Total: ${total_requests} | Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms${fancyColors.RESET}`;
+  const header = `\t${fancyColors.BG_DARK_YELLOW}${fancyColors.UNDERLINE}📊 ${fancyColors.BOLD}API Performance ${fancyColors.RESET}${fancyColors.UNDERLINE}${fancyColors.BOLD}${fancyColors.BLACK}| Total: ${total_requests} |  s Avg: ${Math.round(avg_response_time)}ms | Max: ${Math.round(max_response_time)}ms${fancyColors.RESET}`;
   
   // Format routes if they exist
   if (!routes || Object.keys(routes).length === 0) {
@@ -380,7 +380,7 @@ function formatPerformanceStats(metrics) {
     .sort(([,a], [,b]) => b.requests - a.requests)  // Sort by most requests first
     .map(([route, stats]) => {
       const padding = ' '.repeat(maxRouteLength - route.length);
-      return `\t${fancyColors.BLACK}${fancyColors.BG_DARK_YELLOW}${fancyColors.UNDERLINE}${fancyColors.BOLD}\t${route}${padding}${fancyColors.RESET} ${fancyColors.GRAY}|${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.BLACK}${stats.requests.toString().padStart(3)}${fancyColors.RESET} ${fancyColors.GRAY}reqs${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.avg_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms avg${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.max_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms max${fancyColors.RESET}`;
+      return `${fancyColors.BG_DARK_YELLOW}${fancyColors.BLACK}\t${fancyColors.UNDERLINE}${fancyColors.BOLD}\t${route}${padding}${fancyColors.RESET} ${fancyColors.GRAY}|${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.BLACK}${stats.requests.toString().padStart(3)}${fancyColors.RESET} ${fancyColors.GRAY}reqs${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.avg_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms avg${fancyColors.RESET} | ${fancyColors.BOLD}${fancyColors.DARK_YELLOW}${Math.round(stats.max_response_time).toString().padStart(4)}${fancyColors.RESET} ${fancyColors.GRAY}ms max${fancyColors.RESET}`;
     })
     .join('\n');
 
@@ -538,14 +538,14 @@ const logApi = winston.createLogger({
 });
 
 // Log where logs are being written to on startup
-console.log(`${fancyColors.BOLD}${fancyColors.CYAN}DegenDuel Logger Initialized${fancyColors.RESET}`);
-console.log(`${fancyColors.CYAN}Console log level: ${CONSOLE_LEVEL}${fancyColors.RESET}`);
+console.log(`${fancyColors.BOLD}${fancyColors.BG_DARK_CYAN}${fancyColors.BOLD}DegenDuel Logger Initialized${fancyColors.RESET}`);
+console.log(`${fancyColors.CYAN}Console log level: ${fancyColors.UNDERLINE}${CONSOLE_LEVEL}${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}File log level: ${FILE_LOG_LEVEL}${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}Log files directory: ${LOG_DIR}${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}Log files:${fancyColors.RESET}`);
-console.log(`  ${fancyColors.CYAN}- api-YYYY-MM-DD.log (all logs)${fancyColors.RESET}`);
-console.log(`  ${fancyColors.CYAN}- error-YYYY-MM-DD.log (error logs only)${fancyColors.RESET}`);
-console.log(`  ${fancyColors.CYAN}- debug-YYYY-MM-DD.log (debug logs only)${fancyColors.RESET}`);
+console.log(`  ${fancyColors.LIGHT_CYAN}- api-YYYY-MM-DD.log (all logs)${fancyColors.RESET}`);
+console.log(`  ${fancyColors.LIGHT_CYAN}- error-YYYY-MM-DD.log (error logs only)${fancyColors.RESET}`);
+console.log(`  ${fancyColors.LIGHT_CYAN}- debug-YYYY-MM-DD.log (debug logs only)${fancyColors.RESET}`);
 
 // Helper method to log with service context
 logApi.forService = (serviceName) => ({

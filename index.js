@@ -478,7 +478,7 @@ async function initializeServer() {
         logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ 🔄 Initializing SQLite...\x1b[0m');
         await initDatabase();
         InitLogger.logInit('Database', 'SQLite', 'success', { path: '/home/websites/degenduel/data/leaderboard.db' });
-        logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ SQLite Ready\x1b[0m\n');
+        logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ SQLite Ready\x1b[0m');
 
         // Initialize WebSocket Layer using the WebSocket Initializer
         try {
