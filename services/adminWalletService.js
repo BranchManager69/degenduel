@@ -189,8 +189,8 @@ class AdminWalletService extends BaseService {
             );
 
             logApi.info('\t\tAdmin Wallet Service initialized', {
-                totalWallets,
-                activeWallets
+            //    totalWallets,
+            //    activeWallets
             });
 
             return true;
