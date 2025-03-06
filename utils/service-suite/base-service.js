@@ -296,7 +296,7 @@ export class BaseService {
                 // Ensure we have a valid delay value
                 const validDelay = Math.max(1000, nextAttemptDelay || 5000);
                 
-                logApi.info(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET}${fancyColors.BLACK} will try a reset in ${fancyColors.BOLD}${validDelay/1000} seconds${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET}${fancyColors.BLACK} will attempt reset in ${fancyColors.BOLD}${validDelay/1000} seconds${fancyColors.RESET}`);
                 
                 // Schedule next recovery attempt
                 if (this.recoveryTimeout) clearTimeout(this.recoveryTimeout);
@@ -494,7 +494,7 @@ export class BaseService {
 
         // Check if we should open the circuit
         if (this.stats.circuitBreaker.failures >= this.config.circuitBreaker.failureThreshold) {
-            logApi.warn(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET} \n\t\t${fancyColors.RAINBOW_BLUE}${fancyColors.BG_LIGHT_WHITE}${fancyColors.BOLD} ${this.config.description} ${fancyColors.RESET}${fancyColors.BG_LIGHT_WHITE}${fancyColors.LIGHT_RED}${fancyColors.BOLD}  ${this.stats.circuitBreaker.failures}${fancyColors.RESET}${fancyColors.BG_LIGHT_WHITE}${fancyColors.LIGHT_RED} consecutive failures ${fancyColors.RESET}`);
+            logApi.warn(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET} \n\t\t\t${fancyColors.RAINBOW_BLUE}${fancyColors.BG_LIGHT_RED}${fancyColors.BOLD} ${this.config.description} ${fancyColors.RESET}${fancyColors.BG_LIGHT_RED}${fancyColors.RED}${fancyColors.BOLD}  ${this.stats.circuitBreaker.failures}${fancyColors.RESET}${fancyColors.BG_LIGHT_RED}${fancyColors.RED} consecutive failures ${fancyColors.RESET}`);
             this.stats.circuitBreaker.isOpen = true;
             // Schedule recovery attempt
             await this.attemptCircuitRecovery();

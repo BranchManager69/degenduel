@@ -233,11 +233,12 @@ app.get("/api/health", async (req, res) => {
     });
   }
 });
-// Direct market data route
+
+// Direct market data route // TODO: (not tested)
 app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
   try {
     const response = await fetch(
-      `http://localhost:${port}/api/v2/tokens/marketData/latest`
+      `http://localhost:${port}/api/v2/tokens/marketData/latest` // (not tested)
     );
     const data = await response.json();
     res.json(data);
@@ -249,6 +250,7 @@ app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
     });
   }
 });
+
 // Error handling setup
 app.use(errorHandler);
 
@@ -334,6 +336,7 @@ ${colors.border}╔════════════════════�
     }
 
     // If no services found but we're successful, create some defaults based on service names
+    // TODO: WHAT?????????
     if (services.length === 0 && success) {
         const servicesList = SERVICE_NAMES ? Object.values(SERVICE_NAMES) : [];
         services = servicesList.map(name => {
@@ -435,17 +438,17 @@ ${colors.border}╔════════════════════�
 ╚══════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
 
     // Clear console for dramatic effect
-    console.clear();
+    console.clear(); // TODO: THIS DOES NOT WORK AT ALL; REMOVE IT
     
     // Add dramatic pause between elements
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms)); // TODO: THIS DOES NOT WORK AT ALL; REMOVE IT
     
     // Display startup sequence
     console.log('\n');
     console.log(banner);
-    await sleep(200);
+    await sleep(100);
     console.log(statusDisplay);
-    await sleep(200);
+    await sleep(100);
     console.log(startupMessage);
     console.log('\n');
 }
@@ -455,15 +458,15 @@ ${colors.border}╔════════════════════�
 //    Namely this should makeextensive use of the verbosity flag that we've put in the initialization however it's in this file and it would need to then of course be communicated with whatever file you move this initialization to...that is if you ever move this function to another file, it you know it's up to you
 //    There are also just little colored issues throughout that aren't really that bad but you know here and there some color can get away fromus becausefor example a closing formatof one of the boxes that you're drawing might not becorrectly colored and it starts anyway I don't even want you to think about that too much but you know keep it in mind
 async function initializeServer() {
-    // Log server start action to DegenDuel admin logs
+    // Log server start action to DegenDuel Admin Logs
     AdminLogger.logAction(process.env.BRANCH_MANAGER_WALLET_ADDRESS, 'SERVER', 'START');
 
-    // Add colors to initialization logs
+    // Begin amazing initialization logs
     console.log('\n\x1b[38;5;199m╭───────────────── DegenDuel Initialization Starting ─────────────────╮\x1b[0m');
     console.log('\x1b[38;5;199m│\x1b[38;5;226m               🔍 Swagger docs available at /api-docs                \x1b[38;5;199m│\x1b[0m');
     console.log('\x1b[38;5;199m╰─────────────────────────────────────────────────────────────────────╯\x1b[0m\n');
 
-    // Start initialization logging
+    // Start amazing initialization logging
     InitLogger.startInitialization();
     const initResults = {};
 
@@ -493,7 +496,7 @@ async function initializeServer() {
             logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ 🔄 ${fancyColors.BLUE}${fancyColors.UNDERLINE}${fancyColors.BOLD}NOTE${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BLUE}: ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.LIGHT_BLUE}The Solana Service is now initialized via service system...\x1b[0m`);
 
             // Initialize grouped services 
-            // (Note: I'm not married to these groupings, I'm open to suggestions)
+            // (Note: I'm not married to these groupings; I'm open to suggestions)
             try {
                 // First try to register core services
                 if (VERBOSE_SERVICE_INIT_LOGS) {
@@ -526,6 +529,7 @@ async function initializeServer() {
                     logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}Initializing services...${fancyColors.RESET} \n`);
                 }
                 
+                // Initialize services
                 const results = await ServiceInitializer.initializeServices().catch(error => {
                     logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Failed to initialize services:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
                     if (VERBOSE_SERVICE_INIT_LOGS) {
@@ -558,6 +562,7 @@ async function initializeServer() {
                 logApi.info(`🚀 ${fancyColors.BLACK}${fancyColors.BOLD}Services initialization:${fancyColors.RESET} ${fancyColors.GREEN}${successCount} succeeded${fancyColors.RESET}, ${fancyColors.RED}${failedCount} failed${fancyColors.RESET}`);
 
             } catch (error) {
+                // Log service initialization failure
                 logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Service initialization failed:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
                 if (VERBOSE_SERVICE_INIT_LOGS) {
                     logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Detailed error information:${fancyColors.RESET}`, {
@@ -574,6 +579,7 @@ async function initializeServer() {
             }
 
         } catch (error) {
+            // Log WebSocket initialization failure
             logApi.error(`${fancyColors.MAGENTA}[WEBSOCKET INIT]${fancyColors.RESET} ${fancyColors.RED}WebSocket initialization failed:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
             if (VERBOSE_SERVICE_INIT_LOGS) {
                 logApi.error(`${fancyColors.MAGENTA}[WEBSOCKET INIT]${fancyColors.RESET} ${fancyColors.RED}WebSocket error details:${fancyColors.RESET}`, error);

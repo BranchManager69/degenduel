@@ -777,7 +777,7 @@ class TokenSyncService extends BaseService {
             if (!existing || 
                 existing.name !== token.name || 
                 existing.symbol !== token.symbol) {
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_NEON}${fancyColors.BOLD} Change Detected in Token Metadata! ${fancyColors.RESET}\n\t${fancyColors.BG_DARK_YELLOW} ${token.symbol} ${fancyColors.RESET}${fancyColors.LIGHT_YELLOW}${token.contractAddress}${fancyColors.RESET}\n`, {
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_NEON}${fancyColors.BOLD} Change Detected in Token Metadata! ${fancyColors.RESET}\n\t${fancyColors.BG_DARK_YELLOW} ${token.symbol} ${fancyColors.RESET} \t${fancyColors.LIGHT_YELLOW}${token.contractAddress}${fancyColors.RESET} \n\t`, {
                     old: existing,
                     new: {
                         name: token.name,

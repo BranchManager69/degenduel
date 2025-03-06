@@ -60,22 +60,22 @@ const authLogger = {
 router.get('/challenge', async (req, res) => {
   try {
     // Debug mode
-    if (config.debug_mode) { logApi.info('Challenge request received', { wallet: req.query.wallet }); }
+    if (config.debug_mode) { logApi.info('Challenge request received \n\t', { wallet: req.query.wallet }); }
     
     const { wallet } = req.query;
     if (!wallet) {
-      if (config.debug_mode) { logApi.warn('Missing wallet address in challenge request'); }
+      if (config.debug_mode) { logApi.warn('Missing wallet address in challenge request \n\t'); }
       return res.status(400).json({ error: 'Missing wallet address' });
     }
 
-    if (config.debug_mode) { logApi.info('Attempting to generate nonce', { wallet }); } 
+    if (config.debug_mode) { logApi.info('Attempting to generate nonce \n\t', { wallet }); } 
     // Generate nonce & store in DB
     const nonce = await generateNonce(wallet);
-    if (config.debug_mode) { logApi.info('Nonce generated successfully', { wallet, nonce }); }
+    if (config.debug_mode) { logApi.info('Nonce generated successfully \n\t', { wallet, nonce }); }
     return res.json({ nonce });
   } catch (error) {
     if (config.debug_mode) { 
-      logApi.error('Failed to generate nonce', { 
+      logApi.error('Failed to generate nonce \n\t', { 
         error: error.message,
         stack: error.stack,
         wallet: req.query.wallet,
@@ -146,22 +146,22 @@ router.get('/challenge', async (req, res) => {
 router.post('/verify-wallet', async (req, res) => {
   try {
     const { wallet, signature, message, device_id, device_name, device_type } = req.body;
-    authLogger.info('Verify wallet request received', { wallet });
+    authLogger.info('Verify wallet request received \n\t', { wallet });
 
     if (!wallet || !signature || !message) {
-      authLogger.warn('Missing required fields', { wallet, hasSignature: !!signature, hasMessage: !!message });
+      authLogger.warn('Missing required fields \n\t', { wallet, hasSignature: !!signature, hasMessage: !!message });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     if (!Array.isArray(signature) || signature.length !== 64) {
-      authLogger.warn('Invalid signature format', { wallet, signatureLength: signature?.length });
+      authLogger.warn('Invalid signature format \n\t', { wallet, signatureLength: signature?.length });
       return res.status(400).json({ error: 'Signature must be a 64-byte array' });
     }
 
     // 1) Get the nonce from DB
     const record = await getNonceRecord(wallet);
     if (!record) {
-      authLogger.warn('No nonce record found', { wallet });
+      authLogger.warn('No nonce record found \n\t', { wallet });
       return res.status(401).json({ error: 'Nonce not found or expired' });
     }
 
@@ -169,7 +169,7 @@ router.post('/verify-wallet', async (req, res) => {
     const now = Date.now();
     const expiresAtMs = new Date(record.expires_at).getTime();
     if (expiresAtMs < now) {
-      authLogger.warn('Nonce expired', { 
+      authLogger.warn('Nonce expired \n\t', { 
         wallet,
         expiresAt: record.expires_at,
         now: new Date(now).toISOString(),
@@ -183,11 +183,13 @@ router.post('/verify-wallet', async (req, res) => {
     const lines = message.split('\n').map((l) => l.trim());
     const nonceLine = lines.find((l) => l.startsWith('Nonce:'));
     if (!nonceLine) {
+      authLogger.warn('Message missing nonce line \n\t', { wallet });
       return res.status(400).json({ error: 'Message missing nonce line' });
     }
     const messageNonce = nonceLine.split('Nonce:')[1].trim();
 
     if (messageNonce !== record.nonce) {
+      authLogger.warn('Nonce mismatch in message \n\t', { wallet });
       return res.status(401).json({ error: 'Nonce mismatch in message' });
     }
 
@@ -199,11 +201,13 @@ router.post('/verify-wallet', async (req, res) => {
     try {
       pubKey = new PublicKey(wallet);
     } catch (err) {
+      authLogger.warn('Invalid wallet address \n\t', { wallet });
       return res.status(400).json({ error: 'Invalid wallet address' });
     }
 
     const isVerified = nacl.sign.detached.verify(messageBytes, signatureUint8, pubKey.toBytes());
     if (!isVerified) {
+      authLogger.warn('Invalid signature \n\t', { wallet });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
@@ -233,7 +237,8 @@ router.post('/verify-wallet', async (req, res) => {
         const deviceCount = await prisma.authorized_devices.count({
           where: { wallet_address: wallet }
         });
-        
+
+        // If auto-authorize is enabled, and this is the first device, auto-authorize it
         const shouldAutoAuthorize = config.device_auth.auto_authorize_first_device && deviceCount === 0;
         
         // Check if device is already authorized
@@ -246,6 +251,7 @@ router.post('/verify-wallet', async (req, res) => {
           }
         });
         
+        // If the device is already authorized, update it
         if (existingDevice) {
           // Update existing device
           deviceInfo = await prisma.authorized_devices.update({
@@ -269,7 +275,7 @@ router.post('/verify-wallet', async (req, res) => {
             }
           });
           
-          authLogger.info('Auto-authorized first device for user', {
+          authLogger.info('Auto-authorized first device for user \n\t', {
             wallet,
             device_id,
             device_name: deviceInfo.device_name
@@ -286,14 +292,14 @@ router.post('/verify-wallet', async (req, res) => {
             }
           });
           
-          authLogger.info('Created unauthorized device record', {
+          authLogger.info('Created unauthorized device record \n\t', {
             wallet,
             device_id,
             device_name: deviceInfo.device_name
           });
         }
       } catch (deviceError) {
-        authLogger.error('Error handling device authorization', {
+        authLogger.error('Error handling device authorization \n\t', {
           wallet,
           device_id,
           error: deviceError.message
@@ -336,7 +342,7 @@ router.post('/verify-wallet', async (req, res) => {
     res.cookie('session', token, cookieOptions);
 
     // After successful verification
-    authLogger.info('Wallet verified successfully', { 
+    authLogger.info('Wallet verified successfully \n\t', { 
       wallet,
       role: user.role,
       cookieOptions: {
@@ -363,7 +369,7 @@ router.post('/verify-wallet', async (req, res) => {
       device: deviceAuthStatus
     });
   } catch (error) {
-    authLogger.error('Wallet verification failed', {
+    authLogger.error('Wallet verification failed \n\t', {
       error: error.message,
       stack: error.stack,
       wallet: req.body?.wallet
@@ -459,7 +465,7 @@ router.post('/dev-login', async (req, res) => {
     });
 
     // Log successful dev login
-    authLogger.info('Development login successful', {
+    authLogger.info('Development login successful \n\t', {
       wallet: user.wallet_address,
       role: user.role,
       sessionId
@@ -475,7 +481,7 @@ router.post('/dev-login', async (req, res) => {
       }
     });
   } catch (error) {
-    authLogger.error('Dev login error:', {
+    authLogger.error('Dev login error \n\t', {
       error: error.message,
       stack: error.stack
     });
@@ -520,7 +526,7 @@ router.post('/disconnect', async (req, res) => {
   try {
     const { wallet } = req.body;
     if (!wallet) {
-      logApi.warn('Missing wallet address in disconnect request');
+      logApi.warn('Missing wallet address in disconnect request \n\t');
       return res.status(400).json({ error: 'Missing wallet' });
     }
 
@@ -532,10 +538,10 @@ router.post('/disconnect', async (req, res) => {
     // Clear the cookie
     res.clearCookie('session', { domain: '.degenduel.me' });
 
-    if (config.debug_mode) { logApi.info(`Wallet ${wallet} disconnected`); }
+    if (config.debug_mode) { logApi.info(`Wallet ${wallet} disconnected \n\t`); }
     res.json({ success: true });
   } catch (error) {
-    if (config.debug_mode) { logApi.error('Wallet disconnect failed', { error }); }
+    if (config.debug_mode) { logApi.error('Wallet disconnect failed \n\t', { error }); }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -557,7 +563,7 @@ router.post('/disconnect', async (req, res) => {
 router.post('/logout', requireAuth, async (req, res) => {
   try {
     if (config.debug_mode) {
-      logApi.info('Logout request received', {
+      logApi.info('Logout request received \n\t', {
         user: req.user.wallet_address
       });
     }
@@ -577,13 +583,13 @@ router.post('/logout', requireAuth, async (req, res) => {
     });
 
     if (config.debug_mode) {
-      logApi.info('User logged out successfully', {
+      logApi.info('User logged out successfully \n\t', {
         user: req.user.wallet_address
       });
     }
     res.json({ success: true });
   } catch (error) {
-    logApi.error('Logout failed:', error);
+    logApi.error('Logout failed \n\t', { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -606,7 +612,7 @@ router.get('/session', async (req, res) => {
   try {
     const token = req.cookies.session;
     if (!token) {
-      authLogger.debug('No token provided');
+      authLogger.debug('No token provided \n\t');
       return res.status(401).json({ error: 'No session token provided' });
     }
 
@@ -617,7 +623,7 @@ router.get('/session', async (req, res) => {
     });
 
     if (!user) {
-      authLogger.debug('User not found', { wallet: decoded.wallet_address });
+      authLogger.debug('User not found \n\t', { wallet: decoded.wallet_address });
       return res.status(401).json({ error: 'User not found' });
     }
 
@@ -629,7 +635,7 @@ router.get('/session', async (req, res) => {
 
     // Only log role mismatches at warn level
     if (user.role !== decoded.role) {
-      authLogger.warn('Role mismatch detected', {
+      authLogger.warn('Role mismatch detected \n\t', {
         wallet: user.wallet_address,
         stored_role: user.role,
         token_role: decoded.role
@@ -652,8 +658,86 @@ router.get('/session', async (req, res) => {
       error: error.message
     }, req.headers);
 
-    authLogger.error('Session validation failed', { error: error.message });
+    authLogger.error('Session validation failed \n\t', { error: error.message });
     res.status(401).json({ error: 'Invalid session token' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/token:
+ *   get:
+ *     summary: Get current access token for WebSocket connections
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Token provided successfully
+ *       401:
+ *         description: No valid session
+ */
+router.get('/token', async (req, res) => {
+  try {
+    const sessionToken = req.cookies.session;
+    if (!sessionToken) {
+      authLogger.debug('No session token provided for token request \n\t');
+      return res.status(401).json({ error: 'No session token provided' });
+    }
+
+    // Decode the session token
+    const decoded = jwt.verify(sessionToken, config.jwt.secret);
+
+    // Get the user from the database using the decoded wallet address from the session token
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: decoded.wallet_address }
+    });
+
+    // If the user is not found, return a 401 error
+    if (!user) {
+      authLogger.debug('User not found for token request \n\t', { wallet: decoded.wallet_address });
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Create a WebSocket-specific token with shorter-than-normal expiration
+    const wsToken = sign(
+      {
+        wallet_address: user.wallet_address,
+        role: user.role,
+        session_id: decoded.session_id // Preserve the same session ID
+      },
+      config.jwt.secret,
+      { expiresIn: '1h' } // Short expiration for WebSocket tokens (but is this *too* short?)
+    );
+
+    // Track token generation with analytics
+    authLogger.analytics.trackInteraction(user, 'token_request', {
+      success: true,
+      session_id: decoded.session_id
+    }, req.headers);
+
+    // Log the WSS token generation
+    authLogger.info('WebSocket token generated \n\t', { 
+      wallet: user.wallet_address,
+      session_id: decoded.session_id
+    });
+
+    // Return the WSS token with a 1 hour expiration
+    return res.json({
+      token: wsToken,
+      expiresIn: 3600 // 1 hour in seconds
+    });
+
+  } catch (error) {
+    // Track failed WSS token requests
+    authLogger.analytics.trackInteraction(null, 'token_request', {
+      success: false,
+      error: error.message
+    }, req.headers);
+
+    // Log the failed WSS token generation
+    authLogger.error('Token generation failed \n\t', { error: error.message });
+    res.status(401).json({ error: 'Invalid session' });
   }
 });
 
