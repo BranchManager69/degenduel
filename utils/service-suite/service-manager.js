@@ -161,13 +161,13 @@ class ServiceManager {
 
         // Debug registration
         if (VERBOSE_SERVICE_INIT) {
-            logApi.info(`Registered service: ${serviceName}`, {
+            logApi.info(`${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_GRAY} ${serviceName} ${fancyColors.RESET}`, {
             //    layer: metadata.layer,
             //    criticalLevel: metadata.criticalLevel,
             //    dependencies: allDependencies.size ? Array.from(allDependencies) : []
             });
         } else {
-            logApi.info(`Registered service: ${fancyColors.LIGHT_GREEN}${fancyColors.BG_GRAY} ${serviceName} ${fancyColors.RESET}\n`);
+            logApi.info(`${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_GRAY} ${serviceName} ${fancyColors.RESET}`);
         }
 
         // Return true if the service was registered successfully
