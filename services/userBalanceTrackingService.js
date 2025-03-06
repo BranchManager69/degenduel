@@ -102,7 +102,7 @@ class UserBalanceTrackingService extends BaseService {
             this.calculateCheckInterval(activeUsers);
             
             logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.DARK_CYAN}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.DARK_CYAN}users${fancyColors.RESET}`);
-            logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}Checking each user every ${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} minutes${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}Checking each user every ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} ${fancyColors.DARK_CYAN}minutes${fancyColors.RESET}`);
             
             return true;
         } catch (error) {
@@ -134,7 +134,7 @@ class UserBalanceTrackingService extends BaseService {
             Math.min(calculatedIntervalMs, maxCheckIntervalMs)
         );
         
-        logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}Balance check interval calculated:${fancyColors.RESET} ${fancyColors.DARK_CYAN}${Math.round(this.effectiveCheckIntervalMs / 1000)} seconds${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}Balance check interval calculated to be${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000)} ${fancyColors.DARK_CYAN}${fancyColors.BOLD}seconds (unbuffered)${fancyColors.RESET}`);
     }
     
     /**

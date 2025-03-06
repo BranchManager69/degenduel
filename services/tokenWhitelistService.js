@@ -165,14 +165,14 @@ class TokenWhitelistService extends BaseService {
             );
 
             // Log the service as started
-            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}✅ ${fancyColors.BG_LIGHT_GREEN}Token Whitelist Service initialized ${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}✅ ${fancyColors.BG_LIGHT_GREEN} Token Whitelist Service initialized ${fancyColors.RESET}`, {
             //    totalTokens,
             //    activeTokens
             });
 
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Token Whitelist Service initialization error: ${error.message} ${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Token Whitelist Service initialization error: ${error.message} ${fancyColors.RESET}`);
             await this.handleError(error);
             throw error;
         }
@@ -194,7 +194,7 @@ class TokenWhitelistService extends BaseService {
             // Calculate discount based on user level
             return userStats.level * this.config.submission.discountPerLevel;
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Failed to get user level: ${error.message} ${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Failed to get user level: ${error.message} ${fancyColors.RESET}`);
             return 0; // No discount on error
         }
     }
@@ -287,7 +287,7 @@ class TokenWhitelistService extends BaseService {
             this.whitelistStats.validations.failed++;
             
             // Log the error
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Token verification failed: ${error.message} ${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Token verification failed: ${error.message} ${fancyColors.RESET}`);
 
             // Throw error if it's a ServiceError
             if (error instanceof ServiceError) {
@@ -368,7 +368,7 @@ class TokenWhitelistService extends BaseService {
             return true;
         } catch (error) {
             // Log the error
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Payment verification failed: ${error.message} ${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Payment verification failed: ${error.message} ${fancyColors.RESET}`);
             throw error;
         }
     }
@@ -388,7 +388,7 @@ class TokenWhitelistService extends BaseService {
             const timeout = setTimeout(() => {
                 this.activeSubmissions.delete(contractAddress);
                 this.whitelistStats.submissions.failed++;
-                logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Submission timeout: ${contractAddress} ${fancyColors.RESET}`, {
+                logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Submission timeout: ${contractAddress} ${fancyColors.RESET}`, {
                     contractAddress,
                     metadata
                 });
@@ -450,7 +450,7 @@ class TokenWhitelistService extends BaseService {
             this.whitelistStats.submissions.failed++;
 
             // Log the error
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Failed to add token to whitelist: ${error.message} ${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Failed to add token to whitelist: ${error.message} ${fancyColors.RESET}`);
 
             // Throw error
             throw ServiceError.operation('Failed to add token to whitelist');
@@ -502,7 +502,7 @@ class TokenWhitelistService extends BaseService {
             return token;   
         } catch (error) {
             // Log the error
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Failed to remove token from whitelist: ${error.message} ${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Failed to remove token from whitelist: ${error.message} ${fancyColors.RESET}`);
 
             // Throw error
             throw ServiceError.operation('Failed to remove token from whitelist');
@@ -522,7 +522,7 @@ class TokenWhitelistService extends BaseService {
             for (const [address] of stuckSubmissions) {
                 this.activeSubmissions.delete(address);
                 this.whitelistStats.submissions.failed++;
-                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Cleaned up stuck submission: ${address} ${fancyColors.RESET}`);
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Cleaned up stuck submission: ${address} ${fancyColors.RESET}`);
             }
 
             // Verify all whitelisted tokens still exist
@@ -552,7 +552,7 @@ class TokenWhitelistService extends BaseService {
             for (const token of tokens) {
                 // Skip verification for tokens with known metadata issues
                 if (knownNonStandardTokens.has(token.address)) {
-                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Skipping metadata verification for known non-standard token: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Skipping metadata verification for known non-standard token: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`);
                     results.verified++;
                     continue;
                 }
@@ -569,7 +569,7 @@ class TokenWhitelistService extends BaseService {
                         results.verified++;
                         
                         // Log successful verification with minimal information
-                        logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}✅ ${fancyColors.BG_LIGHT_GREEN}Token verified: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`);
+                        logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}✅ ${fancyColors.BG_LIGHT_GREEN} Token verified: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`);
                     } catch (metaplexError) {
                         // Add more context to the error
                         const enhancedError = new Error(`Metadata fetch failed: ${metaplexError.message}`);
@@ -586,7 +586,7 @@ class TokenWhitelistService extends BaseService {
                     // Only log actual failures, not "already whitelisted" errors
                     if (!error.message.includes('already whitelisted')) {
                         // Enhanced logging for troubleshooting metadata issues
-                        logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Token verification failed during check: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`, {
+                        logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Token verification failed during check: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`, {
                             address: token.address,
                             token_name: token.name,
                             token_symbol: token.symbol,
@@ -597,7 +597,7 @@ class TokenWhitelistService extends BaseService {
                         
                         // Add debug log with more technical details if available
                         if (error.source || error.stack) {
-                            logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Token verification technical details: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`, {
+                            logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Token verification technical details: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`, {
                                 address: token.address,
                                 error_source: error.source || 'Not available',
                                 stack_trace: error.stack || 'Not available'
@@ -619,7 +619,7 @@ class TokenWhitelistService extends BaseService {
             
             // Only log a summary message if there were problems or tokens were removed
             if (foundIssues) {
-                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Token whitelist periodic check completed: ${results} ${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Token whitelist periodic check completed: ${results} ${fancyColors.RESET}`);
             } else {
                 // Silent operation - just increment operation count for stats 
                 this.whitelistStats.operations.total++;
@@ -673,10 +673,10 @@ class TokenWhitelistService extends BaseService {
             );
             
             // Log the service stopped
-            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}✅ ${fancyColors.BG_LIGHT_GREEN}Token Whitelist Service stopped successfully ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA} ✅ ${fancyColors.BG_LIGHT_GREEN}Token Whitelist Service stopped successfully ${fancyColors.RESET}`);
         } catch (error) {
             // Log the error
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Error stopping Token Whitelist Service: ${error.message} ${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA} ❌ ${fancyColors.BG_LIGHT_RED}Error stopping Token Whitelist Service: ${error.message} ${fancyColors.RESET}`);
             throw error;
         }
     }

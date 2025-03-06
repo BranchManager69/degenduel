@@ -150,9 +150,9 @@ class MarketDataService extends BaseService {
                     tokensWithPrices
                 });
             } else {
-                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Initial token data validated ${fancyColors.RESET} \n\t\t`, {
-                    activeTokens,
-                    tokensWithPrices
+                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_DARK_GREEN} Initial token data validated ${fancyColors.RESET}`, {
+                //    activeTokens,
+                //    tokensWithPrices
                 });
             }
 
@@ -166,9 +166,9 @@ class MarketDataService extends BaseService {
             };
 
             logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.GREEN}Market Data Service initialized${fancyColors.RESET}`, {
-                activeTokens: this.marketStats.data.tokens.active,
-                withPrices: this.marketStats.data.tokens.withPrices,
-                status: 'ready'
+            //    activeTokens: this.marketStats.data.tokens.active,
+            //    withPrices: this.marketStats.data.tokens.withPrices,
+            //    status: 'ready'
             });
 
             this.isInitialized = true;

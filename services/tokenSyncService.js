@@ -170,7 +170,7 @@ class TokenSyncService extends BaseService {
                     logApi.warn('No tokens available for price update');
                 }
                 
-                logApi.info('Initial token sync completed successfully');
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_DARK_GREEN} Initial token sync completed successfully ${fancyColors.RESET}`);
             } catch (error) {
                 logApi.error('Initial token sync failed:', error);
                 // Don't throw - we'll retry on normal interval
@@ -421,7 +421,7 @@ class TokenSyncService extends BaseService {
                 logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Database currently contains ${fancyColors.GRAY}${result.data.length}${fancyColors.RESET} ${fancyColors.DARK_GREEN}tokens.${fancyColors.RESET}`);
                 return result.data;
             } catch (error) {
-                logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ⚠️  ${fancyColors.BG_DARK_RED}${fancyColors.BOLD} ERROR ${fancyColors.RESET}⚠️ \n\t\t${fancyColors.BOLD_RED}Error fetching token data from primary source:${fancyColors.RESET}\n\t\t${fancyColors.BOLD}${fancyColors.LIGHT_RED}${error.message}${fancyColors.RESET}`);
+                logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ⚠️  ${fancyColors.DARK_RED}${fancyColors.BOLD} ERROR! ${fancyColors.RESET}⚠️ \n\t\t${fancyColors.BOLD_RED}Error fetching token data from primary source:${fancyColors.RESET}\n\t\t\t${fancyColors.BOLD}${fancyColors.LIGHT_RED}${error.message}${fancyColors.RESET}`);
                 // Continue to fallbacks
             }
         }
@@ -443,7 +443,7 @@ class TokenSyncService extends BaseService {
                 logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_RED}Fallback endpoint also failed:${fancyColors.RESET} ${fancyColors.DARK_RED}${fancyColors.ITALIC}${fallbackError.message}${fancyColors.RESET}`);
             }
         } else {
-            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.LIGHT_RED}No valid fallback endpoint configured.${fancyColors.RESET} \n\t${fancyColors.LIGHT_RED}${fancyColors.ITALIC}Skipping fallback attempt.${fancyColors.RESET}`);
+            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BOLD_RED}No valid fallback endpoint configured.${fancyColors.RESET} ${fancyColors.RED}Skipping fallback attempt.${fancyColors.RESET}`);
         }
             
         // If fallback also fails, try to use database
@@ -562,7 +562,7 @@ class TokenSyncService extends BaseService {
         const startTime = Date.now();
         
         try {
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Starting metadata update.  ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_DARK_GREEN}${fancyColors.WHITE}${fullData.length} ${fancyColors.RESET}${fancyColors.BG_DARK_GREEN}tokens to process${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Starting metadata update.  ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_DARK_GREEN}${fancyColors.WHITE}${fullData.length} ${fancyColors.RESET}${fancyColors.BG_DARK_GREEN}tokens to process ${fancyColors.RESET}`);
 
             let created = 0;
             let updated = 0;
@@ -777,7 +777,7 @@ class TokenSyncService extends BaseService {
             if (!existing || 
                 existing.name !== token.name || 
                 existing.symbol !== token.symbol) {
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_NEON}${fancyColors.BOLD} Change Detected in Token Metadata! ${fancyColors.RESET}\n\t${fancyColors.BG_DARK_YELLOW} ${token.symbol} ${fancyColors.RESET}${fancyColors.LIGHT_YELLOW}${token.contractAddress}${fancyColors.RESET}`, {
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_NEON}${fancyColors.BOLD} Change Detected in Token Metadata! ${fancyColors.RESET}\n\t${fancyColors.BG_DARK_YELLOW} ${token.symbol} ${fancyColors.RESET}${fancyColors.LIGHT_YELLOW}${token.contractAddress}${fancyColors.RESET}\n`, {
                     old: existing,
                     new: {
                         name: token.name,

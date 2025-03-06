@@ -172,8 +172,8 @@ class WalletRakeService extends BaseService {
             );
 
             logApi.info('\t\tWallet Rake Service initialized', {
-                totalRaked: this.rakeStats.amounts.total_raked,
-                totalWallets: this.rakeStats.wallets.total
+            //    totalRaked: this.rakeStats.amounts.total_raked,
+            //    totalWallets: this.rakeStats.wallets.total
             });
 
             return true;
