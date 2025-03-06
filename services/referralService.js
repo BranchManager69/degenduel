@@ -217,7 +217,7 @@ class ReferralService extends BaseService {
             );
 
             // Log successful service initialization
-            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}✅ ${fancyColors.BG_LIGHT_GREEN}Referral Service initialized ${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}✅ ${fancyColors.BG_LIGHT_GREEN} Referral Service initialized ${fancyColors.RESET}`, {
             //    totalReferrals,
             //    activeReferrals,
             //    convertedReferrals,
