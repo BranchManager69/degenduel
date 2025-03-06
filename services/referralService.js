@@ -16,6 +16,7 @@ import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
@@ -119,7 +120,7 @@ class ReferralService extends BaseService {
             // This makes the service more resilient
             const contestEvalStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_EVALUATION);
             if (!contestEvalStatus) {
-                logApi.warn('Contest Evaluation Service not healthy, but continuing initialization');
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Contest Evaluation Service not healthy, but continuing initialization ${fancyColors.RESET}`);
                 this.referralStats.dependencies.contestEvaluation = {
                     status: 'unhealthy',
                     lastCheck: new Date().toISOString(),
@@ -215,19 +216,20 @@ class ReferralService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('\t\tReferral Service initialized', {
-                totalReferrals,
-                activeReferrals,
-                convertedReferrals,
-                totalMilestones,
-                achievedMilestones
+            // Log successful service initialization
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}✅ ${fancyColors.BG_LIGHT_GREEN}Referral Service initialized ${fancyColors.RESET}`, {
+            //    totalReferrals,
+            //    activeReferrals,
+            //    convertedReferrals,
+            //    totalMilestones,
+            //    achievedMilestones
             });
 
             return true;
         } catch (error) {
-            logApi.error('Referral Service initialization error:', error);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Referral Service initialization error:${fancyColors.RESET} ${error.message}`);
             await this.handleError(error);
-            throw error;
+            throw error;    
         }
     }
 
@@ -245,7 +247,7 @@ class ReferralService extends BaseService {
             };
 
             if (!contestEvalStatus) {
-                logApi.warn('Contest Evaluation Service unhealthy, continuing with limited functionality');
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Contest Evaluation Service unhealthy, continuing with limited functionality ${fancyColors.RESET}`);
                 // Continue execution instead of throwing an error
             }
 

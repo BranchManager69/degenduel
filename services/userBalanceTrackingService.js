@@ -466,7 +466,7 @@ async function ensureSchemaExists() {
         // this should work. If it fails, it means there may be a discrepancy
         // between our Prisma schema and the database
         
-        logApi.info(`Verified wallet_balance_history table exists (${historyCount} records)`);
+        logApi.info(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.DARK_CYAN} ✅ ${fancyColors.BOLD}${fancyColors.DARK_CYAN}wallet_balance_history${fancyColors.RESET} ${fancyColors.DARK_CYAN}table exists (records: ${historyCount})`);
         
         return true;
     } catch (error) {

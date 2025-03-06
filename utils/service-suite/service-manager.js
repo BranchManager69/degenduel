@@ -107,21 +107,21 @@ class ServiceManager {
             throw new Error('Attempted to register undefined service');
         }
 
-        // Add detailed logging for service identification
-        logApi.info(`${fancyColors.MAGENTA}[ServiceManager]${fancyColors.RESET} Starting registration:\n`, {
-            type: typeof serviceOrName,
-            isInstance: serviceOrName instanceof BaseService,
-            hasConfig: serviceOrName?.config !== undefined,
-            configName: serviceOrName?.config?.name,
-            directName: serviceOrName?.name,
-            dependencies
-        });
-
         // Handle both service instances and service names
         const serviceName = typeof serviceOrName === 'string' 
             ? serviceOrName 
             : serviceOrName.config?.name || serviceOrName.name;
 
+        // Log the service registration
+        logApi.info(`${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}Registering ${fancyColors.UNDERLINE}${serviceName}${fancyColors.RESET}${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}...${fancyColors.RESET}`, {
+            //    type: typeof serviceOrName,
+            //    isInstance: serviceOrName instanceof BaseService,
+            //    hasConfig: serviceOrName?.config !== undefined,
+            //    configName: serviceOrName?.config?.name,
+            //    directName: serviceOrName?.name,
+            //    dependencies
+            });
+        
         // Debug name resolution
         if (VERBOSE_SERVICE_INIT) {
             logApi.info(`[ServiceManager] Name resolution:`, {
@@ -162,12 +162,12 @@ class ServiceManager {
         // Debug registration
         if (VERBOSE_SERVICE_INIT) {
             logApi.info(`Registered service: ${serviceName}`, {
-                layer: metadata.layer,
-                criticalLevel: metadata.criticalLevel,
-                dependencies: allDependencies.size ? Array.from(allDependencies) : []
+            //    layer: metadata.layer,
+            //    criticalLevel: metadata.criticalLevel,
+            //    dependencies: allDependencies.size ? Array.from(allDependencies) : []
             });
         } else {
-            logApi.info(`Registered service: ${serviceName}`);
+            logApi.info(`Registered service: ${fancyColors.LIGHT_GREEN}${fancyColors.BG_GRAY} ${serviceName} ${fancyColors.RESET}\n`);
         }
 
         // Return true if the service was registered successfully
@@ -186,10 +186,10 @@ class ServiceManager {
         const initOrder = this.calculateInitializationOrder();
 
         // Log the starting service initialization
-        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Starting service initialization in order:${fancyColors.RESET}`, {
-            order: initOrder,
-            totalServices: initOrder.length,
-            registeredServices: Array.from(this.services.keys())
+        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Starting service initialization in order...${fancyColors.RESET}`, {
+        //    order: initOrder,
+        //    totalServices: initOrder.length,
+        //    registeredServices: Array.from(this.services.keys())
         });
 
         // First, initialize infrastructure layer services
@@ -199,9 +199,9 @@ class ServiceManager {
         });
 
         // Log the infrastructure services to be initialized
-        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Initializing infrastructure services:${fancyColors.RESET}`, {
-            services: infraServices,
-            count: infraServices.length
+        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Initializing infrastructure services...${fancyColors.RESET}`, {
+        //    services: infraServices,
+        //    count: infraServices.length
         });
 
         // Initialize the infrastructure services
@@ -226,7 +226,7 @@ class ServiceManager {
                 if (success) {
                     // Log the infrastructure service initialization completed successfully
                     if (VERBOSE_SERVICE_INIT) {
-                        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Infrastructure service ${serviceName} initialization completed successfully${fancyColors.RESET} \n`);
+                        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Infrastructure service ${serviceName} initialization completed successfully${fancyColors.RESET}`);
                     }
                 } else {
                     // Log the infrastructure service initialization returned false
@@ -255,9 +255,9 @@ class ServiceManager {
         // Then initialize remaining services in dependency order
         const remainingServices = initOrder.filter(service => !infraServices.includes(service));
         // Log the remaining services to be initialized
-        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Initializing remaining services:${fancyColors.RESET}`, {
-            services: remainingServices,
-            count: remainingServices.length
+        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Initializing remaining services...${fancyColors.RESET}`, {
+        //    services: remainingServices,
+        //    count: remainingServices.length
         });
 
         // Initialize the remaining services
@@ -280,7 +280,7 @@ class ServiceManager {
                 const success = await this._initializeService(serviceName, initialized, failed);
                 if (success) {
                     // Log the remaining service initialization completed successfully
-                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Service ${serviceName} initialization completed successfully${fancyColors.RESET} \n`);
+                    logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Service ${serviceName} initialization completed successfully${fancyColors.RESET}`);
                 } else {
                     // Log the remaining service initialization returned false
                     logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}${fancyColors.ITALIC}Service ${serviceName} initialization returned false${fancyColors.RESET}`);
@@ -396,7 +396,7 @@ class ServiceManager {
         try {
             // Log the starting service initialization
             if (VERBOSE_SERVICE_INIT) {
-                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Starting initialization of service ${serviceName}`);
+                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ITALIC}${fancyColors.LIGHT_YELLOW}Starting initialization of service ${fancyColors.DARK_MAGENTA}${fancyColors.BOLD}${fancyColors.ITALIC}${serviceName}${fancyColors.RESET}`);
             }
 
             // Return true if the service has already been initialized
@@ -575,8 +575,8 @@ class ServiceManager {
                     // Log the service initialization completed successfully
                     if (VERBOSE_SERVICE_INIT) {
                         logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Service ${serviceName} initialized and started successfully`, {
-                            config: service.config,
-                            stats: service.stats
+                        //    config: service.config,
+                        //    stats: service.stats
                         });
                     } else {
                         //logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Service ${serviceName} initialized and started successfully`, {
@@ -592,11 +592,11 @@ class ServiceManager {
                     const error = new Error(`Service ${serviceName} initialization returned false`);
                     if (VERBOSE_SERVICE_INIT) {
                         logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
-                            metadata: getServiceMetadata(serviceName)
+                        //    metadata: getServiceMetadata(serviceName)
                         });
                     } else {
                         logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
-                            //metadata: getServiceMetadata(serviceName)
+                        //    metadata: getServiceMetadata(serviceName)
                         });
                     }
                     failed.add(serviceName);
@@ -617,7 +617,7 @@ class ServiceManager {
                     });
                 } else {
                     logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
-                        //metadata: getServiceMetadata(serviceName)
+                    //    metadata: getServiceMetadata(serviceName)
                     });
                 }
                 failed.add(serviceName);
@@ -633,8 +633,8 @@ class ServiceManager {
                 });
             } else {
                 logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Unexpected error in _initializeService for ${serviceName}:`, {
-                    //error: error.message,
-                    //metadata: getServiceMetadata(serviceName)
+                //    error: error.message,
+                //    metadata: getServiceMetadata(serviceName)
                 });
             }
             failed.add(serviceName);

@@ -18,6 +18,7 @@ import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
@@ -25,7 +26,6 @@ import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/servic
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import crypto from 'crypto';
-import { fancyColors } from '../utils/colors.js';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
 //import marketDataService from './marketDataService.js';
@@ -98,7 +98,7 @@ class ContestEvaluationService extends BaseService {
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         
         // Connection is ready immediately - log success
-        logApi.info(`${fancyColors.BG_GREEN}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Solana connection initialized${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.WHITE} 🌐 ${fancyColors.BG_DARK_BLACK} Early Solana connection initialized ${fancyColors.RESET}`);
 
         // Initialize service-specific stats
         this.evaluationStats = {
@@ -1043,12 +1043,38 @@ class ContestEvaluationService extends BaseService {
     // Helper function to process refunds
     async processRefund(participant, contest, contestWallet) {
         try {
+            // Use contest.entry_fee as refund amount since entry_amount doesn't exist on participants
+            const refundAmount = contest.entry_fee || new Decimal(0);
+            
+            // Explicitly reject zero-value refunds
+            if (refundAmount.equals(0)) {
+                logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Cannot process zero-value refund:${fancyColors.RESET}`, {
+                    contest_id: contest.id,
+                    wallet_address: participant.wallet_address,
+                    contest_code: contest.contest_code
+                });
+                
+                // Log to admin logger
+                await AdminLogger.logAction(
+                    'SYSTEM',
+                    AdminLogger.Actions.CONTEST.CANCEL,
+                    {
+                        contest_id: contest.id,
+                        error: "Zero-value refund attempted",
+                        wallet: participant.wallet_address,
+                        status: "failed"
+                    }
+                );
+                
+                throw new Error('Zero-value refund rejected: contest.entry_fee is missing or zero');
+            }
+            
             // First create a pending refund transaction record
             const transaction = await prisma.transactions.create({
                 data: {
                     wallet_address: participant.wallet_address,
                     type: config.transaction_types.CONTEST_REFUND,
-                    amount: participant.entry_amount,
+                    amount: refundAmount,
                     balance_before: participant.initial_dxd_points, // TODO: **THE NAME 'balance_before' IS DANGEROUSLY CONFUSING!**  POINTS AT START OF CONTEST HAS NO RELATIONSHIP TO REFUND AMOUNT OR BALANCE!
                     balance_after: participant.current_dxd_points, // TODO: **THE NAME 'balance_after' IS DANGEROUSLY CONFUSING!**  POINTS AT END OF CONTEST HAS NO RELATIONSHIP TO REFUND AMOUNT OR BALANCE!
                     contest_id: contest.id,
@@ -1063,7 +1089,7 @@ class ContestEvaluationService extends BaseService {
             const signature = await this.performBlockchainTransfer(
                 contestWallet,
                 participant.wallet_address,
-                participant.entry_amount
+                refundAmount
             );
 
             // Update transaction with success status
@@ -1086,7 +1112,7 @@ class ContestEvaluationService extends BaseService {
                 },
                 data: {
                     refunded_at: new Date(),
-                    refund_amount: participant.entry_amount,
+                    refund_amount: refundAmount,
                     refund_transaction_id: transaction.id
                 }
             });
@@ -1145,8 +1171,10 @@ class ContestEvaluationService extends BaseService {
             }
 
             // Validate contest wallet has sufficient balance to refund all participants
+            // Use contest.entry_fee since entry_amount doesn't exist on participants
+            const entryFeePerParticipant = contest.entry_fee || new Decimal(0);
             const totalRefundAmount = participants.reduce(
-                (sum, p) => sum.add(p.entry_amount),
+                (sum, p) => sum.add(entryFeePerParticipant),
                 new Decimal(0)
             );
             await this.validateContestWalletBalance(contestWallet, totalRefundAmount.toNumber());

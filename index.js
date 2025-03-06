@@ -468,17 +468,17 @@ async function initializeServer() {
     try {
         // Colored logs - Start with Red (196)
         logApi.info('\n\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mDatabase Layer\x1b[0m\x1b[38;5;196m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-        logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ 🔄 Initializing PostgreSQL...\x1b[0m');
+        logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ 🔄 ${fancyColors.WHITE}Initializing PostgreSQL...\x1b[0m`);
         await initPgDatabase();
         InitLogger.logInit('Database', 'PostgreSQL', 'success');
         initResults.Database = { success: true };
-        logApi.info('\x1b[38;5;196m┃           ┗━━━━━━━━━━━ ☑️ PostgreSQL Ready\x1b[0m');
+        logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ☑️ ${fancyColors.BOLD_GREEN}PostgreSQL Ready\x1b[0m`);
 
         // Initialize SQLite
-        logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ 🔄 Initializing SQLite...\x1b[0m');
+        logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ 🔄 ${fancyColors.WHITE}Initializing SQLite...\x1b[0m`);
         await initDatabase();
         InitLogger.logInit('Database', 'SQLite', 'success', { path: '/home/websites/degenduel/data/leaderboard.db' });
-        logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✅ SQLite Ready\x1b[0m');
+        logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ☑️ ${fancyColors.BOLD_GREEN}SQLite Ready\x1b[0m`);
 
         // Initialize WebSocket Layer using the WebSocket Initializer
         try {
@@ -487,7 +487,7 @@ async function initializeServer() {
             // Initialize Services Layer (Moved outside WebSocket try-catch)
             logApi.info('\n\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
             // (Solana Service Manager is now initialized through the service system)
-            logApi.info('\x1b[38;5;27m┣━━━━━━━━━━━ 🔄 Note: Solana Service now initialized via service system...\x1b[0m');
+            logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ 🔄 ${fancyColors.BLUE}${fancyColors.UNDERLINE}${fancyColors.BOLD}NOTE${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BLUE}: ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.LIGHT_BLUE}The Solana Service is now initialized via service system...\x1b[0m`);
 
             // Initialize grouped services 
             // (Note: I'm not married to these groupings, I'm open to suggestions)
