@@ -15,6 +15,7 @@ import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
+import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
@@ -127,13 +128,15 @@ class WalletService extends BaseService {
                 walletStats: this.walletStats
             }));
 
+            // Mark the service as started
             await serviceManager.markServiceStarted(
                 this.name,
                 JSON.parse(JSON.stringify(this.config)),
                 serializableStats
             );
 
-            logApi.info('\t\tWallet Generator Service initialized');
+            // Log the service initialization
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.DARK_MAGENTA} ✅ ${fancyColors.BG_LIGHT_GREEN} Wallet Generator Service initialized ${fancyColors.RESET}`);
             return true;
         } catch (error) {
             logApi.error('Wallet Generator Service initialization error:', error);

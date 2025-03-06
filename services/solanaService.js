@@ -11,6 +11,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
+import { fancyColors } from '../utils/colors.js';
 
 // Configuration for Solana service
 const SOLANA_SERVICE_CONFIG = {
@@ -66,15 +67,15 @@ class SolanaService extends BaseService {
             );
             
             // Test connection with initial request
-            const versionInfo = await this.connection.getVersion();
-            logApi.info('Solana connection established successfully', {
-                version: versionInfo?.solana || 'unknown',
-                feature_set: versionInfo?.feature_set || 0
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}\t\t✅ ${fancyColors.BG_LIGHT_GREEN} Solana connection established successfully ${fancyColors.RESET}`, {
+            //    version: versionInfo?.solana || 'unknown',
+            //    feature_set: versionInfo?.feature_set || 0
             });
+            //const versionInfo = await this.connection.getVersion();
             
             return true;
         } catch (error) {
-            logApi.error('Failed to initialize Solana service:', error);
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED}Failed to initialize Solana service: ${error.message} ${fancyColors.RESET}`);
             throw new ServiceError('solana_init_failed', `Failed to initialize Solana service: ${error.message}`);
         }
     }

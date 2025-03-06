@@ -178,10 +178,10 @@ class AchievementService extends BaseService {
             );
 
             logApi.info(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.GREEN}Achievement Service initialized${fancyColors.RESET}`, {
-                totalAchievements,
-                activeAchievements,
-                awardedCount,
-                usersWithAchievements
+            //    totalAchievements,
+            //    activeAchievements,
+            //    awardedCount,
+            //    usersWithAchievements
             });
 
             return true;

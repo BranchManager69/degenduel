@@ -1,12 +1,21 @@
+// utils/logger-suite/init-logger.js
+
+/**
+ * This file MIGHT be used to log the initialization of the WebSocket service.
+ * WARNING: I HAVE NO IDEA IF THIS WORKS.
+ */
+
 import { logApi } from './logger.js';
 import { fancyColors } from '../colors.js';
+
+// ???
 class InitLogger {
     static services = new Map();
     static startTime = null;
 
     static startInitialization() {
         this.startTime = Date.now();
-        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}DegenDuel Initialization Starting${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BG_BLACK}     ${fancyColors.YELLOW}${fancyColors.ITALIC}DegenDuel Initialization Starting     ${fancyColors.RESET}`);
     }
 
     static logInit(category, service, status, details = null) {
