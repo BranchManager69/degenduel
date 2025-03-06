@@ -36,7 +36,8 @@ export const SERVICE_NAMES = {
     // Infrastructure Layer Services
     LIQUIDITY: 'liquidity_service',
     WALLET_GENERATOR: 'wallet_generator_service',
-    SOLANA: 'solana_service' // New Solana service
+    SOLANA: 'solana_service', // New Solana service
+    SYSTEM_SETTINGS: 'system_settings_service' // New System Settings service
 };
 
 export const SERVICE_LAYERS = {
@@ -154,6 +155,12 @@ export const SERVICE_METADATA = {
         updateFrequency: '30s',
         criticalLevel: 'critical',
         dependencies: []
+    },
+
+    // New System Settings service metadata
+    [SERVICE_NAMES.SYSTEM_SETTINGS]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'System settings management',
     }
 };
 
