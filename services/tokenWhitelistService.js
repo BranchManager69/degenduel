@@ -552,7 +552,7 @@ class TokenWhitelistService extends BaseService {
             for (const token of tokens) {
                 // Skip verification for tokens with known metadata issues
                 if (knownNonStandardTokens.has(token.address)) {
-                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Skipping metadata verification for known non-standard token: ${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}❌ ${fancyColors.BG_LIGHT_RED} Skipping metadata verification ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}for known non-standard token: ${fancyColors.LIGHT_MAGENTA}${token.symbol} (${token.address.substring(0, 8)}...) ${fancyColors.RESET}`);
                     results.verified++;
                     continue;
                 }
