@@ -3,11 +3,8 @@
 /**
  * 
  * This file is responsible for initializing all WebSocket servers.
- * 
  * It is called by the service-initializer.js file.
- * 
  * It is also responsible for registering the WebSocket servers with the monitor service.
- * 
  * It is also responsible for updating the WebSocket servers with the latest metrics.
  * 
  */
@@ -24,6 +21,7 @@ import { createContestWebSocket } from '../../websocket/contest-ws.js';
 import { createTokenDataWebSocket } from '../../websocket/token-data-ws.js';
 import { createUserNotificationWebSocket } from '../../websocket/user-notification-ws.js';
 import { createSkyDuelWebSocket } from '../../websocket/skyduel-ws.js';
+import { createSystemSettingsWebSocket } from '../../websocket/system-settings-ws.js';
 import { fancyColors, serviceColors } from '../colors.js';
 
 /**
@@ -44,7 +42,7 @@ export async function initializeWebSockets(server, initResults = {}) {
         const wsMonitor = createWebSocketMonitor(server);
         logApi.info(`${fancyColors.ORANGE}┃           ┣━━━━━━━━━━━ ${serviceColors.initializing}Monitor WebSocket initialized${fancyColors.RESET}`);
 
-        // Initialize circuit breaker WebSocket
+        // Initialize WebSocket circuit breaker second
         const wsCircuitBreaker = createCircuitBreakerWebSocket(server);
         logApi.info(`${fancyColors.ORANGE}┃           ┣━━━━━━━━━━━ ${serviceColors.initializing}Circuit Breaker WebSocket initialized${fancyColors.RESET}`);
 
@@ -59,24 +57,36 @@ export async function initializeWebSockets(server, initResults = {}) {
             contest: createContestWebSocket(server),
             tokenData: createTokenDataWebSocket(server),
             userNotification: createUserNotificationWebSocket(server),
-            skyDuel: createSkyDuelWebSocket(server)
+            skyDuel: createSkyDuelWebSocket(server),
+            systemSettings: createSystemSettingsWebSocket(server)
         };
 
-        // Initialize each WebSocket server
+        // Initialize each WebSocket server except monitor and circuit breaker
         const initPromises = Object.entries(wsServers)
-            .filter(([name]) => name !== 'monitor' && name !== 'circuitBreaker') // Skip monitor and circuit breaker as they're already initialized
+            .filter(([name]) => name !== 'monitor' && name !== 'circuitBreaker') // TODO: ??? ARE WE SURE ??? Skip monitor and circuit breaker as they're already initialized
             .map(async ([name, ws]) => {
                 try {
                     if (ws && typeof ws.initialize === 'function') {
+                        // Initialize the WebSocket server
                         await ws.initialize();
+
+                        // Log the successful initialization of the WebSocket server
                         logApi.info(`${fancyColors.ORANGE}┃           ┣━━━━━━━━━━━ ${serviceColors.initialized}${name} WebSocket initialized${fancyColors.RESET}`);
+
+                        // Return the WebSocket server instance
                         return [name, true];
                     } else {
+                        // Log the failed initialization of the WebSocket server
                         logApi.warn(`${fancyColors.ORANGE}┃           ┣━━━━━━━━━━━ ${serviceColors.failed}${name} WebSocket has no initialize method${fancyColors.RESET}`);
+
+                        // Return the WebSocket server instance
                         return [name, false];
                     }
                 } catch (error) {
+                    // Log the failed initialization of the WebSocket server
                     logApi.error(`${fancyColors.ORANGE}┃           ┣━━━━━━━━━━━ ${serviceColors.failed}Failed to initialize ${name} WebSocket:${fancyColors.RESET}`, error);
+
+                    // Return the WebSocket server instance
                     return [name, false];
                 }
             });
@@ -88,11 +98,11 @@ export async function initializeWebSockets(server, initResults = {}) {
         const failedServers = results
             .filter(([, success]) => !success)
             .map(([name]) => name);
-
         if (failedServers.length > 0) {
             throw new Error(`Failed to initialize WebSocket servers: ${failedServers.join(', ')}`);
         }
 
+        // Log the successful initialization of the WebSocket servers
         logApi.info(`${fancyColors.ORANGE}┃           ┗━━━━━━━━━━━ ${serviceColors.initialized}Service WebSockets Ready${fancyColors.RESET}`);
 
         // Store WebSocket servers in global registry
@@ -217,10 +227,7 @@ export async function cleanupWebSockets() {
     }
 
     logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ Cleaning up WebSocket servers...${fancyColors.RESET}`);
-    
-    // Log the cleanup start (???)
     InitLogger.logInit('WebSocket', 'Cleanup', 'initializing');
-
     for (const [name, ws] of Object.entries(global.wsServers)) {
         try {
             // Check if ws exists and has a cleanup method

@@ -30,6 +30,7 @@ import tokenSyncService from '../../services/tokenSyncService.js';
 import tokenWhitelistService from '../../services/tokenWhitelistService.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
 import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
+// systemSettingsService is not a service, but a WebSocket handler
 
 /**
  * ServiceInitializer class
@@ -53,7 +54,8 @@ class ServiceInitializer {
         if (!VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Registering core services...`);
         } else {
-            logApi.info(`${fancyColors.NEON}╭───────────────<< REGISTERING CORE SERVICES >>───────────────╮${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.NEON}╭───────────────────────<< ${fancyColors.BOLD}${fancyColors.BG_BLACK} REGISTERING CORE SERVICES ${fancyColors.RESET}${fancyColors.NEON} >>───────────────────────╮${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.NEON}|                                                             |${fancyColors.RESET}`);
         }
         
         try {
@@ -67,18 +69,17 @@ class ServiceInitializer {
                 logApi.info(`${fancyColors.RED}┏━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
                 
                 // Register Solana Service first (most fundamental)
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} Attempting to register solanaService...`);
+                logApi.info(`${fancyColors.RED}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register solanaService...`);
                 serviceManager.register(solanaService);
-                
                 // Register other infrastructure services
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} Attempting to register walletGeneratorService...`);
+                logApi.info(`${fancyColors.RED}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register walletGeneratorService...`);
                 serviceManager.register(walletGeneratorService);
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} Attempting to register liquidityService...`);
+                logApi.info(`${fancyColors.RED}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register liquidityService...`);
                 serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
-                logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ Infrastructure Services Registered${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ INFRASTRUCTURE LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
             }
 
-            // Data Layer
+            // Market Data Layer
             if (!VERBOSE_SERVICE_INIT_LOGS) {
                 // Register without verbose logging
                 serviceManager.register(tokenSyncService);
@@ -86,13 +87,13 @@ class ServiceInitializer {
                 serviceManager.register(tokenWhitelistService);
             } else {
                 logApi.info(`${fancyColors.ORANGE}┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} Attempting to register tokenSyncService...`);
+                logApi.info(`${fancyColors.ORANGE}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register tokenSyncService...`);
                 serviceManager.register(tokenSyncService);
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} Attempting to register marketDataService...`);
+                logApi.info(`${fancyColors.ORANGE}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register marketDataService...`);
                 serviceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} Attempting to register tokenWhitelistService...`);
+                logApi.info(`${fancyColors.ORANGE}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register tokenWhitelistService...`);
                 serviceManager.register(tokenWhitelistService);
-                logApi.info(`${fancyColors.ORANGE}┗━━━━━━━━━━━ ✅ Data Services Registered${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.ORANGE}┗━━━━━━━━━━━ ✅ DATA LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
             }
 
             // Contest Layer
@@ -105,16 +106,16 @@ class ServiceInitializer {
             } else {
                 logApi.info('\x1b[38;5;226m┏━━━━━━━━━━━━━━━━━━━━━━━ Contest Layer (3/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
                 // Log service names before registration (only in verbose mode)
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Registering Contest Layer services...${fancyColors.RESET}`);
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestEvaluationService...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Registering Contest Layer services...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestEvaluationService...${fancyColors.RESET}`);
                 serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register achievementService...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register achievementService...${fancyColors.RESET}`);
                 serviceManager.register(achievementService, []); // No hard dependencies
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register levelingService...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register levelingService...${fancyColors.RESET}`);
                 serviceManager.register(levelingService, []); // No hard dependencies
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register referralService...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register referralService...${fancyColors.RESET}`);
                 serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-                logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ CONTEST LAYER COMPLETE\x1b[0m');
+                logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ CONTEST LAYER REGISTRATION COMPLETE\x1b[0m');
             }
 
             // Wallet Layer
@@ -129,30 +130,29 @@ class ServiceInitializer {
                 serviceManager.register(userBalanceTrackingService, []);
             } else {
                 logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer (4/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestWalletService...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestWalletService...${fancyColors.RESET}`);
                 serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register adminWalletService...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register adminWalletService...${fancyColors.RESET}`);
                 serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register walletRakeService...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register walletRakeService...${fancyColors.RESET}`);
                 serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
                 // (ensure schema exists for user balance tracking)
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Ensuring database schema for user balance tracking...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Ensuring database schema for user balance tracking...${fancyColors.RESET}`);
                 await ensureSchemaExists();
-                logApi.info(`${fancyColors.LIGHT_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register userBalanceTrackingService...${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register userBalanceTrackingService...${fancyColors.RESET}`);
                 serviceManager.register(userBalanceTrackingService, []);
-                
-                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ WALLET LAYER COMPLETE\x1b[0m');
+                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ WALLET LAYER REGISTRATION COMPLETE\x1b[0m');
             }
 
             // Register dependencies
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.DARK_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Registering service dependencies...${fancyColors.RESET}`);
+            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.DARK_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.PURPLE}${fancyColors.ITALIC}Registering service dependencies...${fancyColors.RESET}`);
             this.registerDependencies();
             if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.DARK_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Service dependencies registered successfully${fancyColors.RESET}`);
 
             // Log completion of services registration
             const registeredServices = Array.from(serviceManager.services.keys());
             if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${fancyColors.DARK_MAGENTA}[SERVICE INIT]${fancyColors.RESET} 😎 ${fancyColors.YELLOW}${fancyColors.ITALIC}Successfully registered ${registeredServices.length} services:${fancyColors.RESET}`, {
+                logApi.info(`${fancyColors.DARK_MAGENTA}[SERVICE INIT]${fancyColors.RESET} 😎 ${fancyColors.PURPLE}${fancyColors.ITALIC}Successfully registered ${registeredServices.length} services:${fancyColors.RESET}`, {
                 //    total: registeredServices.length,
                 //    services: registeredServices
                 });
@@ -198,28 +198,28 @@ class ServiceInitializer {
      */
     static async initializeServices() {
         if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Initializing services...`);
+            logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} Initializing services...`);
         } else {
-            logApi.info(`\n${fancyColors.NEON}╭───────────────── Initializing Services ─────────────────╮${fancyColors.RESET}`);
+            logApi.info(`\n${fancyColors.NEON}╭─────────────────────── Initializing Services ───────────────────────╮${fancyColors.RESET}`);
         }
 
         try {
             // Services should already be registered by now
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.ORANGE}${fancyColors.ITALIC}Services already registered.${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Proceeding to initialization...${fancyColors.RESET}`);
+            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.ORANGE}${fancyColors.ITALIC}Services already registered.${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Proceeding to initialization...${fancyColors.RESET}`);
 
             // Get initialization order
             const initOrder = serviceManager.calculateInitializationOrder();
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Ordering initialization of services...${fancyColors.RESET}`, {
+            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Ordering initialization of services...${fancyColors.RESET}`, {
             //    order: initOrder
             });
 
             // Initialize all services
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Starting service initialization...${fancyColors.RESET}`);
+            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Starting service initialization...${fancyColors.RESET}`);
             const results = await serviceManager.initializeAll();
             
             // Log initialization results
             if (!VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${serviceColors.initialized}[SERVICE INIT]${fancyColors.RESET} Services initialization: ${results.initialized.length} succeeded, ${results.failed.length} failed`);
+                logApi.info(`${serviceColors.initialized}[ServiceInitializer]${fancyColors.RESET} Services initialization: ${results.initialized.length} succeeded, ${results.failed.length} failed`);
                 
                 // Always show failed services, even in non-verbose mode
                 if (results.failed.length > 0) {
@@ -228,7 +228,7 @@ class ServiceInitializer {
                     });
                 }
             } else {
-                logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━ Initialization Results ━━━━━━━━━━━┓\x1b[0m');
+                logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━ Initialization Results ━━━━━━━━━━━━━━━━━┓\x1b[0m');
                 if (results.initialized.length > 0) {
                     logApi.info(`\x1b[38;5;82m┃ Successfully initialized: ${results.initialized.length} services\x1b[0m`);
                     results.initialized.forEach(service => {
@@ -243,7 +243,7 @@ class ServiceInitializer {
                         logApi.error(`\x1b[38;5;196m┃ ✗ ${service}\x1b[0m`);
                     });
                 }
-                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
+                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
             }
 
             // Log to admin logger (admin logs are always kept for auditing)
