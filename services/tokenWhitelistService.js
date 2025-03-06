@@ -70,7 +70,7 @@ class TokenWhitelistService extends BaseService {
         // Initialize Solana connection
         // TODO: shouldnt we already have a connection in the solanaService by this point?
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
-        this.treasuryWallet = new PublicKey(config.degendual_treasury_wallet);
+        this.treasuryWallet = new PublicKey(config.degenduel_treasury_wallet);
         this.umi = createUmi(config.rpc_urls.primary).use(mplTokenMetadata());
 
         // Service-specific state

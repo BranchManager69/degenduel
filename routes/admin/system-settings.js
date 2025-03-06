@@ -1,5 +1,12 @@
 // /routes/admin/system-settings.js
 
+/**
+ * @swagger
+ * tags:
+ *   name: System Settings
+ *   description: System settings endpoints
+ */
+
 import express from "express";
 import prisma from "../../config/prisma.js";
 import { requireAdmin, requireAuth } from "../../middleware/auth.js";
@@ -30,7 +37,7 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
 
-  logApi.info("Fetching all system settings", {
+  logApi.info("Fetching all system settings \n\t", {
     requestId,
     admin_address: req.user.wallet_address,
   });
@@ -38,15 +45,25 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
   try {
     const settings = await prisma.system_settings.findMany();
 
-    logApi.info("Successfully fetched all system settings", {
+    logApi.info("Successfully fetched all system settings \n\t", {
       requestId,
       count: settings.length,
       duration: Date.now() - startTime,
     });
 
+    // Log the background_scene system setting
+    const backgroundScene = settings.find((s) => s.key === "background_scene");
+    if (backgroundScene) {
+      logApi.info("[SYSTEM SETTING] Global Active Background: \n\t", {
+        requestId,
+        backgroundScene: backgroundScene.value,
+      });
+    }
+
+    // Return ALL settings
     return res.json(settings);
   } catch (error) {
-    logApi.error("Failed to fetch system settings", {
+    logApi.error("Failed to fetch system settings \n\t", {
       requestId,
       error: {
         name: error.name,
@@ -95,7 +112,7 @@ router.get("/:key", requireAuth, requireAdmin, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
 
-  logApi.info(`Fetching system setting: ${key}`, {
+  logApi.info(`Fetching system setting: ${key} \n\t`, {
     requestId,
     admin_address: req.user.wallet_address,
   });
@@ -106,7 +123,7 @@ router.get("/:key", requireAuth, requireAdmin, async (req, res) => {
     });
 
     if (!setting) {
-      logApi.warn(`System setting not found: ${key}`, {
+      logApi.warn(`System setting not found: ${key} \n\t`, {
         requestId,
         admin_address: req.user.wallet_address,
       });
@@ -115,14 +132,14 @@ router.get("/:key", requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    logApi.info(`Successfully fetched system setting: ${key}`, {
+    logApi.info(`Successfully fetched system setting: ${key} \n\t`, {
       requestId,
       duration: Date.now() - startTime,
     });
 
     return res.json(setting);
   } catch (error) {
-    logApi.error(`Failed to fetch system setting: ${key}`, {
+    logApi.error(`Failed to fetch system setting: ${key} \n\t`, {
       requestId,
       error: {
         name: error.name,
@@ -192,7 +209,7 @@ router.post("/:key", requireAuth, requireAdmin, async (req, res) => {
     });
   }
 
-  logApi.info(`Updating system setting: ${key}`, {
+  logApi.info(`Updating system setting: ${key} \n\t`, {
     requestId,
     admin_address: req.user.wallet_address,
   });
@@ -230,14 +247,14 @@ router.post("/:key", requireAuth, requireAdmin, async (req, res) => {
       },
     });
 
-    logApi.info(`Successfully updated system setting: ${key}`, {
+    logApi.info(`Successfully updated system setting: ${key} \n\t`, {
       requestId,
       duration: Date.now() - startTime,
     });
 
     return res.json(updatedSetting);
   } catch (error) {
-    logApi.error(`Failed to update system setting: ${key}`, {
+    logApi.error(`Failed to update system setting: ${key} \n\t`, {
       requestId,
       error: {
         name: error.name,
@@ -312,7 +329,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
     }
   }
 
-  logApi.info("Batch updating system settings", {
+  logApi.info("Batch updating system settings \n\t", {
     requestId,
     admin_address: req.user.wallet_address,
     settings: settings.map((s) => s.key),
@@ -355,7 +372,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       },
     });
 
-    logApi.info("Successfully batch updated system settings", {
+    logApi.info("Successfully batch updated system settings \n\t", {
       requestId,
       count: results.length,
       duration: Date.now() - startTime,
@@ -363,7 +380,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 
     return res.json(results);
   } catch (error) {
-    logApi.error("Failed to batch update system settings", {
+    logApi.error("Failed to batch update system settings \n\t", {
       requestId,
       error: {
         name: error.name,
@@ -412,7 +429,7 @@ router.delete("/:key", requireAuth, requireAdmin, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
 
-  logApi.info(`Deleting system setting: ${key}`, {
+  logApi.info(`Deleting system setting: ${key} \n\t`, {
     requestId,
     admin_address: req.user.wallet_address,
   });
@@ -424,7 +441,7 @@ router.delete("/:key", requireAuth, requireAdmin, async (req, res) => {
     });
 
     if (!setting) {
-      logApi.warn(`System setting not found for deletion: ${key}`, {
+      logApi.warn(`System setting not found for deletion: ${key} \n\t`, {
         requestId,
         admin_address: req.user.wallet_address,
       });
@@ -452,7 +469,7 @@ router.delete("/:key", requireAuth, requireAdmin, async (req, res) => {
       },
     });
 
-    logApi.info(`Successfully deleted system setting: ${key}`, {
+    logApi.info(`Successfully deleted system setting: ${key} \n\t`, {
       requestId,
       duration: Date.now() - startTime,
     });
@@ -462,11 +479,11 @@ router.delete("/:key", requireAuth, requireAdmin, async (req, res) => {
       message: `System setting ${key} deleted successfully`,
     });
   } catch (error) {
-    logApi.error(`Failed to delete system setting: ${key}`, {
+    logApi.error(`Failed to delete system setting: ${key} \n\t`, {
       requestId,
       error: {
         name: error.name,
-        message: error.message,
+        message: error.message, 
         stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
       duration: Date.now() - startTime,
