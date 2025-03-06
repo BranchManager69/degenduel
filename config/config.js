@@ -1,17 +1,25 @@
 // config/config.js
 
+/**
+ * 
+ * Some good, some bad
+ * 
+ */
+
 import dotenv from 'dotenv';
 dotenv.config();
 
-// helpful DegenDuel API endpoints:
+// Helpful DegenDuel API endpoints:
 const DD_SERV_API = 'https://degenduel.me/api/dd-serv/tokens';
-const DATA_API = 'https://data.degenduel.me/api';
+const DATA_API = 'https://data.degenduel.me/api'; // deprecating
 const GAME_API = 'https://game.degenduel.me'; // deprecating
+const LOBBY_API = 'https://lobby.degenduel.me';
+const REFLECTIONS_API = 'https://reflections.degenduel.me';
 // Fallback API for when data service is unavailable
 const LOCAL_PORT = process.env.PORT || process.env.API_PORT || 3004;
 const LOCAL_FALLBACK_API = null; // Disabling local fallback during startup to avoid circular dependency
 
-// helpful Solana RPC URLs:
+// Helpful Solana RPC URLs:
 const RPC_URL_MAINNET_HTTP = process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com';
 const RPC_URL_MAINNET_WSS = process.env.QUICKNODE_MAINNET_WSS || '';
 const RPC_URL_DEVNET_HTTP = process.env.QUICKNODE_DEVNET_HTTP || 'https://api.devnet.solana.com';
@@ -53,6 +61,8 @@ const config = {
     dd_serv: DD_SERV_API,
     data: DATA_API,
     game: GAME_API,
+    lobby: LOBBY_API,
+    reflections: REFLECTIONS_API,
     fallback: LOCAL_FALLBACK_API,
   },
   debug_mode: process.env.DD_API_DEBUG_MODE || 'false',
@@ -66,17 +76,17 @@ const config = {
     ////admin: process.env.DD_API_DEBUG_MODE || 'false',
     /////maintenance: process.env.DD_API_DEBUG_MODE || 'false',
   },
-  degendual_treasury_wallet: process.env.TREASURY_WALLET_ADDRESS,
+  degenduel_treasury_wallet: process.env.TREASURY_WALLET_ADDRESS,
   token_submission_cost: process.env.TOKEN_SUBMISSION_COST,
   token_submission_discount_percentage_per_level: process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,
   getEnvironment: (origin) => {
-    if (!origin) return 'production'; // direct API calls default to prod
+    if (!origin) return 'production'; // direct API calls default to prod // TODO: what???
     return origin.includes('localhost') || origin.includes('127.0.0.1') ? 'development' : 'production';
   },
   // Device authentication settings
   device_auth_enabled: process.env.DEVICE_AUTH_ENABLED === 'true' || false,
   device_auth: {
-    max_devices_per_user: parseInt(process.env.MAX_DEVICES_PER_USER || '5'),
+    max_devices_per_user: parseInt(process.env.MAX_DEVICES_PER_USER || '10'),
     auto_authorize_first_device: process.env.AUTO_AUTHORIZE_FIRST_DEVICE === 'true' || true
   },
 };

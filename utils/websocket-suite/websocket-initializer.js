@@ -106,7 +106,7 @@ export async function initializeWebSockets(server, initResults = {}) {
         logApi.info(`${fancyColors.ORANGE}┃           ┗━━━━━━━━━━━ ${serviceColors.initialized}Service WebSockets Ready${fancyColors.RESET}`);
 
         // Store WebSocket servers in global registry
-        global.wsServers = wsServers;
+        global.wsServers = wsServers; // VERY IMPORTANT!
 
         // Wait for WebSocket servers to fully initialize
         await new Promise(resolve => setTimeout(resolve, 2500)); // Wait longer than monitor service's 2000ms

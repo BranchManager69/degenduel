@@ -7,12 +7,16 @@ import { config } from './config.js';
 import helmet from 'helmet';
 import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
 
+// Log every request
+const LOG_EVERY_REQUEST = true;
+
+// Middleware debug mode
+const MIDDLEWARE_DEBUG_MODE = false;
+
 // Game origin
 const gameOrigin = config.api_urls.game;
-
-// Middleware debug mode // TODO: temp hard override
-////const MIDDLEWARE_DEBUG_MODE = config.debug_modes.middleware;
-const MIDDLEWARE_DEBUG_MODE = false;
+const lobbyOrigin = config.api_urls.lobby;
+const reflectionsOrigin = config.api_urls.reflections;
 
 // Master middleware config
 export function configureMiddleware(app) {  
@@ -27,6 +31,7 @@ export function configureMiddleware(app) {
     'https://manager.degenduel.me',
     'https://wallets.degenduel.me',
     'https://reflections.degenduel.me',
+    'https://lobby.degenduel.me',
     'https://branch.bet', 
     'https://app.branch.bet',
     // Development origins
@@ -58,7 +63,7 @@ export function configureMiddleware(app) {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   // Serve static files from uploads directory
-  app.use('/uploads', express.static('uploads'));
+  app.use('/uploads', express.static('uploads')); // TODO: ???
   // Environment middleware
   app.use(environmentMiddleware);
   // CORS middleware for all routes
@@ -155,6 +160,7 @@ export function configureMiddleware(app) {
           'wss://manager.degenduel.me',
           'wss://talk.degenduel.me',
           'wss://wallets.degenduel.me',
+          'wss://lobby.degenduel.me',
           'wss://branch.bet',
           'wss://app.branch.bet',
           'wss://reflections.degenduel.me',
@@ -166,6 +172,7 @@ export function configureMiddleware(app) {
           'https://manager.degenduel.me',
           'https://talk.degenduel.me',
           'https://wallets.degenduel.me',
+          'https://lobby.degenduel.me',
           'https://branch.bet',
           'https://app.branch.bet',
           'https://data.degenduel.me',
@@ -193,25 +200,28 @@ export function configureMiddleware(app) {
   /* Protected Routes */
 
   // Superadmin auth required
+  // TODO: ADD MANY MORE PROTECTED ROUTES
   app.use(['/amm-sim', '/api-playground', '/superadmin-dashboard'], requireAuth, requireSuperAdmin, (req, res, next) => {
     next();
   });
 
   // Admin auth required
+  // TODO: ADD MANY MORE PROTECTED ROUTES
   app.use(['/admin-dashboard'], requireAuth, requireAdmin, (req, res, next) => {
     next();
   });
 
   // User auth required
+  // TODO: ADD MORE PROTECTED ROUTES
   app.use(['/profile'], requireAuth, (req, res, next) => {
     next();
   });
 
-  // Log requests
-  if (config.debug_mode === 'true') {
+  // Logs from middleware
+  if (config.debug_mode === 'true' || LOG_EVERY_REQUEST) {
     app.use((req, res, next) => {
-      if (MIDDLEWARE_DEBUG_MODE) {
-        logApi.info(`${req.method} ${req.url}`, {
+      if (LOG_EVERY_REQUEST) {
+        logApi.info(`${req.method} ${req.url} \n\t`, {
           environment: req.environment,
           origin: req.headers.origin,
           ip: req.ip,
