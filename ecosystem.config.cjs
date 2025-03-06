@@ -1,11 +1,20 @@
+// ecosystem.config.cjs
+// [UPDATED 3/6/25]
+
+/**
+ * This file is used to configure the PM2 ecosystem for the degenduel-api.
+ * It is used to start, stop, and restart the degenduel-api.
+ * It is also used to configure the PM2 ecosystem for the degenduel-api-test.
+ */
+
 const dotenv = require('dotenv');
 dotenv.config();
 
-// Which apps to include in the ecosystem config
+// Include these apps in the ecosystem config
 const INCLUDE_PROD_APPS = true;
 const INCLUDE_TEST_APPS = true;
 const INCLUDE_PRISMA_STUDIO = true;
-const INCLUDE_PGADMIN = false; // (doesn't work; need to fix db.degenduel.me NGINX config)
+const INCLUDE_PGADMIN = false; // TODO: doesn't work; need to fix db.degenduel.me NGINX config
 
 const apps = [];
 
@@ -69,7 +78,7 @@ const TEST_APPS = [
     env: {
       PORT: 3005,
       DD_API_DEBUG_MODE: 'false',
-      NODE_ENV: 'test',
+      NODE_ENV: 'development', // [UPDATED 3/6/25]
       NODE_OPTIONS: '--require ts-node/register',
       SILENT_MODE: 'false',
       CONSOLE_LOG_LEVEL: 'info'
@@ -86,7 +95,7 @@ const TEST_APPS = [
     cwd: '/home/websites/degenduel',
     env: {
       PORT: 5556,
-      DATABASE_URL: process.env.DATABASE_URL_TEST // THIS DOES NOT WORK; PRISMA DOES NOT ACCEPT ENV VARIABLES FOR DATABASE_URL. The env var doesn't even exist.
+      DATABASE_URL: process.env.DATABASE_URL_TEST // THIS DOES NOT WORK; PRISMA DOES NOT ACCEPT ENV VARIABLES FOR DATABASE_URL. The env var doesn't even exist. THEREFORE, IT'S TAKING US TO THE PROD DB!
     }
   },
 ]
@@ -115,87 +124,3 @@ if (!INCLUDE_PRISMA_STUDIO) {
 module.exports = {
   apps: apps
 };
-
-/*
-// old ecosystem config:
-module.exports = {
-  apps: [
-    {
-      name: 'degenduel-api',
-      script: 'index.js',
-      watch: false,
-      cwd: '/home/websites/degenduel',
-      wait_ready: true,
-      node_args: [
-        '--no-warnings',
-        '--experimental-specifier-resolution=node',
-        '--optimize-for-size',
-        '--gc-interval=100'
-      ],
-      env: {
-        PORT: 3004,
-        DD_API_DEBUG_MODE: 'false',
-        NODE_ENV: 'production',
-        NODE_OPTIONS: '--require ts-node/register',
-        SILENT_MODE: 'false',
-        CONSOLE_LOG_LEVEL: 'info'
-      },
-      exp_backoff_restart_delay: 100,
-      max_memory_restart: '2G',
-      kill_timeout: 3000
-    },
-    {
-      name: 'degenduel-api-test',
-      script: 'index.js',
-      watch: false,
-      cwd: '/home/websites/degenduel',
-      wait_ready: true,
-      node_args: [
-        '--no-warnings',
-        '--experimental-specifier-resolution=node',
-        '--optimize-for-size',
-        '--gc-interval=100'
-      ],
-      env: {
-        PORT: 3005,
-        DD_API_DEBUG_MODE: 'false',
-        NODE_ENV: 'test',
-        NODE_OPTIONS: '--require ts-node/register',
-        SILENT_MODE: 'false',
-        CONSOLE_LOG_LEVEL: 'info'
-      },
-      exp_backoff_restart_delay: 100,
-      max_memory_restart: '2G',
-      kill_timeout: 3000
-    },
-    {
-      name: 'prisma-studio',
-      script: 'npx',
-      args: 'prisma studio',
-      watch: false,
-      cwd: '/home/websites/degenduel',
-      env: {
-        PORT: 5555
-      }
-    },
-    {
-      name: 'prisma-studio-test',
-      script: 'npx',
-      args: 'prisma studio',
-      watch: false,
-      cwd: '/home/websites/degenduel',
-      env: {
-        PORT: 5556,
-        DATABASE_URL: process.env.DATABASE_URL_TEST // THIS DOES NOT WORK; PRISMA DOES NOT ACCEPT ENV VARIABLES FOR DATABASE_URL. The env var doesn't even exist.
-      }
-    },
-    {
-      name: 'pgadmin',
-      script: 'docker',
-      args: 'start pgadmin4', // THIS DOES NOT WORK; I think it's a NGINX issue. Going to https://db.degenduel.com redirects to https://db.degenduel.me/login?next=/ which is a 404.
-      watch: false,
-      autorestart: true
-    },
-  ]
-};
-*/

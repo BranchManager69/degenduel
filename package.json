@@ -1,9 +1,36 @@
 {
-  "name": "degenduel",
+  "name": "degenduel-api",
   "private": true,
-  "version": "0.1.2",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
+    "wss:websocket": "node scripts/test-websocket.js",
+    "wss:base-websocket": "node scripts/test-base-websocket.js",
+    "wss:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
+    "wss:test": "node scripts/ws-test.js",
+
+    "test:services": "node scripts/service-status-report.js # Reports saved to reports/service-reports/YYYY-MM-DD/",
+    "test:websocket": "node scripts/test-websocket.js",
+    "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
+    
+    "sys": "./tools/system-status.sh",
+    "sys:ai": "./tools/system-status.sh --ai",
+    "sys:report": "./tools/system-status.sh --ai",
+
+    "start:api": "pm2 start ecosystem.config.cjs --only degenduel-api",
+    "stop:api": "pm2 stop degenduel-api",
+    "restart:api": "pm2 restart degenduel-api",
+
+    "dev": "node index.js",
+    "start": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node index.js",
+    "stop": "npm run stop:api",
+
+    "logs": "node scripts/watchLogs.js all 100",
+    "logs:api": "node scripts/watchLogs.js api 100",
+    "logs:error": "node scripts/watchLogs.js error 100",
+    "logs:raw": "node scripts/watchLogs.js all 100 --raw",
+    "logs:clear": "rm -f server/logs/*.log",
+
     "db:help": "./scripts/db-tools.sh help",
     "db:status": "./scripts/db-tools.sh status",
     "db:compare": "./scripts/db-tools.sh compare # Reports saved to reports/db_comparisons/YYYY-MM-DD/",
@@ -17,34 +44,17 @@
     "db:compliment": "./scripts/db-tools.sh compliment",
     "db:money": "./scripts/db-tools.sh money",
 
-    "test:services": "node scripts/service-status-report.js # Reports saved to reports/service-reports/YYYY-MM-DD/",
-    "test:websocket": "node scripts/test-websocket.js",
-    "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
-
     "prisma:format": "prisma format",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
     
-    "sys": "./tools/system-status.sh",
-    "sys:ai": "./tools/system-status.sh --ai",
-    "sys:report": "./tools/system-status.sh --ai",
-
     "generate-swagger": "node scripts/generate-swagger.js",
-    "dev": "node index.js",
-    "start": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node index.js",
-    "stop": "npm run stop:api",
-    "start:api": "pm2 start ecosystem.config.cjs --only degenduel-api",
-    "stop:api": "pm2 stop degenduel-api",
-    "restart:api": "pm2 restart degenduel-api",
+
     "db:push": "npx prisma db push",
     "db:reset": "npx prisma db reset",
+    
     "init-db": "node db/init-tables.js",
-    "logs": "node scripts/watchLogs.js all 100",
-    "logs:api": "node scripts/watchLogs.js api 100",
-    "logs:error": "node scripts/watchLogs.js error 100",
-    "logs:raw": "node scripts/watchLogs.js all 100 --raw",
-    "logs:clear": "rm -f server/logs/*.log",
     "setup-db": "NODE_OPTIONS='--experimental-loader=ts-node/esm' ts-node scripts/setup-db.ts",
     "setup-db-js": "node scripts/setup-db.js",
     "test-db": "NODE_OPTIONS='--experimental-loader=ts-node/esm' ts-node scripts/test-db-simple.ts",
@@ -123,11 +133,5 @@
   },
   "prisma": {
     "seed": "node prisma/seed.js"
-  },
-  "scripts": {
-    "test:websocket": "node scripts/test-websocket.js",
-    "test:base-websocket": "node scripts/test-base-websocket.js",
-    "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
-    "ws": "node scripts/ws-test.js"
   }
 }

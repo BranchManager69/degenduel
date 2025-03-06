@@ -12,10 +12,11 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from '../config/config.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import prisma from '../config/prisma.js';
+import { fancyColors } from '../utils/colors.js';
+// ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import walletGenerationService from './walletGenerationService.js';
-import { fancyColors } from '../utils/colors.js';
 
 const LIQUIDITY_CONFIG = {
     name: SERVICE_NAMES.LIQUIDITY,
@@ -118,11 +119,11 @@ class LiquidityService extends BaseService {
                 };
             });
             
-            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} 📊 ${fancyColors.LIGHT_CYAN} WALLET INVENTORY ${fancyColors.RESET}${fancyColors.LIGHT_CYAN}${fancyColors.BOLD_BLUE}${fancyColors.BG_YELLOW}${allLiquidityWallets.length}${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} total liquidity wallets${fancyColors.RESET}`, {
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} 📊 ${fancyColors.BOLD}${fancyColors.LIGHT_CYAN} Liquidity Wallets: ${fancyColors.RESET}${fancyColors.LIGHT_CYAN}${fancyColors.BOLD_BLUE}${fancyColors.BG_YELLOW}${fancyColors.UNDERLINE} ${allLiquidityWallets.length} ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_LIGHT_CYAN} found${fancyColors.RESET}`, {
             //    wallets: walletsInfo
             });
             
-            // Now check for active ones
+            // Now check for active liquidity wallet(s)
             const existingWallets = await prisma.seed_wallets.findMany({
                 where: {
                     purpose: 'liquidity',
@@ -131,19 +132,21 @@ class LiquidityService extends BaseService {
                 orderBy: { created_at: 'desc' }
             });
             
-            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} ✅ ${fancyColors.BOLD_GREEN}Found ${existingWallets.length} active liquidity wallet(s)${fancyColors.RESET}${existingWallets.length > 0 ? 
-                `\n\t\t${fancyColors.LIGHT_CYAN}${existingWallets[0].wallet_address}${fancyColors.RESET}` : ''}`);
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN} 🤑  ${fancyColors.BOLD_GREEN}Active Liquidity Wallets: ${fancyColors.RESET}${fancyColors.LIGHT_CYAN}${fancyColors.BOLD_BLUE}${fancyColors.BG_YELLOW}${fancyColors.UNDERLINE} ${existingWallets.length} ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_LIGHT_CYAN} found${fancyColors.RESET}`, {
+            //    wallets: walletsInfo
+            });
             
-            const wallet = existingWallets[0]; // Take the most recent one
-
+            // Use the most recently created liquidity wallet
+            const wallet = existingWallets[0];
+            // If we found a wallet, use it
             if (wallet) {
                 this.wallet = wallet;
-                // Get initial balance
+                // Get its current balance
                 const balance = await this.connection.getBalance(
                     new PublicKey(wallet.wallet_address)
                 );
                 
-                // Update stats
+                // Update service stats
                 this.liquidityStats.wallets.total = 1;
                 this.liquidityStats.wallets.active = 1;
                 this.liquidityStats.wallets.balance_total = balance / 1000000000;
@@ -162,11 +165,18 @@ class LiquidityService extends BaseService {
                     }
                 );
                 
-                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}Liquidity Service initialized${fancyColors.RESET}`, {
-                    wallet: wallet.wallet_address,
-                    balance: this.liquidityStats.wallets.balance_total
+                // Log the wallet in use
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN}${fancyColors.BOLD_GREEN} Using wallet: ${wallet.wallet_address} ${fancyColors.RESET}`, {
+                //    balance: this.liquidityStats.wallets.balance_total
+                });
+
+                // Log success with detailed information
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN}${fancyColors.BOLD_GREEN} Liquidity Service initialized ${fancyColors.RESET}`, {
+                //    wallet: wallet.wallet_address,
+                //    balance: this.liquidityStats.wallets.balance_total
                 });
                 
+                // Return true to indicate successful initialization
                 return true;
             }
 
