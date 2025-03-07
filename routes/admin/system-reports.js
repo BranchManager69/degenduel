@@ -134,6 +134,7 @@ router.get('/:reportId/:reportType', requireAuth, requireAdmin, async (req, res)
  * 
  * @apiParam {String} [reportType=service] Type of report to generate (service, db, prisma)
  * @apiParam {Boolean} [withAi] Include AI analysis for report
+ * @apiParam {Boolean} [generateMigration] Generate a migration script to fix schema discrepancies (only for prisma reports with AI analysis)
  * 
  * @apiSuccess {Boolean} success Success status
  * @apiSuccess {Object} result Generation result
@@ -142,10 +143,12 @@ router.post('/generate', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { withAi, reportType = 'service' } = req.body;
     
+    const generateMigration = req.body.generateMigration === true;
+    
     await AdminLogger.logAction(
       req.user.wallet_address,
       'SYSTEM_REPORT_GENERATE',
-      { withAi, reportType },
+      { withAi, reportType, generateMigration },
       {
         ip_address: req.ip,
         user_agent: req.get('user-agent')
@@ -163,7 +166,18 @@ router.post('/generate', requireAuth, requireAdmin, async (req, res) => {
         command = withAi ? './scripts/db-tools.sh compare --ai-analysis' : './scripts/db-tools.sh compare';
         break;
       case 'prisma':
-        command = withAi ? './scripts/db-tools.sh reconcile --ai-analysis' : './scripts/db-tools.sh reconcile';
+        // For prisma, we can generate a migration as well if AI analysis is enabled
+        if (withAi) {
+          // Check if the user requested migration generation
+          const generateMigration = req.body.generateMigration === true;
+          if (generateMigration) {
+            command = './scripts/db-tools.sh reconcile --ai-analysis --generate-migration';
+          } else {
+            command = './scripts/db-tools.sh reconcile --ai-analysis';
+          }
+        } else {
+          command = './scripts/db-tools.sh reconcile';
+        }
         break;
       default:
         return res.status(400).json({
@@ -172,7 +186,10 @@ router.post('/generate', requireAuth, requireAdmin, async (req, res) => {
         });
     }
     
-    logApi.info(`[System Reports] Generating ${reportType} report${withAi ? ' with AI analysis' : ''}`);
+    let logMessage = `[System Reports] Generating ${reportType} report`;
+    if (withAi) logMessage += ' with AI analysis';
+    if (generateMigration) logMessage += ' and migration script';
+    logApi.info(logMessage);
     
     exec(command, (error, stdout, stderr) => {
       if (error) {
