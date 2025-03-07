@@ -23,6 +23,8 @@ import { createUserNotificationWebSocket } from '../../websocket/user-notificati
 import { createSkyDuelWebSocket } from '../../websocket/skyduel-ws.js';
 import { createSystemSettingsWebSocket } from '../../websocket/system-settings-ws.js';
 import { fancyColors, serviceColors } from '../colors.js';
+// Import v69 WebSocket Initializer
+import { initializeWebSockets as initializeWebSocketsV69 } from '../../websocket/v69/websocket-initializer.js';
 
 /**
  * Initialize all WebSocket servers
@@ -198,6 +200,16 @@ export async function initializeWebSockets(server, initResults = {}) {
             };
         }
 
+        // Initialize v69 WebSockets in parallel without affecting existing ones
+        try {
+            logApi.info(`${fancyColors.CYAN}┣━━━━━━━━━━━ 🚀 Initializing v69 WebSocket Servers...${fancyColors.RESET}`);
+            await initializeWebSocketsV69(server);
+            logApi.info(`${fancyColors.CYAN}┗━━━━━━━━━━━ ✅ v69 WebSocket Servers Ready${fancyColors.RESET}`);
+        } catch (v69Error) {
+            logApi.error(`${fancyColors.CYAN}┗━━━━━━━━━━━ ❌ v69 WebSocket initialization failed:${fancyColors.RESET}`, v69Error);
+            // Don't throw - allow original WebSockets to continue working
+        }
+
         // Return WebSocket servers
         return wsServers;
     } catch (error) {
@@ -224,6 +236,21 @@ export async function cleanupWebSockets() {
     if (!global.wsServers) {
         logApi.warn(`${serviceColors.stopping}[WEBSOCKET CLEANUP]${fancyColors.RESET} No WebSocket servers to clean up`);
         return;
+    }
+    
+    // Also clean up v69 WebSockets
+    try {
+        logApi.info(`${fancyColors.CYAN}┣━━━━━━━━━━━ 🧹 Cleaning up v69 WebSocket Servers...${fancyColors.RESET}`);
+        
+        // Use the v69 cleanup function if available
+        if (typeof global.cleanupWebSocketsV69 === 'function') {
+            await global.cleanupWebSocketsV69();
+        }
+        
+        logApi.info(`${fancyColors.CYAN}┗━━━━━━━━━━━ ✅ v69 WebSocket Servers Cleaned Up${fancyColors.RESET}`);
+    } catch (v69Error) {
+        logApi.error(`${fancyColors.CYAN}┗━━━━━━━━━━━ ❌ v69 WebSocket cleanup failed:${fancyColors.RESET}`, v69Error);
+        // Continue with regular cleanup
     }
 
     logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ Cleaning up WebSocket servers...${fancyColors.RESET}`);
