@@ -126,11 +126,11 @@ async function main() {
     // Process contest wallets
     console.log(chalk.cyan('\n=� Analyzing contest wallets...\n'));
     for (const wallet of contestWallets) {
-      // Only consider non-active contests
-      if (wallet.contests?.status === 'active') {
-        console.log(chalk.gray(`� Contest ${wallet.contests.id} (${wallet.contests.contest_code}): Active contest, skipping`));
+      // Only process non-active and non-pending contest wallets
+      if (wallet.contests?.status === 'active' || wallet.contests?.status === 'pending') {
+        console.log(chalk.gray(`Skipping Contest ${wallet.contests.id} (${wallet.contests.contest_code}): Active or pending contest, skipping`));
         continue;
-      }
+      }      
       
       // Check if balance data is fresh
       const lastUpdated = wallet.last_sync ? wallet.last_sync.getTime() : 0;
@@ -165,9 +165,9 @@ async function main() {
     
     // 4. Summary and confirmation
     console.log(chalk.yellow.bold('\n=== Transfer Summary ===\n'));
-    console.log(chalk.white(`Total wallets: ${transferCandidates.length}`));
-    console.log(chalk.white(`Total SOL: ${totalAmount.toFixed(6)} SOL`));
-    console.log(chalk.white(`Destination: ${TREASURY_WALLET}`));
+    console.log(chalk.white(`    Wallets:  ${transferCandidates.length} of ${managedWallets.length + contestWallets.length} eligible`));
+    console.log(chalk.white(`  Total SOL:  ${totalAmount.toFixed(6)} SOL`));
+    console.log(chalk.white(`Destination:  ${TREASURY_WALLET}`));
     
     if (transferCandidates.length === 0) {
       console.log(chalk.red('\nL No eligible wallets found for transfer'));
@@ -176,7 +176,7 @@ async function main() {
     }
     
     // Confirm transfer
-    const confirmed = await confirm(chalk.red.bold('\n� WARNING: This will transfer all funds to the treasury wallet.\nAre you sure you want to proceed? (y/N) '));
+    const confirmed = await confirm(chalk.red.bold('\n� WARNING: This will transfer all funds to the DegenDuel treasury wallet.\nAre you sure you want to proceed? (y/N) '));
     
     if (!confirmed) {
       console.log(chalk.yellow('\n=� Operation cancelled by user'));
@@ -225,7 +225,7 @@ async function main() {
             wallet.private_key,
             TREASURY_WALLET,
             candidate.transferAmount,
-            'Emergency fund consolidation'
+            'Consolidate funds to treasury'
           );
           
           signature = result.signature;
@@ -257,8 +257,9 @@ async function main() {
         });
         
         console.log(chalk.green(` Successfully transferred ${candidate.transferAmount.toFixed(6)} SOL to treasury`));
-        console.log(chalk.cyan(`=� Transaction: ${signature}`));
-        console.log(chalk.cyan(`= Explorer: https://solscan.io/tx/${signature}`));
+        console.log(chalk.cyan(`=� Transaction:  ${signature}`));
+        console.log(chalk.cyan(`=
+ Explorer: https://solscan.io/tx/${signature}`));
       } catch (error) {
         console.error(chalk.red(`L Failed to transfer from ${candidate.label}: ${error.message}`));
         results.failed++;
@@ -272,9 +273,9 @@ async function main() {
     
     // 6. Final summary
     console.log(chalk.yellow.bold('\n=== Transfer Summary ===\n'));
-    console.log(chalk.white(`Successful: ${results.successful}/${transferCandidates.length}`));
-    console.log(chalk.white(`Failed: ${results.failed}/${transferCandidates.length}`));
-    console.log(chalk.white(`Total SOL transferred: ${results.totalTransferred.toFixed(6)} SOL`));
+    console.log(chalk.white(`Succeeded:  ${results.successful}/${transferCandidates.length}`));
+    console.log(chalk.white(`   Failed:  ${results.failed}/${transferCandidates.length}`));
+    console.log(chalk.white(`Total SOL:  ${results.totalTransferred.toFixed(6)} SOL`));
     
     // Log to file
     const logFile = `${__dirname}/consolidation_${Date.now()}.json`;

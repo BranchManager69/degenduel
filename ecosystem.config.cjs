@@ -14,7 +14,7 @@ dotenv.config();
 const INCLUDE_PROD_APPS = true;
 const INCLUDE_TEST_APPS = true;
 const INCLUDE_PRISMA_STUDIO = true;
-const INCLUDE_PGADMIN = false; // TODO: doesn't work; need to fix db.degenduel.me NGINX config
+const INCLUDE_PGADMIN = false;
 
 const apps = [];
 

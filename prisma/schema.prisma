@@ -837,9 +837,16 @@ enum transaction_status {
 
 enum transaction_type {
   CONTEST_ENTRY
+  CONTEST_ENTRY_REFUND
   PRIZE_PAYOUT
+  CONTEST_CREATION
+  CONTEST_CREATION_REFUND
+  WHITELIST_TOKEN
+  WHITELIST_TOKEN_REFUND
+  PARTNER_TOKEN
+  PARTNER_TOKEN_REFUND
   DEPOSIT
-  WITHDRAWAL
+  WITHDRAWAL // TODO: Currently being used for contest entry refunds
   REFERRAL_BONUS
   PROMOTION
 }
@@ -854,13 +861,14 @@ enum AIDecisionType {
 enum Chain {
   SOLANA
   ETHEREUM
+  BASE
   BSC
 }
 
 enum TokenType {
   SOL
-  DUEL
   SPL
+  DUEL
 }
 
 enum TradeType {
