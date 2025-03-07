@@ -19,7 +19,7 @@ const router = express.Router();
  * @apiGroup SystemReports
  * @apiPermission admin
  * 
- * @apiParam {String} [type] Filter by report type (service, db)
+ * @apiParam {String} [type] Filter by report type (service, db, prisma)
  * @apiParam {String} [date] Filter by date (YYYY-MM-DD)
  * @apiParam {Number} [limit] Limit number of results
  * @apiParam {Boolean} [withAiOnly] Only include reports with AI analysis
@@ -70,7 +70,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
  * @apiPermission admin
  * 
  * @apiParam {String} reportId Report ID
- * @apiParam {String} reportType Report type (service, db)
+ * @apiParam {String} reportType Report type (service, db, prisma)
  * 
  * @apiSuccess {Boolean} success Success status
  * @apiSuccess {Object} report Report data
@@ -87,7 +87,7 @@ router.get('/:reportId/:reportType', requireAuth, requireAdmin, async (req, res)
     }
     
     // Validate report type
-    if (reportType !== 'service' && reportType !== 'db') {
+    if (reportType !== 'service' && reportType !== 'db' && reportType !== 'prisma') {
       return res.status(400).json({
         success: false,
         error: 'Invalid report type'
@@ -132,29 +132,47 @@ router.get('/:reportId/:reportType', requireAuth, requireAdmin, async (req, res)
  * @apiGroup SystemReports
  * @apiPermission admin
  * 
- * @apiParam {Boolean} [withAi] Include AI analysis for database report
+ * @apiParam {String} [reportType=service] Type of report to generate (service, db, prisma)
+ * @apiParam {Boolean} [withAi] Include AI analysis for report
  * 
  * @apiSuccess {Boolean} success Success status
  * @apiSuccess {Object} result Generation result
  */
 router.post('/generate', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { withAi } = req.body;
+    const { withAi, reportType = 'service' } = req.body;
     
     await AdminLogger.logAction(
       req.user.wallet_address,
       'SYSTEM_REPORT_GENERATE',
-      { withAi },
+      { withAi, reportType },
       {
         ip_address: req.ip,
         user_agent: req.get('user-agent')
       }
     );
     
-    // Execute the system-status.sh script
-    const command = withAi 
-      ? 'npm run sys:report' 
-      : 'npm run sys';
+    // Determine the command to execute based on the report type
+    let command;
+    
+    switch (reportType) {
+      case 'service':
+        command = withAi ? 'npm run sys:report' : 'npm run sys';
+        break;
+      case 'db':
+        command = withAi ? './scripts/db-tools.sh compare --ai-analysis' : './scripts/db-tools.sh compare';
+        break;
+      case 'prisma':
+        command = withAi ? './scripts/db-tools.sh reconcile --ai-analysis' : './scripts/db-tools.sh reconcile';
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid report type'
+        });
+    }
+    
+    logApi.info(`[System Reports] Generating ${reportType} report${withAi ? ' with AI analysis' : ''}`);
     
     exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -166,12 +184,12 @@ router.post('/generate', requireAuth, requireAdmin, async (req, res) => {
         });
       }
       
-      // Get the most recent report
-      const reports = getReports({ limit: 1 });
+      // Get the most recent report of the specified type
+      const reports = getReports({ type: reportType, limit: 1 });
       
       return res.json({
         success: true,
-        message: 'System report generated successfully',
+        message: `${reportType} report generated successfully`,
         report: reports[0] || null,
         output: stdout
       });

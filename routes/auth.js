@@ -419,10 +419,14 @@ router.post('/verify-wallet', async (req, res) => {
  *         description: Not found or user not found
  */
 router.post('/dev-login', async (req, res) => {
-  // (Development only) Allow lax dev-login
-  if (process.env.NODE_ENV !== 'development' || process.env.PORT !== '3005' || req.ip !== '127.0.0.1') {
-    authLogger.warn(`Someone tried to dev-login on ${process.env.NODE_ENV} from IP ${req.ip} on port ${process.env.PORT} \n\t`);
-    return res.status(404).json({ error: 'Not found' });
+  // Allow from localhost only - this endpoint is safe if it's only accessible from localhost
+  const localIPs = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
+  const isLocalhost = localIPs.includes(req.ip);
+  
+  // Only allow from localhost for security
+  if (!isLocalhost) {
+    authLogger.warn(`ACCESS DENIED: Dev login attempted by non-localhost IP ${req.ip} on port ${process.env.PORT} \n\t`);
+    return res.status(403).json({ error: `ACCESS DENIED: Dev login bypass attempted by non-localhost IP!` });
   }
 
   try {
@@ -430,11 +434,10 @@ router.post('/dev-login', async (req, res) => {
     
     // Verify secret
     if (secret !== process.env.DEV_LOGIN_SECRET) {
-      authLogger.warn(`Invalid dev-login secret attempt \n\t`, {
-        wallet: wallet_address,
-        providedSecret: secret?.substring(0, 3) + '...'  // Log only first 3 chars for security
+      authLogger.warn(`ACCESS DENIED: Invalid DEV_LOGIN_SECRET \n\t`, {
+        providedSecret: secret?.substring(0, 3) + '...'  // only first 3 chars logged for security
       });
-      return res.status(401).json({ error: 'Invalid secret' });
+      return res.status(403).json({ error: 'ACCESS DENIED: Invalid DEV_LOGIN_SECRET' });
     }
 
     // Get user from database
@@ -444,14 +447,14 @@ router.post('/dev-login', async (req, res) => {
 
     // User not found
     if (!user) {
-      authLogger.warn(`Dev-login attempted for non-existent user \n\t`, { wallet: wallet_address });
-      return res.status(404).json({ error: 'User not found' });
+      authLogger.warn(`NO USER FOUND: Dev login bypass successful, but no user was found for wallet \n\t`, { wallet: wallet_address });
+      return res.status(401).json({ error: `NO USER FOUND: Dev login bypass successful, but no user was found for wallet: ${wallet_address}` });
     }
 
     // Create session ID
     const sessionId = Buffer.from(crypto.randomBytes(16)).toString('hex');
 
-    // Create JWT token (as if normal login)
+    // Create JWT token as if this was a normal login
     const token = sign(
       {
         wallet_address: user.wallet_address,
@@ -459,7 +462,7 @@ router.post('/dev-login', async (req, res) => {
         session_id: sessionId
       },
       config.jwt.secret,
-      { expiresIn: '12h' } // 12 hours (edited 3/7/25)
+      { expiresIn: '1h' } // 1 hour (edited 3/8/25)
     );
 
     // Set cookie
@@ -467,17 +470,17 @@ router.post('/dev-login', async (req, res) => {
       httpOnly: true,
       secure: false,  // Allow non-HTTPS since we're in dev mode
       sameSite: 'strict',
-      maxAge: 12 * 60 * 60 * 1000 // 12 hours (edited 3/7/25)
+      maxAge: 1 * 60 * 60 * 1000 // 1 hour (edited 3/8/25)
     });
 
     // Log successful dev login
-    authLogger.info(`Dev-login successful \n\t`, {
+    authLogger.info(`DEV LOGIN SUCCESS \n\t`, {
       wallet: user.wallet_address,
       role: user.role,
       sessionId
     });
 
-    // Return success with user info
+    // Return success + additional user info (e.g. nickname)
     return res.json({
       success: true,
       user: {
@@ -487,7 +490,7 @@ router.post('/dev-login', async (req, res) => {
       }
     });
   } catch (error) {
-    authLogger.error(`Dev-login error \n\t`, {
+    authLogger.error(`DEV LOGIN ERROR \n\t`, {
       error: error.message,
       stack: error.stack
     });
@@ -533,7 +536,7 @@ router.post('/disconnect', requireAuth, async (req, res) => {
     const { wallet } = req.body;
     if (!wallet) {
       logApi.warn(`Missing wallet address in disconnect request \n\t`);
-      return res.status(400).json({ error: 'Missing wallet' });
+      return res.status(400).json({ error: 'Missing wallet address in disconnect request' });
     }
 
     await prisma.users.update({
