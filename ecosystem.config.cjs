@@ -16,7 +16,7 @@ const INCLUDE_TEST_APPS = true;
 const INCLUDE_PRISMA_STUDIO = true;
 const INCLUDE_PGADMIN = false;
 
-const apps = [];
+let apps = [];
 
 const PROD_APPS = [
   {
@@ -37,7 +37,9 @@ const PROD_APPS = [
         NODE_ENV: 'production',
         NODE_OPTIONS: '--require ts-node/register',
         SILENT_MODE: 'false',
-        CONSOLE_LOG_LEVEL: 'info'
+        CONSOLE_LOG_LEVEL: 'info',
+        MARKET_DATABASE_URL: process.env.MARKET_DATABASE_URL || 'postgres://market_user:password@localhost:5432/degenduel_market_data',
+        REFLECTIONS_DATABASE_URL: process.env.REFLECTIONS_DATABASE_URL || 'postgres://reflections:password@localhost:5432/degenduel_reflections'
       },
       exp_backoff_restart_delay: 100,
       max_memory_restart: '2G',
@@ -81,7 +83,9 @@ const TEST_APPS = [
       NODE_ENV: 'development', // [UPDATED 3/6/25]
       NODE_OPTIONS: '--require ts-node/register',
       SILENT_MODE: 'false',
-      CONSOLE_LOG_LEVEL: 'info'
+      CONSOLE_LOG_LEVEL: 'info',
+      MARKET_DATABASE_URL: process.env.MARKET_DATABASE_URL || 'postgres://market_user:password@localhost:5432/degenduel_market_data',
+      REFLECTIONS_DATABASE_URL: process.env.REFLECTIONS_DATABASE_URL || 'postgres://reflections:password@localhost:5432/degenduel_reflections'
     },
     exp_backoff_restart_delay: 100,
     max_memory_restart: '2G',
