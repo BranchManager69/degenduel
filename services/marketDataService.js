@@ -2,23 +2,25 @@
 
 /*
  * This service is responsible for providing real-time market data for all tokens.
- * It depends on the Token Sync Service for base data and adds real-time analytics,
- * price aggregation, and market sentiment analysis.
+ * It connects directly to the degenduel_market_data database for token information
+ * and provides market data via WebSockets and APIs.
  */
 
-// ** Service Auth **
-//import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
-//import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
-import { fancyColors } from '../utils/colors.js';
-//import AdminLogger from '../utils/admin-logger.js';
-import prisma from '../config/prisma.js';
+import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaClient } from '@prisma/client';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import { fancyColors } from '../utils/colors.js';
+
+// Create a dedicated Prisma client for the market database
+const marketDb = new PrismaClient({
+    datasourceUrl: process.env.MARKET_DATABASE_URL
+});
 
 const MARKET_DATA_CONFIG = {
     name: SERVICE_NAMES.MARKET_DATA,
@@ -44,42 +46,43 @@ const MARKET_DATA_CONFIG = {
     limits: {
         maxConcurrentRequests: 1000,
         requestTimeoutMs: 2000
+    },
+    broadcast: {
+        intervalMs: 10000, // Broadcast every 10 seconds
+        changesOnly: true  // Only broadcast when data changes
     }
 };
 
 // Market Data Service
 class MarketDataService extends BaseService {
     constructor() {
-        ////super(MARKET_DATA_CONFIG.name, MARKET_DATA_CONFIG);
         super(MARKET_DATA_CONFIG);
         
         // Initialize caches
         this.cache = new Map();
+        this.tokensCache = new Map();
         this.requestCount = 0;
         this.requestTimeouts = new Set();
+        this.lastBroadcastData = null;
+        this.broadcastInterval = null;
 
         // Initialize service-specific stats
         this.marketStats = {
             data: {
                 tokens: {
                     total: 0,
-                    active: 0,
-                    withPrices: 0
+                    active: 0
                 },
                 updates: {
-                    prices: {
-                        total: 0,
-                        successful: 0,
-                        failed: 0,
-                        lastUpdate: null
-                    }
-                }
-            },
-            dependencies: {
-                tokenSync: {
-                    status: 'unknown',
-                    lastCheck: null,
-                    errors: 0
+                    total: 0,
+                    successful: 0,
+                    failed: 0,
+                    lastUpdate: null
+                },
+                broadcasts: {
+                    total: 0,
+                    changesOnly: 0,
+                    lastBroadcast: null
                 }
             },
             performance: {
@@ -91,6 +94,17 @@ class MarketDataService extends BaseService {
                 total: 0,
                 successful: 0,
                 failed: 0
+            },
+            cache: {
+                size: 0,
+                hits: 0,
+                misses: 0,
+                lastCleanup: null
+            },
+            requests: {
+                active: 0,
+                rejected: 0,
+                timedOut: 0
             }
         };
     }
@@ -103,16 +117,18 @@ class MarketDataService extends BaseService {
                 data: {
                     tokens: {
                         total: 0,
-                        active: 0,
-                        withPrices: 0
+                        active: 0
                     },
                     updates: {
-                        prices: {
-                            total: 0,
-                            successful: 0,
-                            failed: 0,
-                            lastUpdate: null
-                        }
+                        total: 0,
+                        successful: 0,
+                        failed: 0,
+                        lastUpdate: null
+                    },
+                    broadcasts: {
+                        total: 0,
+                        changesOnly: 0,
+                        lastBroadcast: null
                     }
                 },
                 performance: {
@@ -124,40 +140,51 @@ class MarketDataService extends BaseService {
                     total: 0,
                     successful: 0,
                     failed: 0
+                },
+                cache: {
+                    size: 0,
+                    hits: 0,
+                    misses: 0,
+                    lastCleanup: null
+                },
+                requests: {
+                    active: 0,
+                    rejected: 0,
+                    timedOut: 0
                 }
             };
 
             // Initialize cache
             this.cache.clear();
+            this.tokensCache.clear();
             this.requestTimeouts.clear();
             this.requestCount = 0;
 
-            // Check for initial data but don't fail if not present
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.BOLD} Checking for initial token data... ${fancyColors.RESET}`);
-            const [activeTokens, tokensWithPrices] = await Promise.all([
-                prisma.tokens.count({ where: { is_active: true } }),
-                prisma.token_prices.count()
-            ]);
-
-            // Update stats regardless of data presence
-            this.marketStats.data.tokens.total = await prisma.tokens.count();
-            this.marketStats.data.tokens.active = activeTokens;
-            this.marketStats.data.tokens.withPrices = tokensWithPrices;
-
-            if (activeTokens === 0 || tokensWithPrices === 0) {
-                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED} No initial token data available ${fancyColors.RESET}`, {
-                    activeTokens,
-                    tokensWithPrices
-                });
-            } else {
-                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_DARK_GREEN} Initial token data validated ${fancyColors.RESET}`, {
-                //    activeTokens,
-                //    tokensWithPrices
-                });
+            // Check market database connection
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.BOLD} Connecting to market database... ${fancyColors.RESET}`);
+            try {
+                const tokenCount = await marketDb.tokens.count();
+                this.marketStats.data.tokens.total = tokenCount;
+                
+                if (tokenCount === 0) {
+                    logApi.warn(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED} No tokens found in market database ${fancyColors.RESET}`);
+                } else {
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_DARK_GREEN} Connected to market database, found ${tokenCount} tokens ${fancyColors.RESET}`);
+                }
+                
+                // Preload tokens to cache
+                await this.refreshTokensCache();
+                
+                // Start cleanup interval
+                this.startCleanupInterval();
+                
+                // Start broadcast interval if needed
+                this.startBroadcastInterval();
+                
+            } catch (dbError) {
+                logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD} Market Data Service ${fancyColors.RESET}${fancyColors.DARK_RED}${fancyColors.BOLD} failed to connect to market database: \n ${dbError.message}${fancyColors.RESET}`);
+                throw new Error(`Failed to connect to market database: ${dbError.message}`);
             }
-
-            // Start cleanup interval
-            this.startCleanupInterval();
 
             // Update stats
             this.stats = {
@@ -165,11 +192,7 @@ class MarketDataService extends BaseService {
                 marketStats: this.marketStats
             };
 
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.GREEN}Market Data Service initialized${fancyColors.RESET}`, {
-            //    activeTokens: this.marketStats.data.tokens.active,
-            //    withPrices: this.marketStats.data.tokens.withPrices,
-            //    status: 'ready'
-            });
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.GREEN}Market Data Service initialized${fancyColors.RESET}`);
 
             this.isInitialized = true;
             return true;
@@ -180,11 +203,89 @@ class MarketDataService extends BaseService {
         }
     }
 
+    // Refresh tokens cache
+    async refreshTokensCache() {
+        try {
+            const tokens = await marketDb.tokens.findMany({
+                include: {
+                    token_socials: true,
+                    token_websites: true
+                }
+            });
+            
+            // Clear and rebuild tokensCache
+            this.tokensCache.clear();
+            
+            tokens.forEach(token => {
+                this.tokensCache.set(token.symbol, this.formatTokenData(token));
+                // Added this log to help diagnose the [market-data] logs
+                logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.GREEN}Stored token ${token.symbol} in market database${fancyColors.RESET}`);
+            });
+            
+            // Update service stats
+            this.marketStats.data.tokens.total = tokens.length;
+            this.marketStats.data.updates.successful++;
+            this.marketStats.data.updates.lastUpdate = new Date().toISOString();
+            
+            return tokens.length;
+        } catch (error) {
+            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Failed to refresh tokens cache:${fancyColors.RESET}`, error);
+            this.marketStats.data.updates.failed++;
+            throw error;
+        } finally {
+            this.marketStats.data.updates.total++;
+        }
+    }
+
+    // Format token data for consistent API responses
+    formatTokenData(token) {
+        // Get social URLs by type from token_socials
+        const socials = {};
+        if (token.token_socials) {
+            token.token_socials.forEach(social => {
+                socials[social.type] = social.url;
+            });
+        }
+        
+        // Get websites from token_websites
+        const websites = [];
+        if (token.token_websites) {
+            token.token_websites.forEach(website => {
+                websites.push({
+                    label: website.label,
+                    url: website.url
+                });
+            });
+        }
+        
+        return {
+            id: token.id,
+            symbol: token.symbol,
+            name: token.name,
+            price: parseFloat(token.price) || 0,
+            change_24h: parseFloat(token.change_24h) || 0,
+            color: token.color || '#888888',
+            address: token.address,
+            decimals: token.decimals || 9,
+            market_cap: token.market_cap,
+            fdv: token.fdv,
+            liquidity: token.liquidity,
+            volume_24h: token.volume_24h,
+            image_url: token.image_url,
+            buy_pressure: token.buy_pressure,
+            socials: socials,
+            websites: websites
+        };
+    }
+
     // Perform operation
     async performOperation() {
         const startTime = Date.now();
         
         try {
+            // Refresh tokens data from market database
+            await this.refreshTokensCache();
+            
             // Perform maintenance
             this.cleanupCache();
             await this.checkServiceHealth();
@@ -215,201 +316,163 @@ class MarketDataService extends BaseService {
         }
     }
 
-    // Get price
-    async getPrice(symbol) {
+    // Get all tokens
+    async getAllTokens() {
+        try {
+            await this.checkServiceHealth();
+            
+            // If cache is empty, refresh it
+            if (this.tokensCache.size === 0) {
+                await this.refreshTokensCache();
+            }
+            
+            // Convert map to array
+            return Array.from(this.tokensCache.values());
+        } catch (error) {
+            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error getting all tokens:${fancyColors.RESET}`, error);
+            throw error;
+        }
+    }
+
+    // Get token by symbol
+    async getToken(symbol) {
         const startTime = Date.now();
         
         try {
             await this.checkServiceHealth();
             
             // Check cache first
-            const cacheKey = `price:${symbol}`;
-            const cached = this.getFromCache(cacheKey);
-            if (cached) return cached;
-
-            // First check if token exists and is active
-            const token = await prisma.tokens.findFirst({
-                where: { symbol, is_active: true }
+            if (this.tokensCache.has(symbol)) {
+                this.marketStats.cache.hits++;
+                return this.tokensCache.get(symbol);
+            }
+            
+            // Not in cache, query database
+            this.marketStats.cache.misses++;
+            
+            const token = await marketDb.tokens.findFirst({
+                where: { symbol },
+                include: {
+                    token_socials: true,
+                    token_websites: true
+                }
             });
 
             if (!token) {
-                // Token doesn't exist or isn't active - this is not a failure
                 return null;
             }
 
-            const price = await prisma.token_prices.findFirst({
-                where: { symbol },
-                orderBy: { timestamp: 'desc' }
-            });
-
-            const price24hAgo = await prisma.token_prices.findFirst({
-                where: {
-                    symbol,
-                    timestamp: {
-                        lte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-                    }
-                },
-                orderBy: { timestamp: 'desc' }
-            });
-
-            // If token exists but no price, it's pending sync - not a failure
-            if (!price) {
-                const result = {
-                    current: 0,
-                    change_24h: 0,
-                    volume_24h: 0,
-                    high_24h: 0,
-                    low_24h: 0,
-                    timestamp: new Date(),
-                    pending_sync: true
-                };
-                this.setCache(cacheKey, result);
-                return result;
-            }
-
-            const result = {
-                current: price.price,
-                change_24h: price24hAgo ? ((price.price - price24hAgo.price) / price24hAgo.price) * 100 : 0,
-                volume_24h: price.volume_24h || 0,
-                high_24h: price.high_24h || price.price,
-                low_24h: price.low_24h || price.price,
-                timestamp: price.timestamp,
-                pending_sync: false
-            };
-
-            // Update stats
-            this.marketStats.data.updates.prices.successful++;
-            this.marketStats.data.updates.prices.lastUpdate = new Date().toISOString();
+            // Format and cache the token
+            const formattedToken = this.formatTokenData(token);
+            this.tokensCache.set(symbol, formattedToken);
+            
+            // Update metrics
             this.marketStats.performance.averageLatencyMs = 
-                (this.marketStats.performance.averageLatencyMs * this.marketStats.data.updates.prices.total + 
-                (Date.now() - startTime)) / (this.marketStats.data.updates.prices.total + 1);
-
-            this.setCache(cacheKey, result);
-            return result;
+                (this.marketStats.performance.averageLatencyMs * this.marketStats.data.updates.total + 
+                (Date.now() - startTime)) / (this.marketStats.data.updates.total + 1);
+            
+            return formattedToken;
         } catch (error) {
-            this.marketStats.data.updates.prices.failed++;
+            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error getting token:${fancyColors.RESET}`, error);
             throw error;
-        } finally {
-            this.marketStats.data.updates.prices.total++;
         }
     }
 
-    // Get volume
-    async getVolume(symbol) {
-        const startTime = Date.now();
-        
+    // Get token by address
+    async getTokenByAddress(address) {
         try {
             await this.checkServiceHealth();
             
-            const cacheKey = `volume:${symbol}`;
-            const cached = this.getFromCache(cacheKey);
-            if (cached) return cached;
-
-            const volumes = await prisma.token_volumes.findMany({
-                where: {
-                    symbol,
-                    timestamp: {
-                        gte: new Date(Date.now() - 60 * 60 * 1000) // Last hour
-                    }
-                },
-                orderBy: { timestamp: 'desc' }
+            // Search in cache first
+            for (const token of this.tokensCache.values()) {
+                if (token.address === address) {
+                    this.marketStats.cache.hits++;
+                    return token;
+                }
+            }
+            
+            // Not in cache, query database
+            this.marketStats.cache.misses++;
+            
+            const token = await marketDb.tokens.findFirst({
+                where: { address },
+                include: {
+                    token_socials: true,
+                    token_websites: true
+                }
             });
 
-            if (volumes.length === 0) {
-                this.marketStats.data.updates.volume.failed++;
+            if (!token) {
                 return null;
             }
 
-            const result = {
-                total: volumes.reduce((sum, v) => sum + v.volume, 0),
-                trades_count: volumes.reduce((sum, v) => sum + v.trades_count, 0),
-                buy_volume: volumes.reduce((sum, v) => sum + v.buy_volume, 0),
-                sell_volume: volumes.reduce((sum, v) => sum + v.sell_volume, 0),
-                interval: '1h',
-                timestamp: new Date()
-            };
-
-            // Update stats
-            this.marketStats.data.updates.volume.successful++;
-            this.marketStats.data.updates.volume.lastUpdate = new Date().toISOString();
-            this.marketStats.performance.averageLatencyMs = 
-                (this.marketStats.performance.averageLatencyMs * this.marketStats.data.updates.volume.total + 
-                (Date.now() - startTime)) / (this.marketStats.data.updates.volume.total + 1);
-
-            this.setCache(cacheKey, result);
-            return result;
+            // Format and cache the token
+            const formattedToken = this.formatTokenData(token);
+            this.tokensCache.set(token.symbol, formattedToken);
+            
+            return formattedToken;
         } catch (error) {
-            this.marketStats.data.updates.volume.failed++;
+            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error getting token by address:${fancyColors.RESET}`, error);
             throw error;
-        } finally {
-            this.marketStats.data.updates.volume.total++;
         }
     }
 
-    // Get sentiment
-    async getSentiment(symbol) {
-        const startTime = Date.now();
-        
+    // Generate broadcast data
+    async generateBroadcastData() {
         try {
-            await this.checkServiceHealth();
+            const allTokens = await this.getAllTokens();
             
-            const cacheKey = `sentiment:${symbol}`;
-            const cached = this.getFromCache(cacheKey);
-            if (cached) return cached;
-
-            const sentiment = await prisma.token_sentiment.findFirst({
-                where: { symbol },
-                orderBy: { timestamp: 'desc' }
-            });
-
-            if (!sentiment) {
-                this.marketStats.data.updates.sentiment.failed++;
-                return null;
-            }
-
-            const previousVolumes = await prisma.token_volumes.findMany({
-                where: {
-                    symbol,
-                    timestamp: {
-                        gte: new Date(Date.now() - 15 * 60 * 1000) // Last 15 minutes
-                    }
-                },
-                orderBy: { timestamp: 'desc' }
-            });
-
-            let volumeTrend = 'stable';
-            if (previousVolumes.length >= 2) {
-                const recentVolume = previousVolumes[0].volume;
-                const oldVolume = previousVolumes[previousVolumes.length - 1].volume;
-                const change = ((recentVolume - oldVolume) / oldVolume) * 100;
+            // Format the data for broadcasting
+            const broadcastData = {
+                type: 'token_update',
+                timestamp: new Date().toISOString(),
+                data: allTokens
+            };
+            
+            // Check if data has changed since last broadcast
+            const hasChanged = !this.lastBroadcastData || 
+                JSON.stringify(broadcastData.data) !== JSON.stringify(this.lastBroadcastData.data);
+            
+            if (hasChanged || !this.config.broadcast.changesOnly) {
+                this.lastBroadcastData = broadcastData;
+                if (hasChanged) {
+                    this.marketStats.data.broadcasts.changesOnly++;
+                }
+                this.marketStats.data.broadcasts.total++;
+                this.marketStats.data.broadcasts.lastBroadcast = broadcastData.timestamp;
                 
-                if (change > 10) volumeTrend = 'increasing';
-                else if (change < -10) volumeTrend = 'decreasing';
+                return broadcastData;
             }
-
-            const result = {
-                score: sentiment.sentiment_score,
-                buy_pressure: sentiment.buy_pressure,
-                sell_pressure: sentiment.sell_pressure,
-                volume_trend: volumeTrend,
-                timestamp: sentiment.timestamp
-            };
-
-            // Update stats
-            this.marketStats.data.updates.sentiment.successful++;
-            this.marketStats.data.updates.sentiment.lastUpdate = new Date().toISOString();
-            this.marketStats.performance.averageLatencyMs = 
-                (this.marketStats.performance.averageLatencyMs * this.marketStats.data.updates.sentiment.total + 
-                (Date.now() - startTime)) / (this.marketStats.data.updates.sentiment.total + 1);
-
-            this.setCache(cacheKey, result);
-            return result;
+            
+            return null; // No changes to broadcast
         } catch (error) {
-            this.marketStats.data.updates.sentiment.failed++;
-            throw error;
-        } finally {
-            this.marketStats.data.updates.sentiment.total++;
+            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error generating broadcast data:${fancyColors.RESET}`, error);
+            return null;
         }
+    }
+
+    // Start broadcast interval
+    startBroadcastInterval() {
+        if (this.broadcastInterval) {
+            clearInterval(this.broadcastInterval);
+        }
+        
+        this.broadcastInterval = setInterval(async () => {
+            try {
+                const broadcastData = await this.generateBroadcastData();
+                
+                if (broadcastData) {
+                    // Emit an event that WebSockets can listen for
+                    this.emit('market:broadcast', broadcastData);
+                    
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_GREEN} Broadcasting market data: ${broadcastData.data.length} tokens ${fancyColors.RESET}`);
+                }
+            } catch (error) {
+                logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error in broadcast interval:${fancyColors.RESET}`, error);
+            }
+        }, this.config.broadcast.intervalMs);
+        
+        logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Started market data broadcast interval (${this.config.broadcast.intervalMs}ms)${fancyColors.RESET}`);
     }
 
     // Cache management
@@ -492,9 +555,19 @@ class MarketDataService extends BaseService {
             }
             this.requestTimeouts.clear();
             
+            // Clear broadcast interval
+            if (this.broadcastInterval) {
+                clearInterval(this.broadcastInterval);
+                this.broadcastInterval = null;
+            }
+            
             // Clear cache
             if (this.cache) {
                 this.cache.clear();
+            }
+            
+            if (this.tokensCache) {
+                this.tokensCache.clear();
             }
             
             // Reset cache size in stats if it exists
@@ -512,9 +585,9 @@ class MarketDataService extends BaseService {
                 }
             );
             
-            logApi.info('Market Data Service stopped successfully');
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Market Data Service stopped${fancyColors.RESET}`);
         } catch (error) {
-            logApi.error('Error stopping Market Data Service:', error);
+            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error stopping Market Data Service:${fancyColors.RESET}`, error);
             throw error;
         }
     }

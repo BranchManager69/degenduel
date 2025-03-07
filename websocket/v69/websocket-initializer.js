@@ -14,6 +14,7 @@ import { createMonitorWebSocket } from './monitor-ws.js';
 import { createContestWebSocket } from './contest-ws.js';
 import { createCircuitBreakerWebSocket } from './circuit-breaker-ws.js';
 import { createUserNotificationWebSocket } from './user-notification-ws.js';
+import { createTokenDataWebSocket } from './token-data-ws.js';
 
 // Initialize global v69 WebSocket container
 global.wsServersV69 = global.wsServersV69 || {};
@@ -52,6 +53,11 @@ export async function initializeWebSockets(server) {
     const userNotificationWs = createUserNotificationWebSocket(server);
     global.wsServersV69.userNotification = userNotificationWs;
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created User Notification WebSocket                                    ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    
+    // Create Token Data WebSocket
+    const tokenDataWs = createTokenDataWebSocket(server);
+    global.wsServersV69.tokenData = tokenDataWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Token Data WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
 
     // Initialize all WebSocket servers
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}${fancyColors.BOLD}Starting initialization...${fancyColors.RESET}                                          ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
@@ -60,7 +66,8 @@ export async function initializeWebSockets(server) {
       monitorWs.initialize(),
       contestWs.initialize(),
       circuitBreakerWs.initialize(),
-      userNotificationWs.initialize()
+      userNotificationWs.initialize(),
+      tokenDataWs.initialize()
     ]);
 
     // Check if all initializations were successful
@@ -93,8 +100,8 @@ function printWebSocketEndpoints() {
     { name: 'Monitor WebSocket', path: '/api/v69/ws/monitor' },
     { name: 'Contest WebSocket', path: '/api/v69/ws/contest' },
     { name: 'Circuit Breaker WebSocket', path: '/api/v69/ws/circuit-breaker' },
-    { name: 'User Notification WebSocket', path: '/api/v69/ws/notifications' }
-    // Add more WebSocket endpoints as they are implemented
+    { name: 'User Notification WebSocket', path: '/api/v69/ws/notifications' },
+    { name: 'Token Data WebSocket', path: '/api/v69/ws/token-data' }
   ];
 
   logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} ENDPOINTS ${fancyColors.RESET} Available WebSocket endpoints:                                ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
