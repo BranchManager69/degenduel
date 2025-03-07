@@ -107,14 +107,38 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.get("/:key", requireAuth, requireAdmin, async (req, res) => {
+router.get("/:key", async (req, res) => {
   const { key } = req.params;
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
+  
+  // Allow public access to background_scene setting
+  const isPublicSetting = key === "background_scene";
+  
+  // If not a public setting, require authentication
+  if (!isPublicSetting && (!req.user || !req.user.wallet_address)) {
+    return res.status(401).json({
+      error: "Authentication required",
+    });
+  }
+  
+  // If not a public setting and not admin, require admin role
+  if (!isPublicSetting && req.user.role !== "admin" && req.user.role !== "superadmin") {
+    return res.status(403).json({
+      error: "Admin access required",
+    });
+  }
+
+  const userInfo = req.user ? {
+    admin_address: req.user.wallet_address
+  } : {
+    guest: true
+  };
 
   logApi.info(`Fetching system setting: ${key} \n\t`, {
     requestId,
-    admin_address: req.user.wallet_address,
+    ...userInfo,
+    publicAccess: isPublicSetting
   });
 
   try {
@@ -125,7 +149,7 @@ router.get("/:key", requireAuth, requireAdmin, async (req, res) => {
     if (!setting) {
       logApi.warn(`System setting not found: ${key} \n\t`, {
         requestId,
-        admin_address: req.user.wallet_address,
+        ...userInfo,
       });
       return res.status(404).json({
         error: "System setting not found",

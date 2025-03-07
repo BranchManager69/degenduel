@@ -567,17 +567,48 @@ model level_rewards {
   @@map("level_rewards")
 }
 
+model notification_templates {
+  id             Int                  @id @default(autoincrement())
+  name           String               @unique
+  description    String?
+  type           String
+  template       Json                 @db.JsonB
+  priority       NotificationPriority @default(standard)
+  media_type     String?              // "image", "gif", "video", etc.
+  media_template String?              // Template for media URL with variables
+  action_buttons Json?                @db.JsonB
+  created_at     DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime             @updatedAt @db.Timestamptz(6)
+  created_by     String?              @db.VarChar(44)
+  is_active      Boolean              @default(true)
+  min_user_level Int?                 // Minimum user level to receive this template
+  max_uses       Int?                 // Maximum number of times this template can be used
+
+  @@index([type], map: "idx_notification_templates_type")
+  @@index([priority], map: "idx_notification_templates_priority")
+  @@index([is_active], map: "idx_notification_templates_active")
+  @@map("notification_templates")
+}
+
 model websocket_messages {
-  id             Int      @id @default(autoincrement())
+  id             Int                  @id @default(autoincrement())
   type           String
   data           Json
   wallet_address String
-  timestamp      DateTime @default(now()) @db.Timestamptz(6)
-  delivered      Boolean  @default(false)
-  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+  timestamp      DateTime             @default(now()) @db.Timestamptz(6)
+  delivered_at   DateTime?            @db.Timestamptz(6)
+  read_at        DateTime?            @db.Timestamptz(6)
+  priority       NotificationPriority @default(standard)
+  expires_at     DateTime?            @db.Timestamptz(6)
+  media_url      String?
+  action_buttons Json?                @db.JsonB
+  users          users                @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([wallet_address, type], map: "idx_websocket_messages_wallet_type")
   @@index([timestamp], map: "idx_websocket_messages_timestamp")
+  @@index([priority], map: "idx_websocket_messages_priority")
+  @@index([read_at], map: "idx_websocket_messages_read_at")
+  @@index([expires_at], map: "idx_websocket_messages_expires_at")
   @@map("websocket_messages")
 }
 
@@ -850,4 +881,15 @@ enum ReferralRewardType {
   signup_bonus
   contest_bonus
   special_event
+}
+
+enum NotificationPriority {
+  nuclear     // ☢️ Superadmin exclusive: system-critical alerts with radioactive symbol
+  urgent      // 🚨 Immediate attention required
+  important   // ⚠️ High-priority information 
+  standard    // 📢 Regular notifications
+  subtle      // 💭 Low-priority updates
+  whisper     // 🤫 Quiet, subtle hints that appear briefly
+  nudge       // 👉 Gentle reminders
+  wink        // 😉 Playful, quick notifications
 }
