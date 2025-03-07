@@ -16,7 +16,7 @@ class SystemSettingsWebSocket extends BaseWebSocketServer {
         super(server, {
             path: '/api/ws/system-settings',
             maxMessageSize: 1024 * 1024, // 1MB should be plenty for settings
-            requireAuth: false, // All users can access system settings but only admin/superadmin can modify
+            requireAuth: true, // Require authentication for security
             perMessageDeflate: false // Disable compression by default
         });
 
@@ -24,8 +24,7 @@ class SystemSettingsWebSocket extends BaseWebSocketServer {
         this.cachedSettings = {};
 
         // Log successful initialization of the SystemSettingsWebSocket
-        logApi.info(`${fancyColors.DARK_PURPLE}[SystemSettingsWebSocket]${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}System Settings 
-WebSocket initialized${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.BLUE}[SystemSettingsWebSocket]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.LIGHT_WHITE} System Settings ${fancyColors.RESET}${fancyColors.BLUE} WebSocket initialized${fancyColors.RESET}`);
     }
 
     // Initialize method to support the WebSocket initialization process
