@@ -171,6 +171,56 @@ export function getReports(options = {}) {
       }
     }
     
+    // Get Prisma reconciliation reports
+    if (!type || type === 'prisma') {
+      const prismaReportsDir = path.join(reportsBaseDir, 'prisma_reconcile');
+      if (fs.existsSync(prismaReportsDir)) {
+        // Get all date folders
+        const dateFolders = fs.readdirSync(prismaReportsDir)
+          .filter(folder => {
+            // If date filter is applied, only include matching folders
+            if (date) {
+              return folder === date;
+            }
+            return true;
+          });
+          
+        // Process each date folder
+        dateFolders.forEach(dateFolder => {
+          const datePath = path.join(prismaReportsDir, dateFolder);
+          
+          // Skip if not a directory
+          if (!fs.statSync(datePath).isDirectory()) {
+            return;
+          }
+          
+          // Get all run folders in this date folder
+          const runFolders = fs.readdirSync(datePath);
+          
+          // Process each run folder
+          runFolders.forEach(runFolder => {
+            const runPath = path.join(datePath, runFolder);
+            
+            // Skip if not a directory or not a run folder
+            if (!fs.statSync(runPath).isDirectory() || !runFolder.startsWith('run_')) {
+              return;
+            }
+            
+            // Get metadata for this report
+            const metadata = getReportMetadata(runPath, 'prisma');
+            if (metadata) {
+              // Apply AI filter if requested
+              if (withAiOnly && !metadata.hasAiAnalysis) {
+                return;
+              }
+              
+              allReports.push(metadata);
+            }
+          });
+        });
+      }
+    }
+    
     // Sort reports by timestamp (newest first)
     allReports.sort((a, b) => b.sortTimestamp - a.sortTimestamp);
     
@@ -189,7 +239,7 @@ export function getReports(options = {}) {
 /**
  * Get report content
  * @param {string} reportId Report ID (date_run format)
- * @param {string} reportType Report type (service or db)
+ * @param {string} reportType Report type (service, db, or prisma)
  * @returns {Object} Report content
  */
 export function getReportContent(reportId, reportType) {
@@ -202,7 +252,22 @@ export function getReportContent(reportId, reportType) {
     
     // Construct report path
     const reportsBaseDir = path.join(process.cwd(), 'reports');
-    const reportTypeDir = reportType === 'service' ? 'service-reports' : 'db_comparisons';
+    let reportTypeDir;
+    
+    switch (reportType) {
+      case 'service':
+        reportTypeDir = 'service-reports';
+        break;
+      case 'db':
+        reportTypeDir = 'db_comparisons';
+        break;
+      case 'prisma':
+        reportTypeDir = 'prisma_reconcile';
+        break;
+      default:
+        throw new Error(`Unknown report type: ${reportType}`);
+    }
+    
     const reportPath = path.join(reportsBaseDir, reportTypeDir, date, `run_${run}`);
     
     // Verify path exists
@@ -240,6 +305,18 @@ export function getReportContent(reportId, reportType) {
       
       // Include AI analysis if available
       const aiFile = path.join(reportPath, 'db_comparison_ai_analysis.txt');
+      if (fs.existsSync(aiFile)) {
+        content.aiAnalysis = fs.readFileSync(aiFile, 'utf8');
+      }
+    } else if (reportType === 'prisma') {
+      // For Prisma reconcile reports, read the plain text file
+      const plainFile = path.join(reportPath, 'prisma_reconcile_plain.txt');
+      if (fs.existsSync(plainFile)) {
+        content.report = fs.readFileSync(plainFile, 'utf8');
+      }
+      
+      // Include AI analysis if available
+      const aiFile = path.join(reportPath, 'prisma_reconcile_ai_analysis.txt');
       if (fs.existsSync(aiFile)) {
         content.aiAnalysis = fs.readFileSync(aiFile, 'utf8');
       }
