@@ -200,6 +200,7 @@ router.post('/verify-wallet', async (req, res) => {
     const messageBytes = new TextEncoder().encode(message);
 
     // 3.1) Verify the wallet address
+    let pubKey;
     try {
       pubKey = new PublicKey(wallet);
     } catch (err) {
