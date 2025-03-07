@@ -497,6 +497,7 @@ async function initializeServer() {
 
             // Initialize grouped services 
             // (Note: I'm not married to these groupings; I'm open to suggestions)
+            console.log('\n[DEBUG] Initializing grouped services... \n');
             try {
                 // First try to register core services
                 if (VERBOSE_SERVICE_INIT_LOGS) {
