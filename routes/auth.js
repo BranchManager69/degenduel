@@ -60,22 +60,22 @@ const authLogger = {
 router.get('/challenge', async (req, res) => {
   try {
     // Debug mode
-    if (config.debug_mode) { logApi.info('Challenge request received \n\t', { wallet: req.query.wallet }); }
+    if (config.debug_mode) { logApi.info(`Challenge request received for ${req.query.wallet} \n\t`); }
     
     const { wallet } = req.query;
     if (!wallet) {
-      if (config.debug_mode) { logApi.warn('Missing wallet address in challenge request \n\t'); }
+      if (config.debug_mode) { logApi.warn(`Missing wallet address in challenge request \n\t`); }
       return res.status(400).json({ error: 'Missing wallet address' });
     }
 
-    if (config.debug_mode) { logApi.info('Attempting to generate nonce \n\t', { wallet }); } 
+    if (config.debug_mode) { logApi.info(`Attempting to generate nonce for ${wallet} \n\t`); } 
     // Generate nonce & store in DB
     const nonce = await generateNonce(wallet);
-    if (config.debug_mode) { logApi.info('Nonce generated successfully \n\t', { wallet, nonce }); }
+    if (config.debug_mode) { logApi.info(`Nonce generated successfully for ${wallet} \n\t`, { nonce }); }
     return res.json({ nonce });
   } catch (error) {
     if (config.debug_mode) { 
-      logApi.error('Failed to generate nonce \n\t', { 
+      logApi.error(`Failed to generate nonce for ${req.query.wallet} \n\t`, { 
         error: error.message,
         stack: error.stack,
         wallet: req.query.wallet,
@@ -146,30 +146,31 @@ router.get('/challenge', async (req, res) => {
 router.post('/verify-wallet', async (req, res) => {
   try {
     const { wallet, signature, message, device_id, device_name, device_type } = req.body;
-    authLogger.info('Verify wallet request received \n\t', { wallet });
+    authLogger.info(`Verify wallet request received \n\t`, { wallet });
 
+    // 0) Check if required fields are present
     if (!wallet || !signature || !message) {
-      authLogger.warn('Missing required fields \n\t', { wallet, hasSignature: !!signature, hasMessage: !!message });
+      authLogger.warn(`Missing required fields \n\t`, { wallet, hasSignature: !!signature, hasMessage: !!message });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     if (!Array.isArray(signature) || signature.length !== 64) {
-      authLogger.warn('Invalid signature format \n\t', { wallet, signatureLength: signature?.length });
+      authLogger.warn(`Invalid signature format \n\t`, { wallet, signatureLength: signature?.length });
       return res.status(400).json({ error: 'Signature must be a 64-byte array' });
     }
 
     // 1) Get the nonce from DB
     const record = await getNonceRecord(wallet);
     if (!record) {
-      authLogger.warn('No nonce record found \n\t', { wallet });
+      authLogger.warn(`No nonce record found for ${wallet} \n\t`);
       return res.status(401).json({ error: 'Nonce not found or expired' });
     }
 
-    // Check if it's expired
+    // 1.1) Check if old nonce is expired
     const now = Date.now();
     const expiresAtMs = new Date(record.expires_at).getTime();
     if (expiresAtMs < now) {
-      authLogger.warn('Nonce expired \n\t', { 
+      authLogger.warn(`Nonce expired for ${wallet} \n\t`, { 
         wallet,
         expiresAt: record.expires_at,
         now: new Date(now).toISOString(),
@@ -183,13 +184,14 @@ router.post('/verify-wallet', async (req, res) => {
     const lines = message.split('\n').map((l) => l.trim());
     const nonceLine = lines.find((l) => l.startsWith('Nonce:'));
     if (!nonceLine) {
-      authLogger.warn('Message missing nonce line \n\t', { wallet });
+      authLogger.warn(`Message missing nonce line \n\t`, { wallet });
       return res.status(400).json({ error: 'Message missing nonce line' });
     }
     const messageNonce = nonceLine.split('Nonce:')[1].trim();
 
+    // 2.1) Verify the nonce
     if (messageNonce !== record.nonce) {
-      authLogger.warn('Nonce mismatch in message \n\t', { wallet });
+      authLogger.warn(`Nonce mismatch in message \n\t`, { wallet });
       return res.status(401).json({ error: 'Nonce mismatch in message' });
     }
 
@@ -197,22 +199,26 @@ router.post('/verify-wallet', async (req, res) => {
     const signatureUint8 = new Uint8Array(signature);
     const messageBytes = new TextEncoder().encode(message);
 
-    let pubKey;
+    // 3.1) Verify the wallet address
     try {
       pubKey = new PublicKey(wallet);
     } catch (err) {
-      authLogger.warn('Invalid wallet address \n\t', { wallet });
+      authLogger.warn(`Invalid wallet address \n\t`, { wallet });
       return res.status(400).json({ error: 'Invalid wallet address' });
     }
 
+    // 3.2) Verify the signature
     const isVerified = nacl.sign.detached.verify(messageBytes, signatureUint8, pubKey.toBytes());
     if (!isVerified) {
-      authLogger.warn('Invalid signature \n\t', { wallet });
+      authLogger.warn(`Invalid signature \n\t`, { wallet });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
     // 4) Clear the nonce from DB so it can't be reused
     await clearNonce(wallet);
+
+    // 4.1) Generate a default nickname for new users
+    const newUserDefaultNickname = `degen_${wallet.slice(0, 6)}`;
 
     // 5) Upsert user in DB
     const nowIso = new Date().toISOString();
@@ -220,9 +226,10 @@ router.post('/verify-wallet', async (req, res) => {
       where: { wallet_address: wallet },
       create: {
         wallet_address: wallet,
+        nickname: newUserDefaultNickname, // set a default nickname for new users
         created_at: nowIso,
         last_login: nowIso,
-        role: UserRole.user
+        role: UserRole.user // role for new users = user
       },
       update: {
         last_login: nowIso
@@ -327,22 +334,23 @@ router.post('/verify-wallet', async (req, res) => {
         session_id: Buffer.from(crypto.randomBytes(16)).toString('hex')
       },
       config.jwt.secret,
-      { expiresIn: '24h' }
+      { expiresIn: '12h' } // 12 hours (edited 3/7/25)
     );
 
-    // 7) Set cookie
+    // 7) Create cookie
     const cookieOptions = {
       httpOnly: true,
       sameSite: 'none',
       secure: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 12 * 60 * 60 * 1000, // 12 hours (edited 3/7/25)
       domain: '.degenduel.me' // Always set in production URL
     };
 
+    // Set the cookie
     res.cookie('session', token, cookieOptions);
 
     // After successful verification
-    authLogger.info('Wallet verified successfully \n\t', { 
+    authLogger.info(`Wallet verified successfully \n\t`, { 
       wallet,
       role: user.role,
       cookieOptions: {
@@ -369,7 +377,7 @@ router.post('/verify-wallet', async (req, res) => {
       device: deviceAuthStatus
     });
   } catch (error) {
-    authLogger.error('Wallet verification failed \n\t', {
+    authLogger.error(`Wallet verification failed \n\t`, {
       error: error.message,
       stack: error.stack,
       wallet: req.body?.wallet
@@ -410,22 +418,18 @@ router.post('/verify-wallet', async (req, res) => {
  *         description: Not found or user not found
  */
 router.post('/dev-login', async (req, res) => {
-  // TEMPORARY: Allow dev login in any environment and port
-  // Original restriction: Only available in development mode and on dev port
-  // if (process.env.NODE_ENV !== 'development' || process.env.PORT !== '3005') {
-  //   authLogger.warn('Attempted dev login in production or wrong port', {
-  //     env: process.env.NODE_ENV,
-  //     port: process.env.PORT
-  //   });
-  //   return res.status(404).json({ error: 'Not found' });
-  // }
+  // (Development only) Allow lax dev-login
+  if (process.env.NODE_ENV !== 'development' || process.env.PORT !== '3005' || req.ip !== '127.0.0.1') {
+    authLogger.warn(`Someone tried to dev-login on ${process.env.NODE_ENV} from IP ${req.ip} on port ${process.env.PORT} \n\t`);
+    return res.status(404).json({ error: 'Not found' });
+  }
 
   try {
     const { secret, wallet_address } = req.body;
     
     // Verify secret
     if (secret !== process.env.DEV_LOGIN_SECRET) {
-      authLogger.warn('Invalid dev login secret attempt', {
+      authLogger.warn(`Invalid dev-login secret attempt \n\t`, {
         wallet: wallet_address,
         providedSecret: secret?.substring(0, 3) + '...'  // Log only first 3 chars for security
       });
@@ -437,15 +441,16 @@ router.post('/dev-login', async (req, res) => {
       where: { wallet_address }
     });
 
+    // User not found
     if (!user) {
-      authLogger.warn('Dev login attempted for non-existent user', { wallet: wallet_address });
+      authLogger.warn(`Dev-login attempted for non-existent user \n\t`, { wallet: wallet_address });
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Create session ID
     const sessionId = Buffer.from(crypto.randomBytes(16)).toString('hex');
 
-    // Create JWT token (same as normal login)
+    // Create JWT token (as if normal login)
     const token = sign(
       {
         wallet_address: user.wallet_address,
@@ -453,19 +458,19 @@ router.post('/dev-login', async (req, res) => {
         session_id: sessionId
       },
       config.jwt.secret,
-      { expiresIn: '24h' }
+      { expiresIn: '12h' } // 12 hours (edited 3/7/25)
     );
 
     // Set cookie
     res.cookie('session', token, {
       httpOnly: true,
-      secure: false,  // Allow non-HTTPS in development
+      secure: false,  // Allow non-HTTPS since we're in dev mode
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 12 * 60 * 60 * 1000 // 12 hours (edited 3/7/25)
     });
 
     // Log successful dev login
-    authLogger.info('Development login successful \n\t', {
+    authLogger.info(`Dev-login successful \n\t`, {
       wallet: user.wallet_address,
       role: user.role,
       sessionId
@@ -481,7 +486,7 @@ router.post('/dev-login', async (req, res) => {
       }
     });
   } catch (error) {
-    authLogger.error('Dev login error \n\t', {
+    authLogger.error(`Dev-login error \n\t`, {
       error: error.message,
       stack: error.stack
     });
@@ -522,11 +527,11 @@ router.post('/dev-login', async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.post('/disconnect', async (req, res) => {
+router.post('/disconnect', requireAuth, async (req, res) => {
   try {
     const { wallet } = req.body;
     if (!wallet) {
-      logApi.warn('Missing wallet address in disconnect request \n\t');
+      logApi.warn(`Missing wallet address in disconnect request \n\t`);
       return res.status(400).json({ error: 'Missing wallet' });
     }
 
@@ -541,7 +546,7 @@ router.post('/disconnect', async (req, res) => {
     if (config.debug_mode) { logApi.info(`Wallet ${wallet} disconnected \n\t`); }
     res.json({ success: true });
   } catch (error) {
-    if (config.debug_mode) { logApi.error('Wallet disconnect failed \n\t', { error }); }
+    if (config.debug_mode) { logApi.error(`Wallet disconnect failed \n\t`, { error }); }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -563,7 +568,7 @@ router.post('/disconnect', async (req, res) => {
 router.post('/logout', requireAuth, async (req, res) => {
   try {
     if (config.debug_mode) {
-      logApi.info('Logout request received \n\t', {
+      logApi.info(`Logout request received \n\t`, {
         user: req.user.wallet_address
       });
     }
@@ -583,13 +588,13 @@ router.post('/logout', requireAuth, async (req, res) => {
     });
 
     if (config.debug_mode) {
-      logApi.info('User logged out successfully \n\t', {
+      logApi.info(`User logged out successfully \n\t`, {
         user: req.user.wallet_address
       });
     }
     res.json({ success: true });
   } catch (error) {
-    logApi.error('Logout failed \n\t', { error });
+    logApi.error(`Logout failed \n\t`, { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -608,11 +613,11 @@ router.post('/logout', requireAuth, async (req, res) => {
  *       401:
  *         description: No valid session
  */
-router.get('/session', async (req, res) => {
+router.get('/session', requireAuth, async (req, res) => {
   try {
     const token = req.cookies.session;
     if (!token) {
-      authLogger.debug('No token provided \n\t');
+      authLogger.debug(`No token provided \n\t`);
       return res.status(401).json({ error: 'No session token provided' });
     }
 
@@ -623,7 +628,7 @@ router.get('/session', async (req, res) => {
     });
 
     if (!user) {
-      authLogger.debug('User not found \n\t', { wallet: decoded.wallet_address });
+      authLogger.debug(`User not found \n\t`, { wallet: decoded.wallet_address });
       return res.status(401).json({ error: 'User not found' });
     }
 
@@ -635,7 +640,7 @@ router.get('/session', async (req, res) => {
 
     // Only log role mismatches at warn level
     if (user.role !== decoded.role) {
-      authLogger.warn('Role mismatch detected \n\t', {
+      authLogger.warn(`Role mismatch detected \n\t`, {
         wallet: user.wallet_address,
         stored_role: user.role,
         token_role: decoded.role
@@ -658,7 +663,7 @@ router.get('/session', async (req, res) => {
       error: error.message
     }, req.headers);
 
-    authLogger.error('Session validation failed \n\t', { error: error.message });
+    authLogger.error(`Session validation failed \n\t`, { error: error.message });
     res.status(401).json({ error: 'Invalid session token' });
   }
 });
@@ -667,7 +672,7 @@ router.get('/session', async (req, res) => {
  * @swagger
  * /api/auth/token:
  *   get:
- *     summary: Get current access token for WebSocket connections
+ *     summary: Use current access token to get a WebSocket connection
  *     tags: [Authentication]
  *     security:
  *       - cookieAuth: []
@@ -677,11 +682,11 @@ router.get('/session', async (req, res) => {
  *       401:
  *         description: No valid session
  */
-router.get('/token', async (req, res) => {
+router.get('/token', requireAuth, async (req, res) => {
   try {
     const sessionToken = req.cookies.session;
     if (!sessionToken) {
-      authLogger.debug('No session token provided for token request \n\t');
+      authLogger.debug(`No session token provided for token request \n\t`);
       return res.status(401).json({ error: 'No session token provided' });
     }
 
@@ -695,7 +700,7 @@ router.get('/token', async (req, res) => {
 
     // If the user is not found, return a 401 error
     if (!user) {
-      authLogger.debug('User not found for token request \n\t', { wallet: decoded.wallet_address });
+      authLogger.debug(`User not found for token request \n\t`, { wallet: decoded.wallet_address });
       return res.status(401).json({ error: 'User not found' });
     }
 
@@ -717,12 +722,12 @@ router.get('/token', async (req, res) => {
     }, req.headers);
 
     // Log the WSS token generation
-    authLogger.info('WebSocket token generated \n\t', { 
+    authLogger.info(`WebSocket token generated \n\t`, { 
       wallet: user.wallet_address,
       session_id: decoded.session_id
     });
 
-    // Return the WSS token with a 1 hour expiration
+    // Return the WSS token to the client with a 1 hour expiration
     return res.json({
       token: wsToken,
       expiresIn: 3600 // 1 hour in seconds
@@ -736,7 +741,7 @@ router.get('/token', async (req, res) => {
     }, req.headers);
 
     // Log the failed WSS token generation
-    authLogger.error('Token generation failed \n\t', { error: error.message });
+    authLogger.error(`Token generation failed \n\t`, { error: error.message });
     res.status(401).json({ error: 'Invalid session' });
   }
 });
