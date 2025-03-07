@@ -43,6 +43,10 @@
     "db:***REMOVED***": "./scripts/db-tools.sh ***REMOVED***",
     "db:compliment": "./scripts/db-tools.sh compliment",
     "db:money": "./scripts/db-tools.sh money",
+    
+    "mm:consolidate": "node scripts/mm/consolidate.js",
+    "mm:audit": "node scripts/mm/audit.js",
+    "mm": "./scripts/mm/run.sh",
 
     "prisma:format": "prisma format",
     "prisma:generate": "prisma generate",
