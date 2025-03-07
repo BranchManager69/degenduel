@@ -100,4 +100,4 @@ archive/**
 !config/swagger.json
 !config/swagger.yaml
 !config/swagger.yml
-!config/swagger.json
+!config/swagger.jsonecosystem.local.cjs

@@ -489,6 +489,48 @@ Future WebSocket implementations planned:
 
 ### Token Data WebSocket Implementation Plan
 
+## UPDATE (3/7/2025):
+## Token Data WebSocket Implementation
+
+The Token Data WebSocket has been successfully implemented at `/api/v69/ws/token-data` with the following features:
+
+1. **Direct Market Database Integration**
+   - Connected to dedicated `degenduel_market_data` database via `MARKET_DATABASE_URL`
+   - Complete schema with tokens, socials, websites, and transaction tables
+   - Efficient query patterns with proper caching
+
+2. **Real-time Broadcasting System**
+   - Event-based architecture for token data updates
+   - Automatic broadcasting to all connected clients
+   - Support for channel-based subscriptions (e.g., specific tokens)
+   - Optimized for high message throughput
+
+3. **Multiple Access Patterns**
+   - Public endpoints accessible without authentication
+   - Support for admin token data providers
+   - Token-specific channels for targeted updates
+   - Market-wide broadcasts for all connected clients
+
+4. **Advanced Caching**
+   - In-memory cache for high-performance responses
+   - Token data caching with automatic refresh
+   - Metrics tracking for cache hits/misses
+
+5. **Testing and Documentation**
+   - Full documentation in the v69 README.md
+   - Support in the v69 test client
+   - API documentation for frontend developers
+
+The Token Data WebSocket can be tested using:
+
+```bash
+node websocket/v69/test-client.js token-data
+```
+
+This implementation marks a significant step in our WebSocket modernization strategy, replacing the polling-based token data system with a more efficient real-time solution.
+
+### Original Plan:
+
 The Token Data WebSocket (v69) will build on our enhanced base WebSocket class with these features:
 
 1. **Efficient Data Compression**

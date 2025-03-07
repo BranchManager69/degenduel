@@ -20,6 +20,9 @@ The v69 WebSocket system runs in parallel with the existing WebSocket implementa
 |--------------------------|---------------------------|-----------------------------|----------------|
 | Monitor WebSocket        | `/api/v69/ws/monitor`     | System status and monitoring| Optional       |
 | Contest WebSocket        | `/api/v69/ws/contest`     | Contest data and chat rooms | Optional       |
+| Token Data WebSocket     | `/api/v69/ws/token-data`  | Market data and token prices| None           |
+| Circuit Breaker WebSocket| `/api/v69/ws/circuit-breaker` | Circuit breaker status  | Optional       |
+| User Notification WebSocket| `/api/v69/ws/notifications`| User-specific notifications| Required     |
 
 ## Test Client
 
@@ -36,6 +39,9 @@ node websocket/v69/test-client.js monitor --auth YOUR_TOKEN
 
 # Subscribe to a specific channel
 node websocket/v69/test-client.js monitor --channel system.status
+
+# Test token data WebSocket
+node websocket/v69/test-client.js token-data
 
 # Run automated test suite
 node websocket/v69/test-client.js monitor --test
@@ -79,6 +85,45 @@ Each WebSocket defines its own set of channels that clients can subscribe to:
 - `public.contest.{contestId}` - Public data for a specific contest
 - `user.{walletAddress}` - User-specific contest updates
 
+### Token Data WebSocket Channels
+
+- `public.tokens` - All token data updates (no auth required)
+- `public.market` - Market-wide updates (no auth required)
+- `token.{symbol}` - Updates for a specific token
+- `admin.tokens` - Admin-only token management data
+
+## Token Data WebSocket
+
+The Token Data WebSocket provides real-time market data from the dedicated market database. It supports:
+
+- Automatic broadcasting of token data to all connected clients
+- Individual token subscriptions for targeted updates
+- Public channels that require no authentication
+- Support for market data providers (admin only)
+
+### Connecting to Token Data WebSocket
+
+```javascript
+// Browser example
+const ws = new WebSocket('wss://degenduel.me/api/v69/ws/token-data');
+
+// Listen for token updates
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  
+  if (message.type === 'token_update') {
+    // Handle token data updates
+    console.log('Received token data:', message.data);
+  }
+};
+
+// Subscribe to specific tokens
+ws.send(JSON.stringify({
+  type: 'subscribe_tokens',
+  symbols: ['SOL', 'BONK', 'JUP']
+}));
+```
+
 ## Authentication
 
 To authenticate, you need to obtain a token from the `/api/auth/token` endpoint. This token can be passed to the WebSocket in several ways:
@@ -86,17 +131,3 @@ To authenticate, you need to obtain a token from the `/api/auth/token` endpoint.
 1. **Query Parameter**: `?token=YOUR_TOKEN`
 2. **WebSocket Protocol**: In the Sec-WebSocket-Protocol header
 3. **Authorization Header**: For HTTP/2 connections
-
-## Next Steps
-
-Future WebSocket implementations planned:
-
-1. **Token Data WebSocket** (`/api/v69/ws/token-data`)
-   - Real-time token price and metadata updates
-   - Token whitelist changes
-   - Market data streaming
-
-2. **Contest WebSocket** (`/api/v69/ws/contest`)
-   - Contest state changes
-   - Participation updates
-   - Leaderboard updates
