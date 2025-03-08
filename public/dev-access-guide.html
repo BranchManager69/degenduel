@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Access Guide | DegenDuel</title>
+  <style>
+    :root {
+      --primary-color: #6c5ce7;
+      --secondary-color: #a29bfe;
+      --accent-color: #fd79a8;
+      --text-color: #2d3436;
+      --bg-color: #f7f7f7;
+      --card-bg: #ffffff;
+      --code-bg: #f1f1f1;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: var(--card-bg);
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      padding: 30px;
+      text-align: center;
+      color: white;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    
+    .content {
+      padding: 30px;
+    }
+    
+    .content h2 {
+      margin-top: 20px;
+      margin-bottom: 15px;
+      color: var(--primary-color);
+    }
+    
+    .content h3 {
+      margin-top: 15px;
+      margin-bottom: 10px;
+      color: var(--secondary-color);
+    }
+    
+    .content p {
+      margin-bottom: 15px;
+    }
+    
+    .content ul, .content ol {
+      margin-bottom: 15px;
+      padding-left: 20px;
+    }
+    
+    .content li {
+      margin-bottom: 5px;
+    }
+    
+    code {
+      font-family: monospace;
+      background-color: var(--code-bg);
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    
+    pre {
+      background-color: var(--code-bg);
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      margin-bottom: 15px;
+    }
+    
+    .method {
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .method h3 {
+      margin-top: 0;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 20px;
+      background-color: #f1f1f1;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .button {
+      display: inline-block;
+      background-color: var(--primary-color);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      text-decoration: none;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    
+    .button:hover {
+      background-color: var(--secondary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>DegenDuel Dev Access Guide</h1>
+      <p>How to access the development environment</p>
+    </div>
+    
+    <div class="content">
+      <h2>Introduction</h2>
+      <p>
+        The DegenDuel development environment (<code>dev.degenduel.me</code>) is a restricted area
+        for testing and development purposes. This guide explains how to access it.
+      </p>
+      
+      <h2>Access Methods</h2>
+      <p>
+        There are several ways to access the development environment. Choose the method that works best for you.
+      </p>
+      
+      <div class="method">
+        <h3>Method 1: IP Address Authentication</h3>
+        <p>
+          The simplest method is IP address authentication. If your current IP address is in the allowed list,
+          you'll automatically have access to the development environment.
+        </p>
+        <p>
+          <strong>Setup:</strong> Run the setup script on the server to add your IP address to the allowed list.
+        </p>
+        <pre><code>node scripts/setup-dev-access.js</code></pre>
+        <p>
+          <strong>Pros:</strong> No login required, works automatically.
+        </p>
+        <p>
+          <strong>Cons:</strong> Only works from devices with the allowed IP address. If your IP changes, you'll need to update it.
+        </p>
+      </div>
+      
+      <div class="method">
+        <h3>Method 2: Wallet Authentication</h3>
+        <p>
+          If you're logged in with an authorized wallet address, you'll automatically have access to the development environment.
+        </p>
+        <p>
+          <strong>Setup:</strong> Run the setup script on the server to add your wallet address to the allowed list.
+        </p>
+        <pre><code>node scripts/setup-dev-access.js</code></pre>
+        <p>
+          <strong>Pros:</strong> Works from any device as long as you're logged in.
+        </p>
+        <p>
+          <strong>Cons:</strong> Requires you to be logged in.
+        </p>
+      </div>
+      
+      <div class="method">
+        <h3>Method 3: Access Token</h3>
+        <p>
+          You can use a special access token to access the development environment from any device.
+        </p>
+        <p>
+          <strong>Setup:</strong> Run the setup script on the server to generate an access token.
+        </p>
+        <pre><code>node scripts/setup-dev-access.js</code></pre>
+        <p>
+          <strong>Usage:</strong> There are two ways to use the access token:
+        </p>
+        <ol>
+          <li>
+            <strong>HTTP Header:</strong> Add the <code>X-Dev-Access-Token</code> header to your requests with the token as the value.
+          </li>
+          <li>
+            <strong>Browser Script:</strong> Use the provided browser script to add the token to your requests.
+            <pre><code>// Copy the contents of public/dev-access.js
+// Open the browser console on dev.degenduel.me
+// Paste the script and press Enter
+// Enter your token when prompted</code></pre>
+            <a href="/dev-access.js" download class="button">Download Browser Script</a>
+          </li>
+        </ol>
+        <p>
+          <strong>Pros:</strong> Works from any device, doesn't require you to be logged in.
+        </p>
+        <p>
+          <strong>Cons:</strong> Requires you to set up the token on each device.
+        </p>
+      </div>
+      
+      <h2>Troubleshooting</h2>
+      <p>
+        If you're having trouble accessing the development environment, try the following:
+      </p>
+      <ul>
+        <li>Make sure you're using the correct access method.</li>
+        <li>Check that your IP address or wallet address is in the allowed list.</li>
+        <li>Make sure you're using the correct access token.</li>
+        <li>Clear your browser cache and cookies.</li>
+        <li>Try using a different browser.</li>
+        <li>Contact the system administrator for assistance.</li>
+      </ul>
+    </div>
+    
+    <div class="footer">
+      &copy; DegenDuel - All Rights Reserved
+    </div>
+  </div>
+</body>
+</html> 

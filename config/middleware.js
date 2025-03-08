@@ -6,6 +6,7 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from './config.js';
 import helmet from 'helmet';
 import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
+import { restrictDevAccess } from '../middleware/devAccessMiddleware.js';
 
 // Log every request
 const LOG_EVERY_REQUEST = true;
@@ -62,6 +63,11 @@ export function configureMiddleware(app) {
   // Basic middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  
+  // Apply dev access restriction middleware early in the pipeline
+  // This will restrict access to the dev subdomain to only authorized users
+  app.use(restrictDevAccess);
+  
   // Serve static files from uploads directory
   app.use('/uploads', express.static('uploads')); // TODO: ???
   // Environment middleware

@@ -59,6 +59,7 @@ import scriptExecutionRoutes from "./routes/admin/script-execution.js";
 // Import Main DegenDuel API routes
 import testRoutes from "./archive/test-routes.js";
 import maintenanceRoutes from "./routes/admin/maintenance.js";
+import countdownRoutes from "./routes/admin/countdown.js";
 import authRoutes from "./routes/auth.js";
 import contestRoutes from "./routes/contests.js";
 import ddServRoutes from "./routes/dd-serv/tokens.js";
@@ -82,6 +83,13 @@ import referralRoutes from "./routes/referrals.js";
 import virtualAgentRoutes from "./routes/virtual-agent.js";
 // Device authentication routes
 import deviceRoutes from "./routes/devices.js";
+// Path module for static file serving
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the directory name
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Hard-code all logging flags to reduce verbosity
 const VERBOSE_SERVICE_INIT_LOGS = true; // Show detailed service initialization logs
@@ -119,6 +127,9 @@ setupSwagger(app);
 configureMiddleware(app);
 app.use(memoryMonitoring.setupResponseTimeTracking());
 
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Basic Express Configuration Complete\x1b[0m');
 }
@@ -142,6 +153,7 @@ app.use("/api/status", statusRoutes);
 // Admin Routes
 app.use("/api/admin", prismaAdminRoutes);
 app.use("/api/admin/maintenance", maintenanceRoutes);
+app.use("/api/admin/countdown", countdownRoutes);
 app.use("/api/admin/token-sync", tokenSyncRoutes);
 app.use("/api/admin/wallets", walletManagementRoutes);
 app.use("/api/admin/contests", contestManagementRoutes);

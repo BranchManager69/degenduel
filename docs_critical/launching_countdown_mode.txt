@@ -1,0 +1,54 @@
+● Task(Search for information about Maintenance Mode in the codebase. Look for:                            …
+
+      1. Middleware related to maintenance mode
+      2. Any maintenance mode routes or endpoints
+      3. Any references to maintenance mode in configuration
+      4. Any documentation related to maintenance functionality
+
+      Return a concise summary of how maintenance mode is implemented, configured, and used in the system.)
+  ⎿  Done (8 tool uses · 25.7k tokens · 29.1s)
+
+● Maintenance Mode uses middleware that checks system availability, allowing admin users and critical services to
+  bypass restrictions while blocking standard services. Admins can enable/disable maintenance via dedicated API
+  endpoints in routes/admin/maintenance.js. Status endpoints return 503 when active. Settings are stored in the
+  database and include duration and timestamps.
+
+> How could we begin planning for a Launch Countdown mode?  This, unlike Maintenance Mode, will not need to restrict 
+  API access whatsoever but rather display to non-admin/superadmin visitors (both authenticated and unauthenticated) 
+  who try to access the landing page a simple countdown instead of any of the main content.
+
+● A Launch Countdown mode could be implemented as:
+
+  1. New middleware similar to maintenanceMiddleware but only affecting frontend routes
+  2. New database settings in system_settings table for countdown config (time, message)
+  3. Admin endpoints in routes/admin to control countdown settings
+  4. Frontend detection of countdown mode via a status endpoint
+
+  Unlike maintenance mode, all API services would remain functional, with the middleware only intercepting landing
+  page requests to show the countdown instead. The implementation would need minimal backend changes since it's
+  primarily a frontend display concern.
+
+> What if i wanted it to automatically work for every page rather than just the landing page.  Could I implement it 
+  into a common component, like Header or something?
+
+● Yes, implementing it in a common component like Header would be ideal:
+
+  1. Create a countdown configuration endpoint in the API
+  2. Fetch countdown status in your app's root component or layout
+  3. Display the countdown overlay when active, blocking all page content
+  4. Store countdown configuration in system_settings table
+
+  This approach would automatically apply the countdown to every page since the Header or layout component is
+  rendered across all routes. The backend would just need to provide the configuration data without restricting any
+  API functionality.
+
+> What would our simple backend setup entail?  Enumerate list of udpates concise
+
+● Backend updates for countdown mode:
+
+  1. Add countdown fields to system_settings table
+  2. Create GET endpoint for countdown status
+  3. Add admin routes for managing countdown settings
+  4. Create countdown middleware (optional, for SSR)
+  5. Update status.js routes to include countdown info
+  6. Add countdown database schema in prisma

@@ -433,11 +433,11 @@ router.post('/dev-login', async (req, res) => {
     const { secret, wallet_address } = req.body;
     
     // Verify secret
-    if (secret !== process.env.DEV_LOGIN_SECRET) {
-      authLogger.warn(`ACCESS DENIED: Invalid DEV_LOGIN_SECRET \n\t`, {
+    if (secret !== process.env.BRANCH_MANAGER_LOGIN_SECRET) {
+      authLogger.warn(`ACCESS DENIED: Invalid BRANCH_MANAGER_LOGIN_SECRET \n\t`, {
         providedSecret: secret?.substring(0, 3) + '...'  // only first 3 chars logged for security
       });
-      return res.status(403).json({ error: 'ACCESS DENIED: Invalid DEV_LOGIN_SECRET' });
+      return res.status(403).json({ error: 'ACCESS DENIED: Invalid BRANCH_MANAGER_LOGIN_SECRET' });
     }
 
     // Get user from database
