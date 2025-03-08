@@ -178,4 +178,65 @@ router.get("/maintenance", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/status/countdown:
+ *   get:
+ *     summary: Get countdown mode status for public display
+ *     tags: [Public]
+ *     responses:
+ *       200:
+ *         description: Current countdown mode settings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 enabled:
+ *                   type: boolean
+ *                 end_time:
+ *                   type: string
+ *                   format: date-time
+ *                 title:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *                 redirect_url:
+ *                   type: string
+ */
+router.get("/countdown", async (req, res) => {
+  try {
+    const countdown = await prisma.system_settings.findUnique({
+      where: { key: "countdown_mode" },
+    });
+
+    if (!countdown || !countdown.value || !countdown.value.enabled) {
+      return res.json({
+        enabled: false
+      });
+    }
+
+    // Return countdown data if it's enabled
+    return res.json({
+      enabled: true,
+      end_time: countdown.value.end_time,
+      title: countdown.value.title || "Coming Soon",
+      message: countdown.value.message || "Our platform is launching soon.",
+      redirect_url: countdown.value.redirect_url
+    });
+  } catch (error) {
+    logApi.error("Failed to get countdown status", {
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
+      path: req.path,
+      method: req.method,
+      ip: req.ip,
+    });
+    return res.status(500).json({ error: "Failed to get countdown status" });
+  }
+});
+
 export default router;

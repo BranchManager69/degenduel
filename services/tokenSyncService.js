@@ -401,7 +401,7 @@ class TokenSyncService extends BaseService {
     // Fetch token data
     async fetchTokenData() {
         // Check if primary endpoint is valid
-        const tokensEndpoint = this.config.api.endpoints.tokens;
+        const tokensEndpoint = this.config.api.endpoints.tokens; // TODO: <----- PRIORITY 1: Transplant the current endpoint with the new one (MARKET_DATABASE_URL via new v69 websocket)
         if (!tokensEndpoint) {
             logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Primary token data endpoint not configured or invalid${fancyColors.RESET}`);
         } else {

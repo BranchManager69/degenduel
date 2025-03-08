@@ -23,6 +23,9 @@ model contest_participants {
   entry_time           DateTime      @default(now()) @db.Timestamptz(6)
   final_rank           Int?
   prize_transaction_id Int?
+  status               String        @default("active")
+  portfolio_value      Decimal?      @default(0) @db.Decimal(20, 8)
+  initial_balance      Decimal?      @default(0) @db.Decimal(20, 8)
   contests             contests      @relation(fields: [contest_id], references: [id], onDelete: Cascade)
   entry_transaction    transactions? @relation("contest_participants_entry_transaction_idTotransactions", fields: [entry_transaction_id], references: [id])
   prize_transaction    transactions? @relation("contest_participants_prize_transaction_idTotransactions", fields: [prize_transaction_id], references: [id])
@@ -30,6 +33,8 @@ model contest_participants {
 
   @@unique([contest_id, wallet_address])
   @@index([wallet_address])
+  @@index([status])
+  @@index([portfolio_value])
   @@map("contest_participants")
 }
 
@@ -219,12 +224,12 @@ model tokens {
   market_cap                Decimal?                    @db.Decimal(20, 0)
   change_24h                Decimal?                    @db.Decimal(5, 2)
   volume_24h                Decimal?                    @db.Decimal(20, 0)
-  image_url                 String?                     @db.VarChar(255)
+  image_url                 String?                     @db.VarChar(255)    // IS THIS RIGHT?
   description               String?
-  twitter_url               String?                     @db.VarChar(255)
-  telegram_url              String?                     @db.VarChar(255)
-  discord_url               String?                     @db.VarChar(255)
-  website_url               String?                     @db.VarChar(255)
+  twitter_url               String?                     @db.VarChar(255)    // REMOVE!  We have token_socials[] now
+  telegram_url              String?                     @db.VarChar(255)    // REMOVE!  We have token_socials[] now
+  discord_url               String?                     @db.VarChar(255)    // REMOVE!  We have token_socials[] now     
+  website_url               String?                     @db.VarChar(255)    // REMOVE!  We have token_websites[] now
   ai_decisions              ai_decisions[]
   contest_portfolio_trades  contest_portfolio_trades[]
   contest_portfolios        contest_portfolios[]
@@ -233,6 +238,8 @@ model tokens {
   contest_token_prices      contest_token_prices[]
   token_bucket_memberships  token_bucket_memberships[]
   token_prices              token_prices?
+  token_socials             token_socials[]
+  token_websites            token_websites[]
 
   @@index([symbol], map: "idx_tokens_symbol")
   @@map("tokens")
@@ -367,6 +374,7 @@ model users {
   user_level                user_levels?                @relation(fields: [user_level_id], references: [id])
   wallet_balances           wallet_balance_history[]
   websocket_messages        websocket_messages[]
+  authorized_devices        authorized_devices[]        @relation(name: "UserAuthorizedDevices")
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -466,6 +474,8 @@ model contest_wallets {
   wallet_address String    @db.VarChar
   private_key    String    @db.VarChar
   balance        Decimal   @db.Decimal(20, 8)
+  is_vanity      Boolean   @default(false)
+  vanity_type    String?   @db.VarChar
   created_at     DateTime  @default(now()) @db.Timestamptz(6)
   updated_at     DateTime? @db.Timestamptz(6)
   last_sync      DateTime? @db.Timestamptz(6)
@@ -567,48 +577,22 @@ model level_rewards {
   @@map("level_rewards")
 }
 
-model notification_templates {
-  id             Int                  @id @default(autoincrement())
-  name           String               @unique
-  description    String?
-  type           String
-  template       Json                 @db.JsonB
-  priority       NotificationPriority @default(standard)
-  media_type     String?              // "image", "gif", "video", etc.
-  media_template String?              // Template for media URL with variables
-  action_buttons Json?                @db.JsonB
-  created_at     DateTime             @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime             @updatedAt @db.Timestamptz(6)
-  created_by     String?              @db.VarChar(44)
-  is_active      Boolean              @default(true)
-  min_user_level Int?                 // Minimum user level to receive this template
-  max_uses       Int?                 // Maximum number of times this template can be used
-
-  @@index([type], map: "idx_notification_templates_type")
-  @@index([priority], map: "idx_notification_templates_priority")
-  @@index([is_active], map: "idx_notification_templates_active")
-  @@map("notification_templates")
-}
-
 model websocket_messages {
-  id             Int                  @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   type           String
   data           Json
   wallet_address String
-  timestamp      DateTime             @default(now()) @db.Timestamptz(6)
-  delivered_at   DateTime?            @db.Timestamptz(6)
-  read_at        DateTime?            @db.Timestamptz(6)
-  priority       NotificationPriority @default(standard)
-  expires_at     DateTime?            @db.Timestamptz(6)
-  media_url      String?
-  action_buttons Json?                @db.JsonB
-  users          users                @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
+  timestamp      DateTime  @default(now()) @db.Timestamptz(6)
+  delivered      Boolean   @default(false)
+  delivered_at   DateTime? @db.Timestamptz(6)
+  read           Boolean   @default(false)
+  read_at        DateTime? @db.Timestamptz(6)
+  users          users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([wallet_address, type], map: "idx_websocket_messages_wallet_type")
   @@index([timestamp], map: "idx_websocket_messages_timestamp")
-  @@index([priority], map: "idx_websocket_messages_priority")
-  @@index([read_at], map: "idx_websocket_messages_read_at")
-  @@index([expires_at], map: "idx_websocket_messages_expires_at")
+  @@index([delivered_at], map: "idx_websocket_messages_delivered_at")
+  @@index([read, wallet_address], map: "idx_websocket_messages_read_wallet")
   @@map("websocket_messages")
 }
 
@@ -815,6 +799,24 @@ model circuit_breaker_config {
   @@map("circuit_breaker_config")
 }
 
+model authorized_devices {
+  id            Int      @id @default(autoincrement())
+  wallet_address String   @db.Text
+  device_id      String   @db.Text
+  device_name    String?  @db.Text
+  device_type    String?  @db.Text
+  last_used      DateTime @default(now()) @db.Timestamptz(6)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  is_active      Boolean  @default(true)
+  
+  user           users    @relation(fields: [wallet_address], references: [wallet_address], name: "UserAuthorizedDevices", onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([wallet_address, device_id], name: "authorized_devices_wallet_address_device_id_key")
+  @@index([wallet_address], name: "idx_authorized_devices_wallet")
+  @@index([device_id], name: "idx_authorized_devices_device_id")
+  @@map("authorized_devices")
+}
+
 enum UserRole {
   user
   admin
@@ -837,16 +839,9 @@ enum transaction_status {
 
 enum transaction_type {
   CONTEST_ENTRY
-  CONTEST_ENTRY_REFUND
   PRIZE_PAYOUT
-  CONTEST_CREATION
-  CONTEST_CREATION_REFUND
-  WHITELIST_TOKEN
-  WHITELIST_TOKEN_REFUND
-  PARTNER_TOKEN
-  PARTNER_TOKEN_REFUND
   DEPOSIT
-  WITHDRAWAL // TODO: Currently being used for contest entry refunds
+  WITHDRAWAL
   REFERRAL_BONUS
   PROMOTION
 }
@@ -861,14 +856,13 @@ enum AIDecisionType {
 enum Chain {
   SOLANA
   ETHEREUM
-  BASE
   BSC
 }
 
 enum TokenType {
   SOL
-  SPL
   DUEL
+  SPL
 }
 
 enum TradeType {
@@ -891,13 +885,26 @@ enum ReferralRewardType {
   special_event
 }
 
-enum NotificationPriority {
-  nuclear     // ☢️ Superadmin exclusive: system-critical alerts with radioactive symbol
-  urgent      // 🚨 Immediate attention required
-  important   // ⚠️ High-priority information 
-  standard    // 📢 Regular notifications
-  subtle      // 💭 Low-priority updates
-  whisper     // 🤫 Quiet, subtle hints that appear briefly
-  nudge       // 👉 Gentle reminders
-  wink        // 😉 Playful, quick notifications
+model token_socials {
+  id         Int       @id @default(autoincrement())
+  token_id   Int
+  type       String
+  url        String
+  created_at DateTime? @default(now())
+  token      tokens    @relation(fields: [token_id], references: [id])
+
+  @@index([token_id])
+  @@map("token_socials")
+}
+
+model token_websites {
+  id         Int       @id @default(autoincrement())
+  token_id   Int
+  label      String?
+  url        String
+  created_at DateTime? @default(now())
+  token      tokens    @relation(fields: [token_id], references: [id])
+
+  @@index([token_id])
+  @@map("token_websites")
 }

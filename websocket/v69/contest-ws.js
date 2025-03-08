@@ -1308,8 +1308,8 @@ class ContestWebSocketServer extends BaseWebSocketServer {
         id: contest.id,
         name: contest.name,
         description: contest.description,
-        start_date: contest.start_date,
-        end_date: contest.end_date,
+        start_time: contest.start_time,
+        end_time: contest.end_time,
         status: contest.status,
         prize_pool: contest.prize_pool,
         entry_fee: contest.entry_fee,
@@ -1338,8 +1338,8 @@ class ContestWebSocketServer extends BaseWebSocketServer {
       id: contest.id,
       name: contest.name,
       description: contest.description,
-      start_date: contest.start_date,
-      end_date: contest.end_date,
+      start_time: contest.start_time,
+      end_time: contest.end_time,
       status: contest.status,
       prize_pool: contest.prize_pool,
       entry_fee: contest.entry_fee,
@@ -1364,8 +1364,8 @@ class ContestWebSocketServer extends BaseWebSocketServer {
       id: contest.id,
       name: contest.name,
       description: contest.description,
-      start_date: contest.start_date,
-      end_date: contest.end_date,
+      start_time: contest.start_time,
+      end_time: contest.end_time,
       status: contest.status,
       prize_pool: contest.prize_pool,
       tokenIds: contest.tokenIds || [],
@@ -1474,7 +1474,7 @@ class ContestWebSocketServer extends BaseWebSocketServer {
             { status: 'pending' },
             {
               status: 'completed',
-              end_date: {
+              end_time: {
                 // Keep completed contests in cache for 24 hours
                 gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
               }
@@ -1482,7 +1482,7 @@ class ContestWebSocketServer extends BaseWebSocketServer {
           ]
         },
         orderBy: {
-          start_date: 'desc'
+          start_time: 'desc'
         }
       });
       
@@ -1538,7 +1538,7 @@ class ContestWebSocketServer extends BaseWebSocketServer {
       const participant = await prisma.contest_participants.findUnique({
         where: {
           contest_id_wallet_address: {
-            contest_id: BigInt(contestId),
+            contest_id: parseInt(contestId, 10),
             wallet_address: walletAddress
           }
         }
@@ -1573,7 +1573,7 @@ class ContestWebSocketServer extends BaseWebSocketServer {
       // Fetch leaderboard from database
       const participants = await prisma.contest_participants.findMany({
         where: {
-          contest_id: BigInt(contestId),
+          contest_id: parseInt(contestId, 10),
           status: 'active'
         },
         orderBy: [
@@ -1581,14 +1581,14 @@ class ContestWebSocketServer extends BaseWebSocketServer {
             portfolio_value: 'desc' // Sort by portfolio value first (highest first)
           },
           {
-            created_at: 'asc' // Break ties by entry time (earliest first)
+            entry_time: 'asc' // Break ties by entry time (earliest first)
           }
         ],
         select: {
           wallet_address: true,
           portfolio_value: true,
           initial_balance: true,
-          created_at: true,
+          entry_time: true,
           users: {
             select: {
               nickname: true
