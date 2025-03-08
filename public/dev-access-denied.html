@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access Denied | DegenDuel Development</title>
+  <style>
+    :root {
+      --primary-color: #6c5ce7;
+      --secondary-color: #a29bfe;
+      --accent-color: #fd79a8;
+      --text-color: #2d3436;
+      --bg-color: #f7f7f7;
+      --card-bg: #ffffff;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      background-color: var(--card-bg);
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      padding: 30px;
+      text-align: center;
+      color: white;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    
+    .content {
+      padding: 30px;
+    }
+    
+    .content p {
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    
+    .icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      color: var(--accent-color);
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 20px;
+      background-color: #f1f1f1;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        width: 100%;
+      }
+      
+      .header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="icon">🔒</div>
+      <h1>Access Denied</h1>
+      <p>Development Environment</p>
+    </div>
+    <div class="content">
+      <p>This is a private development environment for DegenDuel. Access is restricted to authorized personnel only.</p>
+      <p>If you believe you should have access to this environment, please contact the system administrator with your credentials.</p>
+      <p>For general information about DegenDuel, please visit our <a href="https://degenduel.me">main website</a>.</p>
+    </div>
+    <div class="footer">
+      &copy; DegenDuel - All Rights Reserved
+    </div>
+  </div>
+</body>
+</html> 

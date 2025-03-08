@@ -19,7 +19,8 @@ import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 // Solana
-import { Keypair, Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Keypair, Connection, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
+import bs58 from 'bs58';
 import crypto from 'crypto';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import { fa } from '@faker-js/faker';
@@ -138,6 +139,71 @@ class ContestWalletService extends BaseService {
         }
     }
 
+    // Get unassociated vanity wallet
+    async getUnassociatedVanityWallet() {
+        try {
+            // Check DUEL folder first (higher priority)
+            const duelWallet = await this.getFirstUnassociatedWalletFromFolder('_DUEL');
+            if (duelWallet) return duelWallet;
+            
+            // Then try DEGEN folder
+            return this.getFirstUnassociatedWalletFromFolder('_DEGEN');
+        } catch (error) {
+            logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to get unassociated vanity wallet:${fancyColors.RESET}`, {
+                error: error.message
+            });
+            return null;
+        }
+    }
+
+    async getFirstUnassociatedWalletFromFolder(folderName) {
+        try {
+            const fs = await import('fs/promises');
+            const dirPath = `/home/websites/degenduel/addresses/keypairs/public/${folderName}`;
+            
+            // Get files in directory
+            const files = await fs.readdir(dirPath);
+            
+            // Filter for JSON files
+            const keypairFiles = files.filter(f => f.endsWith('.json'));
+            
+            for (const file of keypairFiles) {
+                // Extract public key from filename
+                const publicKey = file.replace('.json', '');
+                
+                // Check if already in database
+                const existing = await prisma.contest_wallets.findFirst({
+                    where: { wallet_address: publicKey }
+                });
+                
+                if (!existing) {
+                    // Found an unassociated wallet
+                    const keypairPath = `${dirPath}/${file}`;
+                    const privateKeyPath = `/home/websites/degenduel/addresses/pkeys/public/${folderName}/${publicKey}.key`;
+                    
+                    // Read private key
+                    const privateKey = await fs.readFile(privateKeyPath, 'utf8');
+                    
+                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Found unassociated vanity wallet:${fancyColors.RESET} ${publicKey}`);
+                    
+                    return { 
+                        publicKey, 
+                        privateKey: privateKey.trim(),
+                        isVanity: true,
+                        vanityType: folderName.replace('_', '')
+                    };
+                }
+            }
+            
+            return null; // No unassociated wallets found
+        } catch (error) {
+            logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to check folder ${folderName}:${fancyColors.RESET}`, {
+                error: error.message
+            });
+            return null;
+        }
+    }
+
     // Create a new contest wallet
     async createContestWallet(contestId, adminContext = null) {
         if (this.stats.circuitBreaker.isOpen) {
@@ -146,24 +212,50 @@ class ContestWalletService extends BaseService {
 
         const startTime = Date.now();
         try {
-            // Generate a new wallet
-            const keypair = Keypair.generate();
-            const contestWallet = await prisma.contest_wallets.create({
-                data: {
+            // Try to get a vanity address first
+            const vanityWallet = await this.getUnassociatedVanityWallet();
+            
+            let contestWallet;
+            if (vanityWallet) {
+                // Use the vanity wallet
+                contestWallet = await prisma.contest_wallets.create({
+                    data: {
+                        contest_id: contestId,
+                        wallet_address: vanityWallet.publicKey,
+                        private_key: this.encryptPrivateKey(vanityWallet.privateKey),
+                        balance: 0,
+                        created_at: new Date(),
+                        is_vanity: true,
+                        vanity_type: vanityWallet.vanityType
+                    }
+                });
+                
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.GREEN}Created contest wallet with ${vanityWallet.vanityType} vanity address${fancyColors.RESET}`, {
                     contest_id: contestId,
-                    wallet_address: keypair.publicKey.toString(),
-                    private_key: this.encryptPrivateKey(
-                        Buffer.from(keypair.secretKey).toString('base64')
-                    ),
-                    balance: 0,
-                    created_at: new Date()
-                }
-            });
+                    vanity_type: vanityWallet.vanityType
+                });
+            } else {
+                // Fall back to random address generation
+                const keypair = Keypair.generate();
+                contestWallet = await prisma.contest_wallets.create({
+                    data: {
+                        contest_id: contestId,
+                        wallet_address: keypair.publicKey.toString(),
+                        private_key: this.encryptPrivateKey(
+                            Buffer.from(keypair.secretKey).toString('base64')
+                        ),
+                        balance: 0,
+                        created_at: new Date(),
+                        is_vanity: false
+                    }
+                });
+                
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.YELLOW}Created contest wallet with random address (no vanity addresses available)${fancyColors.RESET}`, {
+                    contest_id: contestId
+                });
+            }
 
             this.walletStats.wallets.generated++;
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.GREEN}Created contest wallet with generated keypair${fancyColors.RESET}`, {
-                contest_id: contestId
-            });
 
             // Update statistics
             await this.recordSuccess();
@@ -181,7 +273,9 @@ class ContestWalletService extends BaseService {
                     'CONTEST_WALLET_CREATE',
                     {
                         contest_id: contestId,
-                        wallet_address: contestWallet.wallet_address
+                        wallet_address: contestWallet.wallet_address,
+                        is_vanity: contestWallet.is_vanity || false,
+                        vanity_type: contestWallet.vanity_type || null
                     },
                     adminContext
                 );

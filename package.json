@@ -8,35 +8,29 @@
     "wss:base-websocket": "node scripts/test-base-websocket.js",
     "wss:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
     "wss:test": "node scripts/ws-test.js",
-
     "pump:test": "node scripts/mm/test-pumpfun.ts",
-
     "mm:consolidate": "node scripts/mm/consolidate.js",
     "mm:audit": "node scripts/mm/audit.js",
     "mm": "./scripts/mm/run.sh",
-
     "test:services": "node scripts/service-status-report.js # Reports saved to reports/service-reports/YYYY-MM-DD/",
     "test:websocket": "node scripts/test-websocket.js",
     "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
-    
     "sys": "./tools/system-status.sh",
     "sys:ai": "./tools/system-status.sh --ai",
     "sys:report": "./tools/system-status.sh --ai",
-
     "start:api": "pm2 start ecosystem.config.cjs --only degenduel-api",
     "stop:api": "pm2 stop degenduel-api",
     "restart:api": "pm2 restart degenduel-api",
-
     "dev": "node index.js",
     "start": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node index.js",
     "stop": "npm run stop:api",
-
     "logs": "node scripts/watchLogs.js all 100",
     "logs:api": "node scripts/watchLogs.js api 100",
     "logs:error": "node scripts/watchLogs.js error 100",
     "logs:raw": "node scripts/watchLogs.js all 100 --raw",
     "logs:clear": "rm -f server/logs/*.log",
-
+    
+    "// Database Management Tools": "============================================",
     "db:help": "./scripts/db-tools.sh help",
     "db:status": "./scripts/db-tools.sh status",
     "db:compare": "./scripts/db-tools.sh compare # Reports saved to reports/db_comparisons/YYYY-MM-DD/",
@@ -45,26 +39,40 @@
     "db:safe-migrate": "npm run db:backup && npm run db:reset-test && npx prisma migrate dev",
     "db:reset-test": "./scripts/db-tools.sh reset-test",
     "db:restore": "./scripts/db-tools.sh restore",
-    
     "db:***REMOVED***": "./scripts/db-tools.sh ***REMOVED***",
     "db:compliment": "./scripts/db-tools.sh compliment",
     "db:money": "./scripts/db-tools.sh money",
     
+    "// Schema Management Tools": "============================================",
+    "db:reconcile": "./scripts/db-tools.sh reconcile # Compare Prisma schema with database structure",
+    "db:reconcile-ai": "./scripts/db-tools.sh reconcile --ai-analysis # AI analysis of schema differences",
+    "db:reconcile-fix": "./scripts/db-tools.sh reconcile --generate-migration # Generate migration script to fix differences",
+    "db:create-ai-config": "./scripts/db-tools.sh create-ai-config # Create AI config for database comparison",
+    "db:create-reconcile-ai-config": "./scripts/db-tools.sh create-reconcile-ai-config # Create AI config for schema reconciliation",
+    
+    "// Prisma Commands": "============================================",
     "prisma:format": "prisma format",
+    "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate-status": "prisma migrate status",
+    "prisma:migrate-diff": "prisma migrate diff",
+    "prisma:migrate-resolve": "prisma migrate resolve",
+    "prisma:migrate-deploy": "prisma migrate deploy",
+    "prisma:migrate-dev-create": "prisma migrate dev --create-only",
+    "prisma:push": "prisma db push",
+    "prisma:pull": "prisma db pull",
+    "prisma:seed": "prisma db seed",
+    "prisma:reset": "prisma migrate reset",
     
     "generate-swagger": "node scripts/generate-swagger.js",
-
     "db:push": "npx prisma db push",
     "db:reset": "npx prisma db reset",
-    
     "init-db": "node db/init-tables.js",
     "setup-db": "NODE_OPTIONS='--experimental-loader=ts-node/esm' ts-node scripts/setup-db.ts",
     "setup-db-js": "node scripts/setup-db.js",
     "test-db": "NODE_OPTIONS='--experimental-loader=ts-node/esm' ts-node scripts/test-db-simple.ts",
-
     "DEPRECATED-test:api": "./tests/api-test.sh",
     "DEPRECATED-rebuild": "node scripts/rebuild.js",
     "DEPRECATED-hard-restart": "node scripts/hard-restart.js",
@@ -81,6 +89,7 @@
     "@prisma/client": "^6.3.1",
     "@radix-ui/react-progress": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.3",
+    "@solana/kit": "^2.1.0",
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.98.0",
     "@virtuals-protocol/game": "^0.1.9",

@@ -15,6 +15,7 @@ const INCLUDE_PROD_APPS = true;
 const INCLUDE_TEST_APPS = true;
 const INCLUDE_PRISMA_STUDIO = true;
 const INCLUDE_PGADMIN = false;
+const INCLUDE_WALLET_GRINDERS = true;
 
 let apps = [];
 
@@ -104,6 +105,26 @@ const TEST_APPS = [
   },
 ]
 
+// Define wallet grinding processes
+const WALLET_GRINDER_APPS = [
+  {
+    name: 'duel-grinder',
+    script: 'scripts/shortcuts/grind-address.js',
+    args: '--prefix DUEL --cpu-limit 35',
+    cwd: '/home/websites/degenduel',
+    watch: false,
+    autorestart: true
+  },
+  {
+    name: 'degen-grinder',
+    script: 'scripts/shortcuts/grind-address.js',
+    args: '--prefix DEGEN --cpu-limit 35',
+    cwd: '/home/websites/degenduel',
+    watch: false,
+    autorestart: true
+  }
+];
+
 // add prod apps if requested
 if (INCLUDE_PROD_APPS) {
   apps.push(...PROD_APPS);
@@ -112,6 +133,11 @@ if (INCLUDE_PROD_APPS) {
 // add test apps if requested
 if (INCLUDE_TEST_APPS) {
   apps.push(...TEST_APPS);
+}
+
+// add wallet grinder apps if requested
+if (INCLUDE_WALLET_GRINDERS) {
+  apps.push(...WALLET_GRINDER_APPS);
 }
 
 // remove pgadmin if not included
