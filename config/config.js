@@ -10,9 +10,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Helpful DegenDuel API endpoints:
-const DD_SERV_API = 'https://degenduel.me/api/dd-serv/tokens';
-const DATA_API = 'https://data.degenduel.me/api'; // deprecating
-const GAME_API = 'https://game.degenduel.me'; // deprecating
+const DD_SERV_API = 'https://degenduel.me/api/dd-serv/tokens'; // deprecated
+const DATA_API = 'https://data.degenduel.me/api'; // deprecated
+const GAME_API = 'https://game.degenduel.me'; // deprecated
 const LOBBY_API = 'https://lobby.degenduel.me';
 const REFLECTIONS_API = 'https://reflections.degenduel.me';
 // Fallback API for when data service is unavailable
