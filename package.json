@@ -29,7 +29,6 @@
     "logs:error": "node scripts/watchLogs.js error 100",
     "logs:raw": "node scripts/watchLogs.js all 100 --raw",
     "logs:clear": "rm -f server/logs/*.log",
-    
     "// Database Management Tools": "============================================",
     "db:help": "./scripts/db-tools.sh help",
     "db:status": "./scripts/db-tools.sh status",
@@ -42,14 +41,12 @@
     "db:bonkfa": "./scripts/db-tools.sh bonkfa",
     "db:compliment": "./scripts/db-tools.sh compliment",
     "db:money": "./scripts/db-tools.sh money",
-    
     "// Schema Management Tools": "============================================",
     "db:reconcile": "./scripts/db-tools.sh reconcile # Compare Prisma schema with database structure",
     "db:reconcile-ai": "./scripts/db-tools.sh reconcile --ai-analysis # AI analysis of schema differences",
     "db:reconcile-fix": "./scripts/db-tools.sh reconcile --generate-migration # Generate migration script to fix differences",
     "db:create-ai-config": "./scripts/db-tools.sh create-ai-config # Create AI config for database comparison",
     "db:create-reconcile-ai-config": "./scripts/db-tools.sh create-reconcile-ai-config # Create AI config for schema reconciliation",
-    
     "// Prisma Commands": "============================================",
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",
@@ -65,7 +62,6 @@
     "prisma:pull": "prisma db pull",
     "prisma:seed": "prisma db seed",
     "prisma:reset": "prisma migrate reset",
-    
     "generate-swagger": "node scripts/generate-swagger.js",
     "db:push": "npx prisma db push",
     "db:reset": "npx prisma db reset",
@@ -83,6 +79,8 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.4.0",
+    "@logtail/node": "^0.5.2",
+    "@logtail/winston": "^0.5.2",
     "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
     "@metaplex-foundation/umi": "^1.0.0",
     "@metaplex-foundation/umi-bundle-defaults": "^1.0.0",
