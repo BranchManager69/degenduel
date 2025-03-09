@@ -8,27 +8,35 @@
     "wss:base-websocket": "node scripts/test-base-websocket.js",
     "wss:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
     "wss:test": "node scripts/ws-test.js",
+    
     "pump:test": "node scripts/mm/test-pumpfun.ts",
+    
     "mm:consolidate": "node scripts/mm/consolidate.js",
     "mm:audit": "node scripts/mm/audit.js",
     "mm": "./scripts/mm/run.sh",
+
     "test:services": "node scripts/service-status-report.js # Reports saved to reports/service-reports/YYYY-MM-DD/",
     "test:websocket": "node scripts/test-websocket.js",
     "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
+    
     "sys": "./tools/system-status.sh",
     "sys:ai": "./tools/system-status.sh --ai",
     "sys:report": "./tools/system-status.sh --ai",
+    
     "start:api": "pm2 start ecosystem.config.cjs --only degenduel-api",
     "stop:api": "pm2 stop degenduel-api",
     "restart:api": "pm2 restart degenduel-api",
+    
     "dev": "node index.js",
     "start": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node index.js",
     "stop": "npm run stop:api",
+    
     "logs": "node scripts/watchLogs.js all 100",
     "logs:api": "node scripts/watchLogs.js api 100",
     "logs:error": "node scripts/watchLogs.js error 100",
     "logs:raw": "node scripts/watchLogs.js all 100 --raw",
     "logs:clear": "rm -f server/logs/*.log",
+    
     "// Database Management Tools": "============================================",
     "db:help": "./scripts/db-tools.sh help",
     "db:status": "./scripts/db-tools.sh status",
@@ -41,12 +49,14 @@
     "db:bonkfa": "./scripts/db-tools.sh bonkfa",
     "db:compliment": "./scripts/db-tools.sh compliment",
     "db:money": "./scripts/db-tools.sh money",
+    
     "// Schema Management Tools": "============================================",
     "db:reconcile": "./scripts/db-tools.sh reconcile # Compare Prisma schema with database structure",
     "db:reconcile-ai": "./scripts/db-tools.sh reconcile --ai-analysis # AI analysis of schema differences",
     "db:reconcile-fix": "./scripts/db-tools.sh reconcile --generate-migration # Generate migration script to fix differences",
     "db:create-ai-config": "./scripts/db-tools.sh create-ai-config # Create AI config for database comparison",
     "db:create-reconcile-ai-config": "./scripts/db-tools.sh create-reconcile-ai-config # Create AI config for schema reconciliation",
+    
     "// Prisma Commands": "============================================",
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",
