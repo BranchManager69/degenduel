@@ -17,29 +17,67 @@ These commands safely analyze without modifying your database.
 ## Project Management
 
 ### Process Management
-- **IMPORTANT**: DegenDuel uses PM2 for process management, not npm scripts for running the application
-- Use PM2 commands instead of npm for managing the application processes:
+- **IMPORTANT**: DegenDuel uses PM2 for process management with simplified npm scripts
 
 ```bash
+# RECOMMENDED APPROACH: Use npm scripts for simple management
+# --------------------------------------------------------
 # View running processes
-pm2 list
+npm run pm2
 
-# Restart all processes
-pm2 restart all
+# Start all services
+npm run up
 
-# Restart specific process
-pm2 restart degenduel-api
+# Stop all services 
+npm run down
 
-# View logs
-pm2 logs
-pm2 logs degenduel-api
+# Restart all services with updated env vars
+npm run reload
+
+# Service-specific commands
+npm run api:up        # Start API only
+npm run api:down      # Stop API only  
+npm run api:reload    # Restart API with updated env vars
+
+# Similar commands for other services:
+# lobby:up, lobby:down, lobby:reload
+# reflections:up, reflections:down, reflections:reload
+# mcp:up, mcp:down, mcp:reload
 ```
 
+### Non-blocking Log Checking
+**IMPORTANT**: Avoid `pm2 logs` as it's blocking. Use these non-blocking alternatives:
+
+```bash
+# Check latest logs without blocking (recommended)
+tail -n 20 /home/branchmanager/.pm2/logs/degenduel-api-out.log
+
+# Check error logs
+tail -n 20 /home/branchmanager/.pm2/logs/degenduel-api-error.log
+
+# Follow logs in a second terminal if needed
+tail -f /home/branchmanager/.pm2/logs/degenduel-api-out.log
+```
+
+### Service Configuration
 The project uses `ecosystem.config.cjs` to manage multiple environments:
 - `degenduel-api` - Production API on port 3004
 - `degenduel-api-test` - Development/Test API on port 3005
+- `degenduel-lobby` - Game lobby on port 3006
+- `mcp-server` - Master Control Program on port 3007
+- `degenduel-reflections` - Reflections service on port 3008
 - `prisma-studio` - Production database UI on port 5555
 - `prisma-studio-test` - Test database UI on port 5556
+
+### Environment Variables
+All environment variables (including Logtail credentials) are configured in:
+1. `.env` - Base environment variables
+2. `ecosystem.config.cjs` - PM2-specific environment variables
+
+When updating environment variables:
+1. Add them to both files for consistency
+2. Always use `--update-env` flag or the npm scripts that include it (like `npm run reload`)
+3. If changes don't apply, try stopping and starting the service
 
 ### Environment Details
 - Production: https://degenduel.me
@@ -113,25 +151,87 @@ npm run ws monitor <token>
 
 Currently only SkyDuel WebSocket is working properly, as it has a different authentication mechanism than the other WebSockets. The token-data WebSocket connects but then has issues with compressed frames.
 
+# Logging Infrastructure
+
+### Logtail Integration
+
+DegenDuel uses Logtail for centralized logging. Key information:
+
+- **Dashboard**: https://betterstack.com/logs - Login with admin credentials
+- **Environment Variables**:
+  ```
+  LOGTAIL_TOKEN=znteWCbz8P9S5yHyvsM4nj8r
+  LOGTAIL_ENDPOINT=https://s1229719.eu-nbg-2.betterstackdata.com
+  LOGTAIL_SOURCE=degenduel_server  # Varies by service
+  ```
+
+- **Service-Specific Sources**:
+  - API: `degenduel_server`
+  - API Test/Dev: `degenduel_server_test`
+  - Lobby: `degenduel_lobby`
+  - Reflections: `degenduel_reflections`
+  - MCP: `degenduel_mcp`
+
+### Logger Implementation
+
+The logger is implemented in `/utils/logger-suite/logger.js` and provides:
+- Console logging with colors
+- File logging to `/logs` directory
+- Logtail remote logging
+- Service-specific logging via `logApi.forService('SERVICE_NAME')`
+
+### Updating Logtail Configuration
+
+If you need to update Logtail settings:
+
+1. Update both `.env` and `ecosystem.config.cjs`
+2. Restart services with: `npm run reload`
+3. Verify logs appear in Logtail dashboard
+
 # Server Restart Checklist
 
-If you need to restart everything:
+### Quick Commands (Recommended)
 
 ```bash
-# Just start all apps with one command
-pm2 start ecosystem.config.cjs
+# Start everything from scratch
+npm run up
 
-# OR to restart existing apps
-pm2 restart all
+# Restart everything with updated environment variables
+npm run reload
 
-# To restart just one app
-pm2 restart degenduel-api
-
-# To restart after changes to ecosystem.config.cjs
-pm2 reload ecosystem.config.cjs
+# Service-specific restarts
+npm run api:reload       # Restart API only
+npm run lobby:reload     # Restart lobby only
+npm run reflections:reload  # Restart reflections only
+npm run mcp:reload       # Restart MCP only
 ```
 
+### Troubleshooting
+
 If market database errors appear, check:
-1. Database credentials in ecosystem.config.cjs
-2. Make sure database is running: `psql -U branchmanager -h localhost -d degenduel_market_data`
-3. Check logs: `grep "market database" /home/branchmanager/.pm2/logs/*`
+1. Database credentials in ecosystem.config.cjs and .env
+2. Make sure database is running: `psql -U branchmanager -h localhost -d degenduel_market_data` 
+3. Check non-blocking error logs: `tail -n 50 /home/branchmanager/.pm2/logs/degenduel-api-error.log | grep "market database"`
+
+### After Environment Variable Changes
+
+Always restart with the update flag to apply new environment variables:
+```bash
+# Proper way to restart after env var changes
+npm run reload  # All services
+npm run api:reload  # Just API
+```
+
+### Logs Inspection (Non-blocking)
+
+Check logs without getting stuck in a blocking process:
+```bash
+# Latest output logs
+tail -n 50 /home/branchmanager/.pm2/logs/degenduel-api-out.log
+
+# Latest error logs 
+tail -n 50 /home/branchmanager/.pm2/logs/degenduel-api-error.log
+
+# Search for specific errors
+grep -i "error" /home/branchmanager/.pm2/logs/degenduel-api-out.log | tail -n 30
+```

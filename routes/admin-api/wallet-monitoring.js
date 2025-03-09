@@ -11,6 +11,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
 import { fancyColors } from '../../utils/colors.js';
+import { safeBigIntToJSON, lamportsToSol } from '../../utils/bigint-utils.js';
 
 const router = express.Router();
 
@@ -103,13 +104,23 @@ router.get('/wallets', requireAuth, requireSuperAdmin, async (req, res) => {
       }
     });
     
+    // Use the safeBigIntToJSON function to safely convert all BigInt values to strings
+    const safeWallets = wallets.map(wallet => {
+      // Process the wallet with our helper function first
+      const safeWallet = safeBigIntToJSON(wallet);
+      
+      // Ensure specific BigInt fields are properly formatted
+      return {
+        ...safeWallet,
+        // Still explicitly convert these fields for consistency and backward compatibility
+        last_known_balance: wallet.last_known_balance !== null ? wallet.last_known_balance.toString() : null,
+        latest_balance: wallet.wallet_balances[0]?.balance_lamports.toString() || null,
+        latest_balance_timestamp: wallet.wallet_balances[0]?.timestamp || null
+      };
+    });
+
     return res.json({
-      wallets: wallets.map(wallet => ({
-        ...wallet,
-        last_known_balance: wallet.last_known_balance?.toString(),
-        latest_balance: wallet.wallet_balances[0]?.balance_lamports.toString(),
-        latest_balance_timestamp: wallet.wallet_balances[0]?.timestamp
-      })),
+      wallets: safeWallets,
       total,
       limit,
       offset
@@ -175,14 +186,14 @@ router.get('/history/:walletAddress', requireAuth, requireSuperAdmin, async (req
     // Format the response to match expected frontend format
     const formattedHistory = history.map(record => ({
       timestamp: record.timestamp.toISOString(),
-      balance: (parseFloat(record.balance_lamports.toString()) / 1_000_000_000).toFixed(2)
+      balance: lamportsToSol(record.balance_lamports) // Use our utility function to convert lamports to SOL
     }));
     
+    // Use the safeBigIntToJSON function to safely convert all BigInt values to strings
+    const safeUser = safeBigIntToJSON(user);
+    
     return res.json({
-      user: {
-        ...user,
-        last_known_balance: user?.last_known_balance?.toString()
-      },
+      user: safeUser,
       history: formattedHistory
     });
   } catch (error) {
@@ -214,8 +225,8 @@ router.post('/check/:walletAddress', requireAuth, requireSuperAdmin, async (req,
     const result = await userBalanceTrackingService.forceBalanceCheck(walletAddress);
     
     if (result.status === 'success') {
-      // Format the balance as SOL instead of lamports for the frontend
-      const balanceInSol = (parseFloat(result.balance.toString()) / 1_000_000_000).toFixed(2);
+      // Use our utility function to convert lamports to SOL
+      const balanceInSol = lamportsToSol(result.balance);
       
       return res.json({
         status: 'success',
@@ -421,6 +432,24 @@ router.get('/dashboard', requireAuth, requireSuperAdmin, async (req, res) => {
       range.percentage = totalWallets > 0 ? parseFloat((range.count / totalWallets * 100).toFixed(1)) : 0;
     });
     
+    // Process top wallets with safe BigInt conversion
+    const safeTopWallets = topWallets.map(wallet => {
+      // Use our utility function to convert lamports to SOL
+      const balanceSol = lamportsToSol(wallet.last_known_balance);
+      
+      return {
+        walletAddress: wallet.wallet_address,
+        balance: balanceSol,
+        lastUpdated: wallet.last_balance_check,
+        nickname: wallet.nickname,
+        isHighValue: parseFloat(balanceSol) > 100
+      };
+    });
+    
+    // Process recent checks
+    const safeRecentChecks = safeBigIntToJSON(checksWithNicknames);
+    
+    // Create response with safe values
     return res.json({
       summary: {
         totalUsers,
@@ -435,14 +464,8 @@ router.get('/dashboard', requireAuth, requireSuperAdmin, async (req, res) => {
         balanceCheckTotal: metrics.balanceChecks.total || 0
       },
       balanceDistribution,
-      topWallets: topWallets.map(wallet => ({
-        walletAddress: wallet.wallet_address,
-        balance: (parseFloat(wallet.last_known_balance?.toString() || "0") / 1_000_000_000).toFixed(2),
-        lastUpdated: wallet.last_balance_check,
-        nickname: wallet.nickname,
-        isHighValue: parseFloat(wallet.last_known_balance?.toString() || "0") / 1_000_000_000 > 100
-      })),
-      recentChecks: checksWithNicknames,
+      topWallets: safeTopWallets,
+      recentChecks: safeRecentChecks,
       settings: {
         queriesPerHour: userBalanceTrackingService.config.rateLimit.queriesPerHour,
         minCheckIntervalMs: userBalanceTrackingService.config.rateLimit.minCheckIntervalMs,

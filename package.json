@@ -23,11 +23,38 @@
     "sys:ai": "./tools/system-status.sh --ai",
     "sys:report": "./tools/system-status.sh --ai",
     
+    "// PM2 Commands": "============================================",
+    "pm2": "pm2 list",
+    "pm2:all": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop all",
+    "pm2:restart": "pm2 restart all --update-env",
+    
+    "up": "pm2 start ecosystem.config.cjs",
+    "down": "pm2 stop all",
+    "reload": "pm2 restart all --update-env",
+    
+    "api:up": "pm2 start ecosystem.config.cjs --only degenduel-api",
+    "api:down": "pm2 stop degenduel-api",
+    "api:reload": "pm2 restart degenduel-api --update-env",
+    
+    "lobby:up": "pm2 start ecosystem.config.cjs --only degenduel-lobby",
+    "lobby:down": "pm2 stop degenduel-lobby",
+    "lobby:reload": "pm2 restart degenduel-lobby --update-env",
+    
+    "reflections:up": "pm2 start ecosystem.config.cjs --only degenduel-reflections",
+    "reflections:down": "pm2 stop degenduel-reflections",
+    "reflections:reload": "pm2 restart degenduel-reflections --update-env",
+    
+    "mcp:up": "pm2 start ecosystem.config.cjs --only mcp-server",
+    "mcp:down": "pm2 stop mcp-server",
+    "mcp:reload": "pm2 restart mcp-server --update-env",
+    
     "start:api": "pm2 start ecosystem.config.cjs --only degenduel-api",
     "stop:api": "pm2 stop degenduel-api",
-    "restart:api": "pm2 restart degenduel-api",
+    "restart:api": "pm2 restart degenduel-api --update-env",
     
     "dev": "node index.js",
+    
     "start": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node index.js",
     "stop": "npm run stop:api",
     
