@@ -104,3 +104,7 @@ archive/**
 !config/swagger.yaml
 !config/swagger.yml
 !config/swagger.jsonecosystem.local.cjs
+
+# Local ecosystem files
+ecosystem.local.cjs
+ecosystem.config.cjs
