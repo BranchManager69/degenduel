@@ -16,6 +16,7 @@ import { PrismaClient } from '@prisma/client';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import { fancyColors } from '../utils/colors.js';
+import serviceEvents from '../utils/service-suite/service-events.js';
 
 // Create a dedicated Prisma client for the market database
 const marketDb = new PrismaClient({
@@ -161,7 +162,7 @@ class MarketDataService extends BaseService {
             this.requestCount = 0;
 
             // Check market database connection
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.BOLD} Connecting to market database... ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.BOLD} Connecting to market database... ${fancyColors.RESET}`);
             try {
                 const tokenCount = await marketDb.tokens.count();
                 this.marketStats.data.tokens.total = tokenCount;
@@ -169,32 +170,32 @@ class MarketDataService extends BaseService {
                 if (tokenCount === 0) {
                     logApi.warn(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED} Connected to market database, but no tokens found ${fancyColors.RESET}`);
                 } else {
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_DARK_GREEN} Connected to market database, found ${tokenCount} tokens ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_PINK} Connected to market database, found ${tokenCount} tokens ${fancyColors.RESET}`);
                 }
                 
                 // Preload tokens to cache
                 try {
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_GREEN} Preloading tokens to cache... ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Preloading tokens to cache... ${fancyColors.RESET}`);
                     await this.refreshTokensCache();
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_GREEN} Preloaded tokens to cache... ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Preloaded tokens to cache... ${fancyColors.RESET}`);
                 } catch (error) {
                     logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error preloading tokens to cache:${fancyColors.RESET}`, error);
                 }
                 
                 // Start cleanup interval
                 try {
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_GREEN} Starting cleanup interval... ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Starting cleanup interval... ${fancyColors.RESET}`);
                     this.startCleanupInterval();
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_GREEN} Cleanup interval started... ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Cleanup interval started... ${fancyColors.RESET}`);
                 } catch (error) {
                     logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error starting cleanup interval:${fancyColors.RESET}`, error);
                 }
                 
                 // Start broadcast interval if needed
                 try {
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_GREEN} Starting broadcast interval... ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Starting broadcast interval... ${fancyColors.RESET}`);
                     this.startBroadcastInterval();
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_GREEN} Broadcast interval started... ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Broadcast interval started... ${fancyColors.RESET}`);
                 } catch (error) {
                     logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error starting broadcast interval:${fancyColors.RESET}`, error);
                 }
@@ -232,21 +233,23 @@ class MarketDataService extends BaseService {
             });
 
             // log to help diagnose the [marketDataService] sync process
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}Found ${fancyColors.GREEN}${fancyColors.BOLD}${tokens.length}${fancyColors.RESET}${fancyColors.LIGHT_GREEN} tokens in market database${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BG_DEBUG_MARKET_DATABASE}${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET}${fancyColors.BG_DEBUG_MARKET_DATABASE} ${fancyColors.LIGHT_GREEN}Found ${fancyColors.GREEN}${fancyColors.BOLD}${tokens.length}${fancyColors.RESET}${fancyColors.BG_DEBUG_MARKET_DATABASE}${fancyColors.LIGHT_GREEN} tokens in market database___________________${fancyColors.RESET}`);
             
             // Clear and rebuild tokensCache
             // log to help diagnose the [marketDataService] sync process
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GRAY}Clearing tokens cache...${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]\t${fancyColors.RESET} ${fancyColors.DARK_GRAY}Clearing tokens cache...${fancyColors.RESET}`);
             this.tokensCache.clear();
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.GRAY}Tokens cache cleared${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]\t\t${fancyColors.RESET} ${fancyColors.GRAY}Tokens cache cleared${fancyColors.RESET}`);
             
+            // Set the tokens in the cache
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]\t${fancyColors.RESET} ${fancyColors.GRAY}Setting tokens in cache...${fancyColors.RESET}`);
             tokens.forEach(token => {
                 try {
                     this.tokensCache.set(token.symbol, this.formatTokenData(token));
                     // log to help diagnose the [marketDataService] sync process
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.DARK_GRAY}Stored ${fancyColors.GREEN}${fancyColors.BOLD}${token.symbol}${fancyColors.RESET}${fancyColors.DARK_GRAY} in tokens cache${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]\t\t${fancyColors.RESET} ${fancyColors.DARK_GRAY}Stored ${fancyColors.LIGHT_MAGENTA}${fancyColors.BOLD}${token.symbol}${fancyColors.RESET}${fancyColors.DARK_GRAY} in tokens cache${fancyColors.RESET}`);
                 } catch (error) {
-                    logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error storing token ${fancyColors.ORANGE}${fancyColors.BOLD}${token.symbol}${fancyColors.RESET}${fancyColors.RED} in tokens cache:${fancyColors.RESET}`, error);
+                    logApi.error(`${fancyColors.MAGENTA}[marketDataService]\t\t\t${fancyColors.RESET} ${fancyColors.RED}Error storing token ${fancyColors.LIGHT_MAGENTA}${fancyColors.BOLD}${token.symbol}${fancyColors.RESET}${fancyColors.RED} in tokens cache:${fancyColors.RESET}`, error);
                 }
             });
             
@@ -490,10 +493,10 @@ class MarketDataService extends BaseService {
                 const broadcastData = await this.generateBroadcastData();
                 
                 if (broadcastData) {
-                    // Emit an event that WebSockets can listen for
-                    this.emit('market:broadcast', broadcastData);
+                    // Emit an event that WebSockets can listen for via serviceEvents
+                    serviceEvents.emit('market:broadcast', broadcastData);
                     
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_GREEN} Broadcasting market data: ${broadcastData.data.length} tokens ${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Broadcasting market data: ${broadcastData.data.length} tokens ${fancyColors.RESET}`);
                 }
             } catch (error) {
                 logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error in broadcast interval:${fancyColors.RESET}`, error);
@@ -545,7 +548,7 @@ class MarketDataService extends BaseService {
         if (cleaned > 0) {
             this.marketStats.cache.size = this.cache.size;
             this.marketStats.cache.lastCleanup = new Date().toISOString();
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_RED}${fancyColors.BOLD}Cleaned ${cleaned} expired entries from market data cache${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_RED}${fancyColors.BOLD}Cleaned ${cleaned} expired entries from market data cache${fancyColors.RESET}`);
         }
     }
 

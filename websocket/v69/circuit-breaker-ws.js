@@ -12,6 +12,7 @@
 import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import serviceManager from '../../utils/service-suite/service-manager.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
 import { isHealthy, getCircuitBreakerStatus, getCircuitBreakerConfig } from '../../utils/service-suite/circuit-breaker-config.js';
 import { fancyColors } from '../../utils/colors.js';
 
@@ -92,11 +93,17 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
    */
   async onInitialize() {
     try {
-      // Register for service manager events
-      serviceManager.on('service:initialized', (serviceName) => this._handleServiceUpdate(serviceName));
-      serviceManager.on('circuit:open', (serviceName) => this._handleCircuitOpen(serviceName));
-      serviceManager.on('circuit:closed', (serviceName) => this._handleCircuitClosed(serviceName));
-      serviceManager.on('circuit:recovery', (serviceName) => this._handleCircuitRecovery(serviceName));
+      // Register for service events
+      serviceEvents.on('service:initialized', (data) => this._handleServiceUpdate(data.name));
+      serviceEvents.on('service:circuit_breaker', (data) => {
+        if (data.status === 'open') {
+          this._handleCircuitOpen(data.name);
+        } else if (data.status === 'closed') {
+          this._handleCircuitClosed(data.name);
+        } else if (data.status === 'recovering') {
+          this._handleCircuitRecovery(data.name);
+        }
+      });
       
       // Load initial service states
       await this._updateAllServiceStates();

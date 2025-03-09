@@ -2,6 +2,7 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { fancyColors } from '../utils/colors.js';
 import marketDataService from '../services/marketDataService.js';
+import serviceEvents from '../utils/service-suite/service-events.js';
 
 class TokenDataWebSocket extends BaseWebSocketServer {
     constructor(server) {
@@ -21,16 +22,18 @@ class TokenDataWebSocket extends BaseWebSocketServer {
             errors: 0
         };
 
-        logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.GREEN}Token Data WebSocket initialized${fancyColors.RESET}`);
+        // Set up broadcast handler
+        this.marketDataListener = this.broadcastMarketData.bind(this);
+
+        logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.GREEN}Token Data WebSocket initialized${fancyColors.RESET}`);
     }
 
     // Add initialize method to support the WebSocket initialization process
     async initialize() {
         try {
             // Set up listener for market data broadcasts
-            marketDataService.on('market:broadcast', (data) => {
-                this.broadcastMarketData(data);
-            });
+            // Use serviceEvents instead of marketDataService.on directly
+            serviceEvents.on('market:broadcast', this.marketDataListener);
 
             // Initial data push to clients that connect before the first broadcast
             const initialData = await marketDataService.getAllTokens();
@@ -40,13 +43,13 @@ class TokenDataWebSocket extends BaseWebSocketServer {
                     timestamp: new Date().toISOString(),
                     data: initialData
                 };
-                logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Loaded initial token data with ${initialData.length} tokens${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Loaded initial token data with ${initialData.length} tokens${fancyColors.RESET}`);
             }
 
-            logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.GREEN}Token Data WebSocket server initialized${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.GREEN}Token Data WebSocket server initialized${fancyColors.RESET}`);
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Error initializing Token Data WebSocket:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Error initializing Token Data WebSocket:${fancyColors.RESET}`, error);
             return false;
         }
     }
@@ -62,7 +65,7 @@ class TokenDataWebSocket extends BaseWebSocketServer {
         // Send initial data if available
         if (this.initialTokenData) {
             this.send(ws, this.initialTokenData);
-            logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Sent initial token data to new client${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Sent initial token data to new client${fancyColors.RESET}`);
         }
         
         // Override close handler to remove client from set
@@ -73,16 +76,16 @@ class TokenDataWebSocket extends BaseWebSocketServer {
                 originalCloseHandler.call(ws, event);
             }
             
-            logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_YELLOW}Client disconnected, ${this.connectedClients.size} clients remaining${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_YELLOW}Client disconnected, ${this.connectedClients.size} clients remaining${fancyColors.RESET}`);
         };
         
-        logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Client connected, ${this.connectedClients.size} total clients${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Client connected, ${this.connectedClients.size} total clients${fancyColors.RESET}`);
     }
 
     // Broadcast market data to all connected clients
     broadcastMarketData(data) {
         if (!data || !data.data || !Array.isArray(data.data)) {
-            logApi.warn(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Invalid market data for broadcast${fancyColors.RESET}`);
+            logApi.warn(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Invalid market data for broadcast${fancyColors.RESET}`);
             return;
         }
         
@@ -100,7 +103,7 @@ class TokenDataWebSocket extends BaseWebSocketServer {
         // Log broadcast stats
         this.messageCounter.broadcast++;
         
-        logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Broadcasting market data to ${this.connectedClients.size} clients: ${data.data.length} tokens${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.RED}${fancyColors.ITALIC}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Broadcasting market data to ${this.connectedClients.size} clients: ${data.data.length} tokens${fancyColors.RESET}`);
         
         // Broadcast to all connected clients
         this.broadcast(data);
@@ -115,7 +118,7 @@ class TokenDataWebSocket extends BaseWebSocketServer {
             if (message.type === 'subscribe') {
                 // Handle subscription updates
                 if (message.symbols && Array.isArray(message.symbols)) {
-                    logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Client subscribed to ${message.symbols.length} tokens${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Client subscribed to ${message.symbols.length} tokens${fancyColors.RESET}`);
                     
                     // Store subscription details on the client
                     ws.subscriptions = message.symbols;
@@ -142,7 +145,7 @@ class TokenDataWebSocket extends BaseWebSocketServer {
             
             // For external data providers, accept token updates
             if (message.type === 'token_update' && message.data && Array.isArray(message.data) && clientInfo.isAdmin) {
-                logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.GREEN}Received token data from admin: ${message.data.length} tokens${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.GREEN}Received token data from admin: ${message.data.length} tokens${fancyColors.RESET}`);
                 
                 // Store for use by other services
                 global.lastTokenData = message.data;
@@ -154,11 +157,11 @@ class TokenDataWebSocket extends BaseWebSocketServer {
             }
             
             // Log unexpected messages
-            logApi.warn(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Unexpected message type: ${message.type}${fancyColors.RESET}`);
+            logApi.warn(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Unexpected message type: ${message.type}${fancyColors.RESET}`);
 
         } catch (error) {
             this.messageCounter.errors++;
-            logApi.error(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling token data:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling token data:${fancyColors.RESET}`, error);
             this.sendError(ws, error.message);
         }
     }
@@ -169,20 +172,20 @@ class TokenDataWebSocket extends BaseWebSocketServer {
     cleanup() {
         try {
             // Remove event listeners
-            marketDataService.removeAllListeners('market:broadcast');
+            serviceEvents.removeListener('market:broadcast', this.marketDataListener);
             
             // Clear client tracking
             this.connectedClients.clear();
             
             // Log stats before cleanup
-            logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Token Data WebSocket stats:${fancyColors.RESET}`, this.messageCounter);
+            logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Token Data WebSocket stats:${fancyColors.RESET}`, this.messageCounter);
             
             // Call parent cleanup
             super.cleanup();
             
-            logApi.info(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Token Data WebSocket cleaned up${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Token Data WebSocket cleaned up${fancyColors.RESET}`);
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Error during cleanup:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.MAGENTA}${fancyColors.RED}${fancyColors.ITALIC}[token-data-ws]${fancyColors.RESET} ${fancyColors.RED}Error during cleanup:${fancyColors.RESET}`, error);
         }
     }
 }
