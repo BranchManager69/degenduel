@@ -13,6 +13,26 @@ The v69 WebSocket system runs in parallel with the existing WebSocket implementa
 - **Public/Private Endpoints**: Support for both authenticated and public access
 - **Performance Metrics**: Detailed monitoring of connections and message flow
 - **Security Protections**: Rate limiting, payload validation, and proper error handling
+- **Event-Driven Updates**: Real-time updates via central service events system
+- **Common Base Implementation**: Standardized error handling and connection management
+
+### Core Components
+
+#### Base WebSocket Server
+The `BaseWebSocketServer` class provides a foundation for all WebSocket implementations with standardized:
+- Authentication and authorization
+- Channel subscriptions and management
+- Client session tracking
+- Rate limiting and message validation
+- Heartbeat monitoring
+- Error handling and reporting
+
+#### Service Events System
+The central event bus `serviceEvents` enables communication between services and WebSockets:
+- Decouples event producers from consumers
+- Allows WebSockets to react to system events in real-time
+- Eliminates the need for periodic polling
+- Provides consistent event naming and payloads
 
 ## Available WebSockets
 
@@ -131,3 +151,100 @@ To authenticate, you need to obtain a token from the `/api/auth/token` endpoint.
 1. **Query Parameter**: `?token=YOUR_TOKEN`
 2. **WebSocket Protocol**: In the Sec-WebSocket-Protocol header
 3. **Authorization Header**: For HTTP/2 connections
+
+## Best Practices for Implementing v69 WebSockets
+
+### 1. Extend BaseWebSocketServer
+All WebSocket servers should extend the base class:
+
+```javascript
+import { BaseWebSocketServer } from './base-websocket.js';
+
+class MyWebSocketServer extends BaseWebSocketServer {
+  constructor(server) {
+    super(server, {
+      path: '/api/v69/ws/my-path',
+      requireAuth: true,
+      publicEndpoints: ['public.channel'],
+      maxPayload: 64 * 1024
+    });
+    
+    // Initialize state and bind event handlers
+    this.dataCache = new Map();
+    this._dataUpdateHandler = this._handleDataUpdate.bind(this);
+  }
+}
+```
+
+### 2. Register Event Handlers
+Subscribe to service events rather than using intervals:
+
+```javascript
+async onInitialize() {
+  try {
+    // Load initial data
+    await this._fetchInitialData();
+    
+    // Register event handlers
+    serviceEvents.on('data:update', this._dataUpdateHandler);
+    serviceEvents.on('service:status', this._serviceStatusHandler);
+    
+    return true;
+  } catch (error) {
+    logApi.error(`Initialization failed: ${error.message}`, error);
+    return false;
+  }
+}
+```
+
+### 3. Handle Events
+Implement event handlers that update internal state and broadcast to clients:
+
+```javascript
+_handleDataUpdate(data) {
+  // Update internal cache
+  this.dataCache.set(data.id, data);
+  
+  // Broadcast to appropriate channels
+  this.broadcastToChannel('data.updates', {
+    type: 'DATA_UPDATE',
+    data: data
+  });
+}
+```
+
+### 4. Clean Up Resources
+Remove event listeners when shutting down:
+
+```javascript
+async onCleanup() {
+  // Remove event listeners
+  serviceEvents.removeListener('data:update', this._dataUpdateHandler);
+  serviceEvents.removeListener('service:status', this._serviceStatusHandler);
+  
+  // Clear caches
+  this.dataCache.clear();
+}
+```
+
+### 5. Emitting Events from Services
+
+Services should emit events via the central `serviceEvents` bus:
+
+```javascript
+import serviceEvents from '../../utils/service-suite/service-events.js';
+
+// In a service method:
+await processData(data);
+serviceEvents.emit('data:update', processedData);
+```
+
+### Event Naming Conventions
+
+Standard event names follow this pattern:
+- `service:initialized` - Service initialization complete
+- `service:error` - Service encountered an error
+- `service:circuit_breaker` - Circuit breaker state changed
+- `system:settings:update` - System settings updated
+- `maintenance:update` - Maintenance mode changed
+- `data:type:action` - Data specific events (e.g., `token:price:update`)

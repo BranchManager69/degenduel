@@ -95,7 +95,7 @@ export class BaseWebSocketServer {
             request.user = user;
             callback(true);
         } catch (error) {
-            logApi.error(`${fancyColors.BG_RED}${fancyColors.BOLD} WebSocket authentication error ${fancyColors.RESET}`, {
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.BOLD} WebSocket authentication error ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.BOLD}NON-v69 API IS DEPRECATED${fancyColors.RESET}`, {
                 error: error.message
             });
             callback(false, 401, 'Authentication failed');

@@ -363,7 +363,7 @@ class TokenSyncService extends BaseService {
 
     // Fetch token prices
     async fetchTokenPrices(addresses) {
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Fetching prices for ${addresses.length} tokens...${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]\t${fancyColors.RESET} ${fancyColors.DARK_GRAY}Fetching prices for ${fancyColors.BOLD}${addresses.length}${fancyColors.RESET}${fancyColors.DARK_GRAY} tokens...${fancyColors.RESET}`);
         
         // Check if price endpoint is configured
         const pricesEndpoint = this.config.api.endpoints.prices;
@@ -373,7 +373,7 @@ class TokenSyncService extends BaseService {
         }
 
         // Get bulk token data from DD-serve
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Fetching market data from ${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.BLUE}${pricesEndpoint}${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET}\t\t ${fancyColors.GRAY}Fetching market data from${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.BLUE}${pricesEndpoint}${fancyColors.RESET}`);
         try {
             // Make the API call
             const data = await this.makeApiCall(pricesEndpoint, {
@@ -418,7 +418,7 @@ class TokenSyncService extends BaseService {
                 }
                 
                 // Log the response
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Database currently contains ${fancyColors.GRAY}${result.data.length}${fancyColors.RESET} ${fancyColors.DARK_GREEN}tokens.${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.BG_DEBUG_GAME_DATABASE}${fancyColors.DARK_MAGENTA}[tokenSyncService]${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.DARK_GREEN}Game database currently contains ${fancyColors.GRAY}${result.data.length}${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.DARK_GREEN}tokens____________${fancyColors.RESET}`);
                 return result.data;
             } catch (error) {
                 logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ⚠️  ${fancyColors.DARK_RED}${fancyColors.BOLD} ERROR! ${fancyColors.RESET}⚠️ \n\t\t${fancyColors.BOLD_RED}Error fetching token data from primary source:${fancyColors.RESET}\n\t\t\t${fancyColors.BOLD}${fancyColors.LIGHT_RED}${error.message}${fancyColors.RESET}`);
@@ -453,7 +453,7 @@ class TokenSyncService extends BaseService {
         });
         
         if (existingTokens.length > 0) {
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.ORANGE}Using the existing ${fancyColors.BOLD_YELLOW}${fancyColors.UNDERLINE}${existingTokens.length}${fancyColors.RESET} ${fancyColors.ORANGE}tokens from database as fallback${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BG_DEBUG_GAME_DATABASE}${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.ORANGE}Using the existing ${fancyColors.BOLD_YELLOW}${fancyColors.UNDERLINE}${existingTokens.length}${fancyColors.RESET}$ ${fancyColors.ORANGE}tokens from database as fallback ${fancyColors.RESET}`);
             
             // Transform to expected format
             return existingTokens.map(token => ({
@@ -484,7 +484,7 @@ class TokenSyncService extends BaseService {
     // Core sync operations
     async updatePrices() {
         const startTime = Date.now();
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Price update cycle starting ${fancyColors.RESET}`, {
+        logApi.info(`${fancyColors.BG_DEBUG_GAME_DATABASE}${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.BG_DARK_GREEN} Price update cycle starting______________________${fancyColors.RESET}`, {
         //    startTime: startTime,
         });
         
@@ -687,7 +687,7 @@ class TokenSyncService extends BaseService {
             // Log the results if there were any token metadata has changed
             const duration = Date.now() - startTime;
             if (created > 0 || updated > 0 || validationFailures > 0) {
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}${fancyColors.BG_LIGHT_YELLOW}${fancyColors.BOLD} Metadata Update Cycle Completed ${fancyColors.RESET}`, {
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.LIGHT_YELLOW}${fancyColors.BOLD} Metadata update cycle completed ${fancyColors.RESET}`, {
                 //    totalTokens: fullData.length,
                 //    created,
                 //    updated,

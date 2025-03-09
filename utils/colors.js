@@ -76,8 +76,12 @@ export const fancyColors = {
   BG_DARK_CYAN: '\x1b[48;5;51m',
   BG_DARK_WHITE: '\x1b[48;5;231m',
   BG_DARK_BLACK: '\x1b[48;5;16m',
-  
-  // Highlight colors (keeping for backward compatibility)
+
+  // Debug vivid highlight and formatted lines
+  BG_DEBUG: '\x1b[48;5;236m\x1b[38;5;252m',                                  // general debug      -  N/A              -  Light gray text on dark gray background
+  BG_DEBUG_MARKET_DATABASE: '\x1b[1m\x1b[38;5;231m\x1b[48;5;201m\x1b[4m\x1b[3m',    // marketDataService  -  MARKET DATABASE  -  Bold white text on magenta background with underline and italic
+  BG_DEBUG_GAME_DATABASE: '\x1b[1m\x1b[38;5;16m\x1b[48;5;118m\x1b[3m\x1b[4m',       // tokenSyncService   -  GAME DATABASE    -  Bold black text on bright green background with underline and italic
+
   HIGHLIGHT_GRAY: '\x1b[48;5;240m',
   HIGHLIGHT_GREEN: '\x1b[48;5;22m',
   HIGHLIGHT_YELLOW: '\x1b[48;5;178m',

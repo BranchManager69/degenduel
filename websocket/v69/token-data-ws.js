@@ -12,6 +12,7 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 import marketDataService from '../../services/marketDataService.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
 
 class TokenDataWebSocket extends BaseWebSocketServer {
   /**
@@ -46,8 +47,8 @@ class TokenDataWebSocket extends BaseWebSocketServer {
    */
   async onInitialize() {
     try {
-      // Set up market data service listener
-      marketDataService.on('market:broadcast', this.marketDataListener);
+      // Set up market data service listener via serviceEvents
+      serviceEvents.on('market:broadcast', this.marketDataListener);
 
       // Subscribe to public channels by default
       this.publicChannels = ['public.tokens', 'public.market'];

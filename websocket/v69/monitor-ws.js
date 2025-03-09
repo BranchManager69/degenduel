@@ -15,6 +15,7 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors } from '../../utils/colors.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
 
 // Log prefix for Monitor WebSocket
 const LOG_PREFIX = `${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} MONITOR-WS ${fancyColors.RESET}`;
@@ -74,36 +75,111 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
     this.systemSettingsCache = new Map();
     this.servicesCache = new Map();
     
-    // Schedule regular updates
-    this._setupDataUpdateIntervals();
+    // Event handlers
+    this._maintenanceUpdateHandler = this._handleMaintenanceUpdate.bind(this);
+    this._systemSettingsUpdateHandler = this._handleSystemSettingsUpdate.bind(this);
+    this._serviceStatusUpdateHandler = this._handleServiceStatusUpdate.bind(this);
     
     logApi.info(`${LOG_PREFIX} ${fancyColors.CYAN}Monitor WebSocket initialized on ${fancyColors.BOLD}${this.path}${fancyColors.RESET}`);
   }
   
   /**
-   * Set up regular data update intervals
+   * Register event handlers for real-time updates
    * @private
    */
-  _setupDataUpdateIntervals() {
-    // Check system status every 5 seconds
-    this._systemStatusInterval = setInterval(() => {
-      this._updateSystemStatus();
-    }, 5000);
+  _registerEventHandlers() {
+    // Listen for system events
+    serviceEvents.on('maintenance:update', this._maintenanceUpdateHandler);
+    serviceEvents.on('system:settings:update', this._systemSettingsUpdateHandler);
+    serviceEvents.on('service:status:update', this._serviceStatusUpdateHandler);
+    serviceEvents.on('service:initialized', this._serviceStatusUpdateHandler);
+    serviceEvents.on('service:error', this._serviceStatusUpdateHandler);
+    serviceEvents.on('service:circuit_breaker', this._serviceStatusUpdateHandler);
+
+    logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}Registered event handlers for real-time updates${fancyColors.RESET}`);
+  }
+  
+  /**
+   * Handle maintenance mode update event
+   * @param {Object} data - The maintenance data
+   * @private
+   */
+  _handleMaintenanceUpdate(data) {
+    // Update cache
+    this.maintenanceCache = {
+      mode: data.enabled === true,
+      message: data.message || null,
+      updated_at: new Date().toISOString()
+    };
     
-    // Check maintenance status every 5 seconds
-    this._maintenanceInterval = setInterval(() => {
-      this._updateMaintenanceStatus();
-    }, 5000);
+    // Broadcast to subscribers
+    this.broadcastToChannel(CHANNELS.MAINTENANCE_STATUS, {
+      type: MESSAGE_TYPES.MAINTENANCE_STATUS,
+      data: this.maintenanceCache
+    });
     
-    // Update system settings every 30 seconds
-    this._systemSettingsInterval = setInterval(() => {
-      this._updateSystemSettings();
-    }, 30000);
+    logApi.info(`${LOG_PREFIX} ${fancyColors.CYAN}Maintenance mode ${this.maintenanceCache.mode ? 'enabled' : 'disabled'} via event${fancyColors.RESET}`);
+  }
+  
+  /**
+   * Handle system settings update event
+   * @param {Object} data - The settings data
+   * @private
+   */
+  _handleSystemSettingsUpdate(data) {
+    // Update cache
+    const changedSettings = {};
     
-    // Update service status every 10 seconds
-    this._servicesInterval = setInterval(() => {
-      this._updateServiceStatus();
-    }, 10000);
+    for (const [key, value] of Object.entries(data)) {
+      this.systemSettingsCache.set(key, value);
+      changedSettings[key] = value;
+      
+      // Special handling for background scene
+      if (key === 'background_scene') {
+        this.broadcastToChannel(CHANNELS.BACKGROUND_SCENE, {
+          type: MESSAGE_TYPES.SYSTEM_SETTINGS,
+          subtype: 'background_scene',
+          data: value
+        });
+      }
+    }
+    
+    // Broadcast to admin subscribers
+    this.broadcastToChannel(CHANNELS.SYSTEM_SETTINGS, {
+      type: MESSAGE_TYPES.SYSTEM_SETTINGS,
+      subtype: 'update',
+      data: changedSettings
+    });
+    
+    logApi.debug(`${LOG_PREFIX} ${fancyColors.CYAN}System settings updated via event${fancyColors.RESET}`, {
+      keys: Object.keys(changedSettings)
+    });
+  }
+  
+  /**
+   * Handle service status update event
+   * @param {Object} data - The service data
+   * @private
+   */
+  _handleServiceStatusUpdate(data) {
+    // Update cache
+    const name = data.name;
+    const status = {
+      status: data.status || 'unknown',
+      metrics: data.metrics || {},
+      updated_at: new Date().toISOString()
+    };
+    
+    this.servicesCache.set(name, status);
+    
+    // Broadcast to admin subscribers
+    this.broadcastToChannel(CHANNELS.SERVICES, {
+      type: MESSAGE_TYPES.SERVICE_STATUS,
+      service: name,
+      data: status
+    });
+    
+    logApi.debug(`${LOG_PREFIX} ${fancyColors.CYAN}Service ${name} status updated via event${fancyColors.RESET}`);
   }
   
   /**
@@ -113,13 +189,28 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
     try {
       // Load initial data
       await Promise.all([
-        this._updateSystemStatus(),
-        this._updateMaintenanceStatus(),
-        this._updateSystemSettings(),
-        this._updateServiceStatus()
+        this._fetchSystemStatus(),
+        this._fetchMaintenanceStatus(),
+        this._fetchSystemSettings(),
+        this._fetchServiceStatus()
       ]);
       
-      logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}${fancyColors.BOLD}Initialization complete${fancyColors.RESET} - data loaded successfully`);
+      // Update our caches
+      this.systemStatusCache = await this._fetchSystemStatus();
+      this.maintenanceCache = await this._fetchMaintenanceStatus();
+      const settings = await this._fetchSystemSettings();
+      for (const [key, value] of Object.entries(settings)) {
+        this.systemSettingsCache.set(key, value);
+      }
+      const services = await this._fetchServiceStatus();
+      for (const [name, status] of Object.entries(services)) {
+        this.servicesCache.set(name, status);
+      }
+      
+      // Register event handlers for real-time updates
+      this._registerEventHandlers();
+      
+      logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}${fancyColors.BOLD}Initialization complete${fancyColors.RESET} - data loaded successfully and event handlers registered`);
       return true;
     } catch (error) {
       logApi.error(`${LOG_PREFIX} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${fancyColors.RED}Initialization failed: ${error.message}${fancyColors.RESET}`, error);
@@ -836,26 +927,13 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
    * Clean up resources before shutdown
    */
   async onCleanup() {
-    // Clear intervals
-    if (this._systemStatusInterval) {
-      clearInterval(this._systemStatusInterval);
-      this._systemStatusInterval = null;
-    }
-    
-    if (this._maintenanceInterval) {
-      clearInterval(this._maintenanceInterval);
-      this._maintenanceInterval = null;
-    }
-    
-    if (this._systemSettingsInterval) {
-      clearInterval(this._systemSettingsInterval);
-      this._systemSettingsInterval = null;
-    }
-    
-    if (this._servicesInterval) {
-      clearInterval(this._servicesInterval);
-      this._servicesInterval = null;
-    }
+    // Remove event listeners
+    serviceEvents.removeListener('maintenance:update', this._maintenanceUpdateHandler);
+    serviceEvents.removeListener('system:settings:update', this._systemSettingsUpdateHandler);
+    serviceEvents.removeListener('service:status:update', this._serviceStatusUpdateHandler);
+    serviceEvents.removeListener('service:initialized', this._serviceStatusUpdateHandler);
+    serviceEvents.removeListener('service:error', this._serviceStatusUpdateHandler);
+    serviceEvents.removeListener('service:circuit_breaker', this._serviceStatusUpdateHandler);
     
     // Clear caches
     this.systemStatusCache = {};
@@ -863,7 +941,7 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
     this.systemSettingsCache.clear();
     this.servicesCache.clear();
     
-    logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}Cleanup complete${fancyColors.RESET} - all data caches cleared`);
+    logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}Cleanup complete${fancyColors.RESET} - all event listeners removed and data caches cleared`);
   }
   
   /**
