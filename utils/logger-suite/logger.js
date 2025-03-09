@@ -14,13 +14,24 @@
  * Log files are stored in the /logs directory.
  */
 
+import dotenv from "dotenv";
 import chalk from "chalk";
 import path from "path";
 import winston from "winston";
 import "winston-daily-rotate-file";
+import { Logtail } from "@logtail/node";
+import { LogtailTransport } from "@logtail/winston";
 import { Socket } from 'net';
 import { Stream } from 'stream';
 import { fancyColors, logColors, serviceColors } from '../colors.js';
+
+// Load environment variables
+dotenv.config();
+
+// Logtail Config
+const LOGTAIL_TOKEN = process.env.LOGTAIL_TOKEN;
+const LOGTAIL_ENDPOINT = process.env.LOGTAIL_ENDPOINT;
+const LOGTAIL_SOURCE = process.env.LOGTAIL_SOURCE;
 
 // Constants
 const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs");
@@ -162,7 +173,7 @@ const formatAnalytics = (metadata) => {
   const { ip, headers = {}, user, performance, ...rest } = metadata;
 
   return {
-    // User identification (anonymized if needed)
+    // User identification
     user: user
       ? {
           id: user.id,
@@ -294,6 +305,7 @@ const formatMetadata = (metadata, level) => {
   return rest;
 };
 
+// Sanitize error objects to prevent circular references
 const sanitizeError = (obj) => {
   if (!obj) return obj;
 
@@ -324,6 +336,7 @@ const sanitizeError = (obj) => {
   return clean;
 };
 
+// Format circuit breaker logs
 function formatCircuitBreaker(service, details) {
   const { failures, threshold, service: serviceName } = details;
   const serviceDisplay = serviceName || service || 'Unknown Service';
@@ -336,6 +349,7 @@ Failures: ${chalk.red(`${failures}/${threshold}`)}
 ${chalk.red('══════════════════════════')}`;
 }
 
+// Format user interaction logs
 function formatUserInteraction(user, action, details) {
   const userInfo = user ? `${user.nickname} (${user.role})` : 'Anonymous';
   let formattedDetails = '';
@@ -351,6 +365,7 @@ function formatUserInteraction(user, action, details) {
   return `👤 ${userInfo} | ${action} | ${formattedDetails}`;
 }
 
+// Format memory stats
 function formatMemoryStats(stats) {
   const { heap_used_mb, heap_total_mb, rss_mb, external_mb, array_buffers_mb, uptime_hours } = stats;
   const heapUsagePercent = Math.round((heap_used_mb / heap_total_mb) * 100);
@@ -361,6 +376,7 @@ function formatMemoryStats(stats) {
     Uptime: ${uptime_hours.toFixed(2)}h`;
 }
 
+// Format performance stats
 function formatPerformanceStats(metrics) {
   const { total_requests, avg_response_time, max_response_time, routes } = metrics;
   
@@ -387,6 +403,7 @@ function formatPerformanceStats(metrics) {
   return `${header}${fancyColors.RESET}\n${routeStats}`;
 }
 
+// Format event loop lag logs
 function formatEventLoopLag(lagMs) {
   // Only use warning colors for seriously high lag
   if (lagMs > 250) {
@@ -396,6 +413,7 @@ function formatEventLoopLag(lagMs) {
   return `${lagMs > 100 ? '⚡⚡' : '⚡'} Event Loop Lag: ${lagMs}ms`;
 }
 
+// Format admin action logs
 function formatAdminAction(details) {
   const { admin, action, details: actionDetails } = details;
   const formattedDetails = JSON.stringify(actionDetails, null, 2)
@@ -403,7 +421,7 @@ function formatAdminAction(details) {
     .map(line => '    ' + line)
     .join('\n');
   
-  return `👑 \t${fancyColors.BG_BLACK}${fancyColors.BOLD_YELLOW}Admin Action Log:${fancyColors.RESET}${fancyColors.UNDERLINE}${fancyColors.WHITE}${fancyColors.BG_BLACK} ${action} ${fancyColors.RESET} ${fancyColors.CYAN}by${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.DARK_YELLOW}${admin}${fancyColors.RESET}`;
+  return `👑 \t${fancyColors.BG_BLACK}${fancyColors.BOLD_YELLOW} Admin Action Log ${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.WHITE}${fancyColors.BG_BLACK} ${action} ${fancyColors.RESET} ${fancyColors.GRAY}by${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.DARK_YELLOW}${admin} ${fancyColors.RESET}`;
 }
 
 // Modify the customFormat to properly handle these special cases
@@ -517,6 +535,22 @@ const debugRotateFileTransport = new winston.transports.DailyRotateFile({
   format: winston.format.combine(winston.format.timestamp(), fileFormat),
 });
 
+
+/* LOGTAIL TRANSPORT */
+
+const logtail = new Logtail(LOGTAIL_TOKEN, {
+  endpoint: LOGTAIL_ENDPOINT,
+  source: LOGTAIL_SOURCE,
+});
+
+const logtailTransport = new LogtailTransport(logtail);
+
+
+
+
+
+/* LOGGER INITIALIZATION */
+
 // Create the logger with clear transport descriptions
 const logApi = winston.createLogger({
   level: process.env.LOG_LEVEL || "info",
@@ -534,8 +568,11 @@ const logApi = winston.createLogger({
     dailyRotateFileTransport,     // All logs
     errorRotateFileTransport,     // Error logs only
     debugRotateFileTransport,     // Debug logs only
+    // NEW: Logtail Transport
+    logtailTransport,            // Logtail Transport
   ],
 });
+
 
 // Log where logs are being written to on startup
 console.log(`${fancyColors.BOLD}${fancyColors.BG_DARK_CYAN} ${fancyColors.DARK_BLACK}DegenDuel Logger Initialized ${fancyColors.RESET}`);
