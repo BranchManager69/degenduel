@@ -225,7 +225,7 @@ export class BaseWebSocketServer {
       // Parse the message
       const message = this.parseMessage(data);
       if (!message) {
-        this.sendError(ws, 'INVALID_MESSAGE', 'Invalid message format', ***REMOVED***);
+        this.sendError(ws, 'INVALID_MESSAGE', 'Invalid message format', 1003);
         return;
       }
 
