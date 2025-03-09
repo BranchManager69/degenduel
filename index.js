@@ -8,6 +8,9 @@
  * 
  */
 
+// Import restart monitor (for Logtail alerting)
+import './scripts/pm2-restart-monitor.js';
+
 //---------------------------------------------------.
 //  Main server initialization and configuration     |
 //---------------------------------------------------|
