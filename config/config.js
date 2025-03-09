@@ -13,18 +13,23 @@ dotenv.config();
 const DD_SERV_API = 'https://degenduel.me/api/dd-serv/tokens'; // deprecated
 const DATA_API = 'https://data.degenduel.me/api'; // deprecated
 const GAME_API = 'https://game.degenduel.me'; // deprecated
-const LOBBY_API = 'https://lobby.degenduel.me';
-const REFLECTIONS_API = 'https://reflections.degenduel.me';
+const LOBBY_API = 'https://lobby.degenduel.me'; // future
+const REFLECTIONS_API = 'https://reflections.degenduel.me'; // future
 // Fallback API for when data service is unavailable
 const LOCAL_PORT = process.env.PORT || process.env.API_PORT || 3004;
 const LOCAL_FALLBACK_API = null; // Disabling local fallback during startup to avoid circular dependency
 
 // Helpful Solana RPC URLs:
-const RPC_URL_MAINNET_HTTP = process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com';
+const RPC_URL_MAINNET_HTTP = process.env.QUICKNODE_MAINNET_HTTP;
 const RPC_URL_MAINNET_WSS = process.env.QUICKNODE_MAINNET_WSS || '';
-const RPC_URL_DEVNET_HTTP = process.env.QUICKNODE_DEVNET_HTTP || 'https://api.devnet.solana.com';
+const RPC_URL_DEVNET_HTTP = process.env.QUICKNODE_DEVNET_HTTP;
 const RPC_URL_DEVNET_WSS = process.env.QUICKNODE_DEVNET_WSS || '';
 const RPC_URL = RPC_URL_MAINNET_HTTP;
+
+// Force an error if RPC URL is not configured
+if (!RPC_URL) {
+  throw new Error('QUICKNODE_MAINNET_HTTP environment variable must be set - cannot default to public Solana RPC endpoint');
+}
 
 const config = {
   rpc_urls: {
@@ -70,11 +75,6 @@ const config = {
     auth: process.env.DD_API_DEBUG_MODE || 'false',
     api: process.env.DD_API_DEBUG_MODE || 'false',
     middleware: process.env.DD_API_DEBUG_MODE || 'false',
-    ////token_sync: process.env.DD_API_DEBUG_MODE || 'false',
-    ////market_data: process.env.DD_API_DEBUG_MODE || 'false',
-    ////leaderboard: process.env.DD_API_DEBUG_MODE || 'false',
-    ////admin: process.env.DD_API_DEBUG_MODE || 'false',
-    /////maintenance: process.env.DD_API_DEBUG_MODE || 'false',
   },
   degenduel_treasury_wallet: process.env.TREASURY_WALLET_ADDRESS,
   token_submission_cost: process.env.TOKEN_SUBMISSION_COST,

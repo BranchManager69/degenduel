@@ -62,7 +62,11 @@ class ContestWalletService extends BaseService {
         super(CONTEST_WALLET_CONFIG);
         
         // Initialize Solana connection
-        // TODO: Shouldn't this use our existing Solana service?
+        if (!config.rpc_urls.primary) {
+            throw new Error("RPC URL is not configured - check QUICKNODE_MAINNET_HTTP environment variable");
+        }
+        
+        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} Initializing with RPC: ${config.rpc_urls.primary}`);
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         
         // Set treasury wallet address from config
