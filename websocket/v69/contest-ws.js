@@ -14,6 +14,7 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors } from '../../utils/colors.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
 
 // Log prefix for Contest WebSocket
 const LOG_PREFIX = `${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} CONTEST-WS ${fancyColors.RESET}`;
@@ -92,36 +93,155 @@ class ContestWebSocketServer extends BaseWebSocketServer {
       messageLengthLimit: 500, // Max 500 characters per message
     };
     
-    // Schedule regular updates
-    this._setupDataUpdateIntervals();
+    // Bind event handlers
+    this._contestUpdateHandler = this._handleContestUpdate.bind(this);
+    this._leaderboardUpdateHandler = this._handleLeaderboardUpdate.bind(this);
+    this._participantUpdateHandler = this._handleParticipantUpdate.bind(this);
+    this._chatMessageHandler = this._handleChatMessage.bind(this);
+    
+    // Only keep the chat rate limit interval
+    this._chatRateLimitInterval = setInterval(() => {
+      this._resetChatRateLimits();
+    }, 60000);
     
     logApi.info(`${LOG_PREFIX} ${fancyColors.CYAN}Contest WebSocket initialized on ${fancyColors.BOLD}${this.path}${fancyColors.RESET}`);
   }
   
   /**
-   * Set up regular data update intervals
+   * Register event handlers for real-time data updates
    * @private
    */
-  _setupDataUpdateIntervals() {
-    // Update active contests every 30 seconds
-    this._contestsInterval = setInterval(() => {
-      this._updateActiveContests();
-    }, 30000);
+  _registerEventHandlers() {
+    // Register event handlers for different types of updates
+    serviceEvents.on('contest:created', this._contestUpdateHandler);
+    serviceEvents.on('contest:updated', this._contestUpdateHandler);
+    serviceEvents.on('contest:status', this._contestUpdateHandler);
     
-    // Update leaderboards every 15 seconds
-    this._leaderboardsInterval = setInterval(() => {
-      this._updateLeaderboards();
-    }, 15000);
+    serviceEvents.on('contest:leaderboard:updated', this._leaderboardUpdateHandler);
+    serviceEvents.on('contest:participant:joined', this._participantUpdateHandler);
+    serviceEvents.on('contest:participant:updated', this._participantUpdateHandler);
     
-    // Update spectator counts every 60 seconds
-    this._spectatorCountsInterval = setInterval(() => {
-      this._updateSpectatorCounts();
-    }, 60000);
+    serviceEvents.on('contest:chat:message', this._chatMessageHandler);
     
-    // Reset chat rate limits every minute
-    this._chatRateLimitInterval = setInterval(() => {
-      this._resetChatRateLimits();
-    }, 60000);
+    logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}Registered event handlers for real-time updates${fancyColors.RESET}`);
+  }
+  
+  /**
+   * Handle contest update event
+   * @param {Object} data Contest data
+   * @private
+   */
+  _handleContestUpdate(data) {
+    const contestId = data.id;
+    
+    // Update contest cache
+    this.contestsCache.set(contestId, data);
+    
+    // Broadcast to relevant channels
+    this.broadcastToChannel(`contest.${contestId}`, {
+      type: MESSAGE_TYPES.CONTEST_UPDATE,
+      contestId,
+      data
+    });
+    
+    // Also broadcast to public contest channel
+    this.broadcastToChannel('public.contests', {
+      type: MESSAGE_TYPES.CONTEST_UPDATE,
+      contestId,
+      data: {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        status: data.status,
+        participant_count: data.participant_count
+      }
+    });
+    
+    logApi.debug(`${LOG_PREFIX} ${fancyColors.CYAN}Contest ${contestId} updated via event${fancyColors.RESET}`);
+  }
+  
+  /**
+   * Handle leaderboard update event
+   * @param {Object} data Leaderboard data
+   * @private
+   */
+  _handleLeaderboardUpdate(data) {
+    const contestId = data.contestId;
+    
+    // Update leaderboard cache
+    this.leaderboardCache.set(contestId, data.leaderboard);
+    
+    // Broadcast to leaderboard channel
+    this.broadcastToChannel(`leaderboard.${contestId}`, {
+      type: MESSAGE_TYPES.LEADERBOARD_UPDATE,
+      contestId,
+      data: data.leaderboard
+    });
+    
+    logApi.debug(`${LOG_PREFIX} ${fancyColors.CYAN}Leaderboard for contest ${contestId} updated via event${fancyColors.RESET}`);
+  }
+  
+  /**
+   * Handle participant update event
+   * @param {Object} data Participant data
+   * @private
+   */
+  _handleParticipantUpdate(data) {
+    const contestId = data.contestId;
+    const walletAddress = data.walletAddress;
+    
+    // Get or create the participants map for this contest
+    let contestParticipants = this.participantsCache.get(contestId);
+    if (!contestParticipants) {
+      contestParticipants = new Map();
+      this.participantsCache.set(contestId, contestParticipants);
+    }
+    
+    // Update participant data
+    contestParticipants.set(walletAddress, data);
+    
+    // Broadcast to participant's personal channel
+    this.broadcastToChannel(`participant.${walletAddress}.${contestId}`, {
+      type: MESSAGE_TYPES.PARTICIPANT_UPDATE,
+      contestId,
+      walletAddress,
+      data
+    });
+    
+    logApi.debug(`${LOG_PREFIX} ${fancyColors.CYAN}Participant ${walletAddress} in contest ${contestId} updated via event${fancyColors.RESET}`);
+  }
+  
+  /**
+   * Handle new chat message event
+   * @param {Object} data Chat message data
+   * @private
+   */
+  _handleChatMessage(data) {
+    const contestId = data.contestId;
+    
+    // Get or create chat history for this contest
+    let chatHistory = this.chatHistoryCache.get(contestId);
+    if (!chatHistory) {
+      chatHistory = [];
+      this.chatHistoryCache.set(contestId, chatHistory);
+    }
+    
+    // Add new message to history (limited to messageHistoryLimit)
+    chatHistory.push(data);
+    if (chatHistory.length > this.chatSettings.messageHistoryLimit) {
+      chatHistory.shift(); // Remove oldest message
+    }
+    
+    // Broadcast to contest chat channel
+    this.broadcastToChannel(`chat.${contestId}`, {
+      type: MESSAGE_TYPES.CHAT_MESSAGE,
+      contestId,
+      data
+    });
+    
+    logApi.debug(`${LOG_PREFIX} ${fancyColors.CYAN}New chat message in contest ${contestId}${fancyColors.RESET}`);
   }
   
   /**
@@ -130,13 +250,65 @@ class ContestWebSocketServer extends BaseWebSocketServer {
   async onInitialize() {
     try {
       // Load initial contest data
-      await this._updateActiveContests();
+      await this._loadInitialContests();
       
-      logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}${fancyColors.BOLD}Initialization complete${fancyColors.RESET} with ${fancyColors.BOLD}${this.contestsCache.size}${fancyColors.RESET} active contests loaded`);
+      // Register event handlers for real-time updates
+      this._registerEventHandlers();
+      
+      logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}${fancyColors.BOLD}Initialization complete${fancyColors.RESET} with ${fancyColors.BOLD}${this.contestsCache.size}${fancyColors.RESET} active contests loaded and event handlers registered`);
       return true;
     } catch (error) {
       logApi.error(`${LOG_PREFIX} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${fancyColors.RED}Initialization failed: ${error.message}${fancyColors.RESET}`, error);
       return false;
+    }
+  }
+  
+  /**
+   * Load initial contest data from database
+   * @private
+   */
+  async _loadInitialContests() {
+    try {
+      // Query active contests from database
+      const contests = await prisma.contests.findMany({
+        where: {
+          status: 'active'
+        },
+        orderBy: [
+          { start_time: 'desc' }
+        ],
+        take: 100 // Limit to 100 contests for initial load
+      });
+      
+      // Initialize caches
+      for (const contest of contests) {
+        this.contestsCache.set(contest.id, contest);
+        
+        // Load leaderboard for each contest
+        await this._loadLeaderboard(contest.id);
+      }
+      
+      logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}Loaded ${contests.length} active contests${fancyColors.RESET}`);
+      return contests.length;
+    } catch (error) {
+      logApi.error(`${LOG_PREFIX} ${fancyColors.RED}Failed to load initial contests:${fancyColors.RESET} ${error.message}`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Load leaderboard data for a specific contest
+   * @param {number} contestId The contest ID
+   * @private
+   */
+  async _loadLeaderboard(contestId) {
+    try {
+      const leaderboard = await this._fetchLeaderboard(contestId);
+      this.leaderboardCache.set(contestId, leaderboard);
+      return leaderboard;
+    } catch (error) {
+      logApi.error(`${LOG_PREFIX} ${fancyColors.RED}Error fetching leaderboard for contest ${contestId}:${fancyColors.RESET} ${error.message}`, error);
+      return [];
     }
   }
   
@@ -1631,22 +1803,18 @@ class ContestWebSocketServer extends BaseWebSocketServer {
    * Clean up resources before shutdown
    */
   async onCleanup() {
-    // Clear intervals
-    if (this._contestsInterval) {
-      clearInterval(this._contestsInterval);
-      this._contestsInterval = null;
-    }
+    // Remove event listeners
+    serviceEvents.removeListener('contest:created', this._contestUpdateHandler);
+    serviceEvents.removeListener('contest:updated', this._contestUpdateHandler);
+    serviceEvents.removeListener('contest:status', this._contestUpdateHandler);
     
-    if (this._leaderboardsInterval) {
-      clearInterval(this._leaderboardsInterval);
-      this._leaderboardsInterval = null;
-    }
+    serviceEvents.removeListener('contest:leaderboard:updated', this._leaderboardUpdateHandler);
+    serviceEvents.removeListener('contest:participant:joined', this._participantUpdateHandler);
+    serviceEvents.removeListener('contest:participant:updated', this._participantUpdateHandler);
     
-    if (this._spectatorCountsInterval) {
-      clearInterval(this._spectatorCountsInterval);
-      this._spectatorCountsInterval = null;
-    }
+    serviceEvents.removeListener('contest:chat:message', this._chatMessageHandler);
     
+    // Clear remaining interval
     if (this._chatRateLimitInterval) {
       clearInterval(this._chatRateLimitInterval);
       this._chatRateLimitInterval = null;
