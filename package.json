@@ -39,7 +39,7 @@
     "db:safe-migrate": "npm run db:backup && npm run db:reset-test && npx prisma migrate dev",
     "db:reset-test": "./scripts/db-tools.sh reset-test",
     "db:restore": "./scripts/db-tools.sh restore",
-    "db:***REMOVED***": "./scripts/db-tools.sh ***REMOVED***",
+    "db:bonkfa": "./scripts/db-tools.sh bonkfa",
     "db:compliment": "./scripts/db-tools.sh compliment",
     "db:money": "./scripts/db-tools.sh money",
     
