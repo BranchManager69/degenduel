@@ -60,7 +60,8 @@ build/
 *.tsbuildinfo
 
 # Generated documentation
-###docs/
+docs/
+docs_important/
 
 # Temporary editor/project files
 .vscode/
