@@ -1044,11 +1044,25 @@ router.get('/twitter/callback', async (req, res) => {
       // Set cookie
       const cookieOptions = {
         httpOnly: true,
-        sameSite: 'none',
-        secure: true,
         maxAge: 12 * 60 * 60 * 1000, // 12 hours
-        domain: '.degenduel.me' // Always set in production URL
       };
+      
+      // Adjust cookie settings based on environment
+      if (process.env.NODE_ENV === 'production') {
+        cookieOptions.sameSite = 'none';
+        cookieOptions.secure = true;
+        cookieOptions.domain = '.degenduel.me';
+      } else {
+        // In development, use less strict settings
+        cookieOptions.sameSite = 'lax';
+        cookieOptions.secure = false;
+        // Don't set domain in development to use default
+      }
+      
+      authLogger.info(`Setting auth cookie with options \n\t`, { 
+        ...cookieOptions,
+        environment: process.env.NODE_ENV || 'development'
+      });
       
       res.cookie('session', token, cookieOptions);
       
