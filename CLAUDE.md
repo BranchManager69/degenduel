@@ -1,5 +1,19 @@
 # DegenDuel Project Reference
 
+```
+Comprehensive guide for working with Solana token metadata in the DegenDuel project. This includes:
+
+  1. Documentation: /docs_critical/token_metadata/solana_token_metadata_guide.md
+    - Explains three different methods for fetching token metadata
+    - Provides code examples for each approach
+    - Includes specifics on handling non-standard tokens
+    - Includes recommendations for implementation in DegenDuel
+  2. Example Scripts:
+    - token_examples.js - Uses Metaplex libraries to fetch standard metadata
+    - direct_rpc_example.js - Uses direct RPC calls for basic token info
+    - alternative_fetch_example.js - A multi-method approach for robust fetching
+```
+
 ## Database Schema Management
 
 ### Prisma Schema Reconciliation

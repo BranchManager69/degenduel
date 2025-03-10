@@ -19,6 +19,7 @@ import './scripts/pm2-restart-monitor.js';
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
+import session from "express-session";
 import fetch from "node-fetch";
 import { closeDatabase, initDatabase } from "./config/database.js"; // SQLite for leaderboard
 import { configureMiddleware } from "./config/middleware.js";
@@ -126,6 +127,19 @@ if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
 // Basic Express configuration
 app.set("trust proxy", 1);
 app.use(cookieParser());
+
+// Add session middleware for Twitter authentication
+app.use(session({
+  secret: process.env.JWT_SECRET, // Using the same secret as JWT for simplicity
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Only use secure cookies in production
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
 setupSwagger(app);
 configureMiddleware(app);
 app.use(memoryMonitoring.setupResponseTimeTracking());

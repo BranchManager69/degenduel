@@ -2,7 +2,6 @@
 
 /**
  * This file MIGHT be used to log the initialization of the WebSocket service.
- * WARNING: I HAVE NO IDEA IF THIS WORKS.
  */
 
 import { logApi } from './logger.js';

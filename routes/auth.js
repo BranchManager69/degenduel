@@ -11,9 +11,13 @@ import { clearNonce, generateNonce, getNonceRecord } from '../utils/dbNonceStore
 import { requireAuth } from '../middleware/auth.js';
 import { UserRole } from '../types/userRole.js';
 import crypto from 'crypto';
+// No need to import sign directly as jwt already includes it
+import axios from 'axios';
+import { randomBytes } from 'crypto';
 
 const router = express.Router();
-const { sign } = jwt;
+// Destructure jwt.sign into a variable
+const jwtSign = jwt.sign;
 
 // Create a service-specific logger with analytics
 const authLogger = {
@@ -328,7 +332,7 @@ router.post('/verify-wallet', async (req, res) => {
     });
 
     // 6) Create JWT
-    const token = sign(
+    const token = jwtSign(
       {
         wallet_address: user.wallet_address,
         role: user.role,
@@ -455,7 +459,7 @@ router.post('/dev-login', async (req, res) => {
     const sessionId = Buffer.from(crypto.randomBytes(16)).toString('hex');
 
     // Create JWT token as if this was a normal login
-    const token = sign(
+    const token = jwtSign(
       {
         wallet_address: user.wallet_address,
         role: user.role,
@@ -709,7 +713,7 @@ router.get('/token', requireAuth, async (req, res) => {
     }
 
     // Create a WebSocket-specific token with shorter-than-normal expiration
-    const wsToken = sign(
+    const wsToken = jwtSign(
       {
         wallet_address: user.wallet_address,
         role: user.role,
@@ -749,6 +753,428 @@ router.get('/token', requireAuth, async (req, res) => {
     res.status(401).json({ error: 'Invalid session' });
   }
 });
+
+/**
+ * @swagger
+ * /api/auth/twitter/login:
+ *   get:
+ *     summary: Initiate Twitter OAuth login
+ *     tags: [Authentication]
+ *     security: []
+ *     responses:
+ *       302:
+ *         description: Redirects to Twitter OAuth
+ */
+router.get('/twitter/login', async (req, res) => {
+  try {
+    // Generate CSRF token and state for security
+    const state = randomBytes(32).toString('hex');
+    const codeVerifier = randomBytes(32).toString('hex');
+    const codeChallenge = crypto
+      .createHash('sha256')
+      .update(codeVerifier)
+      .digest('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+
+    // Store in session for verification later
+    req.session = req.session || {};
+    req.session.twitter_oauth = {
+      state,
+      codeVerifier,
+      codeChallenge
+    };
+
+    // Determine which callback URI to use
+    const callbackUri = process.env.NODE_ENV === 'development' 
+      ? process.env.X_CALLBACK_URI_DEVELOPMENT 
+      : process.env.X_CALLBACK_URI;
+
+    // Construct the Twitter OAuth URL
+    const authUrl = new URL('https://twitter.com/i/oauth2/authorize');
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('client_id', process.env.X_CLIENT_ID);
+    authUrl.searchParams.append('redirect_uri', callbackUri);
+    authUrl.searchParams.append('scope', 'tweet.read users.read offline.access');
+    authUrl.searchParams.append('state', state);
+    authUrl.searchParams.append('code_challenge', codeChallenge);
+    authUrl.searchParams.append('code_challenge_method', 'S256');
+
+    // Redirect user to Twitter OAuth
+    authLogger.info(`Initiating Twitter OAuth flow \n\t`);
+    return res.redirect(authUrl.toString());
+  } catch (error) {
+    authLogger.error(`Twitter OAuth initialization failed \n\t`, {
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({ error: 'Could not initiate Twitter authentication' });
+  }
+});
+
+/**
+ * Find wallet by Twitter ID and create a session
+ * @param {string} twitterId - Twitter user ID
+ * @param {object} twitterUser - Twitter user data
+ * @returns {Promise<{success: boolean, wallet_address?: string, error?: string}>}
+ */
+async function loginWithTwitter(twitterId, twitterUser) {
+  try {
+    // Look up the user_social_profiles entry
+    const socialProfile = await prisma.user_social_profiles.findFirst({
+      where: {
+        platform: 'twitter',
+        platform_user_id: twitterId,
+        verified: true
+      }
+    });
+    
+    // If no linked account found, return error
+    if (!socialProfile) {
+      authLogger.warn(`No verified Twitter account found for login \n\t`, {
+        twitterId,
+        twitterUsername: twitterUser.username
+      });
+      return {
+        success: false,
+        error: 'No linked wallet found for this Twitter account'
+      };
+    }
+    
+    // Get the wallet user
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: socialProfile.wallet_address }
+    });
+    
+    // If no user found, return error
+    if (!user) {
+      authLogger.warn(`Twitter linked to wallet but user not found \n\t`, {
+        twitterId,
+        wallet: socialProfile.wallet_address
+      });
+      return {
+        success: false,
+        error: 'User not found for linked Twitter account'
+      };
+    }
+    
+    // Update user last login time
+    await prisma.users.update({
+      where: { wallet_address: user.wallet_address },
+      data: { last_login: new Date() }
+    });
+    
+    // Update Twitter profile data if needed
+    if (twitterUser.username !== socialProfile.username || 
+        twitterUser.profile_image_url !== socialProfile.metadata?.profile_image_url) {
+      
+      await prisma.user_social_profiles.update({
+        where: {
+          wallet_address_platform: {
+            wallet_address: socialProfile.wallet_address,
+            platform: 'twitter'
+          }
+        },
+        data: {
+          username: twitterUser.username,
+          last_verified: new Date(),
+          metadata: {
+            ...socialProfile.metadata,
+            name: twitterUser.name,
+            profile_image_url: twitterUser.profile_image_url
+          },
+          updated_at: new Date()
+        }
+      });
+    }
+    
+    authLogger.info(`Twitter login successful for ${user.wallet_address} \n\t`, {
+      twitterUsername: twitterUser.username,
+      wallet: user.wallet_address
+    });
+    
+    return {
+      success: true,
+      wallet_address: user.wallet_address,
+      user
+    };
+  } catch (error) {
+    authLogger.error(`Failed to login with Twitter \n\t`, {
+      error: error.message,
+      stack: error.stack,
+      twitterId
+    });
+    
+    return {
+      success: false,
+      error: 'Failed to login with Twitter'
+    };
+  }
+}
+
+/**
+ * @swagger
+ * /api/auth/twitter/callback:
+ *   get:
+ *     summary: Handle Twitter OAuth callback
+ *     tags: [Authentication]
+ *     security: []
+ *     parameters:
+ *       - name: code
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: state
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirects to app with token
+ */
+router.get('/twitter/callback', async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    
+    // Validate state parameter to prevent CSRF attacks
+    if (!req.session?.twitter_oauth || req.session.twitter_oauth.state !== state) {
+      authLogger.warn(`Twitter OAuth state mismatch \n\t`);
+      return res.status(400).json({ error: 'Invalid state parameter' });
+    }
+    
+    // Determine which callback URI to use
+    const callbackUri = process.env.NODE_ENV === 'development' 
+      ? process.env.X_CALLBACK_URI_DEVELOPMENT 
+      : process.env.X_CALLBACK_URI;
+    
+    // Exchange code for access token
+    const tokenResponse = await axios.post(
+      'https://api.twitter.com/2/oauth2/token',
+      new URLSearchParams({
+        code,
+        grant_type: 'authorization_code',
+        client_id: process.env.X_CLIENT_ID,
+        redirect_uri: callbackUri,
+        code_verifier: req.session.twitter_oauth.codeVerifier
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${Buffer.from(
+            `${process.env.X_CLIENT_ID}:${process.env.X_CLIENT_SECRET}`
+          ).toString('base64')}`
+        }
+      }
+    );
+    
+    const { access_token, refresh_token } = tokenResponse.data;
+    
+    // Get Twitter user info
+    const userResponse = await axios.get('https://api.twitter.com/2/users/me', {
+      headers: {
+        Authorization: `Bearer ${access_token}`
+      },
+      params: {
+        'user.fields': 'id,name,username,profile_image_url'
+      }
+    });
+    
+    const twitterUser = userResponse.data.data;
+    
+    // First, check if this Twitter account is already linked and can be used for direct login
+    const loginResult = await loginWithTwitter(twitterUser.id, twitterUser);
+    
+    if (loginResult.success) {
+      // Create JWT token for session
+      const token = jwtSign(
+        {
+          wallet_address: loginResult.wallet_address,
+          role: loginResult.user.role,
+          session_id: Buffer.from(crypto.randomBytes(16)).toString('hex')
+        },
+        config.jwt.secret,
+        { expiresIn: '12h' } // 12 hours
+      );
+      
+      // Set cookie
+      const cookieOptions = {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        maxAge: 12 * 60 * 60 * 1000, // 12 hours
+        domain: '.degenduel.me' // Always set in production URL
+      };
+      
+      res.cookie('session', token, cookieOptions);
+      
+      authLogger.info(`Twitter login: created session for wallet ${loginResult.wallet_address} \n\t`);
+      
+      // Redirect to homepage or dashboard
+      return res.redirect('/');
+    }
+    
+    // If direct login wasn't successful, proceed with the linking flow
+    
+    // Store Twitter info in session for linking to wallet later
+    req.session.twitter_user = {
+      id: twitterUser.id,
+      username: twitterUser.username,
+      name: twitterUser.name,
+      profile_image_url: twitterUser.profile_image_url,
+      access_token,
+      refresh_token
+    };
+    
+    authLogger.info(`Twitter OAuth successful for user ${twitterUser.username} \n\t`);
+    
+    // If user is already authenticated with a wallet, link accounts
+    if (req.cookies.session) {
+      try {
+        const decoded = jwt.verify(req.cookies.session, config.jwt.secret);
+        
+        if (decoded && decoded.wallet_address) {
+          // Link Twitter account to wallet
+          await linkTwitterToWallet(decoded.wallet_address, twitterUser, access_token, refresh_token);
+          
+          // Redirect to profile page or success page
+          return res.redirect('/profile?twitter_linked=true');
+        }
+      } catch (error) {
+        // Token verification failed, continue to login page
+        authLogger.warn(`Failed to verify existing session when linking Twitter \n\t`, { error: error.message });
+      }
+    }
+    
+    // If no wallet is connected yet, redirect to a page where user can connect wallet
+    // Store Twitter data in session for later
+    return res.redirect('/connect-wallet?twitter=pending');
+  } catch (error) {
+    authLogger.error(`Twitter OAuth callback failed \n\t`, {
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({ error: 'Twitter authentication failed' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/twitter/link:
+ *   post:
+ *     summary: Link Twitter account to connected wallet
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Twitter account linked successfully
+ *       401:
+ *         description: Not authenticated
+ *       500:
+ *         description: Server error
+ */
+router.post('/twitter/link', requireAuth, async (req, res) => {
+  try {
+    // Ensure user has Twitter data in session
+    if (!req.session?.twitter_user) {
+      authLogger.warn(`No Twitter data in session for linking \n\t`);
+      return res.status(400).json({ error: 'No Twitter authentication data found' });
+    }
+    
+    const { wallet_address } = req.user;
+    const { id, username, name, profile_image_url, access_token, refresh_token } = req.session.twitter_user;
+    
+    // Link Twitter account to wallet
+    await linkTwitterToWallet(wallet_address, 
+      { id, username, name, profile_image_url }, 
+      access_token, 
+      refresh_token
+    );
+    
+    // Clear Twitter data from session
+    delete req.session.twitter_user;
+    
+    authLogger.info(`Twitter account linked successfully for ${wallet_address} \n\t`);
+    return res.json({ success: true, message: 'Twitter account linked successfully' });
+  } catch (error) {
+    authLogger.error(`Failed to link Twitter account \n\t`, {
+      error: error.message,
+      stack: error.stack,
+      wallet: req.user?.wallet_address
+    });
+    return res.status(500).json({ error: 'Failed to link Twitter account' });
+  }
+});
+
+/**
+ * Helper function to link Twitter account to wallet
+ */
+async function linkTwitterToWallet(walletAddress, twitterUser, accessToken, refreshToken) {
+  const now = new Date();
+  
+  // Check if this Twitter account is already linked to another wallet
+  const existingLink = await prisma.user_social_profiles.findFirst({
+    where: {
+      platform: 'twitter',
+      platform_user_id: twitterUser.id
+    }
+  });
+  
+  if (existingLink && existingLink.wallet_address !== walletAddress) {
+    authLogger.warn(`Twitter account already linked to different wallet \n\t`, {
+      twitterId: twitterUser.id,
+      existingWallet: existingLink.wallet_address,
+      requestedWallet: walletAddress
+    });
+    throw new Error('This Twitter account is already linked to another wallet');
+  }
+  
+  // Create or update social profile
+  await prisma.user_social_profiles.upsert({
+    where: {
+      wallet_address_platform: {
+        wallet_address: walletAddress,
+        platform: 'twitter'
+      }
+    },
+    create: {
+      wallet_address: walletAddress,
+      platform: 'twitter',
+      platform_user_id: twitterUser.id,
+      username: twitterUser.username,
+      verified: true,
+      verification_date: now,
+      last_verified: now,
+      metadata: {
+        name: twitterUser.name,
+        profile_image_url: twitterUser.profile_image_url,
+        access_token: accessToken,
+        refresh_token: refreshToken
+      },
+      created_at: now,
+      updated_at: now
+    },
+    update: {
+      username: twitterUser.username,
+      verified: true,
+      last_verified: now,
+      metadata: {
+        name: twitterUser.name,
+        profile_image_url: twitterUser.profile_image_url,
+        access_token: accessToken,
+        refresh_token: refreshToken
+      },
+      updated_at: now
+    }
+  });
+  
+  authLogger.info(`Twitter account linked to wallet ${walletAddress} \n\t`, {
+    twitterUsername: twitterUser.username
+  });
+}
 
 export default router;
 

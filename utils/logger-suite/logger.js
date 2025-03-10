@@ -676,3 +676,4 @@ logApi.analytics = {
 // Export both default and named
 export { ANALYTICS_PATTERNS, LOG_PATTERNS, logApi };
 export default logApi;
+
