@@ -24,6 +24,7 @@ import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transa
 import { getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
 import bs58 from 'bs58';
 import crypto from 'crypto';
+import { transferSOL, transferToken } from '../utils/solana-suite/web3-v2/solana-transaction-v2.js';
 
 const ADMIN_WALLET_CONFIG = {
     name: SERVICE_NAMES.ADMIN_WALLET,
@@ -430,16 +431,13 @@ class AdminWalletService extends BaseService {
             const privateKeyBytes = bs58.decode(decryptedPrivateKey);
             const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
             
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(toAddress),
-                    lamports: Math.floor(amount * LAMPORTS_PER_SOL),
-                })
+            // Use the new v2 transaction utility
+            const { signature } = await transferSOL(
+                this.connection,
+                fromKeypair,
+                toAddress,
+                amount
             );
-
-            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
-            await this.connection.confirmTransaction(signature);
 
             // Log the transaction
             await prisma.transactions.create({
@@ -482,17 +480,15 @@ class AdminWalletService extends BaseService {
                 new PublicKey(toAddress)
             );
 
-            const transaction = new Transaction().add(
-                createTransferInstruction(
-                    fromTokenAccount,
-                    toTokenAccount,
-                    fromKeypair.publicKey,
-                    amount
-                )
+            // Use the new v2 transaction utility
+            const { signature } = await transferToken(
+                this.connection,
+                fromKeypair,
+                fromTokenAccount,
+                toTokenAccount,
+                amount,
+                mint
             );
-
-            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
-            await this.connection.confirmTransaction(signature);
 
             // Log the transaction
             await prisma.transactions.create({

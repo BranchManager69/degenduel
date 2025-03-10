@@ -24,6 +24,7 @@ import bs58 from 'bs58';
 import crypto from 'crypto';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import { fa } from '@faker-js/faker';
+import { transferSOL } from '../utils/solana-suite/web3-v2/solana-transaction-v2.js';
 
 const CONTEST_WALLET_CONFIG = {
     name: SERVICE_NAMES.CONTEST_WALLET,
@@ -590,16 +591,13 @@ class ContestWalletService extends BaseService {
             const privateKeyBytes = bs58.decode(decryptedPrivateKey);
             const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
 
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(destinationAddress),
-                    lamports: Math.floor(amount * LAMPORTS_PER_SOL),
-                })
+            // Use the new v2 transaction utility
+            const { signature } = await transferSOL(
+                this.connection,
+                fromKeypair,
+                destinationAddress,
+                amount
             );
-
-            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
-            await this.connection.confirmTransaction(signature);
 
             return signature;
         } catch (error) {
