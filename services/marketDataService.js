@@ -162,46 +162,46 @@ class MarketDataService extends BaseService {
             this.requestCount = 0;
 
             // Check market database connection
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.BOLD} Connecting to market database... ${fancyColors.RESET}`);
+            logApi.info(`[marketDataService] Connecting to market database...`);
             try {
                 const tokenCount = await marketDb.tokens.count();
                 this.marketStats.data.tokens.total = tokenCount;
                 
                 if (tokenCount === 0) {
-                    logApi.warn(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED} Connected to market database, but no tokens found ${fancyColors.RESET}`);
+                    logApi.warn(`[marketDataService] Connected to market database, but no tokens found`);
                 } else {
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}${fancyColors.BG_PINK} Connected to market database, found ${tokenCount} tokens ${fancyColors.RESET}`);
+                    logApi.info(`[marketDataService] Connected to market database, found ${tokenCount} tokens`);
                 }
                 
                 // Preload tokens to cache
                 try {
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Preloading tokens to cache... ${fancyColors.RESET}`);
+                    logApi.info(`[marketDataService] Preloading tokens to cache...`);
                     await this.refreshTokensCache();
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Preloaded tokens to cache... ${fancyColors.RESET}`);
+                    logApi.info(`[marketDataService] Preloaded tokens to cache`);
                 } catch (error) {
-                    logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error preloading tokens to cache:${fancyColors.RESET}`, error);
+                    logApi.error(`[marketDataService] Error preloading tokens to cache:`, error);
                 }
                 
                 // Start cleanup interval
                 try {
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Starting cleanup interval... ${fancyColors.RESET}`);
+                    logApi.info(`[marketDataService] Starting cleanup interval...`);
                     this.startCleanupInterval();
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Cleanup interval started... ${fancyColors.RESET}`);
+                    logApi.info(`[marketDataService] Cleanup interval started`);
                 } catch (error) {
-                    logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error starting cleanup interval:${fancyColors.RESET}`, error);
+                    logApi.error(`[marketDataService] Error starting cleanup interval:`, error);
                 }
                 
                 // Start broadcast interval if needed
                 try {
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Starting broadcast interval... ${fancyColors.RESET}`);
+                    logApi.info(`[marketDataService] Starting broadcast interval...`);
                     this.startBroadcastInterval();
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Broadcast interval started... ${fancyColors.RESET}`);
+                    logApi.info(`[marketDataService] Broadcast interval started`);
                 } catch (error) {
-                    logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error starting broadcast interval:${fancyColors.RESET}`, error);
+                    logApi.error(`[marketDataService] Error starting broadcast interval:`, error);
                 }
                 
             } catch (dbError) {
-                logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD} Market Data Service ${fancyColors.RESET}${fancyColors.DARK_RED}${fancyColors.BOLD} failed to connect to market database: \n ${dbError.message}${fancyColors.RESET}`);
+                logApi.error(`[marketDataService] Market Data Service failed to connect to market database: ${dbError.message}`);
                 throw new Error(`Failed to connect to market database: ${dbError.message}`);
             }
 
@@ -211,12 +211,12 @@ class MarketDataService extends BaseService {
                 marketStats: this.marketStats
             };
 
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.GREEN}Market Data Service initialized${fancyColors.RESET}`);
+            logApi.info(`[marketDataService] Market Data Service initialized`);
 
             this.isInitialized = true;
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Market Data Service initialization error:${fancyColors.RESET}`, error);
+            logApi.error(`[marketDataService] Market Data Service initialization error:`, error);
             await this.handleError(error);
             throw error;
         }
@@ -232,13 +232,14 @@ class MarketDataService extends BaseService {
                 }
             });
 
-            // Log a single message about the token refresh operation
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}Refreshed token cache with ${tokens.length} tokens from market database${fancyColors.RESET}`);
+            // Log token refresh with comma-separated list of tokens
+            const tokenSymbols = tokens.map(t => t.symbol).join(', ');
+            logApi.info(`[marketDataService] Refreshed token cache with ${tokens.length} tokens: ${tokenSymbols}`);
             
             // Clear and rebuild tokensCache
             this.tokensCache.clear();
             
-            // Track any token errors in a list instead of logging each one
+            // Track any token errors in a list
             const errorTokens = [];
             
             // Set the tokens in the cache
@@ -247,13 +248,13 @@ class MarketDataService extends BaseService {
                     this.tokensCache.set(token.symbol, this.formatTokenData(token));
                 } catch (error) {
                     errorTokens.push(token.symbol);
-                    logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error storing token ${token.symbol} in cache: ${error.message}${fancyColors.RESET}`);
+                    logApi.error(`[marketDataService] Error storing token ${token.symbol} in cache: ${error.message}`);
                 }
             });
             
             // Only log errors if any occurred
             if (errorTokens.length > 0) {
-                logApi.warn(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to cache ${errorTokens.length} tokens: ${errorTokens.join(', ')}${fancyColors.RESET}`);
+                logApi.warn(`[marketDataService] Failed to cache ${errorTokens.length} tokens: ${errorTokens.join(', ')}`);
             }
             
             // Update service stats
@@ -499,14 +500,14 @@ class MarketDataService extends BaseService {
                     // Emit an event that WebSockets can listen for via serviceEvents
                     serviceEvents.emit('market:broadcast', broadcastData);
                     
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_GREEN} Broadcasting market data: ${broadcastData.data.length} tokens ${fancyColors.RESET}`);
+                    logApi.info(`[marketDataService] Broadcasting market data: ${broadcastData.data.length} tokens`);
                 }
             } catch (error) {
-                logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error in broadcast interval:${fancyColors.RESET}`, error);
+                logApi.error(`[marketDataService] Error in broadcast interval:`, error);
             }
         }, this.config.broadcast.intervalMs);
         
-        logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Started market data broadcast interval (${this.config.broadcast.intervalMs}ms)${fancyColors.RESET}`);
+        logApi.info(`[marketDataService] Started market data broadcast interval (${this.config.broadcast.intervalMs}ms)`);
     }
 
     // Cache management
@@ -551,7 +552,7 @@ class MarketDataService extends BaseService {
         if (cleaned > 0) {
             this.marketStats.cache.size = this.cache.size;
             this.marketStats.cache.lastCleanup = new Date().toISOString();
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.BG_PINK}${fancyColors.LIGHT_RED}${fancyColors.BOLD}Cleaned ${cleaned} expired entries from market data cache${fancyColors.RESET}`);
+            logApi.info(`[marketDataService] Cleaned ${cleaned} expired entries from market data cache`);
         }
     }
 
@@ -619,9 +620,9 @@ class MarketDataService extends BaseService {
                 }
             );
             
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Market Data Service stopped${fancyColors.RESET}`);
+            logApi.info(`[marketDataService] Market Data Service stopped`);
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error stopping Market Data Service:${fancyColors.RESET}`, error);
+            logApi.error(`[marketDataService] Error stopping Market Data Service:`, error);
             throw error;
         }
     }
