@@ -2491,7 +2491,7 @@ router.get('/participations/:wallet', async (req, res) => {
     if (cachedResult) {
       // Only log in verbose mode since these are common requests
       if (config.logging.verbose) {
-        logApi.info(`[routes/contests] User contest participations check (CACHE HIT)`, {
+        logApi.info(`[\x1b[38;5;51mroutes/contests\x1b[0m] 🔍 User contest participations check (\x1b[38;5;46mCACHE HIT\x1b[0m)`, {
           wallet_address,
           participationCount: cachedResult.participations.length
         });
@@ -2549,7 +2549,7 @@ router.get('/participations/:wallet', async (req, res) => {
     
     // Only log in verbose mode since these are common requests
     if (config.logging.verbose) {
-      logApi.info(`[routes/contests] User contest participations check (DB HIT)`, {
+      logApi.info(`[\x1b[38;5;51mroutes/contests\x1b[0m] 🔍 User contest participations check (\x1b[38;5;208mDB HIT\x1b[0m)`, {
         wallet_address,
         participationCount: participations.length
       });
@@ -2558,7 +2558,7 @@ router.get('/participations/:wallet', async (req, res) => {
     return res.json(responseData);
     
   } catch (error) {
-    logApi.error(`[routes/contests] Error fetching user contest participations`, {
+    logApi.error(`[\x1b[38;5;51mroutes/contests\x1b[0m] \x1b[38;5;196mError fetching user contest participations\x1b[0m`, {
       wallet_address,
       error: {
         name: error.name,
@@ -2639,7 +2639,7 @@ router.get('/:id/check-participation', async (req, res) => {
     if (cachedResult) {
       // Only log in verbose mode since these are common requests
       if (config.logging.verbose) {
-        logApi.info(`[routes/contests] Contest participation check (CACHE HIT)`, {
+        logApi.info(`[\x1b[38;5;51mroutes/contests\x1b[0m] 🔍 Contest participation check (\x1b[38;5;46mCACHE HIT\x1b[0m)`, {
           contestId,
           wallet_address,
           isParticipating: cachedResult.is_participating
@@ -2683,7 +2683,7 @@ router.get('/:id/check-participation', async (req, res) => {
     
     // Only log in verbose mode since these are common requests
     if (config.logging.verbose) {
-      logApi.info(`[routes/contests] Contest participation check (DB HIT)`, {
+      logApi.info(`[\x1b[38;5;51mroutes/contests\x1b[0m] 🔍 Contest participation check (\x1b[38;5;208mDB HIT\x1b[0m)`, {
         contestId,
         wallet_address,
         isParticipating: !!participant
@@ -2693,7 +2693,7 @@ router.get('/:id/check-participation', async (req, res) => {
     return res.json(responseData);
     
   } catch (error) {
-    logApi.error(`Error checking contest participation`, {
+    logApi.error(`[\x1b[38;5;51mroutes/contests\x1b[0m] \x1b[38;5;196mError checking contest participation\x1b[0m`, {
       contestId,
       wallet_address,
       error: {
