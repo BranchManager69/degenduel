@@ -1,15 +1,23 @@
 // /utils/solana-suite/solana-connection.js
 
+/**
+ * This is a new version of the solana-connection.js file
+ * About to test it now.
+ */
+
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { logApi } from '../logger-suite/logger.js';
-import { colors } from '../colors.js';
-import config from '../../config/config.js';
+import { colors } from '../../colors.js';
+import config from '../../../config/config.js';
+import { logApi } from '../../logger-suite/logger.js';
 
 // Get RPC URL from environment
 const RPC_URL = config.rpc_urls.primary;
 
-// Create connection
-const connection = new Connection(RPC_URL, 'confirmed');
+// Create connection with v2 configuration
+const connection = new Connection(RPC_URL, {
+  commitment: 'confirmed',
+  maxSupportedTransactionVersion: 0, // Support versioned transactions
+});
 
 // Verify a Solana transaction
 export const verifyTransaction = async (signature, { 
@@ -28,7 +36,8 @@ export const verifyTransaction = async (signature, {
     // Get transaction details
     logApi.debug(`📡 ${colors.yellow}Fetching transaction${colors.reset}`, { signature });
     const tx = await connection.getTransaction(signature, {
-      maxSupportedTransactionVersion: 0
+      maxSupportedTransactionVersion: 0,
+      commitment: 'confirmed'
     });
 
     if (!tx) {

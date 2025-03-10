@@ -1,3 +1,12 @@
+// websocket/v69/token-data-ws.js
+
+/**
+ * 
+ * This file is responsible for the token data WebSocket server.
+ * It is responsible for broadcasting token data to all connected clients.
+ * 
+ */
+
 /**
  * TokenDataWebSocket (v69)
  * 
@@ -14,6 +23,16 @@ import { fancyColors } from '../../utils/colors.js';
 import marketDataService from '../../services/marketDataService.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 
+// Config
+const WSS_PATH = `/api/v69/ws/token-data`;
+const WSS_REQUIRE_AUTH = false;
+const WSS_PUBLIC_ENDPOINTS = ['public.tokens', 'public.market'];
+const WSS_MAX_PAYLOAD = 5 * 1024 * 1024; // 5MB
+const WSS_PER_MESSAGE_DEFLATE = false;
+const WSS_RATE_LIMIT = 500;
+
+
+// TokenDataWebSocket (v69)
 class TokenDataWebSocket extends BaseWebSocketServer {
   /**
    * Create a new TokenDataWebSocket
@@ -21,12 +40,12 @@ class TokenDataWebSocket extends BaseWebSocketServer {
    */
   constructor(server) {
     super(server, {
-      path: '/api/v69/ws/token-data',
-      requireAuth: false, // Public data - no auth required
-      publicEndpoints: ['public.tokens', 'public.market'],
-      maxPayload: 5 * 1024 * 1024, // 5MB
-      perMessageDeflate: false, // Disable compression for token data
-      rateLimit: 500 // Higher limit for market data clients
+      path: WSS_PATH,
+      requireAuth: WSS_REQUIRE_AUTH,
+      publicEndpoints: WSS_PUBLIC_ENDPOINTS,
+      maxPayload: WSS_MAX_PAYLOAD,
+      perMessageDeflate: WSS_PER_MESSAGE_DEFLATE,
+      rateLimit: WSS_RATE_LIMIT
     });
 
     // Initialize token-specific state
@@ -51,7 +70,7 @@ class TokenDataWebSocket extends BaseWebSocketServer {
       serviceEvents.on('market:broadcast', this.marketDataListener);
 
       // Subscribe to public channels by default
-      this.publicChannels = ['public.tokens', 'public.market'];
+      this.publicChannels = WSS_PUBLIC_CHANNELS;
 
       logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 INIT ${fancyColors.RESET} ${fancyColors.CYAN}Token Data WebSocket initialized${fancyColors.RESET}`);
       return true;

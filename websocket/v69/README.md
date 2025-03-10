@@ -36,13 +36,13 @@ The central event bus `serviceEvents` enables communication between services and
 
 ## Available WebSockets
 
-| WebSocket                | Endpoint                  | Description                 | Authentication |
-|--------------------------|---------------------------|-----------------------------|----------------|
-| Monitor WebSocket        | `/api/v69/ws/monitor`     | System status and monitoring| Optional       |
-| Contest WebSocket        | `/api/v69/ws/contest`     | Contest data and chat rooms | Optional       |
-| Token Data WebSocket     | `/api/v69/ws/token-data`  | Market data and token prices| None           |
-| Circuit Breaker WebSocket| `/api/v69/ws/circuit-breaker` | Circuit breaker status  | Optional       |
-| User Notification WebSocket| `/api/v69/ws/notifications`| User-specific notifications| Required     |
+| WebSocket                  | Endpoint                      | Description                 | Authentication |
+|----------------------------|-------------------------------|-----------------------------|----------------|
+| Monitor WebSocket          | `/api/v69/ws/monitor`         | System status and monitoring| Optional       |
+| Contest WebSocket          | `/api/v69/ws/contest`         | Contest data and chat rooms | Optional       |
+| Token Data WebSocket       | `/api/v69/ws/token-data`      | Market data and token prices| None           |
+| Circuit Breaker WebSocket  | `/api/v69/ws/circuit-breaker` | Circuit breaker status      | Optional       |
+| User Notification WebSocket| `/api/v69/ws/notifications`   | User-specific notifications | Required       |
 
 ## Test Client
 
