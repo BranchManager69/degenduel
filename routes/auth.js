@@ -796,7 +796,8 @@ router.get('/twitter/login', async (req, res) => {
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', process.env.X_CLIENT_ID);
     authUrl.searchParams.append('redirect_uri', callbackUri);
-    authUrl.searchParams.append('scope', 'tweet.read users.read offline.access');
+    // Only request minimal profile read access
+    authUrl.searchParams.append('scope', 'users.read:user');
     authUrl.searchParams.append('state', state);
     authUrl.searchParams.append('code_challenge', codeChallenge);
     authUrl.searchParams.append('code_challenge_method', 'S256');
