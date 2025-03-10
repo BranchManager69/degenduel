@@ -2558,14 +2558,13 @@ router.get('/participations/:wallet', async (req, res) => {
     return res.json(responseData);
     
   } catch (error) {
-    logApi.error(`💥 ${fancyColors.RED}[routes/contests]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.BLACK}Error fetching user contest participations${fancyColors.RESET}\n`, {
-      requestId,
+    logApi.error(`[routes/contests] Error fetching user contest participations`, {
+      wallet_address,
       error: {
         name: error.name,
         message: error.message,
         stack: error.stack
-      },
-      duration: Date.now() - startTime
+      }
     });
     
     res.status(500).json({
@@ -2694,14 +2693,14 @@ router.get('/:id/check-participation', async (req, res) => {
     return res.json(responseData);
     
   } catch (error) {
-    logApi.error(`💥 ${colors.red}Error checking contest participation${colors.reset}\n`, {
-      requestId,
+    logApi.error(`Error checking contest participation`, {
+      contestId,
+      wallet_address,
       error: {
         name: error.name,
         message: error.message,
         stack: error.stack
-      },
-      duration: Date.now() - startTime
+      }
     });
     
     res.status(500).json({

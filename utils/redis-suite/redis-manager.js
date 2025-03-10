@@ -24,21 +24,21 @@ class RedisManager {
 
             this.client.on('connect', () => {
                 this.isConnected = true;
-                logApi.info(`${fancyColors.ORANGE}[Redis]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN}${fancyColors.BOLD} Connected successfully ${fancyColors.RESET}`);
+                logApi.info(`[Redis] Connected successfully`);
             });
 
             this.client.on('error', (err) => {
                 this.isConnected = false;
-                logApi.error(`${fancyColors.ORANGE}[Redis]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD} Error:${fancyColors.RESET} \n\t\t${fancyColors.BG_DARK_RED}${fancyColors.BOLD}${err.message} ${fancyColors.RESET}`);
+                logApi.error(`[Redis] Error: ${err.message}`);
             });
 
             this.client.on('close', () => {
                 this.isConnected = false;
-                logApi.warn(`${fancyColors.ORANGE}[Redis]${fancyColors.RESET} ${fancyColors.BG_DARK_GRAY}${fancyColors.BOLD} Connection closed ${fancyColors.RESET}`);
+                logApi.warn(`[Redis] Connection closed`);
             });
 
         } catch (error) {
-            logApi.error(`${fancyColors.ORANGE}[Redis]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD} Failed to initialize client:${fancyColors.RESET} \n\t\t${fancyColors.BG_DARK_RED}${fancyColors.BOLD}${error.message} ${fancyColors.RESET}`);
+            logApi.error(`[Redis] Failed to initialize client: ${error.message}`);
             throw error;
         }
     }
@@ -51,7 +51,7 @@ class RedisManager {
             const data = await this.client.get(key);
             return data ? JSON.parse(data) : null;
         } catch (error) {
-            logApi.error(`${fancyColors.ORANGE}[Redis]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD} Error getting key ${key}:${fancyColors.RESET} \n\t\t${fancyColors.BG_DARK_RED}${fancyColors.BOLD}${error.message} ${fancyColors.RESET}`);
+            logApi.error(`[Redis] Error getting key ${key}: ${error.message}`);
             return null;
         }
     }
@@ -64,7 +64,7 @@ class RedisManager {
             await this.client.setex(key, ttlSeconds, JSON.stringify(value));
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.ORANGE}[Redis]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD} Error setting key ${key}:${fancyColors.RESET} \n\t\t${fancyColors.BG_DARK_RED}${fancyColors.BOLD}${error.message} ${fancyColors.RESET}`);
+            logApi.error(`[Redis] Error setting key ${key}: ${error.message}`);
             return false;
         }
     }
@@ -76,7 +76,7 @@ class RedisManager {
             }
             return await this.client.ttl(key);
         } catch (error) {
-            logApi.error(`${fancyColors.ORANGE}[Redis]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD} Error getting TTL for key ${key}:${fancyColors.RESET} \n\t\t${fancyColors.BG_DARK_RED}${fancyColors.BOLD}${error.message} ${fancyColors.RESET}`);
+            logApi.error(`[Redis] Error getting TTL for key ${key}: ${error.message}`);
             return -2;
         }
     }
