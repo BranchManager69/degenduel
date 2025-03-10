@@ -59,9 +59,10 @@ dist/
 build/
 *.tsbuildinfo
 
-# Generated documentation
+# Generated or sensitive documentation
 docs/
 docs_important/
+docs_critical/
 
 # Temporary editor/project files
 .vscode/
