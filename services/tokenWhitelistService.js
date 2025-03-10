@@ -22,7 +22,8 @@ import { fancyColors } from '../utils/colors.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { verifyTransaction } from '../utils/solana-suite/web3-v2/solana-connection-v2.js';
 import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { publicKey } from "@metaplex-foundation/umi";
@@ -67,9 +68,7 @@ class TokenWhitelistService extends BaseService {
         ////super(TOKEN_WHITELIST_CONFIG.name, TOKEN_WHITELIST_CONFIG);
         super(TOKEN_WHITELIST_CONFIG);
         
-        // Initialize Solana connection
-        // TODO: shouldnt we already have a connection in the solanaService by this point?
-        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        // Use the connection from solana-connection-v2.js instead of creating our own
         this.treasuryWallet = new PublicKey(config.degenduel_treasury_wallet);
         this.umi = createUmi(config.rpc_urls.primary).use(mplTokenMetadata());
 
@@ -302,67 +301,53 @@ class TokenWhitelistService extends BaseService {
     // Verify payment
     async verifyPayment(signature, walletAddress, user) {
         try {
-            // Get the transaction
-            const tx = await this.connection.getTransaction(signature, {
-                commitment: 'confirmed'
-            });
-
-            // Transaction not found
-            if (!tx) {
-                throw ServiceError.validation('Transaction not found');
-            }
-
             // Calculate required amount based on user role and level
             const requiredAmount = await this.calculateSubmissionCost(user);
-
-            // Verify payment amount and recipient
-            const transfer = tx.transaction.message.instructions.find(ix => 
-                ix.program === 'system' && 
-                ix.parsed.type === 'transfer'
-            );
-
-            // No transfer instruction found
-            if (!transfer) {
-                throw ServiceError.validation('No transfer instruction found');
+            
+            // Use the verifyTransaction function from solana-connection-v2
+            const verificationResult = await verifyTransaction(signature, {
+                expectedAmount: requiredAmount / LAMPORTS_PER_SOL, // Convert lamports to SOL
+                expectedSender: walletAddress,
+                expectedReceiver: this.treasuryWallet.toString()
+            });
+            
+            // If verification failed, throw an error
+            if (!verificationResult.verified) {
+                throw ServiceError.validation(verificationResult.error || 'Transaction verification failed');
             }
-
-            // Invalid payment recipient
-            if (transfer.parsed.info.destination !== this.treasuryWallet.toString()) {
-                throw ServiceError.validation('Invalid payment recipient');
-            }
-
-            // Insufficient payment amount
-            if (transfer.parsed.info.lamports < requiredAmount) {
-                const required = requiredAmount / LAMPORTS_PER_SOL;
-                const provided = transfer.parsed.info.lamports / LAMPORTS_PER_SOL;
-                throw ServiceError.validation(`Insufficient payment amount. Required: ${required} SOL, Provided: ${provided} SOL`);
-            }
-
+            
+            // Calculate amount in lamports for the database entry
+            const amountInLamports = Math.round(verificationResult.amount * LAMPORTS_PER_SOL);
+            
             // Log the transaction
             await prisma.transactions.create({
                 data: {
                     wallet_address: walletAddress,
                     type: 'DEPOSIT',
-                    amount: new Decimal(transfer.parsed.info.lamports.toString()),
-                    balance_before: new Decimal(0), // We don't track SOL balance yet 
-                    balance_after: new Decimal(0),  // We don't track SOL balance yet 
+                    amount: new Decimal(amountInLamports.toString()),
+                    balance_before: new Decimal(verificationResult.receiverBalanceBefore || '0'), 
+                    balance_after: new Decimal(verificationResult.receiverBalanceAfter || '0'),
                     description: 'Token whitelist submission fee',
                     status: 'completed',
                     metadata: {
                         signature,
                         token_submission: true,
-                        lamports: transfer.parsed.info.lamports,
+                        lamports: amountInLamports,
                         treasury_wallet: this.treasuryWallet.toString(),
                         user_level_discount: await this.getUserLevelDiscount(user.id),
                         required_amount: requiredAmount,
-                        user_role: user.role
+                        user_role: user.role,
+                        verification_details: {
+                            slot: verificationResult.slot,
+                            isFirstTransaction: verificationResult.isFirstTransaction
+                        }
                     },
                     processed_at: new Date()
                 }
             });
 
             // Update submission stats
-            this.whitelistStats.submissions.fees_collected += transfer.parsed.info.lamports / LAMPORTS_PER_SOL;
+            this.whitelistStats.submissions.fees_collected += amountInLamports / LAMPORTS_PER_SOL;
 
             // Return true if payment is verified
             return true;

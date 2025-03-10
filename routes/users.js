@@ -683,7 +683,15 @@ router.get('/:wallet', async (req, res) => {
       hasContests: user.contest_participants.length > 0
     });
 
-    res.json(user);
+    // Before sending the response, convert any BigInt values to strings
+    const serializeBigInt = (data) => {
+      return JSON.parse(JSON.stringify(data, (key, value) => 
+        typeof value === 'bigint' ? value.toString() : value
+      ));
+    };
+    
+    // Then use the serialized data in response
+    res.json(serializeBigInt(user));
   } catch (error) {
     const status = error.status || 500;
     const message = error.message || 'Internal server error';

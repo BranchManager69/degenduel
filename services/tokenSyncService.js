@@ -453,7 +453,7 @@ class TokenSyncService extends BaseService {
         });
         
         if (existingTokens.length > 0) {
-            logApi.info(`${fancyColors.BG_DEBUG_GAME_DATABASE}${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.ORANGE}Using the existing ${fancyColors.BOLD_YELLOW}${fancyColors.UNDERLINE}${existingTokens.length}${fancyColors.RESET}$ ${fancyColors.ORANGE}tokens from database as fallback ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BG_DEBUG_GAME_DATABASE}${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.ORANGE}Using the existing ${fancyColors.BOLD_YELLOW}${fancyColors.UNDERLINE}${existingTokens.length}${fancyColors.RESET}${fancyColors.BOLD_YELLOW} ${fancyColors.ORANGE}tokens from database as fallback ${fancyColors.RESET}`);
             
             // Transform to expected format
             return existingTokens.map(token => ({

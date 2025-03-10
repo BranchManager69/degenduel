@@ -181,16 +181,18 @@ class ContestWalletService extends BaseService {
                     where: { wallet_address: publicKey }
                 });
                 
+                // If the wallet is not in the database, decrypt the private key and return it
                 if (!existing) {
                     // Found an unassociated wallet
                     const keypairPath = `${dirPath}/${file}`;
                     const privateKeyPath = `/home/websites/degenduel/addresses/pkeys/public/${folderName}/${publicKey}.key`;
                     
-                    // Read private key
+                    // Read unencrypted private key
                     const privateKey = await fs.readFile(privateKeyPath, 'utf8');
                     
                     logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Found unassociated vanity wallet:${fancyColors.RESET} ${publicKey}`);
                     
+                    // Return the unassociated wallet without encrypting the private key
                     return { 
                         publicKey, 
                         privateKey: privateKey.trim(),
@@ -200,7 +202,9 @@ class ContestWalletService extends BaseService {
                 }
             }
             
-            return null; // No unassociated wallets found
+            // No unassociated wallets found
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}No unassociated wallets found in folder ${folderName}${fancyColors.RESET}`);
+            return null;
         } catch (error) {
             logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to check folder ${folderName}:${fancyColors.RESET}`, {
                 error: error.message
@@ -409,6 +413,7 @@ class ContestWalletService extends BaseService {
                 }
             });
             
+            // Track results
             const results = {
                 total: contestWallets.length,
                 updated: 0,
@@ -421,6 +426,7 @@ class ContestWalletService extends BaseService {
             contestWallets.sort((a, b) => a.contests?.id - b.contests?.id);
             
             // Update each wallet's balance
+            // TODO: Bulk update all wallets' balances
             for (const wallet of contestWallets) {
                 try {
                     // Track active contests
@@ -469,7 +475,7 @@ class ContestWalletService extends BaseService {
             // Update overall performance stats
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
             
-            // Log completion summary
+            // Log completion
             logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET}     ${fancyColors.GALAXY} Contest wallet balance refresh cycle completed  ${fancyColors.RESET}`, {
             //    duration_ms: Date.now() - startTime,
             //    total_wallets: results.total,
@@ -484,6 +490,7 @@ class ContestWalletService extends BaseService {
                 ...results
             };
         } catch (error) {
+            // Let the base class handle the error and circuit breaker
             logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to update wallet balances${fancyColors.RESET}`, {
                 error: error.message,
                 stack: error.stack
@@ -534,6 +541,7 @@ class ContestWalletService extends BaseService {
             }
             
             // Update all wallet balances
+            // TODO: Bulk update all wallets' balances
             const balanceUpdateResults = await this.updateAllWalletBalances();
             
             return {

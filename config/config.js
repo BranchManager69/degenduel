@@ -80,7 +80,16 @@ const config = {
   token_submission_cost: process.env.TOKEN_SUBMISSION_COST,
   token_submission_discount_percentage_per_level: process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,
   getEnvironment: (origin) => {
-    if (!origin) return 'production'; // direct API calls default to prod // TODO: what???
+    // First check if we're explicitly in development mode based on NODE_ENV
+    if (process.env.NODE_ENV === 'development') {
+      return 'development';
+    }
+    
+    // Otherwise check origin, but still respect NODE_ENV if it exists
+    if (!origin) {
+      return process.env.NODE_ENV || 'production'; // Default to production if NODE_ENV not set
+    }
+    
     return origin.includes('localhost') || origin.includes('127.0.0.1') ? 'development' : 'production';
   },
   // Device authentication settings

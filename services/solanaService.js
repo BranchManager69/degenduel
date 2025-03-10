@@ -56,13 +56,14 @@ class SolanaService extends BaseService {
             // Validate Solana configuration
             validateSolanaConfig();
             
-            // Create Solana connection
+            // Create Solana connection with web3.js v2 compatible configuration
             this.connection = new Connection(
                 process.env.QUICKNODE_MAINNET_HTTP,
                 {
                     commitment: 'confirmed',
                     confirmTransactionInitialTimeout: 120000,
-                    wsEndpoint: process.env.QUICKNODE_MAINNET_WSS
+                    wsEndpoint: process.env.QUICKNODE_MAINNET_WSS,
+                    maxSupportedTransactionVersion: 0 // Support versioned transactions
                 }
             );
             
@@ -85,16 +86,27 @@ class SolanaService extends BaseService {
      */
     async performOperation() {
         try {
-            // Test Solana connection
-            const result = await this.connection.getVersion();
+            // Test Solana connection with v2.x compatible approach
+            // Try to get slot first as a basic health check
+            const slot = await this.connection.getSlot();
+            
+            // Try to get version info if available
+            let versionInfo = { solana: 'Unknown', feature_set: 0 };
+            try {
+                const result = await this.connection.getVersion();
+                versionInfo = result;
+            } catch (versionError) {
+                logApi.warn(`Failed to get version info, but connection is working: ${versionError.message}`);
+            }
             
             // Record successful operation
             await this.recordSuccess();
             
             return {
                 status: 'healthy',
-                version: result.solana ? `Solana Core ${result.solana}` : 'Unknown',
-                feature_set: result.feature_set || 0
+                slot,
+                version: versionInfo.solana ? `Solana Core ${versionInfo.solana}` : 'Unknown',
+                feature_set: versionInfo.feature_set || 0
             };
         } catch (error) {
             // If connection is lost, attempt to reconnect
