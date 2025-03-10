@@ -889,6 +889,48 @@ async function loginWithTwitter(twitterId, twitterUser) {
       });
     }
     
+    // Check if we should update the user's profile image
+    try {
+      // Get the current user profile details
+      const userProfile = await prisma.users.findUnique({
+        where: { wallet_address: socialProfile.wallet_address },
+        select: { profile_image_url: true }
+      });
+      
+      // Check if profile image is Twitter-sourced by URL pattern
+      const isTwitterProfileImage = userProfile.profile_image_url && 
+        userProfile.profile_image_url.includes('pbs.twimg.com/profile_images');
+      
+      // If user has no profile image or has a Twitter profile image that may be outdated
+      if (!userProfile.profile_image_url || isTwitterProfileImage) {
+        // Get full size image by removing "_normal" suffix
+        const fullSizeImageUrl = twitterUser.profile_image_url.replace('_normal', '');
+        
+        // Update profile image if it's different from current one
+        if (fullSizeImageUrl !== userProfile.profile_image_url) {
+          await prisma.users.update({
+            where: { wallet_address: socialProfile.wallet_address },
+            data: {
+              profile_image_url: fullSizeImageUrl,
+              profile_image_updated_at: new Date()
+            }
+          });
+          
+          authLogger.info(`Updated Twitter profile image on login \n\t`, {
+            wallet: socialProfile.wallet_address,
+            oldImage: userProfile.profile_image_url || 'none',
+            newImage: fullSizeImageUrl
+          });
+        }
+      }
+    } catch (imageError) {
+      authLogger.warn(`Failed to sync Twitter profile image on login \n\t`, {
+        wallet: socialProfile.wallet_address,
+        error: imageError.message
+      });
+      // Continue with login despite image sync error
+    }
+    
     authLogger.info(`Twitter login successful for ${user.wallet_address} \n\t`, {
       twitterUsername: twitterUser.username,
       wallet: user.wallet_address
