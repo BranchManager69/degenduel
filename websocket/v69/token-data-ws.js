@@ -24,12 +24,15 @@ import marketDataService from '../../services/marketDataService.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 
 // Config
-const WSS_PATH = `/api/v69/ws/token-data`;
-const WSS_REQUIRE_AUTH = false;
-const WSS_PUBLIC_ENDPOINTS = ['public.tokens', 'public.market'];
+const WSS_PATH = `/api/v69/ws/token-data`; // path to the WebSocket token data server // TODO: VERIFY THIS!
+const WSS_REQUIRE_AUTH = false; // whether the WebSocket server requires authentication
+const WSS_PUBLIC_ENDPOINTS = ['public.tokens', 'public.market']; // public endpoints to subscribe to by default
 const WSS_MAX_PAYLOAD = 5 * 1024 * 1024; // 5MB
-const WSS_PER_MESSAGE_DEFLATE = false;
-const WSS_RATE_LIMIT = 500;
+const WSS_PER_MESSAGE_DEFLATE = false; // whether to use per-message deflate
+const WSS_RATE_LIMIT = 500; // rate limit for the WebSocket server
+
+// Public channels to subscribe to by default
+const WSS_PUBLIC_CHANNELS = WSS_PUBLIC_ENDPOINTS; // kind of confusing, but it's the correct term
 
 
 // TokenDataWebSocket (v69)
