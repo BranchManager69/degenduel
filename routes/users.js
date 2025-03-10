@@ -1865,4 +1865,177 @@ router.delete('/:wallet/profile-image', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/{wallet}/social-profiles:
+ *   get:
+ *     summary: Get user's social profiles
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: wallet
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User social profiles
+ *       401:
+ *         description: Not authorized
+ *       404:
+ *         description: User not found
+ */
+router.get('/:wallet/social-profiles', requireAuth, async (req, res) => {
+  const logContext = {
+    path: 'GET /api/users/:wallet/social-profiles',
+    wallet: req.params.wallet
+  };
+
+  try {
+    // Users can only view their own social profiles
+    if (req.user.wallet_address !== req.params.wallet && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      logApi.warn('Unauthorized access attempt to social profiles', {
+        ...logContext,
+        requestedWallet: req.params.wallet,
+        userWallet: req.user.wallet_address
+      });
+      return res.status(401).json({ error: 'Not authorized to view these social profiles' });
+    }
+
+    // Check if user exists
+    const user = await prisma.users.findUnique({
+      where: { wallet_address: req.params.wallet }
+    });
+
+    if (!user) {
+      logApi.info('User not found', logContext);
+      throw { status: 404, message: 'User not found' };
+    }
+
+    // Fetch social profiles
+    const socialProfiles = await prisma.user_social_profiles.findMany({
+      where: { wallet_address: req.params.wallet },
+      select: {
+        platform: true,
+        platform_user_id: true,
+        username: true,
+        verified: true,
+        verification_date: true,
+        last_verified: true,
+        created_at: true,
+        updated_at: true,
+        // Don't include sensitive data like tokens
+        metadata: {
+          select: {
+            name: true,
+            profile_image_url: true
+          }
+        }
+      }
+    });
+
+    logApi.info('Successfully fetched social profiles', {
+      ...logContext,
+      profileCount: socialProfiles.length
+    });
+
+    res.json(socialProfiles);
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    
+    logApi.error('Error fetching social profiles', {
+      ...logContext,
+      error: error instanceof Error ? error.message : error
+    });
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/{wallet}/social-profiles/{platform}:
+ *   delete:
+ *     summary: Remove a linked social profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: wallet
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: platform
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Social profile unlinked
+ *       401:
+ *         description: Not authorized
+ *       404:
+ *         description: Profile not found
+ */
+router.delete('/:wallet/social-profiles/:platform', requireAuth, async (req, res) => {
+  const logContext = {
+    path: 'DELETE /api/users/:wallet/social-profiles/:platform',
+    wallet: req.params.wallet,
+    platform: req.params.platform
+  };
+
+  try {
+    // Users can only unlink their own social profiles
+    if (req.user.wallet_address !== req.params.wallet && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      logApi.warn('Unauthorized unlink attempt for social profile', {
+        ...logContext,
+        requestedWallet: req.params.wallet,
+        userWallet: req.user.wallet_address
+      });
+      return res.status(401).json({ error: 'Not authorized to unlink this social profile' });
+    }
+
+    // Check if the profile exists
+    const existingProfile = await prisma.user_social_profiles.findUnique({
+      where: {
+        wallet_address_platform: {
+          wallet_address: req.params.wallet,
+          platform: req.params.platform
+        }
+      }
+    });
+
+    if (!existingProfile) {
+      logApi.info('Social profile not found', logContext);
+      return res.status(404).json({ error: 'Social profile not found' });
+    }
+
+    // Delete the profile
+    await prisma.user_social_profiles.delete({
+      where: {
+        wallet_address_platform: {
+          wallet_address: req.params.wallet,
+          platform: req.params.platform
+        }
+      }
+    });
+
+    logApi.info('Social profile unlinked successfully', logContext);
+    res.json({ success: true, message: `${req.params.platform} profile unlinked successfully` });
+  } catch (error) {
+    logApi.error('Error unlinking social profile', {
+      ...logContext,
+      error: error instanceof Error ? error.message : error
+    });
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

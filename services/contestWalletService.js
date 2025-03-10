@@ -24,7 +24,7 @@ import bs58 from 'bs58';
 import crypto from 'crypto';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import { fa } from '@faker-js/faker';
-import { transferSOL } from '../utils/solana-suite/web3-v2/solana-transaction-v2.js';
+import { transferSOL } from '../utils/solana-suite/web3-v2/solana-transaction-fixed.js';
 
 const CONTEST_WALLET_CONFIG = {
     name: SERVICE_NAMES.CONTEST_WALLET,

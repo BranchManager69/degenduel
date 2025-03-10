@@ -24,7 +24,7 @@ import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transa
 import { getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
 import bs58 from 'bs58';
 import crypto from 'crypto';
-import { transferSOL, transferToken } from '../utils/solana-suite/web3-v2/solana-transaction-v2.js';
+import { transferSOL, transferToken } from '../utils/solana-suite/web3-v2/solana-transaction-fixed.js';
 
 const ADMIN_WALLET_CONFIG = {
     name: SERVICE_NAMES.ADMIN_WALLET,
