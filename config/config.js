@@ -76,6 +76,10 @@ const config = {
     api: process.env.DD_API_DEBUG_MODE || 'false',
     middleware: process.env.DD_API_DEBUG_MODE || 'false',
   },
+  logging: {
+    verbose: process.env.VERBOSE_LOGGING === 'true' || false,
+    request_logging: process.env.REQUEST_LOGGING === 'true' || true,
+  },
   degenduel_treasury_wallet: process.env.TREASURY_WALLET_ADDRESS,
   token_submission_cost: process.env.TOKEN_SUBMISSION_COST,
   token_submission_discount_percentage_per_level: process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,

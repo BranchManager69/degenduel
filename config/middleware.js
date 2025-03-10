@@ -8,8 +8,11 @@ import helmet from 'helmet';
 import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
 import { restrictDevAccess } from '../middleware/devAccessMiddleware.js';
 
-// Log every request
-const LOG_EVERY_REQUEST = true;
+// Load from config
+const LOG_EVERY_REQUEST = config.logging.request_logging !== false;
+
+// Whether to use verbose logging
+const VERBOSE_LOGGING = config.logging.verbose === true;
 
 // Middleware debug mode
 const MIDDLEWARE_DEBUG_MODE = false;
@@ -226,8 +229,17 @@ export function configureMiddleware(app) {
   // Logs from middleware
   if (config.debug_mode === 'true' || LOG_EVERY_REQUEST) {
     app.use((req, res, next) => {
-      if (LOG_EVERY_REQUEST) {
-        logApi.info(`${req.method} ${req.url} \n\t`, {
+      // Skip request logging if not in verbose mode and the request is for certain routes
+      const isRequestLoggingRoute = req.url.startsWith('/api/status') || 
+                                  req.url.startsWith('/api/admin/maintenance') ||
+                                  req.url.startsWith('/api/auth/token') ||
+                                  req.url.includes('check-participation') ||
+                                  req.url.includes('_t='); // Common parameter for cache busting
+                                  
+      const shouldLog = LOG_EVERY_REQUEST && (VERBOSE_LOGGING || !isRequestLoggingRoute);
+      
+      if (shouldLog) {
+        logApi.info(`${req.method} ${req.url}`, {
           environment: req.environment,
           origin: req.headers.origin,
           ip: req.ip,

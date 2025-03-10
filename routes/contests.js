@@ -2489,13 +2489,13 @@ router.get('/participations/:wallet', async (req, res) => {
     const cachedResult = await cache.get(cacheKey);
     
     if (cachedResult) {
-      logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.BOLD}${fancyColors.BLACK}User contest participations check ${fancyColors.RESET}${fancyColors.GREEN}(CACHE HIT)${fancyColors.RESET}`, {
-      //  requestId,
-      //  wallet_address,
-      //  participationCount: cachedResult.participations.length,
-      //  duration: Date.now() - startTime,
-      //  fromCache: true
-      });
+      // Only log in verbose mode since these are common requests
+      if (config.logging.verbose) {
+        logApi.info(`[routes/contests] User contest participations check (CACHE HIT)`, {
+          wallet_address,
+          participationCount: cachedResult.participations.length
+        });
+      }
       
       return res.json(cachedResult);
     }
@@ -2547,12 +2547,13 @@ router.get('/participations/:wallet', async (req, res) => {
     // Cache the result for 5 minutes (300 seconds)
     await cache.set(cacheKey, responseData, 300);
     
-    logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.BOLD}${fancyColors.BLACK}User contest participations check ${fancyColors.RESET}${fancyColors.ORANGE}(DB HIT)${fancyColors.RESET}`, {
-    //  requestId,
-    //  wallet_address,
-    //  participationCount: participations.length,
-    //  duration: Date.now() - startTime
-    });
+    // Only log in verbose mode since these are common requests
+    if (config.logging.verbose) {
+      logApi.info(`[routes/contests] User contest participations check (DB HIT)`, {
+        wallet_address,
+        participationCount: participations.length
+      });
+    }
     
     return res.json(responseData);
     
@@ -2637,14 +2638,14 @@ router.get('/:id/check-participation', async (req, res) => {
     const cachedResult = await cache.get(cacheKey);
     
     if (cachedResult) {
-      logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.BLACK}Contest participation check ${fancyColors.GREEN}(CACHE HIT)${fancyColors.RESET}`, {
-      //  requestId,
-      //  contestId,
-      //  wallet_address,
-      //  isParticipating: cachedResult.is_participating,
-      //  duration: Date.now() - startTime,
-      //  fromCache: true
-      });
+      // Only log in verbose mode since these are common requests
+      if (config.logging.verbose) {
+        logApi.info(`[routes/contests] Contest participation check (CACHE HIT)`, {
+          contestId,
+          wallet_address,
+          isParticipating: cachedResult.is_participating
+        });
+      }
       
       return res.json(cachedResult);
     }
@@ -2681,13 +2682,14 @@ router.get('/:id/check-participation', async (req, res) => {
     const cacheDuration = 5 * 60; // 5 minutes in seconds
     await cache.set(cacheKey, responseData, cacheDuration);
     
-    logApi.info(`${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} 🔍 ${fancyColors.BLACK}Contest participation check ${fancyColors.ORANGE}(DB HIT)${fancyColors.RESET}`, {
-      //  requestId,
-      //  contestId,
-      //  wallet_address,
-      //  isParticipating: !!participant,
-      //  duration: Date.now() - startTime
-    });
+    // Only log in verbose mode since these are common requests
+    if (config.logging.verbose) {
+      logApi.info(`[routes/contests] Contest participation check (DB HIT)`, {
+        contestId,
+        wallet_address,
+        isParticipating: !!participant
+      });
+    }
     
     return res.json(responseData);
     
