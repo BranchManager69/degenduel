@@ -1171,6 +1171,42 @@ async function linkTwitterToWallet(walletAddress, twitterUser, accessToken, refr
     }
   });
   
+  // If the Twitter profile has an image, update user's profile image if not already set
+  try {
+    if (twitterUser.profile_image_url) {
+      // Get the user to check if they already have a profile image
+      const user = await prisma.users.findUnique({
+        where: { wallet_address: walletAddress },
+        select: { profile_image_url: true }
+      });
+      
+      // If user has no profile image, use the Twitter profile image
+      // The Twitter API provides a "_normal" size by default, remove this to get full size
+      if (!user.profile_image_url) {
+        const fullSizeImageUrl = twitterUser.profile_image_url.replace('_normal', '');
+        
+        await prisma.users.update({
+          where: { wallet_address: walletAddress },
+          data: {
+            profile_image_url: fullSizeImageUrl,
+            profile_image_updated_at: now
+          }
+        });
+        
+        authLogger.info(`Updated user profile image from Twitter \n\t`, {
+          wallet: walletAddress,
+          imageUrl: fullSizeImageUrl
+        });
+      }
+    }
+  } catch (imageError) {
+    // Log warning but don't prevent the linking if image update fails
+    authLogger.warn(`Failed to update profile image from Twitter, but account linking succeeded \n\t`, {
+      wallet: walletAddress,
+      error: imageError.message
+    });
+  }
+  
   authLogger.info(`Twitter account linked to wallet ${walletAddress} \n\t`, {
     twitterUsername: twitterUser.username
   });

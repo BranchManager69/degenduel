@@ -300,6 +300,7 @@ model user_social_profiles {
   metadata          Json?     @default("{}")
   created_at        DateTime? @default(now()) @db.Timestamptz(6)
   updated_at        DateTime? @default(now()) @db.Timestamptz(6)
+  user              users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([wallet_address, platform])
   @@unique([platform, platform_user_id], map: "unique_platform_user")
@@ -368,6 +369,7 @@ model users {
   referral_rewards          referral_rewards[]
   referred_by               referrals[]                 @relation("ReferredByRelation")
   referrals_made            referrals[]                 @relation("ReferralsMadeRelation")
+  social_profiles           user_social_profiles[]
   transactions              transactions[]
   user_achievements         user_achievements[]
   user_stats                user_stats?
