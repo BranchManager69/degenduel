@@ -1,0 +1,19 @@
+  To summarize what we did:
+
+  1. Updated the solana-transaction-v2.js file to correctly use the @solana/kit v2.1.0 APIs:
+    - Changed imports to use factory functions (sendAndConfirmTransactionFactory and
+  getComputeUnitEstimateForTransactionMessageFactory)
+    - Updated code to properly configure and use these factory functions with the connection object
+    - Extracted signatures directly from the transaction object
+    - Made sure to convert binary signatures to strings where needed
+  2. Updated the CLAUDE.md file with the new preferred non-blocking restart/start/stop methods, emphasizing:
+    - Adding & at the end of commands to make them non-blocking
+    - Using the newer npm run pm2:restart and related commands
+    - Highlighting the importance of non-blocking operations for log checking
+
+  These changes have successfully:
+  1. Fixed the compatibility issues with web3.js v2.x and @solana/kit v2.1.0
+  2. Improved the documentation for managing services
+  3. Made the system more robust with non-blocking service management
+
+  The updated transaction utility should now work correctly with the newer versions of the Solana libraries.

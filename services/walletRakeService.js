@@ -224,17 +224,17 @@ class WalletRakeService extends BaseService {
                 });
             }
 
-            // Create and send transaction
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(this.config.wallet.master_wallet),
-                    lamports: amount,
-                })
+            // Import the transferSOL function dynamically to avoid circular dependencies
+            const { transferSOL } = await import('../utils/solana-suite/web3-v2/solana-transaction-v2.js');
+            
+            // Use the new v2 transaction utility with amount in SOL
+            const amountInSOL = amount / LAMPORTS_PER_SOL;
+            const { signature } = await transferSOL(
+                this.connection,
+                fromKeypair,
+                this.config.wallet.master_wallet,
+                amountInSOL
             );
-
-            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
-            await this.connection.confirmTransaction(signature);
 
             // Get contest details for logging
             const contest = await prisma.contests.findUnique({

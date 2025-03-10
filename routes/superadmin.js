@@ -1398,16 +1398,16 @@ router.post('/liquidity/recover-nuclear', requireAuth, requireSuperAdmin, async 
 
                 const recoveryAmountSOL = recoveryAmount / LAMPORTS_PER_SOL;
 
-                const transaction = new Transaction().add(
-                    SystemProgram.transfer({
-                        fromPubkey: userKeypair.publicKey,
-                        toPubkey: new PublicKey(liquidityWallet.publicKey),
-                        lamports: recoveryAmount
-                    })
+                // Import the transferSOL function dynamically to avoid circular dependencies
+                const { transferSOL } = await import('../utils/solana-suite/web3-v2/solana-transaction-v2.js');
+                
+                // Use the new v2 transaction utility with recoveryAmount in lamports
+                const { signature } = await transferSOL(
+                    connection,
+                    userKeypair,
+                    liquidityWallet.publicKey,
+                    recoveryAmountSOL
                 );
-
-                const signature = await connection.sendTransaction(transaction, [userKeypair]);
-                await connection.confirmTransaction(signature);
 
                 totalRecovered += recoveryAmountSOL;
                 console.log(`Recovered ${recoveryAmountSOL} SOL from ${user.wallet_address}`);
