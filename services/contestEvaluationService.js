@@ -306,16 +306,16 @@ class ContestEvaluationService extends BaseService {
             const privateKeyBytes = bs58.decode(decryptedPrivateKey);
             const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
 
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(recipientAddress),
-                    lamports: Math.floor(amount * LAMPORTS_PER_SOL),
-                })
+            // Import the transferSOL function dynamically to avoid circular dependencies
+            const { transferSOL } = await import('../utils/solana-suite/web3-v2/solana-transaction-v2.js');
+            
+            // Use the new v2 transaction utility
+            const { signature } = await transferSOL(
+                this.connection,
+                fromKeypair,
+                recipientAddress,
+                amount
             );
-
-            const signature = await this.connection.sendTransaction(transaction, [fromKeypair]);
-            await this.connection.confirmTransaction(signature);
 
             return signature;
         } catch (error) {

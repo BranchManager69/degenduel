@@ -4,6 +4,16 @@
   "version": "0.8.0",
   "type": "module",
   "scripts": {
+    "// PM2 Commands": "============================================",
+    "pm2:restart-logs": "pm2 restart degenduel-api --update-env && pm2 logs degenduel-api --lines 100",
+    "pm2:restart": "pm2 restart degenduel-api --update-env",
+    "pm2:start": "pm2 start ecosystem.config.cjs --only degenduel-api",
+    "pm2:stop": "pm2 stop degenduel-api",
+    
+    "pm2:start-all": "pm2 start ecosystem.config.cjs",
+    "pm2:stop-all": "pm2 stop all",
+    "pm2:restart-all": "pm2 restart all --update-env",
+    
     "wss:websocket": "node scripts/test-websocket.js",
     "wss:base-websocket": "node scripts/test-base-websocket.js",
     "wss:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
@@ -22,12 +32,6 @@
     "sys": "./tools/system-status.sh",
     "sys:ai": "./tools/system-status.sh --ai",
     "sys:report": "./tools/system-status.sh --ai",
-    
-    "// PM2 Commands": "============================================",
-    "pm2": "pm2 list",
-    "pm2:all": "pm2 start ecosystem.config.cjs",
-    "pm2:stop": "pm2 stop all",
-    "pm2:restart": "pm2 restart all --update-env",
     
     "up": "pm2 start ecosystem.config.cjs",
     "down": "pm2 stop all",

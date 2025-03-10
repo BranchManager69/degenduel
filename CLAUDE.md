@@ -25,6 +25,27 @@ These commands safely analyze without modifying your database.
 # View running processes
 npm run pm2
 
+# NEW PREFERRED COMMANDS (RECOMMENDED)
+# ------------------------------------
+# Start API service
+npm run pm2:start
+
+# Stop API service
+npm run pm2:stop
+
+# Restart API service with updated env vars (NON-BLOCKING)
+npm run pm2:restart & 
+
+# Restart API and view logs (MUST BE RUN NON-BLOCKING)
+npm run pm2:restart-logs & # IMPORTANT: Add '&' to make it non-blocking
+
+# Manage all services
+npm run pm2:start-all    # Start all services
+npm run pm2:stop-all     # Stop all services
+npm run pm2:restart-all & # Restart all services (NON-BLOCKING)
+
+# PREVIOUS COMMANDS (STILL SUPPORTED)
+# -----------------------------------
 # Start all services
 npm run up
 
@@ -46,17 +67,25 @@ npm run api:reload    # Restart API with updated env vars
 ```
 
 ### Non-blocking Log Checking
-**IMPORTANT**: Avoid `pm2 logs` as it's blocking. Use these non-blocking alternatives:
+**IMPORTANT**: Always run commands with logs in a non-blocking way by adding `&` at the end.
 
 ```bash
+# ALWAYS RUN WITH '&' AT THE END FOR NON-BLOCKING OPERATION
+npm run pm2:restart-logs & # CRITICAL: Add '&' to make it non-blocking
+
 # Check latest logs without blocking (recommended)
 tail -n 20 /home/branchmanager/.pm2/logs/degenduel-api-out.log
 
 # Check error logs
 tail -n 20 /home/branchmanager/.pm2/logs/degenduel-api-error.log
 
-# Follow logs in a second terminal if needed
-tail -f /home/branchmanager/.pm2/logs/degenduel-api-out.log
+# Follow logs in a second terminal if needed (non-blocking)
+tail -f /home/branchmanager/.pm2/logs/degenduel-api-out.log &
+
+# Alternative log access via npm scripts
+npm run logs &         # Access all logs in non-blocking manner
+npm run logs:api &     # Access API logs in non-blocking manner
+npm run logs:error &   # Access error logs in non-blocking manner
 ```
 
 ### Service Configuration
@@ -193,6 +222,27 @@ If you need to update Logtail settings:
 ### Quick Commands (Recommended)
 
 ```bash
+# PREFERRED NON-BLOCKING COMMANDS (RECOMMENDED)
+# ------------------------------------
+# Start API service
+npm run pm2:start
+
+# Stop API service
+npm run pm2:stop
+
+# Restart API service with updated env vars (NON-BLOCKING - IMPORTANT!)
+npm run pm2:restart & 
+
+# Restart API and view logs (MUST BE RUN NON-BLOCKING)
+npm run pm2:restart-logs & # CRITICAL: Add '&' to make it non-blocking
+
+# Manage all services
+npm run pm2:start-all     # Start all services
+npm run pm2:stop-all      # Stop all services
+npm run pm2:restart-all & # Restart all services (NON-BLOCKING)
+
+# LEGACY COMMANDS (STILL SUPPORTED)
+# --------------------------------
 # Start everything from scratch
 npm run up
 
