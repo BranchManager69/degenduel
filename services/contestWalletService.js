@@ -67,7 +67,7 @@ class ContestWalletService extends BaseService {
             throw new Error("RPC URL is not configured - check QUICKNODE_MAINNET_HTTP environment variable");
         }
         
-        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} Initializing with RPC: ${config.rpc_urls.primary}`);
+        logApi.info(`[contestWalletService] Initializing with RPC: ${config.rpc_urls.primary}`);
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         
         // Set treasury wallet address from config
@@ -389,14 +389,7 @@ class ContestWalletService extends BaseService {
     
     // Bulk update all wallets' balances
     async updateAllWalletBalances() {
-        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET}     ${fancyColors.GALAXY} Contest wallet balance refresh cycle starting   ${fancyColors.RESET}`, {
-        //    duration_ms: Date.now() - startTime,
-        //    total_wallets: results.total,
-        //    successful_updates: results.updated,
-        //    failed_updates: results.failed,
-        //    active_contests: results.active_contests,
-        //    significant_changes: results.updates.length
-        });
+        logApi.info(`[contestWalletService] Contest wallet balance refresh cycle starting`);
 
         const startTime = Date.now();
         try {
@@ -425,65 +418,113 @@ class ContestWalletService extends BaseService {
             // Sort contest wallets by contest ID
             contestWallets.sort((a, b) => a.contests?.id - b.contests?.id);
             
-            // Update each wallet's balance
-            // TODO: Bulk update all wallets' balances
-            for (const wallet of contestWallets) {
+            // Track active contests
+            contestWallets.forEach(wallet => {
+                if (wallet.contests?.status === 'active') {
+                    results.active_contests++;
+                }
+            });
+            
+            // Batch process balances in groups of 100 to avoid rate limiting
+            const BATCH_SIZE = 100;
+            let currentBatch = 0;
+            const totalBatches = Math.ceil(contestWallets.length / BATCH_SIZE);
+            
+            // Process wallets in batches
+            while (currentBatch < totalBatches) {
+                const startIndex = currentBatch * BATCH_SIZE;
+                const endIndex = Math.min(startIndex + BATCH_SIZE, contestWallets.length);
+                const walletBatch = contestWallets.slice(startIndex, endIndex);
+                
+                // Create batch of PublicKeys
+                const publicKeys = walletBatch.map(wallet => new PublicKey(wallet.wallet_address));
+                
                 try {
-                    // Track active contests
-                    if (wallet.contests?.status === 'active') {
-                        results.active_contests++;
-                    }
+                    logApi.info(`[contestWalletService] Fetching batch ${currentBatch+1}/${totalBatches} (${walletBatch.length} wallets)`);
                     
-                    // Update balance
-                    const updateResult = await this.updateWalletBalance(wallet);
+                    // Get multiple balances in a single RPC call
+                    const balances = await this.connection.getMultipleAccountsInfo(publicKeys);
                     
-                    if (updateResult.success) {
-                        results.updated++;
+                    // Process each wallet with its balance
+                    for (let i = 0; i < walletBatch.length; i++) {
+                        const wallet = walletBatch[i];
+                        const accountInfo = balances[i];
                         
-                        // Only add significant balance changes to the results  
-                        if (Math.abs(updateResult.difference) > 0.0001) {
-                            results.updates.push(updateResult);
-                            logApi.info(`${fancyColors.MAGENTA}[contestWalletService] ⚠️ ${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}${fancyColors.BG_BROWN}Significant balance change${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}detected for ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \n\t\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
-                                contest_id: wallet.contests?.id,
-                                contest_code: wallet.contests?.contest_code,
+                        try {
+                            // If account doesn't exist yet, it has 0 balance
+                            const lamports = accountInfo ? accountInfo.lamports : 0;
+                            const solBalance = lamports / LAMPORTS_PER_SOL;
+                            
+                            // Compare with previous balance
+                            const previousBalance = wallet.balance || 0;
+                            const difference = solBalance - previousBalance;
+                            
+                            // Update wallet in database
+                            await prisma.contest_wallets.update({
+                                where: { id: wallet.id },
+                                data: {
+                                    balance: solBalance,
+                                    last_sync: new Date(),
+                                    updated_at: new Date()
+                                }
+                            });
+                            
+                            // Track successful update
+                            results.updated++;
+                            
+                            // Only log significant balance changes (≥ 0.01 SOL)
+                            if (Math.abs(difference) >= 0.01) {
+                                const updateResult = {
+                                    success: true,
+                                    wallet_address: wallet.wallet_address,
+                                    previous_balance: previousBalance,
+                                    current_balance: solBalance,
+                                    difference: difference
+                                };
+                                
+                                results.updates.push(updateResult);
+                                logApi.info(`[contestWalletService] Significant balance change for Contest ${wallet.contests?.id} (${wallet.contests?.contest_code}): ${difference.toFixed(4)} SOL - https://solscan.io/address/${wallet.wallet_address}`);
+                            }
+                        } catch (error) {
+                            results.failed++;
+                            logApi.error(`[contestWalletService] Error processing wallet ${wallet.wallet_address}:`, {
+                                error: error.message,
                                 wallet_address: wallet.wallet_address,
-                                previous_balance: updateResult.previous_balance,
-                                current_balance: updateResult.current_balance,
-                                difference: updateResult.difference
+                                contest_id: wallet.contests?.id
                             });
                         }
-                    } else {
-                        results.failed++;
-                        logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to update ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \n\t\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
-                            contest_id: wallet.contests?.id,
-                            contest_code: wallet.contests?.contest_code,
-                            wallet_address: wallet.wallet_address,
-                            error: updateResult.error
-                        });
+                    }
+                    
+                    // Add a small delay between batches to further reduce rate limiting risks
+                    if (currentBatch < totalBatches - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
                     }
                 } catch (error) {
-                    results.failed++;
-                    logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Error updating ${fancyColors.BOLD_YELLOW}Contest ${wallet.contests?.id}${fancyColors.RESET} (${fancyColors.BOLD_YELLOW}${wallet.contests?.contest_code}${fancyColors.RESET})${fancyColors.RESET} \n\t\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${wallet.wallet_address}${fancyColors.RESET}\n`, {
-                        wallet_address: wallet.wallet_address,
-                        contest_id: wallet.contests?.id,
-                        contest_code: wallet.contests?.contest_code,
-                        error: error.message
+                    results.failed += walletBatch.length;
+                    logApi.error(`[contestWalletService] Failed to fetch batch ${currentBatch+1}:`, {
+                        error: error.message,
+                        batch_size: walletBatch.length,
+                        rate_limited: error.message.includes('429') || error.message.includes('rate') || error.message.includes('limit')
                     });
+                    
+                    // Add a longer delay if we hit rate limits
+                    if (error.message.includes('429') || error.message.includes('rate') || error.message.includes('limit')) {
+                        logApi.warn(`[contestWalletService] Rate limit detected, adding delay before next batch`);
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                    }
                 }
+                
+                currentBatch++;
             }
             
             // Update overall performance stats
             this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
+            this.walletStats.balance_updates.total += results.updated;
+            this.walletStats.balance_updates.successful += results.updated;
+            this.walletStats.balance_updates.failed += results.failed;
             
             // Log completion
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET}     ${fancyColors.GALAXY} Contest wallet balance refresh cycle completed  ${fancyColors.RESET}`, {
-            //    duration_ms: Date.now() - startTime,
-            //    total_wallets: results.total,
-            //    successful_updates: results.updated,
-            //    failed_updates: results.failed,
-            //    active_contests: results.active_contests,
-            //    significant_changes: results.updates.length
-            });
+            logApi.info(`[contestWalletService] Contest wallet balance refresh cycle completed: ${results.updated}/${results.total} wallets updated in ${((Date.now() - startTime)/1000).toFixed(1)}s`);
             
             return {
                 duration: Date.now() - startTime,
@@ -491,7 +532,7 @@ class ContestWalletService extends BaseService {
             };
         } catch (error) {
             // Let the base class handle the error and circuit breaker
-            logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to update wallet balances${fancyColors.RESET}`, {
+            logApi.error(`[contestWalletService] Failed to update wallet balances:`, {
                 error: error.message,
                 stack: error.stack
             });
