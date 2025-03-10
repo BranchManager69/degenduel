@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "// PM2 Commands": "============================================",
-    "pm2:restart-logs": "pm2 restart degenduel-api --update-env && pm2 logs degenduel-api --lines 100",
-    "pm2:restart": "pm2 restart degenduel-api --update-env",
-    "pm2:start": "pm2 start ecosystem.config.cjs --only degenduel-api",
-    "pm2:stop": "pm2 stop degenduel-api",
-    
     "pm2:start-all": "pm2 start ecosystem.config.cjs",
     "pm2:stop-all": "pm2 stop all",
     "pm2:restart-all": "pm2 restart all --update-env",
+    
+    "pm2:restart-logs": "pm2 restart degenduel-api --update-env && pm2 logs degenduel-api --lines 100",
+    "pm2:restart-logs:test": "pm2 restart degenduel-api-test --update-env && pm2 logs degenduel-api-test --lines 100",
+    "pm2:restart": "pm2 restart degenduel-api --update-env",
+    "pm2:start": "pm2 start ecosystem.config.cjs --only degenduel-api",
+    "pm2:stop": "pm2 stop degenduel-api",
     
     "wss:websocket": "node scripts/test-websocket.js",
     "wss:base-websocket": "node scripts/test-base-websocket.js",

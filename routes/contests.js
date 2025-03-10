@@ -5,7 +5,7 @@ import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { createContestWallet } from '../utils/solana-suite/solana-wallet.js';
-import { verifyTransaction } from '../utils/solana-suite/solana-connection.js';
+import { verifyTransaction } from '../utils/solana-suite/web3-v2/solana-connection-v2.js';
 import { colors, fancyColors } from '../utils/colors.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import prisma from '../config/prisma.js';

@@ -441,9 +441,14 @@ const customFormat = winston.format.printf(
       return `${ts} ${levelStyle.badge} ${formatPerformanceStats(metadata)}`;
     }
 
-    // Add service icon if available
+    // Add service icon and environment if available
     const servicePrefix = service ? `${serviceInfo.icon} ` : "";
+    const envPrefix = metadata.environment ? 
+      `${chalk.bgMagenta(chalk.white(` ${metadata.environment} `))} ` : 
+      `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${environment} `)) + ' ' : ''}`;
+    
     const formattedMessage =
+      envPrefix + 
       servicePrefix +
       (service
         ? chalk.hex(serviceInfo.color)(message)
@@ -538,9 +543,19 @@ const debugRotateFileTransport = new winston.transports.DailyRotateFile({
 
 /* LOGTAIL TRANSPORT */
 
+// Get environment from NODE_ENV
+const environment = process.env.NODE_ENV || 'production';
+
+// Create logtail instance with environment metadata
 const logtail = new Logtail(LOGTAIL_TOKEN, {
   endpoint: LOGTAIL_ENDPOINT,
   source: LOGTAIL_SOURCE,
+  // Add environment as context to all logs
+  contextMetadata: {
+    environment,
+    port: process.env.PORT,
+    nodeVersion: process.version
+  }
 });
 
 const logtailTransport = new LogtailTransport(logtail);
