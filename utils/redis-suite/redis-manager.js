@@ -24,21 +24,21 @@ class RedisManager {
 
             this.client.on('connect', () => {
                 this.isConnected = true;
-                logApi.info(`[Redis] Connected successfully`);
+                logApi.info(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;46mConnected successfully\x1b[0m`);
             });
 
             this.client.on('error', (err) => {
                 this.isConnected = false;
-                logApi.error(`[Redis] Error: ${err.message}`);
+                logApi.error(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;196mError: ${err.message}\x1b[0m`);
             });
 
             this.client.on('close', () => {
                 this.isConnected = false;
-                logApi.warn(`[Redis] Connection closed`);
+                logApi.warn(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;226mConnection closed\x1b[0m`);
             });
 
         } catch (error) {
-            logApi.error(`[Redis] Failed to initialize client: ${error.message}`);
+            logApi.error(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;196mFailed to initialize client: ${error.message}\x1b[0m`);
             throw error;
         }
     }
@@ -51,7 +51,7 @@ class RedisManager {
             const data = await this.client.get(key);
             return data ? JSON.parse(data) : null;
         } catch (error) {
-            logApi.error(`[Redis] Error getting key ${key}: ${error.message}`);
+            logApi.error(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;196mError getting key ${key}: ${error.message}\x1b[0m`);
             return null;
         }
     }
@@ -64,7 +64,7 @@ class RedisManager {
             await this.client.setex(key, ttlSeconds, JSON.stringify(value));
             return true;
         } catch (error) {
-            logApi.error(`[Redis] Error setting key ${key}: ${error.message}`);
+            logApi.error(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;196mError setting key ${key}: ${error.message}\x1b[0m`);
             return false;
         }
     }
@@ -76,7 +76,7 @@ class RedisManager {
             }
             return await this.client.ttl(key);
         } catch (error) {
-            logApi.error(`[Redis] Error getting TTL for key ${key}: ${error.message}`);
+            logApi.error(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;196mError getting TTL for key ${key}: ${error.message}\x1b[0m`);
             return -2;
         }
     }
