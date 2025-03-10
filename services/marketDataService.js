@@ -232,26 +232,29 @@ class MarketDataService extends BaseService {
                 }
             });
 
-            // log to help diagnose the [marketDataService] sync process
-            logApi.info(`${fancyColors.BG_DEBUG_MARKET_DATABASE}${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET}${fancyColors.BG_DEBUG_MARKET_DATABASE} ${fancyColors.LIGHT_GREEN}Found ${fancyColors.GREEN}${fancyColors.BOLD}${tokens.length}${fancyColors.RESET}${fancyColors.BG_DEBUG_MARKET_DATABASE}${fancyColors.LIGHT_GREEN} tokens in market database___________________${fancyColors.RESET}`);
+            // Log a single message about the token refresh operation
+            logApi.info(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.LIGHT_GREEN}Refreshed token cache with ${tokens.length} tokens from market database${fancyColors.RESET}`);
             
             // Clear and rebuild tokensCache
-            // log to help diagnose the [marketDataService] sync process
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]\t${fancyColors.RESET} ${fancyColors.DARK_GRAY}Clearing tokens cache...${fancyColors.RESET}`);
             this.tokensCache.clear();
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]\t\t${fancyColors.RESET} ${fancyColors.GRAY}Tokens cache cleared${fancyColors.RESET}`);
+            
+            // Track any token errors in a list instead of logging each one
+            const errorTokens = [];
             
             // Set the tokens in the cache
-            logApi.info(`${fancyColors.MAGENTA}[marketDataService]\t${fancyColors.RESET} ${fancyColors.GRAY}Setting tokens in cache...${fancyColors.RESET}`);
             tokens.forEach(token => {
                 try {
                     this.tokensCache.set(token.symbol, this.formatTokenData(token));
-                    // log to help diagnose the [marketDataService] sync process
-                    logApi.info(`${fancyColors.MAGENTA}[marketDataService]\t\t${fancyColors.RESET} ${fancyColors.DARK_GRAY}Stored ${fancyColors.LIGHT_MAGENTA}${fancyColors.BOLD}${token.symbol}${fancyColors.RESET}${fancyColors.DARK_GRAY} in tokens cache${fancyColors.RESET}`);
                 } catch (error) {
-                    logApi.error(`${fancyColors.MAGENTA}[marketDataService]\t\t\t${fancyColors.RESET} ${fancyColors.RED}Error storing token ${fancyColors.LIGHT_MAGENTA}${fancyColors.BOLD}${token.symbol}${fancyColors.RESET}${fancyColors.RED} in tokens cache:${fancyColors.RESET}`, error);
+                    errorTokens.push(token.symbol);
+                    logApi.error(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.RED}Error storing token ${token.symbol} in cache: ${error.message}${fancyColors.RESET}`);
                 }
             });
+            
+            // Only log errors if any occurred
+            if (errorTokens.length > 0) {
+                logApi.warn(`${fancyColors.MAGENTA}[marketDataService]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to cache ${errorTokens.length} tokens: ${errorTokens.join(', ')}${fancyColors.RESET}`);
+            }
             
             // Update service stats
             this.marketStats.data.tokens.total = tokens.length;
