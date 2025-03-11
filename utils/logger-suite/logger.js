@@ -724,6 +724,56 @@ const logtail = new Logtail(LOGTAIL_TOKEN, {
   }
 });
 
+// Helper to strip ANSI color codes for Logtail
+const stripAnsiCodes = (str) => {
+  if (typeof str !== 'string') return str;
+  // This regex matches all ANSI color/style codes
+  return str.replace(/\x1b\[[0-9;]*m/g, '');
+};
+
+// Helper to determine if a message is a Solana rate limit error
+const isSolanaRateLimit = (message) => {
+  return typeof message === 'string' && 
+         message.includes('429 Too Many Requests') && 
+         message.includes('Retrying after');
+};
+
+// Helper to extract retry time from rate limit message
+const extractRetryTime = (message) => {
+  const retryMatch = /Retrying after (\d+)ms/.exec(message);
+  return retryMatch ? parseInt(retryMatch[1]) : 500;
+};
+
+// Standardized function to handle Solana rate limit errors consistently
+const formatRateLimitError = (message, isForConsole = false) => {
+  const retryMs = extractRetryTime(message);
+  
+  // Standard metadata for all rate limit errors
+  const metadata = {
+    service: 'SOLANA',
+    error_type: 'RATE_LIMIT',
+    retry_ms: retryMs,
+    rpc_provider: config?.rpc_urls?.primary || process.env.QUICKNODE_MAINNET_HTTP || 'unknown',
+    original_message: message,
+    severity: 'warning', // For Logtail filtering
+    alert_type: 'rate_limit' // For Logtail filtering
+  };
+  
+  // For console, use ANSI colors
+  if (isForConsole) {
+    return {
+      message: `${fancyColors.BG_YELLOW}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Retry in ${retryMs}ms${fancyColors.RESET}`,
+      metadata
+    };
+  }
+  
+  // For Logtail, use clean message without ANSI codes
+  return {
+    message: `SOLANA RPC RATE LIMIT: Retry in ${retryMs}ms`,
+    metadata
+  };
+};
+
 // Add a processor to enhance logs with additional information before they're sent to Logtail
 logtail.use((log) => {
   // Make sure metadata exists
@@ -750,20 +800,18 @@ logtail.use((log) => {
   // Add timestamp in a consistent format
   log.metadata.formattedTime = formatTimestamp(log.dt);
   
-  // Special case for handling Solana rate limit messages
-  if (log.message && log.message.includes('429 Too Many Requests') && log.message.includes('Retrying after')) {
-    // Extract retry timing if available
-    const retryMatch = /Retrying after (\d+)ms/.exec(log.message);
-    const retryMs = retryMatch ? parseInt(retryMatch[1]) : null;
-    
-    // Add standardized metadata
-    log.metadata.service = 'SOLANA';
-    log.metadata.error_type = 'RATE_LIMIT';
-    log.metadata.retry_ms = retryMs;
-    log.metadata.rpc_provider = process.env.QUICKNODE_MAINNET_HTTP || 'unknown';
-    
-    // Add enhanced context
-    log.message = `${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Retry in ${retryMs}ms${fancyColors.RESET}`;
+  // Remove ANSI color codes from message before sending to Logtail
+  if (typeof log.message === 'string') {
+    // First check if it's a specially formatted message we need to handle
+    if (isSolanaRateLimit(log.message)) {
+      // Use our standardized formatter
+      const formatted = formatRateLimitError(log.message, false);
+      log.message = formatted.message;
+      log.metadata = { ...log.metadata, ...formatted.metadata };
+    } else {
+      // Just strip ANSI codes for normal messages
+      log.message = stripAnsiCodes(log.message);
+    }
   }
   
   return log;
@@ -792,22 +840,13 @@ const logApi = winston.createLogger({
         // Add special formatter for rate limit messages
         winston.format((info) => {
           // Handle rate limit messages from Solana
-          if (typeof info.message === 'string' && 
-              info.message.includes('429 Too Many Requests') && 
-              info.message.includes('Retrying after')) {
+          if (isSolanaRateLimit(info.message)) {
+            // Use our standardized formatter for console
+            const formatted = formatRateLimitError(info.message, true);
+            info.message = formatted.message;
             
-            // Extract retry timing if available
-            const retryMatch = /Retrying after (\d+)ms/.exec(info.message);
-            const retryMs = retryMatch ? parseInt(retryMatch[1]) : null;
-            
-            // Add standardized metadata
-            info.service = 'SOLANA';
-            info.error_type = 'RATE_LIMIT';
-            info.retry_ms = retryMs;
-            info.environment = environment;
-            
-            // Reformat the message with service prefix and color
-            info.message = `${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Retry in ${retryMs}ms${fancyColors.RESET}`;
+            // Merge metadata with info object
+            Object.assign(info, formatted.metadata);
           }
           return info;
         })(),
@@ -932,20 +971,12 @@ const processMessage = function(args) {
   if (args.length > 0 && typeof args[0] === 'string') {
     const message = args[0];
     
-    if (message.includes('429 Too Many Requests') && message.includes('Retrying after')) {
-      // Extract retry timing if available
-      const retryMatch = /Retrying after (\d+)ms/.exec(message);
-      const retryMs = retryMatch ? parseInt(retryMatch[1]) : 500;
+    if (isSolanaRateLimit(message)) {
+      // Use our standardized formatter (true = formatted for console)
+      const formatted = formatRateLimitError(message, true);
       
       // Log through our proper logging system instead
-      logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Retry in ${retryMs}ms${fancyColors.RESET}`, {
-        service: 'SOLANA',
-        error_type: 'RATE_LIMIT',
-        retry_ms: retryMs,
-        rpc_provider: config?.rpc_urls?.primary || 'unknown',
-        environment: environment,
-        original_message: message
-      });
+      logApi.warn(formatted.message, formatted.metadata);
       
       // Signal that we've handled this message
       return true;
