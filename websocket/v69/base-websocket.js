@@ -1040,9 +1040,27 @@ export class BaseWebSocketServer {
    * @returns {Object} - The server metrics
    */
   getMetrics() {
-    // Calculate average latency
+    // Check if stats exist, initialize if not
+    if (!this.stats) {
+      this.stats = {
+        startTime: Date.now(),
+        totalConnections: 0,
+        currentConnections: 0,
+        messagesReceived: 0,
+        messagesSent: 0,
+        errors: 0,
+        rateLimitExceeded: 0,
+        authenticatedConnections: 0,
+        unauthenticatedConnections: 0,
+        channelCounts: {},
+        latencies: [],
+        uptime: 0
+      };
+    }
+    
+    // Calculate average latency with safety checks
     let averageLatency = 0;
-    if (this.stats.latencies.length > 0) {
+    if (this.stats.latencies && Array.isArray(this.stats.latencies) && this.stats.latencies.length > 0) {
       const sum = this.stats.latencies.reduce((a, b) => a + b, 0);
       averageLatency = Math.round(sum / this.stats.latencies.length);
     }
@@ -1051,24 +1069,24 @@ export class BaseWebSocketServer {
       name: this.path,
       status: 'operational',
       metrics: {
-        uptime: this.stats.uptime,
-        totalConnections: this.stats.totalConnections,
-        currentConnections: this.stats.currentConnections,
-        authenticatedConnections: this.stats.authenticatedConnections,
-        unauthenticatedConnections: this.stats.unauthenticatedConnections,
-        messagesReceived: this.stats.messagesReceived,
-        messagesSent: this.stats.messagesSent,
-        errors: this.stats.errors,
+        uptime: this.stats.uptime || 0,
+        totalConnections: this.stats.totalConnections || 0,
+        currentConnections: this.stats.currentConnections || 0,
+        authenticatedConnections: this.stats.authenticatedConnections || 0,
+        unauthenticatedConnections: this.stats.unauthenticatedConnections || 0,
+        messagesReceived: this.stats.messagesReceived || 0,
+        messagesSent: this.stats.messagesSent || 0,
+        errors: this.stats.errors || 0,
         averageLatency,
-        channelCount: this.channelSubscriptions.size,
+        channelCount: this.channelSubscriptions ? this.channelSubscriptions.size : 0,
         lastUpdate: new Date().toISOString()
       },
-      channels: this.stats.channelCounts,
+      channels: this.stats.channelCounts || {},
       config: {
-        requireAuth: this.requireAuth,
-        maxPayload: this.maxPayload,
-        rateLimit: this.rateLimit,
-        publicEndpoints: Array.from(this.publicEndpoints)
+        requireAuth: this.requireAuth || false,
+        maxPayload: this.maxPayload || 1048576, // 1MB default
+        rateLimit: this.rateLimit || 60,
+        publicEndpoints: this.publicEndpoints ? Array.from(this.publicEndpoints) : []
       }
     };
   }
