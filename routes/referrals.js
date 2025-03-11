@@ -372,6 +372,106 @@ router.get('/leaderboard/rankings',
     }
 );
 
+/**
+ * @api {get} /api/referrals/details Get referrer details from referral code
+ * @apiName GetReferrerDetails
+ * @apiGroup Referrals
+ * @apiDescription Get detailed information about a referrer based on their referral code
+ * 
+ * @apiParam {String} code Referral code
+ * 
+ * @apiSuccess {Boolean} success Indicates if the operation was successful
+ * @apiSuccess {Object} referrer Referrer information
+ * @apiSuccess {String} referrer.nickname Referrer's nickname
+ * @apiSuccess {String} referrer.wallet_address Referrer's wallet address
+ * @apiSuccess {Object} referrer.profile_image Profile image info
+ * @apiSuccess {String} referrer.profile_image.url Full profile image URL
+ * @apiSuccess {String} referrer.profile_image.thumbnail_url Thumbnail profile image URL
+ * @apiSuccess {Object} rewards Information about referral rewards
+ */
+router.get('/details',
+    async (req, res) => {
+        try {
+            const { code } = req.query;
+            
+            logApi.info(`Referrer details requested for code: ${code}`, {
+                ip: req.ip,
+                user_agent: req.get('user-agent')
+            });
+            
+            if (!code) {
+                logApi.warn('Referrer details request missing code parameter');
+                return res.status(400).json({
+                    success: false,
+                    error: 'Referral code is required'
+                });
+            }
+            
+            // Find the user with this referral code
+            const referrer = await prisma.users.findUnique({
+                where: { referral_code: code.toUpperCase() },
+                select: {
+                    wallet_address: true,
+                    username: true,
+                    nickname: true,
+                    profile_image_url: true,
+                    profile_image_updated_at: true,
+                    is_banned: true
+                }
+            });
+            
+            if (!referrer) {
+                logApi.info(`Referrer details request for invalid code: ${code}`);
+                return res.status(404).json({
+                    success: false,
+                    error: 'Invalid referral code'
+                });
+            }
+            
+            if (referrer.is_banned) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'This referral code is no longer valid'
+                });
+            }
+            
+            // Get referral rewards info from database or config
+            // This is placeholder implementation - adjust according to your actual rewards system
+            const referralRewards = {
+                user_bonus: "Increased XP for first week",
+                referrer_bonus: "250 XP and milestone rewards"
+            };
+            
+            // Build profile image URLs
+            const profileImageInfo = referrer.profile_image_url ? {
+                url: referrer.profile_image_url,
+                thumbnail_url: referrer.profile_image_url,
+                updated_at: referrer.profile_image_updated_at
+            } : null;
+            
+            logApi.info(`Referrer details successfully retrieved for code: ${code}`, {
+                referrer_wallet: referrer.wallet_address
+            });
+            
+            res.json({
+                success: true,
+                referrer: {
+                    nickname: referrer.nickname || referrer.username,
+                    wallet_address: referrer.wallet_address,
+                    profile_image: profileImageInfo
+                },
+                rewards: referralRewards
+            });
+        } catch (error) {
+            logApi.error('Failed to get referrer details:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to retrieve referrer information'
+            });
+        }
+    }
+);
+
 // Get user milestones
 router.get('/milestones',
     requireAuth,

@@ -15,6 +15,9 @@ import { createContestWebSocket } from './contest-ws.js';
 import { createCircuitBreakerWebSocket } from './circuit-breaker-ws.js';
 import { createUserNotificationWebSocket } from './user-notification-ws.js';
 import { createTokenDataWebSocket } from './token-data-ws.js';
+import { createSkyDuelWebSocket } from './skyduel-ws.js';
+import { createSystemSettingsWebSocket } from './system-settings-ws.js';
+import { createAnalyticsWebSocket } from './analytics-ws.js';
 
 // Initialize global v69 WebSocket container
 global.wsServersV69 = global.wsServersV69 || {};
@@ -58,6 +61,21 @@ export async function initializeWebSockets(server) {
     const tokenDataWs = createTokenDataWebSocket(server);
     global.wsServersV69.tokenData = tokenDataWs;
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Token Data WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    
+    // Create SkyDuel WebSocket
+    const skyDuelWs = createSkyDuelWebSocket(server);
+    global.wsServersV69.skyDuel = skyDuelWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created SkyDuel WebSocket                                             ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    
+    // Create System Settings WebSocket
+    const systemSettingsWs = createSystemSettingsWebSocket(server);
+    global.wsServersV69.systemSettings = systemSettingsWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created System Settings WebSocket                                     ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    
+    // Create Analytics WebSocket
+    const analyticsWs = createAnalyticsWebSocket(server);
+    global.wsServersV69.analytics = analyticsWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Analytics WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
 
     // Initialize all WebSocket servers
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}${fancyColors.BOLD}Starting initialization...${fancyColors.RESET}                                          ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
@@ -67,7 +85,10 @@ export async function initializeWebSockets(server) {
       contestWs.initialize(),
       circuitBreakerWs.initialize(),
       userNotificationWs.initialize(),
-      tokenDataWs.initialize()
+      tokenDataWs.initialize(),
+      skyDuelWs.initialize(),
+      systemSettingsWs.initialize(),
+      analyticsWs.initialize()
     ]);
 
     // Check if all initializations were successful
@@ -97,17 +118,73 @@ export async function initializeWebSockets(server) {
  */
 function printWebSocketEndpoints() {
   const endpoints = [
-    { name: 'Monitor WebSocket', path: '/api/v69/ws/monitor' },
-    { name: 'Contest WebSocket', path: '/api/v69/ws/contest' },
-    { name: 'Circuit Breaker WebSocket', path: '/api/v69/ws/circuit-breaker' },
-    { name: 'User Notification WebSocket', path: '/api/v69/ws/notifications' },
-    { name: 'Token Data WebSocket', path: '/api/v69/ws/token-data' }
+    { 
+      name: 'Monitor WebSocket', 
+      path: '/api/v69/ws/monitor',
+      channels: ['system.status', 'system.alerts', 'system.metrics'],
+      events: ['get_metrics', 'subscribe_metric', 'unsubscribe_metric', 'get_service_status']
+    },
+    { 
+      name: 'Contest WebSocket', 
+      path: '/api/v69/ws/contest',
+      channels: ['contest.updates', 'contest.entries', 'contest.results'],
+      events: ['join_contest', 'leave_contest', 'get_contest_data', 'subscribe_contest']
+    },
+    { 
+      name: 'Circuit Breaker WebSocket', 
+      path: '/api/v69/ws/circuit-breaker',
+      channels: ['circuit.status', 'circuit.alerts', 'circuit.history'],
+      events: ['get_status', 'reset_circuit', 'subscribe_service', 'unsubscribe_service']
+    },
+    { 
+      name: 'User Notification WebSocket', 
+      path: '/api/v69/ws/notifications',
+      channels: ['notifications.all', 'notifications.system', 'notifications.personal'],
+      events: ['mark_read', 'get_notifications', 'clear_notifications']
+    },
+    { 
+      name: 'Token Data WebSocket', 
+      path: '/api/v69/ws/token-data',
+      channels: ['public.tokens', 'public.market', 'token.[symbol]'],
+      events: ['subscribe_tokens', 'unsubscribe_tokens', 'get_token', 'get_all_tokens']
+    },
+    { 
+      name: 'SkyDuel WebSocket', 
+      path: '/api/v69/ws/skyduel',
+      channels: ['service.[name]'],
+      events: ['get_services', 'subscribe_service', 'unsubscribe_service', 'service_command']
+    },
+    { 
+      name: 'System Settings WebSocket', 
+      path: '/api/v69/ws/system-settings',
+      channels: ['setting.[key]', 'category.[name]'],
+      events: ['get_all_settings', 'get_setting', 'get_category_settings', 'subscribe_setting', 'update_setting']
+    },
+    { 
+      name: 'Analytics WebSocket', 
+      path: '/api/v69/ws/analytics',
+      channels: ['metrics.[name]', 'dashboard'],
+      events: ['track_event', 'subscribe_dashboard', 'subscribe_metric', 'get_active_users', 'get_server_stats']
+    }
   ];
 
   logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} ENDPOINTS ${fancyColors.RESET} Available WebSocket endpoints:                                ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
   
   for (const endpoint of endpoints) {
+    // Print endpoint path
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET}   ${fancyColors.CYAN}• ${endpoint.name}:${fancyColors.RESET} ${fancyColors.BOLD}${endpoint.path}${fancyColors.RESET}${' '.repeat(Math.max(0, 66 - endpoint.path.length))}${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    
+    // Print available channels/rooms
+    if (endpoint.channels && endpoint.channels.length > 0) {
+      const channelsStr = endpoint.channels.map(c => `${fancyColors.MAGENTA}${c}${fancyColors.RESET}`).join(', ');
+      logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET}     ${fancyColors.YELLOW}↳ Channels:${fancyColors.RESET} ${channelsStr}${' '.repeat(Math.max(0, 70 - channelsStr.length))}${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    }
+    
+    // Print supported events/messages
+    if (endpoint.events && endpoint.events.length > 0) {
+      const eventsStr = endpoint.events.map(e => `${fancyColors.GREEN}${e}${fancyColors.RESET}`).join(', ');
+      logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET}     ${fancyColors.YELLOW}↳ Events:${fancyColors.RESET} ${eventsStr}${' '.repeat(Math.max(0, 72 - eventsStr.length))}${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    }
   }
 }
 

@@ -504,6 +504,172 @@ class ReferralService extends BaseService {
 
         return { startTime, endTime };
     }
+    
+    // Calculate period statistics
+    async calculatePeriodStats(period) {
+        try {
+            // Get total referrals in this period
+            const totalReferrals = await prisma.referrals.count({
+                where: {
+                    created_at: {
+                        gte: period.start_date,
+                        lt: period.end_date
+                    }
+                }
+            });
+            
+            // Get qualified referrals in this period
+            const qualifiedReferrals = await prisma.referrals.count({
+                where: {
+                    status: 'qualified',
+                    converted_at: {
+                        gte: period.start_date,
+                        lt: period.end_date
+                    }
+                }
+            });
+            
+            // Get unique referrers in this period
+            const uniqueReferrers = await prisma.referrals.groupBy({
+                by: ['referrer_id'],
+                where: {
+                    created_at: {
+                        gte: period.start_date,
+                        lt: period.end_date
+                    }
+                },
+                _count: true
+            });
+            
+            // Calculate conversion rate
+            const conversionRate = totalReferrals > 0 
+                ? (qualifiedReferrals / totalReferrals) * 100 
+                : 0;
+            
+            return {
+                period_id: period.id,
+                start_date: period.start_date,
+                end_date: period.end_date,
+                total_referrals: totalReferrals,
+                qualified_referrals: qualifiedReferrals,
+                unique_referrers: uniqueReferrers.length,
+                conversion_rate: conversionRate,
+                status: period.status,
+                updated_at: new Date()
+            };
+        } catch (error) {
+            throw ServiceError.operation('Failed to calculate period stats', {
+                period_id: period.id,
+                error: error.message
+            });
+        }
+    }
+    
+    // Calculate rankings for a period
+    async calculateRankings(periodId) {
+        try {
+            // Get period
+            const period = await prisma.referral_periods.findUnique({
+                where: { id: periodId }
+            });
+            
+            if (!period) {
+                throw new Error(`Period with ID ${periodId} not found`);
+            }
+            
+            // Get referrals grouped by referrer
+            const referralCounts = await prisma.referrals.groupBy({
+                by: ['referrer_id'],
+                where: {
+                    status: 'qualified',
+                    converted_at: {
+                        gte: period.start_date,
+                        lt: period.end_date
+                    }
+                },
+                _count: {
+                    referrer_id: true
+                }
+            });
+            
+            // Sort by count descending
+            referralCounts.sort((a, b) => b._count.referrer_id - a._count.referrer_id);
+            
+            // Get previous rankings to calculate trends
+            const previousRankings = await prisma.referral_period_rankings.findMany({
+                where: { period_id: periodId }
+            });
+            
+            const prevRankMap = new Map();
+            previousRankings.forEach(ranking => {
+                prevRankMap.set(ranking.user_id, ranking.rank);
+            });
+            
+            // Create rankings with user info
+            const rankings = await Promise.all(referralCounts.map(async (item, index) => {
+                const user = await prisma.users.findUnique({
+                    where: { wallet_address: item.referrer_id },
+                    select: { username: true, nickname: true }
+                });
+                
+                const prevRank = prevRankMap.get(item.referrer_id);
+                let trend = 'stable';
+                
+                if (prevRank) {
+                    if (index + 1 < prevRank) trend = 'up';
+                    else if (index + 1 > prevRank) trend = 'down';
+                }
+                
+                return {
+                    user_id: item.referrer_id,
+                    user: user || { username: 'Unknown' },
+                    referral_count: item._count.referrer_id,
+                    rank: index + 1,
+                    trend
+                };
+            }));
+            
+            // Store the rankings in database
+            await this.storeRankings(periodId, rankings);
+            
+            return rankings;
+        } catch (error) {
+            throw ServiceError.operation('Failed to calculate rankings', {
+                period_id: periodId,
+                error: error.message
+            });
+        }
+    }
+    
+    // Store rankings in the database
+    async storeRankings(periodId, rankings) {
+        try {
+            // First delete existing rankings for this period
+            await prisma.referral_period_rankings.deleteMany({
+                where: { period_id: periodId }
+            });
+            
+            // Insert new rankings
+            await Promise.all(rankings.map(async (ranking) => {
+                await prisma.referral_period_rankings.create({
+                    data: {
+                        period_id: periodId,
+                        user_id: ranking.user_id,
+                        referral_count: ranking.referral_count,
+                        rank: ranking.rank,
+                        trend: ranking.trend
+                    }
+                });
+            }));
+            
+            return true;
+        } catch (error) {
+            throw ServiceError.operation('Failed to store rankings', {
+                period_id: periodId,
+                error: error.message
+            });
+        }
+    }
 
     // Start ranking updates
     async startRankingUpdates() {

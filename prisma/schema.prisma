@@ -362,6 +362,7 @@ model users {
   contest_portfolios        contest_portfolios[]
   contest_token_performance contest_token_performance[]
   contest_token_prices      contest_token_prices[]
+  ip_history                user_ip_history[]
   participant_influences    participant_influences[]
   referral_clicks           referral_clicks[]           @relation("ReferralClicksReceived")
   referral_milestones       referral_milestones[]
@@ -495,6 +496,49 @@ model seed_wallets {
   is_active      Boolean  @default(true)
   purpose        String?
   metadata       Json?
+}
+
+model banned_ips {
+  id           Int       @id @default(autoincrement())
+  ip_address   String    @unique
+  reason       String
+  is_permanent Boolean   @default(false)
+  expires_at   DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  created_by   String    @db.VarChar(44)
+  updated_at   DateTime? @updatedAt @db.Timestamptz(6)
+  num_attempts Int       @default(0)
+  troll_level  Int       @default(1)
+  metadata     Json?     @default("{}")
+
+  @@index([ip_address], map: "idx_banned_ips_address")
+  @@index([expires_at], map: "idx_banned_ips_expires")
+  @@map("banned_ips")
+}
+
+model user_ip_history {
+  id            Int       @id @default(autoincrement())
+  wallet_address String    @db.VarChar(44)
+  ip_address     String    @db.VarChar(45) // IPv6 can be longer
+  user_agent     String?   @db.Text
+  first_seen     DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen      DateTime  @default(now()) @db.Timestamptz(6)
+  access_count   Int       @default(1)
+  country_code   String?   @db.VarChar(2)
+  region         String?   @db.VarChar(100)
+  city           String?   @db.VarChar(100)
+  is_suspicious  Boolean   @default(false)
+  notes          String?   @db.Text
+  metadata       Json?     @default("{}")
+  users          users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: Cascade)
+
+  @@unique([wallet_address, ip_address], name: "user_ip_unique")
+  @@index([ip_address], map: "idx_user_ip_address")
+  @@index([wallet_address], map: "idx_user_ip_wallet")
+  @@index([is_suspicious], map: "idx_user_ip_suspicious")
+  @@index([first_seen], map: "idx_user_ip_first_seen")
+  @@index([last_seen], map: "idx_user_ip_last_seen")
+  @@map("user_ip_history")
 }
 
 model participant_influences {

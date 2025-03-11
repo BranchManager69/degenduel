@@ -24,6 +24,7 @@ import { LogtailTransport } from "@logtail/winston";
 import { Socket } from 'net';
 import { Stream } from 'stream';
 import { fancyColors, logColors, serviceColors } from '../colors.js';
+import { config } from '../../config/config.js';
 
 // Load environment variables
 dotenv.config();
@@ -195,7 +196,7 @@ const formatAnalytics = (metadata) => {
       // Parse user agent for better analytics
       browser: parseBrowser(headers["user-agent"]),
       os: parseOS(headers["user-agent"]),
-      device_type: getDeviceType(headers),
+      device: getDeviceType(headers),
     },
 
     // Geolocation (if available)
@@ -234,35 +235,181 @@ const formatAnalytics = (metadata) => {
 
 // Helper to parse browser info from user agent
 const parseBrowser = (ua = "") => {
-  const chrome = /Chrome\/(\d+)/.exec(ua);
-  const firefox = /Firefox\/(\d+)/.exec(ua);
-  const safari = /Safari\/(\d+)/.exec(ua);
+  // Handle empty user agent
+  if (!ua) return { name: "Unknown", version: "0", fullInfo: "No user agent" };
 
-  if (chrome) return { name: "Chrome", version: chrome[1] };
-  if (firefox) return { name: "Firefox", version: firefox[1] };
-  if (safari) return { name: "Safari", version: safari[1] };
-  return { name: "Other", version: "0" };
+  // Detect various browsers in order of specificity
+  const edge = /Edg(?:e|A|iOS)?\/(\d+\.\d+)/.exec(ua);
+  const opera = /OPR\/(\d+\.\d+)/.exec(ua) || /Opera\/(\d+\.\d+)/.exec(ua);
+  const brave = /Brave\/(\d+\.\d+)/.exec(ua);
+  const chrome = /Chrome\/(\d+\.\d+)/.exec(ua);
+  const firefox = /Firefox\/(\d+\.\d+)/.exec(ua);
+  const safari = /Version\/(\d+\.\d+).*Safari/.exec(ua) || /Safari\/(\d+\.\d+)/.exec(ua);
+  const ie = /MSIE (\d+\.\d+)/.exec(ua) || /Trident.*rv:(\d+\.\d+)/.exec(ua);
+  const samsung = /SamsungBrowser\/(\d+\.\d+)/.exec(ua);
+  const ucBrowser = /UCBrowser\/(\d+\.\d+)/.exec(ua);
+  const mobileFF = /Mobile.*Firefox\/(\d+\.\d+)/.exec(ua);
+  
+  // Detect mobile vs desktop
+  const isMobile = /Mobile|Android|iPhone|iPad|iPod|Windows Phone|IEMobile/i.test(ua);
+  
+  // Return appropriate browser info
+  if (edge) return { name: "Microsoft Edge", version: edge[1], mobile: isMobile, fullInfo: ua };
+  if (opera) return { name: "Opera", version: opera[1], mobile: isMobile, fullInfo: ua };
+  if (brave) return { name: "Brave", version: brave[1], mobile: isMobile, fullInfo: ua };
+  if (samsung) return { name: "Samsung Browser", version: samsung[1], mobile: isMobile, fullInfo: ua };
+  if (ucBrowser) return { name: "UC Browser", version: ucBrowser[1], mobile: isMobile, fullInfo: ua };
+  if (mobileFF) return { name: "Firefox Mobile", version: mobileFF[1], mobile: true, fullInfo: ua };
+  if (firefox) return { name: "Firefox", version: firefox[1], mobile: isMobile, fullInfo: ua };
+  if (chrome && !safari) return { name: "Chrome", version: chrome[1], mobile: isMobile, fullInfo: ua };
+  if (safari) return { name: "Safari", version: safari[1], mobile: isMobile, fullInfo: ua };
+  if (ie) return { name: "Internet Explorer", version: ie[1], mobile: isMobile, fullInfo: ua };
+  
+  return { name: "Other", version: "0", mobile: isMobile, fullInfo: ua };
 };
 
 // Helper to parse OS info
 const parseOS = (ua = "") => {
-  const windows = /Windows NT (\d+\.\d+)/.exec(ua);
-  const mac = /Mac OS X (\d+[._]\d+)/.exec(ua);
-  const linux = /Linux/.exec(ua);
+  if (!ua) return { name: "Unknown", version: "Unknown" };
 
-  if (windows) return { name: "Windows", version: windows[1] };
-  if (mac) return { name: "MacOS", version: mac[1].replace("_", ".") };
-  if (linux) return { name: "Linux", version: "N/A" };
+  // Windows detection
+  const windows = /Windows NT (\d+\.\d+)/.exec(ua);
+  if (windows) {
+    // Map Windows NT version to familiar Windows version
+    const windowsVersions = {
+      '10.0': '10/11', // Windows 10/11 use same NT version
+      '6.3': '8.1',
+      '6.2': '8',
+      '6.1': '7',
+      '6.0': 'Vista',
+      '5.2': 'XP x64',
+      '5.1': 'XP',
+      '5.0': '2000'
+    };
+    return { 
+      name: "Windows", 
+      version: windowsVersions[windows[1]] || windows[1],
+      ntVersion: windows[1]
+    };
+  }
+
+  // macOS detection
+  const mac = /Mac OS X (\d+[._]\d+(?:[._]\d+)?)/.exec(ua);
+  if (mac) {
+    const version = mac[1].replace(/_/g, ".");
+    // Map version numbers to macOS names
+    let macOSName = "macOS";
+    if (parseFloat(version) >= 10.16 || parseInt(version) >= 11) {
+      macOSName = "macOS Big Sur or newer";
+    } else if (version.startsWith("10.15")) {
+      macOSName = "macOS Catalina";
+    } else if (version.startsWith("10.14")) {
+      macOSName = "macOS Mojave";
+    }
+    return { name: macOSName, version: version };
+  }
+
+  // iOS detection
+  const ios = /iPhone OS (\d+[._]\d+)/.exec(ua) || /iPad.*OS (\d+[._]\d+)/.exec(ua);
+  if (ios) {
+    return { name: "iOS", version: ios[1].replace(/_/g, ".") };
+  }
+
+  // Android detection
+  const android = /Android (\d+(?:\.\d+)?)/.exec(ua);
+  if (android) {
+    return { name: "Android", version: android[1] };
+  }
+
+  // Linux detection
+  const ubuntu = /Ubuntu/.exec(ua);
+  const fedora = /Fedora/.exec(ua);
+  const debian = /Debian/.exec(ua);
+  if (ubuntu) return { name: "Ubuntu Linux", version: "N/A" };
+  if (fedora) return { name: "Fedora Linux", version: "N/A" };
+  if (debian) return { name: "Debian Linux", version: "N/A" };
+  if (/Linux/.exec(ua)) return { name: "Linux", version: "N/A" };
+
+  // Chrome OS
+  if (/CrOS/.exec(ua)) return { name: "Chrome OS", version: "N/A" };
+
   return { name: "Other", version: "N/A" };
 };
 
-// Helper to determine device type
+// Helper to determine device type and device details
 const getDeviceType = (headers) => {
   const ua = headers["user-agent"] || "";
-  if (/mobile/i.test(ua)) return "mobile";
-  if (/tablet/i.test(ua)) return "tablet";
-  if (/iPad|Android(?!.*Mobile)/i.test(ua)) return "tablet";
-  return "desktop";
+  if (!ua) return { type: "unknown", brand: "unknown", model: "unknown" };
+  
+  // Extract device details when possible
+  let brand = "unknown";
+  let model = "unknown";
+  let deviceType = "unknown";
+  
+  // Check for common device patterns
+  
+  // iPhone
+  const iphone = /iPhone(?:.*OS\s+(\d+[._]\d+))?/.exec(ua);
+  if (iphone) {
+    return {
+      type: "mobile",
+      brand: "Apple",
+      model: "iPhone",
+      osVersion: iphone[1] ? iphone[1].replace(/_/g, ".") : "unknown"
+    };
+  }
+  
+  // iPad
+  const ipad = /iPad(?:.*OS\s+(\d+[._]\d+))?/.exec(ua);
+  if (ipad) {
+    return {
+      type: "tablet",
+      brand: "Apple",
+      model: "iPad",
+      osVersion: ipad[1] ? ipad[1].replace(/_/g, ".") : "unknown"
+    };
+  }
+  
+  // Samsung devices
+  const samsung = /Samsung|SM-[A-Z0-9]+/i.exec(ua);
+  const samsungModel = /SM-([A-Z0-9]+)/i.exec(ua);
+  if (samsung) {
+    return {
+      type: /tablet/i.test(ua) ? "tablet" : "mobile",
+      brand: "Samsung",
+      model: samsungModel ? samsungModel[1] : "Galaxy"
+    };
+  }
+  
+  // Google devices
+  const pixel = /Pixel\s+(\d+)/i.exec(ua);
+  if (pixel) {
+    return {
+      type: "mobile",
+      brand: "Google",
+      model: `Pixel ${pixel[1]}`
+    };
+  }
+  
+  // Generic detection by type
+  if (/mobile|android(?!.*tablet)|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
+    deviceType = "mobile";
+  } else if (/tablet|ipad|playbook|silk|android(?!.*mobile)/i.test(ua)) {
+    deviceType = "tablet";
+  } else if (/TV|SmartTV|WebTV|AppleTV/i.test(ua)) {
+    deviceType = "tv";
+  } else if (/bot|crawler|spider|slurp|googlebot/i.test(ua)) {
+    deviceType = "bot";
+  } else {
+    deviceType = "desktop";
+  }
+  
+  return { 
+    type: deviceType,
+    brand: brand,
+    model: model,
+    fullUserAgent: ua
+  };
 };
 
 // Modify the existing formatMetadata function
@@ -350,7 +497,7 @@ ${chalk.red('══════════════════════�
 }
 
 // Format user interaction logs
-function formatUserInteraction(user, action, details) {
+function formatUserInteraction(user, action, details, env) {
   const userInfo = user ? `${user.nickname} (${user.role})` : 'Anonymous';
   let formattedDetails = '';
   
@@ -361,8 +508,13 @@ function formatUserInteraction(user, action, details) {
   } else {
     formattedDetails = JSON.stringify(details);
   }
+
+  // Always include environment
+  const envPrefix = env ? 
+    `${chalk.bgMagenta(chalk.white(` ${env} `))} ` : 
+    `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${environment} `)) + ' ' : ''}`;
   
-  return `👤 ${userInfo} | ${action} | ${formattedDetails}`;
+  return `${envPrefix}👤 ${userInfo} | ${action} | ${formattedDetails}`;
 }
 
 // Format memory stats
@@ -469,8 +621,8 @@ const customFormat = winston.format.printf(
 
     // Format user interaction logs
     if (message === ANALYTICS_PATTERNS.USER_INTERACTION) {
-      const { user, action, details } = metadata;
-      return `${ts} ${levelStyle.badge} ${formatUserInteraction(user, action, details)}`;
+      const { user, action, details, environment: env } = metadata;
+      return `${ts} ${levelStyle.badge} ${formatUserInteraction(user, action, details, env || metadata.environment || environment)}`;
     }
 
     // Format event loop lag logs
@@ -491,24 +643,37 @@ const customFormat = winston.format.printf(
 // File format (without colors, but with structured data for frontend)
 const fileFormat = winston.format.printf(
   ({ level, message, timestamp, service, ...metadata }) => {
-    const pattern = detectLogPattern(message);
-    const formattedMeta = formatMetadata(metadata, level);
+    // Ensure metadata exists and is an object
+    const safeMetadata = metadata || {};
+    const pattern = message ? detectLogPattern(message) : null;
+    const formattedMeta = formatMetadata(safeMetadata, level);
 
     // Create a structured log entry that's easy to parse in the frontend
     const logEntry = {
       timestamp: timestamp || new Date().toISOString(),
       formatted_time: formatTimestamp(timestamp),
-      level: level.toLowerCase(),
-      message,
+      level: level ? level.toLowerCase() : 'info',
+      message: message || '',
       service,
       service_icon: service ? SERVICE_COLORS[service]?.icon : null,
-      level_icon: LEVEL_STYLES[level]?.icon,
+      level_icon: level ? LEVEL_STYLES[level]?.icon : null,
       pattern_type: pattern?.type,
       show_in_group: pattern?.showInGroup,
       details: formattedMeta,
+      environment: safeMetadata.environment || environment,
     };
 
-    return JSON.stringify(logEntry);
+    try {
+      return JSON.stringify(logEntry);
+    } catch (err) {
+      // If JSON stringify fails, return a simplified version
+      return JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'error',
+        message: 'Error serializing log entry',
+        error: err.message
+      });
+    }
   }
 );
 
@@ -554,8 +719,54 @@ const logtail = new Logtail(LOGTAIL_TOKEN, {
   contextMetadata: {
     environment,
     port: process.env.PORT,
-    nodeVersion: process.version
+    nodeVersion: process.version,
+    appName: 'DegenDuel API'
   }
+});
+
+// Add a processor to enhance logs with additional information before they're sent to Logtail
+logtail.use((log) => {
+  // Make sure metadata exists
+  if (!log.metadata) {
+    log.metadata = {};
+  }
+  
+  // Always ensure environment is set
+  log.metadata.environment = log.metadata.environment || environment;
+  
+  // Parse user agent information if available
+  if (log.metadata.headers && log.metadata.headers["user-agent"]) {
+    const ua = log.metadata.headers["user-agent"];
+    log.metadata.browser = parseBrowser(ua);
+    log.metadata.os = parseOS(ua);
+    log.metadata.device = getDeviceType(log.metadata.headers);
+  }
+  
+  // Parse IP information if available
+  if (log.metadata.ip || (log.metadata.headers && (log.metadata.headers["x-real-ip"] || log.metadata.headers["x-forwarded-for"]))) {
+    log.metadata.clientIp = log.metadata.ip || log.metadata.headers["x-real-ip"] || log.metadata.headers["x-forwarded-for"];
+  }
+  
+  // Add timestamp in a consistent format
+  log.metadata.formattedTime = formatTimestamp(log.dt);
+  
+  // Special case for handling Solana rate limit messages
+  if (log.message && log.message.includes('429 Too Many Requests') && log.message.includes('Retrying after')) {
+    // Extract retry timing if available
+    const retryMatch = /Retrying after (\d+)ms/.exec(log.message);
+    const retryMs = retryMatch ? parseInt(retryMatch[1]) : null;
+    
+    // Add standardized metadata
+    log.metadata.service = 'SOLANA';
+    log.metadata.error_type = 'RATE_LIMIT';
+    log.metadata.retry_ms = retryMs;
+    log.metadata.rpc_provider = process.env.QUICKNODE_MAINNET_HTTP || 'unknown';
+    
+    // Add enhanced context
+    log.message = `${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Retry in ${retryMs}ms${fancyColors.RESET}`;
+  }
+  
+  return log;
 });
 
 const logtailTransport = new LogtailTransport(logtail);
@@ -576,7 +787,32 @@ const logApi = winston.createLogger({
   transports: [
     // Console transport (colorized, human-readable)
     new winston.transports.Console({
-      format: winston.format.combine(winston.format.timestamp(), customFormat),
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        // Add special formatter for rate limit messages
+        winston.format((info) => {
+          // Handle rate limit messages from Solana
+          if (typeof info.message === 'string' && 
+              info.message.includes('429 Too Many Requests') && 
+              info.message.includes('Retrying after')) {
+            
+            // Extract retry timing if available
+            const retryMatch = /Retrying after (\d+)ms/.exec(info.message);
+            const retryMs = retryMatch ? parseInt(retryMatch[1]) : null;
+            
+            // Add standardized metadata
+            info.service = 'SOLANA';
+            info.error_type = 'RATE_LIMIT';
+            info.retry_ms = retryMs;
+            info.environment = environment;
+            
+            // Reformat the message with service prefix and color
+            info.message = `${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Retry in ${retryMs}ms${fancyColors.RESET}`;
+          }
+          return info;
+        })(),
+        customFormat
+      ),
       level: CONSOLE_LEVEL,
     }),
     // File transports (JSON formatted for parsing)
@@ -649,6 +885,7 @@ logApi.analytics = {
       user,
       headers,
       timestamp: new Date().toISOString(),
+      environment, // Always include environment
     });
   },
   trackInteraction: (user, action, details, headers) => {
@@ -658,10 +895,18 @@ logApi.analytics = {
       details,
       headers,
       timestamp: new Date().toISOString(),
+      environment, // Always include environment
+      // Enhanced device info by parsing user agent
+      deviceInfo: headers && headers["user-agent"] ? {
+        browser: parseBrowser(headers["user-agent"]),
+        os: parseOS(headers["user-agent"]),
+        device: getDeviceType(headers),
+        ip: headers["x-real-ip"] || headers["x-forwarded-for"] || headers["ip"]
+      } : null
     });
   },
   trackPerformance: (metrics) => {
-    logApi.info('API Performance Stats', metrics);
+    logApi.info('API Performance Stats', { ...metrics, environment });
   },
   trackFeature: (feature, user, details) => {
     logApi.info(ANALYTICS_PATTERNS.FEATURE_USAGE, {
@@ -669,8 +914,68 @@ logApi.analytics = {
       user,
       details,
       timestamp: new Date().toISOString(),
+      environment, // Always include environment
     });
   },
+};
+
+// Patch console.log and console.error to capture and reformat specific types of messages
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+
+// Helper function to process messages for both console.log and console.error
+const processMessage = function(args) {
+  // Convert arguments to a proper array
+  args = Array.from(args);
+  
+  // Check if this is a rate limit message
+  if (args.length > 0 && typeof args[0] === 'string') {
+    const message = args[0];
+    
+    if (message.includes('429 Too Many Requests') && message.includes('Retrying after')) {
+      // Extract retry timing if available
+      const retryMatch = /Retrying after (\d+)ms/.exec(message);
+      const retryMs = retryMatch ? parseInt(retryMatch[1]) : 500;
+      
+      // Log through our proper logging system instead
+      logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Retry in ${retryMs}ms${fancyColors.RESET}`, {
+        service: 'SOLANA',
+        error_type: 'RATE_LIMIT',
+        retry_ms: retryMs,
+        rpc_provider: config?.rpc_urls?.primary || 'unknown',
+        environment: environment,
+        original_message: message
+      });
+      
+      // Signal that we've handled this message
+      return true;
+    }
+  }
+  
+  // Signal that we haven't handled this message
+  return false;
+};
+
+// Override console.log
+console.log = function() {
+  if (processMessage(arguments)) {
+    // Message was handled, don't call original
+    return;
+  }
+  
+  // For all other messages, call the original console.log
+  originalConsoleLog.apply(console, arguments);
+};
+
+// Override console.error
+console.error = function() {
+  if (processMessage(arguments)) {
+    // Message was handled, don't call original
+    return;
+  }
+  
+  // For all other messages, call the original console.error
+  originalConsoleError.apply(console, arguments);
 };
 
 // Export both default and named

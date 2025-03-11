@@ -5,6 +5,7 @@ import contestEvaluationService from '../services/contestEvaluationService.js';
 import AdminLogger from '../utils/admin-logger.js';
 import walletRakeService from '../services/walletRakeService.js';
 import prisma from '../config/prisma.js';
+import { fancyColors } from '../utils/colors.js';
 
 /* 
  * I am unclear on the current state of this controller.
