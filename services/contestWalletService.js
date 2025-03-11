@@ -509,7 +509,15 @@ class ContestWalletService extends BaseService {
                     
                     // Add a longer delay if we hit rate limits
                     if (error.message.includes('429') || error.message.includes('rate') || error.message.includes('limit')) {
-                        logApi.warn(`[contestWalletService] Rate limit detected, adding delay before next batch`);
+                        logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Adding 3000ms delay${fancyColors.RESET}`, {
+                            service: 'SOLANA',
+                            error_type: 'RATE_LIMIT',
+                            batch: currentBatch + 1,
+                            total_batches: totalBatches,
+                            retry_ms: 3000,
+                            rpc_provider: config.rpc_urls.primary,
+                            error_message: error.message
+                        });
                         await new Promise(resolve => setTimeout(resolve, 3000));
                     }
                 }

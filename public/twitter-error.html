@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DegenDuel - Twitter OAuth Error</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #1e293b;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #f43f5e;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        h2 {
+            color: #e2e8f0;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        p {
+            margin-bottom: 1.5rem;
+            color: #cbd5e1;
+        }
+        .error-box {
+            background-color: #45261c;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            border-left: 4px solid #fb7185;
+            margin-bottom: 1.5rem;
+        }
+        .error-box h3 {
+            color: #fb7185;
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+        .error-details {
+            font-family: monospace;
+            background-color: #334155;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            margin-right: 1rem;
+            margin-bottom: 1rem;
+        }
+        .button:hover {
+            background-color: #1d4ed8;
+        }
+        .button.secondary {
+            background-color: #475569;
+        }
+        .button.secondary:hover {
+            background-color: #334155;
+        }
+        .button-group {
+            margin-top: 2rem;
+        }
+        .code-block {
+            background-color: #334155;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            font-family: monospace;
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+        .info-list {
+            margin-bottom: 1.5rem;
+            list-style-type: none;
+        }
+        .info-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+        .info-list .label {
+            font-weight: 500;
+            color: #e2e8f0;
+        }
+        .info-list .value {
+            font-family: monospace;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Twitter OAuth Error</h1>
+        
+        <div class="error-box">
+            <h3>Error Type: <span id="errorType">Unknown Error</span></h3>
+            <p id="errorDescription">An error occurred during Twitter authentication.</p>
+            <div class="error-details" id="errorDetails">
+                No detailed error information available.
+            </div>
+        </div>
+
+        <h2>What happened?</h2>
+        <p>
+            An error occurred during the Twitter authentication process. This might be due to:
+        </p>
+        <ul class="info-list">
+            <li>
+                <span class="label">Session issues</span>
+                <span class="value">Session data couldn't be maintained between requests</span>
+            </li>
+            <li>
+                <span class="label">OAuth configuration</span>
+                <span class="value">Misconfigured Twitter API settings</span>
+            </li>
+            <li>
+                <span class="label">Callback URI mismatch</span>
+                <span class="value">The callback URL doesn't match what's registered in Twitter</span>
+            </li>
+            <li>
+                <span class="label">Network issues</span>
+                <span class="value">Connection problems with Twitter's API</span>
+            </li>
+        </ul>
+
+        <h2>Troubleshooting Steps</h2>
+        <p>
+            Here are some steps that might help resolve the issue:
+        </p>
+        <ol class="info-list">
+            <li>
+                <span class="label">Check authentication status</span>
+                <span class="value">Try logging in with your wallet instead</span>
+            </li>
+            <li>
+                <span class="label">Clear browser cookies</span>
+                <span class="value">This can help with session-related issues</span>
+            </li>
+            <li>
+                <span class="label">Try a different browser</span>
+                <span class="value">Some browser extensions might interfere with OAuth</span>
+            </li>
+            <li>
+                <span class="label">Try again later</span>
+                <span class="value">Twitter's API might be temporarily unavailable</span>
+            </li>
+        </ol>
+
+        <div class="button-group">
+            <a href="/" class="button">Return to Homepage</a>
+            <a href="/connect-wallet" class="button secondary">Connect Wallet Instead</a>
+            <a href="/api/auth/twitter/check-config" class="button secondary" target="_blank">Check Twitter Configuration</a>
+        </div>
+    </div>
+
+    <script>
+        // Extract error information from URL parameters
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Update error information on the page
+        document.addEventListener('DOMContentLoaded', () => {
+            const errorType = getQueryParam('error') || 'Unknown Error';
+            const errorDescription = getQueryParam('description') || 'No additional information available.';
+            const errorDetails = getQueryParam('details') || '';
+            
+            document.getElementById('errorType').textContent = errorType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('errorDescription').textContent = errorDescription;
+            
+            if (errorDetails) {
+                document.getElementById('errorDetails').textContent = errorDetails;
+            }
+            
+            // Log to console for easier debugging
+            console.error('Twitter OAuth Error:', {
+                type: errorType,
+                description: errorDescription,
+                details: errorDetails
+            });
+        });
+    </script>
+</body>
+</html>

@@ -318,8 +318,8 @@ class TokenDataWebSocket extends BaseWebSocketServer {
    * Override the onCleanup method to remove the market data listener
    */
   async onCleanup() {
-    // Remove event listener
-    marketDataService.removeListener('market:broadcast', this.marketDataListener);
+    // Remove event listener - use serviceEvents since that's where we added the listener
+    serviceEvents.off('market:broadcast', this.marketDataListener);
     
     logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.CYAN}Token Data WebSocket cleaned up${fancyColors.RESET}`, {
       broadcasts: this.broadcasts.count,

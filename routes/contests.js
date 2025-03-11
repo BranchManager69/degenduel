@@ -11,6 +11,7 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import prisma from '../config/prisma.js';
 import ReferralService from '../services/referralService.js';
 import cache from '../utils/cache.js';
+import { config } from '../config/config.js';
 ////import { sendSMSAlert, formatContestWalletAlert } from '../utils/notification-suite/sms-alerts.js';
 
 const { Prisma } = pkg;

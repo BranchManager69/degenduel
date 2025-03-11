@@ -28,10 +28,13 @@ class SkyDuelWebSocketServer {
             throw new Error('HTTP server instance is required to initialize SkyDuel WebSocket');
         }
 
+        // Use the v69 standard path for SkyDuel WebSocket
         this.wss = new WebSocket.Server({ 
             server, 
-            path: '/api/v2/ws/skyduel'
+            path: '/api/v69/ws/skyduel'
         });
+        
+        logApi.info(`SkyDuel WebSocket server configured on path: /api/v69/ws/skyduel`);
 
         this.adminSessions = new Map(); // Map of active admin sessions
         this.serviceSubscriptions = new Map(); // Map of service name to set of WebSocket connections

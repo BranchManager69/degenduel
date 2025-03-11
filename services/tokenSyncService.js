@@ -19,12 +19,14 @@ import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 // Solana
-import { TOKEN_VALIDATION } from '../config/constants.js'; //TODO: Verify all is correct
+import { TOKEN_VALIDATION } from '../config/constants.js';
 import { PublicKey } from '@solana/web3.js';
 // Other
 import axios from 'axios';
 import { Decimal } from '@prisma/client/runtime/library';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+// Import marketDataService to replace deprecated API endpoints
+import marketDataService from './marketDataService.js';
 
 const TOKEN_SYNC_CONFIG = {
     name: SERVICE_NAMES.TOKEN_SYNC,
@@ -361,169 +363,299 @@ class TokenSyncService extends BaseService {
         }
     }
 
-    // Fetch token prices
-    async fetchTokenPrices(addresses) {
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]\t${fancyColors.RESET} ${fancyColors.DARK_GRAY}Fetching prices for ${fancyColors.BOLD}${addresses.length}${fancyColors.RESET}${fancyColors.DARK_GRAY} tokens...${fancyColors.RESET}`);
+    // Helper function to format price with smart significant digits
+    formatPrice(price) {
+        if (price === null || price === undefined) return "N/A";
         
-        // Check if price endpoint is configured
-        const pricesEndpoint = this.config.api.endpoints.prices;
-        if (!pricesEndpoint) {
-            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Price API endpoint not configured, using fallback data${fancyColors.RESET}`);
-            return [];
+        // For high value tokens (≥ $1), show 2 decimal places
+        if (price >= 1) {
+            return price.toFixed(2);
         }
+        // For medium value tokens ($0.01 to $1), show 4 decimal places
+        else if (price >= 0.01) {
+            return price.toFixed(4);
+        }
+        // For low value tokens ($0.0001 to $0.01), show 6 decimal places
+        else if (price >= 0.0001) {
+            return price.toFixed(6);
+        }
+        // For very low value tokens ($0.00000001 to $0.0001), show 8 decimal places
+        else if (price >= 0.00000001) {
+            return price.toFixed(8);
+        }
+        // For extremely low value meme coins, use scientific notation
+        else {
+            return price.toExponential(2);
+        }
+    }
+    
+    // Helper function to format market cap with appropriate suffix (K, M, B, T)
+    formatMarketCap(marketCap) {
+        if (!marketCap || marketCap <= 0) return "N/A";
+        
+        const trillion = 1_000_000_000_000;
+        const billion = 1_000_000_000;
+        const million = 1_000_000;
+        const thousand = 1_000;
+        
+        // Format with appropriate suffix and decimal precision
+        if (marketCap >= trillion) {
+            // Trillions with no decimal for huge caps (≥ $1T)
+            return `$${Math.floor(marketCap / trillion)}T`;
+        } else if (marketCap >= billion) {
+            // Billions with no decimal for large caps (≥ $1B)
+            return `$${Math.floor(marketCap / billion)}B`;
+        } else if (marketCap >= 100 * million) {
+            // Hundreds of millions with no decimal (≥ $100M)
+            return `$${Math.floor(marketCap / million)}M`;
+        } else if (marketCap >= 10 * million) {
+            // Tens of millions with 1 decimal (≥ $10M)
+            return `$${(marketCap / million).toFixed(1)}M`;
+        } else if (marketCap >= million) {
+            // Single-digit millions with 2 decimals (≥ $1M)
+            return `$${(marketCap / million).toFixed(2)}M`;
+        } else if (marketCap >= 100 * thousand) {
+            // Hundreds of thousands with no decimal (≥ $100K)
+            return `$${Math.floor(marketCap / thousand)}K`;
+        } else if (marketCap >= thousand) {
+            // Thousands with 1 decimal (≥ $1K)
+            return `$${(marketCap / thousand).toFixed(1)}K`;
+        } else {
+            // Below $1K just show the actual number
+            return `$${Math.floor(marketCap)}`;
+        }
+    }
 
-        // Get bulk token data from DD-serve
-        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET}\t\t ${fancyColors.GRAY}Fetching market data from${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.BLUE}${pricesEndpoint}${fancyColors.RESET}`);
+    // Fetch token prices using marketDataService
+    async fetchTokenPrices(addresses) {
+        logApi.info(`[tokenSyncService] Fetching prices for ${addresses.length} tokens...`);
+        
         try {
-            // Make the API call
-            const data = await this.makeApiCall(pricesEndpoint, {
-                method: 'POST',
-                data: { addresses }
+            // For each address, get token data from marketDataService
+            const pricePromises = addresses.map(async (address) => {
+                const token = await marketDataService.getTokenByAddress(address);
+                if (token) {
+                    return {
+                        contractAddress: address,
+                        price: token.price || 0,
+                        marketCap: token.market_cap || null,
+                        timestamp: new Date().toISOString()
+                    };
+                }
+                return null;
             });
             
-            // Validate the response format
-            if (!data || !data.data || !Array.isArray(data.data)) {
-                logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Invalid price data format received${fancyColors.RESET}`);
-                return [];
-            }
+            // Wait for all token data fetches to complete
+            const results = await Promise.all(pricePromises);
             
-            // Log the response
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.GREEN}Received price data for ${fancyColors.BOLD_GREEN}${data.data.length}${fancyColors.RESET} ${fancyColors.GREEN}tokens${fancyColors.RESET}`);
-            return data.data;
+            // Filter out null results
+            const validResults = results.filter(result => result !== null);
+            
+            logApi.info(`[tokenSyncService] Received price data for ${validResults.length}/${addresses.length} tokens`);
+            
+            return validResults;
         } catch (error) {
-            // Handle 404 error by using fallback empty data
-            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.BOLD} PRICE API UNAVAILABLE ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.DARK_RED} No prices fetched${fancyColors.RESET} \n\t\t${fancyColors.LIGHT_RED}${error.message}${fancyColors.RESET} \t${fancyColors.LIGHT_RED}Trying fallback token data...${fancyColors.RESET}`);
-            // Return empty array for now to prevent initialization failure
+            logApi.error(`[tokenSyncService] Error fetching token prices: ${error.message}`);
             return [];
         }
     }
 
-    // Fetch token data
+    // Fetch token data directly from marketDataService
     async fetchTokenData() {
-        // Check if primary endpoint is valid
-        const tokensEndpoint = this.config.api.endpoints.tokens; // TODO: <----- PRIORITY 1: Transplant the current endpoint with the new one (MARKET_DATABASE_URL via new v69 websocket)
-        if (!tokensEndpoint) {
-            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Primary token data endpoint not configured or invalid${fancyColors.RESET}`);
-        } else {
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_GREEN}Attempting to fetch token data from ${fancyColors.RESET} ${fancyColors.UNDERLINE}${fancyColors.BLUE}${tokensEndpoint}${fancyColors.RESET}`);
-            try {
-                const result = await this.makeApiCall(tokensEndpoint);
-                
-                // Make sure we have a valid response with data array
-                if (!result || !result.data || !Array.isArray(result.data)) {
-                    throw ServiceError.validation('Invalid data format from token API', { 
-                        endpoint: this.config.api.endpoints.tokens,
-                        result: JSON.stringify(result).substring(0, 100) + '...'
-                    });
-                }
-                
-                // Log the response
-                logApi.info(`${fancyColors.BG_DEBUG_GAME_DATABASE}${fancyColors.DARK_MAGENTA}[tokenSyncService]${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.DARK_GREEN}Game database currently contains ${fancyColors.GRAY}${result.data.length}${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.DARK_GREEN}tokens____________${fancyColors.RESET}`);
-                return result.data;
-            } catch (error) {
-                logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ⚠️  ${fancyColors.DARK_RED}${fancyColors.BOLD} ERROR! ${fancyColors.RESET}⚠️ \n\t\t${fancyColors.BOLD_RED}Error fetching token data from primary source:${fancyColors.RESET}\n\t\t\t${fancyColors.BOLD}${fancyColors.LIGHT_RED}${error.message}${fancyColors.RESET}`);
-                // Continue to fallbacks
-            }
-        }
-            
-        // Try local fallback endpoint if the URL is valid
-        if (this.config.api.endpoints.fallback) {
-            try {
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.ORANGE}Attempting to fetch from local fallback endpoint${fancyColors.RESET}`);
-                const fallbackResult = await this.makeApiCall(this.config.api.endpoints.fallback);
-                
-                if (fallbackResult && Array.isArray(fallbackResult)) {
-                    logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.YELLOW}Received ${fallbackResult.length} tokens from local fallback${fancyColors.RESET}`);
-                    return fallbackResult;
-                } else if (fallbackResult && fallbackResult.data && Array.isArray(fallbackResult.data)) {
-                    logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.YELLOW}Received ${fallbackResult.data.length} tokens from local fallback (data property)${fancyColors.RESET}`);
-                    return fallbackResult.data;
-                }
-            } catch (fallbackError) {
-                logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_RED}Fallback endpoint also failed:${fancyColors.RESET} ${fancyColors.DARK_RED}${fancyColors.ITALIC}${fallbackError.message}${fancyColors.RESET}`);
-            }
-        } else {
-            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BOLD_RED}No valid fallback endpoint configured.${fancyColors.RESET} ${fancyColors.RED}Skipping fallback attempt.${fancyColors.RESET}`);
-        }
-            
-        // If fallback also fails, try to use database
-        const existingTokens = await prisma.tokens.findMany({
-            where: { is_active: true },
-            include: { token_prices: true }
-        });
+        logApi.info(`[tokenSyncService] Fetching token data from marketDataService`);
         
-        if (existingTokens.length > 0) {
-            logApi.info(`${fancyColors.BG_DEBUG_GAME_DATABASE}${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.ORANGE}Using the existing ${fancyColors.BOLD_YELLOW}${fancyColors.UNDERLINE}${existingTokens.length}${fancyColors.RESET}${fancyColors.BOLD_YELLOW} ${fancyColors.ORANGE}tokens from database as fallback ${fancyColors.RESET}`);
+        try {
+            // Get all tokens directly from marketDataService
+            const tokensFromMarketService = await marketDataService.getAllTokens();
+
+            if (tokensFromMarketService && tokensFromMarketService.length > 0) {
+                logApi.info(`[tokenSyncService] Successfully fetched ${tokensFromMarketService.length} tokens from marketDataService`);
+                
+                // Transform the data to the expected format for tokenSyncService
+                return tokensFromMarketService.map(token => ({
+                    id: token.id,
+                    symbol: token.symbol,
+                    name: token.name,
+                    contractAddress: token.address,
+                    price: token.price || 0,
+                    marketCap: token.market_cap,
+                    volume24h: token.volume_24h,
+                    chain: "solana",
+                    changesJson: { h24: token.change_24h },
+                    imageUrl: token.image_url,
+                    socials: token.socials || {
+                        twitter: token.socials?.twitter,
+                        telegram: token.socials?.telegram,
+                        discord: token.socials?.discord
+                    },
+                    websites: token.websites ? token.websites.map(w => w.url || w) : []
+                }));
+            }
             
-            // Transform to expected format
-            return existingTokens.map(token => ({
-                id: token.id,
-                symbol: token.symbol,
-                name: token.name,
-                contractAddress: token.address,
-                price: token.token_prices?.price || 0,
-                marketCap: token.market_cap,
-                volume24h: token.volume_24h,
-                chain: "solana",
-                changesJson: { h24: token.change_24h },
-                imageUrl: token.image_url,
-                socials: {
-                    twitter: token.twitter_url,
-                    telegram: token.telegram_url,
-                    discord: token.discord_url
-                },
-                websites: token.website_url ? [token.website_url] : []
-            }));
+            // Fallback to database if marketDataService returns no data
+            logApi.warn(`[tokenSyncService] No tokens returned from marketDataService, using local database fallback`);
+            
+            // If marketDataService fails, use local database as fallback
+            const existingTokens = await prisma.tokens.findMany({
+                where: { is_active: true },
+                include: { token_prices: true }
+            });
+            
+            if (existingTokens.length > 0) {
+                logApi.info(`[tokenSyncService] Using ${existingTokens.length} tokens from local database as fallback`);
+                
+                // Transform to expected format
+                return existingTokens.map(token => ({
+                    id: token.id,
+                    symbol: token.symbol,
+                    name: token.name,
+                    contractAddress: token.address,
+                    price: token.token_prices?.price || 0,
+                    marketCap: token.market_cap,
+                    volume24h: token.volume_24h,
+                    chain: "solana",
+                    changesJson: { h24: token.change_24h },
+                    imageUrl: token.image_url,
+                    socials: {
+                        twitter: token.twitter_url,
+                        telegram: token.telegram_url,
+                        discord: token.discord_url
+                    },
+                    websites: token.website_url ? [token.website_url] : []
+                }));
+            }
+            
+            // If we have no data at all, return empty array rather than failing
+            logApi.error(`[tokenSyncService] All token data sources failed. Returning empty array.`);
+            return [];
+        } catch (error) {
+            logApi.error(`[tokenSyncService] Error fetching token data: ${error.message}`);
+            
+            // If marketDataService fails, try local database as last resort
+            try {
+                const existingTokens = await prisma.tokens.findMany({
+                    where: { is_active: true },
+                    include: { token_prices: true }
+                });
+                
+                if (existingTokens.length > 0) {
+                    logApi.info(`[tokenSyncService] Recovered with ${existingTokens.length} tokens from local database after error`);
+                    
+                    // Transform to expected format
+                    return existingTokens.map(token => ({
+                        id: token.id,
+                        symbol: token.symbol,
+                        name: token.name,
+                        contractAddress: token.address,
+                        price: token.token_prices?.price || 0,
+                        marketCap: token.market_cap,
+                        volume24h: token.volume_24h,
+                        chain: "solana",
+                        changesJson: { h24: token.change_24h },
+                        imageUrl: token.image_url,
+                        socials: {
+                            twitter: token.twitter_url,
+                            telegram: token.telegram_url,
+                            discord: token.discord_url
+                        },
+                        websites: token.website_url ? [token.website_url] : []
+                    }));
+                }
+            } catch (dbError) {
+                logApi.error(`[tokenSyncService] Failed to fetch tokens from local database: ${dbError.message}`);
+            }
+            
+            return [];
         }
-        
-        // If we have no data at all, return empty array rather than failing
-        logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_RED}${fancyColors.BOLD}All token data sources failed.${fancyColors.RESET} ${fancyColors.BG_DARK_RED}Returning empty array...${fancyColors.RESET}`);
-        return [];
     }
 
     // Core sync operations
     async updatePrices() {
         const startTime = Date.now();
-        logApi.info(`${fancyColors.BG_DEBUG_GAME_DATABASE}${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET}${fancyColors.BG_DEBUG_GAME_DATABASE} ${fancyColors.BG_DARK_GREEN} Price update cycle starting______________________${fancyColors.RESET}`, {
-        //    startTime: startTime,
-        });
+        logApi.info(`[tokenSyncService] Price update cycle starting`);
         
         try {
             // Get all tokens that are currently active in DegenDuel
             const activeTokens = await prisma.tokens.findMany({
                 where: { is_active: true },
-                select: { address: true, id: true }
+                select: { address: true, id: true, symbol: true }
             });
 
             if (activeTokens.length === 0) {
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}No active tokens found for price update${fancyColors.RESET}`);
+                logApi.info(`[tokenSyncService] No active tokens found for price update`);
                 return;
             }
 
-            // Map addresses to their corresponding IDs
+            // Map addresses to their corresponding IDs and symbols
             const addresses = activeTokens.map(token => token.address);
-            const addressToId = Object.fromEntries(activeTokens.map(token => [token.address, token.id]));
+            const tokenMap = Object.fromEntries(activeTokens.map(token => [token.address, { id: token.id, symbol: token.symbol }]));
+
+            // Get current prices to compare with
+            const currentPrices = await prisma.token_prices.findMany({
+                where: { token_id: { in: activeTokens.map(token => token.id) } },
+                include: { tokens: { select: { symbol: true, address: true, market_cap: true } } }
+            });
+            
+            // Create a map of addresses to current prices
+            const currentPriceMap = Object.fromEntries(
+                currentPrices.map(price => [
+                    price.tokens.address, 
+                    { 
+                        price: parseFloat(price.price), 
+                        symbol: price.tokens.symbol,
+                        marketCap: price.tokens.market_cap ? parseFloat(price.tokens.market_cap) : null
+                    }
+                ])
+            );
 
             // Fetch prices for all active tokens
+            logApi.info(`[tokenSyncService] Fetching prices for ${addresses.length} tokens...`);
             const priceData = await this.fetchTokenPrices(addresses);
+            
+            // Track price changes for reporting
+            const priceChanges = [];
             
             // Update prices in the database
             let updatedCount = 0;
             await prisma.$transaction(async (tx) => {
                 for (const token of priceData) {
-                    const tokenId = addressToId[token.contractAddress];
-                    if (!tokenId) continue;
+                    const tokenInfo = tokenMap[token.contractAddress];
+                    if (!tokenInfo) continue;
+
+                    const tokenId = tokenInfo.id;
+                    const newPrice = parseFloat(token.price);
+                    const oldPriceInfo = currentPriceMap[token.contractAddress];
+                    const oldPrice = oldPriceInfo ? oldPriceInfo.price : 0;
+                    const marketCap = token.marketCap || (oldPriceInfo ? oldPriceInfo.marketCap : null);
+                    
+                    // Calculate percentage change if old price exists and is not zero
+                    let percentChange = 0;
+                    if (oldPrice > 0) {
+                        percentChange = ((newPrice - oldPrice) / oldPrice) * 100;
+                    }
+                    
+                    // Track significant price changes (> 0.1%)
+                    if (Math.abs(percentChange) > 0.1) {
+                        priceChanges.push({
+                            symbol: tokenInfo.symbol,
+                            oldPrice,
+                            newPrice,
+                            percentChange,
+                            marketCap,
+                            address: token.contractAddress
+                        });
+                    }
 
                     // Upsert the price data into the database
                     await tx.token_prices.upsert({
                         where: { token_id: tokenId },
                         create: {
                             token_id: tokenId,
-                            price: new Decimal(token.price),
+                            price: new Decimal(newPrice),
                             updated_at: new Date(token.timestamp)
                         },
                         update: {
-                            price: new Decimal(token.price),
+                            price: new Decimal(newPrice),
                             updated_at: new Date(token.timestamp)
                         }
                     });
@@ -538,18 +670,46 @@ class TokenSyncService extends BaseService {
                 (this.syncStats.performance.averageOperationTimeMs * this.syncStats.operations.total + duration) / 
                 (this.syncStats.operations.total + 1);
 
-            // Log the results
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Price update cycle completed ${fancyColors.RESET}`, {
-            //    totalTokens: activeTokens.length,
-            //    pricesReceived: priceData.length,
-            //    pricesUpdated: updatedCount,
-            //    duration: `${duration}ms`
-            });
+            // Log the basic results
+            logApi.info(`[tokenSyncService] Price update cycle completed: ${updatedCount}/${priceData.length} tokens updated in ${duration}ms`);
+            
+            // If there are significant price changes, log them in a separate message
+            if (priceChanges.length > 0) {
+                // Sort by absolute percentage change (largest first)
+                priceChanges.sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange));
+                
+                // Format the top changes (up to 5) for display
+                const topChanges = priceChanges.slice(0, 5).map(change => {
+                    const direction = change.percentChange > 0 ? '🟢' : '🔴';
+                    const formattedPercent = change.percentChange.toFixed(2);
+                    // Color formatting based on direction
+                    const coloredPercent = change.percentChange > 0 ? 
+                        `\x1b[32m+${formattedPercent}%\x1b[0m` : 
+                        `\x1b[31m${formattedPercent}%\x1b[0m`;
+                    
+                    // Smart format the price and market cap
+                    const formattedPrice = this.formatPrice(change.newPrice);
+                    const formattedMC = this.formatMarketCap(change.marketCap);
+                    
+                    // Format: Symbol PercentChange Price MC
+                    return `${direction} ${change.symbol.padEnd(6)} ${coloredPercent} $${formattedPrice.padEnd(12)} MC:$${formattedMC}`;
+                }).join('\n    ');
+                
+                // Log the price changes with the total count and details
+                logApi.info(`[tokenSyncService] Detected ${priceChanges.length} significant price changes:\n    ${topChanges}`);
+                
+                // If there are more changes than we displayed, mention it
+                if (priceChanges.length > 5) {
+                    logApi.info(`[tokenSyncService] ...and ${priceChanges.length - 5} more changes`);
+                }
+            } else {
+                logApi.info(`[tokenSyncService] No significant price changes detected`);
+            }
         } catch (error) {
             if (error.isServiceError) throw error;
             
             // Log the error
-            logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Error updating token prices:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
+            logApi.error(`[tokenSyncService] Error updating token prices: ${error.message}`);
             throw ServiceError.operation('Failed to update token prices', {
                 duration: Date.now() - startTime,
                 error: error.message
@@ -562,7 +722,7 @@ class TokenSyncService extends BaseService {
         const startTime = Date.now();
         
         try {
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_GREEN} Starting metadata update.  ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_DARK_GREEN}${fancyColors.WHITE}${fullData.length} ${fancyColors.RESET}${fancyColors.BG_DARK_GREEN}tokens to process ${fancyColors.RESET}`);
+            logApi.info(`[tokenSyncService] Starting metadata update for ${fullData.length} tokens`);
 
             let created = 0;
             let updated = 0;
@@ -575,7 +735,7 @@ class TokenSyncService extends BaseService {
                     try {
                         // Skip tokens with missing essential data
                         if (!token?.contractAddress || !token?.symbol || !token?.name) {
-                            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Skipping token with missing required fields${fancyColors.RESET}`, {
+                            logApi.warn(`[tokenSyncService] Skipping token with missing required fields`, {
                                 address: token?.contractAddress,
                                 symbol: token?.symbol,
                                 name: token?.name
@@ -613,7 +773,7 @@ class TokenSyncService extends BaseService {
                                 validationError.details?.field === 'address') {
                                 
                                 // For address errors, log clearly and skip this token
-                                logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}SKIPPING TOKEN - Invalid Solana address: ${token.contractAddress}${fancyColors.RESET}`, {
+                                logApi.warn(`[tokenSyncService] SKIPPING TOKEN - Invalid Solana address: ${token.contractAddress}`, {
                                     error: validationError.message,
                                     details: validationError.details
                                 });
@@ -624,7 +784,7 @@ class TokenSyncService extends BaseService {
                             }
                             
                             // For other validation errors, log but continue with best effort
-                            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.RED}Validation error for token ${token.contractAddress}: ${validationError.message}${fancyColors.RESET}`);
+                            logApi.warn(`[tokenSyncService] Validation error for token ${token.contractAddress}: ${validationError.message}`);
                             
                             // Fall back to minimal valid data
                             validatedData = {

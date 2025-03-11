@@ -985,33 +985,54 @@ export class BaseWebSocketServer {
    */
   updateStats() {
     // Calculate average latency
-    if (this.stats.latencies.length > 0) {
+    if (this.stats && this.stats.latencies && Array.isArray(this.stats.latencies) && this.stats.latencies.length > 0) {
       const sum = this.stats.latencies.reduce((a, b) => a + b, 0);
       this.stats.averageLatency = Math.round(sum / this.stats.latencies.length);
     }
 
-    // Calculate uptime
-    this.stats.uptime = Math.floor((Date.now() - this.stats.startTime) / 1000); // in seconds
+    // Safety check for stats
+    if (!this.stats) {
+      logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 STATS ${fancyColors.RESET} ${fancyColors.YELLOW}Stats object is undefined for WebSocket at ${this.path}${fancyColors.RESET}`);
+      this.stats = {
+        startTime: Date.now(),
+        totalConnections: 0,
+        currentConnections: 0,
+        messagesReceived: 0,
+        messagesSent: 0,
+        errors: 0,
+        rateLimitExceeded: 0,
+        authenticatedConnections: 0,
+        unauthenticatedConnections: 0,
+        channelCounts: {},
+        latencies: []
+      };
+    }
 
-    // Log statistics
-    logApi.info('WebSocket server statistics', {
-      path: this.path,
+    // Calculate uptime
+    this.stats.uptime = Math.floor((Date.now() - (this.stats.startTime || Date.now())) / 1000); // in seconds
+
+    // Ensure all properties exist to avoid undefined errors
+    const safeStats = {
+      path: this.path || 'unknown',
       connections: {
-        total: this.stats.totalConnections,
-        current: this.stats.currentConnections,
-        authenticated: this.stats.authenticatedConnections,
-        unauthenticated: this.stats.unauthenticatedConnections
+        total: this.stats.totalConnections || 0,
+        current: this.stats.currentConnections || 0,
+        authenticated: this.stats.authenticatedConnections || 0,
+        unauthenticated: this.stats.unauthenticatedConnections || 0
       },
       messages: {
-        received: this.stats.messagesReceived,
-        sent: this.stats.messagesSent,
-        averageLatency: this.stats.averageLatency + 'ms',
-        rateLimitExceeded: this.stats.rateLimitExceeded
+        received: this.stats.messagesReceived || 0,
+        sent: this.stats.messagesSent || 0,
+        averageLatency: (this.stats.averageLatency || 0) + 'ms',
+        rateLimitExceeded: this.stats.rateLimitExceeded || 0
       },
-      errors: this.stats.errors,
-      channels: this.stats.channelCounts,
-      uptime: this.formatDuration(this.stats.uptime)
-    });
+      errors: this.stats.errors || 0,
+      channels: this.stats.channelCounts || {},
+      uptime: this.formatDuration(this.stats.uptime || 0)
+    };
+
+    // Log statistics
+    logApi.info('WebSocket server statistics', safeStats);
   }
 
   /**

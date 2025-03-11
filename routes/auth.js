@@ -60,6 +60,62 @@ const authLogger = {
  *       500:
  *         description: Internal server error
  */
+// Twitter OAuth configuration check route
+router.get('/twitter/check-config', async (req, res) => {
+  try {
+    // Check environment variables
+    const config = {
+      X_APP_ID: process.env.X_APP_ID ? '✅ Set' : '❌ Missing',
+      X_CLIENT_ID: process.env.X_CLIENT_ID ? '✅ Set' : '❌ Missing',
+      X_CLIENT_SECRET: process.env.X_CLIENT_SECRET ? '✅ Set' : '❌ Missing',
+      X_CALLBACK_URI: process.env.X_CALLBACK_URI ? '✅ Set' : '❌ Missing',
+      X_CALLBACK_URI_DEVELOPMENT: process.env.X_CALLBACK_URI_DEVELOPMENT ? '✅ Set' : '❌ Missing',
+      NODE_ENV: process.env.NODE_ENV || 'development',
+      ACTIVE_CALLBACK_URI: process.env.NODE_ENV === 'development' 
+        ? process.env.X_CALLBACK_URI_DEVELOPMENT 
+        : process.env.X_CALLBACK_URI
+    };
+
+    // Check session middleware
+    const sessionStatus = req.session ? '✅ Working' : '❌ Not initialized';
+    
+    // Check Redis connection
+    const redisManager = (await import('../utils/redis-suite/redis-manager.js')).default;
+    const redisStatus = redisManager.isConnected ? '✅ Connected' : '❌ Not connected';
+    
+    // Try to use the session
+    const sessionId = Math.random().toString(36).substring(7);
+    req.session.test = sessionId;
+    
+    // Save session and verify
+    await new Promise((resolve) => {
+      req.session.save(() => resolve());
+    });
+    
+    const sessionVerified = req.session.test === sessionId ? '✅ Verified' : '❌ Failed verification';
+    
+    return res.json({
+      success: true,
+      config,
+      sessionStatus,
+      redisStatus,
+      sessionVerified,
+      currentEnvironment: process.env.NODE_ENV || 'development',
+      message: 'Twitter OAuth configuration check completed'
+    });
+  } catch (error) {
+    authLogger.error(`Twitter config check failed \n\t`, {
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({ 
+      success: false,
+      error: 'Configuration check failed',
+      details: error.message
+    });
+  }
+});
+
 // Example: GET /api/auth/challenge?wallet=<WALLET_ADDR>
 router.get('/challenge', async (req, res) => {
   try {
@@ -730,7 +786,7 @@ router.get('/token', requireAuth, async (req, res) => {
     }, req.headers);
 
     // Log the WSS token generation
-    authLogger.info(`WebSocket token generated \n\t`, { 
+    authLogger.info(`[auth] WebSocket token generated`, { 
       wallet: user.wallet_address,
       session_id: decoded.session_id
     });
@@ -770,6 +826,8 @@ router.get('/twitter/login', async (req, res) => {
     // Generate CSRF token and state for security
     const state = randomBytes(32).toString('hex');
     const codeVerifier = randomBytes(32).toString('hex');
+    
+    // Generate code challenge using SHA-256
     const codeChallenge = crypto
       .createHash('sha256')
       .update(codeVerifier)
@@ -778,18 +836,70 @@ router.get('/twitter/login', async (req, res) => {
       .replace(/\//g, '_')
       .replace(/=/g, '');
 
+    // Ensure session object exists
+    if (!req.session) {
+      authLogger.error(`Twitter OAuth failed: Session middleware not properly initialized \n\t`);
+      return res.status(500).json({ 
+        error: 'Session middleware not properly initialized',
+        details: 'Session object missing from request'
+      });
+    }
+
     // Store in session for verification later
-    req.session = req.session || {};
     req.session.twitter_oauth = {
       state,
       codeVerifier,
-      codeChallenge
+      codeChallenge,
+      created: new Date().toISOString()
     };
+
+    // Save session explicitly to ensure it's persisted
+    await new Promise((resolve, reject) => {
+      req.session.save(err => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Verify session was saved by checking if we can read it back
+    if (!req.session.twitter_oauth || req.session.twitter_oauth.state !== state) {
+      authLogger.error(`Twitter OAuth failed: Session not properly saved \n\t`, {
+        sessionExists: !!req.session,
+        oauthDataExists: !!req.session.twitter_oauth,
+        stateMatches: req.session.twitter_oauth?.state === state
+      });
+      return res.status(500).json({ 
+        error: 'Session storage error',
+        details: 'Unable to store OAuth state in session'
+      });
+    }
 
     // Determine which callback URI to use
     const callbackUri = process.env.NODE_ENV === 'development' 
       ? process.env.X_CALLBACK_URI_DEVELOPMENT 
       : process.env.X_CALLBACK_URI;
+
+    // Check if callback URI is properly configured
+    if (!callbackUri) {
+      authLogger.error(`Twitter OAuth failed: Missing callback URI \n\t`, {
+        environment: process.env.NODE_ENV,
+        devCallback: process.env.X_CALLBACK_URI_DEVELOPMENT,
+        prodCallback: process.env.X_CALLBACK_URI
+      });
+      return res.status(500).json({ 
+        error: 'Configuration error',
+        details: 'OAuth callback URI not configured'
+      });
+    }
+
+    // Check if client ID is properly configured
+    if (!process.env.X_CLIENT_ID) {
+      authLogger.error(`Twitter OAuth failed: Missing client ID \n\t`);
+      return res.status(500).json({ 
+        error: 'Configuration error',
+        details: 'OAuth client ID not configured'
+      });
+    }
 
     // Construct the Twitter OAuth URL
     const authUrl = new URL('https://twitter.com/i/oauth2/authorize');
@@ -802,15 +912,26 @@ router.get('/twitter/login', async (req, res) => {
     authUrl.searchParams.append('code_challenge', codeChallenge);
     authUrl.searchParams.append('code_challenge_method', 'S256');
 
+    // Log OAuth parameters for debugging
+    authLogger.info(`Initiating Twitter OAuth flow \n\t`, {
+      state: state.substring(0, 6) + '...',
+      codeChallenge: codeChallenge.substring(0, 6) + '...',
+      callbackUri,
+      clientId: process.env.X_CLIENT_ID.substring(0, 6) + '...',
+      scope: 'users.read:user'
+    });
+
     // Redirect user to Twitter OAuth
-    authLogger.info(`Initiating Twitter OAuth flow \n\t`);
     return res.redirect(authUrl.toString());
   } catch (error) {
     authLogger.error(`Twitter OAuth initialization failed \n\t`, {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({ error: 'Could not initiate Twitter authentication' });
+    return res.status(500).json({ 
+      error: 'Could not initiate Twitter authentication',
+      details: error.message
+    });
   }
 });
 
@@ -980,12 +1101,42 @@ async function loginWithTwitter(twitterId, twitterUser) {
  */
 router.get('/twitter/callback', async (req, res) => {
   try {
-    const { code, state } = req.query;
+    const { code, state, error, error_description } = req.query;
+    
+    // Handle explicit OAuth errors returned by Twitter
+    if (error) {
+      authLogger.warn(`Twitter OAuth error returned: ${error} \n\t`, { 
+        error,
+        error_description,
+        state: state?.substring(0, 6) + '...' || 'missing'
+      });
+      return res.redirect(`/twitter-error.html?error=${encodeURIComponent(error)}&description=${encodeURIComponent(error_description || '')}`);
+    }
+    
+    // Check if all required parameters are present
+    if (!code || !state) {
+      authLogger.warn(`Twitter OAuth callback missing required parameters \n\t`, { 
+        codeExists: !!code,
+        stateExists: !!state
+      });
+      return res.redirect('/twitter-error.html?error=missing_parameters');
+    }
+    
+    // Check if session exists
+    if (!req.session) {
+      authLogger.error(`Twitter OAuth callback failed: Session not available \n\t`);
+      return res.redirect('/twitter-error.html?error=session_lost');
+    }
     
     // Validate state parameter to prevent CSRF attacks
-    if (!req.session?.twitter_oauth || req.session.twitter_oauth.state !== state) {
-      authLogger.warn(`Twitter OAuth state mismatch \n\t`);
-      return res.status(400).json({ error: 'Invalid state parameter' });
+    if (!req.session.twitter_oauth || req.session.twitter_oauth.state !== state) {
+      authLogger.warn(`Twitter OAuth state mismatch \n\t`, {
+        expected: req.session.twitter_oauth?.state?.substring(0, 6) + '...' || 'missing',
+        received: state.substring(0, 6) + '...',
+        sessionExists: !!req.session,
+        oauthDataExists: !!req.session.twitter_oauth
+      });
+      return res.redirect('/twitter-error.html?error=invalid_state');
     }
     
     // Determine which callback URI to use
@@ -993,39 +1144,114 @@ router.get('/twitter/callback', async (req, res) => {
       ? process.env.X_CALLBACK_URI_DEVELOPMENT 
       : process.env.X_CALLBACK_URI;
     
-    // Exchange code for access token
-    const tokenResponse = await axios.post(
-      'https://api.twitter.com/2/oauth2/token',
-      new URLSearchParams({
+    // Check for required environment variables
+    if (!process.env.X_CLIENT_ID || !process.env.X_CLIENT_SECRET || !callbackUri) {
+      authLogger.error(`Twitter OAuth missing configuration \n\t`, {
+        clientIdExists: !!process.env.X_CLIENT_ID,
+        clientSecretExists: !!process.env.X_CLIENT_SECRET,
+        callbackUriExists: !!callbackUri
+      });
+      return res.redirect('/twitter-error.html?error=configuration_error');
+    }
+    
+    // Get code verifier from session
+    const codeVerifier = req.session.twitter_oauth.codeVerifier;
+    if (!codeVerifier) {
+      authLogger.error(`Twitter OAuth missing code verifier in session \n\t`);
+      return res.redirect('/twitter-error.html?error=missing_code_verifier');
+    }
+    
+    // Exchange code for access token with detailed error handling
+    let tokenResponse;
+    try {
+      // Prepare parameters for token request
+      const tokenParams = new URLSearchParams({
         code,
         grant_type: 'authorization_code',
         client_id: process.env.X_CLIENT_ID,
         redirect_uri: callbackUri,
-        code_verifier: req.session.twitter_oauth.codeVerifier
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${Buffer.from(
-            `${process.env.X_CLIENT_ID}:${process.env.X_CLIENT_SECRET}`
-          ).toString('base64')}`
+        code_verifier: codeVerifier
+      });
+      
+      // Log token request parameters (with sensitive data masked)
+      authLogger.info(`Exchanging code for token with parameters \n\t`, {
+        code: code.substring(0, 6) + '...',
+        grant_type: 'authorization_code',
+        client_id: process.env.X_CLIENT_ID.substring(0, 6) + '...',
+        redirect_uri: callbackUri,
+        code_verifier: codeVerifier.substring(0, 6) + '...'
+      });
+      
+      // Make token request
+      tokenResponse = await axios.post(
+        'https://api.twitter.com/2/oauth2/token',
+        tokenParams,
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Basic ${Buffer.from(
+              `${process.env.X_CLIENT_ID}:${process.env.X_CLIENT_SECRET}`
+            ).toString('base64')}`
+          }
         }
-      }
-    );
+      );
+    } catch (tokenError) {
+      // Handle token request error
+      const responseData = tokenError.response?.data || {};
+      authLogger.error(`Twitter OAuth token exchange failed \n\t`, {
+        status: tokenError.response?.status,
+        statusText: tokenError.response?.statusText,
+        error: tokenError.message,
+        responseData
+      });
+      
+      return res.redirect(`/twitter-error.html?error=token_exchange&details=${encodeURIComponent(responseData.error || tokenError.message)}`);
+    }
     
+    // Extract token data
     const { access_token, refresh_token } = tokenResponse.data;
     
-    // Get Twitter user info
-    const userResponse = await axios.get('https://api.twitter.com/2/users/me', {
-      headers: {
-        Authorization: `Bearer ${access_token}`
-      },
-      params: {
-        'user.fields': 'id,name,username,profile_image_url'
-      }
-    });
+    // Get Twitter user info with detailed error handling
+    let userResponse;
+    try {
+      userResponse = await axios.get('https://api.twitter.com/2/users/me', {
+        headers: {
+          Authorization: `Bearer ${access_token}`
+        },
+        params: {
+          'user.fields': 'id,name,username,profile_image_url'
+        }
+      });
+    } catch (userError) {
+      // Handle user info request error
+      const responseData = userError.response?.data || {};
+      authLogger.error(`Twitter user info request failed \n\t`, {
+        status: userError.response?.status,
+        statusText: userError.response?.statusText,
+        error: userError.message,
+        responseData
+      });
+      
+      return res.redirect(`/twitter-error.html?error=user_info&details=${encodeURIComponent(responseData.error || userError.message)}`);
+    }
     
+    // Extract user data
     const twitterUser = userResponse.data.data;
+    
+    // Check if valid user data was returned
+    if (!twitterUser || !twitterUser.id) {
+      authLogger.error(`Twitter returned invalid user data \n\t`, { 
+        responseData: userResponse.data
+      });
+      return res.redirect('/twitter-error.html?error=invalid_user_data');
+    }
+    
+    // Log successful user info retrieval
+    authLogger.info(`Retrieved Twitter user info \n\t`, {
+      id: twitterUser.id,
+      username: twitterUser.username,
+      hasProfileImage: !!twitterUser.profile_image_url
+    });
     
     // First, check if this Twitter account is already linked and can be used for direct login
     const loginResult = await loginWithTwitter(twitterUser.id, twitterUser);
@@ -1085,6 +1311,18 @@ router.get('/twitter/callback', async (req, res) => {
       refresh_token
     };
     
+    // Save session explicitly to ensure twitter_user data is persisted
+    await new Promise((resolve, reject) => {
+      req.session.save(err => {
+        if (err) {
+          authLogger.error(`Failed to save Twitter user data to session \n\t`, { error: err.message });
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+    
     authLogger.info(`Twitter OAuth successful for user ${twitterUser.username} \n\t`);
     
     // If user is already authenticated with a wallet, link accounts
@@ -1106,14 +1344,13 @@ router.get('/twitter/callback', async (req, res) => {
     }
     
     // If no wallet is connected yet, redirect to a page where user can connect wallet
-    // Store Twitter data in session for later
     return res.redirect('/connect-wallet?twitter=pending');
   } catch (error) {
     authLogger.error(`Twitter OAuth callback failed \n\t`, {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({ error: 'Twitter authentication failed' });
+    return res.redirect(`/twitter-error.html?error=unexpected_error&details=${encodeURIComponent(error.message)}`);
   }
 });
 
