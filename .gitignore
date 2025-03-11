@@ -46,6 +46,8 @@ db/
 # Logs and debug files
 logs/
 */logs/
+logs-*.txt
+logs-*.log
 
 # Temporary files
 *.swp
