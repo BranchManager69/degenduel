@@ -740,7 +740,27 @@ process.on("unhandledRejection", (reason, promise) => {
 initializeServer().then(() => {
     // Start listening after successful initialization
     server.listen(port, async () => {
-        logApi.info(`${fancyColors.MAGENTA}[SERVER]${fancyColors.RESET} ${fancyColors.GREEN}Server listening on port ${port}${fancyColors.RESET}`);
+        // Log server start with Logtail-friendly formatting
+        logApi.info(`Server listening on port ${port}`, {
+            service: 'SYSTEM',
+            event_type: 'server_start',
+            port: port,
+            uptime: process.uptime(),
+            _icon: '🚀',
+            _color: '#00AA00', // Green for success
+            _highlight: true,
+            _html_message: `
+                <span style="background-color:#00AA00;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
+                    SERVER RUNNING
+                </span>
+                <span style="font-weight:bold;margin-left:6px;">
+                    Listening on port ${port}
+                </span>
+            `
+        });
+        
+        // Generate initialization summary
+        InitLogger.summarizeInitialization(true);
         
         // Only show animation if enabled
         if (SHOW_STARTUP_ANIMATION) {
@@ -779,13 +799,49 @@ initializeServer().then(() => {
                 await displayStartupAnimation(port, {}, true);
             }
         } else {
-            logApi.info(`${fancyColors.MAGENTA}[SERVER]${fancyColors.RESET} ${fancyColors.GREEN}DegenDuel API Server ready on port ${port}${fancyColors.RESET}`);
+            logApi.info(`DegenDuel API Server ready on port ${port}`, {
+                service: 'SYSTEM',
+                _color: '#00AA00' // Green for success
+            });
         }
     });
 }).catch(error => {
-    logApi.error(`${fancyColors.MAGENTA}[SERVER]${fancyColors.RESET} ${fancyColors.RED}Failed to initialize server:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
+    // Log server initialization failure with Logtail formatting
+    logApi.error(`Failed to initialize server: ${error.message}`, {
+        service: 'SYSTEM',
+        event_type: 'server_initialization_failure',
+        error: error.message,
+        stack: error.stack,
+        _icon: '❌',
+        _color: '#FF0000', // Red for error
+        _highlight: true,
+        _html_message: `
+            <span style="background-color:#FF0000;color:white;padding:4px 8px;border-radius:3px;font-weight:bold;font-size:16px;">
+                SERVER INITIALIZATION FAILED
+            </span>
+            <div style="margin-top:8px;font-weight:bold;color:#FF0000;">
+                ${error.message}
+            </div>
+        `
+    });
+    
+    // Log more detailed error information if verbose logging is enabled
     if (VERBOSE_SERVICE_INIT_LOGS) {
-        logApi.error(`${fancyColors.MAGENTA}[SERVER]${fancyColors.RESET} ${fancyColors.RED}Error details:${fancyColors.RESET}`, error);
+        logApi.error('Server initialization failure details', {
+            service: 'SYSTEM',
+            event_type: 'server_initialization_details',
+            error: error.message,
+            stack: error.stack,
+            _color: '#FF0000' // Red for error
+        });
     }
+    
+    // Generate initialization summary even on failure
+    try {
+        InitLogger.summarizeInitialization(true);
+    } catch (summaryError) {
+        // Don't let summary generation failure prevent clean exit
+    }
+    
     process.exit(1);
 });
