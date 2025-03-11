@@ -731,6 +731,37 @@ const stripAnsiCodes = (str) => {
   return str.replace(/\x1b\[[0-9;]*m/g, '');
 };
 
+// Helper to add Logtail-specific color formatting based on log level
+const addLogtailFormatting = (level, message, metadata) => {
+  // Define color mapping for different log levels
+  const levelColors = {
+    error: { bg: '#FF0000', fg: '#FFFFFF', icon: '🔴' },    // Red
+    warn: { bg: '#FFD700', fg: '#000000', icon: '⚠️' },     // Gold
+    info: { bg: '#0078D7', fg: '#FFFFFF', icon: 'ℹ️' },     // Blue
+    debug: { bg: '#9370DB', fg: '#FFFFFF', icon: '🔍' },    // Purple
+    http: { bg: '#20B2AA', fg: '#FFFFFF', icon: '🌐' }      // Light sea green
+  };
+
+  // Get colors for this level (or default to info)
+  const colors = levelColors[level] || levelColors.info;
+  
+  // Get service icon if available
+  const serviceIcon = metadata.service ? 
+    (SERVICE_COLORS[metadata.service]?.icon || '') : '';
+  
+  // Add Logtail-specific properties for better presentation
+  return {
+    ...metadata,
+    _highlight: level === 'error' || level === 'warn',
+    _color: colors.bg,
+    _icon: metadata.icon || colors.icon || serviceIcon,
+    // Only add HTML message for certain levels to avoid clutter
+    ...(level === 'error' || level === 'warn' ? {
+      _html_message: `<span style="background-color:${colors.bg};color:${colors.fg};padding:2px 6px;border-radius:3px;font-weight:bold;">${level.toUpperCase()}</span> ${message}`
+    } : {})
+  };
+};
+
 // Helper to determine if a message is a Solana rate limit error
 const isSolanaRateLimit = (message) => {
   return typeof message === 'string' && 
@@ -767,10 +798,17 @@ const formatRateLimitError = (message, isForConsole = false) => {
     };
   }
   
-  // For Logtail, use clean message without ANSI codes
+  // For Logtail, use Logtail's native color formatting
   return {
     message: `SOLANA RPC RATE LIMIT: Retry in ${retryMs}ms`,
-    metadata
+    metadata: {
+      ...metadata,
+      // Add Logtail-specific color properties
+      _html_message: `<span style="background-color:#FFD700;color:#000000;padding:2px 6px;border-radius:3px;font-weight:bold;"> SOLANA RPC RATE LIMIT </span> <span style="color:#FF0000;font-weight:bold;">Retry in ${retryMs}ms</span>`,
+      _highlight: true,
+      _color: "#FFD700", // Gold background color for warnings
+      _icon: "⚠️"  // Warning icon
+    }
   };
 };
 
@@ -800,7 +838,7 @@ logtail.use((log) => {
   // Add timestamp in a consistent format
   log.metadata.formattedTime = formatTimestamp(log.dt);
   
-  // Remove ANSI color codes from message before sending to Logtail
+  // Process message before sending to Logtail
   if (typeof log.message === 'string') {
     // First check if it's a specially formatted message we need to handle
     if (isSolanaRateLimit(log.message)) {
@@ -809,8 +847,14 @@ logtail.use((log) => {
       log.message = formatted.message;
       log.metadata = { ...log.metadata, ...formatted.metadata };
     } else {
-      // Just strip ANSI codes for normal messages
-      log.message = stripAnsiCodes(log.message);
+      // Strip ANSI codes for normal messages
+      const cleanMessage = stripAnsiCodes(log.message);
+      log.message = cleanMessage;
+      
+      // Add Logtail-specific formatting based on log level
+      if (log.level) {
+        log.metadata = addLogtailFormatting(log.level, cleanMessage, log.metadata);
+      }
     }
   }
   
