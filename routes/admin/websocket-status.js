@@ -85,9 +85,27 @@ router.post('/test', requireAuth, requireAdmin, async (req, res) => {
     // Try to find the WebSocket server and send the message
     let messageSent = false;
     let targetServer = null;
+    let system = 'legacy';
     
-    if (global.wsServers && Object.keys(global.wsServers).length > 0) {
-      // Try to find a matching WebSocket server
+    // Check if the socketType includes a system prefix
+    const isV69 = socketType.toLowerCase().startsWith('v69_') || socketType.toLowerCase().startsWith('v69:');
+    if (isV69) {
+      socketType = socketType.replace(/^v69[_:]/, '');
+      system = 'v69';
+    }
+    
+    // First check the specified system (v69 or legacy)
+    if (system === 'v69' && global.wsServersV69 && Object.keys(global.wsServersV69).length > 0) {
+      // Try to find a matching V69 WebSocket server
+      for (const [serverName, server] of Object.entries(global.wsServersV69)) {
+        if (serverName.toLowerCase().includes(socketType.toLowerCase()) ||
+            (server.name && server.name.toLowerCase().includes(socketType.toLowerCase()))) {
+          targetServer = server;
+          break;
+        }
+      }
+    } else if (system === 'legacy' && global.wsServers && Object.keys(global.wsServers).length > 0) {
+      // Try to find a matching legacy WebSocket server
       for (const [serverName, server] of Object.entries(global.wsServers)) {
         if (serverName.toLowerCase().includes(socketType.toLowerCase()) ||
             (server.name && server.name.toLowerCase().includes(socketType.toLowerCase()))) {
@@ -95,22 +113,47 @@ router.post('/test', requireAuth, requireAdmin, async (req, res) => {
           break;
         }
       }
-      
-      // If we found a server, try to broadcast the message
-      if (targetServer && typeof targetServer.broadcast === 'function') {
-        try {
-          targetServer.broadcast({
-            type: messageType,
-            data: payload,
-            testMessage: true,
-            timestamp: new Date().toISOString()
-          });
-          messageSent = true;
-          
-          logApi.info(`[WebSocket Test] Admin ${req.user.username} sent ${messageType} to ${socketType}:`, payload);
-        } catch (broadcastError) {
-          logApi.error(`[WebSocket Test] Error broadcasting to ${socketType}:`, broadcastError);
+    }
+    
+    // If we couldn't find a server in the specified system, check the other system
+    if (!targetServer) {
+      if (system === 'v69' && global.wsServers && Object.keys(global.wsServers).length > 0) {
+        // Try to find a matching legacy WebSocket server
+        for (const [serverName, server] of Object.entries(global.wsServers)) {
+          if (serverName.toLowerCase().includes(socketType.toLowerCase()) ||
+              (server.name && server.name.toLowerCase().includes(socketType.toLowerCase()))) {
+            targetServer = server;
+            system = 'legacy';
+            break;
+          }
         }
+      } else if (system === 'legacy' && global.wsServersV69 && Object.keys(global.wsServersV69).length > 0) {
+        // Try to find a matching V69 WebSocket server
+        for (const [serverName, server] of Object.entries(global.wsServersV69)) {
+          if (serverName.toLowerCase().includes(socketType.toLowerCase()) ||
+              (server.name && server.name.toLowerCase().includes(socketType.toLowerCase()))) {
+            targetServer = server;
+            system = 'v69';
+            break;
+          }
+        }
+      }
+    }
+    
+    // If we found a server, try to broadcast the message
+    if (targetServer && typeof targetServer.broadcast === 'function') {
+      try {
+        targetServer.broadcast({
+          type: messageType,
+          data: payload,
+          testMessage: true,
+          timestamp: new Date().toISOString()
+        });
+        messageSent = true;
+        
+        logApi.info(`[WebSocket Test] Admin ${req.user.username} sent ${messageType} to ${system}:${socketType}:`, payload);
+      } catch (broadcastError) {
+        logApi.error(`[WebSocket Test] Error broadcasting to ${system}:${socketType}:`, broadcastError);
       }
     }
     
@@ -153,6 +196,14 @@ router.get('/healthcheck', (req, res) => {
     // Look up the WebSocket service status
     let serviceStatus = 'unknown';
     let isAvailable = false;
+    let system = 'legacy';
+    
+    // Check if the endpoint includes a system prefix
+    const isV69 = endpoint.toLowerCase().startsWith('/api/v69/') || 
+                 endpoint.toLowerCase().includes('v69');
+    if (isV69) {
+      system = 'v69';
+    }
     
     // Check if we can find this endpoint in our WebSocket services
     if (global.wsServers && Object.keys(global.wsServers).length > 0) {
@@ -163,12 +214,27 @@ router.get('/healthcheck', (req, res) => {
         
         // Find matching service
         const matchingService = services.find(service => 
-          service.name && endpoint.toLowerCase().includes(service.name.toLowerCase().replace(' websocket', ''))
+          service.name && 
+          endpoint.toLowerCase().includes(service.name.toLowerCase().replace(' websocket', '')) &&
+          (!service.system || service.system === system)
         );
         
         if (matchingService) {
           serviceStatus = matchingService.status;
           isAvailable = serviceStatus === 'operational';
+        }
+      }
+    }
+    
+    // If not found and this is a v69 endpoint, check directly in v69 WebSockets
+    if (!isAvailable && system === 'v69' && global.wsServersV69) {
+      for (const [name, server] of Object.entries(global.wsServersV69)) {
+        if (server && server.path && 
+            (endpoint.includes(server.path) || 
+             name.toLowerCase() === endpoint.toLowerCase().replace(/^\/api\/v69\/ws\//, ''))) {
+          serviceStatus = server.isInitialized ? 'operational' : 'initializing';
+          isAvailable = server.isInitialized;
+          break;
         }
       }
     }
@@ -206,7 +272,25 @@ router.get('/endpoints', requireAuth, requireAdmin, async (req, res) => {
             path: server.path,
             status: server.isInitialized ? 'operational' : 'initializing',
             clients: server.getConnectionsCount ? server.getConnectionsCount() : 0,
-            requiresAuth: server.requireAuth || false
+            requiresAuth: server.requireAuth || false,
+            system: 'legacy'
+          });
+        }
+      }
+    }
+    
+    // Get list of V69 WebSocket servers
+    if (global.wsServersV69 && Object.keys(global.wsServersV69).length > 0) {
+      for (const [serverName, server] of Object.entries(global.wsServersV69)) {
+        if (server && server.path) {
+          endpoints.push({
+            name: `V69 ${server.name || serverName}`,
+            type: serverName,
+            path: server.path,
+            status: server.isInitialized ? 'operational' : 'initializing',
+            clients: server.getConnectionsCount ? server.getConnectionsCount() : 0,
+            requiresAuth: server.requireAuth || false,
+            system: 'v69'
           });
         }
       }
@@ -237,6 +321,18 @@ async function checkEndpointAvailability(wsUrl, endpoint, socketType) {
     // For dynamic endpoints with path parameters (like :contestId), replace with a test value
     const processedEndpoint = endpoint.replace(/:(\w+)/g, '123');
     
+    // Determine which system we're checking (v69 or legacy)
+    const isV69 = socketType.toLowerCase().startsWith('v69_') || 
+                 socketType.toLowerCase().startsWith('v69:') ||
+                 processedEndpoint.toLowerCase().startsWith('/api/v69/') || 
+                 processedEndpoint.toLowerCase().includes('v69');
+    const system = isV69 ? 'v69' : 'legacy';
+    
+    // Clean up socketType if it has a prefix
+    if (socketType.toLowerCase().startsWith('v69_') || socketType.toLowerCase().startsWith('v69:')) {
+      socketType = socketType.replace(/^v69[_:]/, '');
+    }
+    
     // Check if the WebSocket server exists by checking the monitor server
     if (global.wsServers && Object.keys(global.wsServers).length > 0) {
       // Access the WebSocket metrics from the monitor service
@@ -244,15 +340,28 @@ async function checkEndpointAvailability(wsUrl, endpoint, socketType) {
       if (wsMonitor) {
         const services = wsMonitor.monitorService?.getServiceMetrics() || [];
         
-        // Look for a matching service in the metrics
+        // Look for a matching service in the metrics, filtered by system
         const matchingService = services.find(service => 
           service.name && 
           (service.name.toLowerCase().includes(socketType?.toLowerCase() || '') ||
-           processedEndpoint.toLowerCase().includes(service.name.toLowerCase().replace(' websocket', '')))
+           processedEndpoint.toLowerCase().includes(service.name.toLowerCase().replace(' websocket', ''))) &&
+          (!service.system || service.system === system)
         );
         
         if (matchingService) {
           return matchingService.status === 'operational';
+        }
+      }
+    }
+    
+    // Direct check in v69 WebSockets if applicable
+    if (system === 'v69' && global.wsServersV69) {
+      for (const [name, server] of Object.entries(global.wsServersV69)) {
+        if (server && server.path && 
+            (processedEndpoint.includes(server.path) || 
+             name.toLowerCase() === socketType.toLowerCase() ||
+             name.toLowerCase() === processedEndpoint.toLowerCase().replace(/^\/api\/v69\/ws\//, ''))) {
+          return server.isInitialized;
         }
       }
     }
