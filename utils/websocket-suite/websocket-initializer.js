@@ -204,7 +204,43 @@ export async function initializeWebSockets(server, initResults = {}) {
         try {
             logApi.info(`${fancyColors.CYAN}┣━━━━━━━━━━━ 🚀 Initializing v69 WebSocket Servers...${fancyColors.RESET}`);
             await initializeWebSocketsV69(server);
-            logApi.info(`${fancyColors.CYAN}┗━━━━━━━━━━━ ✅ v69 WebSocket Servers Ready${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}┣━━━━━━━━━━━ ✅ v69 WebSocket Servers Ready${fancyColors.RESET}`);
+            
+            // Register v69 WebSockets with monitor service
+            try {
+                if (wsMonitor && wsMonitor.monitorService && wsMonitor.monitorService.isInitialized && global.wsServersV69) {
+                    logApi.info(`${fancyColors.CYAN}┣━━━━━━━━━━━ 📊 Registering v69 WebSocket metrics...${fancyColors.RESET}`);
+                    
+                    // Register each v69 WebSocket service with the monitor
+                    for (const [name, instance] of Object.entries(global.wsServersV69)) {
+                        try {
+                            const metrics = instance.getMetrics?.() || defaultMetrics;
+                            const formattedName = `v69_${name}`;
+                            
+                            // Add dependency information
+                            let dependencies = ['Base'];
+                            
+                            // Update metrics with dependencies
+                            wsMonitor.monitorService.updateServiceMetrics(formattedName, {
+                                ...metrics,
+                                name: `V69 ${name}`,
+                                dependencies,
+                                system: 'v69'
+                            });
+                            
+                            logApi.info(`${fancyColors.CYAN}┃           ┣━━━━━━━━━━━ ${serviceColors.initialized}v69 ${name} WebSocket metrics registered${fancyColors.RESET}`);
+                        } catch (error) {
+                            logApi.error(`${fancyColors.CYAN}┃           ┣━━━━━━━━━━━ ${serviceColors.failed}Failed to register v69 ${name} WebSocket metrics:${fancyColors.RESET}`, error);
+                        }
+                    }
+                    
+                    logApi.info(`${fancyColors.CYAN}┗━━━━━━━━━━━ ✅ v69 WebSocket metrics registration complete${fancyColors.RESET}`);
+                } else {
+                    logApi.warn(`${fancyColors.CYAN}┗━━━━━━━━━━━ ⚠️ Monitor service not available for v69 metric registration${fancyColors.RESET}`);
+                }
+            } catch (metricError) {
+                logApi.error(`${fancyColors.CYAN}┗━━━━━━━━━━━ ❌ Failed to register v69 WebSocket metrics:${fancyColors.RESET}`, metricError);
+            }
         } catch (v69Error) {
             logApi.error(`${fancyColors.CYAN}┗━━━━━━━━━━━ ❌ v69 WebSocket initialization failed:${fancyColors.RESET}`, v69Error);
             // Don't throw - allow original WebSockets to continue working

@@ -27,6 +27,8 @@ import { closePgDatabase, initPgDatabase } from "./config/pg-database.js";
 import prisma from "./config/prisma.js";
 import setupSwagger from "./config/swagger.js";
 import maintenanceCheck from "./middleware/maintenanceMiddleware.js";
+import ipBanMiddleware from "./middleware/ipBanMiddleware.js";
+import ipTrackingMiddleware from "./middleware/ipTrackingMiddleware.js";
 import { errorHandler } from "./utils/errorHandler.js";
 import { logApi } from "./utils/logger-suite/logger.js";
 import { fancyColors } from './utils/colors.js';
@@ -55,6 +57,12 @@ import systemSettingsRoutes from './routes/admin/system-settings.js';
 // Import Circuit Breaker routes
 import circuitBreakerRoutes from './routes/admin/circuit-breaker.js';
 import serviceManagementRoutes from './routes/admin/service-management.js';
+// Import IP Ban Management routes
+import ipBanManagementRoutes from './routes/admin/ip-ban-management.js';
+// Import IP Tracking routes
+import ipTrackingRoutes from './routes/admin/ip-tracking.js';
+// Import Public Ban Check route
+import bannedIpRoutes from './routes/banned-ip.js';
 // Import (some) Admin Routes
 import contestManagementRoutes from "./routes/admin/contest-management.js";
 import skyduelManagementRoutes from "./routes/admin/skyduel-management.js";
@@ -128,20 +136,41 @@ if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
 app.set("trust proxy", 1);
 app.use(cookieParser());
 
-// Add session middleware for Twitter authentication
+// Import Redis session store
+import { createRedisSessionStore } from './utils/redis-suite/redis-session-store.js';
+
+// Create Redis session store or fall back to memory store
+const sessionStore = createRedisSessionStore() || null;
+if (!sessionStore) {
+  logApi.warn(`[\x1b[38;5;208mSession\x1b[0m] \x1b[38;5;226mFalling back to memory session store - not suitable for production!\x1b[0m`);
+}
+
+// Add session middleware with Redis store for Twitter authentication
 app.use(session({
+  store: sessionStore,
   secret: process.env.JWT_SECRET, // Using the same secret as JWT for simplicity
   resave: false,
   saveUninitialized: false,
+  name: 'degenduel.sid', // Custom cookie name for clarity
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Only use secure cookies in production
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Cross-site cookies in production
   }
 }));
 
 setupSwagger(app);
 configureMiddleware(app);
+
+// Apply IP Ban middleware early in the middleware chain
+// This ensures banned IPs are blocked before any other processing
+app.use(ipBanMiddleware);
+
+// Apply IP tracking middleware for authenticated users
+// This runs after auth middleware sets req.user, but doesn't block requests
+app.use(ipTrackingMiddleware);
+
 app.use(memoryMonitoring.setupResponseTimeTracking());
 
 // Serve static files from the public directory
@@ -166,6 +195,7 @@ app.get("/", (req, res) => {
 // Public Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/status", statusRoutes);
+app.use("/api/banned-ip", bannedIpRoutes);
 
 // Admin Routes
 app.use("/api/admin", prismaAdminRoutes);
@@ -186,6 +216,8 @@ app.use('/api/admin/websocket', websocketStatusRoutes);
 app.use('/api/admin/system-reports', systemReportsRoutes);
 app.use('/api/admin/system-settings', systemSettingsRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
+app.use("/api/admin/ip-ban", ipBanManagementRoutes);
+app.use("/api/admin/ip-tracking", ipTrackingRoutes);
 
 // Protected routes (with maintenance check)
 // earliest protected routes
@@ -241,6 +273,17 @@ app.get("/api/health", async (req, res) => {
         };
       }
     }
+    
+    // Check V69 WebSocket servers
+    const wsV69Status = {};
+    if (global.wsServersV69) {
+      for (const [name, ws] of Object.entries(global.wsServersV69)) {
+        wsV69Status[name] = {
+          connected: ws?.wss?.clients?.size || 0,
+          status: ws?.isInitialized ? 'ready' : 'initializing'
+        };
+      }
+    }
 
     res.status(200).json({
       status: "ok",
@@ -251,6 +294,7 @@ app.get("/api/health", async (req, res) => {
       },
       services: serviceStatuses,
       websockets: wsStatus,
+      websocketsV69: wsV69Status,
       memory: process.memoryUsage()
     });
   } catch (error) {
