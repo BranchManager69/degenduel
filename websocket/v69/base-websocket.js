@@ -100,7 +100,7 @@ export class BaseWebSocketServer {
    * Set up background maintenance tasks
    * @private
    */
-  _setupBackgroundTasks() {
+  async _setupBackgroundTasks() {
     // Start heartbeat interval
     this._heartbeatInterval = setInterval(() => {
       this.sendHeartbeats();
@@ -115,6 +115,27 @@ export class BaseWebSocketServer {
     this._statsInterval = setInterval(() => {
       this.updateStats();
     }, 300000);
+    
+    // Start metrics reporting interval (every minute)
+    // This will report status to the central monitoring system
+    try {
+      const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
+      
+      this._metricsReportInterval = setInterval(() => {
+        const metrics = this.getMetrics();
+        const status = this.stats.errors > 0 ? 'degraded' : 'operational';
+        
+        // Report metrics via service events
+        serviceEvents.emit('service:status:update', {
+          name: this.path,
+          source: 'v69_websocket',
+          status: status,
+          metrics: metrics
+        });
+      }, 15000); // Report every 15 seconds
+    } catch (error) {
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 METRICS ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} Failed to set up metrics reporting: ${error.message}`, error);
+    }
   }
 
   /**
@@ -332,15 +353,33 @@ export class BaseWebSocketServer {
       const clientInfo = this.clientInfoMap.get(ws);
       const connId = clientInfo?.connectionId.substring(0,8) || 'unknown';
       
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CLIENT ERROR ${fancyColors.RESET} ${connId}: ${fancyColors.RED}${error.message}${fancyColors.RESET}`, {
+      // Standardized error data for reporting
+      const errorData = {
         error: error.message,
         connectionId: clientInfo?.connectionId,
         authenticated: clientInfo?.authenticated,
-        wallet: clientInfo?.authenticated ? clientInfo.user.wallet_address : null
-      });
+        wallet: clientInfo?.authenticated ? clientInfo.user.wallet_address : null,
+        path: this.path,
+        timestamp: new Date().toISOString(),
+        type: 'client_error',
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      };
+      
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CLIENT ERROR ${fancyColors.RESET} ${connId}: ${fancyColors.RED}${error.message}${fancyColors.RESET}`, errorData);
 
       // Update statistics
       this.stats.errors++;
+
+      // Emit event for monitoring systems to track
+      const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
+      serviceEvents.emit('service:error', {
+        name: this.path,
+        source: 'v69_websocket',
+        status: 'error',
+        error: error.message,
+        metrics: this.getMetrics(),
+        details: errorData
+      });
 
       // Call the onError handler which can be overridden by subclasses
       await this.onError(ws, error);
@@ -357,9 +396,47 @@ export class BaseWebSocketServer {
    * Handle server-level errors
    * @param {Error} error - The server error
    */
-  handleServerError(error) {
-    logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SERVER ERROR ${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`, error);
+  async handleServerError(error) {
+    // Standardized error data for reporting
+    const errorData = {
+      error: error.message,
+      path: this.path,
+      timestamp: new Date().toISOString(),
+      type: 'server_error',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      component: 'websocket_server'
+    };
+    
+    logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SERVER ERROR ${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`, errorData);
     this.stats.errors++;
+    
+    // Emit event for monitoring systems to track
+    try {
+      const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
+      serviceEvents.emit('service:error', {
+        name: this.path,
+        source: 'v69_websocket_server',
+        status: 'error',
+        error: error.message,
+        metrics: this.getMetrics(),
+        details: errorData
+      });
+      
+      // Update system status via monitor WebSocket if available
+      if (global.wsServersV69?.monitor) {
+        global.wsServersV69.monitor.broadcastToChannel('system.status', {
+          type: 'SERVER_STATUS_UPDATE',
+          data: {
+            status: 'degraded',
+            message: `WebSocket error: ${error.message}`,
+            timestamp: new Date().toISOString(),
+            affectedComponent: this.path
+          }
+        });
+      }
+    } catch (additionalError) {
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} META ERROR ${fancyColors.RESET} Error while emitting error event: ${additionalError.message}`, additionalError);
+    }
   }
 
   /**
@@ -1174,6 +1251,11 @@ export class BaseWebSocketServer {
         this._statsInterval = null;
       }
       
+      if (this._metricsReportInterval) {
+        clearInterval(this._metricsReportInterval);
+        this._metricsReportInterval = null;
+      }
+      
       // Track stats for summary
       const connectionCount = this.clients.size;
       
@@ -1196,6 +1278,26 @@ export class BaseWebSocketServer {
       // Close the WebSocket server
       if (this.wss) {
         this.wss.close();
+      }
+      
+      // Report cleanup status via service events
+      try {
+        const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
+        serviceEvents.emit('service:status:update', {
+          name: this.path,
+          source: 'v69_websocket',
+          status: 'shutdown',
+          message: `WebSocket ${this.path} shutdown complete`,
+          metrics: {
+            connections_closed: connectionCount,
+            total_connections: this.stats.totalConnections,
+            total_messages: this.stats.messagesReceived + this.stats.messagesSent,
+            total_errors: this.stats.errors
+          }
+        });
+      } catch (error) {
+        // Don't throw errors during cleanup
+        logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.RED}Failed to report cleanup status: ${error.message}${fancyColors.RESET}`);
       }
       
       // Call the onCleanup handler which can be overridden by subclasses

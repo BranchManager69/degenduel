@@ -3,6 +3,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import fetch from 'node-fetch';
+import serviceEvents from '../../utils/service-suite/service-events.js';
 
 const router = express.Router();
 
@@ -306,6 +307,141 @@ router.get('/endpoints', requireAuth, requireAdmin, async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to get WebSocket endpoints',
+    });
+  }
+});
+
+/**
+ * Report a test WebSocket error (for testing the error reporting system)
+ */
+router.post('/report-error', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { service, error, source } = req.body;
+    
+    if (!service || !error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Service name and error message are required',
+      });
+    }
+    
+    // Log admin action
+    await AdminLogger.logAction(
+      req.user.wallet_address,
+      'WEBSOCKET_TEST_ERROR',
+      {
+        service,
+        error,
+        source: source || 'admin_api'
+      },
+      {
+        ip_address: req.ip,
+        user_agent: req.get('user-agent')
+      }
+    );
+    
+    // Create error data
+    const errorData = {
+      name: service,
+      source: source || 'admin_api',
+      status: 'error',
+      error: error,
+      details: {
+        reportedBy: req.user.wallet_address,
+        timestamp: new Date().toISOString(),
+        type: 'manual_test',
+        message: error
+      }
+    };
+    
+    // Emit error event
+    serviceEvents.emit('service:error', errorData);
+    
+    logApi.warn(`[WebSocket Test] Admin ${req.user.username || req.user.wallet_address} reported test error: ${error} for service: ${service}`);
+    
+    return res.json({
+      success: true,
+      service,
+      error,
+      timestamp: new Date().toISOString(),
+      message: 'Test error reported successfully'
+    });
+  } catch (error) {
+    logApi.error('[WebSocket Test Error] Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to report test error',
+    });
+  }
+});
+
+/**
+ * Get recent WebSocket errors
+ */
+router.get('/errors', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { limit = 20, source, service } = req.query;
+    
+    // Log admin action
+    await AdminLogger.logAction(
+      req.user.wallet_address,
+      'WEBSOCKET_ERROR_CHECK',
+      {
+        limit,
+        source,
+        service
+      },
+      {
+        ip_address: req.ip,
+        user_agent: req.get('user-agent')
+      }
+    );
+    
+    let errors = [];
+    
+    // Try to get errors from v69 monitor WebSocket if available
+    if (global.wsServersV69?.monitor && global.wsServersV69.monitor.errorsCache) {
+      errors = [...global.wsServersV69.monitor.errorsCache];
+      
+      // Apply filters
+      if (source) {
+        errors = errors.filter(error => error.source === source || 
+                                       (error.source && error.source.includes(source)));
+      }
+      
+      if (service) {
+        errors = errors.filter(error => error.service === service || 
+                                      (error.service && error.service.includes(service)));
+      }
+      
+      // Apply limit
+      const parsedLimit = parseInt(limit);
+      if (!isNaN(parsedLimit) && parsedLimit > 0) {
+        errors = errors.slice(0, parsedLimit);
+      }
+    }
+    
+    // Get error counts by source if available
+    let errorCounts = {};
+    if (global.wsServersV69?.monitor && typeof global.wsServersV69.monitor._getErrorCountsBySource === 'function') {
+      errorCounts = global.wsServersV69.monitor._getErrorCountsBySource();
+    }
+    
+    return res.json({
+      success: true,
+      errors,
+      counts: {
+        total: global.wsServersV69?.monitor?.errorsCache?.length || 0,
+        filtered: errors.length,
+        bySource: errorCounts
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logApi.error('[WebSocket Errors] Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get WebSocket errors',
     });
   }
 });
