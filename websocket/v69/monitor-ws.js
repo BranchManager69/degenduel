@@ -30,13 +30,15 @@ const MESSAGE_TYPES = {
   SERVICE_METRICS: 'service_metrics',
   ALL_SERVICES: 'all_services',
   NOTIFICATION: 'notification',
+  ERROR_ALERT: 'error_alert',
   
   // Client → Server messages
   GET_SYSTEM_STATUS: 'get_system_status',
   GET_MAINTENANCE_STATUS: 'get_maintenance_status',
   GET_SYSTEM_SETTINGS: 'get_system_settings',
   GET_SERVICE_STATUS: 'get_service_status',
-  GET_ALL_SERVICES: 'get_all_services'
+  GET_ALL_SERVICES: 'get_all_services',
+  GET_RECENT_ERRORS: 'get_recent_errors'
 };
 
 // Constants for channel names
@@ -47,7 +49,9 @@ const CHANNELS = {
   SERVICE_STATUS: 'service.status',
   SERVICES: 'services',
   // Special public channel for background scene
-  BACKGROUND_SCENE: 'public.background_scene'
+  BACKGROUND_SCENE: 'public.background_scene',
+  // Error monitoring channel
+  ERROR_ALERTS: 'system.errors'
 };
 
 /**
@@ -74,11 +78,14 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
     this.maintenanceCache = { mode: false, message: null, updated_at: new Date() };
     this.systemSettingsCache = new Map();
     this.servicesCache = new Map();
+    this.errorsCache = [];  // Store recent errors
+    this.errorMaxHistory = 100;  // Maximum number of errors to keep
     
     // Event handlers
     this._maintenanceUpdateHandler = this._handleMaintenanceUpdate.bind(this);
     this._systemSettingsUpdateHandler = this._handleSystemSettingsUpdate.bind(this);
     this._serviceStatusUpdateHandler = this._handleServiceStatusUpdate.bind(this);
+    this._serviceErrorHandler = this._handleServiceError.bind(this);
     
     logApi.info(`${LOG_PREFIX} ${fancyColors.CYAN}Monitor WebSocket initialized on ${fancyColors.BOLD}${this.path}${fancyColors.RESET}`);
   }
@@ -93,10 +100,53 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
     serviceEvents.on('system:settings:update', this._systemSettingsUpdateHandler);
     serviceEvents.on('service:status:update', this._serviceStatusUpdateHandler);
     serviceEvents.on('service:initialized', this._serviceStatusUpdateHandler);
-    serviceEvents.on('service:error', this._serviceStatusUpdateHandler);
+    serviceEvents.on('service:error', this._serviceErrorHandler);
     serviceEvents.on('service:circuit_breaker', this._serviceStatusUpdateHandler);
 
     logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}Registered event handlers for real-time updates${fancyColors.RESET}`);
+  }
+  
+  /**
+   * Handle service error event
+   * @param {Object} data - The error data
+   * @private
+   */
+  _handleServiceError(data) {
+    try {
+      // Format the error for display
+      const errorRecord = {
+        service: data.name || 'unknown',
+        source: data.source || 'unknown',
+        status: data.status || 'error',
+        error: data.error || 'Unknown error',
+        timestamp: new Date().toISOString(),
+        details: data.details || {},
+        metrics: data.metrics || {}
+      };
+      
+      // Add to error cache (limit size)
+      this.errorsCache.unshift(errorRecord);
+      if (this.errorsCache.length > this.errorMaxHistory) {
+        this.errorsCache.pop();
+      }
+      
+      // Broadcast to error channel
+      this.broadcastToChannel(CHANNELS.ERROR_ALERTS, {
+        type: MESSAGE_TYPES.ERROR_ALERT,
+        data: errorRecord
+      });
+      
+      // Also update service status
+      this._serviceStatusUpdateHandler(data);
+      
+      logApi.error(`${LOG_PREFIX} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ALERT ${fancyColors.RESET} ${fancyColors.YELLOW}${errorRecord.service}${fancyColors.RESET}: ${fancyColors.RED}${errorRecord.error}${fancyColors.RESET}`, {
+        service: errorRecord.service,
+        error: errorRecord.error,
+        source: errorRecord.source
+      });
+    } catch (error) {
+      logApi.error(`${LOG_PREFIX} ${fancyColors.BG_RED}${fancyColors.WHITE} META-ERROR ${fancyColors.RESET} ${fancyColors.RED}Failed to process error event: ${error.message}${fancyColors.RESET}`, error);
+    }
   }
   
   /**
@@ -286,6 +336,7 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
         await this.subscribeToChannel(ws, CHANNELS.MAINTENANCE_STATUS);
         await this.subscribeToChannel(ws, CHANNELS.SYSTEM_SETTINGS);
         await this.subscribeToChannel(ws, CHANNELS.SERVICES);
+        await this.subscribeToChannel(ws, CHANNELS.ERROR_ALERTS);
       } else {
         // Regular users get public info
         await this.subscribeToChannel(ws, CHANNELS.SYSTEM_STATUS);
@@ -362,6 +413,21 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
         data: services
       });
     }
+    
+    // Send recent errors for admins
+    if (clientInfo.subscriptions.has(CHANNELS.ERROR_ALERTS)) {
+      // Get most recent 10 errors
+      const recentErrors = this.errorsCache.slice(0, 10);
+      
+      if (recentErrors.length > 0) {
+        this.sendToClient(ws, {
+          type: 'recent_errors',
+          count: recentErrors.length,
+          totalErrors: this.errorsCache.length,
+          data: recentErrors
+        });
+      }
+    }
   }
   
   /**
@@ -396,6 +462,10 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
           this._handleGetAllServices(ws, clientInfo);
           break;
           
+        case MESSAGE_TYPES.GET_RECENT_ERRORS:
+          this._handleGetRecentErrors(ws, clientInfo, message);
+          break;
+          
         default:
           this.sendError(ws, 'UNKNOWN_MESSAGE_TYPE', `Unknown message type: ${message.type}`);
           break;
@@ -404,6 +474,54 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
       logApi.error(`${LOG_PREFIX} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${fancyColors.RED}Message handling failed: ${error.message}${fancyColors.RESET}`, error);
       this.sendError(ws, 'INTERNAL_ERROR', 'Error processing message');
     }
+  }
+  
+  /**
+   * Handle get recent errors request
+   * @param {WebSocket} ws - The WebSocket connection
+   * @param {Object} clientInfo - Client information
+   * @param {Object} message - The message object
+   * @private
+   */
+  _handleGetRecentErrors(ws, clientInfo, message) {
+    // Check if user is admin/superadmin
+    const isAdmin = clientInfo.authenticated && 
+                   (clientInfo.user.role === 'admin' || clientInfo.user.role === 'superadmin');
+    
+    if (!isAdmin) {
+      this.sendError(ws, 'UNAUTHORIZED', 'You do not have permission to access error logs');
+      return;
+    }
+    
+    // Get parameters
+    const limit = message.limit && !isNaN(message.limit) ? Math.min(parseInt(message.limit), this.errorMaxHistory) : 20;
+    const serviceFilter = message.service || null;
+    
+    // Filter errors
+    let errors = [...this.errorsCache];
+    
+    if (serviceFilter) {
+      errors = errors.filter(error => error.service === serviceFilter || 
+                                     error.service.includes(serviceFilter));
+    }
+    
+    // Limit results
+    errors = errors.slice(0, limit);
+    
+    // Send response
+    this.sendToClient(ws, {
+      type: 'recent_errors',
+      count: errors.length,
+      totalErrors: this.errorsCache.length,
+      service: serviceFilter,
+      data: errors
+    });
+    
+    logApi.debug(`${LOG_PREFIX} ${fancyColors.CYAN}Sent ${errors.length} recent errors to client ${clientInfo.connectionId.substring(0,8)}${fancyColors.RESET}`, {
+      connectionId: clientInfo.connectionId,
+      service: serviceFilter,
+      count: errors.length
+    });
   }
   
   /**
@@ -932,7 +1050,7 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
     serviceEvents.removeListener('system:settings:update', this._systemSettingsUpdateHandler);
     serviceEvents.removeListener('service:status:update', this._serviceStatusUpdateHandler);
     serviceEvents.removeListener('service:initialized', this._serviceStatusUpdateHandler);
-    serviceEvents.removeListener('service:error', this._serviceStatusUpdateHandler);
+    serviceEvents.removeListener('service:error', this._serviceErrorHandler);
     serviceEvents.removeListener('service:circuit_breaker', this._serviceStatusUpdateHandler);
     
     // Clear caches
@@ -940,6 +1058,7 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
     this.maintenanceCache = {};
     this.systemSettingsCache.clear();
     this.servicesCache.clear();
+    this.errorsCache = [];
     
     logApi.info(`${LOG_PREFIX} ${fancyColors.GREEN}Cleanup complete${fancyColors.RESET} - all event listeners removed and data caches cleared`);
   }
@@ -959,11 +1078,36 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
           maintenanceStatus: this.channelSubscriptions.get(CHANNELS.MAINTENANCE_STATUS)?.size || 0,
           systemSettings: this.channelSubscriptions.get(CHANNELS.SYSTEM_SETTINGS)?.size || 0,
           serviceStatus: this.channelSubscriptions.get(CHANNELS.SERVICES)?.size || 0,
-          backgroundScene: this.channelSubscriptions.get(CHANNELS.BACKGROUND_SCENE)?.size || 0
+          backgroundScene: this.channelSubscriptions.get(CHANNELS.BACKGROUND_SCENE)?.size || 0,
+          errorAlerts: this.channelSubscriptions.get(CHANNELS.ERROR_ALERTS)?.size || 0
+        },
+        errorTracking: {
+          recentErrors: this.errorsCache.length,
+          errorsBySource: this._getErrorCountsBySource(),
+          latestError: this.errorsCache.length > 0 ? {
+            service: this.errorsCache[0].service,
+            error: this.errorsCache[0].error,
+            timestamp: this.errorsCache[0].timestamp
+          } : null
         },
         lastUpdate: new Date().toISOString()
       }
     };
+  }
+  
+  /**
+   * Get error counts by source
+   * @private
+   * @returns {Object} - Error counts by source
+   */
+  _getErrorCountsBySource() {
+    // Count errors by source
+    const counts = {};
+    for (const error of this.errorsCache) {
+      const source = error.source || 'unknown';
+      counts[source] = (counts[source] || 0) + 1;
+    }
+    return counts;
   }
 }
 
