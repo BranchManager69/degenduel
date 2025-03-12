@@ -85,8 +85,12 @@ CLAUDE.md
 .cursorignore
 .cursorrules
 
-# Configurations
-config/
+# Configurations - Allow most but exclude swagger
+# config/
+config/swagger*.js
+config/*swagger*.json
+config/*swagger*.yaml
+config/*swagger*.yml
 
 # Scripts
 scripts/
