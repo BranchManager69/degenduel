@@ -61,6 +61,8 @@ import serviceManagementRoutes from './routes/admin/service-management.js';
 import ipBanManagementRoutes from './routes/admin/ip-ban-management.js';
 // Import IP Tracking routes
 import ipTrackingRoutes from './routes/admin/ip-tracking.js';
+// Import Role Management routes
+import roleManagementRoutes from './routes/admin/role-management.js';
 // Import Public Ban Check route
 import bannedIpRoutes from './routes/banned-ip.js';
 // Import (some) Admin Routes
@@ -218,6 +220,7 @@ app.use('/api/admin/system-settings', systemSettingsRoutes);
 app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
 app.use("/api/admin/ip-ban", ipBanManagementRoutes);
 app.use("/api/admin/ip-tracking", ipTrackingRoutes);
+app.use("/api/admin/role", roleManagementRoutes);
 
 // Protected routes (with maintenance check)
 // earliest protected routes
