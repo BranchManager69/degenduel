@@ -49,6 +49,9 @@ logs/
 logs-*.txt
 logs-*.log
 
+# Test files
+test-message.json
+
 # Temporary files
 *.swp
 *.swo
