@@ -498,7 +498,22 @@ ${chalk.red('══════════════════════�
 
 // Format user interaction logs
 function formatUserInteraction(user, action, details, env) {
-  const userInfo = user ? `${user.nickname} (${user.role})` : 'Anonymous';
+  let userInfo = 'Anonymous';
+  
+  if (user) {
+    // Apply role-specific colors
+    let roleFormatted = user.role;
+    if (user.role === 'superadmin') {
+      roleFormatted = `${fancyColors.DARK_YELLOW}${user.role}${fancyColors.RESET}`;  // Gold color for superadmins
+    } else if (user.role === 'admin') {
+      roleFormatted = `${fancyColors.DARK_RED}${user.role}${fancyColors.RESET}`;     // Royal red for admins
+    } else if (user.role === 'user') {
+      roleFormatted = `${fancyColors.PURPLE}${user.role}${fancyColors.RESET}`;       // Purple for regular users
+    }
+    
+    userInfo = `${user.nickname} (${roleFormatted})`;
+  }
+  
   let formattedDetails = '';
   
   if (action === 'session_check') {
@@ -754,11 +769,8 @@ const addLogtailFormatting = (level, message, metadata) => {
     ...metadata,
     _highlight: level === 'error' || level === 'warn',
     _color: colors.bg,
-    _icon: metadata.icon || colors.icon || serviceIcon,
-    // Only add HTML message for certain levels to avoid clutter
-    ...(level === 'error' || level === 'warn' ? {
-      _html_message: `<span style="background-color:${colors.bg};color:${colors.fg};padding:2px 6px;border-radius:3px;font-weight:bold;">${level.toUpperCase()}</span> ${message}`
-    } : {})
+    _icon: metadata.icon || colors.icon || serviceIcon
+    // Removed HTML message formatting - this will be handled separately in Winston formatters
   };
 };
 
@@ -798,13 +810,12 @@ const formatRateLimitError = (message, isForConsole = false) => {
     };
   }
   
-  // For Logtail, use Logtail's native color formatting
+  // For Logtail, add the basic metadata only
   return {
     message: `SOLANA RPC RATE LIMIT: Retry in ${retryMs}ms`,
     metadata: {
       ...metadata,
-      // Add Logtail-specific color properties
-      _html_message: `<span style="background-color:#FFD700;color:#000000;padding:2px 6px;border-radius:3px;font-weight:bold;"> SOLANA RPC RATE LIMIT </span> <span style="color:#FF0000;font-weight:bold;">Retry in ${retryMs}ms</span>`,
+      // Add Logtail-specific color properties but no HTML
       _highlight: true,
       _color: "#FFD700", // Gold background color for warnings
       _icon: "⚠️"  // Warning icon
@@ -845,15 +856,25 @@ logtail.use((log) => {
       // Use our standardized formatter
       const formatted = formatRateLimitError(log.message, false);
       log.message = formatted.message;
+      
+      // Merge metadata without HTML formatting
       log.metadata = { ...log.metadata, ...formatted.metadata };
     } else {
       // Strip ANSI codes for normal messages
       const cleanMessage = stripAnsiCodes(log.message);
       log.message = cleanMessage;
       
-      // Add Logtail-specific formatting based on log level
+      // Add Logtail-specific formatting but no HTML
       if (log.level) {
-        log.metadata = addLogtailFormatting(log.level, cleanMessage, log.metadata);
+        const formattedMetadata = addLogtailFormatting(log.level, cleanMessage, { ...log.metadata });
+        
+        // Only add the non-HTML properties
+        log.metadata = {
+          ...log.metadata,
+          _highlight: formattedMetadata._highlight,
+          _color: formattedMetadata._color,
+          _icon: formattedMetadata._icon
+        };
       }
     }
   }

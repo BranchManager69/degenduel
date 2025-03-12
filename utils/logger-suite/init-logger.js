@@ -25,8 +25,8 @@ class InitLogger {
             service: 'SYSTEM',
             event_type: 'initialization_start',
             _highlight: true,
-            _color: '#6A0DAD', // Purple
-            _html_message: '<span style="background-color:#6A0DAD;color:#FFFFFF;padding:2px 8px;border-radius:3px;font-weight:bold;">SYSTEM INIT</span> <span style="font-weight:bold;">DegenDuel Initialization Starting</span>'
+            _color: '#6A0DAD' // Purple
+            // Removed HTML formatting to keep console logs clean
         });
     }
 
@@ -69,8 +69,8 @@ class InitLogger {
             details,
             _icon: statusStyle.icon,
             _color: statusStyle.color,
-            _highlight: status === 'error',
-            _html_message: `<span style="background-color:${statusStyle.color};color:white;padding:1px 6px;border-radius:3px;font-weight:bold;">${statusStyle.label}</span> <span style="font-weight:bold;">[${category}]</span> ${service}${detailsStr}`
+            _highlight: status === 'error'
+            // Removed HTML formatting to keep console logs clean
         });
     }
 
@@ -110,29 +110,15 @@ class InitLogger {
             categories: Object.fromEntries(categories)
         };
 
-        // Log summary header with HTML formatting for Logtail
+        // Log summary header (removed HTML formatting to keep console logs clean)
         logApi.info(`Initialization Summary (${duration}s) - ${successful} succeeded, ${warnings} warnings, ${failures} failed`, {
             service: 'SYSTEM_INIT',
             event_type: 'initialization_summary',
             summary,
             _icon: failures > 0 ? '❌' : warnings > 0 ? '⚠️' : '✅',
             _color: failures > 0 ? '#FF0000' : warnings > 0 ? '#FFA500' : '#00AA00',
-            _highlight: failures > 0 || warnings > 0,
-            _html_message: `
-                <div style="margin-bottom:8px;">
-                    <span style="background-color:#6A0DAD;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                        INITIALIZATION SUMMARY
-                    </span>
-                    <span style="font-weight:bold;margin-left:8px;">
-                        Completed in ${duration}s
-                    </span>
-                </div>
-                <div style="margin-left:10px;">
-                    <span style="color:#00AA00;font-weight:bold;">${successful} successful</span> • 
-                    <span style="color:#FFA500;font-weight:bold;">${warnings} warnings</span> • 
-                    <span style="color:#FF0000;font-weight:bold;">${failures} failures</span>
-                </div>
-            `
+            _highlight: failures > 0 || warnings > 0
+            // Removed HTML formatting
         });
         
         // Log detailed category information if requested
@@ -143,13 +129,13 @@ class InitLogger {
                 const catWarnings = services.filter(s => s.status === 'warning' || s.status === 'initializing').length;
                 const catFailures = services.filter(s => s.status === 'error').length;
                 
-                // Log category header
+                // Log category header (removed HTML formatting)
                 logApi.info(`Category: ${category} (${catSuccess}/${services.length} successful)`, {
                     service: 'SYSTEM_INIT',
                     category,
                     status: catFailures > 0 ? 'error' : catWarnings > 0 ? 'warning' : 'success',
-                    _color: catFailures > 0 ? '#FF0000' : catWarnings > 0 ? '#FFA500' : '#00AA00',
-                    _html_message: `<span style="font-weight:bold;font-size:15px;">${category}</span> <span style="color:#888;font-size:14px;">(${catSuccess}/${services.length} successful)</span>`
+                    _color: catFailures > 0 ? '#FF0000' : catWarnings > 0 ? '#FFA500' : '#00AA00'
+                    // Removed HTML formatting
                 });
             }
         }
