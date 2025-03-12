@@ -1,11 +1,19 @@
+# .gitignore
+
+# Environment files
+.env
+
+# Ecosystem files
+ecosystem.config.cjs
+ecosystem.production.cjs
+ecosystem.development.cjs
+ecosystem.local.cjs
+
 # Node.js dependencies
 node_modules/
 
 # Code compilation
 code_compilation/
-
-# Archive
-archive/
 
 # Addresses
 addresses/
@@ -27,15 +35,10 @@ backups/
 # Reports
 reports/
 
-# Shortcut Scripts
-scripts/shortcuts/
-
 # Archives
+archive
 archive/
 archive/**
-
-# Drafts
-docs_drafts/
 
 # Database-related files
 data/
@@ -65,20 +68,29 @@ build/
 *.tsbuildinfo
 
 # Generated or sensitive documentation
-docs/
-docs_important/
-docs_critical/
+docs
+docs_important
+docs_critical
+# Allow public docs to be visible
+!docs_public 
 
 # Temporary editor/project files
-.vscode/
-.idea/
+.vscode
+.idea
 *.code-workspace
+.claude
+CLAUDE.md
+.cursor
+.git-rewrite
+.cursorignore
+.cursorrules
 
 # Configurations
 config/
 
-# Generated or archived scripts
+# Scripts
 scripts/
+scripts/shortcuts/
 
 # Test outputs and artifacts
 tests/
@@ -89,29 +101,18 @@ tests/
 #*.svg
 #*.ico
 
-# Ignore migrations (optional)
-###migrations/
-
 # All hidden files (e.g., temporary or config files)
 .*
 
-# Safeguard against stupidity
-.env
-
 # Archive files
-archive/
+archive
 archive/**
 
 # Exceptions to allow specific files
 !.gitignore
 !.README.md
 !.env.example
-!config/config.js
-!config/swagger.json
-!config/swagger.yaml
-!config/swagger.yml
-!config/swagger.jsonecosystem.local.cjs
 
-# Local ecosystem files
-ecosystem.local.cjs
-ecosystem.config.cjs
+# Temp
+temp/
+temp/**
