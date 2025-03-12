@@ -122,6 +122,10 @@ const port = process.env.PORT || 3004; // Default to production port if not spec
 // Create HTTP server instance
 const server = createServer(app);
 
+// Increase the maximum number of listeners to prevent EventEmitter memory leak warnings
+// This is necessary because we're attaching multiple WebSocket servers to the same HTTP server
+server.setMaxListeners(20);
+
 //------------------------------------------------.
 //  WebSocket servers and service initialization   |
 //  moved to the initializeServer() function       |
@@ -751,15 +755,7 @@ initializeServer().then(() => {
             uptime: process.uptime(),
             _icon: '🚀',
             _color: '#00AA00', // Green for success
-            _highlight: true,
-            _html_message: `
-                <span style="background-color:#00AA00;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                    SERVER RUNNING
-                </span>
-                <span style="font-weight:bold;margin-left:6px;">
-                    Listening on port ${port}
-                </span>
-            `
+            _highlight: true
         });
         
         // Generate initialization summary
@@ -817,15 +813,7 @@ initializeServer().then(() => {
         stack: error.stack,
         _icon: '❌',
         _color: '#FF0000', // Red for error
-        _highlight: true,
-        _html_message: `
-            <span style="background-color:#FF0000;color:white;padding:4px 8px;border-radius:3px;font-weight:bold;font-size:16px;">
-                SERVER INITIALIZATION FAILED
-            </span>
-            <div style="margin-top:8px;font-weight:bold;color:#FF0000;">
-                ${error.message}
-            </div>
-        `
+        _highlight: true
     });
     
     // Log more detailed error information if verbose logging is enabled

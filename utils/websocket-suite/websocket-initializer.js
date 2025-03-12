@@ -33,21 +33,24 @@ import { initializeWebSockets as initializeWebSocketsV69 } from '../../websocket
  * @returns {Object} WebSocket server instances
  */
 export async function initializeWebSockets(server, initResults = {}) {
-    // Log initialization start with both console formatting and Logtail HTML
+    // Increase the maximum number of listeners to prevent EventEmitter warnings
+    // This is necessary because we're attaching multiple WebSocket servers to the same HTTP server
+    if (server && typeof server.setMaxListeners === 'function') {
+        // Set a higher limit to accommodate all our WebSocket servers
+        server.setMaxListeners(20);
+        logApi.info('Increased HTTP server MaxListeners to 20', {
+            service: 'WEBSOCKET',
+            event_type: 'config_update'
+        });
+    }
+    
+    // Log initialization start with console formatting
     logApi.info('WebSocket Layer Initialization Starting', {
         service: 'WEBSOCKET',
         event_type: 'initialization_start',
         _icon: '🔌',
         _highlight: true,
-        _color: '#E91E63', // Pink/magenta for WebSocket color
-        _html_message: `
-            <div style="margin-bottom:4px;">
-                <span style="background-color:#E91E63;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                    WEBSOCKET LAYER
-                </span>
-            </div>
-            <span style="font-weight:bold;">Initializing WebSocket Servers...</span>
-        `
+        _color: '#E91E63' // Pink/magenta for WebSocket color
     });
 
     // Track initialization with InitLogger
@@ -124,15 +127,7 @@ export async function initializeWebSockets(server, initResults = {}) {
             event_type: 'initialization_complete',
             servers_count: Object.keys(wsServers).length,
             _icon: '✅',
-            _color: '#00AA00', // Green for success
-            _html_message: `
-                <span style="background-color:#00AA00;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                    SUCCESS
-                </span>
-                <span style="font-weight:bold;margin-left:6px;">
-                    ${Object.keys(wsServers).length} WebSocket Services Ready
-                </span>
-            `
+            _color: '#00AA00' // Green for success
         });
         
         // Update initialization status in InitLogger
@@ -238,15 +233,7 @@ export async function initializeWebSockets(server, initResults = {}) {
                 service: 'WEBSOCKET_V69',
                 event_type: 'initialization_start',
                 _icon: '🚀',
-                _color: '#00BFFF', // Deep sky blue
-                _html_message: `
-                    <span style="background-color:#00BFFF;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                        V69 WEBSOCKETS
-                    </span>
-                    <span style="font-weight:bold;margin-left:6px;">
-                        Initialization Starting
-                    </span>
-                `
+                _color: '#00BFFF' // Deep sky blue
             });
 
             // Track in InitLogger
@@ -260,15 +247,7 @@ export async function initializeWebSockets(server, initResults = {}) {
                 service: 'WEBSOCKET_V69',
                 event_type: 'initialization_complete',
                 _icon: '✅',
-                _color: '#00AA00', // Green for success
-                _html_message: `
-                    <span style="background-color:#00AA00;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                        SUCCESS
-                    </span>
-                    <span style="font-weight:bold;margin-left:6px;">
-                        v69 WebSocket Servers Ready
-                    </span>
-                `
+                _color: '#00AA00' // Green for success
             });
             
             // Update initialization status
@@ -282,15 +261,7 @@ export async function initializeWebSockets(server, initResults = {}) {
                         service: 'WEBSOCKET_V69',
                         event_type: 'metrics_registration',
                         _icon: '📊',
-                        _color: '#8A2BE2', // BlueViolet
-                        _html_message: `
-                            <span style="background-color:#8A2BE2;color:white;padding:2px 6px;border-radius:3px;">
-                                METRICS
-                            </span>
-                            <span style="margin-left:6px;">
-                                Registering v69 WebSocket metrics with monitor
-                            </span>
-                        `
+                        _color: '#8A2BE2' // BlueViolet
                     });
                     
                     // Track in InitLogger
@@ -348,15 +319,7 @@ export async function initializeWebSockets(server, initResults = {}) {
                             success_count: successCount,
                             failure_count: 0,
                             _icon: '✅',
-                            _color: '#00AA00', // Green for success
-                            _html_message: `
-                                <span style="background-color:#00AA00;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                                    SUCCESS
-                                </span>
-                                <span style="font-weight:bold;margin-left:6px;">
-                                    Metrics registered for ${successCount} WebSocket services
-                                </span>
-                            `
+                            _color: '#00AA00' // Green for success
                         });
                         
                         // Update initialization status
@@ -369,15 +332,7 @@ export async function initializeWebSockets(server, initResults = {}) {
                             failure_count: failureCount,
                             _icon: '⚠️',
                             _color: '#FFA500', // Orange for warning
-                            _highlight: true,
-                            _html_message: `
-                                <span style="background-color:#FFA500;color:black;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                                    WARNING
-                                </span>
-                                <span style="font-weight:bold;margin-left:6px;">
-                                    Metrics registration: ${successCount} succeeded, ${failureCount} failed
-                                </span>
-                            `
+                            _highlight: true
                         });
                         
                         // Update initialization status
@@ -393,15 +348,7 @@ export async function initializeWebSockets(server, initResults = {}) {
                         event_type: 'metrics_registration_skipped',
                         _icon: '⚠️',
                         _color: '#FFA500', // Orange for warning
-                        _highlight: true,
-                        _html_message: `
-                            <span style="background-color:#FFA500;color:black;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                                WARNING
-                            </span>
-                            <span style="font-weight:bold;margin-left:6px;">
-                                Monitor service not available for v69 metric registration
-                            </span>
-                        `
+                        _highlight: true
                     });
                     
                     // Update initialization status
@@ -416,15 +363,7 @@ export async function initializeWebSockets(server, initResults = {}) {
                     stack: metricError.stack,
                     _icon: '❌',
                     _color: '#FF0000', // Red for error
-                    _highlight: true,
-                    _html_message: `
-                        <span style="background-color:#FF0000;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                            ERROR
-                        </span>
-                        <span style="font-weight:bold;margin-left:6px;color:#FF0000;">
-                            Failed to register v69 WebSocket metrics
-                        </span>
-                    `
+                    _highlight: true
                 });
                 
                 // Update initialization status
@@ -441,15 +380,7 @@ export async function initializeWebSockets(server, initResults = {}) {
                 stack: v69Error.stack,
                 _icon: '❌',
                 _color: '#FF0000', // Red for error
-                _highlight: true,
-                _html_message: `
-                    <span style="background-color:#FF0000;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                        ERROR
-                    </span>
-                    <span style="font-weight:bold;margin-left:6px;color:#FF0000;">
-                        v69 WebSocket initialization failed
-                    </span>
-                `
+                _highlight: true
             });
             
             // Update initialization status
@@ -477,15 +408,7 @@ export async function initializeWebSockets(server, initResults = {}) {
             stack: error.stack,
             _icon: '❌',
             _color: '#FF0000', // Red for error
-            _highlight: true,
-            _html_message: `
-                <span style="background-color:#FF0000;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                    ERROR
-                </span>
-                <span style="font-weight:bold;margin-left:6px;color:#FF0000;">
-                    WebSocket initialization failed: ${error.message}
-                </span>
-            `
+            _highlight: true
         });
         
         // Update initialization status
@@ -521,20 +444,12 @@ export async function cleanupWebSockets() {
         return true;
     }
     
-    // Log cleanup start with both console formatting and Logtail HTML
+    // Log cleanup start with console formatting
     logApi.info('WebSocket Cleanup Starting', {
         service: 'WEBSOCKET',
         event_type: 'cleanup_start',
         _icon: '🧹',
-        _color: '#E91E63', // Pink/magenta for WebSocket color
-        _html_message: `
-            <div style="margin-bottom:4px;">
-                <span style="background-color:#E91E63;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                    WEBSOCKET CLEANUP
-                </span>
-            </div>
-            <span style="font-weight:bold;">Starting WebSocket server cleanup...</span>
-        `
+        _color: '#E91E63' // Pink/magenta for WebSocket color
     });
     
     // Track cleanup with InitLogger
@@ -552,15 +467,7 @@ export async function cleanupWebSockets() {
             service: 'WEBSOCKET_V69',
             event_type: 'cleanup_start',
             _icon: '🧹',
-            _color: '#00BFFF', // Deep sky blue
-            _html_message: `
-                <span style="background-color:#00BFFF;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                    V69 CLEANUP
-                </span>
-                <span style="margin-left:6px;">
-                    Cleaning up v69 WebSocket servers
-                </span>
-            `
+            _color: '#00BFFF' // Deep sky blue
         });
         
         // Track in InitLogger
@@ -575,15 +482,7 @@ export async function cleanupWebSockets() {
                 service: 'WEBSOCKET_V69',
                 event_type: 'cleanup_complete',
                 _icon: '✅',
-                _color: '#00AA00', // Green for success
-                _html_message: `
-                    <span style="background-color:#00AA00;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                        SUCCESS
-                    </span>
-                    <span style="margin-left:6px;">
-                        v69 WebSocket servers successfully cleaned up
-                    </span>
-                `
+                _color: '#00AA00' // Green for success
             });
             
             // Update initialization status
