@@ -1,0 +1,48 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "DegenDuel Game DB (Prod)",
+      "Group": "DegenDuel Servers",
+      "Host": "172.17.0.1",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "branchmanager",
+      "Password": "servN!ck1003",
+      "SSLMode": "prefer",
+      "Comment": "DegenDuel Game DB (Prod)"
+    },
+    "2": {
+      "Name": "DegenDuel Game DB (Dev)",
+      "Group": "DegenDuel Servers",
+      "Host": "172.17.0.1",
+      "Port": 5432,
+      "MaintenanceDB": "degenduel_test",
+      "Username": "branchmanager",
+      "Password": "servN!ck1003",
+      "SSLMode": "prefer",
+      "Comment": "DegenDuel Game DB (Dev)"
+    },
+    "3": {
+      "Name": "DegenDuel Market DB (Prod)",
+      "Group": "DegenDuel Servers",
+      "Host": "172.17.0.1",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "branchmanager",
+      "Password": "servN!ck1003",
+      "SSLMode": "prefer",
+      "Comment": "DegenDuel Market DB (Prod)"
+    },
+    "4": {
+      "Name": "DegenDuel Reflections DB (Prod)",
+      "Group": "DegenDuel Servers",
+      "Host": "172.17.0.1",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "branchmanager",
+      "Password": "servN!ck1003",
+      "SSLMode": "prefer",
+      "Comment": "DegenDuel Reflections DB (Prod)"
+    }
+  }
+} 
