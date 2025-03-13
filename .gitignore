@@ -78,7 +78,6 @@ docs_critical
 .vscode
 .idea
 *.code-workspace
-.claude
 CLAUDE.md
 .cursor
 .git-rewrite

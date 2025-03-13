@@ -24,6 +24,7 @@
     "mm:consolidate": "node scripts/mm/consolidate.js",
     "mm:audit": "node scripts/mm/audit.js",
     "mm": "./scripts/mm/run.sh",
+    "lint:ai": "claude -p 'you are a linter. please look at the changes vs. main and report any issues related to typos. report the filename and line number on one line, and a description of the issue on the second line. do not return any other text.'",
     "test:services": "node scripts/service-status-report.js # Reports saved to reports/service-reports/YYYY-MM-DD/",
     "test:websocket": "node scripts/test-websocket.js",
     "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
