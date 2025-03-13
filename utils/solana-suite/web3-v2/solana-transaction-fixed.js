@@ -1,8 +1,9 @@
 // utils/solana-suite/web3-v2/solana-transaction-fixed.js
 
 /*
- * This is an updated implementation using @solana/transactions v2.1 to create and send transactions
- * in a more functional programming style
+ * This is an updated implementation using @solana/transaction-messages and @solana/transactions v2.1
+ * in a more functional programming style, properly separating message creation from transaction
+ * compilation and signing
  */
 
 import {
@@ -11,27 +12,30 @@ import {
   LAMPORTS_PER_SOL,
 } from '@solana/web3.js';
 
-// Import functions from @solana/transactions v2.1.0
-import { 
-  createTransaction,
-  setTransactionFeePayer,
-  appendTransactionInstruction,
-  setTransactionLifetimeUsingBlockhash,
-  signTransaction,
-  getBase64EncodedWireTransaction
-} from '@solana/transactions';
+// Import functions from @solana/transaction-messages for building transaction messages
+import {
+  createTransactionMessage,
+  setTransactionMessageFeePayer,
+  appendTransactionMessageInstruction,
+  setTransactionMessageLifetimeUsingBlockhash
+} from '@solana/transaction-messages';
+
+// Note: The following functions will be dynamically imported when needed:
+// - compileTransaction from @solana/transactions
+// - signTransaction from @solana/transactions
+// - getBase64EncodedWireTransaction from @solana/transactions
 
 // Still need RPC functions from @solana/kit
 import { 
-  createSolanaRpc,
-  sendAndConfirmTransactionFactory 
+  createSolanaRpc
 } from '@solana/kit';
 
-import bs58 from 'bs58';
 import { logApi } from '../../logger-suite/logger.js';
 
 /**
- * Creates and sends a SOL transfer transaction using @solana/kit v2.1
+ * Creates and sends a SOL transfer transaction using @solana/transaction-messages
+ * and @solana/transactions v2.1 with the correct separation of message creation,
+ * transaction compilation, and transaction signing
  * 
  * @param {Connection} connection - Solana connection object
  * @param {Keypair} fromKeypair - Sender's keypair
@@ -41,14 +45,10 @@ import { logApi } from '../../logger-suite/logger.js';
  */
 export async function transferSOL(connection, fromKeypair, toAddress, amount) {
   try {
-    // Convert to bytes for @solana/kit
-    const fromPublicKeyBytes = fromKeypair.publicKey.toBytes();
-    
-    // Convert string address to PublicKey if needed, then to bytes
+    // Convert string address to PublicKey if needed
     const toPubkey = typeof toAddress === 'string' 
       ? new PublicKey(toAddress) 
       : toAddress;
-    const toPublicKeyBytes = toPubkey.toBytes();
     
     // Create an RPC client
     const rpc = createSolanaRpc({ 
@@ -59,60 +59,66 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
     // Get a recent blockhash
     const { value: latestBlockhash } = await rpc.getLatestBlockhash();
     
-    // Create an empty transaction with version 0
-    let transaction = createTransaction({ version: 0 });
-    
-    // Set the fee payer - different param structure with transactions package
-    transaction = setTransactionFeePayer(fromPublicKeyBytes, transaction);
-    
-    // Set transaction lifetime using blockhash - different param structure
-    transaction = setTransactionLifetimeUsingBlockhash(latestBlockhash.blockhash, transaction);
-    
-    // System Program ID (all zeros)
-    const systemProgramId = new Uint8Array(32).fill(0);
+    // System Program ID for System Transfer (all zeros in base58)
+    const systemProgramId = '11111111111111111111111111111111';
     
     // Instruction data for a transfer (opcode 2 + amount as 64-bit LE)
     const data = new Uint8Array(9);
     data[0] = 2; // Transfer opcode
     
+    // Convert amount to lamports
+    const amountInLamports = Math.floor(amount * LAMPORTS_PER_SOL);
+    
     // Write amount as little-endian 64-bit value
     const view = new DataView(data.buffer, 1);
-    view.setBigUint64(0, BigInt(Math.floor(amount * LAMPORTS_PER_SOL)), true);
+    view.setBigUint64(0, BigInt(amountInLamports), true);
     
-    // Create the transfer instruction
+    // Create the transfer instruction using base58 strings for pubkeys
     const transferInstruction = {
       programId: systemProgramId,
       accounts: [
-        { pubkey: fromPublicKeyBytes, isSigner: true, isWritable: true },
-        { pubkey: toPublicKeyBytes, isSigner: false, isWritable: true }
+        { pubkey: fromKeypair.publicKey.toBase58(), isSigner: true, isWritable: true },
+        { pubkey: toPubkey.toBase58(), isSigner: false, isWritable: true }
       ],
       data: data
     };
     
-    // Add the instruction to the transaction - different param structure
-    transaction = appendTransactionInstruction(transferInstruction, transaction);
+    // STEP 1: Build the transaction message
+    // Create an empty transaction message with version 0
+    let txMessage = createTransactionMessage({ version: 0 });
     
-    // Get private key for signing
-    const privateKey = fromKeypair.secretKey ? 
-      fromKeypair.secretKey : 
-      fromKeypair._keypair.secretKey;
+    // Set the fee payer using base58 string
+    txMessage = setTransactionMessageFeePayer(fromKeypair.publicKey.toBase58(), txMessage);
     
-    // Sign the transaction using the signTransaction function
-    const signedTransaction = await signTransaction([privateKey], transaction);
+    // Set transaction lifetime using blockhash
+    txMessage = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash.blockhash, txMessage);
     
-    // Encode the transaction for sending
+    // Add the transfer instruction to the message
+    txMessage = appendTransactionMessageInstruction(transferInstruction, txMessage);
+    
+    // STEP 2: Compile the message into an unsigned transaction
+    // Import the compileTransaction function from @solana/transactions
+    const { compileTransaction } = await import('@solana/transactions');
+    const transaction = compileTransaction(txMessage);
+    
+    // STEP 3: Sign the transaction with the sender's keypair
+    // Import the signTransaction and getBase64EncodedWireTransaction functions from @solana/transactions
+    const { signTransaction, getBase64EncodedWireTransaction } = await import('@solana/transactions');
+    
+    // Sign the transaction
+    const signedTransaction = await signTransaction([fromKeypair.secretKey], transaction);
+    
+    // STEP 4: Encode the signed transaction for sending
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
     
-    // Create transaction sender function
-    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
-      rpc: rpc,
-      rpcSubscriptions: connection
-    });
+    // STEP 5: Send the transaction with proper encoding specified
+    const txSignature = await rpc.sendTransaction(encodedTransaction, { 
+      encoding: 'base64',
+      skipPreflight: false,
+      preflightCommitment: connection.commitment || 'confirmed'
+    }).send();
     
-    // Send and confirm the transaction
-    const txSignature = await rpc.sendTransaction(encodedTransaction, { encoding: 'base64' }).send();
-    
-    logApi.info('SOL transfer successful using @solana/transactions', {
+    logApi.info('SOL transfer successful using @solana/transactions v2.1', {
       from: fromKeypair.publicKey.toString(),
       to: toPubkey.toString(),
       amount,
@@ -122,7 +128,7 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
     // Return signature
     return { signature: txSignature };
   } catch (error) {
-    logApi.error('SOL transfer failed using @solana/transactions', {
+    logApi.error('SOL transfer failed using @solana/transactions v2.1', {
       error: error.message,
       from: fromKeypair.publicKey.toString(),
       to: typeof toAddress === 'string' ? toAddress : toAddress.toString(),
@@ -133,7 +139,9 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
 }
 
 /**
- * Creates and sends a token transfer transaction using @solana/kit v2.1
+ * Creates and sends a token transfer transaction using @solana/transaction-messages
+ * and @solana/transactions v2.1 with the correct separation of message creation,
+ * transaction compilation, and transaction signing
  * 
  * @param {Connection} connection - Solana connection object
  * @param {Keypair} fromKeypair - Sender's keypair
@@ -170,26 +178,12 @@ export async function transferToken(
     const mintPubkey = typeof mint === 'string'
       ? new PublicKey(mint)
       : mint;
-      
-    // Convert to bytes for @solana/kit
-    const fromPublicKeyBytes = fromKeypair.publicKey.toBytes();
-    const fromTokenBytes = fromTokenPubkey.toBytes();
-    const toTokenBytes = toTokenPubkey.toBytes();
     
     // Get a recent blockhash
     const { value: latestBlockhash } = await rpc.getLatestBlockhash();
     
-    // Create an empty transaction with version 0
-    let transaction = createTransaction({ version: 0 });
-    
-    // Set the fee payer - different param structure with transactions package
-    transaction = setTransactionFeePayer(fromPublicKeyBytes, transaction);
-    
-    // Set transaction lifetime using blockhash - different param structure
-    transaction = setTransactionLifetimeUsingBlockhash(latestBlockhash.blockhash, transaction);
-    
-    // Token Program ID
-    const tokenProgramId = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA').toBytes();
+    // Token Program ID in base58 format
+    const tokenProgramId = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
     
     // Instruction data for token transfer
     const data = new Uint8Array(9);
@@ -199,41 +193,53 @@ export async function transferToken(
     const view = new DataView(data.buffer, 1);
     view.setBigUint64(0, BigInt(amount), true);
     
-    // Create the token transfer instruction
+    // Create the token transfer instruction using base58 strings for pubkeys
     const transferInstruction = {
       programId: tokenProgramId,
       accounts: [
-        { pubkey: fromTokenBytes, isSigner: false, isWritable: true },
-        { pubkey: toTokenBytes, isSigner: false, isWritable: true },
-        { pubkey: fromPublicKeyBytes, isSigner: true, isWritable: false }
+        { pubkey: fromTokenPubkey.toBase58(), isSigner: false, isWritable: true },
+        { pubkey: toTokenPubkey.toBase58(), isSigner: false, isWritable: true },
+        { pubkey: fromKeypair.publicKey.toBase58(), isSigner: true, isWritable: false }
       ],
       data: data
     };
     
-    // Add the instruction to the transaction - different param structure
-    transaction = appendTransactionInstruction(transferInstruction, transaction);
+    // STEP 1: Build the transaction message
+    // Create an empty transaction message with version 0
+    let txMessage = createTransactionMessage({ version: 0 });
     
-    // Get private key for signing
-    const privateKey = fromKeypair.secretKey ? 
-      fromKeypair.secretKey : 
-      fromKeypair._keypair.secretKey;
+    // Set the fee payer using base58 string
+    txMessage = setTransactionMessageFeePayer(fromKeypair.publicKey.toBase58(), txMessage);
     
-    // Sign the transaction using the signTransaction function
-    const signedTransaction = await signTransaction([privateKey], transaction);
+    // Set transaction lifetime using blockhash
+    txMessage = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash.blockhash, txMessage);
     
-    // Encode the transaction for sending
+    // Add the transfer instruction to the message
+    txMessage = appendTransactionMessageInstruction(transferInstruction, txMessage);
+    
+    // STEP 2: Compile the message into an unsigned transaction
+    // Import the compileTransaction function from @solana/transactions
+    const { compileTransaction } = await import('@solana/transactions');
+    const transaction = compileTransaction(txMessage);
+    
+    // STEP 3: Sign the transaction with the sender's keypair
+    // Import the signTransaction and getBase64EncodedWireTransaction functions from @solana/transactions
+    const { signTransaction, getBase64EncodedWireTransaction } = await import('@solana/transactions');
+    
+    // Sign the transaction
+    const signedTransaction = await signTransaction([fromKeypair.secretKey], transaction);
+    
+    // STEP 4: Encode the signed transaction for sending
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
     
-    // Create transaction sender function
-    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
-      rpc: rpc,
-      rpcSubscriptions: connection
-    });
+    // STEP 5: Send the transaction with proper encoding specified
+    const txSignature = await rpc.sendTransaction(encodedTransaction, { 
+      encoding: 'base64',
+      skipPreflight: false,
+      preflightCommitment: connection.commitment || 'confirmed'
+    }).send();
     
-    // Send and confirm the transaction
-    const txSignature = await rpc.sendTransaction(encodedTransaction, { encoding: 'base64' }).send();
-    
-    logApi.info('Token transfer successful using @solana/transactions', {
+    logApi.info('Token transfer successful using @solana/transactions v2.1', {
       from: fromKeypair.publicKey.toString(),
       fromToken: fromTokenPubkey.toString(),
       toToken: toTokenPubkey.toString(),
@@ -245,9 +251,11 @@ export async function transferToken(
     // Return signature
     return { signature: txSignature };
   } catch (error) {
-    logApi.error('Token transfer failed using @solana/transactions', {
+    logApi.error('Token transfer failed using @solana/transactions v2.1', {
       error: error.message,
       from: fromKeypair.publicKey.toString(),
+      fromToken: typeof fromTokenAccount === 'string' ? fromTokenAccount : fromTokenAccount.toString(),
+      toToken: typeof toTokenAccount === 'string' ? toTokenAccount : toTokenAccount.toString(),
       amount,
     });
     throw error;
@@ -255,7 +263,9 @@ export async function transferToken(
 }
 
 /**
- * Estimates the transaction fee for a SOL transfer using @solana/kit v2.1
+ * Estimates the transaction fee for a SOL transfer using @solana/transaction-messages
+ * and @solana/transactions v2.1 with the correct separation of message creation,
+ * transaction compilation, and transaction signing
  * 
  * @param {Connection} connection - Solana connection object
  * @param {PublicKey} fromPubkey - Sender's public key
@@ -270,61 +280,68 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
       commitment: connection.commitment
     });
     
-    // Convert to bytes for @solana/kit
-    const fromPublicKeyBytes = fromPubkey.toBytes();
-    const toPublicKeyBytes = toPubkey.toBytes();
-    
     // Get a recent blockhash
     const { value: latestBlockhash } = await rpc.getLatestBlockhash();
     
-    // Create an empty transaction with version 0
-    let transaction = createTransaction({ version: 0 });
-    
-    // Set the fee payer - different param structure with transactions package
-    transaction = setTransactionFeePayer(fromPublicKeyBytes, transaction);
-    
-    // Set transaction lifetime using blockhash - different param structure
-    transaction = setTransactionLifetimeUsingBlockhash(latestBlockhash.blockhash, transaction);
-    
-    // System Program ID (all zeros)
-    const systemProgramId = new Uint8Array(32).fill(0);
+    // System Program ID (all zeros in base58)
+    const systemProgramId = '11111111111111111111111111111111';
     
     // Instruction data for a transfer (opcode 2 + amount as 64-bit LE)
     const data = new Uint8Array(9);
     data[0] = 2; // Transfer opcode
     
-    // Write placeholder amount as little-endian 64-bit value
+    // Write placeholder amount as little-endian 64-bit value (1 SOL)
     const view = new DataView(data.buffer, 1);
-    view.setBigUint64(0, BigInt(LAMPORTS_PER_SOL), true); // 1 SOL as placeholder
+    view.setBigUint64(0, BigInt(LAMPORTS_PER_SOL), true);
     
-    // Create the transfer instruction
+    // Create the transfer instruction using base58 strings for pubkeys
     const transferInstruction = {
       programId: systemProgramId,
       accounts: [
-        { pubkey: fromPublicKeyBytes, isSigner: true, isWritable: true },
-        { pubkey: toPublicKeyBytes, isSigner: false, isWritable: true }
+        { pubkey: fromPubkey.toBase58(), isSigner: true, isWritable: true },
+        { pubkey: toPubkey.toBase58(), isSigner: false, isWritable: true }
       ],
       data: data
     };
     
-    // Add the instruction to the transaction - different param structure
-    transaction = appendTransactionInstruction(transferInstruction, transaction);
+    // STEP 1: Build the transaction message
+    // Create an empty transaction message with version 0
+    let txMessage = createTransactionMessage({ version: 0 });
     
-    // We need to sign the transaction for simulation
-    // Get private key for signing - use a temporary key for simulation
+    // Set the fee payer using base58 string
+    txMessage = setTransactionMessageFeePayer(fromPubkey.toBase58(), txMessage);
+    
+    // Set transaction lifetime using blockhash
+    txMessage = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash.blockhash, txMessage);
+    
+    // Add the transfer instruction to the message
+    txMessage = appendTransactionMessageInstruction(transferInstruction, txMessage);
+    
+    // STEP 2: Compile the message into an unsigned transaction
+    // Import the compileTransaction function from @solana/transactions
+    const { compileTransaction } = await import('@solana/transactions');
+    const transaction = compileTransaction(txMessage);
+    
+    // STEP 3: For simulation, we need to sign the transaction
+    // Create a temporary keypair for simulation
     const tempKeypair = Keypair.generate();
     
-    // Sign the transaction using the signTransaction function
+    // Import the signTransaction and getBase64EncodedWireTransaction functions
+    const { signTransaction, getBase64EncodedWireTransaction } = await import('@solana/transactions');
+    
+    // Sign the transaction with the temporary keypair
+    // This won't be a valid signature for the real fromPubkey, but works for simulation
     const signedTransaction = await signTransaction([tempKeypair.secretKey], transaction);
     
-    // Encode the transaction for sending
+    // STEP 4: Encode the signed transaction for simulation
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
     
-    // Simulate the transaction to get the fee
+    // STEP 5: Simulate the transaction to get the fee
     const simulationResult = await rpc.simulateTransaction(encodedTransaction, {
       commitment: 'confirmed',
       encoding: 'base64',
-      replaceRecentBlockhash: true
+      replaceRecentBlockhash: true, // Important: this replaces our fake signature with a valid one for simulation
+      sigVerify: false // Skip signature verification since we're using a fake signer
     });
     
     // Extract fee information from simulation result
@@ -332,7 +349,7 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
     
     return fee / LAMPORTS_PER_SOL;
   } catch (error) {
-    logApi.error('Failed to estimate transaction fee using @solana/transactions', {
+    logApi.error('Failed to estimate transaction fee using @solana/transactions v2.1', {
       error: error.message,
     });
     // Return a default fee estimate if calculation fails
