@@ -11,6 +11,7 @@
 
 import { logApi } from '../logger-suite/logger.js';
 import InitLogger from '../logger-suite/init-logger.js';
+// Legacy WebSocket imports
 import { createWebSocketMonitor } from '../../websocket/monitor-ws.js';
 import { createCircuitBreakerWebSocket } from '../../websocket/circuit-breaker-ws.js';
 import { createAnalyticsWebSocket } from '../../websocket/analytics-ws.js';
@@ -25,6 +26,8 @@ import { createSystemSettingsWebSocket } from '../../websocket/system-settings-w
 import { fancyColors, serviceColors } from '../colors.js';
 // Import v69 WebSocket Initializer
 import { initializeWebSockets as initializeWebSocketsV69 } from '../../websocket/v69/websocket-initializer.js';
+// Import v69 WebSocket preferences
+import { shouldUseV69, shouldUseLegacy, websocketPreferences } from '../../config/v69-preferences.js';
 
 /**
  * Initialize all WebSocket servers
@@ -65,20 +68,64 @@ export async function initializeWebSockets(server, initResults = {}) {
         const wsCircuitBreaker = createCircuitBreakerWebSocket(server);
         logApi.info(`${fancyColors.ORANGE}┃           ┣━━━━━━━━━━━ ${serviceColors.initializing}Circuit Breaker WebSocket initialized${fancyColors.RESET}`);
 
-        // Initialize all other WebSocket servers after monitor and circuit breaker
+        // Initialize v69 WebSockets first
+        try {
+            // Initialize v69 WebSockets
+            await initializeWebSocketsV69(server);
+            
+            // Log successful initialization
+            logApi.info('v69 WebSocket Servers Ready', {
+                service: 'WEBSOCKET_V69',
+                event_type: 'initialization_complete',
+                _icon: '✅',
+                _color: '#00AA00' // Green for success
+            });
+            
+            // Update initialization status
+            InitLogger.logInit('WebSocket', 'V69System', 'success', {
+                count: global.wsServersV69 ? Object.keys(global.wsServersV69).length : 0,
+                version: 'v69'
+            });
+        } catch (v69Error) {
+            // Log error but continue with legacy initialization
+            logApi.error(`v69 WebSocket initialization error: ${v69Error.message}`, {
+                service: 'WEBSOCKET_V69',
+                event_type: 'initialization_error',
+                error: v69Error.message,
+                _icon: '⚠️',
+                _color: '#FFA500' // Warning color
+            });
+        }
+        
+        // Initialize legacy WebSocket servers based on preferences
         const wsServers = {
+            // Always include monitor and circuit breaker in legacy for now
+            // (They are foundation services)
             monitor: wsMonitor,
-            circuitBreaker: wsCircuitBreaker,
-            analytics: createAnalyticsWebSocket(server),
-            portfolio: createPortfolioWebSocket(server),
-            market: createMarketDataWebSocket(server),
-            wallet: createWalletWebSocket(server),
-            contest: createContestWebSocket(server),
-            tokenData: createTokenDataWebSocket(server),
-            userNotification: createUserNotificationWebSocket(server),
-            skyDuel: createSkyDuelWebSocket(server),
-            systemSettings: createSystemSettingsWebSocket(server)
+            circuitBreaker: wsCircuitBreaker
         };
+        
+        // Only initialize legacy versions as needed based on preferences
+        if (shouldUseLegacy('analytics')) wsServers.analytics = createAnalyticsWebSocket(server);
+        if (shouldUseLegacy('portfolio')) wsServers.portfolio = createPortfolioWebSocket(server);
+        if (shouldUseLegacy('market')) wsServers.market = createMarketDataWebSocket(server);
+        if (shouldUseLegacy('wallet')) wsServers.wallet = createWalletWebSocket(server);
+        if (shouldUseLegacy('contest')) wsServers.contest = createContestWebSocket(server);
+        if (shouldUseLegacy('tokenData')) wsServers.tokenData = createTokenDataWebSocket(server);
+        if (shouldUseLegacy('userNotification')) wsServers.userNotification = createUserNotificationWebSocket(server);
+        if (shouldUseLegacy('skyDuel')) wsServers.skyDuel = createSkyDuelWebSocket(server);
+        if (shouldUseLegacy('systemSettings')) wsServers.systemSettings = createSystemSettingsWebSocket(server);
+        
+        // Log which WebSockets are using v69 vs legacy
+        logApi.info('WebSocket Preferences Applied', {
+            service: 'WEBSOCKET',
+            event_type: 'preferences_applied',
+            v69_count: Object.keys(websocketPreferences).filter(key => websocketPreferences[key] === 'v69').length,
+            legacy_count: Object.keys(websocketPreferences).filter(key => websocketPreferences[key] === 'legacy').length,
+            parallel_count: Object.keys(websocketPreferences).filter(key => websocketPreferences[key] === 'parallel').length,
+            _icon: '🔀',
+            _color: '#8A2BE2' // BlueViolet
+        });
 
         // Initialize each WebSocket server except monitor and circuit breaker
         const initPromises = Object.entries(wsServers)
@@ -226,176 +273,142 @@ export async function initializeWebSockets(server, initResults = {}) {
             };
         }
 
-        // Initialize v69 WebSockets in parallel without affecting existing ones
+        // Register v69 WebSockets with monitor service
         try {
-            // Log v69 initialization start
-            logApi.info('Initializing v69 WebSocket Servers', {
-                service: 'WEBSOCKET_V69',
-                event_type: 'initialization_start',
-                _icon: '🚀',
-                _color: '#00BFFF' // Deep sky blue
-            });
-
-            // Track in InitLogger
-            InitLogger.logInit('WebSocket', 'V69System', 'initializing');
-            
-            // Initialize v69 WebSockets
-            await initializeWebSocketsV69(server);
-            
-            // Get count of initialized v69 WebSocket servers
-            const v69ServersCount = global.wsServersV69 ? Object.keys(global.wsServersV69).length : 0;
-            
-            // Log successful initialization
-            logApi.info('v69 WebSocket Servers Ready', {
-                service: 'WEBSOCKET_V69',
-                event_type: 'initialization_complete',
-                servers_count: v69ServersCount,
-                _icon: '✅',
-                _color: '#00AA00' // Green for success
-            });
-            
-            // Update initialization status with details
-            InitLogger.logInit('WebSocket', 'V69System', 'success', {
-                count: v69ServersCount,
-                version: 'v69'
-            });
-            
-            // Register v69 WebSockets with monitor service
-            try {
-                if (wsMonitor && wsMonitor.monitorService && wsMonitor.monitorService.isInitialized && global.wsServersV69) {
-                    // Log metrics registration start
-                    logApi.info('Registering v69 WebSocket metrics', {
-                        service: 'WEBSOCKET_V69',
-                        event_type: 'metrics_registration',
-                        _icon: '📊',
-                        _color: '#8A2BE2' // BlueViolet
+            if (wsMonitor && wsMonitor.monitorService && wsMonitor.monitorService.isInitialized && global.wsServersV69) {
+                // Log metrics registration start
+                logApi.info('Registering v69 WebSocket metrics', {
+                    service: 'WEBSOCKET_V69',
+                    event_type: 'metrics_registration',
+                    _icon: '📊',
+                    _color: '#8A2BE2' // BlueViolet
                     });
-                    
-                    // Track in InitLogger
-                    InitLogger.logInit('WebSocket', 'V69Metrics', 'initializing');
-                    
-                    let successCount = 0;
-                    let failureCount = 0;
-                    
-                    // Register each v69 WebSocket service with the monitor
-                    for (const [name, instance] of Object.entries(global.wsServersV69)) {
-                        try {
-                            const metrics = instance.getMetrics?.() || defaultMetrics;
-                            const formattedName = `v69_${name}`;
-                            
-                            // Add dependency information
-                            let dependencies = ['Base'];
-                            
-                            // Update metrics with dependencies
-                            wsMonitor.monitorService.updateServiceMetrics(formattedName, {
-                                ...metrics,
-                                name: `V69 ${name}`,
-                                dependencies,
-                                system: 'v69'
-                            });
-                            
-                            // Log individual service success
-                            logApi.debug(`Registered metrics for v69 ${name} WebSocket`, {
-                                service: 'WEBSOCKET_V69',
-                                component: name,
-                                event_type: 'metric_registration_success',
-                                _color: '#00AA00' // Green for success
-                            });
-                            
-                            successCount++;
-                        } catch (error) {
-                            // Log individual service failure
-                            logApi.error(`Failed to register v69 ${name} WebSocket metrics: ${error.message}`, {
-                                service: 'WEBSOCKET_V69',
-                                component: name,
-                                event_type: 'metric_registration_failure',
-                                error: error.message,
-                                _color: '#FF0000', // Red for error
-                                _highlight: true
-                            });
-                            
-                            failureCount++;
-                        }
-                    }
-                    
-                    // Log overall metrics registration result
-                    if (failureCount === 0) {
-                        logApi.info(`Metrics registered for ${successCount} v69 WebSocket services`, {
+                
+                // Track in InitLogger
+                InitLogger.logInit('WebSocket', 'V69Metrics', 'initializing');
+                
+                let successCount = 0;
+                let failureCount = 0;
+                
+                // Register each v69 WebSocket service with the monitor
+                for (const [name, instance] of Object.entries(global.wsServersV69)) {
+                    try {
+                        const metrics = instance.getMetrics?.() || defaultMetrics;
+                        const formattedName = `v69_${name}`;
+                        
+                        // Add dependency information
+                        let dependencies = ['Base'];
+                        
+                        // Update metrics with dependencies
+                        wsMonitor.monitorService.updateServiceMetrics(formattedName, {
+                            ...metrics,
+                            name: `V69 ${name}`,
+                            dependencies,
+                            system: 'v69'
+                        });
+                        
+                        // Log individual service success
+                        logApi.debug(`Registered metrics for v69 ${name} WebSocket`, {
                             service: 'WEBSOCKET_V69',
-                            event_type: 'metrics_registration_complete',
-                            success_count: successCount,
-                            failure_count: 0,
-                            _icon: '✅',
+                            component: name,
+                            event_type: 'metric_registration_success',
                             _color: '#00AA00' // Green for success
                         });
                         
-                        // Update initialization status
-                        InitLogger.logInit('WebSocket', 'V69Metrics', 'success', { count: successCount });
-                    } else {
-                        logApi.warn(`Metrics registration incomplete - ${successCount} succeeded, ${failureCount} failed`, {
+                        successCount++;
+                    } catch (error) {
+                        // Log individual service failure
+                        logApi.error(`Failed to register v69 ${name} WebSocket metrics: ${error.message}`, {
                             service: 'WEBSOCKET_V69',
-                            event_type: 'metrics_registration_partial',
-                            success_count: successCount,
-                            failure_count: failureCount,
-                            _icon: '⚠️',
-                            _color: '#FFA500', // Orange for warning
+                            component: name,
+                            event_type: 'metric_registration_failure',
+                            error: error.message,
+                            _color: '#FF0000', // Red for error
                             _highlight: true
                         });
                         
-                        // Update initialization status
-                        InitLogger.logInit('WebSocket', 'V69Metrics', 'warning', { 
-                            success_count: successCount,
-                            failure_count: failureCount 
-                        });
+                        failureCount++;
                     }
-                } else {
-                    // Log monitor service not available warning
-                    logApi.warn('Monitor service not available for v69 metric registration', {
+                }
+                
+                // Log overall metrics registration result
+                if (failureCount === 0) {
+                    logApi.info(`Metrics registered for ${successCount} v69 WebSocket services`, {
                         service: 'WEBSOCKET_V69',
-                        event_type: 'metrics_registration_skipped',
+                        event_type: 'metrics_registration_complete',
+                        success_count: successCount,
+                        failure_count: 0,
+                        _icon: '✅',
+                        _color: '#00AA00' // Green for success
+                    });
+                    
+                    // Update initialization status
+                    InitLogger.logInit('WebSocket', 'V69Metrics', 'success', { count: successCount });
+                } else {
+                    logApi.warn(`Metrics registration incomplete - ${successCount} succeeded, ${failureCount} failed`, {
+                        service: 'WEBSOCKET_V69',
+                        event_type: 'metrics_registration_partial',
+                        success_count: successCount,
+                        failure_count: failureCount,
                         _icon: '⚠️',
                         _color: '#FFA500', // Orange for warning
                         _highlight: true
                     });
                     
                     // Update initialization status
-                    InitLogger.logInit('WebSocket', 'V69Metrics', 'warning', { reason: 'monitor_unavailable' });
+                    InitLogger.logInit('WebSocket', 'V69Metrics', 'warning', { 
+                        success_count: successCount,
+                        failure_count: failureCount 
+                    });
                 }
-            } catch (metricError) {
-                // Log critical error in metrics registration
-                logApi.error(`Failed to register v69 WebSocket metrics: ${metricError.message}`, {
+            } else {
+                // Log monitor service not available warning
+                logApi.warn('Monitor service not available for v69 metric registration', {
                     service: 'WEBSOCKET_V69',
-                    event_type: 'metrics_registration_failure',
-                    error: metricError.message,
-                    stack: metricError.stack,
-                    _icon: '❌',
-                    _color: '#FF0000', // Red for error
+                    event_type: 'metrics_registration_skipped',
+                    _icon: '⚠️',
+                    _color: '#FFA500', // Orange for warning
                     _highlight: true
                 });
                 
                 // Update initialization status
-                InitLogger.logInit('WebSocket', 'V69Metrics', 'error', { 
-                    error: metricError.message 
-                });
+                InitLogger.logInit('WebSocket', 'V69Metrics', 'warning', { reason: 'monitor_unavailable' });
             }
-        } catch (v69Error) {
-            // Log v69 initialization failure
-            logApi.error(`v69 WebSocket initialization failed: ${v69Error.message}`, {
+        } catch (metricError) {
+            // Log critical error in metrics registration
+            logApi.error(`Failed to register v69 WebSocket metrics: ${metricError.message}`, {
                 service: 'WEBSOCKET_V69',
-                event_type: 'initialization_failure',
-                error: v69Error.message,
-                stack: v69Error.stack,
+                event_type: 'metrics_registration_failure',
+                error: metricError.message,
+                stack: metricError.stack,
                 _icon: '❌',
                 _color: '#FF0000', // Red for error
                 _highlight: true
             });
             
             // Update initialization status
-            InitLogger.logInit('WebSocket', 'V69System', 'error', { 
-                error: v69Error.message 
+            InitLogger.logInit('WebSocket', 'V69Metrics', 'error', { 
+                error: metricError.message 
             });
-            
-            // Don't throw - allow original WebSockets to continue working
+        }
+    } catch (v69Error) {
+        // Log v69 initialization failure
+        logApi.error(`v69 WebSocket initialization failed: ${v69Error.message}`, {
+            service: 'WEBSOCKET_V69',
+            event_type: 'initialization_failure',
+            error: v69Error.message,
+            stack: v69Error.stack,
+            _icon: '❌',
+            _color: '#FF0000', // Red for error
+            _highlight: true
+        });
+        
+        // Update initialization status
+        InitLogger.logInit('WebSocket', 'V69System', 'error', { 
+            error: v69Error.message 
+        });
+        
+        // Don't throw - allow original WebSockets to continue working
         }
         
         // Add summarization for all WebSocket initialization
