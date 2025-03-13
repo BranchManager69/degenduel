@@ -76,10 +76,18 @@ const printResults = (status) => {
     chalk.cyan.bold('WebSocket'.padEnd(20)),
     chalk.yellow.bold('Legacy'.padEnd(15)),
     chalk.green.bold('v69'.padEnd(15)),
-    chalk.magenta.bold('Status')
+    chalk.magenta.bold('Status'.padEnd(25)),
+    chalk.blue.bold('Notes')
   );
   
-  console.log('-'.repeat(70));
+  console.log('-'.repeat(100));
+  
+  // Add notes for special WebSockets
+  const notes = {
+    'market': 'Consider merging with token-data',
+    'token-data': 'Consider merging with market',
+    'portfolio': 'Keep separate (authentication required)'
+  };
   
   // Print each WebSocket status
   status.forEach(item => {
@@ -87,7 +95,8 @@ const printResults = (status) => {
       chalk.white(item.name.padEnd(20)),
       item.legacy ? chalk.yellow('✓'.padEnd(15)) : chalk.gray('✗'.padEnd(15)),
       item.v69 ? chalk.green('✓'.padEnd(15)) : chalk.gray('✗'.padEnd(15)),
-      getStatusColor(item.status)(getStatusText(item.status))
+      getStatusColor(item.status)(getStatusText(item.status).padEnd(25)),
+      notes[item.name] ? chalk.blue(notes[item.name]) : ''
     );
   });
   
@@ -130,6 +139,28 @@ const printResults = (status) => {
     status.filter(s => s.status === 'both')
       .forEach(s => console.log(`   - ${chalk.magenta(s.name)}`));
   }
+  
+  console.log('\n');
+  console.log(chalk.bgCyan.black(' CONSOLIDATION RECOMMENDATIONS '));
+  console.log('\n');
+  
+  console.log('Based on functionality overlap analysis:');
+  console.log('\n1. ' + chalk.cyan.bold('Market Data Consolidation:'));
+  console.log('   Combine market-ws and token-data-ws into a single "market-data-ws" v69 implementation:');
+  console.log('   - Both deal with market/token data');
+  console.log('   - Both use marketDataService');
+  console.log('   - Both are public-facing');
+  console.log('   - Combining them would streamline data access and reduce redundancy');
+  
+  console.log('\n2. ' + chalk.cyan.bold('Keep portfolio-ws separate:'));
+  console.log('   - It\'s user-specific and requires authentication');
+  console.log('   - It serves a fundamentally different purpose (user portfolio vs market data)');
+  console.log('   - It requires integration with user accounts and trade systems');
+  
+  console.log('\n3. ' + chalk.cyan.bold('Implementation Strategy:'));
+  console.log('   - Create a consolidated v69 "market-data-ws.js" that handles both token and market data');
+  console.log('   - Create appropriate routes to maintain backward compatibility');
+  console.log('   - Create a separate v69 "portfolio-ws.js" implementation');
   
   console.log('\n');
 };
