@@ -4,6 +4,8 @@
   "version": "0.8.0",
   "type": "module",
   "scripts": {
+    "// MASTER DEGENDUEL RESTART": "============================================",
+    "re": "pm2 delete all && npm run pm2:start-all && pm2 logs degenduel-api-test",
     "// PM2 Commands": "============================================",
     "pm2:start-all": "pm2 start ecosystem.config.cjs",
     "pm2:stop-all": "pm2 stop all",

@@ -113,9 +113,11 @@ archive/**
 
 # Exceptions to allow specific files
 !.gitignore
+!.claude
 !.README.md
 !.env.example
 
 # Temp
 temp/
 temp/**
+
