@@ -4,6 +4,10 @@
 
 This document outlines the plan to deprecate the legacy WebSocket implementation in favor of the new v69 implementation. The v69 implementation provides better performance, reliability, and maintainability.
 
+## Latest Updates
+
+**[2025-03-13]** Consolidated market-ws.js and token-data-ws.js into a unified market-data-ws.js implementation. See [MARKET_DATA_WEBSOCKET_CONSOLIDATION.md](./MARKET_DATA_WEBSOCKET_CONSOLIDATION.md) for details.
+
 ## Migration Timeline
 
 | Phase | Description | Estimated Timeframe |
@@ -68,18 +72,23 @@ This will display:
 
 ### Endpoint Mapping
 
-Legacy endpoints typically start with `/ws/` while v69 endpoints use `/api/v69/ws/`. The mapping is:
+Legacy endpoints typically use various prefix patterns, while v69 endpoints consistently use `/api/v69/ws/`. The mapping is:
 
-| Legacy Endpoint | v69 Endpoint |
-|----------------|--------------|
-| /ws/monitor | /api/v69/ws/monitor |
-| /ws/contest | /api/v69/ws/contest |
-| /ws/circuit-breaker | /api/v69/ws/circuit-breaker |
-| /ws/notifications | /api/v69/ws/notifications |
-| /ws/token-data | /api/v69/ws/token-data |
-| /ws/skyduel | /api/v69/ws/skyduel |
-| /ws/system-settings | /api/v69/ws/system-settings |
-| /ws/analytics | /api/v69/ws/analytics |
+| Legacy Endpoint | v69 Endpoint | Notes |
+|----------------|--------------|-------|
+| /ws/monitor | /api/v69/ws/monitor | |
+| /ws/contest | /api/v69/ws/contest | |
+| /ws/circuit-breaker | /api/v69/ws/circuit-breaker | |
+| /ws/notifications | /api/v69/ws/notifications | |
+| /api/ws/token-data | /api/v69/ws/market-data | Consolidated endpoint |
+| /api/v2/ws/market | /api/v69/ws/market-data | Consolidated endpoint |
+| /ws/skyduel | /api/v69/ws/skyduel | |
+| /ws/system-settings | /api/v69/ws/system-settings | |
+| /ws/analytics | /api/v69/ws/analytics | |
+
+Special notes on endpoint consolidation:
+- The v69 implementation of market-data-ws.js handles both token-data and market functionality
+- Legacy endpoints are still supported for backward compatibility
 
 ### Message Format Changes
 

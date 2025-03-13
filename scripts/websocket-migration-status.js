@@ -84,8 +84,9 @@ const printResults = (status) => {
   
   // Add notes for special WebSockets
   const notes = {
-    'market': 'Consider merging with token-data',
-    'token-data': 'Consider merging with market',
+    'market': 'Now handled by market-data-ws.js',
+    'token-data': 'Now handled by market-data-ws.js',
+    'market-data': 'Consolidated implementation for market + token-data',
     'portfolio': 'Keep separate (authentication required)'
   };
   
@@ -141,26 +142,24 @@ const printResults = (status) => {
   }
   
   console.log('\n');
-  console.log(chalk.bgCyan.black(' CONSOLIDATION RECOMMENDATIONS '));
+  console.log(chalk.bgCyan.black(' CONSOLIDATION STATUS '));
   console.log('\n');
   
-  console.log('Based on functionality overlap analysis:');
+  console.log('Market Data Consolidation: ' + chalk.green.bold('COMPLETED ✓'));
   console.log('\n1. ' + chalk.cyan.bold('Market Data Consolidation:'));
-  console.log('   Combine market-ws and token-data-ws into a single "market-data-ws" v69 implementation:');
-  console.log('   - Both deal with market/token data');
-  console.log('   - Both use marketDataService');
-  console.log('   - Both are public-facing');
-  console.log('   - Combining them would streamline data access and reduce redundancy');
+  console.log('   ' + chalk.green('✓') + ' Created consolidated market-data-ws.js in v69 directory');
+  console.log('   ' + chalk.green('✓') + ' Handles functionality from both market-ws.js and token-data-ws.js');
+  console.log('   ' + chalk.green('✓') + ' Supports backward compatibility through multiple endpoints');
+  console.log('   ' + chalk.green('✓') + ' Maintains functionality of both original WebSockets');
   
   console.log('\n2. ' + chalk.cyan.bold('Keep portfolio-ws separate:'));
   console.log('   - It\'s user-specific and requires authentication');
   console.log('   - It serves a fundamentally different purpose (user portfolio vs market data)');
   console.log('   - It requires integration with user accounts and trade systems');
   
-  console.log('\n3. ' + chalk.cyan.bold('Implementation Strategy:'));
-  console.log('   - Create a consolidated v69 "market-data-ws.js" that handles both token and market data');
-  console.log('   - Create appropriate routes to maintain backward compatibility');
-  console.log('   - Create a separate v69 "portfolio-ws.js" implementation');
+  console.log('\n3. ' + chalk.cyan.bold('Next Consolidation Opportunities:'));
+  console.log('   - Consider consolidating admin-spy-ws and broadcast-command-ws into admin-ws');
+  console.log('   - Consider integrating wallet-ws functionality into portfolio-ws');
   
   console.log('\n');
 };

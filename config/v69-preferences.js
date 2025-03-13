@@ -29,12 +29,17 @@ export const websocketPreferences = {
   tokenData: 'v69',
   userNotification: 'v69',
   
+  // Consolidated WebSockets
+  market: 'v69', // Now handled by market-data-ws.js
+  
   // WebSockets not yet migrated to v69 (default to legacy)
   adminSpy: 'legacy',
   broadcastCommand: 'legacy',
-  market: 'legacy',
   portfolio: 'legacy',
   wallet: 'legacy',
+  
+  // Special implementations
+  marketData: 'v69', // New consolidated implementation for market + tokenData
 };
 
 /**

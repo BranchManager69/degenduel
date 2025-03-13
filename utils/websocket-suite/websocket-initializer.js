@@ -391,31 +391,33 @@ export async function initializeWebSockets(server, initResults = {}) {
                 error: metricError.message 
             });
         }
-    } catch (v69Error) {
-        // Log v69 initialization failure
-        logApi.error(`v69 WebSocket initialization failed: ${v69Error.message}`, {
-            service: 'WEBSOCKET_V69',
-            event_type: 'initialization_failure',
-            error: v69Error.message,
-            stack: v69Error.stack,
-            _icon: '❌',
-            _color: '#FF0000', // Red for error
-            _highlight: true
-        });
-        
-        // Update initialization status
-        InitLogger.logInit('WebSocket', 'V69System', 'error', { 
-            error: v69Error.message 
-        });
-        
-        // Don't throw - allow original WebSockets to continue working
+
+        try {
+            // Process v69 specific logic
+            if (global.wsServersV69) {
+                // Add summarization for all WebSocket initialization
+                InitLogger.logInit('WebSocket', 'AllSystems', 'success', {
+                    legacy: Object.keys(wsServers).length,
+                    v69: Object.keys(global.wsServersV69).length
+                });
+            }
+        } catch (v69Error) {
+            // Log v69 initialization failure
+            logApi.error(`v69 WebSocket initialization failed: ${v69Error.message}`, {
+                service: 'WEBSOCKET_V69',
+                event_type: 'initialization_failure',
+                error: v69Error.message,
+                stack: v69Error.stack,
+                _icon: '❌',
+                _color: '#FF0000', // Red for error
+                _highlight: true
+            });
+            
+            // Update initialization status
+            InitLogger.logInit('WebSocket', 'V69System', 'error', { 
+                error: v69Error.message 
+            });
         }
-        
-        // Add summarization for all WebSocket initialization
-        InitLogger.logInit('WebSocket', 'AllSystems', 'success', {
-            legacy: Object.keys(wsServers).length,
-            v69: global.wsServersV69 ? Object.keys(global.wsServersV69).length : 0
-        });
 
         // Return WebSocket servers
         return wsServers;
