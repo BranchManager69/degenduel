@@ -242,16 +242,23 @@ export async function initializeWebSockets(server, initResults = {}) {
             // Initialize v69 WebSockets
             await initializeWebSocketsV69(server);
             
+            // Get count of initialized v69 WebSocket servers
+            const v69ServersCount = global.wsServersV69 ? Object.keys(global.wsServersV69).length : 0;
+            
             // Log successful initialization
             logApi.info('v69 WebSocket Servers Ready', {
                 service: 'WEBSOCKET_V69',
                 event_type: 'initialization_complete',
+                servers_count: v69ServersCount,
                 _icon: '✅',
                 _color: '#00AA00' // Green for success
             });
             
-            // Update initialization status
-            InitLogger.logInit('WebSocket', 'V69System', 'success');
+            // Update initialization status with details
+            InitLogger.logInit('WebSocket', 'V69System', 'success', {
+                count: v69ServersCount,
+                version: 'v69'
+            });
             
             // Register v69 WebSockets with monitor service
             try {
