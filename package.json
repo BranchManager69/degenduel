@@ -22,6 +22,7 @@
     "wss:base-websocket": "node scripts/test-base-websocket.js",
     "wss:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
     "wss:test": "node scripts/ws-test.js",
+    "wss:migration": "node scripts/websocket-migration-status.js",
     "pump:test": "node scripts/mm/test-pumpfun.ts",
     "mm:consolidate": "node scripts/mm/consolidate.js",
     "mm:audit": "node scripts/mm/audit.js",

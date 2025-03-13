@@ -1,9 +1,13 @@
 // websocket/base-websocket.js
 
 /*
- * This is the base class for all WebSocket servers.
+ * [DEPRECATED] This version is being phased out in favor of the v69 implementation.
+ * 
+ * This is the base class for all legacy WebSocket servers.
  * It provides a common interface for all WebSocket servers and handles
  * authentication, rate limiting, and message queuing.
+ * 
+ * @deprecated Use the v69 WebSocket implementation instead (websocket/v69/base-websocket.js)
  */
 
 import { WebSocketServer } from 'ws';
