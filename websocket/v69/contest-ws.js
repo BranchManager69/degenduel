@@ -69,7 +69,10 @@ class ContestWebSocketServer extends BaseWebSocketServer {
       publicEndpoints: [`${CHANNEL_PREFIXES.PUBLIC}.contests`], // Public endpoint for spectators
       maxPayload: 256 * 1024, // 256KB for leaderboard data
       rateLimit: 120, // 2 messages per second per client
-      heartbeatInterval: 30000 // 30s heartbeat
+      heartbeatInterval: 30000, // 30s heartbeat
+      perMessageDeflate: false, // Disable compression to avoid frame header issues
+      useCompression: false, // Alias for clarity
+      authMode: 'query' // Use query auth mode for most reliable browser connections
     });
     
     // Initialize data caches

@@ -64,7 +64,10 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
       publicEndpoints: [], // No public endpoints, everything requires auth
       maxPayload: 512 * 1024, // 512KB for detailed service data
       rateLimit: 120, // 2 messages per second
-      heartbeatInterval: 30000 // 30s heartbeat
+      heartbeatInterval: 30000, // 30s heartbeat
+      perMessageDeflate: false, // Disable compression to avoid frame header issues
+      useCompression: false, // Alias for clarity
+      authMode: 'query' // Use query auth mode for most reliable browser connections
     });
     
     // Initialize state tracking

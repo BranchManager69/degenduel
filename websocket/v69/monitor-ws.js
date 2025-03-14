@@ -70,7 +70,10 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
       publicEndpoints: [CHANNELS.BACKGROUND_SCENE],
       maxPayload: 64 * 1024, // 64KB should be plenty
       rateLimit: 120, // 2 messages per second
-      heartbeatInterval: 30000 // 30s heartbeat
+      heartbeatInterval: 30000, // 30s heartbeat
+      perMessageDeflate: false, // Disable compression to avoid header issues
+      useCompression: false, // Alias for clarity
+      authMode: 'query' // Use query auth mode for Monitor WS - most reliable with browsers
     });
     
     // Initialize data caches

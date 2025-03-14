@@ -66,7 +66,8 @@ class UserNotificationWebSocketServer extends BaseWebSocketServer {
       publicEndpoints: [CHANNELS.SYSTEM_ANNOUNCEMENTS],
       maxPayload: 128 * 1024, // 128KB should be plenty
       rateLimit: 60, // 1 message per second
-      heartbeatInterval: 30000 // 30s heartbeat
+      heartbeatInterval: 30000, // 30s heartbeat
+      authMode: 'query' // Use query auth mode for most reliable browser connections
     });
     
     // Initialize data caches

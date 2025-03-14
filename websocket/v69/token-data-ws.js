@@ -48,7 +48,8 @@ class TokenDataWebSocket extends BaseWebSocketServer {
       publicEndpoints: WSS_PUBLIC_ENDPOINTS,
       maxPayload: WSS_MAX_PAYLOAD,
       perMessageDeflate: WSS_PER_MESSAGE_DEFLATE,
-      rateLimit: WSS_RATE_LIMIT
+      rateLimit: WSS_RATE_LIMIT,
+      authMode: 'query' // Use query auth mode for most reliable browser connections
     });
 
     // Initialize token-specific state
