@@ -430,7 +430,8 @@ export class MarketDataWebSocketServer extends BaseWebSocketServer {
       maxPayload: 5 * 1024 * 1024, // 5MB, plenty of room for token data
       requireAuth: false, // Public data endpoint
       perMessageDeflate: false, // Disable compression to match token-data-ws behavior
-      rateLimit: 600 // 10 requests/second
+      rateLimit: 600, // 10 requests/second
+      authMode: 'query' // Use query auth mode for most reliable browser connections
     });
 
     // Initialize state
