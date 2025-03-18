@@ -18,6 +18,8 @@ import { createTokenDataWebSocket } from './token-data-ws.js';
 import { createSkyDuelWebSocket } from './skyduel-ws.js';
 import { createSystemSettingsWebSocket } from './system-settings-ws.js';
 import { createAnalyticsWebSocket } from './analytics-ws.js';
+import { createPortfolioWebSocket } from './portfolio-ws.js';
+import { createWalletWebSocket } from './wallet-ws.js';
 
 // Initialize global v69 WebSocket container
 global.wsServersV69 = global.wsServersV69 || {};
@@ -76,6 +78,16 @@ export async function initializeWebSockets(server) {
     const analyticsWs = createAnalyticsWebSocket(server);
     global.wsServersV69.analytics = analyticsWs;
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Analytics WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    
+    // Create Portfolio WebSocket
+    const portfolioWs = createPortfolioWebSocket(server);
+    global.wsServersV69.portfolio = portfolioWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Portfolio WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+    
+    // Create Wallet WebSocket
+    const walletWs = createWalletWebSocket(server);
+    global.wsServersV69.wallet = walletWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Wallet WebSocket                                              ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
 
     // Initialize all WebSocket servers
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}${fancyColors.BOLD}Starting initialization...${fancyColors.RESET}                                          ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
@@ -88,7 +100,9 @@ export async function initializeWebSockets(server) {
       tokenDataWs.initialize(),
       skyDuelWs.initialize(),
       systemSettingsWs.initialize(),
-      analyticsWs.initialize()
+      analyticsWs.initialize(),
+      portfolioWs.initialize(),
+      walletWs.initialize()
     ]);
 
     // Check if all initializations were successful
@@ -147,6 +161,18 @@ function printWebSocketEndpoints() {
       path: '/api/v69/ws/token-data',
       channels: ['public.tokens', 'public.market', 'token.[symbol]'],
       events: ['subscribe_tokens', 'unsubscribe_tokens', 'get_token', 'get_all_tokens']
+    },
+    { 
+      name: 'Portfolio WebSocket', 
+      path: '/api/v69/ws/portfolio',
+      channels: ['portfolio.[walletAddress]', 'trades.[walletAddress]', 'performance.[walletAddress]'],
+      events: ['subscribe_portfolio', 'unsubscribe_portfolio', 'get_portfolio_history', 'get_portfolio_performance']
+    },
+    { 
+      name: 'Wallet WebSocket', 
+      path: '/api/v69/ws/wallet',
+      channels: ['wallet.[walletAddress]', 'transactions.[walletAddress]', 'assets.[walletAddress]'],
+      events: ['subscribe_wallet', 'unsubscribe_wallet', 'request_balance', 'request_transactions', 'request_assets']
     },
     { 
       name: 'SkyDuel WebSocket', 

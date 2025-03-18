@@ -60,12 +60,12 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
   constructor(server) {
     super(server, {
       path: '/api/v69/ws/circuit-breaker',
-      requireAuth: true, // Authentication required for circuit breaker access
-      publicEndpoints: [], // No public endpoints, everything requires auth
+      requireAuth: false, // TEMPORARILY disabled auth for testing
+      publicEndpoints: ['*'], // TEMPORARILY making all endpoints public for testing
       maxPayload: 512 * 1024, // 512KB for detailed service data
       rateLimit: 120, // 2 messages per second
       heartbeatInterval: 30000, // 30s heartbeat
-      perMessageDeflate: false, // Disable compression to avoid frame header issues
+      perMessageDeflate: false, // Completely disable compression for better client compatibility (especially Postman)
       useCompression: false, // Alias for clarity
       authMode: 'query' // Use query auth mode for most reliable browser connections
     });

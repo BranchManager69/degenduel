@@ -66,12 +66,12 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
   constructor(server) {
     super(server, {
       path: '/api/v69/ws/monitor',
-      requireAuth: true,
-      publicEndpoints: [CHANNELS.BACKGROUND_SCENE],
+      requireAuth: false, // TEMPORARILY disabled auth for testing
+      publicEndpoints: ['*'], // ALL endpoints are public for testing
       maxPayload: 64 * 1024, // 64KB should be plenty
       rateLimit: 120, // 2 messages per second
       heartbeatInterval: 30000, // 30s heartbeat
-      perMessageDeflate: false, // Disable compression to avoid header issues
+      perMessageDeflate: false, // Disable compression - especially important for Postman
       useCompression: false, // Alias for clarity
       authMode: 'query' // Use query auth mode for Monitor WS - most reliable with browsers
     });

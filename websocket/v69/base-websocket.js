@@ -75,8 +75,8 @@ export class BaseWebSocketServer {
       server,
       path: this.path,
       maxPayload: this.maxPayload,
-      // Only include perMessageDeflate if explicitly enabled
-      ...(this.perMessageDeflate ? { perMessageDeflate: true } : { perMessageDeflate: false })
+      // Explicitly disable perMessageDeflate - it causes issues with some clients including Postman
+      perMessageDeflate: false
     };
     
     logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} Creating WebSocket server with compression: ${this.perMessageDeflate ? 'ENABLED' : 'DISABLED'}`);
@@ -180,6 +180,20 @@ export class BaseWebSocketServer {
       // Parse the request URL
       const parsedUrl = url.parse(req.url, true);
       const { query } = parsedUrl;
+      
+      // Log detailed URL parsing for debugging monitor websocket specifically
+      if (this.path === '/api/v69/ws/monitor') {
+        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 URL-PARSE ${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}Monitor WS request:${fancyColors.RESET} ${req.url}`, {
+          wsEvent: 'monitor_ws_url_parse',
+          rawUrl: req.url,
+          parsedUrl: JSON.stringify(parsedUrl),
+          queryParams: JSON.stringify(query),
+          path: parsedUrl.pathname,
+          search: parsedUrl.search || 'none',
+          origin: req.headers.origin || 'no-origin',
+          _highlight: true
+        });
+      }
 
       // Add to client tracking
       this.clients.add(ws);
@@ -328,7 +342,25 @@ export class BaseWebSocketServer {
 
       // If auth is required and client is not authenticated and not requesting a public endpoint, close connection
       if (this.requireAuth && !clientInfo.authenticated && !isPublicEndpoint) {
-        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.BOLD}Authentication failed${fancyColors.RESET} for connection ${clientInfo.connectionId.substring(0,8)}`);
+        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.BOLD}Authentication failed${fancyColors.RESET} for connection ${clientInfo.connectionId.substring(0,8)} on ${this.path}`, {
+          connectionId: clientInfo.connectionId,
+          endpoint: this.path,
+          wsEvent: 'auth_failed_closing',
+          origin: req.headers.origin || 'no-origin',
+          url: req.url,
+          userAgent: req.headers['user-agent'],
+          authMode: this.authMode,
+          ipAddress: clientInfo.ip,
+          hasQueryParams: Object.keys(query).length > 0,
+          queryParams: JSON.stringify(query),
+          hasAuthHeader: !!req.headers.authorization,
+          hasProtocol: !!req.headers['sec-websocket-protocol'],
+          hasCookie: !!req.headers.cookie,
+          authCompleted: clientInfo.authenticationCompleted,
+          requestedEndpoint: clientInfo.requestedEndpoint,
+          isPublicEndpoint: isPublicEndpoint,
+          _highlight: true
+        });
         this.sendError(ws, 'UNAUTHORIZED', 'Authentication required', 4001);
         this.closeConnection(ws, 4001, 'Authentication required');
         return;
@@ -918,25 +950,31 @@ export class BaseWebSocketServer {
    * @returns {string|null} - The extracted token or null
    */
   extractToken(req, query) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}Extracting token using mode: ${this.authMode}${fancyColors.RESET}`, {
+    // Log more detailed information about token extraction - including query params
+    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}Extracting token using mode: ${this.authMode}${fancyColors.RESET} Path: ${req.url}`, {
       wsEvent: 'extract_token',
       authMode: this.authMode,
-      hasQueryToken: !!query.token,
+      hasQueryToken: !!query.token, 
+      queryParams: JSON.stringify(query),
+      path: req.url,
+      endpoint: this.path,
       hasAuthHeader: !!(req.headers.authorization && req.headers.authorization.startsWith('Bearer ')),
       hasProtocol: !!req.headers['sec-websocket-protocol'],
-      hasCookie: !!req.headers.cookie
+      hasCookie: !!req.headers.cookie,
+      origin: req.headers.origin || 'no-origin',
+      userAgent: req.headers['user-agent']
     });
     
     // If using 'query' mode, prioritize query parameters for WebSockets (more reliable with browsers)
     if (this.authMode === 'query' && query.token) {
-      logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query token (query mode)${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query token (query mode)${fancyColors.RESET} Token length: ${query.token.length}`);
       return query.token;
     }
     
     // If using 'header' mode or 'auto' mode, try Authorization header first
     if ((this.authMode === 'header' || this.authMode === 'auto') && 
         req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using Authorization header${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using Authorization header${fancyColors.RESET}`);
       return req.headers.authorization.substring(7); // Remove 'Bearer ' prefix
     }
 
@@ -967,7 +1005,22 @@ export class BaseWebSocketServer {
       return query.token;
     }
 
-    logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}No token found in any source${fancyColors.RESET}`);
+    logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}No token found in any source${fancyColors.RESET}`, {
+      endpoint: this.path,
+      wsEvent: 'auth_no_token',
+      path: req.url,
+      fullUrl: req.url,
+      authMode: this.authMode,
+      queryParamsData: JSON.stringify(query),
+      hasAuthHeader: !!req.headers.authorization,
+      hasProtocol: !!req.headers['sec-websocket-protocol'],
+      hasCookie: !!req.headers.cookie,
+      protocol: req.headers['sec-websocket-protocol'] || 'none',
+      cookies: req.headers.cookie || 'none',
+      origin: req.headers.origin || 'no-origin',
+      headersData: JSON.stringify(Object.keys(req.headers)),
+      _highlight: true
+    });
     return null;
   }
 

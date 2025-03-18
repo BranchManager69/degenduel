@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DegenDuel WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .endpoints {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.disconnected {
+            background-color: #f44336;
+        }
+        button.connected {
+            background-color: #4CAF50;
+        }
+        button.connecting {
+            background-color: #ff9800;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        .log-time {
+            color: #aaa;
+        }
+        .log-level-info {
+            color: #4CAF50;
+        }
+        .log-level-error {
+            color: #f44336;
+        }
+        .log-level-warn {
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>DegenDuel WebSocket Test</h1>
+    
+    <div class="card">
+        <h2>Authentication</h2>
+        <input type="text" id="token" placeholder="JWT Token" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRfYWRkcmVzcyI6IkJQdVJoa2VDa29yN0R4TXJjUFZzQjRBZFc2UG1wNW9BQ2pWenBQYjcyTWhwIiwicm9sZSI6InN1cGVyYWRtaW4iLCJzZXNzaW9uX2lkIjoiZTYxMWZjYzdjODFhYjU5ZGFhMjRjOWJlYWNlMGFlOWMiLCJpYXQiOjE3NDIwODgyNzAsImV4cCI6MTc0MjEzMTQ3MH0.8NsPAF20iekQDUvut6cNmmflimm3KKLLA2vExBa_RHc">
+        <input type="text" id="devAccessToken" placeholder="Dev Access Token" value="e8c863e6222ca385db44bd5f68925c6159c393c6f8a349955eb4e77892470970">
+    </div>
+    
+    <div class="card">
+        <h2>WebSocket Endpoints</h2>
+        <div class="endpoints">
+            <button id="monitor-btn" data-endpoint="monitor" class="disconnected">Monitor</button>
+            <button id="circuit-breaker-btn" data-endpoint="circuit-breaker" class="disconnected">Circuit Breaker</button>
+            <button id="token-data-btn" data-endpoint="token-data" class="disconnected">Token Data</button>
+            <button id="market-data-btn" data-endpoint="market-data" class="disconnected">Market Data</button>
+        </div>
+        <div id="connection-details"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Log</h2>
+        <div class="log-container" id="log"></div>
+    </div>
+
+    <script>
+        // Store active connections
+        const connections = {};
+        const logContainer = document.getElementById('log');
+
+        // Log functions
+        function log(message, level = 'info') {
+            const now = new Date();
+            const time = now.toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-level-${level}`;
+            logEntry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Create WebSocket connection
+        function connectWebSocket(endpoint) {
+            const token = document.getElementById('token').value;
+            const devAccessToken = document.getElementById('devAccessToken').value;
+            
+            // If we already have a connection, close it first
+            if (connections[endpoint]) {
+                connections[endpoint].close();
+                connections[endpoint] = null;
+            }
+            
+            // Update button state
+            const button = document.querySelector(`button[data-endpoint="${endpoint}"]`);
+            if (button) {
+                button.textContent = `${endpoint} (Connecting...)`;
+                button.className = 'connecting';
+            }
+            
+            try {
+                // Create WebSocket URL with auth params
+                const baseUrl = window.location.origin.replace(/^http/, 'ws');
+                let wsUrl = `${baseUrl}/api/v69/ws/${endpoint}?token=${encodeURIComponent(token)}`;
+                if (devAccessToken) {
+                    wsUrl += `&devAccess=${encodeURIComponent(devAccessToken)}`;
+                }
+                
+                log(`Connecting to ${endpoint} WebSocket: ${wsUrl.substring(0, 60)}...`);
+                
+                // Create WebSocket connection
+                const ws = new WebSocket(wsUrl);
+                connections[endpoint] = ws;
+                
+                // Set up event handlers
+                ws.onopen = () => {
+                    log(`Connected to ${endpoint} WebSocket! 🟢`);
+                    if (button) {
+                        button.textContent = `${endpoint} (Connected)`;
+                        button.className = 'connected';
+                    }
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        log(`Received from ${endpoint}: ${JSON.stringify(message)}`);
+                        
+                        // Auto-subscribe if connection established
+                        if (message.type === 'connection_established') {
+                            if (endpoint === 'circuit-breaker') {
+                                sendMessage(endpoint, { type: 'subscribe_all' });
+                            } else if (endpoint === 'token-data') {
+                                sendMessage(endpoint, { type: 'subscribe', tokens: 'all' });
+                            }
+                        }
+                    } catch (e) {
+                        log(`Received non-JSON message from ${endpoint}: ${event.data}`, 'warn');
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    log(`Error on ${endpoint} WebSocket: ${error}`, 'error');
+                    if (button) {
+                        button.textContent = `${endpoint} (Error)`;
+                        button.className = 'disconnected';
+                    }
+                };
+                
+                ws.onclose = (event) => {
+                    log(`Disconnected from ${endpoint} WebSocket. Code: ${event.code}, Reason: ${event.reason || 'No reason provided'} 🔴`, 'warn');
+                    connections[endpoint] = null;
+                    
+                    if (button) {
+                        button.textContent = endpoint;
+                        button.className = 'disconnected';
+                    }
+                };
+                
+                return ws;
+            } catch (error) {
+                log(`Failed to connect to ${endpoint} WebSocket: ${error.message}`, 'error');
+                if (button) {
+                    button.textContent = endpoint;
+                    button.className = 'disconnected';
+                }
+                return null;
+            }
+        }
+        
+        // Send message to WebSocket
+        function sendMessage(endpoint, message) {
+            if (!connections[endpoint] || connections[endpoint].readyState !== WebSocket.OPEN) {
+                log(`Cannot send message to ${endpoint}: Not connected`, 'error');
+                return false;
+            }
+            
+            try {
+                const messageString = typeof message === 'string' ? message : JSON.stringify(message);
+                connections[endpoint].send(messageString);
+                log(`Sent to ${endpoint}: ${messageString}`);
+                return true;
+            } catch (error) {
+                log(`Failed to send message to ${endpoint}: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Set up button click handlers
+        document.querySelectorAll('.endpoints button').forEach(button => {
+            button.addEventListener('click', () => {
+                const endpoint = button.getAttribute('data-endpoint');
+                if (connections[endpoint] && connections[endpoint].readyState === WebSocket.OPEN) {
+                    connections[endpoint].close();
+                    connections[endpoint] = null;
+                    button.textContent = endpoint;
+                    button.className = 'disconnected';
+                } else {
+                    connectWebSocket(endpoint);
+                }
+            });
+        });
+        
+        // Initialize
+        log('WebSocket test page loaded. Click on an endpoint to connect.');
+    </script>
+</body>
+</html>

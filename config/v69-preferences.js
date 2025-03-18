@@ -35,8 +35,8 @@ export const websocketPreferences = {
   // WebSockets not yet migrated to v69 (default to legacy)
   adminSpy: 'legacy',
   broadcastCommand: 'legacy',
-  portfolio: 'legacy',
-  wallet: 'legacy',
+  portfolio: 'v69',  // Updated to use v69 implementation
+  wallet: 'v69',     // Updated to use v69 implementation
   
   // Special implementations
   marketData: 'v69', // New consolidated implementation for market + tokenData

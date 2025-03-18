@@ -426,34 +426,56 @@ class TokenSyncService extends BaseService {
         }
     }
 
-    // Fetch token prices using marketDataService
+    // Fetch token prices using marketDataService with limited concurrency
     async fetchTokenPrices(addresses) {
         logApi.info(`[tokenSyncService] Fetching prices for ${addresses.length} tokens...`);
         
         try {
-            // For each address, get token data from marketDataService
-            const pricePromises = addresses.map(async (address) => {
-                const token = await marketDataService.getTokenByAddress(address);
-                if (token) {
-                    return {
-                        contractAddress: address,
-                        price: token.price || 0,
-                        marketCap: token.market_cap || null,
-                        timestamp: new Date().toISOString()
-                    };
+            // Process tokens in chunks to limit concurrency
+            const BATCH_SIZE = 3; // Process 3 tokens at a time to avoid rate limits
+            const results = [];
+            
+            // Helper function to process tokens in smaller batches
+            const processBatch = async (batch) => {
+                const batchPromises = batch.map(async (address) => {
+                    // Add a small delay between requests in the same batch
+                    const delay = Math.random() * 200; // 0-200ms delay for jitter
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    
+                    const token = await marketDataService.getTokenByAddress(address);
+                    if (token) {
+                        return {
+                            contractAddress: address,
+                            price: token.price || 0,
+                            marketCap: token.market_cap || null,
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                    return null;
+                });
+                
+                // Process this batch
+                const batchResults = await Promise.all(batchPromises);
+                return batchResults.filter(result => result !== null);
+            };
+            
+            // Process all addresses in smaller batches
+            for (let i = 0; i < addresses.length; i += BATCH_SIZE) {
+                const batch = addresses.slice(i, i + BATCH_SIZE);
+                logApi.debug(`[tokenSyncService] Processing token batch ${i/BATCH_SIZE + 1}/${Math.ceil(addresses.length/BATCH_SIZE)}`);
+                
+                // Process this batch and add a small delay between batches
+                const batchResults = await processBatch(batch);
+                results.push(...batchResults);
+                
+                // Add delay between batches to avoid rate limits
+                if (i + BATCH_SIZE < addresses.length) {
+                    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms between batches
                 }
-                return null;
-            });
+            }
             
-            // Wait for all token data fetches to complete
-            const results = await Promise.all(pricePromises);
-            
-            // Filter out null results
-            const validResults = results.filter(result => result !== null);
-            
-            logApi.info(`[tokenSyncService] Received price data for ${validResults.length}/${addresses.length} tokens`);
-            
-            return validResults;
+            logApi.info(`[tokenSyncService] Received price data for ${results.length}/${addresses.length} tokens`);
+            return results;
         } catch (error) {
             logApi.error(`[tokenSyncService] Error fetching token prices: ${error.message}`);
             return [];
@@ -878,12 +900,108 @@ class TokenSyncService extends BaseService {
         }
     }
 
+    /**
+     * Synchronize tokens across databases
+     * This function ensures that all tokens in the main database are also in the market database
+     * by calling the dedicated token-sync API endpoint in the lobby service
+     */
+    async synchronizeTokensAcrossDatabases() {
+        logApi.info(`[tokenSyncService] Starting token synchronization across databases...`);
+        
+        try {
+            // Get all active tokens from main database
+            const activeTokens = await prisma.tokens.findMany({
+                where: { is_active: true },
+                select: { address: true, symbol: true, name: true }
+            });
+            
+            logApi.info(`[tokenSyncService] Found ${activeTokens.length} active tokens in main database`);
+            
+            // Prepare tokens for the API request
+            const tokensForSync = activeTokens.map(token => ({
+                address: token.address,
+                symbol: token.symbol,
+                name: token.name || token.symbol
+            }));
+            
+            // Call the token sync API (using imported axios from the top of the file)
+            // Axios is already imported at the top: import axios from 'axios';
+            const lobbyPort = process.env.LOBBY_PORT || 3006;
+            const response = await axios.post(`http://localhost:${lobbyPort}/api/token-sync/check-missing`, {
+                tokens: tokensForSync
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.API_KEY || 'internal-service'}`
+                },
+                timeout: 120000 // 2 minute timeout for discovery
+            });
+            
+            if (response.status === 200 && response.data.success) {
+                const results = response.data.results;
+                logApi.info(`[tokenSyncService] Token sync completed: ${results.added}/${results.missing} tokens added to market database`);
+                
+                // Log detailed results if tokens were added
+                if (results.added > 0) {
+                    const addedTokens = results.details.filter(t => t.status === 'added');
+                    logApi.info(`[tokenSyncService] Added tokens: ${addedTokens.map(t => t.symbol).join(', ')}`);
+                }
+                
+                // Log failed tokens if any
+                if (results.failed > 0) {
+                    const failedTokens = results.details.filter(t => t.status === 'failed' || t.status === 'error');
+                    logApi.warn(`[tokenSyncService] Failed to add tokens: ${failedTokens.map(t => t.symbol).join(', ')}`);
+                }
+                
+                return {
+                    totalActive: activeTokens.length,
+                    missingInMarketDb: results.missing,
+                    addedToMarketDb: results.added,
+                    details: results.details
+                };
+            } else {
+                logApi.warn(`[tokenSyncService] Token sync API call failed: ${JSON.stringify(response.data)}`);
+                return {
+                    error: 'API call failed',
+                    totalActive: activeTokens.length,
+                    missingInMarketDb: 0,
+                    addedToMarketDb: 0
+                };
+            }
+        } catch (error) {
+            logApi.error(`[tokenSyncService] Error synchronizing tokens: ${error.message}`);
+            return {
+                error: error.message,
+                totalActive: 0,
+                missingInMarketDb: 0,
+                addedToMarketDb: 0
+            };
+        }
+    }
+    
+    /**
+     * Simple placeholder for token addition
+     * This will be replaced by a proper token discovery implementation
+     */
+    async addTokenToMarketDatabase(token) {
+        logApi.info(`[tokenSyncService] Need to add token ${token.symbol} (${token.address}) to market database`);
+        logApi.info(`[tokenSyncService] This function needs to be replaced with proper token discovery implementation`);
+        
+        // For now, we'll just log the missing tokens but not try to add them
+        // The actual implementation will be done in the token discovery service
+        return false;
+    }
+
     // Main operation implementation
     async performOperation() {
         const startTime = Date.now();
         
         try {
-            // First update prices (higher priority)
+            // First ensure all tokens are synchronized across databases
+            // Commented out as synchronization now happens automatically when processing token list
+            // await this.synchronizeTokensAcrossDatabases();
+            
+            // Then update prices (higher priority)
             await this.updatePrices();
             
             // Then check if we need to update metadata (less frequent)
