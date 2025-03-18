@@ -19,6 +19,7 @@ import solanaService from '../../services/solanaService.js'; // #1 of 7
 import liquidityService from '../../services/liquidityService.js'; // #2 of 7
 import marketDataService from '../../services/marketDataService.js'; // #3 of 7
 import contestEvaluationService from '../../services/contestEvaluationService.js'; // #4 of 7
+import contestSchedulerService from '../../services/contestSchedulerService.js'; // New contest scheduler service
 import levelingService from '../../services/levelingService.js'; // #5 of 7
 import contestWalletService from '../../services/contestWalletService.js'; // #6 of 7
 import walletRakeService from '../../services/walletRakeService.js'; // #7 of 7
@@ -100,6 +101,7 @@ class ServiceInitializer {
             if (!VERBOSE_SERVICE_INIT_LOGS) {
                 // Register without verbose logging
                 serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
+                serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
                 serviceManager.register(achievementService, []); // No hard dependencies
                 serviceManager.register(levelingService, []); // No hard dependencies
                 serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
@@ -109,6 +111,8 @@ class ServiceInitializer {
                 logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Registering Contest Layer services...${fancyColors.RESET}`);
                 logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestEvaluationService...${fancyColors.RESET}`);
                 serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
+                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestSchedulerService...${fancyColors.RESET}`);
+                serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
                 logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register achievementService...${fancyColors.RESET}`);
                 serviceManager.register(achievementService, []); // No hard dependencies
                 logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register levelingService...${fancyColors.RESET}`);

@@ -670,24 +670,51 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         }
       });
 
-      // 2. Create Solana wallet
-      const { publicKey, encryptedPrivateKey } = await createContestWallet();
-      
-      // 3. Create wallet record
-      const contestWallet = await prisma.contest_wallets.create({
-        data: {
-          contest_id: contest.id,
-          wallet_address: publicKey,
-          private_key: encryptedPrivateKey,
-          balance: '0'
+      // 2. Use contestWalletService to create wallet (for proper vanity wallet support)
+      let contestWallet;
+      try {
+        // Import contestWalletService (avoid circular dependencies)
+        const contestWalletService = (await import('../services/contestWalletService.js')).default;
+        contestWallet = await contestWalletService.createContestWallet(contest.id);
+        
+        // Log if this is a vanity wallet
+        if (contestWallet.is_vanity) {
+          logApi.info({
+            requestId,
+            message: `Using ${contestWallet.vanity_type} vanity wallet for contest`,
+            data: {
+              contest_id: contest.id,
+              wallet_address: contestWallet.wallet_address,
+              vanity_type: contestWallet.vanity_type
+            }
+          });
         }
-      });
+      } catch (walletError) {
+        // Fall back to direct wallet creation if service fails
+        logApi.warn({
+          requestId,
+          message: 'Wallet service failed, falling back to direct wallet creation',
+          error: walletError.message
+        });
+        
+        // Direct wallet creation as a fallback
+        const { publicKey, encryptedPrivateKey } = await createContestWallet();
+        
+        contestWallet = await prisma.contest_wallets.create({
+          data: {
+            contest_id: contest.id,
+            wallet_address: publicKey,
+            private_key: encryptedPrivateKey,
+            balance: '0'
+          }
+        });
+      }
 
       // Send success SMS alert
       //await sendSMSAlert(
       //  formatContestWalletAlert('creation', {
       //    contest_id: contest.id,
-      //    wallet_address: publicKey
+      //    wallet_address: contestWallet.wallet_address
       //  })
       //);
       logApi.info({
@@ -695,7 +722,9 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         message: 'Contest wallet created successfully',
         data: {
           contest_id: contest.id,
-          wallet_address: publicKey
+          wallet_address: contestWallet.wallet_address,
+          is_vanity: contestWallet.is_vanity || false,
+          vanity_type: contestWallet.vanity_type || null
         }
       });
 

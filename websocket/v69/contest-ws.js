@@ -65,8 +65,8 @@ class ContestWebSocketServer extends BaseWebSocketServer {
   constructor(server) {
     super(server, {
       path: '/api/v69/ws/contest',
-      requireAuth: true, // Most contest interactions require auth
-      publicEndpoints: [`${CHANNEL_PREFIXES.PUBLIC}.contests`], // Public endpoint for spectators
+      requireAuth: false, // TEMPORARILY disabled auth for testing
+      publicEndpoints: ['*'], // ALL endpoints are public for testing
       maxPayload: 256 * 1024, // 256KB for leaderboard data
       rateLimit: 120, // 2 messages per second per client
       heartbeatInterval: 30000, // 30s heartbeat

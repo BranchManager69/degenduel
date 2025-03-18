@@ -43,6 +43,189 @@ import { logApi } from '../../logger-suite/logger.js';
  * @param {number} amount - Amount in SOL
  * @returns {Promise<{signature: string}>} Transaction signature
  */
+// Use a Map for tracking per-request rate limiting state
+// This avoids race conditions with concurrent requests
+const RPC_LIMITER = {
+  // Concurrency control
+  activeRequests: 0,
+  maxConcurrentRequests: 5,
+  requestQueue: [],
+  processingQueue: false,
+  
+  // Global settings
+  settings: {
+    minOperationSpacing: 500, // Min 500ms between operations
+    maxDelay: 8000, // Maximum backoff delay in ms
+    baseDelayMs: 250, // Base delay for exponential backoff
+    lastOperationTime: 0, // Track the last operation time globally
+  },
+  
+  // Per-call state (key = callName)
+  callStats: new Map(),
+  
+  // Add a request to the queue
+  async scheduleRequest(rpcCall, callName) {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({ rpcCall, callName, resolve, reject });
+      this.processQueue();
+    });
+  },
+  
+  // Process requests from the queue
+  async processQueue() {
+    // Prevent multiple concurrent queue processing
+    if (this.processingQueue) return;
+    this.processingQueue = true;
+    
+    while (this.requestQueue.length > 0 && this.activeRequests < this.maxConcurrentRequests) {
+      const { rpcCall, callName, resolve, reject } = this.requestQueue.shift();
+      this.activeRequests++;
+      
+      // Execute the request with rate limiting
+      this.executeWithRateLimiting(rpcCall, callName)
+        .then(result => {
+          this.activeRequests--;
+          resolve(result);
+          this.processQueue(); // Continue processing queue
+        })
+        .catch(error => {
+          this.activeRequests--;
+          reject(error);
+          this.processQueue(); // Continue processing queue
+        });
+    }
+    
+    this.processingQueue = false;
+  },
+  
+  // Get call-specific state
+  getCallState(callName) {
+    if (!this.callStats.has(callName)) {
+      this.callStats.set(callName, {
+        lastHit: 0,
+        consecutiveHits: 0,
+        currentDelay: 0,
+        lastOperationTime: 0
+      });
+    }
+    return this.callStats.get(callName);
+  },
+  
+  // RPC execution with rate limiting
+  async executeWithRateLimiting(rpcCall, callName = 'RPC Call') {
+    const callState = this.getCallState(callName);
+    const now = Date.now();
+    
+    // 1. Ensure minimum time between operations globally
+    const globalTimeSinceLastOp = now - this.settings.lastOperationTime;
+    if (globalTimeSinceLastOp < this.settings.minOperationSpacing) {
+      const waitTime = this.settings.minOperationSpacing - globalTimeSinceLastOp;
+      if (waitTime > 50) {
+        logApi.debug(`⏱️ Spacing Solana RPC operations globally by ${waitTime}ms`, {
+          service: 'SOLANA',
+          operation: callName,
+          wait_ms: waitTime
+        });
+      }
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    // 2. Ensure minimum time between operations for this specific call type
+    const callTimeSinceLastOp = now - callState.lastOperationTime;
+    if (callTimeSinceLastOp < this.settings.minOperationSpacing * 2) {
+      const waitTime = (this.settings.minOperationSpacing * 2) - callTimeSinceLastOp;
+      if (waitTime > 50) {
+        logApi.debug(`⏱️ Spacing ${callName} operations by ${waitTime}ms`, {
+          service: 'SOLANA',
+          operation: callName,
+          wait_ms: waitTime
+        });
+      }
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    // Update operation timestamps
+    this.settings.lastOperationTime = Date.now();
+    callState.lastOperationTime = Date.now();
+    
+    // 3. Apply backoff from previous rate limits for this call type
+    if (callState.currentDelay > 0) {
+      logApi.debug(`⏱️ Applying rate limit backoff of ${callState.currentDelay}ms for ${callName}`, {
+        service: 'SOLANA',
+        operation: callName,
+        backoff_ms: callState.currentDelay,
+        consecutive_hits: callState.consecutiveHits
+      });
+      await new Promise(resolve => setTimeout(resolve, callState.currentDelay));
+    }
+    
+    try {
+      // Execute the RPC call
+      const result = await rpcCall();
+      
+      // Decrease backoff on success (but don't go to zero immediately)
+      if (callState.currentDelay > 0) {
+        callState.currentDelay = Math.max(0, callState.currentDelay / 2);
+      }
+      callState.consecutiveHits = 0;
+      
+      return result;
+    } catch (error) {
+      // Check for rate limit error
+      const isRateLimit = error.message && (
+        error.message.includes('429') ||
+        error.message.includes('rate') ||
+        error.message.includes('limit') ||
+        error.message.includes('requests per second') ||
+        error.message.includes('too many requests')
+      );
+      
+      if (isRateLimit) {
+        // Update rate limit state for this call type
+        callState.lastHit = Date.now();
+        callState.consecutiveHits++;
+        
+        // Exponential backoff with jitter
+        const baseDelay = Math.min(
+          this.settings.maxDelay,
+          Math.pow(2, callState.consecutiveHits) * this.settings.baseDelayMs
+        );
+        // Add jitter (±20% randomness)
+        callState.currentDelay = baseDelay * (0.8 + Math.random() * 0.4);
+        
+        logApi.warn(`⚡ SOLANA RPC RATE LIMIT Retry in ${callState.currentDelay}ms`, {
+          error_type: 'RATE_LIMIT',
+          retry_ms: callState.currentDelay,
+          rpc_provider: typeof connection === 'object' ? connection.rpcEndpoint : 'unknown',
+          original_message: error.message,
+          operation: callName,
+          consecutive_hits: callState.consecutiveHits,
+          severity: 'warning',
+          alert_type: 'rate_limit'
+        });
+        
+        // Wait according to backoff and retry once
+        await new Promise(resolve => setTimeout(resolve, callState.currentDelay));
+        // Retry with a recursive call to this method
+        return this.executeWithRateLimiting(rpcCall, callName);
+      }
+      
+      // Not a rate limit error, rethrow
+      throw error;
+    }
+  }
+};
+
+/**
+ * Execute an RPC call with rate limiting and automatic retry
+ * @param {Function} rpcCall - Function that performs the RPC call
+ * @param {string} callName - Name of the call for logging
+ * @returns {Promise<any>} - Result of the RPC call
+ */
+async function executeWithRateLimiting(rpcCall, callName = 'RPC Call') {
+  return RPC_LIMITER.scheduleRequest(rpcCall, callName);
+}
+
 export async function transferSOL(connection, fromKeypair, toAddress, amount) {
   try {
     // Convert string address to PublicKey if needed
@@ -56,8 +239,11 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
       commitment: connection.commitment
     });
     
-    // Get a recent blockhash
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash();
+    // Get a recent blockhash with rate limiting
+    const { value: latestBlockhash } = await executeWithRateLimiting(
+      () => rpc.getLatestBlockhash(),
+      'getLatestBlockhash'
+    );
     
     // System Program ID for System Transfer (all zeros in base58)
     const systemProgramId = '11111111111111111111111111111111';
@@ -111,12 +297,15 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
     // STEP 4: Encode the signed transaction for sending
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
     
-    // STEP 5: Send the transaction with proper encoding specified
-    const txSignature = await rpc.sendTransaction(encodedTransaction, { 
-      encoding: 'base64',
-      skipPreflight: false,
-      preflightCommitment: connection.commitment || 'confirmed'
-    }).send();
+    // STEP 5: Send the transaction with proper encoding specified and rate limiting
+    const txSignature = await executeWithRateLimiting(
+      () => rpc.sendTransaction(encodedTransaction, { 
+        encoding: 'base64',
+        skipPreflight: false,
+        preflightCommitment: connection.commitment || 'confirmed'
+      }).send(),
+      'sendTransaction'
+    );
     
     logApi.info('SOL transfer successful using @solana/transactions v2.1', {
       from: fromKeypair.publicKey.toString(),
@@ -179,8 +368,11 @@ export async function transferToken(
       ? new PublicKey(mint)
       : mint;
     
-    // Get a recent blockhash
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash();
+    // Get a recent blockhash with rate limiting
+    const { value: latestBlockhash } = await executeWithRateLimiting(
+      () => rpc.getLatestBlockhash(),
+      'getLatestBlockhash'
+    );
     
     // Token Program ID in base58 format
     const tokenProgramId = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
@@ -232,12 +424,15 @@ export async function transferToken(
     // STEP 4: Encode the signed transaction for sending
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
     
-    // STEP 5: Send the transaction with proper encoding specified
-    const txSignature = await rpc.sendTransaction(encodedTransaction, { 
-      encoding: 'base64',
-      skipPreflight: false,
-      preflightCommitment: connection.commitment || 'confirmed'
-    }).send();
+    // STEP 5: Send the transaction with proper encoding specified and rate limiting
+    const txSignature = await executeWithRateLimiting(
+      () => rpc.sendTransaction(encodedTransaction, { 
+        encoding: 'base64',
+        skipPreflight: false,
+        preflightCommitment: connection.commitment || 'confirmed'
+      }).send(),
+      'sendTransaction'
+    );
     
     logApi.info('Token transfer successful using @solana/transactions v2.1', {
       from: fromKeypair.publicKey.toString(),
@@ -280,8 +475,11 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
       commitment: connection.commitment
     });
     
-    // Get a recent blockhash
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash();
+    // Get a recent blockhash with rate limiting
+    const { value: latestBlockhash } = await executeWithRateLimiting(
+      () => rpc.getLatestBlockhash(),
+      'getLatestBlockhash'
+    );
     
     // System Program ID (all zeros in base58)
     const systemProgramId = '11111111111111111111111111111111';

@@ -23,6 +23,7 @@ export const SERVICE_NAMES = {
 
     // Contest Layer Services
     CONTEST_EVALUATION: 'contest_evaluation_service',
+    CONTEST_SCHEDULER: 'contest_scheduler_service', // New Contest Scheduler service
     ACHIEVEMENT: 'achievement_service',
     REFERRAL: 'referral_service',
     LEVELING: 'leveling_service',
@@ -79,6 +80,13 @@ export const SERVICE_METADATA = {
         updateFrequency: '1m',
         criticalLevel: 'critical',
         dependencies: [SERVICE_NAMES.MARKET_DATA]
+    },
+    [SERVICE_NAMES.CONTEST_SCHEDULER]: {
+        layer: SERVICE_LAYERS.CONTEST,
+        description: 'Automatic contest creation and scheduling',
+        updateFrequency: '1h',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.WALLET_GENERATOR]
     },
     [SERVICE_NAMES.ACHIEVEMENT]: {
         layer: SERVICE_LAYERS.CONTEST,

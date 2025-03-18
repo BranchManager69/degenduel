@@ -67,6 +67,7 @@ import roleManagementRoutes from './routes/admin/role-management.js';
 import bannedIpRoutes from './routes/banned-ip.js';
 // Import (some) Admin Routes
 import contestManagementRoutes from "./routes/admin/contest-management.js";
+import contestSchedulerRoutes from "./routes/admin/contest-scheduler.js";
 import skyduelManagementRoutes from "./routes/admin/skyduel-management.js";
 // Import Script Execution Routes
 import scriptExecutionRoutes from "./routes/admin/script-execution.js";
@@ -210,6 +211,7 @@ app.use("/api/admin/countdown", countdownRoutes);
 app.use("/api/admin/token-sync", tokenSyncRoutes);
 app.use("/api/admin/wallets", walletManagementRoutes);
 app.use("/api/admin/contests", contestManagementRoutes);
+app.use("/api/admin/contest-scheduler", contestSchedulerRoutes);
 app.use("/api/admin/faucet", faucetManagementRoutes);
 app.use("/api/admin/liquidity", faucetManagementRoutes);
 app.use("/api/admin/metrics", serviceMetricsRoutes);

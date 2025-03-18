@@ -147,15 +147,30 @@ class ContestWalletService extends BaseService {
     // Get unassociated vanity wallet
     async getUnassociatedVanityWallet() {
         try {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} DEBUG: Searching for vanity wallets... ${fancyColors.RESET}`);
+            
             // Check DUEL folder first (higher priority)
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Checking _DUEL folder first${fancyColors.RESET}`);
             const duelWallet = await this.getFirstUnassociatedWalletFromFolder('_DUEL');
-            if (duelWallet) return duelWallet;
+            if (duelWallet) {
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Found DUEL wallet: ${duelWallet.publicKey}${fancyColors.RESET}`);
+                return duelWallet;
+            }
             
             // Then try DEGEN folder
-            return this.getFirstUnassociatedWalletFromFolder('_DEGEN');
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Checking _DEGEN folder next${fancyColors.RESET}`);
+            const degenWallet = await this.getFirstUnassociatedWalletFromFolder('_DEGEN');
+            if (degenWallet) {
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Found DEGEN wallet: ${degenWallet.publicKey}${fancyColors.RESET}`);
+                return degenWallet;
+            }
+            
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}DEBUG: No vanity wallets found in either folder${fancyColors.RESET}`);
+            return null;
         } catch (error) {
-            logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to get unassociated vanity wallet:${fancyColors.RESET}`, {
-                error: error.message
+            logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DEBUG: Error finding vanity wallet: ${error.message} ${fancyColors.RESET}`, {
+                error: error.message,
+                stack: error.stack
             });
             return null;
         }
@@ -166,20 +181,34 @@ class ContestWalletService extends BaseService {
             const fs = await import('fs/promises');
             const dirPath = `/home/websites/degenduel/addresses/keypairs/public/${folderName}`;
             
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Checking directory: ${dirPath}${fancyColors.RESET}`);
+            
             // Get files in directory
             const files = await fs.readdir(dirPath);
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Found ${files.length} files in ${folderName} directory${fancyColors.RESET}`);
             
             // Filter for JSON files
             const keypairFiles = files.filter(f => f.endsWith('.json'));
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Found ${keypairFiles.length} JSON files in ${folderName} directory${fancyColors.RESET}`);
+            
+            if (keypairFiles.length > 0) {
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: First few keypair files: ${keypairFiles.slice(0, 3).join(', ')}${fancyColors.RESET}`);
+            }
             
             for (const file of keypairFiles) {
                 // Extract public key from filename
                 const publicKey = file.replace('.json', '');
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Checking wallet: ${publicKey}${fancyColors.RESET}`);
                 
                 // Check if already in database
                 const existing = await prisma.contest_wallets.findFirst({
                     where: { wallet_address: publicKey }
                 });
+                
+                if (existing) {
+                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}DEBUG: Wallet already used: ${publicKey}${fancyColors.RESET}`);
+                    continue;
+                }
                 
                 // If the wallet is not in the database, decrypt the private key and return it
                 if (!existing) {
@@ -187,18 +216,29 @@ class ContestWalletService extends BaseService {
                     const keypairPath = `${dirPath}/${file}`;
                     const privateKeyPath = `/home/websites/degenduel/addresses/pkeys/public/${folderName}/${publicKey}.key`;
                     
-                    // Read unencrypted private key
-                    const privateKey = await fs.readFile(privateKeyPath, 'utf8');
+                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Looking for private key at: ${privateKeyPath}${fancyColors.RESET}`);
                     
-                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Found unassociated vanity wallet:${fancyColors.RESET} ${publicKey}`);
-                    
-                    // Return the unassociated wallet without encrypting the private key
-                    return { 
-                        publicKey, 
-                        privateKey: privateKey.trim(),
-                        isVanity: true,
-                        vanityType: folderName.replace('_', '')
-                    };
+                    try {
+                        // Check if private key file exists
+                        await fs.access(privateKeyPath);
+                        
+                        // Read unencrypted private key
+                        const privateKey = await fs.readFile(privateKeyPath, 'utf8');
+                        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Read private key with length: ${privateKey.length}${fancyColors.RESET}`);
+                        
+                        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Found unassociated vanity wallet:${fancyColors.RESET} ${publicKey}`);
+                        
+                        // Return the unassociated wallet without encrypting the private key
+                        return { 
+                            publicKey, 
+                            privateKey: privateKey.trim(),
+                            isVanity: true,
+                            vanityType: folderName.replace('_', '')
+                        };
+                    } catch (accessError) {
+                        logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}DEBUG: Cannot access private key file: ${accessError.message}${fancyColors.RESET}`);
+                        continue; // Try next wallet
+                    }
                 }
             }
             
@@ -206,8 +246,10 @@ class ContestWalletService extends BaseService {
             logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}No unassociated wallets found in folder ${folderName}${fancyColors.RESET}`);
             return null;
         } catch (error) {
-            logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to check folder ${folderName}:${fancyColors.RESET}`, {
-                error: error.message
+            logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DEBUG: Failed to check folder ${folderName}: ${error.message} ${fancyColors.RESET}`, {
+                error: error.message,
+                stack: error.stack,
+                folder: folderName
             });
             return null;
         }
@@ -221,47 +263,86 @@ class ContestWalletService extends BaseService {
 
         const startTime = Date.now();
         try {
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} DEBUG: Starting contest wallet creation for contest ID: ${contestId} ${fancyColors.RESET}`);
+            
             // Try to get a vanity address first
             const vanityWallet = await this.getUnassociatedVanityWallet();
             
             let contestWallet;
             if (vanityWallet) {
-                // Use the vanity wallet
-                contestWallet = await prisma.contest_wallets.create({
-                    data: {
-                        contest_id: contestId,
-                        wallet_address: vanityWallet.publicKey,
-                        private_key: this.encryptPrivateKey(vanityWallet.privateKey),
-                        balance: 0,
-                        created_at: new Date(),
-                        is_vanity: true,
-                        vanity_type: vanityWallet.vanityType
-                    }
-                });
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} DEBUG: Using vanity wallet for contest ${contestId} ${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Vanity details: ${JSON.stringify({
+                    publicKey: vanityWallet.publicKey,
+                    privateKeyLength: vanityWallet.privateKey.length,
+                    isVanity: vanityWallet.isVanity,
+                    vanityType: vanityWallet.vanityType
+                })}${fancyColors.RESET}`);
                 
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.GREEN}Created contest wallet with ${vanityWallet.vanityType} vanity address${fancyColors.RESET}`, {
-                    contest_id: contestId,
-                    vanity_type: vanityWallet.vanityType
-                });
+                // Use the vanity wallet
+                try {
+                    contestWallet = await prisma.contest_wallets.create({
+                        data: {
+                            contest_id: contestId,
+                            wallet_address: vanityWallet.publicKey,
+                            private_key: this.encryptPrivateKey(vanityWallet.privateKey),
+                            balance: 0,
+                            created_at: new Date(),
+                            is_vanity: true,
+                            vanity_type: vanityWallet.vanityType
+                        }
+                    });
+                    
+                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Successfully created DB record for vanity wallet${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.GREEN}Created contest wallet with ${vanityWallet.vanityType} vanity address${fancyColors.RESET}`, {
+                        contest_id: contestId,
+                        vanity_type: vanityWallet.vanityType,
+                        is_vanity: contestWallet.is_vanity
+                    });
+                } catch (dbError) {
+                    logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DEBUG: Failed to create vanity wallet DB record: ${dbError.message} ${fancyColors.RESET}`, {
+                        error: dbError.message,
+                        stack: dbError.stack,
+                        contestId,
+                        publicKey: vanityWallet.publicKey
+                    });
+                    throw dbError;
+                }
             } else {
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}DEBUG: No vanity wallet available, generating random wallet${fancyColors.RESET}`);
+                
                 // Fall back to random address generation
                 const keypair = Keypair.generate();
-                contestWallet = await prisma.contest_wallets.create({
-                    data: {
-                        contest_id: contestId,
-                        wallet_address: keypair.publicKey.toString(),
-                        private_key: this.encryptPrivateKey(
-                            Buffer.from(keypair.secretKey).toString('base64')
-                        ),
-                        balance: 0,
-                        created_at: new Date(),
-                        is_vanity: false
-                    }
-                });
+                const publicKey = keypair.publicKey.toString();
+                const secretKeyBase64 = Buffer.from(keypair.secretKey).toString('base64');
                 
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.YELLOW}Created contest wallet with random address (no vanity addresses available)${fancyColors.RESET}`, {
-                    contest_id: contestId
-                });
+                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Generated random wallet: ${publicKey}${fancyColors.RESET}`);
+                
+                try {
+                    contestWallet = await prisma.contest_wallets.create({
+                        data: {
+                            contest_id: contestId,
+                            wallet_address: publicKey,
+                            private_key: this.encryptPrivateKey(secretKeyBase64),
+                            balance: 0,
+                            created_at: new Date(),
+                            is_vanity: false
+                        }
+                    });
+                    
+                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Successfully created DB record for random wallet${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.YELLOW}Created contest wallet with random address (no vanity addresses available)${fancyColors.RESET}`, {
+                        contest_id: contestId,
+                        is_vanity: contestWallet.is_vanity
+                    });
+                } catch (dbError) {
+                    logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DEBUG: Failed to create random wallet DB record: ${dbError.message} ${fancyColors.RESET}`, {
+                        error: dbError.message,
+                        stack: dbError.stack,
+                        contestId,
+                        publicKey
+                    });
+                    throw dbError;
+                }
             }
 
             this.walletStats.wallets.generated++;
@@ -425,10 +506,14 @@ class ContestWalletService extends BaseService {
                 }
             });
             
-            // Batch process balances in groups of 100 to avoid rate limiting
-            const BATCH_SIZE = 100;
+            // Batch process balances in smaller groups to avoid rate limiting
+            // Reduce batch size from 100 to 20 (Quicknode has stricter per-second limits)
+            const BATCH_SIZE = 20;
             let currentBatch = 0;
             const totalBatches = Math.ceil(contestWallets.length / BATCH_SIZE);
+            
+            // Track rate limit hits to implement exponential backoff
+            let consecutiveRateLimitHits = 0;
             
             // Process wallets in batches
             while (currentBatch < totalBatches) {
@@ -440,12 +525,28 @@ class ContestWalletService extends BaseService {
                 const publicKeys = walletBatch.map(wallet => new PublicKey(wallet.wallet_address));
                 
                 try {
-                    logApi.info(`[contestWalletService] Fetching batch ${currentBatch+1}/${totalBatches} (${walletBatch.length} wallets)`);
+                    // Calculate delay based on consecutive rate limit hits
+                    // Implement exponential backoff: 0ms → 1000ms → 2000ms → 4000ms → 8000ms
+                    const delayBetweenBatches = Math.min(8000, consecutiveRateLimitHits === 0 ? 500 : Math.pow(2, consecutiveRateLimitHits) * 500);
+                    
+                    logApi.info(`[contestWalletService] Fetching batch ${currentBatch+1}/${totalBatches} (${walletBatch.length} wallets) - Delay: ${delayBetweenBatches}ms`);
+                    
+                    // If this isn't the first batch, add delay before request to avoid rate limits
+                    if (currentBatch > 0) {
+                        await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+                    }
                     
                     // Get multiple balances in a single RPC call
                     const balances = await this.connection.getMultipleAccountsInfo(publicKeys);
                     
+                    // Reset consecutive rate limit counter on success
+                    consecutiveRateLimitHits = 0;
+                    
                     // Process each wallet with its balance
+                    // Collect DB updates to do in a single transaction
+                    const dbUpdates = [];
+                    const balanceChanges = [];
+                    
                     for (let i = 0; i < walletBatch.length; i++) {
                         const wallet = walletBatch[i];
                         const accountInfo = balances[i];
@@ -459,14 +560,10 @@ class ContestWalletService extends BaseService {
                             const previousBalance = wallet.balance || 0;
                             const difference = solBalance - previousBalance;
                             
-                            // Update wallet in database
-                            await prisma.contest_wallets.update({
-                                where: { id: wallet.id },
-                                data: {
-                                    balance: solBalance,
-                                    last_sync: new Date(),
-                                    updated_at: new Date()
-                                }
+                            // Collect update for batch processing
+                            dbUpdates.push({
+                                wallet_id: wallet.id,
+                                balance: solBalance
                             });
                             
                             // Track successful update
@@ -474,16 +571,14 @@ class ContestWalletService extends BaseService {
                             
                             // Only log significant balance changes (≥ 0.01 SOL)
                             if (Math.abs(difference) >= 0.01) {
-                                const updateResult = {
-                                    success: true,
+                                balanceChanges.push({
                                     wallet_address: wallet.wallet_address,
                                     previous_balance: previousBalance,
                                     current_balance: solBalance,
-                                    difference: difference
-                                };
-                                
-                                results.updates.push(updateResult);
-                                logApi.info(`[contestWalletService] Significant balance change for Contest ${wallet.contests?.id} (${wallet.contests?.contest_code}): ${difference.toFixed(4)} SOL - https://solscan.io/address/${wallet.wallet_address}`);
+                                    difference: difference,
+                                    contest_id: wallet.contests?.id,
+                                    contest_code: wallet.contests?.contest_code
+                                });
                             }
                         } catch (error) {
                             results.failed++;
@@ -495,33 +590,80 @@ class ContestWalletService extends BaseService {
                         }
                     }
                     
-                    // Add a small delay between batches to further reduce rate limiting risks
-                    if (currentBatch < totalBatches - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                    // Process all database updates in a single transaction to reduce database load
+                    if (dbUpdates.length > 0) {
+                        await prisma.$transaction(async (tx) => {
+                            const now = new Date();
+                            for (const update of dbUpdates) {
+                                await tx.contest_wallets.update({
+                                    where: { id: update.wallet_id },
+                                    data: {
+                                        balance: update.balance,
+                                        last_sync: now,
+                                        updated_at: now
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    
+                    // Log balance changes separately
+                    for (const change of balanceChanges) {
+                        results.updates.push({
+                            success: true,
+                            wallet_address: change.wallet_address,
+                            previous_balance: change.previous_balance,
+                            current_balance: change.current_balance,
+                            difference: change.difference
+                        });
+                        
+                        logApi.info(`[contestWalletService] Significant balance change for Contest ${change.contest_id} (${change.contest_code}): ${change.difference.toFixed(4)} SOL - https://solscan.io/address/${change.wallet_address}`);
                     }
                 } catch (error) {
-                    results.failed += walletBatch.length;
-                    logApi.error(`[contestWalletService] Failed to fetch batch ${currentBatch+1}:`, {
-                        error: error.message,
-                        batch_size: walletBatch.length,
-                        rate_limited: error.message.includes('429') || error.message.includes('rate') || error.message.includes('limit')
-                    });
+                    // Check if this is a rate limit error
+                    const isRateLimited = error.message.includes('429') || 
+                                         error.message.includes('rate') || 
+                                         error.message.includes('limit') ||
+                                         error.message.includes('requests per second') ||
+                                         error.message.includes('too many requests');
                     
-                    // Add a longer delay if we hit rate limits
-                    if (error.message.includes('429') || error.message.includes('rate') || error.message.includes('limit')) {
-                        logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Adding 3000ms delay${fancyColors.RESET}`, {
+                    if (isRateLimited) {
+                        // Increment consecutive rate limit counter
+                        consecutiveRateLimitHits++;
+                        
+                        // Calculate exponential backoff delay
+                        const backoffDelay = Math.min(30000, Math.pow(2, consecutiveRateLimitHits) * 1000);
+                        
+                        logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits} - Adding ${backoffDelay}ms delay${fancyColors.RESET}`, {
                             service: 'SOLANA',
                             error_type: 'RATE_LIMIT',
                             batch: currentBatch + 1,
                             total_batches: totalBatches,
-                            retry_ms: 3000,
+                            retry_ms: backoffDelay,
+                            consecutive_hits: consecutiveRateLimitHits,
                             rpc_provider: config.rpc_urls.primary,
                             error_message: error.message
                         });
-                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        
+                        // Wait longer based on consecutive failures
+                        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                        
+                        // Don't increment currentBatch - retry the same batch
+                        continue;
+                    } else {
+                        // For non-rate limit errors, log and move on
+                        results.failed += walletBatch.length;
+                        logApi.error(`[contestWalletService] Failed to fetch batch ${currentBatch+1}:`, {
+                            error: error.message,
+                            batch_size: walletBatch.length
+                        });
+                        
+                        // Standard delay for general errors
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                 }
                 
+                // Move to the next batch
                 currentBatch++;
             }
             
@@ -533,6 +675,12 @@ class ContestWalletService extends BaseService {
             
             // Log completion
             logApi.info(`[contestWalletService] Contest wallet balance refresh cycle completed: ${results.updated}/${results.total} wallets updated in ${((Date.now() - startTime)/1000).toFixed(1)}s`);
+            
+            // Add a cooldown period after batch completion to prevent immediate rate limiting in other services
+            // This helps spread out the RPC calls across the system
+            const cooldownMs = 2000; // 2 second cooldown
+            await new Promise(resolve => setTimeout(resolve, cooldownMs));
+            logApi.info(`[contestWalletService] RPC cooldown period (${cooldownMs}ms) completed after wallet balance update`);
             
             return {
                 duration: Date.now() - startTime,
@@ -727,153 +875,239 @@ class ContestWalletService extends BaseService {
                 details: []
             };
             
-            // Process each wallet
-            for (const wallet of eligibleWallets) {
+            // Process wallets in smaller batches to avoid rate limiting
+            const BATCH_SIZE = 20; // Same batch size as in updateAllWalletBalances
+            let walletIndex = 0;
+            
+            // Track rate limit hits for adaptive delays
+            let consecutiveRateLimitHits = 0;
+            
+            while (walletIndex < eligibleWallets.length) {
+                // Extract current batch
+                const endIndex = Math.min(walletIndex + BATCH_SIZE, eligibleWallets.length);
+                const walletBatch = eligibleWallets.slice(walletIndex, endIndex);
+                
+                // Calculate adaptive delay between batches
+                const delayBetweenBatches = Math.min(8000, consecutiveRateLimitHits === 0 ? 500 : Math.pow(2, consecutiveRateLimitHits) * 500);
+                
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Processing reclaim batch ${Math.floor(walletIndex/BATCH_SIZE)+1}/${Math.ceil(eligibleWallets.length/BATCH_SIZE)} (${walletBatch.length} wallets) - Delay: ${delayBetweenBatches}ms`);
+                
+                // Wait between batches
+                if (walletIndex > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+                }
+                
                 try {
-                    // Get latest balance
-                    const publicKey = new PublicKey(wallet.wallet_address);
-                    const balance = await this.connection.getBalance(publicKey);
-                    const solBalance = balance / LAMPORTS_PER_SOL;
+                    // Create batch of PublicKeys
+                    const publicKeys = walletBatch.map(wallet => new PublicKey(wallet.wallet_address));
                     
-                    // Update wallet balance in database
-                    await prisma.contest_wallets.update({
-                        where: { id: wallet.id },
-                        data: {
-                            balance: solBalance,
-                            last_sync: new Date()
+                    // Get multiple balances in a single RPC call
+                    const balanceInfos = await this.connection.getMultipleAccountsInfo(publicKeys);
+                    
+                    // Reset consecutive rate limit counter on success
+                    consecutiveRateLimitHits = 0;
+                    
+                    // Process each wallet with its balance
+                    for (let i = 0; i < walletBatch.length; i++) {
+                        const wallet = walletBatch[i];
+                        const accountInfo = balanceInfos[i];
+                        
+                        try {
+                            // If account doesn't exist yet, it has 0 balance
+                            const lamports = accountInfo ? accountInfo.lamports : 0;
+                            const solBalance = lamports / LAMPORTS_PER_SOL;
+                            
+                            // Update wallet balance in database
+                            await prisma.contest_wallets.update({
+                                where: { id: wallet.id },
+                                data: {
+                                    balance: solBalance,
+                                    last_sync: new Date()
+                                }
+                            });
+                            
+                            // Check if balance meets minimum criteria
+                            if (solBalance < minBalance) {
+                                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping wallet ${wallet.wallet_address} with low balance: ${solBalance.toFixed(6)} SOL`);
+                                results.details.push({
+                                    contest_id: wallet.contest_id,
+                                    contest_code: wallet.contests?.contest_code,
+                                    wallet_address: wallet.wallet_address,
+                                    balance: solBalance,
+                                    status: 'skipped_low_balance'
+                                });
+                                continue;
+                            }
+                            
+                            // Reserve a small amount for fees, approximately 0.0005 SOL (5000 lamports)
+                            const reserveAmount = 0.0005;
+                            const transferAmount = solBalance - reserveAmount;
+                            
+                            // Skip if transfer amount is too small
+                            if (transferAmount < minTransfer) {
+                                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping transfer from ${wallet.wallet_address}, amount too small: ${transferAmount.toFixed(6)} SOL`);
+                                results.details.push({
+                                    contest_id: wallet.contest_id,
+                                    contest_code: wallet.contests?.contest_code,
+                                    wallet_address: wallet.wallet_address,
+                                    balance: solBalance,
+                                    transferAmount: transferAmount,
+                                    status: 'skipped_small_transfer'
+                                });
+                                continue;
+                            }
+                            
+                            results.walletsThatMeetCriteria++;
+                            
+                            // Perform the transfer
+                            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Transferring ${transferAmount.toFixed(6)} SOL from contest ${wallet.contest_id} (${wallet.contests?.contest_code || 'Unknown'}) to treasury${fancyColors.RESET}`);
+                            
+                            try {
+                                // Create a transaction record
+                                const transaction = await prisma.transactions.create({
+                                    data: {
+                                        wallet_address: wallet.wallet_address,
+                                        type: config.transaction_types.WITHDRAWAL,
+                                        amount: transferAmount,
+                                        balance_before: solBalance,
+                                        balance_after: solBalance - transferAmount,
+                                        contest_id: wallet.contest_id,
+                                        description: `Reclaiming unused funds from ${wallet.contests?.contest_code || `Contest #${wallet.contest_id}`} wallet to treasury`,
+                                        status: 'PENDING',
+                                        created_at: new Date()
+                                    }
+                                });
+                                
+                                // Perform blockchain transaction
+                                const signature = await this.performBlockchainTransfer(
+                                    wallet,
+                                    this.treasuryWalletAddress,
+                                    transferAmount
+                                );
+                                
+                                // Update transaction with success
+                                await prisma.transactions.update({
+                                    where: { id: transaction.id },
+                                    data: {
+                                        status: 'COMPLETED',
+                                        blockchain_signature: signature,
+                                        completed_at: new Date()
+                                    }
+                                });
+                                
+                                // Log success
+                                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Successfully transferred ${transferAmount.toFixed(6)} SOL to treasury${fancyColors.RESET}
+                     Signature: ${signature}
+                     Explorer: https://solscan.io/tx/${signature}`);
+                                
+                                results.successfulTransfers++;
+                                results.totalAmountReclaimed += transferAmount;
+                                results.details.push({
+                                    contest_id: wallet.contest_id,
+                                    contest_code: wallet.contests?.contest_code,
+                                    wallet_address: wallet.wallet_address,
+                                    balance: solBalance,
+                                    transferAmount: transferAmount,
+                                    signature: signature,
+                                    status: 'success'
+                                });
+                                
+                                // Update service stats
+                                this.walletStats.reclaimed_funds.total_operations++;
+                                this.walletStats.reclaimed_funds.successful_operations++;
+                                this.walletStats.reclaimed_funds.total_amount += transferAmount;
+                                this.walletStats.reclaimed_funds.last_reclaim = new Date().toISOString();
+                                
+                                // Log admin action
+                                await AdminLogger.logAction(
+                                    adminAddress,
+                                    AdminLogger.Actions.WALLET.RECLAIM_FUNDS || 'WALLET_RECLAIM_FUNDS',
+                                    {
+                                        contest_id: wallet.contest_id,
+                                        contest_code: wallet.contests?.contest_code,
+                                        wallet_address: wallet.wallet_address,
+                                        amount: transferAmount.toString(),
+                                        signature: signature
+                                    }
+                                );
+                            } catch (error) {
+                                logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to transfer funds from ${wallet.wallet_address}:${fancyColors.RESET}`, error);
+                                
+                                results.failedTransfers++;
+                                this.walletStats.reclaimed_funds.failed_operations++;
+                                results.details.push({
+                                    contest_id: wallet.contest_id,
+                                    contest_code: wallet.contests?.contest_code,
+                                    wallet_address: wallet.wallet_address,
+                                    balance: solBalance,
+                                    transferAmount: transferAmount,
+                                    error: error.message,
+                                    status: 'failed'
+                                });
+                            }
+                        } catch (error) {
+                            logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to process wallet ${wallet.wallet_address}:${fancyColors.RESET}`, error);
+                            
+                            results.failedTransfers++;
+                            results.details.push({
+                                contest_id: wallet.contest_id,
+                                contest_code: wallet.contests?.contest_code || null,
+                                wallet_address: wallet.wallet_address,
+                                error: error.message,
+                                status: 'failed'
+                            });
                         }
-                    });
-                    
-                    // Check if balance meets minimum criteria
-                    if (solBalance < minBalance) {
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping wallet ${wallet.wallet_address} with low balance: ${solBalance.toFixed(6)} SOL`);
-                        results.details.push({
-                            contest_id: wallet.contest_id,
-                            contest_code: wallet.contests?.contest_code,
-                            wallet_address: wallet.wallet_address,
-                            balance: solBalance,
-                            status: 'skipped_low_balance'
-                        });
-                        continue;
                     }
                     
-                    // Reserve a small amount for fees, approximately 0.0005 SOL (5000 lamports)
-                    const reserveAmount = 0.0005;
-                    const transferAmount = solBalance - reserveAmount;
+                    // Move to the next batch
+                    walletIndex += BATCH_SIZE;
                     
-                    // Skip if transfer amount is too small
-                    if (transferAmount < minTransfer) {
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping transfer from ${wallet.wallet_address}, amount too small: ${transferAmount.toFixed(6)} SOL`);
-                        results.details.push({
-                            contest_id: wallet.contest_id,
-                            contest_code: wallet.contests?.contest_code,
-                            wallet_address: wallet.wallet_address,
-                            balance: solBalance,
-                            transferAmount: transferAmount,
-                            status: 'skipped_small_transfer'
-                        });
-                        continue;
-                    }
-                    
-                    results.walletsThatMeetCriteria++;
-                    
-                    // Perform the transfer
-                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Transferring ${transferAmount.toFixed(6)} SOL from contest ${wallet.contest_id} (${wallet.contests?.contest_code || 'Unknown'}) to treasury${fancyColors.RESET}`);
-                    
-                    try {
-                        // Create a transaction record
-                        const transaction = await prisma.transactions.create({
-                            data: {
-                                wallet_address: wallet.wallet_address,
-                                type: config.transaction_types.WITHDRAWAL,
-                                amount: transferAmount,
-                                balance_before: solBalance,
-                                balance_after: solBalance - transferAmount,
-                                contest_id: wallet.contest_id,
-                                description: `Reclaiming unused funds from ${wallet.contests?.contest_code || `Contest #${wallet.contest_id}`} wallet to treasury`,
-                                status: 'PENDING',
-                                created_at: new Date()
-                            }
-                        });
-                        
-                        // Perform blockchain transaction
-                        const signature = await this.performBlockchainTransfer(
-                            wallet,
-                            this.treasuryWalletAddress,
-                            transferAmount
-                        );
-                        
-                        // Update transaction with success
-                        await prisma.transactions.update({
-                            where: { id: transaction.id },
-                            data: {
-                                status: 'COMPLETED',
-                                blockchain_signature: signature,
-                                completed_at: new Date()
-                            }
-                        });
-                        
-                        // Log success
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Successfully transferred ${transferAmount.toFixed(6)} SOL to treasury${fancyColors.RESET}
-             Signature: ${signature}
-             Explorer: https://solscan.io/tx/${signature}`);
-                        
-                        results.successfulTransfers++;
-                        results.totalAmountReclaimed += transferAmount;
-                        results.details.push({
-                            contest_id: wallet.contest_id,
-                            contest_code: wallet.contests?.contest_code,
-                            wallet_address: wallet.wallet_address,
-                            balance: solBalance,
-                            transferAmount: transferAmount,
-                            signature: signature,
-                            status: 'success'
-                        });
-                        
-                        // Update service stats
-                        this.walletStats.reclaimed_funds.total_operations++;
-                        this.walletStats.reclaimed_funds.successful_operations++;
-                        this.walletStats.reclaimed_funds.total_amount += transferAmount;
-                        this.walletStats.reclaimed_funds.last_reclaim = new Date().toISOString();
-                        
-                        // Log admin action
-                        await AdminLogger.logAction(
-                            adminAddress,
-                            AdminLogger.Actions.WALLET.RECLAIM_FUNDS || 'WALLET_RECLAIM_FUNDS',
-                            {
-                                contest_id: wallet.contest_id,
-                                contest_code: wallet.contests?.contest_code,
-                                wallet_address: wallet.wallet_address,
-                                amount: transferAmount.toString(),
-                                signature: signature
-                            }
-                        );
-                    } catch (error) {
-                        logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to transfer funds from ${wallet.wallet_address}:${fancyColors.RESET}`, error);
-                        
-                        results.failedTransfers++;
-                        this.walletStats.reclaimed_funds.failed_operations++;
-                        results.details.push({
-                            contest_id: wallet.contest_id,
-                            contest_code: wallet.contests?.contest_code,
-                            wallet_address: wallet.wallet_address,
-                            balance: solBalance,
-                            transferAmount: transferAmount,
-                            error: error.message,
-                            status: 'failed'
-                        });
-                    }
                 } catch (error) {
-                    logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to process wallet ${wallet.wallet_address}:${fancyColors.RESET}`, error);
+                    // Check if this is a rate limit error
+                    const isRateLimited = error.message && (
+                        error.message.includes('429') || 
+                        error.message.includes('rate') || 
+                        error.message.includes('limit') ||
+                        error.message.includes('requests per second') ||
+                        error.message.includes('too many requests')
+                    );
                     
-                    results.failedTransfers++;
-                    results.details.push({
-                        contest_id: wallet.contest_id,
-                        contest_code: wallet.contests?.contest_code || null,
-                        wallet_address: wallet.wallet_address,
-                        error: error.message,
-                        status: 'failed'
-                    });
+                    if (isRateLimited) {
+                        // Increment consecutive rate limit counter
+                        consecutiveRateLimitHits++;
+                        
+                        // Calculate exponential backoff delay
+                        const backoffDelay = Math.min(30000, Math.pow(2, consecutiveRateLimitHits) * 1000);
+                        
+                        logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits} - Adding ${backoffDelay}ms delay${fancyColors.RESET}`, {
+                            service: 'SOLANA',
+                            error_type: 'RATE_LIMIT',
+                            batch: Math.floor(walletIndex/BATCH_SIZE)+1,
+                            total_batches: Math.ceil(eligibleWallets.length/BATCH_SIZE),
+                            retry_ms: backoffDelay,
+                            consecutive_hits: consecutiveRateLimitHits,
+                            rpc_provider: config.rpc_urls.primary,
+                            error_message: error.message
+                        });
+                        
+                        // Wait longer based on consecutive failures
+                        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                        
+                        // Don't increment walletIndex - retry the same batch
+                    } else {
+                        // For non-rate limit errors, log and move on
+                        results.failedTransfers += walletBatch.length;
+                        logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Failed to fetch balance batch:`, {
+                            error: error.message,
+                            batch_size: walletBatch.length
+                        });
+                        
+                        // Standard delay for general errors
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        
+                        // Move to next batch
+                        walletIndex += BATCH_SIZE;
+                    }
                 }
             }
             

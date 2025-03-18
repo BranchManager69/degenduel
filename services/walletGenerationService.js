@@ -67,6 +67,11 @@ class WalletService extends BaseService {
             encryption: {
                 successful: 0,
                 failed: 0
+            },
+            performance: {
+                last_operation_time_ms: 0,
+                average_generation_time_ms: 0,
+                cache_hit_rate: 0
             }
         };
 
