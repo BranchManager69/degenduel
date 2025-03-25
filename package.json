@@ -30,11 +30,15 @@
     "mcp:up": "pm2 start ecosystem.config.cjs --only mcp-server",
     "mcp:down": "pm2 stop mcp-server",
     "mcp:reload": "pm2 restart mcp-server --update-env",
-    "// General DD Services Testing": "==========================================================================================================",
+    
+    "// DD Websockets Testing (Late March 2025)": "================================================================================================================",
+    "test:wss": "node postman-ws-test.js",
+
+    "// General DD Services Testing (Pre-March 2025)": "==========================================================================================================",
     "test:services": "node scripts/service-status-report.js # Reports saved to reports/service-reports/YYYY-MM-DD/",
     "test:websocket": "node scripts/test-websocket.js",
     "test:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",
-    "// DD Websockets Testing": "================================================================================================================",
+    "// DD Websockets Testing (Pre-March 2025)": "================================================================================================================",
     "wss:websocket": "node scripts/test-websocket.js",
     "wss:base-websocket": "node scripts/test-base-websocket.js",
     "wss:websocket-envs": "node --experimental-loader=ts-node/esm --experimental-specifier-resolution=node scripts/test-websocket-envs.js",

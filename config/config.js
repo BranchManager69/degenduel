@@ -7,7 +7,14 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Helpful DegenDuel API endpoints
+// MASTER RPC THROTTLE:
+//   e.g. 1 = 1x normal refresh rate
+//   e.g. 2 = 2x normal refresh rate (more updates)
+//   e.g. 0.5 = 0.5x normal refresh rate (fewer updates)
+// Ratio relative to 'normal' (roughly once-per-minute refreshes of most things)
+const MASTER_RPC_THROTTLE = process.env.MASTER_RPC_THROTTLE || 1.0; // (default = 1.0) applies to variables marked with ^^^
+
+ // Helpful DegenDuel API endpoints
 const LOBBY_API = process.env.LOBBY_API; // future
 const REFLECTIONS_API = process.env.REFLECTIONS_API; // future
 const DD_SERV_API = process.env.DD_SERV_API; // deprecating
@@ -88,57 +95,77 @@ const config = {
   
   // Solana timeout settings:
   solana_timeouts: {
+    // ^^^ = uses RPC calls
 
     // RPC initial connection timeout:
     rpc_initial_connection_timeout:
-      process.env.SOLANA_RPC_INITIAL_CONNECTION_TIMEOUT || 45, // seconds
+      MASTER_RPC_THROTTLE !== 1 ? 
+        process.env.SOLANA_RPC_INITIAL_CONNECTION_TIMEOUT || 45 + (45 * MASTER_RPC_THROTTLE) : 
+        45, // seconds ^^^
     // RPC reconnection timeout:
     rpc_reconnection_timeout:
-      process.env.SOLANA_RPC_RECONNECTION_TIMEOUT || 45, // seconds
+      MASTER_RPC_THROTTLE !== 1 ? 
+        process.env.SOLANA_RPC_RECONNECTION_TIMEOUT || 45 + (45 * MASTER_RPC_THROTTLE) : 
+        45, // seconds ^^^
     // RPC transaction confirmation timeout:
     rpc_transaction_confirmation_timeout:
-      process.env.SOLANA_RPC_TRANSACTION_CONFIRMATION_TIMEOUT || 120, // seconds
+      MASTER_RPC_THROTTLE !== 1 ? 
+        process.env.SOLANA_RPC_TRANSACTION_CONFIRMATION_TIMEOUT || 120 + (120 * MASTER_RPC_THROTTLE) : 
+        120, // seconds
     // RPC rate limit retry delay:
     rpc_rate_limit_retry_delay:
-      process.env.SOLANA_RPC_RATE_LIMIT_RETRY_DELAY || 15, // seconds
+      MASTER_RPC_THROTTLE !== 1 ? 
+        process.env.SOLANA_RPC_RATE_LIMIT_RETRY_DELAY || 15 + (15 * MASTER_RPC_THROTTLE) : 
+        15, // seconds ^^^
     // RPC rate limit retry backoff factor:
     rpc_rate_limit_retry_backoff_factor:
-      process.env.SOLANA_RPC_RATE_LIMIT_RETRY_BACKOFF_FACTOR || 2, // factor
+      MASTER_RPC_THROTTLE !== 1 ? 
+        process.env.SOLANA_RPC_RATE_LIMIT_RETRY_BACKOFF_FACTOR || 2 + (2 * MASTER_RPC_THROTTLE) : 
+        2, // factor
     // RPC rate limit max delay:
     rpc_rate_limit_max_delay:
-      process.env.SOLANA_RPC_RATE_LIMIT_MAX_DELAY || 30, // seconds
+      MASTER_RPC_THROTTLE !== 1 ? 
+        process.env.SOLANA_RPC_RATE_LIMIT_MAX_DELAY || 30 + (30 * MASTER_RPC_THROTTLE) : 
+        30, // seconds ^^^
     // RPC batch size for wallet operations:
     rpc_wallet_batch_size:
-      process.env.SOLANA_RPC_WALLET_BATCH_SIZE || 10, // number of wallets per batch
+      MASTER_RPC_THROTTLE !== 1 ?
+        process.env.SOLANA_RPC_WALLET_BATCH_SIZE || 10 + (10 * MASTER_RPC_THROTTLE) : 
+        10, // number of wallets per batch
   
   },
 
   // Service interval settings:
   service_intervals: {
-    
+    // ^^^ = uses RPC calls
+
     /* CONTEST WALLET SERVICE */
 
-    // Contest wallet check cycle interval:
+    // Contest wallet check cycle interval (for Solana balances):
     contest_wallet_check_cycle_interval:
-      process.env.CONTEST_WALLET_CHECK_CYCLE_INTERVAL || 60, // seconds
+      MASTER_RPC_THROTTLE !== 1 ? 
+        process.env.CONTEST_WALLET_CHECK_CYCLE_INTERVAL || 60 + (60 * MASTER_RPC_THROTTLE) : 
+        60, // seconds ^^^
     // Contest wallet seconds between transactions during funds reclaim/recovery:
     contest_wallet_seconds_between_transactions_during_recovery:
-      process.env.CONTEST_WALLET_SECONDS_BETWEEN_TRANSACTIONS_DURING_RECOVERY || 2, // seconds
+      MASTER_RPC_THROTTLE !== 1 ? 
+        process.env.CONTEST_WALLET_SECONDS_BETWEEN_TRANSACTIONS_DURING_RECOVERY || 2 + (2 * MASTER_RPC_THROTTLE) : 
+        2, // seconds ^^^
     
     /* CONTEST EVALUATION SERVICE */
 
     // Contest evaluation check interval:
     contest_evaluation_check_interval:
       process.env.CONTEST_EVALUATION_CHECK_INTERVAL || 30, // seconds
-    // Auto-cancel underparticipated contests window:
+    // Auto-cancelation of underparticipated contests timeframe:
     contest_evaluation_auto_cancel_window_days:
-      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_DAYS || 0, // days
+      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_DAYS || 0, // = days...
     contest_evaluation_auto_cancel_window_hours:
-      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_HOURS || 0, // hours
+      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_HOURS || 0, // + hours...
     contest_evaluation_auto_cancel_window_minutes:
-      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_MINUTES || 0, // minutes
+      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_MINUTES || 0, // + minutes...
     contest_evaluation_auto_cancel_window_seconds:
-      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_SECONDS || 59, // seconds
+      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_SECONDS || 59, // + seconds.
     // Contest evaluation retry delay:
     contest_evaluation_retry_delay:
       process.env.CONTEST_EVALUATION_RETRY_DELAY || 5, // seconds
@@ -150,10 +177,10 @@ const config = {
       process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_MIN_HEALTHY_PERIOD || 180, // seconds
     // Contest evaluation circuit breaker backoff initial delay:
     contest_evaluation_circuit_breaker_backoff_initial_delay:
-      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_BACKOFF_INITIAL_DELAY || 1000, // milliseconds
+      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_BACKOFF_INITIAL_DELAY || 1, // seconds
     // Contest evaluation circuit breaker backoff max delay:
     contest_evaluation_circuit_breaker_backoff_max_delay:
-      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_BACKOFF_MAX_DELAY || 30000, // milliseconds
+      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_BACKOFF_MAX_DELAY || 30, // seconds
   },
 
   // Service threshold settings:
