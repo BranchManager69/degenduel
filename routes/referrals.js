@@ -394,22 +394,34 @@ router.get('/details',
         try {
             const { code } = req.query;
             
-            logApi.info(`Referrer details requested for code: ${code}`, {
-                ip: req.ip,
-                user_agent: req.get('user-agent')
-            });
-            
+            // CRITICAL: Immediately reject if missing code - prevents empty log entries
             if (!code) {
-                logApi.warn('Referrer details request missing code parameter');
                 return res.status(400).json({
                     success: false,
                     error: 'Referral code is required'
                 });
             }
             
+            // SIMPLE CHECK: Referral codes are given to users in all uppercase
+            // If there are any lowercase letters, it's likely a navigation path, not a code
+            // This simple check prevents most UI navigation paths from hitting the database
+            if (code !== code.toUpperCase() || code.includes('-') || code.includes('/')) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Invalid referral code'
+                });
+            }
+            
+            // At this point, the code is all uppercase with no special chars
+            // Only log these potential valid codes to reduce spam
+            logApi.info(`Referrer details requested for code: ${code}`, {
+                ip: req.ip,
+                user_agent: req.get('user-agent')
+            });
+            
             // Find the user with this referral code
             const referrer = await prisma.users.findUnique({
-                where: { referral_code: code.toUpperCase() },
+                where: { referral_code: code },  // Already uppercase from check above
                 select: {
                     wallet_address: true,
                     username: true,

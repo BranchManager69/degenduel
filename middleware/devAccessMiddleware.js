@@ -53,17 +53,26 @@ export const restrictDevAccess = async (req, res, next) => {
   }
 
   // Check if this is a websocket (or v69) request
-  if (req.url.includes('/ws/') || req.url.includes('v69')) {
+  if (req.url.includes('/api/v69/ws/')) {
+    
+    
+    
+    
+    console.log('websocket request url:', req.url);
+
+
+
+    
     // Log a single line with both security status and access grant
-    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
       logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Public resource${fancyColors.RESET}`);
     } else {
       logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} INSECURE ${fancyColors.RESET} ${fancyColors.RED}WS auth disabled${fancyColors.RESET}`);
     }
-    // Automatically grant access to websocket requests
+    // Anddddd *automatically* grant access to websocket requests
     return next();
   } else {
-    // Not a websocket request, proceed normally
+    // Not a websocket request, keep processing
   }
 
   // Check if it has no auth method
@@ -96,34 +105,41 @@ export const restrictDevAccess = async (req, res, next) => {
   // Check for a special dev access cookie
   const devAccessToken = req.cookies?.devAccess;
 
-  // Method 1: Check for a special dev access cookie
+  // Method 1: Check for special dev access cookie
   if (devAccessToken) {
     try {
-      // Verify the token
+      // Verify special dev access token if it exists
       const decoded = jwt.verify(devAccessToken, config.jwt.secret);
       if (decoded && decoded.authorized) {
-        if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+        if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
           logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via cookie token${fancyColors.RESET}`);
         }
+        // Grant access
         return next();
+      } else {
+        // Log the miss if in debug mode
+        if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
+          logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid cookie token: ${error.message}${fancyColors.RESET}`);
+        }
       }
     } catch (error) {
-      if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+      if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
         logApi.error(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid cookie token: ${error.message}${fancyColors.RESET}`);
       }
     }
   }
   
-  // Method 2: Check for a special header
+  // Method 2: Check for special dev access header
   const devAccessHeader = req.headers['x-dev-access-token'];
   // Check if the special header token is valid
   if (devAccessHeader === config.secure_middleware.branch_manager_header_token) {
-    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
       logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via header token${fancyColors.RESET}`);
     }
     
-    // Set a cookie for future requests if it doesn't exist
+    // Set a special dev access cookie for future requests if it doesn't exist
     if (!devAccessToken) {
+      // Log the cookie set attempt
       logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via header token${fancyColors.RESET}`);
       const token = jwt.sign({ authorized: true }, config.jwt.secret, { expiresIn: '30d' });
       res.cookie('devAccess', token, { 
@@ -132,47 +148,66 @@ export const restrictDevAccess = async (req, res, next) => {
         sameSite: 'strict',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
+      // Log the cookie set
       logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via header token${fancyColors.RESET}`);
     }
-    
+    // Grant access
     return next();
+  } else {
+    // Log the miss if in debug mode
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
+      logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid cookie token: ${error.message}${fancyColors.RESET}`);
+    }
   }
-  
+
   // Method 2.5: Check for Branch Manager dev access token in query parameters
   const devAccessQuery = req.query?.devAccess;
+  // Check if the special query token is valid
   if (devAccessQuery === config.secure_middleware.branch_manager_header_token) {
-    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
       // Extract query string for debugging
       const queryString = req.url.includes('?') ? req.url.split('?')[1] : 'none';
-      
-      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via query param${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via query param${fancyColors.RESET} ${fancyColors.GRAY}${queryString}${fancyColors.RESET}`);
     }
+    // Grant access
     return next();
+  } else {
+    // Log the miss if in debug mode
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
+      logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid cookie token: ${error.message}${fancyColors.RESET}`);
+    }
   }
   
   // Method 3: Check for authorized user session
   const sessionToken = req.cookies?.session;
+  // Check if there is a session token
   if (sessionToken) {
     try {
-      // Verify the session token against the JWT secret
+      // Verify session token against the JWT secret
       const decoded = jwt.verify(sessionToken, config.jwt.secret);
       const walletAddress = decoded.wallet_address;
       
-      // List of authorized wallet addresses
+      // List of "authorized" "wallet addresses" (hmm...)
       const authorizedWallets = [
         config.secure_middleware.branch_manager_wallet_address,
-        // Add any other authorized wallets here
+        // (any future authorized wallets here)
       ];
-      
-      // Check if the wallet address is authorized
+      // Check if the "wallet address" is "authorized" (Hmmmmmm......)
       if (authorizedWallets.includes(walletAddress)) {
-        if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+        if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
           logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via session${fancyColors.RESET} ${fancyColors.YELLOW}${walletAddress.substring(0, 8)}...${fancyColors.RESET}`);
         }
+        // Grant access
         return next();
+      } else {
+        // Log the miss if in debug mode
+        if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
+          logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid session: ${error.message}${fancyColors.RESET}`);
+        }
       }
     } catch (error) {
-      if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+      // Log the error
+      if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
         logApi.error(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid session: ${error.message}${fancyColors.RESET}`);
       }
     }
@@ -185,22 +220,72 @@ export const restrictDevAccess = async (req, res, next) => {
     // Branch Manager IP address
     config.secure_middleware.branch_manager_ip_address,
     // Server internal IPs
-    '127.0.0.1',
     'localhost',
+    '127.0.0.1',
+    '::ffff:127.0.0.1',
     // Other authorized IPs
     '69.420.69.420',
   ];
   // Check if the client IP is authorized
   if (authorizedIps.includes(clientIp)) {
-    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
       logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via IP${fancyColors.RESET} ${fancyColors.GRAY}${clientIp}${fancyColors.RESET}`);
     }
+    // Grant access
     return next();
+  } else {
+    // Log this [final chance] miss if in debug mode
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
+      logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid IP: ${clientIp}${fancyColors.RESET}`);
+    }
   }
-  
-  // Access denied - return a 403 Forbidden response
-  if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+
+
+  /* At this point, we've exhausted all methods of obtaining valid credentials */
+
+  // Make a quick 403 Forbidden HTML page
+  const rude403ForbiddenPageHTML =`<!DOCTYPE html>
+    <html>
+    <head>
+      <title>Access DENIED by Branch Manager</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f5f5f5;
+          color: #333;
+          text-align: center;
+          padding: 50px;
+          line-height: 1.6;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #fff;
+          padding: 30px;
+          border-radius: 5px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+          color: #e74c3c;
+        }
+        p {
+          margin-bottom: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Access DENIED by Branch Manager</h1>
+        <p>You have attempted to access a secure DegenDuel environment without proper authorization from the Branch Manager.</p>
+        <p>Further attempts to breach DegenDuel security will be harshly treated with the utmost severity. Govern yourself accordingly.</p>
+      </div>
+    </body>
+    </html>`;
+
+  // Access denied - return Branch Manager's exquisite 403 page
+  if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
     logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DENIED ${fancyColors.RESET} ${fancyColors.RED}No valid credentials${fancyColors.RESET} ${fancyColors.DARK_GRAY}IP:${clientIp}${fancyColors.RESET}`);
+    return res.status(403).send(rude403ForbiddenPageHTML); 
   }
   
   // Try to read the access guide HTML file

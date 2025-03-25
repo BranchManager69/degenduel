@@ -1,15 +1,15 @@
 {
   "name": "degenduel-api",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.8.1",
   "type": "module",
   "scripts": {
     "// MASTER DEGENDUEL RESTART (PREFERRED RESTART METHOD)": "=============================================================================================================",
     "re": "pm2 delete all && pm2 start ecosystem.config.cjs && pm2 logs degenduel-api-test",
     "// Master DegenDuel Start/Stop/Restart": "==================================================================================================",
-    "pm2:start-all": "pm2 start ecosystem.config.cjs",
+    "pm2:start-all": "pm2 start ecosystem.config.cjs && pm2 logs degenduel-api-test",
     "pm2:stop-all": "pm2 stop all",
-    "pm2:restart-all": "pm2 restart all --update-env",
+    "pm2:restart-all": "npm run pm2:stop-all && npm run pm2:start-all && pm2 logs degenduel-api-test",
     "// DegenDuel App-Specific PM2 Commands": "============================================================================================================",
     "up": "pm2 start ecosystem.config.cjs",
     "down": "pm2 stop all",
