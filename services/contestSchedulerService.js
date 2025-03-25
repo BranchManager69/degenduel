@@ -25,10 +25,12 @@ import { createContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import { Decimal } from '@prisma/client/runtime/library';
 // Service authentication for maintenance bypass
 import { generateServiceAuthHeader } from '../config/service-auth.js';
-// Import central configuration
-import SCHEDULER_CONFIG from '../config/contest-scheduler-config.js';
 
-// Create full service configuration
+// Config
+import { config } from '../config/config.js';
+// Yet more Contest Scheduler Config
+import SCHEDULER_CONFIG from '../config/contest-scheduler-config.js';
+// Full contest scheduler service configuration
 const CONTEST_SCHEDULER_CONFIG = {
     // Add service name to the imported config
     name: SERVICE_NAMES.CONTEST_SCHEDULER,
@@ -36,9 +38,18 @@ const CONTEST_SCHEDULER_CONFIG = {
     ...SCHEDULER_CONFIG
 };
 
+// Contest Scheduler Service - Creates contests on a scheduled basis
 /**
  * Contest Scheduler Service
- * Creates contests on a scheduled basis
+ * @extends {BaseService}
+ * 
+ * This service is responsible for automatically creating new contests at scheduled intervals.
+ * It ensures that there are always contests available for users to join.
+ * 
+ * The service is designed to work even during maintenance mode, using internal service authentication.
+ * 
+ * CONFIGURATION: Settings are stored in /config/contest-scheduler-config.js
+ * Edit that file to adjust contest schedules, fees, durations, etc.
  */
 class ContestSchedulerService extends BaseService {
     constructor() {

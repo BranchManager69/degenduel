@@ -65,7 +65,16 @@ const CONTEST_WALLET_CONFIG = {
 };
 
 // Contest Wallet Service
+/**
+ * Contest Wallet Service
+ * 
+ * This service is responsible for managing the contest wallets.
+ * It allows the admin to create and manage contest wallets.
+ */
 class ContestWalletService extends BaseService {
+    /**
+     * Constructor for the ContestWalletService
+     */
     constructor() {
         ////super(CONTEST_WALLET_CONFIG.name, CONTEST_WALLET_CONFIG);
         super(CONTEST_WALLET_CONFIG);
@@ -121,6 +130,12 @@ class ContestWalletService extends BaseService {
     }
 
     // Encrypt wallet private key
+    /**
+     * Encrypt wallet private key
+     * 
+     * @param {string} privateKey - The private key to encrypt
+     * @returns {string} - The encrypted private key
+     */
     encryptPrivateKey(privateKey) {
         try {
             const iv = crypto.randomBytes(16);
@@ -153,6 +168,11 @@ class ContestWalletService extends BaseService {
     }
 
     // Get unassociated vanity wallet
+    /**
+     * Get unassociated vanity wallet
+     * 
+     * @returns {Promise<Object>} - The results of the operation
+     */
     async getUnassociatedVanityWallet() {
         try {
             logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} DEBUG: Searching for vanity wallets... ${fancyColors.RESET}`);
@@ -184,6 +204,13 @@ class ContestWalletService extends BaseService {
         }
     }
 
+    // Get first unassociated wallet from folder
+    /**
+     * Get first unassociated wallet from folder
+     * 
+     * @param {string} folderName - The name of the folder to check
+     * @returns {Promise<Object>} - The results of the operation
+     */
     async getFirstUnassociatedWalletFromFolder(folderName) {
         try {
             const fs = await import('fs/promises');
@@ -264,6 +291,13 @@ class ContestWalletService extends BaseService {
     }
 
     // Create a new contest wallet
+    /**
+     * Create a new contest wallet
+     * 
+     * @param {number} contestId - The ID of the contest
+     * @param {Object} adminContext - The admin context
+     * @returns {Promise<Object>} - The results of the operation
+     */
     async createContestWallet(contestId, adminContext = null) {
         if (this.stats.circuitBreaker.isOpen) {
             throw ServiceError.operation('Circuit breaker is open for wallet creation');
@@ -271,7 +305,7 @@ class ContestWalletService extends BaseService {
 
         const startTime = Date.now();
         try {
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} DEBUG: Starting contest wallet creation for contest ID: ${contestId} ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting contest wallet creation for contest ID: ${contestId} ${fancyColors.RESET}`);
             
             // Try to get a vanity address first
             const vanityWallet = await this.getUnassociatedVanityWallet();
@@ -364,6 +398,9 @@ class ContestWalletService extends BaseService {
                 (this.walletStats.performance.average_creation_time_ms * this.walletStats.operations.total + 
                 (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
 
+            // Log success
+            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.WHITE} Successfully created contest wallet for contest ID: ${contestId} ${fancyColors.RESET}`);
+
             // Log admin action if context provided
             if (adminContext) {
                 await AdminLogger.logAction(
@@ -378,7 +415,8 @@ class ContestWalletService extends BaseService {
                     adminContext
                 );
             }
-
+            
+            // Return the contest wallet
             return contestWallet;
         } catch (error) {
             // Update error statistics
@@ -392,6 +430,12 @@ class ContestWalletService extends BaseService {
     }
 
     // Fetch and update Solana balance for a wallet
+    /**
+     * Fetch and update Solana balance for a wallet
+     * 
+     * @param {Object} wallet - The wallet to update
+     * @returns {Promise<Object>} - The results of the operation
+     */
     async updateWalletBalance(wallet) {
         try {
             const startTime = Date.now();
@@ -477,6 +521,11 @@ class ContestWalletService extends BaseService {
     }
     
     // Bulk update all wallets' balances
+    /**
+     * Bulk update all wallets' balances
+     * 
+     * @returns {Promise<Object>} - The results of the operation
+     */
     async updateAllWalletBalances() {
         logApi.info(`[contestWalletService] Contest wallet balance refresh cycle starting`);
 
@@ -545,7 +594,7 @@ class ContestWalletService extends BaseService {
                         consecutiveRateLimitHits === 0 ? baseDelayBetweenBatches : Math.pow(2, consecutiveRateLimitHits) * baseDelayBetweenBatches);
                     
                     // Log the batch being processed
-                    logApi.info(`[contestWalletService] Getting balances of contest wallets #${startIndex+1}-${endIndex} (batch ${currentBatch+1} of ${totalBatches}), waiting ${delayBetweenBatches}ms between batches`);
+                    logApi.info(`[contestWalletService] Getting balances of contest wallets #${startIndex+1}-${endIndex} (batch ${currentBatch+1} of ${totalBatches})`);
                     
                     // Add delay before EVERY request to avoid rate limits, not just after the first one
                     await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
@@ -724,6 +773,11 @@ class ContestWalletService extends BaseService {
     }
 
     // Main operation implementation - periodic health checks and balance updates
+    /**
+     * Perform the main operation of the contest wallet service
+     * 
+     * @returns {Promise<Object>} - The results of the operation
+     */
     async performOperation() {
         const startTime = Date.now();
         

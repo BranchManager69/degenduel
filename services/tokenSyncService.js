@@ -496,12 +496,14 @@ class TokenSyncService extends BaseService {
     /**
      * Fetch token prices using marketDataService with limited concurrency
      * 
+     * Note: NOT GUARANTEED TO RETURN THE SAME QUANTITY OF TOKENS!
+     *  'addresses' comes from the active tokens in the database ('activeTokens' in 'updatePrices')
+     *  'results' comes from those we get back from 'marketDataService'
+     * 
      * @param {Array} addresses - The addresses of the tokens to fetch prices for
      * @returns {Promise<Array>} - An array of token prices
      */
     async fetchTokenPrices(addresses) {
-        logApi.info(`[tokenSyncService] Fetching prices for ${addresses.length} tokens...`);
-        
         try {
             // Process tokens in chunks to limit concurrency
             const BATCH_SIZE = 3; // Process 3 tokens at a time to avoid rate limits
@@ -988,6 +990,7 @@ class TokenSyncService extends BaseService {
         }
     }
 
+    // Synchronize tokens across databases
     /**
      * Synchronize tokens across databases
      * This function ensures that all tokens in the main database are also in the market database
@@ -1069,6 +1072,7 @@ class TokenSyncService extends BaseService {
         }
     }
     
+    // Add token to market database
     /**
      * Simple placeholder for token addition
      * This will be replaced by a proper token discovery implementation
