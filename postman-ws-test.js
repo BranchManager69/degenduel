@@ -1,3 +1,5 @@
+// postman-ws-test.js
+
 /**
  * Simple WebSocket test client
  * 
@@ -12,15 +14,36 @@
 
 import WebSocket from 'ws';
 
-// Configuration
+// Config
+import { config } from './config/config.js';
+const CURR_NODE_ENV = config.getEnvironment() === 'development' ? 'dev' : 'prod';
+// Extra config
 const config = {
-  token: '[REDACTED_JWT_HEADER].[REDACTED_JWT_PAYLOAD].[REDACTED_JWT_SIGNATURE]',
-  devAccessToken: '[REDACTED_TOKEN]',
-  baseUrl: 'wss://dev.degenduel.me',
+  baseUrl: CURR_NODE_ENV === 'dev' ? 'wss://dev.degenduel.me' : 'wss://degenduel.me',
   endpoints: {
+    // websocket #1
     monitor: '/api/v69/ws/monitor',
-    circuitBreaker: '/api/v69/ws/circuit-breaker'
-  }
+    // websocket #2
+    analytics: '/api/v69/ws/analytics',
+    // websocket #3
+    circuitBreaker: '/api/v69/ws/circuit-breaker',
+    // websocket #4
+    contests: '/api/v69/ws/contests',
+    // websocket #5
+    ////
+    // websocket #6
+    ////
+    // websocket #7
+    ////
+    // websocket #8
+    ////tokens:
+    // websocket #9
+    ////user-notifications:
+    // websocket #10
+    ////wallets:
+  },
+  devAccessToken: config.secure_middleware.branch_manager_header_token,
+  token: config.jwt.branch_manager_token,
 };
 
 // Create WebSocket URL with authentication

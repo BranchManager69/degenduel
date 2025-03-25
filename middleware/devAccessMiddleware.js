@@ -1,16 +1,26 @@
+// middleware/devAccessMiddleware.js
+
+/**
+ * Middleware to restrict access to the development subdomain
+ * 
+ * This middleware checks if the request is coming from the development subdomain
+ * and restricts access to only authorized users. It can use various methods for authentication:
+ * 
+ */
+
 import { logApi } from '../utils/logger-suite/logger.js';
 import jwt from 'jsonwebtoken';
-import { config } from '../config/config.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Get the directory name
+// Config
+import { config } from '../config/config.js';
+const SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE = config.debug_modes.secure_middleware; // Debug mode flag
+
+// Get current directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Debug mode flag
-const BRANCH_MANAGER_ACCESS_DEBUG_MODE = true; // Temporarily enable debugging
 
 /**
  * Middleware to restrict access to the development subdomain
@@ -27,7 +37,7 @@ export const restrictDevAccess = (req, res, next) => {
   const host = req.headers.host;
   const origin = req.headers.origin;
   
-  if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
+  if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
     logApi.info('Dev Access Check:', { 
       host, 
       origin,
@@ -52,7 +62,7 @@ export const restrictDevAccess = (req, res, next) => {
   // BYPASS ALL WEBSOCKET REQUESTS - no auth needed for WebSockets
   if (req.url.includes('/ws/') || req.url.includes('socket')) {
     const wsEndpoint = req.url.split('/').pop();
-    if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
       logApi.info(`WebSocket access GRANTED - Authentication bypassed for all WebSockets`, {
         url: req.url,
         endpoint: wsEndpoint
@@ -70,13 +80,13 @@ export const restrictDevAccess = (req, res, next) => {
       // Verify the token
       const decoded = jwt.verify(devAccessToken, config.jwt.secret);
       if (decoded && decoded.authorized) {
-        if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
+        if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
           logApi.info('Dev access granted via cookie token');
         }
         return next();
       }
     } catch (error) {
-      if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
+      if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
         logApi.error('Invalid dev access token:', error);
       }
     }
@@ -84,10 +94,11 @@ export const restrictDevAccess = (req, res, next) => {
   
   // Method 2: Check for a special header
   const devAccessHeader = req.headers['x-dev-access-token'];
-  if (devAccessHeader === '[REDACTED_TOKEN]' || 
-      devAccessHeader === process.env.BRANCH_MANAGER_ACCESS_SECRET) {
-    if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
-      logApi.info('Dev access granted via header token');
+
+  // Check if the special header token is valid
+  if (devAccessHeader === config.secure_middleware.branch_manager_header_token) {
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+      logApi.info('Access granted to Branch Manager via header token');
     }
     
     // Set a cookie for future requests if it doesn't exist
@@ -104,12 +115,11 @@ export const restrictDevAccess = (req, res, next) => {
     return next();
   }
   
-  // Method 2.5: Check for dev access token in query parameters
+  // Method 2.5: Check for Branch Manager dev access token in query parameters
   const devAccessQuery = req.query?.devAccess;
-  if (devAccessQuery === '[REDACTED_TOKEN]' || 
-      devAccessQuery === process.env.BRANCH_MANAGER_ACCESS_SECRET) {
-    if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
-      logApi.info('Dev access granted via query parameter', {
+  if (devAccessQuery === config.secure_middleware.branch_manager_header_token) {
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+      logApi.info('Access granted to Branch Manager via query parameter', {
         url: req.url,
         fullQueryString: req.url.includes('?') ? req.url.split('?')[1] : 'none',
         decodedQuery: JSON.stringify(req.query),
@@ -123,49 +133,55 @@ export const restrictDevAccess = (req, res, next) => {
   const sessionToken = req.cookies?.session;
   if (sessionToken) {
     try {
+      // Verify the session token against the JWT secret
       const decoded = jwt.verify(sessionToken, config.jwt.secret);
       const walletAddress = decoded.wallet_address;
       
       // List of authorized wallet addresses
       const authorizedWallets = [
-        process.env.BRANCH_MANAGER_WALLET_ADDRESS,
+        config.secure_middleware.branch_manager_wallet_address,
         // Add any other authorized wallets here
       ];
       
+      // Check if the wallet address is authorized
       if (authorizedWallets.includes(walletAddress)) {
-        if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
-          logApi.info('Dev access granted via user session');
+        if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+          logApi.info(`Access granted to Branch Manager via user session token (wallet address: ${walletAddress})`);
         }
         return next();
       }
     } catch (error) {
-      if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
-        logApi.error('Invalid session token:', error);
+      if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+        logApi.error(`Invalid session token: ${error}`);
       }
     }
   }
   
-  // Method 4: Check for specific IP addresses (less secure)
+  // Method 4: Check for authorized IP addresses (least secure)
   const clientIp = req.ip || req.connection.remoteAddress;
   
-  // List of authorized IP addresses
+  // List of all authorized IP addresses
   const authorizedIps = [
-    process.env.BRANCH_MANAGER_IP_ADDRESS,
-    // Add any other authorized IPs here
+    // Branch Manager IP address
+    config.secure_middleware.branch_manager_ip_address,
+    // Server internal IPs
     '127.0.0.1',
-    'localhost'
+    'localhost',
+    // Other authorized IPs
+    '69.420.69.420',
   ];
   
+  // Check if the client IP is authorized
   if (authorizedIps.includes(clientIp)) {
-    if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
-      logApi.info('Dev access granted via IP address');
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+      logApi.info(`👑 Access granted to Branch Manager (verified IP: ${clientIp})`);
     }
     return next();
   }
   
   // Access denied - return a 403 Forbidden response
-  if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
-    logApi.warn('Dev access denied', { 
+  if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+    logApi.warn('WARNING: Access DENIED by Branch Manager', { 
       ip: clientIp,
       host,
       origin
@@ -185,7 +201,7 @@ export const restrictDevAccess = (req, res, next) => {
       return res.status(403).send(accessDeniedHtml);
     } catch (error) {
       // If both files don't exist, return a simple access denied message
-      if (BRANCH_MANAGER_ACCESS_DEBUG_MODE) {
+      if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
         logApi.error('Error reading access HTML files:', error);
       }
       
@@ -194,7 +210,7 @@ export const restrictDevAccess = (req, res, next) => {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Access Denied</title>
+          <title>Access DENIED by Branch Manager</title>
           <style>
             body {
               font-family: Arial, sans-serif;
@@ -222,9 +238,9 @@ export const restrictDevAccess = (req, res, next) => {
         </head>
         <body>
           <div class="container">
-            <h1>Access Denied</h1>
-            <p>This is a private development environment. Unauthorized access is prohibited.</p>
-            <p>If you believe you should have access, please contact the site administrator.</p>
+            <h1>Access DENIED by Branch Manager</h1>
+            <p>You have attempted to access a secure DegenDuel environment without proper authorization from the Branch Manager.</p>
+            <p>Further attempts to breach DegenDuel security will be harshly treated with the utmost severity. Govern yourself accordingly.</p>
           </div>
         </body>
         </html>

@@ -34,32 +34,51 @@ import levelingService from './levelingService.js';
 const VERBOSE_CONTEST_EVALUATION_INIT = false;
 
 const CONTEST_EVALUATION_CONFIG = {
-    name: SERVICE_NAMES.CONTEST_EVALUATION,
-    description: getServiceMetadata(SERVICE_NAMES.CONTEST_EVALUATION).description,
-    checkIntervalMs: 30 * 1000, // Check every 30 seconds for contests to evaluate
-    maxRetries: 3,
-    retryDelayMs: 5000,
+    name: 
+        SERVICE_NAMES.CONTEST_EVALUATION,
+    description: 
+        getServiceMetadata(SERVICE_NAMES.CONTEST_EVALUATION).description,
+    checkIntervalMs: 
+        config.service_intervals.contest_evaluation_check_interval * 1000, // seconds
+    maxRetries: 
+        config.service_thresholds.contest_evaluation_max_retries, // max retries for contest evaluation
+    retryDelayMs: 
+        config.service_thresholds.contest_evaluation_retry_delay * 1000, // seconds
     circuitBreaker: {
-        failureThreshold: 10, // Higher threshold for critical service
-        resetTimeoutMs: 120000, // Longer reset time for financial operations
-        minHealthyPeriodMs: 180000 // Longer health period required
+        failureThreshold: 
+            config.service_thresholds.contest_evaluation_circuit_breaker_failure_threshold, // number of service failures before circuit breaker trips
+        resetTimeoutMs: 
+            config.service_intervals.contest_evaluation_circuit_breaker_reset_timeout * 1000, // seconds
+        minHealthyPeriodMs: 
+            config.service_intervals.contest_evaluation_circuit_breaker_min_healthy_period * 1000, // seconds
     },
     backoff: {
-        initialDelayMs: 1000,
-        maxDelayMs: 30000,
-        factor: 2
+        initialDelayMs: 
+            config.service_intervals.contest_evaluation_circuit_breaker_backoff_initial_delay * 1000, // seconds
+        maxDelayMs: 
+            config.service_intervals.contest_evaluation_circuit_breaker_backoff_max_delay * 1000, // seconds
+        factor: 
+            config.service_thresholds.contest_evaluation_circuit_breaker_backoff_factor, // exponential backoff factor
     },
     dependencies: [SERVICE_NAMES.MARKET_DATA],
     evaluation: {
-        maxParallelEvaluations: 5,
-        minPrizeAmount: 0.001,
-        maxRetries: 3,
-        retryDelayMs: 5000,
-        timeoutMs: 300000 // 5 minutes
+        maxParallelEvaluations: 
+            config.service_thresholds.contest_evaluation_max_parallel_evaluations, // max concurrent contest evaluations
+        minPrizeAmount: 
+            config.service_thresholds.contest_evaluation_min_prize_amount, // SOL - min amount to distribute as prize
+        maxRetries: 
+            config.service_thresholds.contest_evaluation_max_retries, // max retries for distribution of contest prizes
+        retryDelayMs: 
+            config.service_thresholds.contest_evaluation_retry_delay * 1000, // seconds
+        timeoutMs: 
+            config.service_intervals.contest_evaluation_timeout * 1000, // seconds
     },
     // Auto-cancel window for contests with insufficient participants
-    // Time to wait before auto-cancelling contests that don't meet minimum participant requirements
-    autoCancelWindow: (0 * 24 * 60 * 60 * 1000) + (0 * 60 * 60 * 1000) + (0 * 60 * 1000) + (59 * 1000), // 0 days, 0 hours, 0 minutes, and 59 seconds
+    autoCancelWindow: // Time to wait before auto-cancelling contests that don't meet minimum participant requirements
+        (config.service_intervals.contest_evaluation_auto_cancel_window_days * 24 * 60 * 60 * 1000) + // 0 days
+        (config.service_intervals.contest_evaluation_auto_cancel_window_hours * 60 * 60 * 1000) + // 0 hours
+        (config.service_intervals.contest_evaluation_auto_cancel_window_minutes * 60 * 1000) + // 0 minutes
+        (config.service_intervals.contest_evaluation_auto_cancel_window_seconds * 1000), // 59 seconds
     states: {
         PENDING: 'pending',
         ACTIVE: 'active',
@@ -67,13 +86,22 @@ const CONTEST_EVALUATION_CONFIG = {
         CANCELLED: 'cancelled'
     },
     refunds: {
-        maxRetries: 3,
-        retryDelayMs: 5000
+        maxRetries: 
+            config.service_thresholds.contest_evaluation_max_retries, // max retries for distributing contest refunds
+        retryDelayMs: 
+            config.service_thresholds.contest_evaluation_retry_delay * 1000, // seconds
     }
 };
 
 // Contest Evaluation Service
+/**
+ * Contest Evaluation Service
+ * @extends BaseService
+ */
 class ContestEvaluationService extends BaseService {
+    /**
+     * Constructor for the Contest Evaluation Service
+     */
     constructor() {
         // Add logging before super call
         if (VERBOSE_CONTEST_EVALUATION_INIT) {
@@ -83,7 +111,7 @@ class ContestEvaluationService extends BaseService {
             });
         }
         
-        ////super(SERVICE_NAMES.CONTEST_EVALUATION, CONTEST_EVALUATION_CONFIG);
+        // Initialize the service
         super(CONTEST_EVALUATION_CONFIG);
         
         // Add logging after super call
@@ -94,8 +122,9 @@ class ContestEvaluationService extends BaseService {
             });
         }
         
-        // Initialize Solana connection
+        // Initialize a new Solana connection
         this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        // TODO: Use the singleton connection from solana-connection-v2.js instead of creating our own
         
         // Connection is ready immediately - log success
         logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.WHITE} 🌐 ${fancyColors.BG_DARK_BLACK} Early Solana connection initialized ${fancyColors.RESET}`);
@@ -153,6 +182,10 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Initialize the service
+    /**
+     * Initializes the service
+     * @returns {Promise<boolean>} - True if successful
+     */
     async initialize() {
         try {
             // Call parent initialize first
@@ -230,8 +263,11 @@ class ContestEvaluationService extends BaseService {
         }
     }
 
+    // Perform the main operation of the service
     /**
      * Implementation of service's main operation
+     * Performs the main operation of the service 
+     * @returns {Promise<Object>} - The result of the operation
      */
     async onPerformOperation() {
         // Original implementation - don't modify
@@ -239,6 +275,10 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Stop the service
+    /**
+     * Stops the service
+     * @returns {Promise<void>} - A promise that resolves when the service is stopped
+     */
     async stop() {
         try {
             // Call parent stop first
@@ -273,6 +313,11 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Utility functions
+    /**
+     * Decrypts a private key
+     * @param {string} encryptedData - The encrypted data
+     * @returns {string} - The decrypted private key
+     */
     decryptPrivateKey(encryptedData) {
         try {
             const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
@@ -300,6 +345,13 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Perform a blockchain transfer
+    /**
+     * Performs a blockchain transfer
+     * @param {Object} contestWallet - The contest wallet object
+     * @param {string} recipientAddress - The recipient address
+     * @param {number} amount - The amount to transfer
+     * @returns {Promise<string>} - The signature of the transaction
+     */
     async performBlockchainTransfer(contestWallet, recipientAddress, amount) {
         try {
             const decryptedPrivateKey = this.decryptPrivateKey(contestWallet.private_key);
@@ -329,6 +381,14 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Distribute a prize with retry logic
+    /**
+     * Distributes a prize with retry logic
+     * @param {Object} participant - The participant object
+     * @param {number} place - The place of the participant
+     * @param {number} prizeAmount - The amount of the prize
+     * @param {Object} contest - The contest object
+     * @returns {Promise<boolean>} - True if successful
+     */
     async distributePrizeWithRetry(participant, place, prizeAmount, contest) {
         for (let attempt = 1; attempt <= this.config.prizeDistribution.maxRetries; attempt++) {
             let transaction;
@@ -429,6 +489,12 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Get participant tie-break stats
+    /**
+     * Gets the participant tie-break stats
+     * @param {Object} participant - The participant object
+     * @param {Object} contest - The contest object
+     * @returns {Promise<Object>} - The participant tie-break stats
+     */
     async getParticipantTiebreakStats(participant, contest) {
         // Default stats for no-trade scenario
         const defaultStats = {
@@ -517,6 +583,12 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Resolve ties between participants
+    /**
+     * Resolves ties between participants
+     * @param {Array} tiedParticipants - The participants to resolve ties between
+     * @param {Object} contest - The contest object
+     * @returns {Promise<Array>} - The resolved participants
+     */
     async resolveTies(tiedParticipants, contest) {
         // Get detailed stats for all tied participants
         const participantStats = await Promise.all(
@@ -566,6 +638,11 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Group participants by their current balance
+    /**
+     * Groups participants by their current balance
+     * @param {Array} participants - The participants to group
+     * @returns {Promise<Array>} - The grouped participants
+     */
     async groupParticipantsByBalance(participants) {
         // Group participants by their current balance
         const balanceGroups = new Map();
@@ -604,6 +681,12 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Validate the contest wallet balance
+    /**
+     * Validates the contest wallet balance
+     * @param {Object} contestWallet - The contest wallet object
+     * @param {Decimal} totalPrizePool - The total prize pool
+     * @returns {Promise<Object>} - The result of the validation
+     */
     async validateContestWalletBalance(contestWallet, totalPrizePool) {
         try {
             const balance = await this.connection.getBalance(new PublicKey(contestWallet.wallet_address));
@@ -627,6 +710,13 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Validate the token balance
+    /**
+     * Validates the token balance
+     * @param {Object} wallet - The wallet object
+     * @param {string} mint - The mint address
+     * @param {number} amount - The amount to validate
+     * @returns {Promise<Object>} - The result of the validation
+     */
     async validateTokenBalance(wallet, mint, amount) {
         try {
             const associatedTokenAddress = await getAssociatedTokenAddress(
@@ -657,6 +747,11 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Evaluate a contest
+    /**
+     * Evaluates a contest
+     * @param {Object} contest - The contest object
+     * @returns {Promise<Object>} - The result of the evaluation
+     */
     async evaluateContest(contest) {
         try {
             const previousStatus = contest.status;
@@ -815,6 +910,15 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Common contest cancellation logic
+    /**
+     * Cancels a contest
+     * @param {Object} contest - The contest object
+     * @param {string} status - The new status of the contest
+     * @param {string} reason - The reason for the cancellation
+     * @param {string} logAction - The action to log
+     * @param {Object} additionalData - Additional data to log
+     * @returns {Promise<boolean>} - True if successful
+     */
     async cancelContest(contest, status, reason, logAction, additionalData = {}) {
         const contestId = contest.id;
         const contestName = contest.contest_name || `Contest #${contestId}`;
@@ -875,6 +979,11 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Helper methods for contest evaluation
+    /**
+     * Handles no participants
+     * @param {Object} contest - The contest object
+     * @returns {Promise<boolean>} - True if successful
+     */
     async handleNoParticipants(contest) {
         return this.cancelContest(
             contest,
@@ -884,6 +993,14 @@ class ContestEvaluationService extends BaseService {
         );
     }
 
+    // Handle insufficient participants
+    /**
+     * Handles insufficient participants
+     * @param {Object} contest - The contest object
+     * @param {number} actualCount - The actual number of participants
+     * @param {number} requiredCount - The required number of participants
+     * @returns {Promise<boolean>} - True if successful
+     */
     async handleInsufficientParticipants(contest, actualCount, requiredCount) {
         return this.cancelContest(
             contest,
@@ -897,6 +1014,12 @@ class ContestEvaluationService extends BaseService {
         );
     }
 
+    // Calculate prize pool and fee
+    /**
+     * Calculates the actual prize pool and fee
+     * @param {Object} contest - The contest object
+     * @returns {Object} - The actual prize pool and fee
+     */
     calculatePrizePoolAndFee(contest) {
         // Use current_prize_pool instead of prize_pool for actual prize calculations
         const prizePool = contest.current_prize_pool ? new Decimal(contest.current_prize_pool) : new Decimal(0);
@@ -909,6 +1032,14 @@ class ContestEvaluationService extends BaseService {
         return { actualPrizePool, platformFeeAmount };
     }
 
+    // Get and validate contest wallet
+    /**
+     * Gets and validates the contest wallet
+     * @param {Object} contest - The contest object
+     * @param {Decimal} actualPrizePool - The actual prize pool
+     * @param {Decimal} platformFeeAmount - The platform fee amount
+     * @returns {Promise<Object>} - The contest wallet object
+    */
     async getAndValidateContestWallet(contest, actualPrizePool, platformFeeAmount) {
         const contestWallet = await prisma.contest_wallets.findUnique({
             where: { contest_id: contest.id }
@@ -958,6 +1089,15 @@ class ContestEvaluationService extends BaseService {
         return contestWallet;
     }
 
+    // Distribute prizes
+    /**
+     * Distributes prizes to the top 3 participants
+     * @param {Object} contest - The contest object
+     * @param {Array} resolvedParticipants - The resolved participants from the tiebreak
+     * @param {Decimal} actualPrizePool - The actual prize pool
+     * @param {Object} payout_structure - The payout structure
+     * @returns {Promise<Array>} - The results of the prize distribution
+     */
     async distributePrizes(contest, resolvedParticipants, actualPrizePool, payout_structure) {
         const prizeDistributionResults = [];
 
@@ -998,6 +1138,12 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Record platform fee at time of evaluation (contest end)
+    /**
+     * Records the platform fee at time of evaluation (contest end)
+     * @param {Object} contest - The contest object
+     * @param {Decimal} platformFeeAmount - The platform fee amount
+     * @returns {Promise<boolean>} - True if successful
+    */
     async recordPlatformFee(contest, platformFeeAmount) {
         // Create a pending platform fee transaction record
         await prisma.transactions.create({
@@ -1020,6 +1166,14 @@ class ContestEvaluationService extends BaseService {
         });
     }
 
+    // Log contest completion
+    /**
+     * Logs the completion of a contest
+     * @param {Object} contest - The contest object
+     * @param {Array} prizeDistributionResults - The results of the prize distribution
+     * @param {Decimal} platformFeeAmount - The platform fee amount
+     * @returns {Promise<boolean>} - True if successful
+     */
     async logContestCompletion(contest, prizeDistributionResults, platformFeeAmount) {
         await AdminLogger.logAction(
             'SYSTEM',
@@ -1041,6 +1195,13 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Helper function to process refunds
+    /**
+     * Process refunds for a cancelled contest
+     * @param {Object} participant - The participant object
+     * @param {Object} contest - The contest object
+     * @param {Object} contestWallet - The contest wallet object
+     * @returns {Promise<Object>} - The result of the refund process
+     */
     async processRefund(participant, contest, contestWallet) {
         try {
             // Use contest.entry_fee as refund amount since entry_amount doesn't exist on participants
@@ -1130,6 +1291,13 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Process refunds for a cancelled contest
+    /**
+     * Process refunds for a cancelled contest
+     * @param {Object} contest - The contest object
+     * @param {string} adminAddress - The address of the admin performing the refund
+     * @param {Object} context - Additional context for the refund
+     * @returns {Promise<Object>} - The result of the refund process
+     */
     async processContestRefunds(contest, adminAddress = null, context = {}) {
         try {
             // Admin is processing a refund
@@ -1233,6 +1401,10 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Main operation implementation
+    /**
+     * Main operation implementation
+     * @returns {Promise<Object>} - The result of the operation
+     */
     async performOperationImpl() {
         const startTime = Date.now();
         
@@ -1356,6 +1528,11 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Helper methods for performOperation
+    /**
+     * Finds contests that should start
+     * @param {Date} now - The current date and time
+     * @returns {Promise<Array>} - An array of contests that should start
+     */
     async findContestsToStart(now) {
         // Find contests that should start
         return await prisma.contests.findMany({
@@ -1372,6 +1549,11 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Helper method to find contests that should end
+    /**
+     * Finds contests that should end
+     * @param {Date} now - The current date and time
+     * @returns {Promise<Array>} - An array of contests that should end
+     */
     async findContestsToEnd(now) {
         // Find contests that should end ('active' status despite an end time in the past)
         return await prisma.contests.findMany({
@@ -1388,6 +1570,7 @@ class ContestEvaluationService extends BaseService {
         });
     }
 
+    // Starts a contest by updating its status to active
     /**
      * Starts a contest by updating its status to active
      * @param {Object} contest - The contest object to start
@@ -1441,6 +1624,7 @@ class ContestEvaluationService extends BaseService {
         }
     }
 
+    // Cancel a contest that has no participants
     /**
      * Cancels a contest that has no participants
      * @param {Object} contest - The contest object to cancel
@@ -1461,6 +1645,7 @@ class ContestEvaluationService extends BaseService {
         );
     }
 
+    // Cancel a contest that has insufficient participants after waiting period
     /**
      * Cancels a contest that has insufficient participants after waiting period
      * @param {Object} contest - The contest object to cancel
@@ -1505,6 +1690,7 @@ class ContestEvaluationService extends BaseService {
         return cancellationResult;
     }
     
+    // Cancel a contest that has only one participant
     /**
      * Cancels a contest that has only one participant
      * @param {Object} contest - The contest object to cancel
@@ -1543,6 +1729,7 @@ class ContestEvaluationService extends BaseService {
         return cancellationResult;
     }
 
+    // Process contest start by checking participant requirements
     /**
      * Process contest start by checking participant requirements
      * @param {Object} contest - The contest to process
@@ -1576,6 +1763,13 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Admin operations
+    /**
+     * Manually evaluate a contest
+     * @param {string} contestId - The ID of the contest to evaluate
+     * @param {string} adminAddress - The address of the admin performing the evaluation
+     * @param {Object} context - Additional context for the evaluation
+     * @returns {Promise<Object>} - The result of the evaluation
+     */
     async manuallyEvaluateContest(contestId, adminAddress, context = {}) {
         try {
             // Get the contest
@@ -1617,6 +1811,12 @@ class ContestEvaluationService extends BaseService {
     }
 
     // Justify tiebreak details for a contest
+    /**
+     * Records tiebreak details for a contest
+     * @param {Object} contest - The contest object
+     * @param {Array} resolvedParticipants - The resolved participants from the tiebreak
+     * @returns {Promise<boolean>} - True if successful
+     */
     async recordTieBreakDetails(contest, resolvedParticipants) {
         try {
             // For each participant, log their tiebreak metrics

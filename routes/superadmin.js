@@ -26,16 +26,16 @@ import { config } from '../config/config.js';
 // Logs go into current working directory + /logs
 const LOG_DIR = path.join(process.cwd(), 'logs');
 // Constants
-const TEST_RECOVERY_AMOUNT_PER_WALLET = 0.00420690; // SOL (default = 0.00420690 SOL)
-const ABSOLUTE_MINIMUM_SOL_TO_LEAVE_IN_EACH_WALLET_DURING_RECOVERY = 0.0001; // SOL (default = 0.0001 SOL)
-const ACCEPTABLE_LOSS_AMOUNT_PER_WALLET_DURING_RECOVERY = 0.0001; // SOL (default = 0.0001 SOL)
-const SECOND_BETWEEN_TRANSACTIONS_DURING_RECOVERY = 2; // seconds
+const TEST_RECOVERY_AMOUNT_PER_WALLET = config.contest_wallet_test_recovery_amount_per_wallet; // SOL (default = 0.00420690 SOL)
+const ABSOLUTE_MINIMUM_SOL_TO_LEAVE_IN_EACH_WALLET_DURING_RECOVERY = config.contest_wallet_min_amount_to_leave_in_each_wallet_during_recovery; // SOL (default = 0.0001 SOL)
+const ACCEPTABLE_LOSS_AMOUNT_PER_WALLET_DURING_RECOVERY = config.contest_wallet_acceptable_loss_amount_per_wallet_during_recovery; // SOL (default = 0.0001 SOL)
+const SECONDS_BETWEEN_TRANSACTIONS_DURING_RECOVERY = config.contest_wallet_seconds_between_transactions_during_recovery; // default = 2 seconds
 
 // Router
 const router = express.Router();
 
 // Solana connection
-const connection = new Connection(config.rpc_urls.mainnet_http, 'confirmed');
+const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
 // Middleware ensures superadmin role
 const requireSuperAdminMiddleware = (req, res, next) => {
@@ -756,7 +756,7 @@ router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (re
         const acceptableLossAmount = ACCEPTABLE_LOSS_AMOUNT_PER_WALLET_DURING_RECOVERY; // SOL (default = 0.0001 SOL)
 
         // Wait time between transfers
-        const waitTime = req.body.wait_time || SECOND_BETWEEN_TRANSACTIONS_DURING_RECOVERY * 1000; // ms
+        const waitTime = req.body.wait_time || SECONDS_BETWEEN_TRANSACTIONS_DURING_RECOVERY * 1000; // ms
 
 
         /* SOL TRANSFER TESTING */
