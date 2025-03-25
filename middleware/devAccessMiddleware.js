@@ -39,12 +39,7 @@ export const restrictDevAccess = (req, res, next) => {
   
   // Log the request details
   if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-    logApi.info(`\t\t🔒 Secure Access Check `, { 
-      host, 
-      origin,
-      url: req.url,
-      method: req.method
-    });
+    logApi.info(`\t🔒 Secure Access Check \n\t\t\tHost:   ${host}\n\t\t\tOrigin: ${origin}\n\t\t\tURL:    ${req.url}\n\t\t\tMethod: ${req.method}`);
   }
   
   // Check if this is the development subdomain or production domain
@@ -104,7 +99,7 @@ export const restrictDevAccess = (req, res, next) => {
   // Check if the special header token is valid
   if (devAccessHeader === config.secure_middleware.branch_manager_header_token) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info('Access granted to Branch Manager via header token');
+      logApi.info('\t👑 Access Granted to Branch Manager (via header token)');
     }
     
     // Set a cookie for future requests if it doesn't exist
@@ -125,7 +120,7 @@ export const restrictDevAccess = (req, res, next) => {
   const devAccessQuery = req.query?.devAccess;
   if (devAccessQuery === config.secure_middleware.branch_manager_header_token) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info('Access granted to Branch Manager via query parameter', {
+      logApi.info('👑 Access Granted to Branch Manager (via query parameter)', {
         url: req.url,
         fullQueryString: req.url.includes('?') ? req.url.split('?')[1] : 'none',
         decodedQuery: JSON.stringify(req.query),
@@ -152,7 +147,7 @@ export const restrictDevAccess = (req, res, next) => {
       // Check if the wallet address is authorized
       if (authorizedWallets.includes(walletAddress)) {
         if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-          logApi.info(`Access granted to Branch Manager via user session token (wallet address: ${walletAddress})`);
+          logApi.info(`👑 Access Granted to Branch Manager (via user session token; wallet: ${walletAddress})`);
         }
         return next();
       }
@@ -178,7 +173,7 @@ export const restrictDevAccess = (req, res, next) => {
   // Check if the client IP is authorized
   if (authorizedIps.includes(clientIp)) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`\t\t👑 Access granted to Branch Manager (verified IP: ${clientIp})`);
+      logApi.info(`\t👑 Access Granted to Branch Manager (IP verified: ${clientIp})`);
     }
     return next();
   }
