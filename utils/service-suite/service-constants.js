@@ -1,3 +1,5 @@
+// utils/service-suite/service-constants.js
+
 /**
  * Service name constants and configurations
  * This file serves as the single source of truth for service names
@@ -5,14 +7,14 @@
 
 // Default circuit breaker configuration
 export const DEFAULT_CIRCUIT_BREAKER_CONFIG = {
-    enabled: true,
-    failureThreshold: 5,
-    resetTimeoutMs: 60000, // 1 minute
-    minHealthyPeriodMs: 120000, // 2 minutes
-    monitoringWindowMs: 300000, // 5 minutes
-    healthCheckIntervalMs: 30000, // 30 seconds
-    maxRecoveryAttempts: 3,
-    backoffMultiplier: 2
+    enabled: true, // Enabled by default
+    failureThreshold: 5, // 5 failures
+    resetTimeoutMs: 60 * 1000, // 1 minute
+    minHealthyPeriodMs: 2 * 60 * 1000, // 2 minutes
+    monitoringWindowMs: 5 * 60 * 1000, // 5 minutes
+    healthCheckIntervalMs: 30 * 1000, // 30 seconds
+    maxRecoveryAttempts: 3, // 3 attempts
+    backoffMultiplier: 2 // 2x backoff for each attempt
 };
 
 export const SERVICE_NAMES = {
@@ -33,12 +35,16 @@ export const SERVICE_NAMES = {
     WALLET_RAKE: 'wallet_rake_service',
     ADMIN_WALLET: 'admin_wallet_service',
     USER_BALANCE_TRACKING: 'user_balance_tracking_service',
+    //// WALLET_SERVICE: 'wallet_service',
+    //// WALLET_GENERATOR: 'wallet_generator_service',
 
     // Infrastructure Layer Services
     LIQUIDITY: 'liquidity_service',
     WALLET_GENERATOR: 'wallet_generator_service',
     SOLANA: 'solana_service', // New Solana service
-    SYSTEM_SETTINGS: 'system_settings_service' // New System Settings service
+    SYSTEM_SETTINGS: 'system_settings_service', // New System Settings service
+    /* TESTING BELOW THIS POINT */
+    NOTIFICATION: 'notification_service', // New Notification service
 };
 
 export const SERVICE_LAYERS = {
@@ -46,7 +52,6 @@ export const SERVICE_LAYERS = {
     CONTEST: 'contest_layer',
     WALLET: 'wallet_layer',
     INFRASTRUCTURE: 'infrastructure_layer',
-    ////AUTH: 'auth_layer'
 };
 
 export const SERVICE_METADATA = {
@@ -169,36 +174,99 @@ export const SERVICE_METADATA = {
     [SERVICE_NAMES.SYSTEM_SETTINGS]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'System settings management',
-    }
+    },
+
+    /* TESTING BELOW THIS POINT */
+
+    // New Notification service metadata
+    [SERVICE_NAMES.NOTIFICATION]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'User notification service',
+        updateFrequency: '1m', // TODO: Add update frequency
+        criticalLevel: 'medium', // TODO: Add critical level
+        dependencies: []
+    },
+
 };
 
-// Helper functions
+
+/* Helper functions */
+
+// Get service metadata
+/**
+ * Get the metadata for a given service name
+ * 
+ * @param {string} serviceName - The name of the service to get metadata for
+ * @returns {Object} The metadata for the service
+ */
 export function getServiceMetadata(serviceName) {
     return SERVICE_METADATA[serviceName];
 }
 
+// Get service layer
+/**
+ * Get the layer for a given service name
+ * 
+ * @param {string} serviceName - The name of the service to get the layer for
+ * @returns {string} The layer for the service
+ */ 
 export function getServiceLayer(serviceName) {
     return SERVICE_METADATA[serviceName]?.layer;
 }
 
+// Get services in a layer
+/**
+ * Get all services in a given layer
+ * 
+ * @param {string} layer - The layer to get services for
+ * @returns {Array} The services in the layer
+ */
 export function getServicesInLayer(layer) {
     return Object.entries(SERVICE_METADATA)
         .filter(([_, metadata]) => metadata.layer === layer)
         .map(([serviceName]) => serviceName);
 }
 
+// Validate service name
+/**
+ * Validate if a given service name exists in the SERVICE_NAMES object
+ * 
+ * @param {string} serviceName - The name of the service to validate
+ * @returns {boolean} True if the service name exists, false otherwise
+ */
 export function validateServiceName(serviceName) {
     return Object.values(SERVICE_NAMES).includes(serviceName);
 }
 
+// Get service dependencies
+/**
+ * Get the dependencies for a given service name
+ * 
+ * @param {string} serviceName - The name of the service to get dependencies for
+ * @returns {Array} The dependencies for the service
+ */
 export function getServiceDependencies(serviceName) {
     return SERVICE_METADATA[serviceName]?.dependencies || [];
 }
 
+// Get service critical level
+/**
+ * Get the critical level for a given service name
+ * 
+ * @param {string} serviceName - The name of the service to get the critical level for
+ * @returns {string} The critical level for the service
+ */
 export function getServiceCriticalLevel(serviceName) {
     return SERVICE_METADATA[serviceName]?.criticalLevel || 'medium';
 }
 
+// Validate dependency chain
+/**
+ * Validate if the dependency chain for a given service name is valid
+ * 
+ * @param {string} serviceName - The name of the service to validate the dependency chain for
+ * @returns {boolean} True if the dependency chain is valid, false otherwise
+ */
 export function validateDependencyChain(serviceName) {
     const visited = new Set();
     const recursionStack = new Set();
@@ -223,6 +291,7 @@ export function validateDependencyChain(serviceName) {
     return !hasCycle(serviceName);
 }
 
+// Export the constants
 export default {
     SERVICE_NAMES,
     SERVICE_LAYERS,

@@ -18,16 +18,28 @@ import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/servic
 import { fancyColors } from '../utils/colors.js';
 import serviceEvents from '../utils/service-suite/service-events.js';
 
+// Config
+import { config } from '../config/config.js';
 // Extra Config
-const BROADCAST_INTERVAL = 10// Broadcast every 10 seconds
+const BROADCAST_INTERVAL = 10 // Broadcast every 10 seconds
 
-// Create the marketDataService's dedicated internal Prisma client to the Market Database
-//     The service should be the only one responsible for interacting with the Market Database
+
+// Initialize the marketDataService's dedicated internal Prisma client to the Market Database
+/**
+ * Initialize the marketDataService's dedicated internal Prisma client to the Market Database
+ * 
+ * @returns {PrismaClient} The Prisma client for the Market Database
+ */
 const marketDb = new PrismaClient({
     datasourceUrl: process.env.MARKET_DATABASE_URL
 });
 
 // Create the marketDataService's dedicated internal config
+/**
+ * Create the marketDataService's dedicated internal config
+ * 
+ * @returns {Object} The config for the marketDataService
+ */
 const MARKET_DATA_CONFIG = {
     name: SERVICE_NAMES.MARKET_DATA,
     description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA).description,
@@ -59,7 +71,14 @@ const MARKET_DATA_CONFIG = {
     }
 };
 
+// ------------------------------------------------------------------------------------------------
+
 // Market Data Service
+/**
+ * Market Data Service
+ * 
+ * @extends {BaseService}
+ */
 class MarketDataService extends BaseService {
     constructor() {
         super(MARKET_DATA_CONFIG);
@@ -241,8 +260,25 @@ class MarketDataService extends BaseService {
             ////const tokenSymbols = tokens.map(t => t.symbol).join(', ');
             ////logApi.info(`[MktDataSvc] Refreshed token cache with ${tokens.length} tokens: ${tokenSymbols}`);
             
-            // Log with just the token count
-            logApi.info(`[MktDataSvc] Tokens cache refreshed (${tokens.length} tokens)`);
+            // Format token count with consistent spacing
+            const formattedCount = tokens.length.toString().padStart(3);
+            
+            // Calculate category counts for cache details
+            const categoryCounts = {
+                majorTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) > 100000000).length, // > $100M
+                midCapTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) <= 100000000 && parseFloat(t.market_cap) > 10000000).length, // $10M-$100M
+                smallCapTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) <= 10000000).length, // < $10M
+                noCapTokens: tokens.filter(t => !t.market_cap).length, // No market cap data
+                hasPriceTokens: tokens.filter(t => t.price && parseFloat(t.price) > 0).length, // Has price data
+                hasImageTokens: tokens.filter(t => t.image_url).length, // Has image data
+                hasSocialTokens: tokens.filter(t => t.token_socials && t.token_socials.length > 0).length // Has social data
+            };
+            
+            // Format details string
+            const cacheDetailsStr = `Major: ${categoryCounts.majorTokens} · Mid: ${categoryCounts.midCapTokens} · Small: ${categoryCounts.smallCapTokens} · Price data: ${categoryCounts.hasPriceTokens} · Images: ${categoryCounts.hasImageTokens}`;
+            
+            // Log with improved formatting and pink color theme, including cache details
+            logApi.info(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CACHE REFRESHED ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}(${cacheDetailsStr})${fancyColors.RESET}`);
             
             // Clear and rebuild tokensCache
             this.tokensCache.clear();
@@ -256,13 +292,21 @@ class MarketDataService extends BaseService {
                     this.tokensCache.set(token.symbol, this.formatTokenData(token));
                 } catch (error) {
                     errorTokens.push(token.symbol);
-                    logApi.error(`[MktDataSvc] Error storing token ${token.symbol} in cache: ${error.message}`);
+                    // Format token symbol with consistent width
+                    const formattedSymbol = token.symbol.padEnd(8);
+                    
+                    // Log with improved formatting and color
+                    logApi.error(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}✗ ${formattedSymbol}${fancyColors.RESET} ${fancyColors.RED}Cache error: ${error.message}${fancyColors.RESET}`);
                 }
             });
             
             // Only log errors if any occurred
             if (errorTokens.length > 0) {
-                logApi.warn(`[MktDataSvc] Failed to cache ${errorTokens.length} tokens: ${errorTokens.join(', ')}`);
+                // Format count with consistent spacing
+                const formattedCount = errorTokens.length.toString().padStart(3);
+                
+                // Log with improved formatting and color
+                logApi.warn(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} CACHE ERRORS ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.YELLOW}${errorTokens.join(', ')}${fancyColors.RESET}`);
             }
             
             // Update service stats
@@ -272,7 +316,7 @@ class MarketDataService extends BaseService {
             
             return tokens.length;
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Failed to refresh tokens cache:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}✗ ERROR:${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Failed to refresh tokens cache:${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`);
             this.marketStats.data.updates.failed++;
             throw error;
         } finally {
@@ -508,7 +552,24 @@ class MarketDataService extends BaseService {
                     // Emit an event that WebSockets can listen for via serviceEvents
                     serviceEvents.emit('market:broadcast', broadcastData);
                     
-                    logApi.info(`[MktDataSvc] Broadcasting market data (${broadcastData.data.length} tokens)`);
+                    // Format token count with consistent spacing
+                    const formattedCount = broadcastData.data.length.toString().padStart(3);
+                    
+                    // Calculate token price stats for the broadcast
+                    const tokensWithPriceChange = broadcastData.data.filter(t => t.change_24h && Math.abs(t.change_24h) > 0.5).length;
+                    const topGainers = broadcastData.data
+                        .filter(t => t.change_24h && t.change_24h > 2)
+                        .sort((a, b) => b.change_24h - a.change_24h)
+                        .slice(0, 3)
+                        .map(t => t.symbol);
+                    
+                    // Format broadcast details
+                    const broadcastDetailsStr = topGainers.length > 0 ? 
+                        `${tokensWithPriceChange} with sig. changes · Top gainers: ${topGainers.join(', ')}` : 
+                        `${tokensWithPriceChange} with sig. changes`;
+                    
+                    // Log with improved formatting and pink color theme
+                    logApi.info(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} BROADCASTING ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}(${broadcastDetailsStr})${fancyColors.RESET}`);
                 }
             } catch (error) {
                 logApi.error(`[MktDataSvc] Error in broadcast interval:`, error);
@@ -560,7 +621,12 @@ class MarketDataService extends BaseService {
         if (cleaned > 0) {
             this.marketStats.cache.size = this.cache.size;
             this.marketStats.cache.lastCleanup = new Date().toISOString();
-            logApi.info(`[MktDataSvc] Cleaned ${cleaned} expired entries from market data cache`);
+            // Format cleaned count with consistent spacing
+            const formattedCleaned = cleaned.toString().padStart(3);
+            const formattedRemaining = this.cache.size.toString().padStart(3);
+            
+            // Log with improved formatting and pink color theme
+            logApi.info(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CACHE CLEANED ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${formattedCleaned} entries${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}(${formattedRemaining} remaining)${fancyColors.RESET}`);
         }
     }
 
@@ -636,6 +702,6 @@ class MarketDataService extends BaseService {
     }
 }
 
-// Export service singleton
+// Export the marketDataService singleton
 const marketDataService = new MarketDataService();
 export default marketDataService;

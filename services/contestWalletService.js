@@ -593,8 +593,14 @@ class ContestWalletService extends BaseService {
                     const delayBetweenBatches = Math.min(16000, 
                         consecutiveRateLimitHits === 0 ? baseDelayBetweenBatches : Math.pow(2, consecutiveRateLimitHits) * baseDelayBetweenBatches);
                     
-                    // Log the batch being processed
-                    logApi.info(`[contestWalletService] Getting balances of contest wallets #${startIndex+1}-${endIndex} (batch ${currentBatch+1} of ${totalBatches})`);
+                    // Format batch numbers with consistent spacing
+                    const formattedBatchNum = (currentBatch+1).toString().padStart(2);
+                    const formattedTotalBatches = totalBatches.toString().padStart(2);
+                    const formattedStartIndex = (startIndex+1).toString().padStart(3);
+                    const formattedEndIndex = endIndex.toString().padStart(3);
+                    
+                    // Log the batch being processed with consistent formatting
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} Batch ${formattedBatchNum}/${formattedTotalBatches} ${fancyColors.RESET} ${fancyColors.BOLD_CYAN}Wallets #${formattedStartIndex}-${formattedEndIndex}${fancyColors.RESET}`);
                     
                     // Add delay before EVERY request to avoid rate limits, not just after the first one
                     await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
@@ -644,14 +650,15 @@ class ContestWalletService extends BaseService {
                                 });
                             }
                         } catch (error) {
-                            // Log error
+                            // Log error with better formatting
                             results.failed++;
-                            logApi.error(`[contestWalletService] Error processing wallet ${wallet.wallet_address}:`, {
-                                error: error.message,
-                                wallet_address: wallet.wallet_address,
-                                contest_id: wallet.contests?.id,
-                                contest_code: wallet.contests?.contest_code
-                            });
+                            
+                            // Format contest ID and code with consistent spacing
+                            const formattedContestId = wallet.contests?.id ? wallet.contests.id.toString().padStart(4) : "N/A ".padStart(4);
+                            const formattedContestCode = (wallet.contests?.contest_code || "Unknown").padEnd(10);
+                            const shortAddress = wallet.wallet_address.substring(0, 8) + '...' + wallet.wallet_address.substring(wallet.wallet_address.length - 4);
+                            
+                            logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BOLD_CYAN}✗ Contest ${formattedContestId}${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}(${formattedContestCode})${fancyColors.RESET} ${fancyColors.RED}Error: ${error.message}${fancyColors.RESET} ${fancyColors.GRAY}[${shortAddress}]${fancyColors.RESET}`);
                         }
                     }
                     
@@ -682,7 +689,34 @@ class ContestWalletService extends BaseService {
                             difference: change.difference
                         });
                         
-                        logApi.info(`[contestWalletService] Balance of contest wallet ${change.contest_id} (${change.contest_code}) has changed by ${change.difference.toFixed(4)} SOL \n\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${change.wallet_address}${fancyColors.RESET}`);
+                        // Format contest ID and code with consistent spacing
+                        const formattedContestId = change.contest_id ? change.contest_id.toString().padStart(4) : "N/A ".padStart(4);
+                        const formattedContestCode = (change.contest_code || "Unknown").padEnd(10);
+                        
+                        // Format balance changes with color based on direction and magnitude
+                        const diffAbs = Math.abs(change.difference);
+                        let diffColor;
+                        
+                        if (diffAbs < 0.001) {
+                            // Very small change
+                            diffColor = fancyColors.DARK_GRAY;
+                        } else if (change.difference > 0) {
+                            // Positive change - green shades based on size
+                            diffColor = diffAbs > 0.1 ? fancyColors.DARK_GREEN : fancyColors.LIGHT_GREEN;
+                        } else {
+                            // Negative change - red shades based on size
+                            diffColor = diffAbs > 0.1 ? fancyColors.DARK_RED : fancyColors.LIGHT_RED;
+                        }
+                        
+                        // Format difference with sign, 4 decimal places
+                        const sign = change.difference >= 0 ? '+' : '';
+                        const formattedDiff = `${sign}${change.difference.toFixed(4)}`;
+                        
+                        // Format current balance with 4 decimal places and consistent spacing
+                        const formattedBalance = change.current_balance.toFixed(4).padStart(10);
+                        
+                        // Log with better formatting - using CYAN instead of MAGENTA for consistency
+                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.CYAN}✓ ${fancyColors.BOLD_CYAN}Contest ${formattedContestId}${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}(${formattedContestCode})${fancyColors.RESET} ${fancyColors.CYAN}Balance: ${formattedBalance} SOL${fancyColors.RESET} ${diffColor}${formattedDiff} SOL${fancyColors.RESET} \n\t${fancyColors.GRAY}${fancyColors.UNDERLINE}https://solscan.io/address/${change.wallet_address}${fancyColors.RESET}`);
                     }
                 } catch (error) {
                     // Check if this is a rate limit error
@@ -708,7 +742,7 @@ class ContestWalletService extends BaseService {
                         );
                         
                         // Log rate limit error
-                        logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits} - Adding ${backoffDelay}ms delay${fancyColors.RESET}`, {
+                        logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits} - Adding ${backoffDelay}ms delay${fancyColors.RESET}`, {
                             service: 'SOLANA',
                             error_type: 'RATE_LIMIT',
                             batch: currentBatch + 1,
@@ -749,14 +783,24 @@ class ContestWalletService extends BaseService {
             this.walletStats.balance_updates.successful += results.updated;
             this.walletStats.balance_updates.failed += results.failed;
             
-            // Log completion
-            logApi.info(`[contestWalletService] Contest wallet balance refresh cycle completed: ${results.updated}/${results.total} wallets updated in ${((Date.now() - startTime)/1000).toFixed(1)}s`);
+            // Calculate and format stats with consistent spacing
+            const totalTime = Date.now() - startTime;
+            const formattedSeconds = (totalTime/1000).toFixed(1).padStart(4);
+            const formattedUpdated = results.updated.toString().padStart(3);
+            const formattedTotal = results.total.toString().padStart(3);
+            const successRate = (results.updated / results.total) * 100;
+            const formattedSuccessRate = successRate.toFixed(0).padStart(3);
+            
+            // Log completion with better formatting
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} COMPLETED ${fancyColors.RESET} ${fancyColors.BOLD_CYAN}${formattedUpdated}/${formattedTotal} wallets${fancyColors.RESET} ${fancyColors.CYAN}(${formattedSuccessRate}%)${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}in ${formattedSeconds}s${fancyColors.RESET}`);
             
             // Add a cooldown period after batch completion to prevent immediate rate limiting in other services
             // This helps spread out the RPC calls across the system
             const cooldownMs = 2000; // 2 second cooldown
             await new Promise(resolve => setTimeout(resolve, cooldownMs));
-            logApi.info(`[contestWalletService] RPC cooldown period (${cooldownMs}ms) completed after wallet balance update`);
+            
+            // Log cooldown completion with better formatting
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}RPC cooldown period completed${fancyColors.RESET}`);
             
             return {
                 duration: Date.now() - startTime,

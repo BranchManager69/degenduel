@@ -177,6 +177,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Handle new WebSocket connection
   /**
    * Handle new WebSocket connection
    * @param {WebSocket} ws - The WebSocket connection
@@ -433,6 +434,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Handle message from client
   /**
    * Handle message from client
    * @param {WebSocket} ws - The WebSocket connection
@@ -544,6 +546,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Handle client disconnect
   /**
    * Handle client disconnect
    * @param {WebSocket} ws - The WebSocket connection
@@ -660,6 +663,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Handle connection error
   /**
    * Handle connection error
    * @param {WebSocket} ws - The WebSocket connection
@@ -710,6 +714,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Handle server-level errors
   /**
    * Handle server-level errors
    * @param {Error} error - The server error
@@ -757,6 +762,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Handle pong response from client heartbeat
   /**
    * Handle pong response from client heartbeat
    * @param {WebSocket} ws - The WebSocket connection
@@ -782,6 +788,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Handle heartbeat message from client
   /**
    * Handle heartbeat message from client
    * @param {WebSocket} ws - The WebSocket connection
@@ -800,6 +807,7 @@ export class BaseWebSocketServer {
     clientInfo.lastActivity = new Date();
   }
 
+  // Handle subscribe message from client
   /**
    * Handle subscribe message from client
    * @param {WebSocket} ws - The WebSocket connection
@@ -833,6 +841,7 @@ export class BaseWebSocketServer {
     await this.onSubscribe(ws, channel);
   }
 
+  // Handle unsubscribe message from client
   /**
    * Handle unsubscribe message from client
    * @param {WebSocket} ws - The WebSocket connection
@@ -860,6 +869,7 @@ export class BaseWebSocketServer {
     await this.onUnsubscribe(ws, channel);
   }
 
+  // Authenticate client using JWT token
   /**
    * Authenticate client using JWT token
    * @param {WebSocket} ws - The WebSocket connection
@@ -953,6 +963,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Extract authentication token from request
   /**
    * Extract authentication token from request
    * @param {http.IncomingMessage} req - The HTTP request
@@ -1034,6 +1045,7 @@ export class BaseWebSocketServer {
     return null;
   }
 
+  // Check if a client can access a channel
   /**
    * Check if a client can access a channel
    * @param {Object} clientInfo - The client info object
@@ -1078,6 +1090,7 @@ export class BaseWebSocketServer {
     return !this.requireAuth || clientInfo.authenticated;
   }
 
+  // Subscribe a client to a channel
   /**
    * Subscribe a client to a channel
    * @param {WebSocket} ws - The WebSocket connection
@@ -1119,6 +1132,7 @@ export class BaseWebSocketServer {
     });
   }
 
+  // Unsubscribe a client from a channel
   /**
    * Unsubscribe a client from a channel
    * @param {WebSocket} ws - The WebSocket connection
@@ -1170,6 +1184,7 @@ export class BaseWebSocketServer {
     });
   }
 
+  // Send a message to all subscribers of a channel
   /**
    * Send a message to all subscribers of a channel
    * @param {string} channel - The channel name
@@ -1237,6 +1252,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Send a message to all connected clients
   /**
    * Send a message to all connected clients
    * @param {Object} message - The message to send
@@ -1264,6 +1280,7 @@ export class BaseWebSocketServer {
     });
   }
 
+  // Send a message to a specific client
   /**
    * Send a message to a specific client
    * @param {WebSocket} ws - The WebSocket connection
@@ -1345,6 +1362,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Send an error message to a client
   /**
    * Send an error message to a client
    * @param {WebSocket} ws - The WebSocket connection
@@ -1393,6 +1411,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Close a WebSocket connection
   /**
    * Close a WebSocket connection
    * @param {WebSocket} ws - The WebSocket connection
@@ -1437,6 +1456,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Start heartbeat for a client
   /**
    * Start heartbeat for a client
    * @param {WebSocket} ws - The WebSocket connection
@@ -1459,6 +1479,7 @@ export class BaseWebSocketServer {
     this.heartbeatTimers.set(ws, heartbeatTimer);
   }
 
+  // Stop heartbeat for a client
   /**
    * Stop heartbeat for a client
    * @param {WebSocket} ws - The WebSocket connection
@@ -1476,6 +1497,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Check heartbeat for a client
   /**
    * Check heartbeat for a client
    * @param {WebSocket} ws - The WebSocket connection
@@ -1560,6 +1582,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Send heartbeats to all clients
   /**
    * Send heartbeats to all clients
    */
@@ -1575,6 +1598,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Apply rate limiting to a client
   /**
    * Apply rate limiting to a client
    * @param {WebSocket} ws - The WebSocket connection
@@ -1610,6 +1634,7 @@ export class BaseWebSocketServer {
     return false;
   }
 
+  // Reset rate limits for all clients
   /**
    * Reset rate limits for all clients
    */
@@ -1617,6 +1642,7 @@ export class BaseWebSocketServer {
     this.messageRateLimits.clear();
   }
 
+  // Parse a message from a client
   /**
    * Parse a message from a client
    * @param {string|Buffer} data - The message data
@@ -1635,6 +1661,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Clean up resources for a client
   /**
    * Clean up resources for a client
    * @param {WebSocket} ws - The WebSocket connection
@@ -1677,6 +1704,7 @@ export class BaseWebSocketServer {
     this.clients.delete(ws);
   }
 
+  // Update server statistics
   /**
    * Update server statistics
    */
@@ -1736,6 +1764,7 @@ export class BaseWebSocketServer {
     logApi.info('WebSocket server statistics', safeStats);
   }
 
+  // Get server metrics
   /**
    * Get server metrics
    * @returns {Object} - The server metrics
@@ -1796,6 +1825,7 @@ export class BaseWebSocketServer {
     };
   }
 
+  // Format bytes to human-readable string
   /**
    * Format bytes to human-readable string
    * @param {number} bytes - The number of bytes
@@ -1816,6 +1846,7 @@ export class BaseWebSocketServer {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
+  // Format duration in seconds to human-readable string
   /**
    * Format duration in seconds to human-readable string
    * @param {number} seconds - The duration in seconds
@@ -1841,6 +1872,7 @@ export class BaseWebSocketServer {
     return parts.join(' ');
   }
 
+  // Initialize the WebSocket server
   /**
    * Initialize the WebSocket server
    * @returns {Promise<boolean>} - Whether initialization was successful
@@ -1865,6 +1897,7 @@ export class BaseWebSocketServer {
     }
   }
 
+  // Clean up resources before shutdown
   /**
    * Clean up resources before shutdown
    * @returns {Promise<boolean>} - Whether cleanup was successful
@@ -1951,6 +1984,7 @@ export class BaseWebSocketServer {
 
   // ===== Overridable methods for subclasses =====
 
+  // Called when the WebSocket server is initialized
   /**
    * Called when the WebSocket server is initialized
    * @returns {Promise<boolean>} - Whether initialization was successful
@@ -1960,6 +1994,7 @@ export class BaseWebSocketServer {
     return true;
   }
 
+  // Called when a new client connects
   /**
    * Called when a new client connects
    * @param {WebSocket} ws - The WebSocket connection
@@ -1972,6 +2007,7 @@ export class BaseWebSocketServer {
     // Override in subclass
   }
 
+  // Called when a client sends a message
   /**
    * Called when a client sends a message
    * @param {WebSocket} ws - The WebSocket connection
@@ -1985,6 +2021,7 @@ export class BaseWebSocketServer {
     // Override in subclass
   }
 
+  // Called when a client disconnects
   /**
    * Called when a client disconnects
    * @param {WebSocket} ws - The WebSocket connection
@@ -1996,6 +2033,7 @@ export class BaseWebSocketServer {
     // Override in subclass
   }
 
+  // Called when a client connection has an error
   /**
    * Called when a client connection has an error
    * @param {WebSocket} ws - The WebSocket connection
@@ -2009,6 +2047,7 @@ export class BaseWebSocketServer {
     // Override in subclass
   }
 
+  // Called when a client subscribes to a channel
   /**
    * Called when a client subscribes to a channel
    * @param {WebSocket} ws - The WebSocket connection
@@ -2022,6 +2061,7 @@ export class BaseWebSocketServer {
     // Override in subclass
   }
 
+  // Called when a client unsubscribes from a channel
   /**
    * Called when a client unsubscribes from a channel
    * @param {WebSocket} ws - The WebSocket connection
@@ -2035,6 +2075,7 @@ export class BaseWebSocketServer {
     // Override in subclass
   }
 
+  // Called when the WebSocket server is cleaning up
   /**
    * Called when the WebSocket server is cleaning up
    */

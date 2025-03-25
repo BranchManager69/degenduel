@@ -31,6 +31,9 @@ import marketDataService from './marketDataService.js';
 // Config
 import { config } from '../config/config.js';
 
+// Extra Config (Ensure refresh duration is OFF by default)
+const SHOW_TOKEN_REFRESH_DURATION_IN_LOGS = false;
+
 // Token Sync Service Configuration
 const TOKEN_SYNC_CONFIG = {
     name: SERVICE_NAMES.TOKEN_SYNC,
@@ -500,32 +503,130 @@ class TokenSyncService extends BaseService {
      *  'addresses' comes from the active tokens in the database ('activeTokens' in 'updatePrices')
      *  'results' comes from those we get back from 'marketDataService'
      * 
-     * @param {Array} addresses - The addresses of the tokens to fetch prices for
+     * @param {Array} addresses - The addresses of the tokens to fetch prices for 
+     * @param {Object} currentPriceMap - Map of token addresses to their current price data
      * @returns {Promise<Array>} - An array of token prices
      */
-    async fetchTokenPrices(addresses) {
+    async fetchTokenPrices(addresses, currentPriceMap = {}) {
         try {
             // Process tokens in chunks to limit concurrency
             const BATCH_SIZE = 3; // Process 3 tokens at a time to avoid rate limits
             const results = [];
+            const startTime = Date.now();
+            
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} STARTING ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}Price refresh for ${addresses.length} tokens${fancyColors.RESET}`);
             
             // Helper function to process tokens in smaller batches
             const processBatch = async (batch) => {
-                const batchPromises = batch.map(async (address) => {
+                const batchPromises = batch.map(async (address, index) => {
+                    const tokenStartTime = Date.now();
                     // Add a small delay between requests in the same batch
                     const delay = Math.random() * 200; // 0-200ms delay for jitter
+                    
+                    // Format market cap with commas and round to nearest $1,000
+                    const formatMarketCap = (marketCap) => {
+                        if (!marketCap) return "N/A";
+                        // Round to nearest $1,000
+                        const roundedCap = Math.round(marketCap / 1000) * 1000;
+                        // Format with commas
+                        return '$' + roundedCap.toLocaleString();
+                    };
+                    
                     await new Promise(resolve => setTimeout(resolve, delay));
                     
-                    const token = await marketDataService.getTokenByAddress(address);
-                    if (token) {
-                        return {
-                            contractAddress: address,
-                            price: token.price || 0,
-                            marketCap: token.market_cap || null,
-                            timestamp: new Date().toISOString()
-                        };
+                    try {
+                        const token = await marketDataService.getTokenByAddress(address);
+                        const processingTime = Date.now() - tokenStartTime;
+                        
+                        if (token) {
+                            // Get previous token data from current price map to calculate change
+                            const oldPriceInfo = currentPriceMap[address];
+                            const oldMarketCap = oldPriceInfo ? oldPriceInfo.marketCap : null;
+                            const newMarketCap = token.market_cap || 0;
+                            
+                            // Calculate market cap change
+                            let marketCapChange = 0;
+                            let marketCapChangePercent = 0;
+                            let marketCapChangeStr = "";
+                            
+                            if (oldMarketCap && oldMarketCap > 0 && newMarketCap) {
+                                marketCapChange = newMarketCap - oldMarketCap;
+                                marketCapChangePercent = (marketCapChange / oldMarketCap) * 100;
+                                
+                                // Special case for very small or zero change
+                                if (Math.abs(marketCapChangePercent) < 0.01) {
+                                    // Use a dash for essentially no change
+                                    marketCapChangeStr = ` (${fancyColors.DARK_GRAY}-${fancyColors.RESET})`;
+                                } else {
+                                    // Format the change with +/- sign, $ and commas
+                                    const formattedChange = (marketCapChange >= 0 ? '+' : '') + 
+                                        '$' + Math.abs(Math.round(marketCapChange / 1000) * 1000).toLocaleString();
+                                    
+                                    // Format the percent with +/- sign and 2 decimals
+                                    const formattedPercent = (marketCapChangePercent >= 0 ? '+' : '') + 
+                                        marketCapChangePercent.toFixed(2) + '%';
+                                    
+                                    // Choose color based on direction and magnitude of change
+                                    let valueColor;
+                                    const absPercentChange = Math.abs(marketCapChangePercent);
+                                    
+                                    if (absPercentChange < 0.1) {
+                                        // Very small change (near zero)
+                                        valueColor = fancyColors.DARK_GRAY;
+                                    } else if (marketCapChangePercent > 0) {
+                                        // Positive change - green shades based on size
+                                        valueColor = absPercentChange > 5 ? fancyColors.DARK_GREEN : fancyColors.LIGHT_GREEN;
+                                    } else {
+                                        // Negative change - red shades based on size
+                                        valueColor = absPercentChange > 5 ? fancyColors.DARK_RED : fancyColors.LIGHT_RED;
+                                    }
+                                    
+                                    // Create the change string with color (applying color to the entire parenthetical content)
+                                    marketCapChangeStr = ` ${valueColor}(${formattedChange} ${formattedPercent})${fancyColors.RESET}`;
+                                }
+                            }
+                            
+                            const result = {
+                                contractAddress: address,
+                                price: token.price || 0,
+                                marketCap: token.market_cap || null,
+                                symbol: token.symbol || "Unknown",
+                                timestamp: new Date().toISOString(),
+                                processingTimeMs: processingTime,
+                                marketCapChange: marketCapChange,
+                                marketCapChangePercent: marketCapChangePercent
+                            };
+                            
+                            // Format the token symbol to be 8 characters wide (right-padded)
+                            const formattedSymbol = (token.symbol || address).padEnd(8);
+                            
+                            // Format the refresh duration with consistent width
+                            const formattedDuration = SHOW_TOKEN_REFRESH_DURATION_IN_LOGS ? 
+                                ` ${fancyColors.LIGHT_MAGENTA}[${processingTime.toString().padStart(3, ' ')}ms]` : ``;
+                                
+                            // Format market cap
+                            const formattedMarketCap = formatMarketCap(token.market_cap);
+                            
+                            // Log with everything aligned
+                            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.MAGENTA}✓ ${fancyColors.BOLD_MAGENTA}${formattedSymbol}${fancyColors.RESET}${formattedDuration} ${fancyColors.MAGENTA}MCap: ${formattedMarketCap}${marketCapChangeStr}${fancyColors.RESET}`);
+                            
+                            return result;
+                        } else {
+                            // For no data received, use dark gray text as requested
+                            const formattedSymbol = address.padEnd(8);
+                            const formattedDuration = processingTime.toString().padStart(3, ' ');
+                            
+                            logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_GRAY}⚠ ${formattedSymbol}${fancyColors.RESET} ${fancyColors.DARK_GRAY}[${formattedDuration}ms] No data received${fancyColors.RESET}`);
+                            return null;
+                        }
+                    } catch (tokenError) {
+                        const processingTime = Date.now() - tokenStartTime;
+                        const formattedSymbol = address.padEnd(8);
+                        const formattedDuration = processingTime.toString().padStart(3, ' ');
+                        
+                        logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}✗ ${formattedSymbol}${fancyColors.RESET} ${fancyColors.MAGENTA}[${formattedDuration}ms] Error: ${fancyColors.LIGHT_MAGENTA}${tokenError.message}${fancyColors.RESET}`);
+                        return null;
                     }
-                    return null;
                 });
                 
                 // Process this batch
@@ -535,23 +636,65 @@ class TokenSyncService extends BaseService {
             
             // Process all addresses in smaller batches
             for (let i = 0; i < addresses.length; i += BATCH_SIZE) {
+                const batchStartTime = Date.now();
                 const batch = addresses.slice(i, i + BATCH_SIZE);
-                logApi.debug(`[tokenSyncService] Processing token batch ${i/BATCH_SIZE + 1}/${Math.ceil(addresses.length/BATCH_SIZE)}`);
+                const batchNumber = Math.floor(i/BATCH_SIZE) + 1;
+                const totalBatches = Math.ceil(addresses.length/BATCH_SIZE);
+                
+                // Format batch numbers with consistent spacing
+                const formattedBatchNum = batchNumber.toString().padStart(2);
+                const formattedTotalBatches = totalBatches.toString().padStart(2);
+                
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} Batch ${formattedBatchNum}/${formattedTotalBatches} ${fancyColors.RESET}`);
                 
                 // Process this batch and add a small delay between batches
                 const batchResults = await processBatch(batch);
                 results.push(...batchResults);
                 
-                // Add delay between batches to avoid rate limits
+                const batchProcessingTime = Date.now() - batchStartTime;
+                // Format processing time with consistent spacing
+                const formattedProcessingTime = batchProcessingTime.toString().padStart(4);
+                const formattedSuccessCount = batchResults.length.toString().padStart(2);
+                const formattedTotalCount = batch.length.toString().padStart(2);
+                
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Batch ${formattedBatchNum}/${formattedTotalBatches} complete: ${formattedSuccessCount}/${formattedTotalCount} tokens [${formattedProcessingTime}ms]${fancyColors.RESET}`);
+                
+                // Add delay between batches to avoid rate limits (silently)
                 if (i + BATCH_SIZE < addresses.length) {
-                    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms between batches
+                    const interBatchDelay = 500; // 500ms between batches
+                    await new Promise(resolve => setTimeout(resolve, interBatchDelay));
                 }
             }
             
-            logApi.info(`[tokenSyncService] Received price data for ${results.length}/${addresses.length} tokens`);
+            const totalTime = Date.now() - startTime;
+            // Calculate stats with consistent formatting
+            const successRate = (results.length / addresses.length) * 100;
+            const successRateFormatted = successRate.toFixed(0).padStart(3);
+            const resultsCount = results.length.toString().padStart(3);
+            const addressesCount = addresses.length.toString().padStart(3);
+            const totalTimeFormatted = totalTime.toString().padStart(5);
+            
+            // Find min, max, avg processing times with consistent formatting
+            let metricsStr = "";
+            if (results.length > 0) {
+                const processingTimes = results.map(r => r.processingTimeMs);
+                const minTime = Math.min(...processingTimes);
+                const maxTime = Math.max(...processingTimes);
+                const avgTime = processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length;
+                
+                const minTimeFormatted = minTime.toString().padStart(3);
+                const maxTimeFormatted = maxTime.toString().padStart(3);
+                const avgTimeFormatted = avgTime.toFixed(0).padStart(3);
+                
+                metricsStr = ` • Min=${minTimeFormatted}ms • Max=${maxTimeFormatted}ms • Avg=${avgTimeFormatted}ms`;
+            }
+            
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} COMPLETED ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${resultsCount}/${addressesCount} tokens${fancyColors.RESET} ${fancyColors.MAGENTA}(${successRateFormatted}%)${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}in ${totalTimeFormatted}ms${metricsStr}${fancyColors.RESET}`);
+            
+            
             return results;
         } catch (error) {
-            logApi.error(`[tokenSyncService] Error fetching token prices: ${error.message}`);
+            logApi.error(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}✗ ERROR:${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}${error.message}${fancyColors.RESET}`);
             return [];
         }
     }
@@ -684,13 +827,27 @@ class TokenSyncService extends BaseService {
             // Get all tokens that are currently active in DegenDuel
             const activeTokens = await prisma.tokens.findMany({
                 where: { is_active: true },
-                select: { address: true, id: true, symbol: true }
+                select: { address: true, id: true, symbol: true, market_cap: true, name: true }
             });
 
             if (activeTokens.length === 0) {
                 logApi.info(`[tokenSyncService] No active tokens found for price update`);
                 return;
             }
+            
+            // Sort tokens by symbol for predictable, user-friendly processing order
+            activeTokens.sort((a, b) => {
+                // First attempt to sort by symbol
+                if (a.symbol && b.symbol) {
+                    return a.symbol.localeCompare(b.symbol);
+                }
+                // Fall back to name if symbol is missing
+                if (a.name && b.name) {
+                    return a.name.localeCompare(b.name);
+                }
+                // Last resort: sort by address
+                return a.address.localeCompare(b.address);
+            });
 
             // Map addresses to their corresponding IDs and symbols
             const addresses = activeTokens.map(token => token.address);
@@ -716,7 +873,7 @@ class TokenSyncService extends BaseService {
 
             // Fetch prices for all active tokens
             logApi.info(`[tokenSyncService] Fetching prices for ${addresses.length} tokens...`);
-            const priceData = await this.fetchTokenPrices(addresses);
+            const priceData = await this.fetchTokenPrices(addresses, currentPriceMap);
             
             // Track price changes for reporting
             const priceChanges = [];
