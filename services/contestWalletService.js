@@ -26,39 +26,42 @@ import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/servic
 import { transferSOL } from '../utils/solana-suite/web3-v2/solana-transaction-fixed.js';
 //import { fa } from '@faker-js/faker';
 
-
 // Config
 import { config } from '../config/config.js';
 
 // Contest Wallet Config
 const CONTEST_WALLET_CONFIG = {
-    name: SERVICE_NAMES.CONTEST_WALLET,
-    description: getServiceMetadata(SERVICE_NAMES.CONTEST_WALLET).description,
-    checkIntervalMs: 1 * 60 * 1000, // Check every 1 minute
+    name:
+        SERVICE_NAMES.CONTEST_WALLET, // get name from central service metadata
+    description:
+        getServiceMetadata(SERVICE_NAMES.CONTEST_WALLET).description, // get description from central service metadata
+    checkIntervalMs:
+        config.service_intervals.contest_wallet_check_cycle_interval * 1000, // cycle through all contest wallets (get all contest wallet balances)
     treasury: {
-        walletAddress: process.env.TREASURY_WALLET_ADDRESS || 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp'
+        walletAddress: config.master_wallet.treasury_address
     },
     reclaim: {
-        minimumBalanceToReclaim: 0.001, // SOL - minimum balance to consider reclaiming
-        minimumAmountToTransfer: 0.0005, // SOL - don't transfer if amount is too small
-        contestStatuses: ['completed', 'cancelled'] // Only reclaim from these statuses
-    },
-    maxRetries: 3,
-    retryDelayMs: 5000,
-    circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 60000, // 1 minute timeout when circuit is open
-        minHealthyPeriodMs: 120000 // 2 minutes of health before fully resetting
-    },
-    backoff: {
-        initialDelayMs: 1000,
-        maxDelayMs: 30000,
-        factor: 2
+        minimumBalanceToReclaim: config.service_thresholds.contest_wallet_min_balance_for_reclaim, // SOL - minimum balance to consider reclaiming
+        minimumAmountToTransfer: config.service_thresholds.contest_wallet_min_amount_to_transfer, // SOL - don't transfer if amount is too small
+        contestStatuses: ['completed', 'cancelled'] // Only reclaim from contests with these statuses (i.e., not 'active' nor 'pending')
     },
     wallet: {
         encryption_algorithm: 'aes-256-gcm',
-        min_balance_sol: 0.01
-    }
+        min_balance_sol: config.service_thresholds.contest_wallet_min_balance_for_reclaim // minimum balance to consider reclaiming
+    },
+    circuitBreaker: {
+        failureThreshold: 5, // number of failures before circuit is open
+        resetTimeoutMs: 60 * 1000, // 1 minute timeout when circuit is open
+        minHealthyPeriodMs: 120 * 1000 // 2 minutes of health before fully resetting
+    },
+    backoff: {
+        initialDelayMs: 1 * 1000, // 1 second
+        maxDelayMs: 30 * 1000, // 30 seconds
+        factor: 2 // exponential backoff
+    },
+    // loose config vars, kept for backwards compatibility:
+    maxRetries: 3, // maximum number of retries
+    retryDelayMs: 5 * 1000, // 5 seconds
 };
 
 // Contest Wallet Service
@@ -501,7 +504,7 @@ class ContestWalletService extends BaseService {
                 updates: []
             };
             
-            // Sort contest wallets by contest ID
+            // Sort contest wallets by contest ID (ascending; last are the contest wallets most recently created)
             contestWallets.sort((a, b) => a.contests?.id - b.contests?.id);
             
             // Track active contests
@@ -511,17 +514,19 @@ class ContestWalletService extends BaseService {
                 }
             });
             
-            // Batch process balances in smaller groups to avoid rate limiting
-            // Reduce batch size from 100 to 20 (Quicknode has stricter per-second limits)
-            const BATCH_SIZE = 20;
+            // Process contest wallets in batches
+            const BATCH_SIZE = 20; // reduced from 100 to avoid rate limiting
+            
+            // Calculate total batches needed to process all contest wallets
             let currentBatch = 0;
             const totalBatches = Math.ceil(contestWallets.length / BATCH_SIZE);
             
             // Track rate limit hits to implement exponential backoff
             let consecutiveRateLimitHits = 0;
             
-            // Process wallets in batches
+            // Process each batch of contest wallets
             while (currentBatch < totalBatches) {
+                // Calculate start and end indices for current batch
                 const startIndex = currentBatch * BATCH_SIZE;
                 const endIndex = Math.min(startIndex + BATCH_SIZE, contestWallets.length);
                 const walletBatch = contestWallets.slice(startIndex, endIndex);
@@ -529,29 +534,30 @@ class ContestWalletService extends BaseService {
                 // Create batch of PublicKeys
                 const publicKeys = walletBatch.map(wallet => new PublicKey(wallet.wallet_address));
                 
+                // Calculate delay based on consecutive rate limit hits 
                 try {
-                    // Calculate delay based on consecutive rate limit hits
                     // Implement exponential backoff: 0ms → 1000ms → 2000ms → 4000ms → 8000ms
                     const delayBetweenBatches = Math.min(8000, consecutiveRateLimitHits === 0 ? 500 : Math.pow(2, consecutiveRateLimitHits) * 500);
                     
-                    logApi.info(`[contestWalletService] Fetching batch ${currentBatch+1}/${totalBatches} (${walletBatch.length} wallets) - Delay: ${delayBetweenBatches}ms`);
+                    // Log the batch being processed
+                    logApi.info(`[contestWalletService] Getting balances of contest wallets #${startIndex+1}-${endIndex} (batch ${currentBatch+1} of ${totalBatches})`);
                     
                     // If this isn't the first batch, add delay before request to avoid rate limits
                     if (currentBatch > 0) {
                         await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
                     }
                     
-                    // Get multiple balances in a single RPC call
+                    // Get balances of all contest wallets from a single RPC call
                     const balances = await this.connection.getMultipleAccountsInfo(publicKeys);
                     
                     // Reset consecutive rate limit counter on success
                     consecutiveRateLimitHits = 0;
                     
-                    // Process each wallet with its balance
                     // Collect DB updates to do in a single transaction
                     const dbUpdates = [];
                     const balanceChanges = [];
-                    
+
+                    // Process each contest wallet in the batch with its balance                    
                     for (let i = 0; i < walletBatch.length; i++) {
                         const wallet = walletBatch[i];
                         const accountInfo = balances[i];
@@ -574,8 +580,8 @@ class ContestWalletService extends BaseService {
                             // Track successful update
                             results.updated++;
                             
-                            // Only log significant balance changes (≥ 0.01 SOL)
-                            if (Math.abs(difference) >= 0.01) {
+                            // Log notable balance changes (≥ 0.0001 SOL)
+                            if (Math.abs(difference) >= 0.0001) {
                                 balanceChanges.push({
                                     wallet_address: wallet.wallet_address,
                                     previous_balance: previousBalance,
@@ -586,11 +592,13 @@ class ContestWalletService extends BaseService {
                                 });
                             }
                         } catch (error) {
+                            // Log error
                             results.failed++;
                             logApi.error(`[contestWalletService] Error processing wallet ${wallet.wallet_address}:`, {
                                 error: error.message,
                                 wallet_address: wallet.wallet_address,
-                                contest_id: wallet.contests?.id
+                                contest_id: wallet.contests?.id,
+                                contest_code: wallet.contests?.contest_code
                             });
                         }
                     }
@@ -622,7 +630,7 @@ class ContestWalletService extends BaseService {
                             difference: change.difference
                         });
                         
-                        logApi.info(`[contestWalletService] Significant balance change for Contest ${change.contest_id} (${change.contest_code}): ${change.difference.toFixed(4)} SOL - https://solscan.io/address/${change.wallet_address}`);
+                        logApi.info(`[contestWalletService] Balance of contest wallet ${change.contest_id} (${change.contest_code}) has changed by ${change.difference.toFixed(4)} SOL \n\t${fancyColors.BLUE}${fancyColors.UNDERLINE}https://solscan.io/address/${change.wallet_address}${fancyColors.RESET}`);
                     }
                 } catch (error) {
                     // Check if this is a rate limit error
@@ -637,8 +645,10 @@ class ContestWalletService extends BaseService {
                         consecutiveRateLimitHits++;
                         
                         // Calculate exponential backoff delay
-                        const backoffDelay = Math.min(30000, Math.pow(2, consecutiveRateLimitHits) * 1000);
+                        const RPC_RATE_LIMIT_RETRY_DELAY = config.solana_timeouts.rpc_rate_limit_retry_delay || 15 * 1000; // default: 15 seconds
+                        const backoffDelay = Math.min(RPC_RATE_LIMIT_RETRY_DELAY, Math.pow(2, consecutiveRateLimitHits) * 1000);
                         
+                        // Log rate limit error
                         logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits} - Adding ${backoffDelay}ms delay${fancyColors.RESET}`, {
                             service: 'SOLANA',
                             error_type: 'RATE_LIMIT',

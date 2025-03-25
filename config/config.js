@@ -43,8 +43,8 @@ const config = {
   },
   // Some master wallet stuff:
   master_wallet: {
-    address: process.env.DD_MASTER_WALLET,
-    min_contest_wallet_balance: 0.01 // SOL
+    treasury_address: process.env.DD_MASTER_WALLET, // new
+    address: process.env.DD_MASTER_WALLET, // TODO: deprecate
   },
   // Internal transaction types:
   transaction_types: {
@@ -78,6 +78,36 @@ const config = {
     lobby: LOBBY_API,
     reflections: REFLECTIONS_API,
     fallback: LOCAL_FALLBACK_API,
+  },
+  // Solana timeout settings:
+  solana_timeouts: {
+    // RPC initial connection timeout:
+    rpc_initial_connection_timeout:
+      process.env.SOLANA_RPC_INITIAL_CONNECTION_TIMEOUT || 45, // seconds
+    // RPC reconnection timeout:
+    rpc_reconnection_timeout:
+      process.env.SOLANA_RPC_RECONNECTION_TIMEOUT || 45, // seconds
+    // RPC transaction confirmation timeout:
+    rpc_transaction_confirmation_timeout:
+      process.env.SOLANA_RPC_TRANSACTION_CONFIRMATION_TIMEOUT || 120, // seconds
+    // RPC rate limit retry delay:
+    rpc_rate_limit_retry_delay:
+      process.env.SOLANA_RPC_RATE_LIMIT_RETRY_DELAY || 15, // seconds
+  },
+  // Service interval settings:
+  service_intervals: {
+    // Contest wallet check cycle interval:
+    contest_wallet_check_cycle_interval:
+      process.env.CONTEST_WALLET_CHECK_CYCLE_INTERVAL || 60, // seconds
+  },
+  // Service threshold settings:
+  service_thresholds: {
+    // Contest wallet minimum balance for reclaim:
+    contest_wallet_min_balance_for_reclaim:
+      process.env.CONTEST_WALLET_MIN_BALANCE_FOR_RECLAIM || 0.001, // SOL
+    // Contest wallet minimum amount to transfer:
+    contest_wallet_min_amount_to_transfer:
+      process.env.CONTEST_WALLET_MIN_AMOUNT_TO_TRANSFER || 0.0005, // SOL
   },
   // Debug modes:
   debug_mode: 

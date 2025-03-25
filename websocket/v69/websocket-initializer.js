@@ -195,7 +195,8 @@ function printWebSocketEndpoints() {
   ];
 
   logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} ENDPOINTS ${fancyColors.RESET} Available WebSocket endpoints:                                ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
-  
+
+  // Print all endpoints
   for (const endpoint of endpoints) {
     // Print endpoint path
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET}   ${fancyColors.CYAN}• ${endpoint.name}:${fancyColors.RESET} ${fancyColors.BOLD}${endpoint.path}${fancyColors.RESET}${' '.repeat(Math.max(0, 66 - endpoint.path.length))}${fancyColors.OCEAN}┃${fancyColors.RESET}`);

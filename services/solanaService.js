@@ -6,7 +6,6 @@
  */
 
 import { Connection } from '@solana/web3.js';
-import { validateSolanaConfig } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
@@ -14,21 +13,21 @@ import { ServiceError } from '../utils/service-suite/service-error.js';
 import { fancyColors } from '../utils/colors.js';
 
 // Config
-import { config } from '../config/config.js';
+import { config, validateSolanaConfig } from '../config/config.js';
 
-// Configuration for Solana service
+// Configure the Solana service itself
 const SOLANA_SERVICE_CONFIG = {
     name: SERVICE_NAMES.SOLANA,
     description: getServiceMetadata(SERVICE_NAMES.SOLANA).description,
     layer: getServiceMetadata(SERVICE_NAMES.SOLANA).layer,
     criticalLevel: getServiceMetadata(SERVICE_NAMES.SOLANA).criticalLevel,
-    checkIntervalMs: 30000, // 30 seconds - match current monitoring interval
-    maxRetries: 3,
-    retryDelayMs: 5000,
+    checkIntervalMs: 30 * 1000, // 30 seconds (matches intended monitoring interval)
+    maxRetries: 3, // 3 retries
+    retryDelayMs: 5 * 1000, // 5 seconds
     circuitBreaker: {
-        failureThreshold: 3,
-        resetTimeoutMs: 60000,
-        minHealthyPeriodMs: 120000
+        failureThreshold: 3, // 3 failures
+        resetTimeoutMs: 60 * 1000, // 60 seconds
+        minHealthyPeriodMs: 2 * 60 * 1000 // 2 minutes
     },
     dependencies: []
 };
@@ -51,6 +50,7 @@ class SolanaService extends BaseService {
             // Call parent initialization first
             await super.initialize();
             
+            // Check if connection is already initialized
             if (this.connection) {
                 logApi.info('Solana connection already initialized');
                 return true;
@@ -59,23 +59,24 @@ class SolanaService extends BaseService {
             // Validate Solana configuration
             validateSolanaConfig();
             
-            // Create Solana connection with web3.js v2 compatible configuration
+            // Create Solana connection with web3.js v2 compatible configuration // TODO: maybe
             this.connection = new Connection(
-                config.SOLANA_MAINNET_HTTP,
+                config.rpc_urls.mainnet_http,
                 {
                     commitment: 'confirmed',
-                    confirmTransactionInitialTimeout: 120000,
-                    wsEndpoint: config.SOLANA_MAINNET_WSS,
+                    confirmTransactionInitialTimeout: config.solana_timeouts.rpc_initial_connection_timeout * 1000,
+                    wsEndpoint: config.rpc_urls.mainnet_wss,
                     maxSupportedTransactionVersion: 0 // Support versioned transactions
+                    //maxSupportedTransactionVersion: 2 // Support versioned transactions // ??? 
                 }
             );
             
             // Test connection with initial request
+            const versionInfo = await this.connection.getVersion();
             logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.DARK_MAGENTA}\t\t✅ ${fancyColors.BG_LIGHT_GREEN} Solana connection established successfully ${fancyColors.RESET}`, {
-            //    version: versionInfo?.solana || 'unknown',
-            //    feature_set: versionInfo?.feature_set || 0
+                //version: versionInfo?.solana || 'unknown',
+                //feature_set: versionInfo?.feature_set || 0
             });
-            //const versionInfo = await this.connection.getVersion();
             
             return true;
         } catch (error) {
@@ -132,15 +133,22 @@ class SolanaService extends BaseService {
      */
     async reconnect() {
         try {
+            // Close existing connection, if one exists
+            if (this.connection) {
+                logApi.info('Closing and re-establishing Solana connection...');
+                await this.connection.destroy();
+            }
+
+            // Attempt to create new connection
             this.connection = new Connection(
-                config.SOLANA_MAINNET_HTTP, 
+                config.rpc_urls.mainnet_http, 
                 {
                     commitment: 'confirmed',
-                    confirmTransactionInitialTimeout: 120000,
-                    wsEndpoint: config.SOLANA_MAINNET_WSS
+                    confirmTransactionInitialTimeout: config.solana_timeouts.rpc_reconnection_timeout * 1000,
+                    wsEndpoint: config.rpc_urls.mainnet_wss
                 }
             );
-            
+            // Test connection
             await this.connection.getVersion();
             logApi.info('Solana connection re-established');
             return true;
