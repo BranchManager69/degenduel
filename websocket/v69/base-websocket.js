@@ -23,6 +23,22 @@ import { config } from '../../config/config.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors } from '../../utils/colors.js';
 
+/**
+ * IMPORTANT: GLOBAL WEBSOCKET COMPRESSION DISABLE
+ * 
+ * We need to disable perMessageDeflate compression to resolve client connection issues.
+ * Many clients (wscat, Postman, curl) fail with "Invalid WebSocket frame: RSV1 must be clear"
+ * 
+ * Instead of monkey patching (which causes const reassignment errors), 
+ * we'll make sure perMessageDeflate is explicitly set to false in the options.
+ * 
+ * - Implementation Date: March 25, 2025
+ * - Implemented By: BranchManager
+ * - Issue: RSV1 compression flag causing client connection failures
+ */
+// NOTE: We can't monkey patch WebSocket.Server since it's imported as a const,
+// so we'll explicitly set perMessageDeflate: false in the options throughout the code
+
 // Base WebSocket Server
 /**
  * This is the base class for all WebSocket servers in the application.
@@ -64,9 +80,10 @@ export class BaseWebSocketServer {
     this.maxPayload = options.maxPayload || 1024 * 1024; // 1MB default
     this.rateLimit = options.rateLimit || 300; // 300 messages per minute
     
-    // Compression settings - IMPORTANT: setting to false by default to prevent frame header issues
-    this.perMessageDeflate = options.perMessageDeflate === true; // Default to FALSE
-    this.useCompression = options.useCompression === true; // Alias for clarity
+    // Compression settings - EXPLICITLY DISABLED to prevent frame header issues
+    // Setting both flags to false to ensure consistency
+    this.perMessageDeflate = false; // Force to FALSE regardless of options
+    this.useCompression = false; // Alias for clarity - also forced to FALSE
     
     // Time intervals
     this.heartbeatInterval = options.heartbeatInterval || 60000; // 60 seconds (increased to reduce frequency)
@@ -79,19 +96,47 @@ export class BaseWebSocketServer {
     // - 'auto': Try header first, then fallback to query if not found (default)
     this.authMode = options.authMode || 'auto';
 
-    // Initialize WebSocket server with careful handling of compression options
-    // perMessageDeflate can cause frame header issues if misconfigured
+    // Initialize WebSocket server with compression EXPLICITLY DISABLED
+    // This prevents "RSV1 must be clear" errors with many clients
     const wsOptions = {
       server,
       path: this.path,
       maxPayload: this.maxPayload,
-      // Explicitly disable perMessageDeflate - it causes issues with some clients including Postman
-      perMessageDeflate: false
+      // Explicitly disable compression - CRITICAL for client compatibility
+      perMessageDeflate: false,
+      
+      // CRITICAL FIX: Prevent all extensions from being negotiated
+      // This is the key to fixing the "RSV1 must be clear" issue
+      handleProtocols: (protocols, request) => {
+        // Delete any extension headers to prevent compression negotiation
+        if (request.headers['sec-websocket-extensions']) {
+          const extensionHeader = request.headers['sec-websocket-extensions'];
+          logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION BLOCKED ${fancyColors.RESET} ${fancyColors.YELLOW}Removing extension header: ${extensionHeader}${fancyColors.RESET}`);
+          delete request.headers['sec-websocket-extensions'];
+        }
+        
+        // Return the first protocol or null
+        return protocols.length > 0 ? protocols[0] : null;
+      }
     };
     
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} Creating WebSocket server with compression: ${this.perMessageDeflate ? 'ENABLED' : 'DISABLED'}`);
+    // Include any direct WebSocket options provided by subclasses
+    if (options._ws_direct_options) {
+      Object.assign(wsOptions, options._ws_direct_options);
+      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} ${fancyColors.MAGENTA}Using direct WebSocket options to override defaults${fancyColors.RESET}`);
+    }
+    
+    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} Creating WebSocket server with compression: ${fancyColors.BG_GREEN}${fancyColors.BLACK} DISABLED ${fancyColors.RESET}`);
     
     this.wss = new WebSocket.Server(wsOptions);
+    
+    // Double-check that compression is disabled in the server instance
+    if (this.wss._options) {
+      this.wss._options.perMessageDeflate = false;
+      
+      // Log actual server options for debugging
+      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} WebSocket._options: perMessageDeflate=${!!this.wss._options.perMessageDeflate}`);
+    }
 
     // Initialize client tracking maps
     this.clients = new Set(); // All connected clients

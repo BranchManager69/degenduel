@@ -64,7 +64,8 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
    * @param {http.Server} server - The HTTP server to attach to
    */
   constructor(server) {
-    super(server, {
+    // CRITICAL: Add direct WebSocket options patch to force disable extensions
+    const baseOptions = {
       path: '/api/v69/ws/monitor',
       requireAuth: false, // TEMPORARILY disabled auth for testing
       publicEndpoints: ['*'], // ALL endpoints are public for testing
@@ -73,8 +74,29 @@ class MonitorWebSocketServer extends BaseWebSocketServer {
       heartbeatInterval: 30000, // 30s heartbeat
       perMessageDeflate: false, // Disable compression - especially important for Postman
       useCompression: false, // Alias for clarity
-      authMode: 'query' // Use query auth mode for Monitor WS - most reliable with browsers
-    });
+      authMode: 'query', // Use query auth mode for Monitor WS - most reliable with browsers
+      
+      // DIRECT CLIENT COMPRESSION OVERRIDE: 
+      // Additional options that will be passed directly to the WebSocket.Server
+      // to override any defaults in the ws library.
+      _ws_direct_options: {
+        perMessageDeflate: false,
+        
+        // Special hook to reject any extension headers
+        handleProtocols: (protocols, request) => {
+          // Prevent compression by removing any extension headers from the request
+          if (request.headers['sec-websocket-extensions']) {
+            logApi.warn(`${LOG_PREFIX} ${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION OVERRIDE ${fancyColors.RESET} Removing WebSocket extensions: ${request.headers['sec-websocket-extensions']}`);
+            delete request.headers['sec-websocket-extensions'];
+          }
+          
+          // Return the first protocol if any, or null
+          return protocols.length > 0 ? protocols[0] : null;
+        }
+      }
+    };
+    
+    super(server, baseOptions);
     
     // Initialize data caches
     this.systemStatusCache = { status: 'initializing', updated_at: new Date() };

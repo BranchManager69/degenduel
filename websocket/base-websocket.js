@@ -17,6 +17,22 @@ import prisma from '../config/prisma.js';
 import { fancyColors } from '../utils/colors.js';
 import { config } from '../config/config.js';
 
+/**
+ * IMPORTANT: GLOBAL WEBSOCKET COMPRESSION DISABLE
+ * 
+ * We need to disable perMessageDeflate compression to resolve client connection issues.
+ * Many clients (wscat, Postman, curl) fail with "Invalid WebSocket frame: RSV1 must be clear"
+ * 
+ * Instead of monkey patching (which causes const reassignment errors), 
+ * we'll make sure perMessageDeflate is explicitly set to false in the options.
+ * 
+ * - Implementation Date: March 25, 2025
+ * - Implemented By: BranchManager
+ * - Issue: RSV1 compression flag causing client connection failures
+ */
+// NOTE: We can't monkey patch WebSocketServer since it's a const,
+// so we'll explicitly set perMessageDeflate: false in the options below
+
 const VERBOSE_WEBSOCKET_INIT = true;
 
 // Base WebSocket Server
