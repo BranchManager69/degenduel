@@ -508,7 +508,7 @@ class MarketDataService extends BaseService {
                     // Emit an event that WebSockets can listen for via serviceEvents
                     serviceEvents.emit('market:broadcast', broadcastData);
                     
-                    logApi.info(`[MktDataSvc] Broadcasting market data: ${broadcastData.data.length} tokens`);
+                    logApi.info(`[MktDataSvc] Broadcasting market data (${broadcastData.data.length} tokens)`);
                 }
             } catch (error) {
                 logApi.error(`[MktDataSvc] Error in broadcast interval:`, error);

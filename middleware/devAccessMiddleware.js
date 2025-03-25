@@ -39,7 +39,9 @@ export const restrictDevAccess = (req, res, next) => {
   
   // Log the request details
   if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-    logApi.info(`\t🔒 Secure Access Check \n\t\t\tHost:   ${host}\n\t\t\tOrigin: ${origin}\n\t\t\tURL:    ${req.url}\n\t\t\tMethod: ${req.method}`);
+    logApi.info(`🔒 Secure Access Active! Checking... \n\t\t\tHost:   ${host}\n\t\t\tURL:    ${req.url}`);
+  } else {
+    logApi.info(`🔓 Secure Access is Currently Relaxed! \n\t\t\tHost:   ${host}\n\t\t\tURL:    ${req.url}`);
   }
   
   // Check if this is the development subdomain or production domain
@@ -60,7 +62,7 @@ export const restrictDevAccess = (req, res, next) => {
   if (req.url.includes('/ws/') || req.url.includes('socket')) {
     const wsEndpoint = req.url.split('/').pop();
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`\t\t🔓 WebSocket access GRANTED - Authentication bypassed for all WebSockets`, {
+      logApi.info(`\t🔓 WebSocket access GRANTED - Authentication bypassed for all WebSockets`, {
         url: req.url,
         endpoint: wsEndpoint
       });
@@ -83,13 +85,13 @@ export const restrictDevAccess = (req, res, next) => {
       const decoded = jwt.verify(devAccessToken, config.jwt.secret);
       if (decoded && decoded.authorized) {
         if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-          logApi.info('Dev access granted via cookie token');
+          logApi.info('\t👑 Access Granted to Branch Manager (via cookie token)');
         }
         return next();
       }
     } catch (error) {
       if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-        logApi.error('Invalid dev access token:', error);
+        logApi.error('\t🔒 Invalid dev access token:', error);
       }
     }
   }
@@ -120,7 +122,7 @@ export const restrictDevAccess = (req, res, next) => {
   const devAccessQuery = req.query?.devAccess;
   if (devAccessQuery === config.secure_middleware.branch_manager_header_token) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info('👑 Access Granted to Branch Manager (via query parameter)', {
+      logApi.info('\t👑 Access Granted to Branch Manager (via query parameter)', {
         url: req.url,
         fullQueryString: req.url.includes('?') ? req.url.split('?')[1] : 'none',
         decodedQuery: JSON.stringify(req.query),
@@ -147,7 +149,7 @@ export const restrictDevAccess = (req, res, next) => {
       // Check if the wallet address is authorized
       if (authorizedWallets.includes(walletAddress)) {
         if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-          logApi.info(`👑 Access Granted to Branch Manager (via user session token; wallet: ${walletAddress})`);
+          logApi.info(`\t👑 Access Granted to Branch Manager (via user session token; wallet: ${walletAddress})`);
         }
         return next();
       }
