@@ -515,7 +515,8 @@ class ContestWalletService extends BaseService {
             });
             
             // Process contest wallets in batches
-            const BATCH_SIZE = 20; // reduced from 100 to avoid rate limiting
+            // Use configured batch size from config
+            const BATCH_SIZE = config.solana_timeouts.rpc_wallet_batch_size || 10;
             
             // Calculate total batches needed to process all contest wallets
             let currentBatch = 0;
@@ -523,6 +524,9 @@ class ContestWalletService extends BaseService {
             
             // Track rate limit hits to implement exponential backoff
             let consecutiveRateLimitHits = 0;
+            
+            // Set dynamic delay based on total batches to spread requests
+            const baseDelayBetweenBatches = Math.max(1000, Math.min(5000, 300 * totalBatches));
             
             // Process each batch of contest wallets
             while (currentBatch < totalBatches) {
@@ -536,16 +540,15 @@ class ContestWalletService extends BaseService {
                 
                 // Calculate delay based on consecutive rate limit hits 
                 try {
-                    // Implement exponential backoff: 0ms → 1000ms → 2000ms → 4000ms → 8000ms
-                    const delayBetweenBatches = Math.min(8000, consecutiveRateLimitHits === 0 ? 500 : Math.pow(2, consecutiveRateLimitHits) * 500);
+                    // Implement exponential backoff with higher base delay: 1000ms → 2000ms → 4000ms → 8000ms → 16000ms
+                    const delayBetweenBatches = Math.min(16000, 
+                        consecutiveRateLimitHits === 0 ? baseDelayBetweenBatches : Math.pow(2, consecutiveRateLimitHits) * baseDelayBetweenBatches);
                     
                     // Log the batch being processed
-                    logApi.info(`[contestWalletService] Getting balances of contest wallets #${startIndex+1}-${endIndex} (batch ${currentBatch+1} of ${totalBatches})`);
+                    logApi.info(`[contestWalletService] Getting balances of contest wallets #${startIndex+1}-${endIndex} (batch ${currentBatch+1} of ${totalBatches}), waiting ${delayBetweenBatches}ms between batches`);
                     
-                    // If this isn't the first batch, add delay before request to avoid rate limits
-                    if (currentBatch > 0) {
-                        await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
-                    }
+                    // Add delay before EVERY request to avoid rate limits, not just after the first one
+                    await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
                     
                     // Get balances of all contest wallets from a single RPC call
                     const balances = await this.connection.getMultipleAccountsInfo(publicKeys);
@@ -644,9 +647,16 @@ class ContestWalletService extends BaseService {
                         // Increment consecutive rate limit counter
                         consecutiveRateLimitHits++;
                         
-                        // Calculate exponential backoff delay
-                        const RPC_RATE_LIMIT_RETRY_DELAY = config.solana_timeouts.rpc_rate_limit_retry_delay || 15 * 1000; // default: 15 seconds
-                        const backoffDelay = Math.min(RPC_RATE_LIMIT_RETRY_DELAY, Math.pow(2, consecutiveRateLimitHits) * 1000);
+                        // Get config values with defaults
+                        const RPC_RATE_LIMIT_RETRY_DELAY = (config.solana_timeouts.rpc_rate_limit_retry_delay || 15) * 1000; // convert to ms
+                        const RPC_RATE_LIMIT_RETRY_BACKOFF_FACTOR = config.solana_timeouts.rpc_rate_limit_retry_backoff_factor || 2;
+                        const RPC_RATE_LIMIT_MAX_DELAY = (config.solana_timeouts.rpc_rate_limit_max_delay || 30) * 1000; // convert to ms
+                        
+                        // Calculate exponential backoff delay with more configurable approach
+                        const backoffDelay = Math.min(
+                            RPC_RATE_LIMIT_MAX_DELAY, 
+                            RPC_RATE_LIMIT_RETRY_DELAY * Math.pow(RPC_RATE_LIMIT_RETRY_BACKOFF_FACTOR, consecutiveRateLimitHits - 1)
+                        );
                         
                         // Log rate limit error
                         logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits} - Adding ${backoffDelay}ms delay${fancyColors.RESET}`, {
@@ -657,7 +667,9 @@ class ContestWalletService extends BaseService {
                             retry_ms: backoffDelay,
                             consecutive_hits: consecutiveRateLimitHits,
                             rpc_provider: config.rpc_urls.primary,
-                            error_message: error.message
+                            original_message: error.message,
+                            severity: 'warning',
+                            alert_type: 'rate_limit'
                         });
                         
                         // Wait longer based on consecutive failures
@@ -891,26 +903,29 @@ class ContestWalletService extends BaseService {
             };
             
             // Process wallets in smaller batches to avoid rate limiting
-            const BATCH_SIZE = 20; // Same batch size as in updateAllWalletBalances
+            // For reclaiming funds, use half the normal batch size for extra safety
+            const BATCH_SIZE = Math.max(1, Math.floor((config.solana_timeouts.rpc_wallet_batch_size || 10) / 2));
             let walletIndex = 0;
             
             // Track rate limit hits for adaptive delays
             let consecutiveRateLimitHits = 0;
+            
+            // Set more aggressive base delay for reclaiming (higher stakes operation)
+            const baseDelayBetweenBatches = Math.max(2000, Math.min(8000, 500 * Math.ceil(eligibleWallets.length/BATCH_SIZE)));
             
             while (walletIndex < eligibleWallets.length) {
                 // Extract current batch
                 const endIndex = Math.min(walletIndex + BATCH_SIZE, eligibleWallets.length);
                 const walletBatch = eligibleWallets.slice(walletIndex, endIndex);
                 
-                // Calculate adaptive delay between batches
-                const delayBetweenBatches = Math.min(8000, consecutiveRateLimitHits === 0 ? 500 : Math.pow(2, consecutiveRateLimitHits) * 500);
+                // Calculate adaptive delay between batches - more conservative for fund reclaiming
+                const delayBetweenBatches = Math.min(20000, consecutiveRateLimitHits === 0 ? 
+                    baseDelayBetweenBatches : Math.pow(2, consecutiveRateLimitHits) * baseDelayBetweenBatches);
                 
                 logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Processing reclaim batch ${Math.floor(walletIndex/BATCH_SIZE)+1}/${Math.ceil(eligibleWallets.length/BATCH_SIZE)} (${walletBatch.length} wallets) - Delay: ${delayBetweenBatches}ms`);
                 
-                // Wait between batches
-                if (walletIndex > 0) {
-                    await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
-                }
+                // Always wait between batches, even for the first one
+                await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
                 
                 try {
                     // Create batch of PublicKeys
@@ -1091,8 +1106,16 @@ class ContestWalletService extends BaseService {
                         // Increment consecutive rate limit counter
                         consecutiveRateLimitHits++;
                         
-                        // Calculate exponential backoff delay
-                        const backoffDelay = Math.min(30000, Math.pow(2, consecutiveRateLimitHits) * 1000);
+                        // Get config values with defaults - with higher values for reclaiming operations
+                        const RPC_RATE_LIMIT_RETRY_DELAY = (config.solana_timeouts.rpc_rate_limit_retry_delay || 15) * 1000 * 2; // 2x regular delay for reclaiming
+                        const RPC_RATE_LIMIT_RETRY_BACKOFF_FACTOR = config.solana_timeouts.rpc_rate_limit_retry_backoff_factor || 2;
+                        const RPC_RATE_LIMIT_MAX_DELAY = (config.solana_timeouts.rpc_rate_limit_max_delay || 30) * 1000 * 1.5; // 1.5x max delay for reclaiming
+                        
+                        // Calculate exponential backoff delay with more configurable approach
+                        const backoffDelay = Math.min(
+                            RPC_RATE_LIMIT_MAX_DELAY, 
+                            RPC_RATE_LIMIT_RETRY_DELAY * Math.pow(RPC_RATE_LIMIT_RETRY_BACKOFF_FACTOR, consecutiveRateLimitHits - 1)
+                        );
                         
                         logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits} - Adding ${backoffDelay}ms delay${fancyColors.RESET}`, {
                             service: 'SOLANA',
@@ -1102,7 +1125,9 @@ class ContestWalletService extends BaseService {
                             retry_ms: backoffDelay,
                             consecutive_hits: consecutiveRateLimitHits,
                             rpc_provider: config.rpc_urls.primary,
-                            error_message: error.message
+                            original_message: error.message,
+                            severity: 'warning',
+                            alert_type: 'rate_limit'
                         });
                         
                         // Wait longer based on consecutive failures

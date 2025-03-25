@@ -19,14 +19,15 @@ import { createSystemSettingsWebSocket } from './system-settings-ws.js';
 import { createTokenDataWebSocket } from './token-data-ws.js';
 import { createUserNotificationWebSocket } from './user-notification-ws.js';
 import { createWalletWebSocket } from './wallet-ws.js';
-
+// Logger
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 
 
-// Initialize global v69 WebSocket container
+// Global v69 WebSocket container
 global.wsServersV69 = global.wsServersV69 || {};
 
+// Initialize all v69 WebSocket servers
 /**
  * Initialize all v69 WebSocket servers
  * @param {http.Server} server - The HTTP server to attach WebSockets to
@@ -40,7 +41,7 @@ export async function initializeWebSockets(server) {
 
   // Master v69 WebSocket server initialization process
   try {
-    logApi.info(`\n${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 SYSTEM ${fancyColors.RESET} ${fancyColors.OCEAN}┏━━━━━━━━━━━━━━━━━━━━━━━ ${fancyColors.BOLD}${fancyColors.WHITE}WebSocket Initialization${fancyColors.RESET}${fancyColors.OCEAN} ━━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
+    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 SYSTEM ${fancyColors.RESET} ${fancyColors.OCEAN}┏━━━━━━━━━━━━━━━━━━━━━━━ ${fancyColors.BOLD}${fancyColors.WHITE}WebSocket Initialization${fancyColors.RESET}${fancyColors.OCEAN} ━━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}${fancyColors.BOLD}Initializing v69 WebSocket Servers...${fancyColors.RESET}                                    ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
 
     // Create WebSocket instances
@@ -133,8 +134,10 @@ export async function initializeWebSockets(server) {
   }
 }
 
+// Print v69 WebSocket endpoints information
 /**
  * Print v69 WebSocket endpoints information
+ * @returns {void}
  */
 function printv69WebSocketEndpoints() {
   const endpoints = [
@@ -349,6 +352,7 @@ function printv69WebSocketEndpoints() {
   }
 }
 
+// Cleanup WebSocket servers before shutdown
 /**
  * Cleanup all WebSocket servers before shutdown
  * @returns {Promise<boolean>} - Whether cleanup was successful

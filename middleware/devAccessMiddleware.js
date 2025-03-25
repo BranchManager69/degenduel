@@ -37,8 +37,9 @@ export const restrictDevAccess = (req, res, next) => {
   const host = req.headers.host;
   const origin = req.headers.origin;
   
+  // Log the request details
   if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-    logApi.info('Dev Access Check:', { 
+    logApi.info(`\t\t🔒 Secure Access Check `, { 
       host, 
       origin,
       url: req.url,
@@ -46,7 +47,7 @@ export const restrictDevAccess = (req, res, next) => {
     });
   }
   
-  // Check if this is the dev subdomain
+  // Check if this is the development subdomain or production domain
   const isDev = host?.includes('dev.degenduel.me') || origin?.includes('dev.degenduel.me');
   
   if (!isDev) {
@@ -60,10 +61,16 @@ export const restrictDevAccess = (req, res, next) => {
   }
 
   // BYPASS ALL WEBSOCKET REQUESTS - no auth needed for WebSockets
+  // TODO: WTF???
   if (req.url.includes('/ws/') || req.url.includes('socket')) {
     const wsEndpoint = req.url.split('/').pop();
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`WebSocket access GRANTED - Authentication bypassed for all WebSockets`, {
+      logApi.info(`\t\t🔓 WebSocket access GRANTED - Authentication bypassed for all WebSockets`, {
+        url: req.url,
+        endpoint: wsEndpoint
+      });
+    } else {
+      logApi.info(`\t\t🔓 [UH-OH! SECURE ACCESS RESTRICTIONS ARE DISABLED!] WebSocket access GRANTED - Authentication bypassed for all WebSockets`, {
         url: req.url,
         endpoint: wsEndpoint
       });
@@ -94,7 +101,6 @@ export const restrictDevAccess = (req, res, next) => {
   
   // Method 2: Check for a special header
   const devAccessHeader = req.headers['x-dev-access-token'];
-
   // Check if the special header token is valid
   if (devAccessHeader === config.secure_middleware.branch_manager_header_token) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
@@ -159,7 +165,6 @@ export const restrictDevAccess = (req, res, next) => {
   
   // Method 4: Check for authorized IP addresses (least secure)
   const clientIp = req.ip || req.connection.remoteAddress;
-  
   // List of all authorized IP addresses
   const authorizedIps = [
     // Branch Manager IP address
@@ -170,11 +175,10 @@ export const restrictDevAccess = (req, res, next) => {
     // Other authorized IPs
     '69.420.69.420',
   ];
-  
   // Check if the client IP is authorized
   if (authorizedIps.includes(clientIp)) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`👑 Access granted to Branch Manager (verified IP: ${clientIp})`);
+      logApi.info(`\t\t👑 Access granted to Branch Manager (verified IP: ${clientIp})`);
     }
     return next();
   }

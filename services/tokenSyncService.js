@@ -11,9 +11,6 @@ import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
-import { config } from '../config/config.js';
-import { logApi } from '../utils/logger-suite/logger.js';
-import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
@@ -21,6 +18,9 @@ import serviceManager from '../utils/service-suite/service-manager.js';
 // Solana
 import { TOKEN_VALIDATION } from '../config/constants.js';
 import { PublicKey } from '@solana/web3.js';
+// Logger
+import { logApi } from '../utils/logger-suite/logger.js';
+import AdminLogger from '../utils/admin-logger.js';
 // Other
 import axios from 'axios';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -28,6 +28,10 @@ import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/servic
 // Import marketDataService to replace deprecated API endpoints
 import marketDataService from './marketDataService.js';
 
+// Config
+import { config } from '../config/config.js';
+
+// Token Sync Service Configuration
 const TOKEN_SYNC_CONFIG = {
     name: SERVICE_NAMES.TOKEN_SYNC,
     description: getServiceMetadata(SERVICE_NAMES.TOKEN_SYNC).description,
@@ -57,6 +61,14 @@ const TOKEN_SYNC_CONFIG = {
 };
 
 // Token Sync Service
+/**
+ * Token Sync Service
+ * 
+ * This service is responsible for fetching and updating token prices and metadata.
+ * It stays up to date by constantly fetching from the DegenDuel Market Data API.
+ * 
+ * @extends {BaseService}
+ */
 class TokenSyncService extends BaseService {
     constructor() {
         ////super(TOKEN_SYNC_CONFIG.name, TOKEN_SYNC_CONFIG);
@@ -123,6 +135,11 @@ class TokenSyncService extends BaseService {
     }
 
     // Initialize the service
+    /**
+     * Initialize the service
+     * 
+     * @returns {Promise<boolean>} - True if the service was initialized successfully, false otherwise
+     */
     async initialize() {
         try {
             // Call parent initialize first
@@ -217,6 +234,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Validation utilities
+    /**
+     * Validate the URL
+     * 
+     * @param {string} url - The URL to validate
+     * @returns {string} - The validated URL
+     */
     validateUrl(url) {
         // Skip validation if no URL provided
         if (!url) return null;
@@ -248,6 +271,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Validate the description
+    /**
+     * Validate the description
+     * 
+     * @param {string} desc - The description to validate
+     * @returns {string} - The validated description
+     */
     validateDescription(desc) {
         if (!desc) return null;
         const trimmed = desc.trim();
@@ -257,6 +286,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Validate the symbol
+    /**
+     * Validate the symbol
+     * 
+     * @param {string} symbol - The symbol to validate
+     * @returns {string} - The validated symbol
+     */
     validateSymbol(symbol) {
         if (!symbol) return null;
         
@@ -273,6 +308,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Validate the name
+    /**
+     * Validate the name
+     * 
+     * @param {string} name - The name to validate
+     * @returns {string} - The validated name
+     */
     validateName(name) {
         const trimmed = name?.trim();
         if (!trimmed) {
@@ -284,6 +325,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Validate the address
+    /**
+     * Validate the address
+     * 
+     * @param {string} address - The address to validate
+     * @returns {string} - The validated address
+     */
     validateAddress(address) {
         // Skip validation if no address provided
         if (!address) return null;
@@ -323,6 +370,13 @@ class TokenSyncService extends BaseService {
     }
 
     // API calls with circuit breaker protection
+    /**
+     * Make an API call with circuit breaker protection
+     * 
+     * @param {string} endpoint - The endpoint to call
+     * @param {Object} options - The options for the API call
+     * @returns {Promise<Object>} - The response from the API call
+     */
     async makeApiCall(endpoint, options = {}) {
         // Validate the endpoint URL first
         if (!endpoint) {
@@ -364,6 +418,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Helper function to format price with smart significant digits
+    /**
+     * Format price with smart significant digits
+     * 
+     * @param {number} price - The price to format
+     * @returns {string} - The formatted price
+     */
     formatPrice(price) {
         if (price === null || price === undefined) return "N/A";
         
@@ -390,6 +450,12 @@ class TokenSyncService extends BaseService {
     }
     
     // Helper function to format market cap with appropriate suffix (K, M, B, T)
+    /**
+     * Format market cap with appropriate suffix (K, M, B, T)
+     * 
+     * @param {number} marketCap - The market cap to format
+     * @returns {string} - The formatted market cap
+     */
     formatMarketCap(marketCap) {
         if (!marketCap || marketCap <= 0) return "N/A";
         
@@ -427,6 +493,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Fetch token prices using marketDataService with limited concurrency
+    /**
+     * Fetch token prices using marketDataService with limited concurrency
+     * 
+     * @param {Array} addresses - The addresses of the tokens to fetch prices for
+     * @returns {Promise<Array>} - An array of token prices
+     */
     async fetchTokenPrices(addresses) {
         logApi.info(`[tokenSyncService] Fetching prices for ${addresses.length} tokens...`);
         
@@ -483,6 +555,11 @@ class TokenSyncService extends BaseService {
     }
 
     // Fetch token data directly from marketDataService
+    /**
+     * Fetch token data directly from marketDataService
+     * 
+     * @returns {Promise<Array>} - An array of token data
+     */
     async fetchTokenData() {
         logApi.info(`[tokenSyncService] Fetching token data from marketDataService`);
         
@@ -592,6 +669,11 @@ class TokenSyncService extends BaseService {
     }
 
     // Core sync operations
+    /**
+     * Update token prices
+     * 
+     * @returns {Promise<Object>} - Performance metrics and results
+     */
     async updatePrices() {
         const startTime = Date.now();
         logApi.info(`[tokenSyncService] Price update cycle starting`);
@@ -740,6 +822,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Update token metadata
+    /**
+     * Update token metadata
+     * 
+     * @param {Array} fullData - The full token data
+     * @returns {Promise<Object>} - Performance metrics and results
+     */
     async updateMetadata(fullData) {
         const startTime = Date.now();
         
@@ -904,6 +992,8 @@ class TokenSyncService extends BaseService {
      * Synchronize tokens across databases
      * This function ensures that all tokens in the main database are also in the market database
      * by calling the dedicated token-sync API endpoint in the lobby service
+     * 
+     * @returns {Promise<Object>} - Performance metrics and results
      */
     async synchronizeTokensAcrossDatabases() {
         logApi.info(`[tokenSyncService] Starting token synchronization across databases...`);
@@ -982,6 +1072,9 @@ class TokenSyncService extends BaseService {
     /**
      * Simple placeholder for token addition
      * This will be replaced by a proper token discovery implementation
+     * 
+     * @param {Object} token - The token to add
+     * @returns {Promise<boolean>} - True if the token was added, false otherwise
      */
     async addTokenToMarketDatabase(token) {
         logApi.info(`[tokenSyncService] Need to add token ${token.symbol} (${token.address}) to market database`);
@@ -993,6 +1086,13 @@ class TokenSyncService extends BaseService {
     }
 
     // Main operation implementation
+    /**
+     * Perform the main operation of the token sync service
+     * This function ensures all tokens are synchronized across databases
+     * and updates prices and metadata as needed
+     * 
+     * @returns {Promise<Object>} - Performance metrics and results
+     */
     async performOperation() {
         const startTime = Date.now();
         
@@ -1044,6 +1144,12 @@ class TokenSyncService extends BaseService {
     }
 
     // Check if the token list has changed
+    /**
+     * Check if the token list has changed
+     * 
+     * @param {Array} newTokens - The new token list
+     * @returns {boolean} - True if the token list has changed, false otherwise
+     */
     hasTokenListChanged(newTokens) {
         if (this.lastKnownTokens.size !== newTokens.length) {
             logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_NEON} Token List Size Changed! \n\t${fancyColors.RESET} ${fancyColors.BG_DARK_YELLOW} ${this.lastKnownTokens.size} -> ${newTokens.length}`);
@@ -1069,6 +1175,10 @@ class TokenSyncService extends BaseService {
     }
 
     // Stop the service
+    /**
+     * Stop the service
+     * @returns {Promise<void>} - A promise that resolves when the service is stopped
+     */
     async stop() {
         try {
             await super.stop();

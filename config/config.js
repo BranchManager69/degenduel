@@ -101,6 +101,15 @@ const config = {
     // RPC rate limit retry delay:
     rpc_rate_limit_retry_delay:
       process.env.SOLANA_RPC_RATE_LIMIT_RETRY_DELAY || 15, // seconds
+    // RPC rate limit retry backoff factor:
+    rpc_rate_limit_retry_backoff_factor:
+      process.env.SOLANA_RPC_RATE_LIMIT_RETRY_BACKOFF_FACTOR || 2, // factor
+    // RPC rate limit max delay:
+    rpc_rate_limit_max_delay:
+      process.env.SOLANA_RPC_RATE_LIMIT_MAX_DELAY || 30, // seconds
+    // RPC batch size for wallet operations:
+    rpc_wallet_batch_size:
+      process.env.SOLANA_RPC_WALLET_BATCH_SIZE || 10, // number of wallets per batch
   
   },
 
