@@ -780,6 +780,57 @@ class ReferralService extends BaseService {
             throw error;
         }
     }
+
+    // Implementation of trackClick method that was missing
+    // This is called by the /api/referrals/analytics/click endpoint
+    async trackClick(referralCode, clickData) {
+        try {
+            // Validate the referral code before proceeding
+            const referrer = await prisma.users.findUnique({
+                where: { referral_code: referralCode.toUpperCase() },
+                select: { wallet_address: true }
+            });
+
+            if (!referrer) {
+                throw new Error('Invalid referral code');
+            }
+
+            // Create a record of the click
+            const click = await prisma.referral_clicks.create({
+                data: {
+                    referral_code: referralCode.toUpperCase(),
+                    referrer_id: referrer.wallet_address,
+                    source: clickData.source,
+                    landing_page: clickData.landingPage,
+                    utm_source: clickData.utmParams?.utm_source,
+                    utm_medium: clickData.utmParams?.utm_medium,
+                    utm_campaign: clickData.utmParams?.utm_campaign,
+                    device: clickData.device,
+                    browser: clickData.browser,
+                    ip_address: clickData.ip_address,
+                    user_agent: clickData.user_agent,
+                    session_id: clickData.sessionId,
+                    timestamp: new Date()
+                }
+            });
+
+            // Update service stats
+            this.referralStats.operations.total++;
+            this.referralStats.operations.successful++;
+
+            return {
+                click_id: click.id,
+                timestamp: click.timestamp,
+                status: 'recorded'
+            };
+        } catch (error) {
+            this.referralStats.operations.failed++;
+            throw ServiceError.operation('Failed to track referral click', {
+                referral_code: referralCode,
+                error: error.message
+            });
+        }
+    }
 }
 
 // Export service singleton

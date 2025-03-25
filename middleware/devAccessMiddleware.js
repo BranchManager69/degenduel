@@ -54,15 +54,6 @@ export const restrictDevAccess = async (req, res, next) => {
 
   // Check if this is a websocket (or v69) request
   if (req.url.includes('/api/v69/ws/')) {
-    
-    
-    
-    
-    console.log('websocket request url:', req.url);
-
-
-
-    
     // Log a single line with both security status and access grant
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
       logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Public resource${fancyColors.RESET}`);

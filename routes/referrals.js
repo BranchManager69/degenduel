@@ -1,18 +1,30 @@
 // /routes/referrals.js
 
-import express, { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+/**
+ * 
+ * This file needs a lot of work.
+ * 
+ */
+
+import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import crypto from 'crypto';
 import { logApi } from '../utils/logger-suite/logger.js';
-import { referralClickLimit, referralConversionLimit } from '../middleware/rateLimit.js';
 import { body } from 'express-validator';
 import { validateRequest } from '../middleware/validateRequest.js';
 import rateLimit from 'express-rate-limit';
 import referralService from '../services/referralService.js';
 import prisma from '../config/prisma.js';
+import { referralClickLimit, referralConversionLimit } from '../middleware/rateLimit.js'; // why are these unused?
 
+// Config
+import config from '../config/config.js';
+
+// Referrals router
 const router = Router();
+
+
+/* Helpers */
 
 // Generate a random referral code
 function generateReferralCode(length = 8) {
@@ -21,6 +33,9 @@ function generateReferralCode(length = 8) {
         .slice(0, length)
         .toUpperCase();
 }
+
+
+/* Routes */
 
 // Get or generate referral code for authenticated user
 router.get('/code', requireAuth, async (req, res) => {
@@ -205,20 +220,59 @@ router.post('/apply', async (req, res) => {
     }
 });
 
-// Rate limiting setup as per documentation
+// Click rate limiting setup as per documentation
 const clickLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100 // 100 requests per IP
 });
 
+// Conversion rate limiting setup as per documentation
 const conversionLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 10 // 10 attempts per IP
 });
 
 // Track referral click
+/* 
+ * ================================================================
+ * TEMPORARILY DISABLED - 2025-03-25
+ * 
+ * This endpoint was causing excessive log spam when misused by
+ * client-side navigation to non-referral paths. We're replacing it
+ * with a no-op implementation until the referral system is properly
+ * implemented and needed.
+ *
+ * Original implementation is commented out below.
+ * ================================================================
+ */
+router.post('/analytics/click', (req, res) => {
+    // Return a successful empty response without any processing
+    // This effectively disables the endpoint without breaking the API contract
+    res.json({
+        success: true,
+        data: {
+            status: 'noop',
+            message: 'Referral tracking temporarily disabled'
+        }
+    });
+});
+
+/* Original implementation kept for reference
 router.post('/analytics/click',
     clickLimiter,
+    // First middleware: check if this is likely a misrouted request 
+    (req, res, next) => {
+        // Quick check if this is likely a navigation request, not a proper API call
+        // Proper API calls should have a JSON content type and a body with required fields
+        if (!req.is('application/json') || !req.body || !req.body.referralCode) {
+            // This is likely a misrouted page navigation - reject silently without logging
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid request format'
+            });
+        }
+        next();
+    },
     [
         body('referralCode').isString().trim().notEmpty(),
         body('source').isString().trim().optional(),
@@ -245,16 +299,42 @@ router.post('/analytics/click',
                 data: result
             });
         } catch (error) {
-            logApi.error('Failed to track referral click:', error);
+            // Don't log invalid referral codes - these are expected
+            if (error.message !== 'Invalid referral code') {
+                logApi.error('Failed to track referral click:', error);
+            }
+            
             res.status(400).json({
                 success: false,
                 error: error.message
             });
         }
     }
-);
+*/
 
 // Track conversion
+/* 
+ * ================================================================
+ * TEMPORARILY DISABLED - 2025-03-25
+ * 
+ * This endpoint is part of the referral tracking system that's
+ * causing issues. Disabling until the system is needed.
+ *
+ * Original implementation is commented out below.
+ * ================================================================
+ */
+router.post('/analytics/conversion', requireAuth, (req, res) => {
+    // Return a successful empty response
+    res.json({
+        success: true,
+        data: {
+            status: 'noop',
+            message: 'Referral conversion tracking temporarily disabled'
+        }
+    });
+});
+
+/* Original implementation kept for reference
 router.post('/analytics/conversion',
     requireAuth,
     conversionLimiter,
@@ -285,9 +365,39 @@ router.post('/analytics/conversion',
             });
         }
     }
-);
+*/
 
 // Get analytics (requires authentication)
+/* 
+ * ================================================================
+ * TEMPORARILY DISABLED - 2025-03-25
+ * 
+ * This endpoint is part of the referral analytics system that's
+ * currently disabled. Providing a mock response.
+ *
+ * Original implementation is commented out below.
+ * ================================================================
+ */
+router.get('/analytics', requireAuth, (req, res) => {
+    // Return mock analytics data
+    res.json({
+        clicks: {
+            total: 0,
+            conversion_rate: 0,
+            by_source: {},
+            by_campaign: {},
+            by_date: {}
+        },
+        conversions: {
+            total: 0,
+            by_date: {}
+        },
+        status: 'disabled',
+        message: 'Referral analytics temporarily disabled'
+    });
+});
+
+/* Original implementation kept for reference
 router.get('/analytics',
     requireAuth,
     async (req, res) => {
@@ -318,9 +428,38 @@ router.get('/analytics',
             });
         }
     }
-);
+*/
 
-// Get leaderboard statistics
+// Get referrals leaderboard statistics
+/* 
+ * ================================================================
+ * TEMPORARILY DISABLED - 2025-03-25
+ * 
+ * This endpoint is part of the referral leaderboard system that's
+ * currently disabled. Providing a mock response.
+ *
+ * Original implementation is commented out below.
+ * ================================================================
+ */
+router.get('/leaderboard/stats', (req, res) => {
+    // Return mock leaderboard stats
+    res.json({
+        success: true,
+        data: {
+            period_id: 1,
+            start_date: new Date(),
+            end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+            total_referrals: 0,
+            qualified_referrals: 0,
+            unique_referrers: 0,
+            conversion_rate: 0,
+            status: 'disabled',
+            message: 'Referral leaderboard temporarily disabled'
+        }
+    });
+});
+
+/* Original implementation kept for reference
 router.get('/leaderboard/stats',
     async (req, res) => {
         try {
@@ -346,8 +485,28 @@ router.get('/leaderboard/stats',
         }
     }
 );
+*/
 
-// Get leaderboard rankings
+// Get referrals leaderboard rankings
+/* 
+ * ================================================================
+ * TEMPORARILY DISABLED - 2025-03-25
+ * 
+ * This endpoint is part of the referral rankings system that's
+ * currently disabled. Providing a mock response.
+ *
+ * Original implementation is commented out below.
+ * ================================================================
+ */
+router.get('/leaderboard/rankings', (req, res) => {
+    // Return empty rankings
+    res.json({
+        success: true,
+        data: [] // Empty rankings array
+    });
+});
+
+/* Original implementation kept for reference
 router.get('/leaderboard/rankings',
     async (req, res) => {
         try {
@@ -371,120 +530,35 @@ router.get('/leaderboard/rankings',
         }
     }
 );
-
-/**
- * @api {get} /api/referrals/details Get referrer details from referral code
- * @apiName GetReferrerDetails
- * @apiGroup Referrals
- * @apiDescription Get detailed information about a referrer based on their referral code
- * 
- * @apiParam {String} code Referral code
- * 
- * @apiSuccess {Boolean} success Indicates if the operation was successful
- * @apiSuccess {Object} referrer Referrer information
- * @apiSuccess {String} referrer.nickname Referrer's nickname
- * @apiSuccess {String} referrer.wallet_address Referrer's wallet address
- * @apiSuccess {Object} referrer.profile_image Profile image info
- * @apiSuccess {String} referrer.profile_image.url Full profile image URL
- * @apiSuccess {String} referrer.profile_image.thumbnail_url Thumbnail profile image URL
- * @apiSuccess {Object} rewards Information about referral rewards
- */
-router.get('/details',
-    async (req, res) => {
-        try {
-            const { code } = req.query;
-            
-            // CRITICAL: Immediately reject if missing code - prevents empty log entries
-            if (!code) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Referral code is required'
-                });
-            }
-            
-            // SIMPLE CHECK: Referral codes are given to users in all uppercase
-            // If there are any lowercase letters, it's likely a navigation path, not a code
-            // This simple check prevents most UI navigation paths from hitting the database
-            if (code !== code.toUpperCase() || code.includes('-') || code.includes('/')) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Invalid referral code'
-                });
-            }
-            
-            // At this point, the code is all uppercase with no special chars
-            // Only log these potential valid codes to reduce spam
-            logApi.info(`Referrer details requested for code: ${code}`, {
-                ip: req.ip,
-                user_agent: req.get('user-agent')
-            });
-            
-            // Find the user with this referral code
-            const referrer = await prisma.users.findUnique({
-                where: { referral_code: code },  // Already uppercase from check above
-                select: {
-                    wallet_address: true,
-                    username: true,
-                    nickname: true,
-                    profile_image_url: true,
-                    profile_image_updated_at: true,
-                    is_banned: true
-                }
-            });
-            
-            if (!referrer) {
-                logApi.info(`Referrer details request for invalid code: ${code}`);
-                return res.status(404).json({
-                    success: false,
-                    error: 'Invalid referral code'
-                });
-            }
-            
-            if (referrer.is_banned) {
-                return res.status(403).json({
-                    success: false,
-                    error: 'This referral code is no longer valid'
-                });
-            }
-            
-            // Get referral rewards info from database or config
-            // This is placeholder implementation - adjust according to your actual rewards system
-            const referralRewards = {
-                user_bonus: "Increased XP for first week",
-                referrer_bonus: "250 XP and milestone rewards"
-            };
-            
-            // Build profile image URLs
-            const profileImageInfo = referrer.profile_image_url ? {
-                url: referrer.profile_image_url,
-                thumbnail_url: referrer.profile_image_url,
-                updated_at: referrer.profile_image_updated_at
-            } : null;
-            
-            logApi.info(`Referrer details successfully retrieved for code: ${code}`, {
-                referrer_wallet: referrer.wallet_address
-            });
-            
-            res.json({
-                success: true,
-                referrer: {
-                    nickname: referrer.nickname || referrer.username,
-                    wallet_address: referrer.wallet_address,
-                    profile_image: profileImageInfo
-                },
-                rewards: referralRewards
-            });
-        } catch (error) {
-            logApi.error('Failed to get referrer details:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Failed to retrieve referrer information'
-            });
-        }
-    }
-);
+*/
 
 // Get user milestones
+/**
+ * @api {get} /api/referrals/milestones Get user milestones
+ * @apiName GetUserMilestones
+ * @apiGroup Referrals
+ * @apiDescription Get all milestones for the authenticated user
+ * 
+ */
+/* 
+ * ================================================================
+ * TEMPORARILY DISABLED - 2025-03-25
+ * 
+ * This endpoint is part of the referral system that's currently disabled.
+ * Providing a mock response with empty milestones.
+ *
+ * Original implementation is commented out below.
+ * ================================================================
+ */
+router.get('/milestones', requireAuth, (req, res) => {
+    // Return empty milestones array
+    res.json({
+        success: true,
+        data: [] // Empty milestones array
+    });
+});
+
+/* Original implementation kept for reference
 router.get('/milestones',
     requireAuth,
     async (req, res) => {
@@ -507,8 +581,40 @@ router.get('/milestones',
         }
     }
 );
+*/
 
 // Get user period rankings
+/**
+ * @api {get} /api/referrals/rankings/me Get user period rankings
+ * @apiName GetUserPeriodRankings
+ * @apiGroup Referrals
+ * @apiDescription Get the current period rankings for the authenticated user
+ * 
+ */
+/* 
+ * ================================================================
+ * TEMPORARILY DISABLED - 2025-03-25
+ * 
+ * This endpoint is part of the referral ranking system that's
+ * currently disabled. Providing a mock response.
+ *
+ * Original implementation is commented out below.
+ * ================================================================
+ */
+router.get('/rankings/me', requireAuth, (req, res) => {
+    // Return mock ranking data
+    res.json({
+        success: true,
+        data: {
+            referral_count: 0,
+            rank: null,
+            trend: 'stable',
+            message: 'Referral system temporarily disabled'
+        }
+    });
+});
+
+/* Original implementation kept for reference
 router.get('/rankings/me',
     requireAuth,
     async (req, res) => {
@@ -545,5 +651,6 @@ router.get('/rankings/me',
         }
     }
 );
+*/
 
 export default router; 
