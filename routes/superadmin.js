@@ -10,19 +10,21 @@ import logApi from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+// Route imports
+import walletMonitoringRouter from './admin-api/wallet-monitoring.js';
+// Services
 import walletGenerationService from '../services/walletGenerationService.js';
 import adminWalletService from '../services/adminWalletService.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
-import walletMonitoringRouter from './admin-api/wallet-monitoring.js';
 ////import liquidityService from '../services/liquidityService.js';
 ////import userBalanceTrackingService from '../services/userBalanceTrackingService.js';
 
 // Config
 import { config } from '../config/config.js';
+// Logs go into current working directory + /logs
 const LOG_DIR = path.join(process.cwd(), 'logs');
-
 // Constants
 const TEST_RECOVERY_AMOUNT_PER_WALLET = 0.00420690; // SOL (default = 0.00420690 SOL)
 const ABSOLUTE_MINIMUM_SOL_TO_LEAVE_IN_EACH_WALLET_DURING_RECOVERY = 0.0001; // SOL (default = 0.0001 SOL)
@@ -33,7 +35,7 @@ const SECOND_BETWEEN_TRANSACTIONS_DURING_RECOVERY = 2; // seconds
 const router = express.Router();
 
 // Solana connection
-const connection = new Connection(config.SOLANA_MAINNET_HTTP, 'confirmed');
+const connection = new Connection(config.rpc_urls.mainnet_http, 'confirmed');
 
 // Middleware ensures superadmin role
 const requireSuperAdminMiddleware = (req, res, next) => {
@@ -1835,7 +1837,7 @@ router.post('/services/:serviceName/toggle', requireAuth, requireSuperAdmin, asy
         res.status(500).json({
             success: false,
             error: 'Failed to toggle service',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            details: config.g === 'development' ? error.message : undefined
         });
     }
 });
