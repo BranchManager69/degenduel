@@ -25,6 +25,8 @@ db/
 # Logs
 logs/
 */logs/
+logs-*.txt
+logs-*.log
 
 # Scripts
 scripts/
