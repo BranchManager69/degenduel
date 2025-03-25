@@ -18,6 +18,9 @@ code_compilation/
 # Addresses
 addresses/
 
+# Other
+client-fix/
+
 # Database
 data/
 db/
