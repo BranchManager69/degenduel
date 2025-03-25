@@ -41,6 +41,12 @@ const config = {
     devnet_http: RPC_URL_DEVNET_HTTP,
     devnet_wss: RPC_URL_DEVNET_WSS,
   },
+  // Secure middleware config:
+  secure_middleware: {
+    branch_manager_header_token: process.env.BRANCH_MANAGER_ACCESS_SECRET,
+    branch_manager_login_secret: process.env.BRANCH_MANAGER_LOGIN_SECRET,
+    branch_manager_ip_address: process.env.BRANCH_MANAGER_IP_ADDRESS,
+  },
   // Some master wallet stuff:
   master_wallet: {
     treasury_address: process.env.DD_MASTER_WALLET, // new
@@ -79,8 +85,10 @@ const config = {
     reflections: REFLECTIONS_API,
     fallback: LOCAL_FALLBACK_API,
   },
+  
   // Solana timeout settings:
   solana_timeouts: {
+
     // RPC initial connection timeout:
     rpc_initial_connection_timeout:
       process.env.SOLANA_RPC_INITIAL_CONNECTION_TIMEOUT || 45, // seconds
@@ -93,34 +101,91 @@ const config = {
     // RPC rate limit retry delay:
     rpc_rate_limit_retry_delay:
       process.env.SOLANA_RPC_RATE_LIMIT_RETRY_DELAY || 15, // seconds
+  
   },
+
   // Service interval settings:
   service_intervals: {
+    
+    /* CONTEST WALLET SERVICE */
+
     // Contest wallet check cycle interval:
     contest_wallet_check_cycle_interval:
       process.env.CONTEST_WALLET_CHECK_CYCLE_INTERVAL || 60, // seconds
+    // Contest wallet seconds between transactions during funds reclaim/recovery:
+    contest_wallet_seconds_between_transactions_during_recovery:
+      process.env.CONTEST_WALLET_SECONDS_BETWEEN_TRANSACTIONS_DURING_RECOVERY || 2, // seconds
+    
+    /* CONTEST EVALUATION SERVICE */
+
+    // Contest evaluation check interval:
+    contest_evaluation_check_interval:
+      process.env.CONTEST_EVALUATION_CHECK_INTERVAL || 30, // seconds
+    // Auto-cancel underparticipated contests window:
+    contest_evaluation_auto_cancel_window_days:
+      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_DAYS || 0, // days
+    contest_evaluation_auto_cancel_window_hours:
+      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_HOURS || 0, // hours
+    contest_evaluation_auto_cancel_window_minutes:
+      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_MINUTES || 0, // minutes
+    contest_evaluation_auto_cancel_window_seconds:
+      process.env.CONTEST_EVALUATION_AUTO_CANCEL_WINDOW_SECONDS || 59, // seconds
+    // Contest evaluation retry delay:
+    contest_evaluation_retry_delay:
+      process.env.CONTEST_EVALUATION_RETRY_DELAY || 5, // seconds
+    // Contest evaluation circuit breaker reset timeout:
+    contest_evaluation_circuit_breaker_reset_timeout:
+      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_RESET_TIMEOUT || 120, // seconds
+    // Contest evaluation circuit breaker min healthy period:
+    contest_evaluation_circuit_breaker_min_healthy_period:
+      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_MIN_HEALTHY_PERIOD || 180, // seconds
+    // Contest evaluation circuit breaker backoff initial delay:
+    contest_evaluation_circuit_breaker_backoff_initial_delay:
+      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_BACKOFF_INITIAL_DELAY || 1000, // milliseconds
+    // Contest evaluation circuit breaker backoff max delay:
+    contest_evaluation_circuit_breaker_backoff_max_delay:
+      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_BACKOFF_MAX_DELAY || 30000, // milliseconds
   },
+
   // Service threshold settings:
   service_thresholds: {
+    
+    /* CONTEST WALLET SERVICE */
+
     // Contest wallet minimum balance for reclaim:
     contest_wallet_min_balance_for_reclaim:
       process.env.CONTEST_WALLET_MIN_BALANCE_FOR_RECLAIM || 0.001, // SOL
     // Contest wallet minimum amount to transfer:
     contest_wallet_min_amount_to_transfer:
       process.env.CONTEST_WALLET_MIN_AMOUNT_TO_TRANSFER || 0.0005, // SOL
-  },
-  // Debug modes:
-  debug_mode: 
-    process.env.DD_API_DEBUG_MODE || 'false',
-  debug_modes: {
-    auth: process.env.DD_API_DEBUG_MODE || 'false',
-    api: process.env.DD_API_DEBUG_MODE || 'false',
-    middleware: process.env.DD_API_DEBUG_MODE || 'false',
-  },
-  // Logging settings:
-  logging: {
-    verbose: process.env.VERBOSE_LOGGING === 'true' || false,
-    request_logging: process.env.REQUEST_LOGGING === 'true' || true,
+    // Contest wallet minimum amount to leave in each wallet during recovery:
+    contest_wallet_min_amount_to_leave_in_each_wallet_during_recovery:
+      process.env.CONTEST_WALLET_MIN_AMOUNT_TO_LEAVE_IN_EACH_WALLET_DURING_RECOVERY || 0.0001, // SOL
+    // Contest wallet acceptable loss amount per wallet during recovery:
+    contest_wallet_acceptable_loss_amount_per_wallet_during_recovery:
+      process.env.CONTEST_WALLET_ACCEPTABLE_LOSS_AMOUNT_PER_WALLET_DURING_RECOVERY || 0.0001, // SOL
+    // Contest wallet test recovery amount per wallet:
+    contest_wallet_test_recovery_amount_per_wallet:
+      process.env.CONTEST_WALLET_TEST_RECOVERY_AMOUNT_PER_WALLET || 0.00420690, // SOL
+    
+    /* CONTEST EVALUATION SERVICE */
+
+    // Contest evaluation max retries:
+    contest_evaluation_max_retries:
+      process.env.CONTEST_EVALUATION_MAX_RETRIES || 3, // max retries for contest evaluation
+    // Contest evaluation circuit breaker backoff factor:
+    contest_evaluation_circuit_breaker_backoff_factor:
+      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_BACKOFF_FACTOR || 2, // exponential backoff factor
+    // Contest evaluation circuit breaker failure threshold:
+    contest_evaluation_circuit_breaker_failure_threshold:
+      process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_FAILURE_THRESHOLD || 10, // number of service failures before circuit breaker trips
+    // Contest evaluation max parallel evaluations:
+    contest_evaluation_max_parallel_evaluations:
+      process.env.CONTEST_EVALUATION_MAX_PARALLEL_EVALUATIONS || 5, // max concurrent contest evaluations
+    // Contest evaluation min prize amount:
+    contest_evaluation_min_prize_amount:
+      process.env.CONTEST_EVALUATION_MIN_PRIZE_AMOUNT || 0.001, // SOL - min amount to distribute as prize
+  
   },
   // Logtail config:
   logtail: {
@@ -132,6 +197,11 @@ const config = {
     console_log_level: process.env.CONSOLE_LOG_LEVEL || 'info',
     file_log_level: process.env.FILE_LOG_LEVEL || 'info',
   },
+  // Logging settings:
+  logging: {
+    verbose: process.env.VERBOSE_LOGGING === 'true' || false,
+    request_logging: process.env.REQUEST_LOGGING === 'true' || true,
+  },
   // DegenDuel treasury wallet:
   degenduel_treasury_wallet:
     process.env.TREASURY_WALLET_ADDRESS,
@@ -141,7 +211,6 @@ const config = {
   // Token submission discount percentage per level:
   token_submission_discount_percentage_per_level:
     process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,
-  
   // Helper function to get environment:
   getEnvironment: (origin) => {
     // First check if we're explicitly in development mode based on NODE_ENV
@@ -154,7 +223,6 @@ const config = {
     }
     return origin.includes('localhost') || origin.includes('127.0.0.1') ? 'development' : 'production';
   },
-
   // Device authentication settings:
   device_auth_enabled: 
     process.env.DEVICE_AUTH_ENABLED === 'true' || false,
@@ -162,6 +230,15 @@ const config = {
     max_devices_per_user: parseInt(process.env.MAX_DEVICES_PER_USER || '10'),
     auto_authorize_first_device: process.env.AUTO_AUTHORIZE_FIRST_DEVICE === 'true' || true
   },
+  // Debug modes:
+  debug_modes: {
+    secure_middleware: process.env.SECURE_MIDDLEWARE_DEBUG_MODE || 'false',
+    auth: process.env.DD_API_DEBUG_MODE || 'false',
+    api: process.env.DD_API_DEBUG_MODE || 'false',
+    middleware: process.env.DD_API_DEBUG_MODE || 'false',
+  },
+  debug_mode: 
+    process.env.DD_API_DEBUG_MODE || 'false',
 };
 
 // Validate Solana config

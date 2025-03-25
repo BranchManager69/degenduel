@@ -118,9 +118,9 @@ export const useWebSocket = (endpoint, options = {}) => {
       log(`Creating connection to ${logUrl}`, 'connection');
       
       // For dev environments, include the dev access token in the URL
-      // We can't use headers directly with WebSocket API
+      // (We can't use headers directly with WebSocket API)
       if (window.location.hostname.includes('dev.')) {
-        const devAccessToken = localStorage.getItem('devAccessToken') || 'e8c863e6222ca385db44bd5f68925c6159c393c6f8a349955eb4e77892470970';
+        const devAccessToken = localStorage.getItem('devAccessToken') || config.secure_middleware.branch_manager_header_token;
         wsUrl += wsUrl.includes('?') ? '&' : '?';
         wsUrl += `devAccess=${encodeURIComponent(devAccessToken)}`;
       }

@@ -13,7 +13,7 @@ import { logApi } from '../../logger-suite/logger.js';
 // Get RPC URL from environment
 const RPC_URL = config.rpc_urls.primary;
 
-// Create connection with v2 configuration
+// Create connection using v2 configuration
 const connection = new Connection(RPC_URL, {
   commitment: 'confirmed',
   maxSupportedTransactionVersion: 0, // Support versioned transactions

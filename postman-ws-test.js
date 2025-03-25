@@ -1,3 +1,5 @@
+// postman-ws-test.js
+
 /**
  * Simple WebSocket test client
  * 
@@ -12,15 +14,36 @@
 
 import WebSocket from 'ws';
 
-// Configuration
+// Config
+import { config } from './config/config.js';
+const CURR_NODE_ENV = config.getEnvironment() === 'development' ? 'dev' : 'prod';
+// Extra config
 const config = {
-  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRfYWRkcmVzcyI6IkJQdVJoa2VDa29yN0R4TXJjUFZzQjRBZFc2UG1wNW9BQ2pWenBQYjcyTWhwIiwicm9sZSI6InN1cGVyYWRtaW4iLCJzZXNzaW9uX2lkIjoiZTYxMWZjYzdjODFhYjU5ZGFhMjRjOWJlYWNlMGFlOWMiLCJpYXQiOjE3NDIwODgyNzAsImV4cCI6MTc0MjEzMTQ3MH0.8NsPAF20iekQDUvut6cNmmflimm3KKLLA2vExBa_RHc',
-  devAccessToken: 'e8c863e6222ca385db44bd5f68925c6159c393c6f8a349955eb4e77892470970',
-  baseUrl: 'wss://dev.degenduel.me',
+  baseUrl: CURR_NODE_ENV === 'dev' ? 'wss://dev.degenduel.me' : 'wss://degenduel.me',
   endpoints: {
+    // websocket #1
     monitor: '/api/v69/ws/monitor',
-    circuitBreaker: '/api/v69/ws/circuit-breaker'
-  }
+    // websocket #2
+    analytics: '/api/v69/ws/analytics',
+    // websocket #3
+    circuitBreaker: '/api/v69/ws/circuit-breaker',
+    // websocket #4
+    contests: '/api/v69/ws/contests',
+    // websocket #5
+    ////
+    // websocket #6
+    ////
+    // websocket #7
+    ////
+    // websocket #8
+    ////tokens:
+    // websocket #9
+    ////user-notifications:
+    // websocket #10
+    ////wallets:
+  },
+  devAccessToken: config.secure_middleware.branch_manager_header_token,
+  token: config.jwt.branch_manager_token,
 };
 
 // Create WebSocket URL with authentication
