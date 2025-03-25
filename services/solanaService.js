@@ -13,6 +13,9 @@ import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/servic
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import { fancyColors } from '../utils/colors.js';
 
+// Config
+import { config } from '../config/config.js';
+
 // Configuration for Solana service
 const SOLANA_SERVICE_CONFIG = {
     name: SERVICE_NAMES.SOLANA,
@@ -58,11 +61,11 @@ class SolanaService extends BaseService {
             
             // Create Solana connection with web3.js v2 compatible configuration
             this.connection = new Connection(
-                process.env.QUICKNODE_MAINNET_HTTP,
+                config.SOLANA_MAINNET_HTTP,
                 {
                     commitment: 'confirmed',
                     confirmTransactionInitialTimeout: 120000,
-                    wsEndpoint: process.env.QUICKNODE_MAINNET_WSS,
+                    wsEndpoint: config.SOLANA_MAINNET_WSS,
                     maxSupportedTransactionVersion: 0 // Support versioned transactions
                 }
             );
@@ -130,11 +133,11 @@ class SolanaService extends BaseService {
     async reconnect() {
         try {
             this.connection = new Connection(
-                process.env.QUICKNODE_MAINNET_HTTP,
+                config.SOLANA_MAINNET_HTTP, 
                 {
                     commitment: 'confirmed',
                     confirmTransactionInitialTimeout: 120000,
-                    wsEndpoint: process.env.QUICKNODE_MAINNET_WSS
+                    wsEndpoint: config.SOLANA_MAINNET_WSS
                 }
             );
             

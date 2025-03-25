@@ -11,21 +11,26 @@ import { generateServiceAuthHeader } from '../config/service-auth.js';
 // ** Service Class **
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../utils/service-suite/service-error.js';
-import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
 import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
-import serviceManager from '../utils/service-suite/service-manager.js';
+//import serviceManager from '../utils/service-suite/service-manager.js';
+
 // Solana
 import { Keypair, Connection, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import crypto from 'crypto';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
-import { fa } from '@faker-js/faker';
 import { transferSOL } from '../utils/solana-suite/web3-v2/solana-transaction-fixed.js';
+//import { fa } from '@faker-js/faker';
 
+
+// Config
+import { config } from '../config/config.js';
+
+// Contest Wallet Config
 const CONTEST_WALLET_CONFIG = {
     name: SERVICE_NAMES.CONTEST_WALLET,
     description: getServiceMetadata(SERVICE_NAMES.CONTEST_WALLET).description,
@@ -64,7 +69,7 @@ class ContestWalletService extends BaseService {
         
         // Initialize Solana connection
         if (!config.rpc_urls.primary) {
-            throw new Error("RPC URL is not configured - check QUICKNODE_MAINNET_HTTP environment variable");
+            throw new Error("RPC URL is not configured - check SOLANA_MAINNET_HTTP environment variable");
         }
         
         logApi.info(`[contestWalletService] Initializing with RPC: ${config.rpc_urls.primary}`);

@@ -24,21 +24,21 @@ import { LogtailTransport } from "@logtail/winston";
 import { Socket } from 'net';
 import { Stream } from 'stream';
 import { fancyColors, logColors, serviceColors } from '../colors.js';
+
+// Config
 import { config } from '../../config/config.js';
 
 // Load environment variables
 dotenv.config();
 
 // Logtail Config
-const LOGTAIL_TOKEN = process.env.LOGTAIL_TOKEN;
-const LOGTAIL_ENDPOINT = process.env.LOGTAIL_ENDPOINT;
-const LOGTAIL_SOURCE = process.env.LOGTAIL_SOURCE;
-
-// Constants
-const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs");
-const SILENT_MODE = process.env.SILENT_MODE === 'true';
-const CONSOLE_LEVEL = SILENT_MODE ? 'error' : (process.env.CONSOLE_LOG_LEVEL || "info");
-const FILE_LOG_LEVEL = process.env.FILE_LOG_LEVEL || "info";
+const LOGTAIL_TOKEN = config.logtail.token;
+const LOGTAIL_ENDPOINT = config.logtail.endpoint;
+const LOGTAIL_SOURCE = config.logtail.source;
+const LOG_DIR = config.logtail.log_dir || path.join(process.cwd(), "logs");
+const SILENT_MODE = config.logtail.silent_mode === 'true';
+const CONSOLE_LEVEL = SILENT_MODE ? 'error' : (config.logtail.console_log_level || "info");
+const FILE_LOG_LEVEL = config.logtail.file_log_level || "info";
 
 // Helper function to handle circular references in objects
 const getCircularReplacer = () => {
@@ -796,7 +796,7 @@ const formatRateLimitError = (message, isForConsole = false) => {
     service: 'SOLANA',
     error_type: 'RATE_LIMIT',
     retry_ms: retryMs,
-    rpc_provider: config?.rpc_urls?.primary || process.env.QUICKNODE_MAINNET_HTTP || 'unknown',
+    rpc_provider: config?.rpc_urls?.primary,
     original_message: message,
     severity: 'warning', // For Logtail filtering
     alert_type: 'rate_limit' // For Logtail filtering
@@ -882,17 +882,15 @@ logtail.use((log) => {
   return log;
 });
 
+// Create the logtail transport
 const logtailTransport = new LogtailTransport(logtail);
-
-
-
 
 
 /* LOGGER INITIALIZATION */
 
 // Create the logger with clear transport descriptions
 const logApi = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
+  level: FILE_LOG_LEVEL || "info",
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.json()
@@ -927,7 +925,6 @@ const logApi = winston.createLogger({
     logtailTransport,            // Logtail Transport
   ],
 });
-
 
 // Log where logs are being written to on startup
 console.log(`${fancyColors.BOLD}${fancyColors.BG_DARK_CYAN} ${fancyColors.DARK_BLACK}DegenDuel Logger Initialized ${fancyColors.RESET}`);
@@ -1077,4 +1074,3 @@ console.error = function() {
 // Export both default and named
 export { ANALYTICS_PATTERNS, LOG_PATTERNS, logApi };
 export default logApi;
-

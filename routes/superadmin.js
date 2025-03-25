@@ -1,4 +1,4 @@
-// /routes/superadmin.js
+// routes/superadmin.js
 
 import { exec } from 'child_process';
 import express from 'express';
@@ -11,23 +11,31 @@ import prisma from '../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import walletGenerationService from '../services/walletGenerationService.js';
-import liquidityService from '../services/liquidityService.js';
 import adminWalletService from '../services/adminWalletService.js';
-import userBalanceTrackingService from '../services/userBalanceTrackingService.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import walletMonitoringRouter from './admin-api/wallet-monitoring.js';
+////import liquidityService from '../services/liquidityService.js';
+////import userBalanceTrackingService from '../services/userBalanceTrackingService.js';
 
+// Config
+import { config } from '../config/config.js';
 const LOG_DIR = path.join(process.cwd(), 'logs');
+
+// Constants
+const TEST_RECOVERY_AMOUNT_PER_WALLET = 0.00420690; // SOL (default = 0.00420690 SOL)
+const ABSOLUTE_MINIMUM_SOL_TO_LEAVE_IN_EACH_WALLET_DURING_RECOVERY = 0.0001; // SOL (default = 0.0001 SOL)
+const ACCEPTABLE_LOSS_AMOUNT_PER_WALLET_DURING_RECOVERY = 0.0001; // SOL (default = 0.0001 SOL)
+const SECOND_BETWEEN_TRANSACTIONS_DURING_RECOVERY = 2; // seconds
 
 // Router
 const router = express.Router();
 
 // Solana connection
-const connection = new Connection(process.env.QUICKNODE_MAINNET_HTTP || 'https://api.mainnet-beta.solana.com', 'confirmed');
+const connection = new Connection(config.SOLANA_MAINNET_HTTP, 'confirmed');
 
-// Middleware to ensure superadmin role
+// Middleware ensures superadmin role
 const requireSuperAdminMiddleware = (req, res, next) => {
     if (req.user?.role !== 'superadmin') {
         return res.status(403).json({
@@ -36,6 +44,7 @@ const requireSuperAdminMiddleware = (req, res, next) => {
     }
     next();
 };
+
 
 // ==== WALLET MANAGEMENT ENDPOINTS ====
 
@@ -731,21 +740,35 @@ router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (re
             });
         }
         
-        // Use provided values or defaults
+
+        /* Use provided values or defaults */
+
+        // Source wallet address
         const source = req.body.source || activeWallet.wallet_address;
-        const { destination } = req.body;
-        const amount = req.body.amount || 0.001; // Very small amount by default (0.001 SOL)
-        const waitTime = req.body.wait_time || 2000; // 2 seconds by default
-        
+
+        // Destination wallet address
+        const { destination } = req.body; // ???
+
+        // Amount of SOL to transfer
+        const amount = req.body.amount || TEST_RECOVERY_AMOUNT_PER_WALLET; // SOL (default = 0.00420690 SOL)
+        const acceptableLossAmount = ACCEPTABLE_LOSS_AMOUNT_PER_WALLET_DURING_RECOVERY; // SOL (default = 0.0001 SOL)
+
+        // Wait time between transfers
+        const waitTime = req.body.wait_time || SECOND_BETWEEN_TRANSACTIONS_DURING_RECOVERY * 1000; // ms
+
+
+        /* SOL TRANSFER TESTING */
+
+        // Step 0: Check if destination wallet address is provided
         if (!destination) {
             return res.status(400).json({ error: 'Destination wallet address is required' });
         }
         
-        // Step 1: Get initial balances
+        // Step 1: Get initial balances of source and destination wallets
         const initialSourceBalance = await connection.getBalance(new PublicKey(source));
         const initialDestBalance = await connection.getBalance(new PublicKey(destination));
         
-        // Step 2: First transfer (source to destination)
+        // Step 2: First transfer (source --> destination)
         const outboundTransfer = await adminWalletService.transferSOL(
             source,
             destination,
@@ -765,11 +788,11 @@ router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (re
         const interimSourceBalance = await connection.getBalance(new PublicKey(source));
         const interimDestBalance = await connection.getBalance(new PublicKey(destination));
         
-        // Step 5: Calculate return amount (slightly less to account for fees)
-        // Keep 0.0001 SOL for return transfer fee
-        const returnAmount = Math.max(0, (amount - 0.0001));
+        // Step 5: Calculate return amount
+        //         Keep a very small amount for return transfer fee (default = keep 0.0001 SOL)
+        const returnAmount = Math.max(0, (amount - acceptableLossAmount));
         
-        // Step 6: Return transfer (destination back to source)
+        // Step 6: Return transfer (destination --> source)
         const inboundTransfer = await adminWalletService.transferSOL(
             destination,
             source,
@@ -785,15 +808,16 @@ router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (re
         // Step 7: Wait for second transaction to confirm
         await new Promise(resolve => setTimeout(resolve, waitTime));
         
-        // Step 8: Get final balances
+        // Step 8: Get final balances of source and destination wallets
         const finalSourceBalance = await connection.getBalance(new PublicKey(source));
         const finalDestBalance = await connection.getBalance(new PublicKey(destination));
         
-        // Step 9: Calculate statistics
+        // Step 9: Calculate balance changes and fees
         const sourceDiff = (finalSourceBalance - initialSourceBalance) / LAMPORTS_PER_SOL;
         const destDiff = (finalDestBalance - initialDestBalance) / LAMPORTS_PER_SOL;
         const totalFees = amount - returnAmount - destDiff;
-        
+
+        // Step 10: Return results
         return res.json({
             success: true,
             source: {
@@ -1351,17 +1375,21 @@ router.post('/liquidity/recover', requireAuth, requireSuperAdmin, async (req, re
     }
 });
 
-// Nuclear recover SOL from test wallets - leaves minimal balance (SUPERADMIN ONLY)
+// Nuclear recover SOL from ALL wallets - leaves minimal balance (SUPERADMIN ONLY)
 router.post('/liquidity/recover-nuclear', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
-        // Get all test users (created in the last 24 hours)
+        // Filter wallets to only "test user" wallets
+        const createdWithinLastDays = 90; // created within the last 90 days
+        const testUserNamePrefix = 'Test User'; // and whose nickname starts with prefix
+
+        // Withdraw SOL from test users      
         const testUsers = await prisma.users.findMany({
             where: {
                 created_at: {
-                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+                    gte: new Date(Date.now() - createdWithinLastDays * (24 * 60 * 60 * 1000))
                 },
                 nickname: {
-                    startsWith: 'Test User'
+                    startsWith: testUserNamePrefix
                 }
             },
             select: {
@@ -1370,56 +1398,70 @@ router.post('/liquidity/recover-nuclear', requireAuth, requireSuperAdmin, async 
             }
         });
 
+        // Get the master liquidity wallet from LiquidityManager configuration
         const liquidityWallet = await LiquidityManager.getLiquidityWallet();
         if (!liquidityWallet) {
             throw new Error('Failed to get test liquidity wallet');
         }
 
+        // Recover SOL from test users
         let totalRecovered = 0;
-
         for (const user of testUsers) {
             try {
+                // Get balance of test user
                 const balance = await connection.getBalance(new PublicKey(user.wallet_address));
-                if (balance <= 0) continue;
 
+                // Skip this wallet if balance is 0
+                if (balance <= 0) continue; // TODO: Build in the configured buffer amount
+
+                // Convert lamports to Solana
                 const balanceSOL = balance / LAMPORTS_PER_SOL;
 
+                // Get this wallet's private key
                 const walletInfo = await WalletGenerator.getWallet(`test-user-${user.id}`);
                 if (!walletInfo) {
-                    console.log(`No private key found for ${user.wallet_address}, skipping...`);
+                    console.warn(`No private key found for ${user.wallet_address}, skipping...`);
                     continue;
                 }
 
+                // Get this wallet's complete keypair from its private key
                 const userKeypair = Keypair.fromSecretKey(bs58.decode(walletInfo.secretKey));
                 
-                // Leave absolute minimum for rent (0.000001 SOL)
-                const recoveryAmount = balance - (0.000001 * LAMPORTS_PER_SOL);
-                if (recoveryAmount <= 0) continue;
+                // Calculate minimum SOL to leave in each wallet before recovery
+                const leaveInWalletAmountLamports = ABSOLUTE_MINIMUM_SOL_TO_LEAVE_IN_EACH_WALLET_DURING_RECOVERY * LAMPORTS_PER_SOL;
+                const recoveryAmountLamports = balance - leaveInWalletAmountLamports;
+                
+                // Skip this wallet if there's nothing to recover
+                if (recoveryAmountLamports <= 0) continue;
 
-                const recoveryAmountSOL = recoveryAmount / LAMPORTS_PER_SOL;
+                // Convert recovery amount to SOL
+                const recoveryAmountSOL = recoveryAmountLamports / LAMPORTS_PER_SOL;
 
                 // Import the transferSOL function dynamically to avoid circular dependencies
                 const { transferSOL } = await import('../utils/solana-suite/web3-v2/solana-transaction-v2.js');
                 
-                // Use the new v2 transaction utility with recoveryAmount in lamports
+                // Use the new v2 transaction utility
                 const { signature } = await transferSOL(
                     connection,
                     userKeypair,
                     liquidityWallet.publicKey,
-                    recoveryAmountSOL
+                    recoveryAmountSOL // in SOL
                 );
 
+                // Update total recovered amount
                 totalRecovered += recoveryAmountSOL;
-                console.log(`Recovered ${recoveryAmountSOL} SOL from ${user.wallet_address}`);
 
                 // Log the recovery transaction
+                console.log(`Recovered ${recoveryAmountSOL} SOL from ${user.wallet_address}`);
+
+                // Create a transaction record in the 'transactions' table
                 await prisma.transactions.create({
                     data: {
                         wallet_address: user.wallet_address,
                         type: 'WITHDRAWAL',
                         amount: recoveryAmountSOL,
                         balance_before: balanceSOL,
-                        balance_after: 0.000001, // Minimal balance left
+                        balance_after: balanceAfterSOL,
                         status: 'completed',
                         metadata: {
                             blockchain_signature: signature
@@ -1448,7 +1490,191 @@ router.post('/liquidity/recover-nuclear', requireAuth, requireSuperAdmin, async 
     }
 });
 
-// Get all service states
+// Valid v69 websocket service names
+const VALID_WEBSOCKET_SERVICES = [
+    'analytics',
+    'base', // ???
+    'circuit-breaker',
+    'contest',
+    'market',
+    'monitor',
+    'wallet',
+    'portfolio'
+];
+
+// Start a v69 websocket service (e.g. contest, market, monitor, wallet, portfolio, ...)
+router.post('/websocket/:serviceId/start', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+        
+        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
+            });
+        }
+
+        const wsFile = `${serviceId}-ws.js`;
+        const wsPath = path.join(process.cwd(), 'websocket', wsFile);
+
+        // Check if service file exists
+        try {
+            await fs.access(wsPath);
+        } catch (err) {
+            return res.status(404).json({
+                success: false,
+                message: `WebSocket service file not found: ${wsFile}`
+            });
+        }
+
+        // Start the service with admin context
+        await serviceManager.startService(wsFile, {
+            adminAddress: req.user.wallet_address,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        // Get current state after starting
+        const state = await serviceManager.getServiceState(wsFile);
+
+        res.json({
+            success: true,
+            message: `${serviceId} WebSocket service started successfully`,
+            state: {
+                running: state?.running || true,
+                status: state?.status || 'active',
+                lastStarted: state?.last_started || new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        logApi.error(`Error starting WebSocket service: ${error.message}`);
+        res.status(500).json({
+            success: false,
+            message: `Failed to start service: ${error.message}`
+        });
+    }
+});
+
+// Stop a v69 websocket service (e.g. contest, market, monitor, wallet, portfolio, ...)
+router.post('/websocket/:serviceId/stop', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+        
+        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
+            });
+        }
+
+        const wsFile = `${serviceId}-ws.js`;
+        
+        // Stop the service with admin context
+        await serviceManager.stopService(wsFile, {
+            adminAddress: req.user.wallet_address,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        // Get current state after stopping
+        const state = await serviceManager.getServiceState(wsFile);
+
+        res.json({
+            success: true,
+            message: `${serviceId} WebSocket service stopped successfully`,
+            state: {
+                running: state?.running || false,
+                status: state?.status || 'stopped',
+                lastStopped: state?.last_stopped || new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        logApi.error(`Error stopping WebSocket service: ${error.message}`);
+        res.status(500).json({
+            success: false,
+            message: `Failed to stop service: ${error.message}`
+        });
+    }
+});
+
+// Restart a v69 websocket service (e.g. contest, market, monitor, wallet, portfolio, ...)
+router.post('/websocket/:serviceId/restart', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+        
+        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
+            });
+        }
+
+        const wsFile = `${serviceId}-ws.js`;
+        
+        // Restart the service with admin context
+        await serviceManager.restartService(wsFile, {
+            adminAddress: req.user.wallet_address,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        // Get current state after restarting
+        const state = await serviceManager.getServiceState(wsFile);
+
+        res.json({
+            success: true,
+            message: `${serviceId} WebSocket service restarted successfully`,
+            state: {
+                running: state?.running || true,
+                status: state?.status || 'active',
+                lastStarted: state?.last_started || new Date().toISOString(),
+                lastStopped: state?.last_stopped
+            }
+        });
+    } catch (error) {
+        logApi.error(`Error restarting WebSocket service: ${error.message}`);
+        res.status(500).json({
+            success: false,
+            message: `Failed to restart service: ${error.message}`
+        });
+    }
+});
+
+// [OLD SERVICES] Old services config
+/*
+const VALID_SERVICES = [
+    'token_sync_service',
+    'market_data_service',
+    'token_whitelist_service',
+    'contest_evaluation_service',
+    'achievement_service',
+    'referral_service',
+    'contest_wallet_service',
+    'wallet_rake_service',
+    'admin_wallet_service',
+    'liquidity_service',
+    'wallet_generator_service'
+];
+*/
+
+// [OLD SERVICES] Default service config
+/*
+const DEFAULT_SERVICE_CONFIG = {
+    token_sync_service: { enabled: true },
+    market_data_service: { enabled: true },
+    token_whitelist_service: { enabled: true },
+    contest_evaluation_service: { enabled: true },
+    achievement_service: { enabled: true },
+    referral_service: { enabled: true },
+    contest_wallet_service: { enabled: true },
+    wallet_rake_service: { enabled: true },
+    admin_wallet_service: { enabled: true },
+    liquidity_service: { enabled: true },
+    wallet_generator_service: { enabled: true }
+};
+*/
+
+// [OLD(?)] Get all service states
 router.get('/services/states', requireAuth, requireSuperAdmin, async (req, res) => {
     try {
         const serviceStates = await prisma.system_settings.findMany({
@@ -1496,7 +1722,7 @@ router.get('/services/states', requireAuth, requireSuperAdmin, async (req, res) 
     }
 });
 
-// Service state management
+// [OLD(?)] Service state management
 router.post('/services/:serviceName/toggle', requireAuth, requireSuperAdmin, async (req, res) => {
     const { serviceName } = req.params;
     const adminName = req.user.nickname || req.user.username || 'Admin';
@@ -1614,182 +1840,8 @@ router.post('/services/:serviceName/toggle', requireAuth, requireSuperAdmin, asy
     }
 });
 
-const VALID_SERVICES = [
-    'token_sync_service',
-    'market_data_service',
-    'token_whitelist_service',
-    'contest_evaluation_service',
-    'achievement_service',
-    'referral_service',
-    'contest_wallet_service',
-    'wallet_rake_service',
-    'admin_wallet_service',
-    'liquidity_service',
-    'wallet_generator_service'
-];
+// ------------------------------------------------------------
 
-const VALID_WEBSOCKET_SERVICES = [
-    'analytics',
-    'base',
-    'circuit-breaker',
-    'contest',
-    'market',
-    'monitor',
-    'wallet',
-    'portfolio'
-];
-
-const DEFAULT_SERVICE_CONFIG = {
-    token_sync_service: { enabled: true },
-    market_data_service: { enabled: true },
-    token_whitelist_service: { enabled: true },
-    contest_evaluation_service: { enabled: true },
-    achievement_service: { enabled: true },
-    referral_service: { enabled: true },
-    contest_wallet_service: { enabled: true },
-    wallet_rake_service: { enabled: true },
-    admin_wallet_service: { enabled: true },
-    liquidity_service: { enabled: true },
-    wallet_generator_service: { enabled: true }
-};
-
-// WebSocket Service Control Endpoints
-router.post('/websocket/:serviceId/start', requireAuth, requireSuperAdmin, async (req, res) => {
-    try {
-        const { serviceId } = req.params;
-        
-        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
-            return res.status(400).json({
-                success: false,
-                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
-            });
-        }
-
-        const wsFile = `${serviceId}-ws.js`;
-        const wsPath = path.join(process.cwd(), 'websocket', wsFile);
-
-        // Check if service file exists
-        try {
-            await fs.access(wsPath);
-        } catch (err) {
-            return res.status(404).json({
-                success: false,
-                message: `WebSocket service file not found: ${wsFile}`
-            });
-        }
-
-        // Start the service with admin context
-        await serviceManager.startService(wsFile, {
-            adminAddress: req.user.wallet_address,
-            ip: req.ip,
-            userAgent: req.get('user-agent')
-        });
-
-        // Get current state after starting
-        const state = await serviceManager.getServiceState(wsFile);
-
-        res.json({
-            success: true,
-            message: `${serviceId} WebSocket service started successfully`,
-            state: {
-                running: state?.running || true,
-                status: state?.status || 'active',
-                lastStarted: state?.last_started || new Date().toISOString()
-            }
-        });
-    } catch (error) {
-        logApi.error(`Error starting WebSocket service: ${error.message}`);
-        res.status(500).json({
-            success: false,
-            message: `Failed to start service: ${error.message}`
-        });
-    }
-});
-
-router.post('/websocket/:serviceId/stop', requireAuth, requireSuperAdmin, async (req, res) => {
-    try {
-        const { serviceId } = req.params;
-        
-        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
-            return res.status(400).json({
-                success: false,
-                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
-            });
-        }
-
-        const wsFile = `${serviceId}-ws.js`;
-        
-        // Stop the service with admin context
-        await serviceManager.stopService(wsFile, {
-            adminAddress: req.user.wallet_address,
-            ip: req.ip,
-            userAgent: req.get('user-agent')
-        });
-
-        // Get current state after stopping
-        const state = await serviceManager.getServiceState(wsFile);
-
-        res.json({
-            success: true,
-            message: `${serviceId} WebSocket service stopped successfully`,
-            state: {
-                running: state?.running || false,
-                status: state?.status || 'stopped',
-                lastStopped: state?.last_stopped || new Date().toISOString()
-            }
-        });
-    } catch (error) {
-        logApi.error(`Error stopping WebSocket service: ${error.message}`);
-        res.status(500).json({
-            success: false,
-            message: `Failed to stop service: ${error.message}`
-        });
-    }
-});
-
-router.post('/websocket/:serviceId/restart', requireAuth, requireSuperAdmin, async (req, res) => {
-    try {
-        const { serviceId } = req.params;
-        
-        if (!VALID_WEBSOCKET_SERVICES.includes(serviceId)) {
-            return res.status(400).json({
-                success: false,
-                message: `Invalid service ID. Must be one of: ${VALID_WEBSOCKET_SERVICES.join(', ')}`
-            });
-        }
-
-        const wsFile = `${serviceId}-ws.js`;
-        
-        // Restart the service with admin context
-        await serviceManager.restartService(wsFile, {
-            adminAddress: req.user.wallet_address,
-            ip: req.ip,
-            userAgent: req.get('user-agent')
-        });
-
-        // Get current state after restarting
-        const state = await serviceManager.getServiceState(wsFile);
-
-        res.json({
-            success: true,
-            message: `${serviceId} WebSocket service restarted successfully`,
-            state: {
-                running: state?.running || true,
-                status: state?.status || 'active',
-                lastStarted: state?.last_started || new Date().toISOString(),
-                lastStopped: state?.last_stopped
-            }
-        });
-    } catch (error) {
-        logApi.error(`Error restarting WebSocket service: ${error.message}`);
-        res.status(500).json({
-            success: false,
-            message: `Failed to restart service: ${error.message}`
-        });
-    }
-});
-
-// Use wallet monitoring routes
+// Add the wallet-monitoring routes to the superadmin router
 router.use('/wallet-monitoring', walletMonitoringRouter);
-
 export default router;
