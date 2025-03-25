@@ -19,16 +19,16 @@ const LOCAL_FALLBACK_API = null; // (DISABLED to avoid circular dependency issue
 
 // Solana RPCs
 // -- Default RPC URL:
-const RPC_URL = process.env.SOLANA_RPC_URL;
+const RPC_URL = process.env.SOLANA_RPC_ENDPOINT;
 // -- All Helius URLs:
-const RPC_URL_MAINNET_HTTP = process.env.SOLANA_RPC_URL;
-const RPC_URL_MAINNET_WSS = process.env.SOLANA_WSS_URL || '';
-const RPC_URL_DEVNET_HTTP = process.env.SOLANA_DEVNET_RPC_URL;
-const RPC_URL_DEVNET_WSS = process.env.SOLANA_DEVNET_WSS_URL || '';
+const RPC_URL_MAINNET_HTTP = process.env.SOLANA_MAINNET_HTTP || '';
+const RPC_URL_MAINNET_WSS = process.env.SOLANA_MAINNET_WSS || '';
+const RPC_URL_DEVNET_HTTP = process.env.SOLANA_DEVNET_HTTP || '';
+const RPC_URL_DEVNET_WSS = process.env.SOLANA_DEVNET_WSS || '';
 
 // Throw error if no RPC URL is configured
 if (!RPC_URL) {
-  throw new Error('RPC_URL_MAINNET_HTTP must be set (use of public Solana RPC endpoints has been intentionally disabled)');
+  throw new Error('RPC_URL must be set (use of public Solana RPC endpoints has been intentionally disabled)');
 }
 
 // Master config object
@@ -64,7 +64,8 @@ const config = {
     CANCELLED: 'cancelled'
   },
   // DegenDuel server port:
-  port: process.env.PORT || process.env.API_PORT || 3004,
+  port:
+    process.env.PORT || process.env.API_PORT || 3004,
   // JWT secret:
   jwt: {
     secret: process.env.JWT_SECRET
@@ -79,7 +80,8 @@ const config = {
     fallback: LOCAL_FALLBACK_API,
   },
   // Debug modes:
-  debug_mode: process.env.DD_API_DEBUG_MODE || 'false',
+  debug_mode: 
+    process.env.DD_API_DEBUG_MODE || 'false',
   debug_modes: {
     auth: process.env.DD_API_DEBUG_MODE || 'false',
     api: process.env.DD_API_DEBUG_MODE || 'false',
@@ -101,11 +103,14 @@ const config = {
     file_log_level: process.env.FILE_LOG_LEVEL || 'info',
   },
   // DegenDuel treasury wallet:
-  degenduel_treasury_wallet: process.env.TREASURY_WALLET_ADDRESS,
+  degenduel_treasury_wallet:
+    process.env.TREASURY_WALLET_ADDRESS,
   // Token submission cost:
-  token_submission_cost: process.env.TOKEN_SUBMISSION_COST,
+  token_submission_cost:
+    process.env.TOKEN_SUBMISSION_COST,
   // Token submission discount percentage per level:
-  token_submission_discount_percentage_per_level: process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,
+  token_submission_discount_percentage_per_level:
+    process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,
   
   // Helper function to get environment:
   getEnvironment: (origin) => {
