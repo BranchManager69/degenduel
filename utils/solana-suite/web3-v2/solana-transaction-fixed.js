@@ -193,8 +193,29 @@ const RPC_LIMITER = {
         // Add jitter (±20% randomness)
         callState.currentDelay = baseDelay * (0.8 + Math.random() * 0.4);
         
-        logApi.warn(`⚡ SOLANA RPC RATE LIMIT Retry in ${callState.currentDelay}ms`, {
+        // Import the colors synchronously to avoid async issues
+        let fancyColors;
+        try {
+          const colorModule = require('../../../utils/colors.js');
+          fancyColors = colorModule.fancyColors;
+        } catch (e) {
+          // Fallback colors if import fails
+          fancyColors = {
+            RED: '\x1b[31m',
+            BOLD_RED: '\x1b[1;31m',
+            LIGHT_RED: '\x1b[91m',
+            DARK_RED: '\x1b[38;5;88m',
+            BG_RED: '\x1b[41m',
+            WHITE: '\x1b[37m',
+            RESET: '\x1b[0m'
+          };
+        }
+        
+        // More informative rate limit log with consistent format and more context
+        logApi.warn(`${fancyColors.RED}[solana-rpc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} RATE LIMIT ${fancyColors.RESET} ${fancyColors.BOLD_RED}${callName}${fancyColors.RESET} ${fancyColors.RED}Hit #${callState.consecutiveHits}${fancyColors.RESET} ${fancyColors.LIGHT_RED}Retry in ${callState.currentDelay}ms${fancyColors.RESET}`, {
           error_type: 'RATE_LIMIT',
+          operation: callName,
+          consecutive_hits: callState.consecutiveHits,
           retry_ms: callState.currentDelay,
           rpc_provider: typeof connection === 'object' ? connection.rpcEndpoint : 'unknown',
           original_message: error.message,

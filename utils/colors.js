@@ -19,6 +19,11 @@ export const fancyColors = {
   MAGENTA: '\x1b[38;5;201m',
   ORANGE: '\x1b[38;5;208m',
   PURPLE: '\x1b[38;5;129m',
+  GOLD: '\x1b[38;5;220m',       // Added gold color for system services
+  BOLD_PURPLE: '\x1b[1m\x1b[38;5;129m', // Added bold purple
+  LIGHT_PURPLE: '\x1b[38;5;141m', // Added light purple 
+  BOLD_CYAN: '\x1b[1m\x1b[38;5;51m', // Added bold cyan
+  BG_PURPLE: '\x1b[48;5;129m', // Added purple background
   PINK: '\x1b[38;5;213m',
   BROWN: '\x1b[38;5;130m',
   GRAY: '\x1b[38;5;240m',
@@ -53,6 +58,7 @@ export const fancyColors = {
   BG_MAGENTA: '\x1b[48;5;201m',
   BG_ORANGE: '\x1b[48;5;208m',
   BG_PURPLE: '\x1b[48;5;129m',
+  BG_GOLD: '\x1b[48;5;220m',     // Added gold background
   BG_PINK: '\x1b[48;5;213m',
   BG_BROWN: '\x1b[48;5;130m',
   BG_GRAY: '\x1b[48;5;240m',

@@ -13,6 +13,7 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { fancyColors } from '../utils/colors.js';
 
 // Config
 import { config } from '../config/config.js';
@@ -32,16 +33,17 @@ const __dirname = path.dirname(__filename);
  * 2. Cookie-based authentication (more secure)
  * 3. Special header token authentication (for API access)
  */
-export const restrictDevAccess = (req, res, next) => {
+export const restrictDevAccess = async (req, res, next) => {
   // Check if the request is for the development subdomain
   const host = req.headers.host;
   const origin = req.headers.origin;
   
-  // Log the request details
+  // Log the request details - using amber/yellow color for system services
+  // Use a concise but informative format with gold/yellow colors for system middleware
   if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-    logApi.info(`🔒 Secure Access Active! Checking... \n\t\t\tHost:   ${host}\n\t\t\tURL:    ${req.url}`);
+    logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SECURE ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET}`);
   } else {
-    logApi.info(`🔓 Secure Access is Currently Relaxed! \n\t\t\tHost:   ${host}\n\t\t\tURL:    ${req.url}`);
+    logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_DARK_YELLOW}${fancyColors.BLACK} RELAXED ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET}`);
   }
   
   // Check if this is the development subdomain or production domain
@@ -62,15 +64,9 @@ export const restrictDevAccess = (req, res, next) => {
   if (req.url.includes('/ws/') || req.url.includes('socket')) {
     const wsEndpoint = req.url.split('/').pop();
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`\t🔓 WebSocket access GRANTED - Authentication bypassed for all WebSockets`, {
-        url: req.url,
-        endpoint: wsEndpoint
-      });
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS-BYPASS ${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${wsEndpoint}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET}`);
     } else {
-      logApi.info(`\t\t🔓 [UH-OH! SECURE ACCESS RESTRICTIONS ARE DISABLED!] WebSocket access GRANTED - Authentication bypassed for all WebSockets`, {
-        url: req.url,
-        endpoint: wsEndpoint
-      });
+      logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} INSECURE ${fancyColors.RESET} ${fancyColors.RED}WS auth disabled: ${fancyColors.LIGHT_YELLOW}${wsEndpoint}${fancyColors.RESET}`);
     }
     return next();
   }
@@ -85,13 +81,13 @@ export const restrictDevAccess = (req, res, next) => {
       const decoded = jwt.verify(devAccessToken, config.jwt.secret);
       if (decoded && decoded.authorized) {
         if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-          logApi.info('\t👑 Access Granted to Branch Manager (via cookie token)');
+          logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via cookie token${fancyColors.RESET}`);
         }
         return next();
       }
     } catch (error) {
       if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-        logApi.error('\t🔒 Invalid dev access token:', error);
+        logApi.error(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid cookie token: ${error.message}${fancyColors.RESET}`);
       }
     }
   }
@@ -101,7 +97,7 @@ export const restrictDevAccess = (req, res, next) => {
   // Check if the special header token is valid
   if (devAccessHeader === config.secure_middleware.branch_manager_header_token) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info('\t👑 Access Granted to Branch Manager (via header token)');
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via header token${fancyColors.RESET}`);
     }
     
     // Set a cookie for future requests if it doesn't exist
@@ -122,12 +118,10 @@ export const restrictDevAccess = (req, res, next) => {
   const devAccessQuery = req.query?.devAccess;
   if (devAccessQuery === config.secure_middleware.branch_manager_header_token) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info('\t👑 Access Granted to Branch Manager (via query parameter)', {
-        url: req.url,
-        fullQueryString: req.url.includes('?') ? req.url.split('?')[1] : 'none',
-        decodedQuery: JSON.stringify(req.query),
-        devAccess: devAccessQuery ? devAccessQuery.substring(0, 10) + '...' : 'none'
-      });
+      // Extract query string for debugging
+      const queryString = req.url.includes('?') ? req.url.split('?')[1] : 'none';
+      
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via query param${fancyColors.RESET} ${fancyColors.GRAY}${queryString}${fancyColors.RESET}`);
     }
     return next();
   }
@@ -149,13 +143,13 @@ export const restrictDevAccess = (req, res, next) => {
       // Check if the wallet address is authorized
       if (authorizedWallets.includes(walletAddress)) {
         if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-          logApi.info(`\t👑 Access Granted to Branch Manager (via user session token; wallet: ${walletAddress})`);
+          logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via session${fancyColors.RESET} ${fancyColors.YELLOW}${walletAddress.substring(0, 8)}...${fancyColors.RESET}`);
         }
         return next();
       }
     } catch (error) {
       if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-        logApi.error(`Invalid session token: ${error}`);
+        logApi.error(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid session: ${error.message}${fancyColors.RESET}`);
       }
     }
   }
@@ -175,18 +169,14 @@ export const restrictDevAccess = (req, res, next) => {
   // Check if the client IP is authorized
   if (authorizedIps.includes(clientIp)) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`\t👑 Access Granted to Branch Manager (IP verified: ${clientIp})`);
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via IP${fancyColors.RESET} ${fancyColors.GRAY}${clientIp}${fancyColors.RESET}`);
     }
     return next();
   }
   
   // Access denied - return a 403 Forbidden response
   if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-    logApi.warn('WARNING: Access DENIED by Branch Manager', { 
-      ip: clientIp,
-      host,
-      origin
-    });
+    logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DENIED ${fancyColors.RESET} ${fancyColors.RED}No valid credentials${fancyColors.RESET} ${fancyColors.DARK_GRAY}IP:${clientIp}${fancyColors.RESET} ${fancyColors.GRAY}Host:${host}${fancyColors.RESET}`);
   }
   
   // Try to read the access guide HTML file

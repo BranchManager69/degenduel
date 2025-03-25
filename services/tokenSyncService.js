@@ -706,14 +706,14 @@ class TokenSyncService extends BaseService {
      * @returns {Promise<Array>} - An array of token data
      */
     async fetchTokenData() {
-        logApi.info(`[tokenSyncService] Fetching token data from marketDataService`);
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.BLACK} FETCHING TOKEN DATA ${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}From marketDataService...${fancyColors.RESET}`);
         
         try {
             // Get all tokens directly from marketDataService
             const tokensFromMarketService = await marketDataService.getAllTokens();
 
             if (tokensFromMarketService && tokensFromMarketService.length > 0) {
-                logApi.info(`[tokenSyncService] Successfully fetched ${tokensFromMarketService.length} tokens from marketDataService`);
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}✓ ${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Successfully fetched ${fancyColors.BOLD_MAGENTA}${tokensFromMarketService.length}${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}tokens from marketDataService${fancyColors.RESET}`);
                 
                 // Transform the data to the expected format for tokenSyncService
                 return tokensFromMarketService.map(token => ({
@@ -821,7 +821,7 @@ class TokenSyncService extends BaseService {
      */
     async updatePrices() {
         const startTime = Date.now();
-        logApi.info(`[tokenSyncService] Price update cycle starting`);
+        logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.BLACK} PRICE UPDATE CYCLE ${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Starting token price refresh...${fancyColors.RESET}`);
         
         try {
             // Get all tokens that are currently active in DegenDuel
@@ -831,7 +831,7 @@ class TokenSyncService extends BaseService {
             });
 
             if (activeTokens.length === 0) {
-                logApi.info(`[tokenSyncService] No active tokens found for price update`);
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.YELLOW}No active tokens found for price update${fancyColors.RESET}`);
                 return;
             }
             
@@ -872,7 +872,7 @@ class TokenSyncService extends BaseService {
             );
 
             // Fetch prices for all active tokens
-            logApi.info(`[tokenSyncService] Fetching prices for ${addresses.length} tokens...`);
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} FETCHING PRICES ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${addresses.length}${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}tokens queued for price update${fancyColors.RESET}`);
             const priceData = await this.fetchTokenPrices(addresses, currentPriceMap);
             
             // Track price changes for reporting
@@ -933,8 +933,8 @@ class TokenSyncService extends BaseService {
                 (this.syncStats.performance.averageOperationTimeMs * this.syncStats.operations.total + duration) / 
                 (this.syncStats.operations.total + 1);
 
-            // Log the basic results
-            logApi.info(`[tokenSyncService] Price update cycle completed: ${updatedCount}/${priceData.length} tokens updated in ${duration}ms`);
+            // Log the basic results - making it clear we're talking about successful updates vs attempted tokens
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.BLACK} PRICE UPDATE SUMMARY ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${updatedCount}/${priceData.length}${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}successful DB updates from ${priceData.length}/${addresses.length} tokens with data (${duration}ms)${fancyColors.RESET}`);
             
             // If there are significant price changes, log them in a separate message
             if (priceChanges.length > 0) {
@@ -966,7 +966,7 @@ class TokenSyncService extends BaseService {
                     logApi.info(`[tokenSyncService] ...and ${priceChanges.length - 5} more changes`);
                 }
             } else {
-                logApi.info(`[tokenSyncService] No significant price changes detected`);
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.BLACK} PRICE ANALYSIS ${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}No significant price changes detected in this update cycle${fancyColors.RESET}`);
             }
         } catch (error) {
             if (error.isServiceError) throw error;
@@ -991,7 +991,7 @@ class TokenSyncService extends BaseService {
         const startTime = Date.now();
         
         try {
-            logApi.info(`[tokenSyncService] Starting metadata update for ${fullData.length} tokens`);
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.BLACK} METADATA UPDATE ${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Starting metadata update for ${fancyColors.BOLD_MAGENTA}${fullData.length}${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}tokens${fancyColors.RESET}`);
 
             let created = 0;
             let updated = 0;

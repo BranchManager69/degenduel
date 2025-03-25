@@ -262,12 +262,27 @@ class MarketDataService extends BaseService {
             
             // Format token count with consistent spacing
             const formattedCount = tokens.length.toString().padStart(3);
+
+            // Calculate category thresholds (for cache details)
+            const mktCapBlueChipThreshold = 100; // $ million
+            const mktCapThresholdMajor = 25; // $ million
+            const mktCapThresholdMid = 10; // $ million
+            const mktCapThresholdSmall = 1; // $ million
+            const mktCapThresholdMicro = 0.1; // $ million
+            const mktCapThresholdNano = 0.05; // $ million
+            const mktCapThresholdDeadButNeverForgotten = 0.001; // $ million
+            const MILLION = 1000000;
             
             // Calculate category counts for cache details
             const categoryCounts = {
-                majorTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) > 100000000).length, // > $100M
-                midCapTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) <= 100000000 && parseFloat(t.market_cap) > 10000000).length, // $10M-$100M
-                smallCapTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) <= 10000000).length, // < $10M
+                blueChipTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) >= mktCapBlueChipThreshold * MILLION).length,
+                majorTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) < mktCapBlueChipThreshold * MILLION && parseFloat(t.market_cap) >= mktCapThresholdMajor * MILLION).length,
+                midCapTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) < mktCapThresholdMajor * MILLION && parseFloat(t.market_cap) >= mktCapThresholdMid * MILLION).length,
+                smallCapTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) < mktCapThresholdMid * MILLION && parseFloat(t.market_cap) >= mktCapThresholdSmall * MILLION).length,
+                microCapTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) < mktCapThresholdSmall * MILLION && parseFloat(t.market_cap) >= mktCapThresholdMicro * MILLION).length,
+                nanoCapTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) < mktCapThresholdMicro * MILLION && parseFloat(t.market_cap) >= mktCapThresholdNano * MILLION).length,
+                deadButNeverForgottenTokens: tokens.filter(t => t.market_cap && parseFloat(t.market_cap) < mktCapThresholdNano * MILLION && parseFloat(t.market_cap) >= mktCapThresholdDeadButNeverForgotten * MILLION).length,
+
                 noCapTokens: tokens.filter(t => !t.market_cap).length, // No market cap data
                 hasPriceTokens: tokens.filter(t => t.price && parseFloat(t.price) > 0).length, // Has price data
                 hasImageTokens: tokens.filter(t => t.image_url).length, // Has image data
@@ -275,10 +290,10 @@ class MarketDataService extends BaseService {
             };
             
             // Format details string
-            const cacheDetailsStr = `Major: ${categoryCounts.majorTokens} · Mid: ${categoryCounts.midCapTokens} · Small: ${categoryCounts.smallCapTokens} · Price data: ${categoryCounts.hasPriceTokens} · Images: ${categoryCounts.hasImageTokens}`;
+            const cacheDetailsStr = ` \n\t Blue Chip: ${categoryCounts.blueChipTokens} · Major: ${categoryCounts.majorTokens} · Mid: ${categoryCounts.midCapTokens} · Small: ${categoryCounts.smallCapTokens} · Micro: ${categoryCounts.microCapTokens} · Nano: ${categoryCounts.nanoCapTokens} · Dead: ${categoryCounts.deadCapTokens} · Dead: ${categoryCounts.deadButNeverForgottenTokens} · No cap: ${categoryCounts.noCapTokens}  \n\tPrice data: ${categoryCounts.hasPriceTokens} · Socials: ${categoryCounts.hasSocialTokens} · Media: ${categoryCounts.hasImageTokens}`;
             
-            // Log with improved formatting and pink color theme, including cache details
-            logApi.info(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CACHE REFRESHED ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}(${cacheDetailsStr})${fancyColors.RESET}`);
+            // Log with improved formatting and purple color theme (distinct from magenta token sync)
+            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} CACHE REFRESHED ${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}(${cacheDetailsStr})${fancyColors.RESET}`);
             
             // Clear and rebuild tokensCache
             this.tokensCache.clear();
@@ -295,8 +310,8 @@ class MarketDataService extends BaseService {
                     // Format token symbol with consistent width
                     const formattedSymbol = token.symbol.padEnd(8);
                     
-                    // Log with improved formatting and color
-                    logApi.error(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}✗ ${formattedSymbol}${fancyColors.RESET} ${fancyColors.RED}Cache error: ${error.message}${fancyColors.RESET}`);
+                    // Log with improved formatting and purple color
+                    logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}✗ ${formattedSymbol}${fancyColors.RESET} ${fancyColors.RED}Cache error: ${error.message}${fancyColors.RESET}`);
                 }
             });
             
@@ -305,8 +320,8 @@ class MarketDataService extends BaseService {
                 // Format count with consistent spacing
                 const formattedCount = errorTokens.length.toString().padStart(3);
                 
-                // Log with improved formatting and color
-                logApi.warn(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} CACHE ERRORS ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.YELLOW}${errorTokens.join(', ')}${fancyColors.RESET}`);
+                // Log with improved formatting and purple color
+                logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} CACHE ERRORS ${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.YELLOW}${errorTokens.join(', ')}${fancyColors.RESET}`);
             }
             
             // Update service stats
@@ -316,7 +331,7 @@ class MarketDataService extends BaseService {
             
             return tokens.length;
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}✗ ERROR:${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Failed to refresh tokens cache:${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}✗ ERROR:${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}Failed to refresh tokens cache:${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`);
             this.marketStats.data.updates.failed++;
             throw error;
         } finally {
@@ -568,8 +583,8 @@ class MarketDataService extends BaseService {
                         `${tokensWithPriceChange} with sig. changes · Top gainers: ${topGainers.join(', ')}` : 
                         `${tokensWithPriceChange} with sig. changes`;
                     
-                    // Log with improved formatting and pink color theme
-                    logApi.info(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} BROADCASTING ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}(${broadcastDetailsStr})${fancyColors.RESET}`);
+                    // Log with improved formatting and purple color theme
+                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} BROADCASTING ${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}(${broadcastDetailsStr})${fancyColors.RESET}`);
                 }
             } catch (error) {
                 logApi.error(`[MktDataSvc] Error in broadcast interval:`, error);
@@ -625,8 +640,8 @@ class MarketDataService extends BaseService {
             const formattedCleaned = cleaned.toString().padStart(3);
             const formattedRemaining = this.cache.size.toString().padStart(3);
             
-            // Log with improved formatting and pink color theme
-            logApi.info(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CACHE CLEANED ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${formattedCleaned} entries${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}(${formattedRemaining} remaining)${fancyColors.RESET}`);
+            // Log with improved formatting and purple color theme
+            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} CACHE CLEANED ${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}${formattedCleaned} entries${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}(${formattedRemaining} remaining)${fancyColors.RESET}`);
         }
     }
 

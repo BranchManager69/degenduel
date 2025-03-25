@@ -802,10 +802,10 @@ const formatRateLimitError = (message, isForConsole = false) => {
     alert_type: 'rate_limit' // For Logtail filtering
   };
   
-  // For console, use ANSI colors
+  // For console, use ANSI colors with our standardized format
   if (isForConsole) {
     return {
-      message: `${fancyColors.BG_YELLOW}${fancyColors.WHITE} SOLANA RPC RATE LIMIT ${fancyColors.RESET} ${fancyColors.RED}Retry in ${retryMs}ms${fancyColors.RESET}`,
+      message: `${fancyColors.RED}[solana-rpc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} RATE LIMIT ${fancyColors.RESET} ${fancyColors.BOLD_RED}Unknown${fancyColors.RESET} ${fancyColors.RED}Hit #1${fancyColors.RESET} ${fancyColors.LIGHT_RED}Retry in ${retryMs}ms${fancyColors.RESET}`,
       metadata
     };
   }

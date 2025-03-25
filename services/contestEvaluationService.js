@@ -1209,7 +1209,7 @@ class ContestEvaluationService extends BaseService {
             
             // Explicitly reject zero-value refunds
             if (refundAmount.equals(0)) {
-                logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Cannot process zero-value refund:${fancyColors.RESET}`, {
+                logApi.error(`${fancyColors.DARK_CYAN}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${fancyColors.RED}Cannot process zero-value refund:${fancyColors.RESET}`, {
                     contest_id: contest.id,
                     wallet_address: participant.wallet_address,
                     contest_code: contest.contest_code
@@ -1805,7 +1805,7 @@ class ContestEvaluationService extends BaseService {
             };
         } catch (error) {
             // Log the error
-            logApi.error('Manual contest evaluation failed:', error);
+            logApi.error(`${fancyColors.DARK_CYAN}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} EVALUATION FAILED ${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`, error);
             throw error;
         }
     }
@@ -1824,7 +1824,7 @@ class ContestEvaluationService extends BaseService {
                 const tiebreakStats = await this.getParticipantTiebreakStats(participant, contest);
                 
                 // Log the tiebreak details
-                logApi.info(`Tiebreak details for participant in contest ${contest.id}`, {
+                logApi.info(`${fancyColors.DARK_CYAN}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} TIEBREAK ${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}Details for participant in contest ${contest.id}${fancyColors.RESET}`, {
                     contest_id: contest.id,
                     wallet_address: participant.wallet_address,
                     tiebreak_metrics: {
