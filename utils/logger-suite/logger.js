@@ -791,11 +791,49 @@ const extractRetryTime = (message) => {
 const formatRateLimitError = (message, isForConsole = false) => {
   const retryMs = extractRetryTime(message);
   
+  // Extract operation name and source from the message
+  let operation = "Unknown";
+  let hitCount = "1";
+  let sourceService = "";
+  
+  // Parse additional context from message
+  if (message.includes("via ")) {
+    const sourceMatch = /via ([a-zA-Z0-9]+)/.exec(message);
+    sourceService = sourceMatch ? sourceMatch[1] : "";
+  }
+  
+  // Check for operation name in message
+  if (message.includes("Operation: ")) {
+    const opMatch = /Operation: ([a-zA-Z0-9]+)/.exec(message);
+    operation = opMatch ? opMatch[1] : operation;
+  } else if (message.includes("TokenBatch")) {
+    operation = "TokenBatch";
+  } else if (message.includes("WalletBatch")) {
+    operation = "WalletBatch";
+  } else if (message.includes("ReclaimFunds")) {
+    operation = "ReclaimFunds";
+  } else if (message.includes("getAccounts")) {
+    operation = "getAccounts";
+  } else if (message.includes("getTokens")) {
+    operation = "getTokens";
+  } else {
+    operation = message.split(" ")[0] || "Unknown";
+  }
+  
+  // Check for hit count in message
+  if (message.includes("Hit #")) {
+    const hitMatch = /Hit #(\d+)/.exec(message);
+    hitCount = hitMatch ? hitMatch[1] : hitCount;
+  }
+  
   // Standard metadata for all rate limit errors
   const metadata = {
     service: 'SOLANA',
     error_type: 'RATE_LIMIT',
     retry_ms: retryMs,
+    operation: operation,
+    hit_count: hitCount,
+    source_service: sourceService,
     rpc_provider: config?.rpc_urls?.primary,
     original_message: message,
     severity: 'warning', // For Logtail filtering
@@ -804,15 +842,16 @@ const formatRateLimitError = (message, isForConsole = false) => {
   
   // For console, use ANSI colors with our standardized format
   if (isForConsole) {
+    const sourceText = sourceService ? ` ${fancyColors.DARK_RED}(via ${sourceService})${fancyColors.RESET}` : '';
     return {
-      message: `${fancyColors.RED}[solana-rpc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} RATE LIMIT ${fancyColors.RESET} ${fancyColors.BOLD_RED}Unknown${fancyColors.RESET} ${fancyColors.RED}Hit #1${fancyColors.RESET} ${fancyColors.LIGHT_RED}Retry in ${retryMs}ms${fancyColors.RESET}`,
+      message: `${fancyColors.RED}[solana-rpc]${fancyColors.RESET} ${fancyColors.BG_RED} ${fancyColors.WHITE} RATE LIMIT ${fancyColors.RESET} ${fancyColors.BOLD_RED}${operation}${fancyColors.RESET} ${fancyColors.RED}Hit #${hitCount}${fancyColors.RESET} ${fancyColors.LIGHT_RED}Retry in ${retryMs}ms${fancyColors.RESET}${sourceText}`,
       metadata
     };
   }
   
   // For Logtail, add the basic metadata only
   return {
-    message: `SOLANA RPC RATE LIMIT: Retry in ${retryMs}ms`,
+    message: `SOLANA RPC RATE LIMIT: ${operation} operation - Retry in ${retryMs}ms`,
     metadata: {
       ...metadata,
       // Add Logtail-specific color properties but no HTML

@@ -510,7 +510,7 @@ class TokenSyncService extends BaseService {
     async fetchTokenPrices(addresses, currentPriceMap = {}) {
         try {
             // Process tokens in chunks to limit concurrency
-            const BATCH_SIZE = 3; // Process 3 tokens at a time to avoid rate limits
+            const BATCH_SIZE = 5; // Process 5 tokens at a time to avoid rate limits
             const results = [];
             const startTime = Date.now();
             
@@ -645,7 +645,21 @@ class TokenSyncService extends BaseService {
                 const formattedBatchNum = batchNumber.toString().padStart(2);
                 const formattedTotalBatches = totalBatches.toString().padStart(2);
                 
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} Batch ${formattedBatchNum}/${formattedTotalBatches} ${fancyColors.RESET}`);
+                // Format token indices with consistent spacing
+                const startIndex = i + 1;
+                const endIndex = Math.min(i + BATCH_SIZE, addresses.length);
+                const formattedStartIndex = startIndex.toString().padStart(3);
+                const formattedEndIndex = endIndex.toString().padStart(3);
+                
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} BATCH ${formattedBatchNum}/${formattedTotalBatches} ${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Processing tokens ${formattedStartIndex}-${formattedEndIndex}${fancyColors.RESET}`, {
+                    operation: 'TokenBatch',
+                    source_service: 'tokenSyncService',
+                    batch_number: batchNumber,
+                    total_batches: totalBatches,
+                    start_index: startIndex,
+                    end_index: endIndex,
+                    batch_size: BATCH_SIZE
+                });
                 
                 // Process this batch and add a small delay between batches
                 const batchResults = await processBatch(batch);
@@ -657,7 +671,7 @@ class TokenSyncService extends BaseService {
                 const formattedSuccessCount = batchResults.length.toString().padStart(2);
                 const formattedTotalCount = batch.length.toString().padStart(2);
                 
-                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Batch ${formattedBatchNum}/${formattedTotalBatches} complete: ${formattedSuccessCount}/${formattedTotalCount} tokens [${formattedProcessingTime}ms]${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.DARK_MAGENTA}Batch ${formattedBatchNum}/${formattedTotalBatches}${fancyColors.RESET} ${fancyColors.GREEN}✓${formattedSuccessCount}${fancyColors.RESET}/${fancyColors.MAGENTA}${formattedTotalCount}${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}tokens in ${formattedProcessingTime}ms${fancyColors.RESET}`);
                 
                 // Add delay between batches to avoid rate limits (silently)
                 if (i + BATCH_SIZE < addresses.length) {
@@ -676,20 +690,42 @@ class TokenSyncService extends BaseService {
             
             // Find min, max, avg processing times with consistent formatting
             let metricsStr = "";
+            let minTimeFormatted = "0";
+            let maxTimeFormatted = "0";
+            let avgTimeFormatted = "0";
+            let avgTimeValue = 0;
+            
             if (results.length > 0) {
                 const processingTimes = results.map(r => r.processingTimeMs);
                 const minTime = Math.min(...processingTimes);
                 const maxTime = Math.max(...processingTimes);
-                const avgTime = processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length;
+                avgTimeValue = processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length;
                 
-                const minTimeFormatted = minTime.toString().padStart(3);
-                const maxTimeFormatted = maxTime.toString().padStart(3);
-                const avgTimeFormatted = avgTime.toFixed(0).padStart(3);
+                minTimeFormatted = minTime.toString().padStart(3);
+                maxTimeFormatted = maxTime.toString().padStart(3);
+                avgTimeFormatted = avgTimeValue.toFixed(0).padStart(3);
                 
                 metricsStr = ` • Min=${minTimeFormatted}ms • Max=${maxTimeFormatted}ms • Avg=${avgTimeFormatted}ms`;
             }
             
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} COMPLETED ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${resultsCount}/${addressesCount} tokens${fancyColors.RESET} ${fancyColors.MAGENTA}(${successRateFormatted}%)${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}in ${totalTimeFormatted}ms${metricsStr}${fancyColors.RESET}`);
+            // First line: overall timing metrics
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} COMPLETED ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${resultsCount}/${addressesCount} tokens${fancyColors.RESET} ${fancyColors.MAGENTA}(${successRateFormatted}%)${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}in ${totalTimeFormatted}ms${fancyColors.RESET}`, {
+                operation: 'TokenRefreshComplete',
+                source_service: 'tokenSyncService',
+                total_tokens: addressesCount,
+                processed_tokens: resultsCount,
+                success_rate: successRate,
+                duration_ms: totalTime,
+                avg_token_time: avgTimeValue || 0
+            });
+            
+            // Second line: summary of data changes and timing details
+            const changedTokens = results.filter(r => r.marketCapChange !== 0).length;
+            const priceIncreases = results.filter(r => r.marketCapChangePercent > 0).length;
+            const priceDecreases = results.filter(r => r.marketCapChangePercent < 0).length;
+            const noChange = results.filter(r => r.marketCapChange === 0).length;
+            
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_MAGENTA}${fancyColors.WHITE} PRICE DATA ${fancyColors.RESET} ${fancyColors.GREEN}↑${priceIncreases}${fancyColors.RESET} ${fancyColors.RED}↓${priceDecreases}${fancyColors.RESET} ${fancyColors.GRAY}‒${noChange}${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}|${fancyColors.RESET} ${fancyColors.DARK_GREEN}Min:${minTimeFormatted}ms${fancyColors.RESET} ${fancyColors.DARK_RED}Max:${maxTimeFormatted}ms${fancyColors.RESET} ${fancyColors.DARK_MAGENTA}Avg:${avgTimeFormatted}ms${fancyColors.RESET}`);
             
             
             return results;
@@ -933,8 +969,14 @@ class TokenSyncService extends BaseService {
                 (this.syncStats.performance.averageOperationTimeMs * this.syncStats.operations.total + duration) / 
                 (this.syncStats.operations.total + 1);
 
-            // Log the basic results - making it clear we're talking about successful updates vs attempted tokens
-            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.BLACK} PRICE UPDATE SUMMARY ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${updatedCount}/${priceData.length}${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}successful DB updates from ${priceData.length}/${addresses.length} tokens with data (${duration}ms)${fancyColors.RESET}`);
+            // Log the basic results on first line - timing info
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.BLACK} PRICE UPDATE CYCLE ${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}Completed in ${duration}ms${fancyColors.RESET}`);
+            
+            // Count tokens with actual market data
+            const tokensWithMarketData = priceData.filter(token => token.marketCap && token.marketCap > 0).length;
+            
+            // Log the price change info on second line - for clear metrics
+            logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_DARK_MAGENTA}${fancyColors.WHITE} DATABASE UPDATES ${fancyColors.RESET} ${fancyColors.BOLD_MAGENTA}${updatedCount}/${priceData.length}${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}tokens updated${fancyColors.RESET} ${fancyColors.DARK_MAGENTA}(${tokensWithMarketData}/${addresses.length} tokens had market cap data)${fancyColors.RESET}`);
             
             // If there are significant price changes, log them in a separate message
             if (priceChanges.length > 0) {

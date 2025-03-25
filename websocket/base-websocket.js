@@ -13,9 +13,9 @@
 import { WebSocketServer } from 'ws';
 import { logApi } from '../utils/logger-suite/logger.js';
 import jwt from 'jsonwebtoken';
-import { config } from '../config/config.js';
 import prisma from '../config/prisma.js';
 import { fancyColors } from '../utils/colors.js';
+import { config } from '../config/config.js';
 
 const VERBOSE_WEBSOCKET_INIT = true;
 

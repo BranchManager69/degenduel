@@ -289,11 +289,17 @@ class MarketDataService extends BaseService {
                 hasSocialTokens: tokens.filter(t => t.token_socials && t.token_socials.length > 0).length // Has social data
             };
             
-            // Format details string
-            const cacheDetailsStr = ` \n\t Blue Chip: ${categoryCounts.blueChipTokens} · Major: ${categoryCounts.majorTokens} · Mid: ${categoryCounts.midCapTokens} · Small: ${categoryCounts.smallCapTokens} · Micro: ${categoryCounts.microCapTokens} · Nano: ${categoryCounts.nanoCapTokens} · Dead: ${categoryCounts.deadCapTokens} · Dead: ${categoryCounts.deadButNeverForgottenTokens} · No cap: ${categoryCounts.noCapTokens}  \n\tPrice data: ${categoryCounts.hasPriceTokens} · Socials: ${categoryCounts.hasSocialTokens} · Media: ${categoryCounts.hasImageTokens}`;
+            // Calculate market cap coverage
+            const tokensWithMarketCap = tokens.filter(t => t.market_cap && parseFloat(t.market_cap) > 0).length;
             
-            // Log with improved formatting and purple color theme (distinct from magenta token sync)
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} CACHE REFRESHED ${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}(${cacheDetailsStr})${fancyColors.RESET}`);
+            // Simplified log message with only essential info
+            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} CACHE REFRESHED ${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}(${tokensWithMarketCap} with market cap, ${categoryCounts.hasImageTokens} with images)${fancyColors.RESET}`, {
+                operation: 'TokenCacheRefresh',
+                source_service: 'marketDataService',
+                token_count: formattedCount,
+                tokens_with_mcap: tokensWithMarketCap,
+                tokens_with_images: categoryCounts.hasImageTokens
+            });
             
             // Clear and rebuild tokensCache
             this.tokensCache.clear();

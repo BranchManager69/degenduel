@@ -745,10 +745,12 @@ class ContestWalletService extends BaseService {
                         logApi.warn(`${fancyColors.RED}[solana-rpc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} RATE LIMIT ${fancyColors.RESET} ${fancyColors.BOLD_RED}WalletBatch${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits}${fancyColors.RESET} ${fancyColors.LIGHT_RED}Retry in ${backoffDelay}ms${fancyColors.RESET} ${fancyColors.DARK_RED}(via contestWalletSvc)${fancyColors.RESET}`, {
                             service: 'SOLANA',
                             error_type: 'RATE_LIMIT',
+                            operation: 'WalletBatch',
+                            hit_count: consecutiveRateLimitHits.toString(),
+                            source_service: 'contestWalletService',
                             batch: currentBatch + 1,
                             total_batches: totalBatches,
                             retry_ms: backoffDelay,
-                            consecutive_hits: consecutiveRateLimitHits,
                             rpc_provider: config.rpc_urls.primary,
                             original_message: error.message,
                             severity: 'warning',
@@ -783,6 +785,38 @@ class ContestWalletService extends BaseService {
             this.walletStats.balance_updates.successful += results.updated;
             this.walletStats.balance_updates.failed += results.failed;
             
+            // Track wallets with SOL
+            const walletsWithBalance = [];
+            
+            // Create balanceChanges list from results if it exists
+            const balanceChanges = results.updates?.filter(update => update.success && update.difference !== 0) || [];
+            
+            // Attempt to find all wallets with balance > 0.001 SOL
+            // We'll map through all contest wallets to check them
+            const walletsWithSolBalance = await prisma.contest_wallets.findMany({
+                where: { balance: { gt: 0.001 } },
+                include: {
+                    contests: {
+                        select: {
+                            id: true,
+                            contest_code: true,
+                            status: true
+                        }
+                    }
+                },
+                orderBy: { balance: 'desc' }
+            });
+            
+            // Add wallets with balance to our tracking list
+            for (const wallet of walletsWithSolBalance) {
+                walletsWithBalance.push({
+                    contest_id: wallet.contests?.id,
+                    contest_code: wallet.contests?.contest_code,
+                    wallet_address: wallet.wallet_address,
+                    balance: parseFloat(wallet.balance)
+                });
+            }
+            
             // Calculate and format stats with consistent spacing
             const totalTime = Date.now() - startTime;
             const formattedSeconds = (totalTime/1000).toFixed(1).padStart(4);
@@ -793,6 +827,38 @@ class ContestWalletService extends BaseService {
             
             // Log completion with better formatting
             logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} COMPLETED ${fancyColors.RESET} ${fancyColors.BOLD_CYAN}${formattedUpdated}/${formattedTotal} wallets${fancyColors.RESET} ${fancyColors.CYAN}(${formattedSuccessRate}%)${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}in ${formattedSeconds}s${fancyColors.RESET}`);
+            
+            // Sort wallets by balance (descending)
+            walletsWithBalance.sort((a, b) => b.balance - a.balance);
+            
+            // Log summary of wallets with SOL
+            if (walletsWithBalance.length > 0) {
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} WALLETS WITH SOL ${fancyColors.RESET} ${fancyColors.BOLD_CYAN}Found ${walletsWithBalance.length} wallets${fancyColors.RESET}`);
+                
+                // Log top wallets with SOL (top 10 or all if less than 10)
+                const topWallets = walletsWithBalance.slice(0, Math.min(10, walletsWithBalance.length));
+                for (const wallet of topWallets) {
+                    const formattedContestId = wallet.contest_id ? wallet.contest_id.toString().padStart(4) : "N/A ".padStart(4);
+                    const formattedContestCode = (wallet.contest_code || "Unknown").padEnd(10);
+                    const formattedBalance = wallet.balance.toFixed(4).padStart(10);
+                    const shortAddress = wallet.wallet_address.substring(0, 8) + '...' + wallet.wallet_address.substring(wallet.wallet_address.length - 4);
+                    
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BOLD_CYAN}Contest ${formattedContestId}${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}(${formattedContestCode})${fancyColors.RESET} ${fancyColors.CYAN}Balance: ${formattedBalance} SOL${fancyColors.RESET} ${fancyColors.GRAY}[${shortAddress}]${fancyColors.RESET}`);
+                }
+                
+                // If more than 10 wallets, summarize the rest
+                if (walletsWithBalance.length > 10) {
+                    const remainingWallets = walletsWithBalance.length - 10;
+                    const remainingBalance = walletsWithBalance.slice(10).reduce((sum, wallet) => sum + wallet.balance, 0);
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.CYAN}+ ${remainingWallets} more wallets with total balance: ${remainingBalance.toFixed(4)} SOL${fancyColors.RESET}`);
+                }
+                
+                // Calculate total SOL in all wallets
+                const totalSOL = walletsWithBalance.reduce((sum, wallet) => sum + wallet.balance, 0);
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOTAL SOL ${fancyColors.RESET} ${fancyColors.BOLD_CYAN}${totalSOL.toFixed(4)} SOL${fancyColors.RESET} across ${walletsWithBalance.length} wallets`);
+            } else {
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}No wallets found with SOL balance${fancyColors.RESET}`);
+            }
             
             // Add a cooldown period after batch completion to prevent immediate rate limiting in other services
             // This helps spread out the RPC calls across the system
@@ -1219,10 +1285,11 @@ class ContestWalletService extends BaseService {
                             service: 'SOLANA',
                             error_type: 'RATE_LIMIT',
                             operation: 'ReclaimFunds',
+                            hit_count: consecutiveRateLimitHits.toString(),
+                            source_service: 'contestWalletService',
                             batch: Math.floor(walletIndex/BATCH_SIZE)+1,
                             total_batches: Math.ceil(eligibleWallets.length/BATCH_SIZE),
                             retry_ms: backoffDelay,
-                            consecutive_hits: consecutiveRateLimitHits,
                             rpc_provider: config.rpc_urls.primary,
                             original_message: error.message,
                             severity: 'warning',

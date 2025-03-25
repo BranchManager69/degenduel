@@ -43,7 +43,7 @@ export const fancyColors = {
   DARK_YELLOW: '\x1b[38;5;178m',
   DARK_RED: '\x1b[38;5;196m',
   DARK_BLUE: '\x1b[38;5;21m',
-  DARK_MAGENTA: '\x1b[38;5;129m',
+  DARK_MAGENTA: '\x1b[38;5;90m', // Changed to match BG_DARK_MAGENTA
   DARK_CYAN: '\x1b[38;5;51m',
   DARK_WHITE: '\x1b[38;5;231m',
   DARK_BLACK: '\x1b[38;5;16m',
@@ -56,6 +56,7 @@ export const fancyColors = {
   BG_CYAN: '\x1b[48;5;51m',
   BG_NEON: '\x1b[48;5;207m',
   BG_MAGENTA: '\x1b[48;5;201m',
+  BG_DARK_MAGENTA: '\x1b[48;5;90m', // Added dark magenta background
   BG_ORANGE: '\x1b[48;5;208m',
   BG_PURPLE: '\x1b[48;5;129m',
   BG_GOLD: '\x1b[48;5;220m',     // Added gold background

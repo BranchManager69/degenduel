@@ -38,56 +38,78 @@ export const restrictDevAccess = async (req, res, next) => {
   const host = req.headers.host;
   const origin = req.headers.origin;
   
-  // Log the request details - using amber/yellow color for system services
-  // Use a concise but informative format with gold/yellow colors for system middleware
-  if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-    logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SECURE ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET}`);
-  } else {
-    logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_DARK_YELLOW}${fancyColors.BLACK} RELAXED ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET}`);
-  }
+  // We'll store the request details and determine access status later
+  // This will allow us to log everything in a single line
+  let securityMode = SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE ? 'SECURE' : 'RELAXED';
+  let authMethod = '';
+  let authDetails = '';
   
   // Check if this is the development subdomain or production domain
   const isDev = host?.includes('dev.degenduel.me') || origin?.includes('dev.degenduel.me');
-  
   if (!isDev) {
-    // Not the dev subdomain, proceed normally
+    // Not trying to access dev.degenduel.me! End restriction checks here and allow all access
+    // NOTE: This is an imperfect bypass. Websockets are not handled well.
     return next();
   }
+
+  // Check if this is a websocket (or v69) request
+  if (req.url.includes('/ws/') || req.url.includes('v69')) {
+    // Log a single line with both security status and access grant
+    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Public resource${fancyColors.RESET}`);
+    } else {
+      logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} INSECURE ${fancyColors.RESET} ${fancyColors.RED}WS auth disabled${fancyColors.RESET}`);
+    }
+    // Automatically grant access to websocket requests
+    return next();
+  } else {
+    // Not a websocket request, proceed normally
+  }
+
+  // Check if it has no auth method
+  if (!authMethod) {
+    // Log a single line with both security status and access grant
+    logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Public resource${fancyColors.RESET}`);
+  }
   
-  // Special case: Allow access to the dev-access.js file
+  // Special case: Allow access to the dev-access.js page
   if (req.url === '/dev-access.js') {
+    // Log a single line with both security status and access grant
+    logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Public resource${fancyColors.RESET}`);
     return next();
   }
 
   // BYPASS ALL WEBSOCKET REQUESTS - no auth needed for WebSockets
   // TODO: WTF???
-  if (req.url.includes('/ws/') || req.url.includes('socket')) {
-    const wsEndpoint = req.url.split('/').pop();
-    if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS-BYPASS ${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${wsEndpoint}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET}`);
-    } else {
-      logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} INSECURE ${fancyColors.RESET} ${fancyColors.RED}WS auth disabled: ${fancyColors.LIGHT_YELLOW}${wsEndpoint}${fancyColors.RESET}`);
-    }
-    return next();
-  }
+  //if (req.url.includes('/ws/') || req.url.includes('socket')) {
+  //  const wsEndpoint = req.url.split('/').pop();
+  //  if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
+  //    logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS-BYPASS ${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${wsEndpoint}${fancyColors.RESET}`);
+  //  } else {
+  //    logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_DARK_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} INSECURE ${fancyColors.RESET} ${fancyColors.RED}WS auth disabled${fancyColors.RESET}`);
+  //  }
+  //  return next();
+  //}
   
   // This is the dev subdomain, check for authorization
-  
-  // Method 1: Check for a special dev access cookie
+
+  // Check for a special dev access cookie
   const devAccessToken = req.cookies?.devAccess;
+
+  // Method 1: Check for a special dev access cookie
   if (devAccessToken) {
     try {
       // Verify the token
       const decoded = jwt.verify(devAccessToken, config.jwt.secret);
       if (decoded && decoded.authorized) {
         if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-          logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via cookie token${fancyColors.RESET}`);
+          logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via cookie token${fancyColors.RESET}`);
         }
         return next();
       }
     } catch (error) {
       if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-        logApi.error(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid cookie token: ${error.message}${fancyColors.RESET}`);
+        logApi.error(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid cookie token: ${error.message}${fancyColors.RESET}`);
       }
     }
   }
@@ -97,11 +119,12 @@ export const restrictDevAccess = async (req, res, next) => {
   // Check if the special header token is valid
   if (devAccessHeader === config.secure_middleware.branch_manager_header_token) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via header token${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via header token${fancyColors.RESET}`);
     }
     
     // Set a cookie for future requests if it doesn't exist
     if (!devAccessToken) {
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via header token${fancyColors.RESET}`);
       const token = jwt.sign({ authorized: true }, config.jwt.secret, { expiresIn: '30d' });
       res.cookie('devAccess', token, { 
         httpOnly: true, 
@@ -109,6 +132,7 @@ export const restrictDevAccess = async (req, res, next) => {
         sameSite: 'strict',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via header token${fancyColors.RESET}`);
     }
     
     return next();
@@ -121,7 +145,7 @@ export const restrictDevAccess = async (req, res, next) => {
       // Extract query string for debugging
       const queryString = req.url.includes('?') ? req.url.split('?')[1] : 'none';
       
-      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via query param${fancyColors.RESET} ${fancyColors.GRAY}${queryString}${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via query param${fancyColors.RESET}`);
     }
     return next();
   }
@@ -143,13 +167,13 @@ export const restrictDevAccess = async (req, res, next) => {
       // Check if the wallet address is authorized
       if (authorizedWallets.includes(walletAddress)) {
         if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-          logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via session${fancyColors.RESET} ${fancyColors.YELLOW}${walletAddress.substring(0, 8)}...${fancyColors.RESET}`);
+          logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via session${fancyColors.RESET} ${fancyColors.YELLOW}${walletAddress.substring(0, 8)}...${fancyColors.RESET}`);
         }
         return next();
       }
     } catch (error) {
       if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-        logApi.error(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid session: ${error.message}${fancyColors.RESET}`);
+        logApi.error(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} REJECTED ${fancyColors.RESET} ${fancyColors.RED}Invalid session: ${error.message}${fancyColors.RESET}`);
       }
     }
   }
@@ -169,14 +193,14 @@ export const restrictDevAccess = async (req, res, next) => {
   // Check if the client IP is authorized
   if (authorizedIps.includes(clientIp)) {
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via IP${fancyColors.RESET} ${fancyColors.GRAY}${clientIp}${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Auth via IP${fancyColors.RESET} ${fancyColors.GRAY}${clientIp}${fancyColors.RESET}`);
     }
     return next();
   }
   
   // Access denied - return a 403 Forbidden response
   if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE) {
-    logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DENIED ${fancyColors.RESET} ${fancyColors.RED}No valid credentials${fancyColors.RESET} ${fancyColors.DARK_GRAY}IP:${clientIp}${fancyColors.RESET} ${fancyColors.GRAY}Host:${host}${fancyColors.RESET}`);
+    logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DENIED ${fancyColors.RESET} ${fancyColors.RED}No valid credentials${fancyColors.RESET} ${fancyColors.DARK_GRAY}IP:${clientIp}${fancyColors.RESET}`);
   }
   
   // Try to read the access guide HTML file

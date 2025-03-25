@@ -212,15 +212,14 @@ const RPC_LIMITER = {
         }
         
         // More informative rate limit log with consistent format and more context
-        logApi.warn(`${fancyColors.RED}[solana-rpc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} RATE LIMIT ${fancyColors.RESET} ${fancyColors.BOLD_RED}${callName}${fancyColors.RESET} ${fancyColors.RED}Hit #${callState.consecutiveHits}${fancyColors.RESET} ${fancyColors.LIGHT_RED}Retry in ${callState.currentDelay}ms${fancyColors.RESET}`, {
+        logApi.warn(`${fancyColors.RED}[solana-rpc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} RATE LIMIT ${fancyColors.RESET} ${fancyColors.BOLD_RED}${callName}${fancyColors.RESET} ${fancyColors.RED}Hit #${callState.consecutiveHits}${fancyColors.RESET} ${fancyColors.LIGHT_RED}Retry in ${callState.currentDelay}ms${fancyColors.RESET} ${fancyColors.DARK_RED}(via solana-transaction)${fancyColors.RESET}`, {
           error_type: 'RATE_LIMIT',
           operation: callName,
-          consecutive_hits: callState.consecutiveHits,
+          hit_count: callState.consecutiveHits.toString(),
           retry_ms: callState.currentDelay,
           rpc_provider: typeof connection === 'object' ? connection.rpcEndpoint : 'unknown',
           original_message: error.message,
-          operation: callName,
-          consecutive_hits: callState.consecutiveHits,
+          source_service: 'solana-transaction',
           severity: 'warning',
           alert_type: 'rate_limit'
         });
