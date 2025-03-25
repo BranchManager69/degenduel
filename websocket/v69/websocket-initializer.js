@@ -1,25 +1,28 @@
+// websocket/v69/websocket-initializer.js
+
 /**
  * WebSocket Initializer (v69)
  * 
  * This module initializes all v69 WebSocket servers and makes them available globally.
  * It runs in parallel with the original WebSocket system without interfering.
  */
-
 import http from 'http';
+
+// Import all v69 WebSocket server factories
+import { createAnalyticsWebSocket } from './analytics-ws.js';
+import { createCircuitBreakerWebSocket } from './circuit-breaker-ws.js';
+import { createContestWebSocket } from './contest-ws.js';
+import { createMonitorWebSocket } from './monitor-ws.js';
+import { createPortfolioWebSocket } from './portfolio-ws.js';
+import { createSkyDuelWebSocket } from './skyduel-ws.js';
+import { createSystemSettingsWebSocket } from './system-settings-ws.js';
+import { createTokenDataWebSocket } from './token-data-ws.js';
+import { createUserNotificationWebSocket } from './user-notification-ws.js';
+import { createWalletWebSocket } from './wallet-ws.js';
+
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 
-// Import WebSocket server factories
-import { createMonitorWebSocket } from './monitor-ws.js';
-import { createContestWebSocket } from './contest-ws.js';
-import { createCircuitBreakerWebSocket } from './circuit-breaker-ws.js';
-import { createUserNotificationWebSocket } from './user-notification-ws.js';
-import { createTokenDataWebSocket } from './token-data-ws.js';
-import { createSkyDuelWebSocket } from './skyduel-ws.js';
-import { createSystemSettingsWebSocket } from './system-settings-ws.js';
-import { createAnalyticsWebSocket } from './analytics-ws.js';
-import { createPortfolioWebSocket } from './portfolio-ws.js';
-import { createWalletWebSocket } from './wallet-ws.js';
 
 // Initialize global v69 WebSocket container
 global.wsServersV69 = global.wsServersV69 || {};
@@ -35,34 +38,37 @@ export async function initializeWebSockets(server) {
     return false;
   }
 
+  // Master v69 WebSocket server initialization process
   try {
     logApi.info(`\n${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 SYSTEM ${fancyColors.RESET} ${fancyColors.OCEAN}┏━━━━━━━━━━━━━━━━━━━━━━━ ${fancyColors.BOLD}${fancyColors.WHITE}WebSocket Initialization${fancyColors.RESET}${fancyColors.OCEAN} ━━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}${fancyColors.BOLD}Initializing v69 WebSocket Servers...${fancyColors.RESET}                                    ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
 
     // Create WebSocket instances
+
+    // (first) Create Monitor WebSocket
     const monitorWs = createMonitorWebSocket(server);
     global.wsServersV69.monitor = monitorWs;
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Monitor WebSocket                                              ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
-    
-    // Create Contest WebSocket
-    const contestWs = createContestWebSocket(server);
-    global.wsServersV69.contest = contestWs;
-    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Contest WebSocket                                              ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+
+    // Create Analytics WebSocket
+    const analyticsWs = createAnalyticsWebSocket(server);
+    global.wsServersV69.analytics = analyticsWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Analytics WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
 
     // Create Circuit Breaker WebSocket
     const circuitBreakerWs = createCircuitBreakerWebSocket(server);
     global.wsServersV69.circuitBreaker = circuitBreakerWs;
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Circuit Breaker WebSocket                                      ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
-    
-    // Create User Notification WebSocket
-    const userNotificationWs = createUserNotificationWebSocket(server);
-    global.wsServersV69.userNotification = userNotificationWs;
-    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created User Notification WebSocket                                    ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
-    
-    // Create Token Data WebSocket
-    const tokenDataWs = createTokenDataWebSocket(server);
-    global.wsServersV69.tokenData = tokenDataWs;
-    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Token Data WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+   
+    // Create Contest WebSocket
+    const contestWs = createContestWebSocket(server);
+    global.wsServersV69.contest = contestWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Contest WebSocket                                              ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+
+    // Create Portfolio WebSocket
+    const portfolioWs = createPortfolioWebSocket(server);
+    global.wsServersV69.portfolio = portfolioWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Portfolio WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
     
     // Create SkyDuel WebSocket
     const skyDuelWs = createSkyDuelWebSocket(server);
@@ -73,35 +79,35 @@ export async function initializeWebSockets(server) {
     const systemSettingsWs = createSystemSettingsWebSocket(server);
     global.wsServersV69.systemSettings = systemSettingsWs;
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created System Settings WebSocket                                     ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
-    
-    // Create Analytics WebSocket
-    const analyticsWs = createAnalyticsWebSocket(server);
-    global.wsServersV69.analytics = analyticsWs;
-    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Analytics WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
-    
-    // Create Portfolio WebSocket
-    const portfolioWs = createPortfolioWebSocket(server);
-    global.wsServersV69.portfolio = portfolioWs;
-    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Portfolio WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
-    
+     
+    // Create Token Data WebSocket
+    const tokenDataWs = createTokenDataWebSocket(server);
+    global.wsServersV69.tokenData = tokenDataWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Token Data WebSocket                                           ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+ 
+    // Create User Notification WebSocket
+    const userNotificationWs = createUserNotificationWebSocket(server);
+    global.wsServersV69.userNotification = userNotificationWs;
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created User Notification WebSocket                                    ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
+        
     // Create Wallet WebSocket
     const walletWs = createWalletWebSocket(server);
     global.wsServersV69.wallet = walletWs;
     logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}•${fancyColors.RESET} Created Wallet WebSocket                                              ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
 
     // Initialize all WebSocket servers
-    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}${fancyColors.BOLD}Starting initialization...${fancyColors.RESET}                                          ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
-    
+    logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.CYAN}${fancyColors.BOLD}Starting initialization...${fancyColors.RESET}                                          ${fancyColors.OCEAN}┃${fancyColors.RESET}`);    
+
     const initResults = await Promise.all([
-      monitorWs.initialize(),
-      contestWs.initialize(),
+      monitorWs.initialize(), // (first)
+      analyticsWs.initialize(),
       circuitBreakerWs.initialize(),
-      userNotificationWs.initialize(),
-      tokenDataWs.initialize(),
+      contestWs.initialize(),
       skyDuelWs.initialize(),
       systemSettingsWs.initialize(),
-      analyticsWs.initialize(),
       portfolioWs.initialize(),
+      tokenDataWs.initialize(),
+      userNotificationWs.initialize(),
       walletWs.initialize()
     ]);
 
@@ -114,8 +120,8 @@ export async function initializeWebSockets(server) {
       logApi.warn(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WARNING ${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.BOLD}Some WebSocket servers failed to initialize${fancyColors.RESET}                  ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
     }
 
-    // Print endpoint info
-    printWebSocketEndpoints();
+    // Print v69 WebSocket endpoints info
+    printv69WebSocketEndpoints();
     
     logApi.info(`${fancyColors.OCEAN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${fancyColors.RESET}`);
 
@@ -128,72 +134,200 @@ export async function initializeWebSockets(server) {
 }
 
 /**
- * Print WebSocket endpoints information
+ * Print v69 WebSocket endpoints information
  */
-function printWebSocketEndpoints() {
+function printv69WebSocketEndpoints() {
   const endpoints = [
+    // Analytics WebSocket
     { 
-      name: 'Monitor WebSocket', 
-      path: '/api/v69/ws/monitor',
-      channels: ['system.status', 'system.alerts', 'system.metrics'],
-      events: ['get_metrics', 'subscribe_metric', 'unsubscribe_metric', 'get_service_status']
+      name:
+        'Analytics WebSocket', 
+      path:
+        '/api/v69/ws/analytics',
+      channels: [
+        'metrics.[name]', 
+        'dashboard'
+      ],
+      events: [
+        'track_event', 
+        'subscribe_dashboard', 
+        'subscribe_metric', 
+        'get_active_users', 
+        'get_server_stats'
+      ]
     },
+
+    // Circuit Breaker WebSocket
     { 
-      name: 'Contest WebSocket', 
-      path: '/api/v69/ws/contest',
-      channels: ['contest.updates', 'contest.entries', 'contest.results'],
-      events: ['join_contest', 'leave_contest', 'get_contest_data', 'subscribe_contest']
+      name: 
+        'Circuit Breaker WebSocket', 
+      path: 
+        '/api/v69/ws/circuit-breaker',
+      channels: [
+        'circuit.status', 
+        'circuit.alerts', 
+        'circuit.history'
+      ],
+      events: [
+        'get_status', 
+        'reset_circuit', 
+        'subscribe_service', 
+        'unsubscribe_service'
+      ]
     },
+
+    // Contest WebSocket
     { 
-      name: 'Circuit Breaker WebSocket', 
-      path: '/api/v69/ws/circuit-breaker',
-      channels: ['circuit.status', 'circuit.alerts', 'circuit.history'],
-      events: ['get_status', 'reset_circuit', 'subscribe_service', 'unsubscribe_service']
+      name: 
+        'Contest WebSocket', 
+      path: 
+        '/api/v69/ws/contest',
+      channels: [
+        'contest.updates',
+        'contest.entries', 
+        'contest.results'
+      ],
+      events: [
+        'join_contest', 
+        'leave_contest', 
+        'get_contest_data', 
+        'subscribe_contest'
+      ]
     },
+    
+    // Monitor WebSocket
     { 
-      name: 'User Notification WebSocket', 
-      path: '/api/v69/ws/notifications',
-      channels: ['notifications.all', 'notifications.system', 'notifications.personal'],
-      events: ['mark_read', 'get_notifications', 'clear_notifications']
+      name: 
+        'Monitor WebSocket', 
+      path: 
+        '/api/v69/ws/monitor',
+      channels: [
+        'system.status', 
+        'system.alerts', 
+        'system.metrics'
+      ],
+      events: [
+        'get_metrics', 
+        'subscribe_metric', 
+        'unsubscribe_metric', 
+        'get_service_status'
+      ]
     },
+
+    // Portfolio WebSocket
     { 
-      name: 'Token Data WebSocket', 
-      path: '/api/v69/ws/token-data',
-      channels: ['public.tokens', 'public.market', 'token.[symbol]'],
-      events: ['subscribe_tokens', 'unsubscribe_tokens', 'get_token', 'get_all_tokens']
+      name: 
+        'Portfolio WebSocket', 
+      path:
+        '/api/v69/ws/portfolio',
+      channels: [
+        'portfolio.[walletAddress]', 
+        'trades.[walletAddress]', 
+        'performance.[walletAddress]'
+      ],
+      events: [
+        'subscribe_portfolio', 
+        'unsubscribe_portfolio', 
+        'get_portfolio_history', 
+        'get_portfolio_performance'
+      ]
     },
+
+    // SkyDuel WebSocket
     { 
-      name: 'Portfolio WebSocket', 
-      path: '/api/v69/ws/portfolio',
-      channels: ['portfolio.[walletAddress]', 'trades.[walletAddress]', 'performance.[walletAddress]'],
-      events: ['subscribe_portfolio', 'unsubscribe_portfolio', 'get_portfolio_history', 'get_portfolio_performance']
+      name:
+        'SkyDuel WebSocket', 
+      path:
+        '/api/v69/ws/skyduel',
+      channels: [
+        'service.[name]'
+      ],
+      events: [
+        'get_services', 
+        'subscribe_service', 
+        'unsubscribe_service', 
+        'service_command'
+      ]
     },
+
+    // System Settings WebSocket
     { 
-      name: 'Wallet WebSocket', 
-      path: '/api/v69/ws/wallet',
-      channels: ['wallet.[walletAddress]', 'transactions.[walletAddress]', 'assets.[walletAddress]'],
-      events: ['subscribe_wallet', 'unsubscribe_wallet', 'request_balance', 'request_transactions', 'request_assets']
+      name: 
+        'System Settings WebSocket', 
+      path: 
+        '/api/v69/ws/system-settings',
+      channels: [
+        'setting.[key]', 
+        'category.[name]'
+      ],
+      events: [
+        'get_all_settings', 
+        'get_setting', 
+        'get_category_settings', 
+        'subscribe_setting', 
+        'update_setting'
+      ]
     },
+
+    // Token Data WebSocket
     { 
-      name: 'SkyDuel WebSocket', 
-      path: '/api/v69/ws/skyduel',
-      channels: ['service.[name]'],
-      events: ['get_services', 'subscribe_service', 'unsubscribe_service', 'service_command']
+      name:
+        'Token Data WebSocket', 
+      path: 
+        '/api/v69/ws/token-data',
+      channels: [
+        'public.tokens', 
+        'public.market', 
+        'token.[symbol]'
+      ],
+      events: [
+        'subscribe_tokens', 
+        'unsubscribe_tokens', 
+        'get_token', 
+        'get_all_tokens'
+      ]
     },
+
+    // User Notification WebSocket
     { 
-      name: 'System Settings WebSocket', 
-      path: '/api/v69/ws/system-settings',
-      channels: ['setting.[key]', 'category.[name]'],
-      events: ['get_all_settings', 'get_setting', 'get_category_settings', 'subscribe_setting', 'update_setting']
+      name: 
+        'User Notification WebSocket', 
+      path: 
+        '/api/v69/ws/notifications',
+      channels: [
+        'notifications.all', 
+        'notifications.system', 
+        'notifications.personal'
+      ],
+      events: [
+        'mark_read', 
+        'get_notifications', 
+        'clear_notifications'
+      ]
     },
+    
+    // Wallet WebSocket
     { 
-      name: 'Analytics WebSocket', 
-      path: '/api/v69/ws/analytics',
-      channels: ['metrics.[name]', 'dashboard'],
-      events: ['track_event', 'subscribe_dashboard', 'subscribe_metric', 'get_active_users', 'get_server_stats']
-    }
+      name: 
+        'Wallet WebSocket', 
+      path: 
+        '/api/v69/ws/wallet',
+      channels: [
+        'wallet.[walletAddress]', 
+        'transactions.[walletAddress]', 
+        'assets.[walletAddress]'
+      ],
+      events: [
+        'subscribe_wallet', 
+        'unsubscribe_wallet', 
+        'request_balance', 
+        'request_transactions', 
+        'request_assets'
+      ]
+    },
   ];
 
+  // Print header
   logApi.info(`${fancyColors.OCEAN}┃${fancyColors.RESET} ${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} ENDPOINTS ${fancyColors.RESET} Available WebSocket endpoints:                                ${fancyColors.OCEAN}┃${fancyColors.RESET}`);
 
   // Print all endpoints
