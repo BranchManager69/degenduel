@@ -7,12 +7,12 @@
  * 
  * Usage:
  * 1. Run with: node postman-ws-test.js
- * 2. Connect from Postman to: ws://localhost:3333
+ * 2. Connect from Postman to: ws://147.79.74.67:3008
  */
 
 // Import the WebSocket server
-const WebSocket = require('ws');
-const http = require('http');
+import { WebSocketServer } from 'ws';
+import http from 'http';
 
 // Create HTTP server
 const server = http.createServer((req, res) => {
@@ -21,7 +21,7 @@ const server = http.createServer((req, res) => {
 });
 
 // Create WebSocket server with NO compression
-const wss = new WebSocket.Server({ 
+const wss = new WebSocketServer({ 
   server,
   perMessageDeflate: false, // Explicitly disable compression
   maxPayload: 1024 * 1024, // 1MB max payload
@@ -85,7 +85,7 @@ wss.on('connection', (ws, req) => {
   
   // Send periodic ping (every 15 seconds)
   const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
+    if (ws.readyState === ws.OPEN) {
       console.log(`[${id}] Sending ping`);
       ws.send(JSON.stringify({
         type: 'ping',
@@ -99,13 +99,16 @@ wss.on('connection', (ws, req) => {
 
 // Start the server
 const PORT = 3008;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`
 ====================================================
   POSTMAN WEBSOCKET TEST SERVER
 ====================================================
   Server started on port ${PORT}
-  Connect with Postman using: ws://localhost:${PORT}
+  
+  Connect with Postman using: 
+  ws://147.79.74.67:${PORT}  (from external clients)
+  ws://localhost:${PORT}     (from this machine)
   
   This server:
   - Has NO authentication
