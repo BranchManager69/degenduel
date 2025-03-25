@@ -1,3 +1,5 @@
+// websocket/v69/base-websocket.js
+
 /**
  * BaseWebSocketServer (v69)
  * 
@@ -21,6 +23,14 @@ import { config } from '../../config/config.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors } from '../../utils/colors.js';
 
+// Base WebSocket Server
+/**
+ * This is the base class for all WebSocket servers in the application.
+ * It provides a standardized interface for managing WebSocket connections,
+ * authentication, and other common functionality.
+ * 
+ * @extends {WebSocket.Server}
+ */
 export class BaseWebSocketServer {
   /**
    * Create a new BaseWebSocketServer
