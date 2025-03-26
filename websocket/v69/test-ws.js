@@ -424,8 +424,9 @@ export async function createTestWebSocket(server) {
           // Close the server
           testWsServer.wss.close();
           
-          // Clear our reference
-          testWsServer = null;
+          // Clear our references safely
+          testWsServer.wss = null;
+          testWsServer.clients = null;
           
           logApi.info(`${fancyColors.BG_PURPLE}${fancyColors.WHITE} TEST-WS ${fancyColors.RESET} Test WebSocket Server shut down`);
           return true;
