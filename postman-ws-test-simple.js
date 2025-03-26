@@ -52,14 +52,21 @@ class FixedWebSocket extends WebSocket {
   constructor(address, protocols, options) {
     console.log(`[INIT] Creating WebSocket with compression disabled`);
     
-    // Force compression off
+    // Configure compression properly instead of forcing it off
     const fixedOptions = {
       ...(options || {}),
-      perMessageDeflate: false,
+      // Use a more compatible compression configuration
+      perMessageDeflate: {
+        serverNoContextTakeover: true,
+        clientNoContextTakeover: true,
+        serverMaxWindowBits: 10,
+        clientMaxWindowBits: 10,
+        threshold: 1024  // Only compress messages larger than 1KB
+      },
       headers: {
         ...(options?.headers || {}),
-        'Sec-WebSocket-Extensions': '',
         'X-Dev-Access-Token': my_X_Dev_Access_Token
+        // Allow the websocket extensions header to be sent by the client
       }
     };
     

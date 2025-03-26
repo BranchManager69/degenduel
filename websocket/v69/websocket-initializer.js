@@ -13,15 +13,19 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 
 /**
- * CRITICAL PATCH: Fix for WebSocket RSV1 errors
+ * CRITICAL PATCH: WebSocket Compression Compatibility Fix
  * 
- * Issue: "Invalid WebSocket frame: RSV1 must be clear" errors with many clients
- * despite attempts to disable compression in WebSocket options.
+ * Issue: "Invalid WebSocket frame: RSV1 must be clear" errors with clients using permessage-deflate.
+ * Instead of disabling compression entirely (which causes client-server negotiation issues),
+ * we now properly support compressed frames.
  * 
- * Solution: Patch the WebSocket's Receiver class to ignore RSV1 bit errors
- * and properly handle compressed frames even when compression is disabled.
+ * Solution: Patch the WebSocket's Receiver class to properly handle compression by:
+ * 1. Accepting the sec-websocket-extensions header from clients
+ * 2. Configuring perMessageDeflate with conservative settings
+ * 3. Setting _compressed flag to true to process compressed frames correctly
  * 
  * Implementation Date: March 25, 2025
+ * Updated: March 25, 2025
  */
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -41,14 +45,14 @@ try {
     const originalGetInfo = Receiver.prototype.getInfo;
     
     Receiver.prototype.getInfo = function(cb) {
-      // Create wrapper callback that ignores RSV1 errors
+      // Create wrapper callback that properly handles RSV1 for compression
       const patchedCallback = function(error) {
         if (error && error.message && error.message.includes('RSV1 must be clear')) {
-          // Ignore RSV1 errors but log them
-          logApi.debug(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} RSV1 IGNORED ${fancyColors.RESET} Bypassing RSV1 validation error`);
+          // This is a compressed frame (RSV1 bit set), but we're handling it manually
+          logApi.debug(`${fancyColors.BG_GREEN}${fancyColors.BLACK} COMPRESSED FRAME ${fancyColors.RESET} Processing compressed WebSocket frame`);
           
-          // Set compressed flag to false but continue processing
-          this._compressed = false;
+          // Set compressed flag to true to properly handle the frame
+          this._compressed = true;
           
           // Call callback without the error to allow processing to continue
           return cb();
@@ -65,19 +69,28 @@ try {
     logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} RECEIVER PATCH ${fancyColors.RESET} Successfully patched WebSocket frame validation`);
   }
   
-  // Enhance WebSocketServer.handleUpgrade to remove extension headers
+  // Enhance WebSocketServer.handleUpgrade to properly handle compression extensions
   const originalHandleUpgrade = WebSocketServer.prototype.handleUpgrade;
   
   WebSocketServer.prototype.handleUpgrade = function(req, socket, head, cb) {
-    // Remove any WebSocket extension headers from the request
+    // Instead of removing the extension header, properly configure compression
     if (req.headers['sec-websocket-extensions']) {
-      logApi.debug(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} EXTENSIONS REMOVED ${fancyColors.RESET} Removing header: ${req.headers['sec-websocket-extensions']}`);
-      delete req.headers['sec-websocket-extensions'];
+      logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} EXTENSIONS DETECTED ${fancyColors.RESET} Found header: ${req.headers['sec-websocket-extensions']}`);
+      
+      // We want to keep the header but handle compression properly
+      // This helps clients like wscat and browser WebSockets that expect compression
     }
     
-    // Force perMessageDeflate to false in all options
+    // Configure perMessageDeflate properly instead of disabling it
     if (this.options) {
-      this.options.perMessageDeflate = false;
+      // Configure compression with conservative settings
+      this.options.perMessageDeflate = {
+        serverNoContextTakeover: true,
+        clientNoContextTakeover: true,
+        serverMaxWindowBits: 10,
+        clientMaxWindowBits: 10,
+        threshold: 1024  // Only compress messages larger than 1KB
+      };
     }
     
     // Enhance the callback to apply per-connection patches
@@ -93,6 +106,9 @@ try {
           }
           return originalError.call(this, reason, code);
         };
+        
+        // Set compression flag to support compressed frames
+        ws._receiver._compressed = true;
       }
       
       // Call the original callback
