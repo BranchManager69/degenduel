@@ -7,6 +7,9 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// v69 WSS testing
+const test_secret_dev_access_token = process.env.BRANCH_MANAGER_ACCESS_SECRET || '';
+
 // MASTER RPC THROTTLE:
 //   e.g. 1 = 1x normal refresh rate
 //   e.g. 2 = 2x normal refresh rate (more updates)
@@ -275,6 +278,10 @@ const config = {
   },
   debug_mode: 
     process.env.DD_API_DEBUG_MODE || 'false',
+  // v69 WSS testing
+  wss_testing: {
+    test_secret_dev_access_token: test_secret_dev_access_token,
+  },
 };
 
 // Validate Solana config

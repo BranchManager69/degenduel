@@ -13,39 +13,15 @@ import { Agent } from 'https';
 import { createRequire } from 'module';
 
 // Config
-//import config from './config/config.json';
+import config from './config/config.json';
 
 // More Config (for testing)
 const DEFAULT_ENDPOINT = 'monitor';
 const DEFAULT_HOST = 'dev.degenduel.me';
 const PATH_PREFIX = '/api/v69/ws/';
 
-// Generate a valid Secret Dev Access Token ("SDAT") using our secure "db:bonkfa" function from scripts/db-tools.sh
-//     npm run db:bonkfa; enter a valid passcode in time; then use the SDAT (valid for 1 hour) which automatically gets saved as a new file to data/sensitive/session_token_archive subfolder 
-//     example format:  st_20250325_144155_superadmin_Branch.txt
-let mySDAT = null;
-try {
-  // Load the most recently created SDAT file from the folder using best practices
-  const SDAT_FILES = require('./data/sensitive/session_token_archive/');
-  // Sort them by creation date
-  SDAT_FILES.sort((a, b) => new Date(b.name) - new Date(a.name));
-  // Get the most recent one
-  const SDAT_FILE = SDAT_FILES[0];
-  // Load the valid SDAT from that file (it's good for 1 hour)
-  ////const SDAT_TOKEN = SDAT_FILE.token; // PROBLEM! This is a string, not a JSON object
-  const SDAT_TOKEN = SDAT_FILE;
-  // Use the SDAT token for testing
-  mySDAT = SDAT_TOKEN;
-  // Log our valid SDAT token in celebration!
-  console.log(`VALID SDAT: \t${SDAT_TOKEN}`);
-} catch (error) {
-  // Log the error
-  console.error(`SDAT ERROR: \tFailed to generate SDAT token. ${error.message}`);
-  process.exit(1);
-}
-
-
 // Secret Dev Access Token
+const mySDAT = config.wss_testing.test_secret_dev_access_token;
 const SECRET_DEV_ACCESS_TOKEN = mySDAT;
 
 

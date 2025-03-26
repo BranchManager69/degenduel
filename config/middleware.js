@@ -73,8 +73,10 @@ export function configureMiddleware(app) {
   
   // Serve static files from uploads directory
   app.use('/uploads', express.static('uploads')); // TODO: ???
+
   // Environment middleware
   app.use(environmentMiddleware);
+
   // CORS middleware for all routes
   app.use((req, res, next) => {
     let origin = req.headers.origin;
@@ -186,7 +188,30 @@ export function configureMiddleware(app) {
           'https://app.branch.bet',
           'https://data.degenduel.me',
           'https://dev.degenduel.me',
-          'https://reflections.degenduel.me'
+          'https://reflections.degenduel.me',
+          // Development origins
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://localhost:3002',
+          'http://localhost:3003',
+          'http://localhost:3004',
+          'http://localhost:3005',
+          'http://localhost:3006',
+          'http://localhost:3007',
+          'http://localhost:3008',
+          'http://localhost:3009',
+          'http://localhost:3010',
+          'http://localhost:3011',
+          'http://localhost:3012',
+          'http://localhost:3013',
+          'http://localhost:3014',
+          'http://localhost:3015',
+          'http://localhost:4173',
+          'http://localhost:5000',
+          'http://localhost:5001',
+          'http://localhost:6000',
+          'http://localhost:6001',
+          'http://localhost:56347'
         ],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
