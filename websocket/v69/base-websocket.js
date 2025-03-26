@@ -1020,7 +1020,8 @@ export class BaseWebSocketServer {
     logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}Extracting token using mode: ${this.authMode}${fancyColors.RESET} Path: ${req.url}`, {
       wsEvent: 'extract_token',
       authMode: this.authMode,
-      hasQueryToken: !!query.token, 
+      hasQueryToken: !!query.token,
+      hasQueryAuthorization: !!query.authorization, 
       queryParams: JSON.stringify(query),
       path: req.url,
       endpoint: this.path,
@@ -1032,9 +1033,17 @@ export class BaseWebSocketServer {
     });
     
     // If using 'query' mode, prioritize query parameters for WebSockets (more reliable with browsers)
-    if (this.authMode === 'query' && query.token) {
-      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query token (query mode)${fancyColors.RESET} Token length: ${query.token.length}`);
-      return query.token;
+    // Check for both token and authorization parameters for backward compatibility
+    if (this.authMode === 'query') {
+      if (query.authorization) {
+        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query authorization (query mode)${fancyColors.RESET} Token length: ${query.authorization.length}`);
+        return query.authorization;
+      }
+      
+      if (query.token) {
+        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query token (query mode)${fancyColors.RESET} Token length: ${query.token.length}`);
+        return query.token;
+      }
     }
     
     // If using 'header' mode or 'auto' mode, try Authorization header first
@@ -1066,9 +1075,17 @@ export class BaseWebSocketServer {
     }
 
     // If in 'auto' mode and no other methods worked, try query parameter as fallback
-    if ((this.authMode === 'auto' || this.authMode === 'query') && query.token) {
-      logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query token (fallback)${fancyColors.RESET}`);
-      return query.token;
+    if (this.authMode === 'auto' || this.authMode === 'query') {
+      // Try authorization parameter first, then token parameter
+      if (query.authorization) {
+        logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query authorization (fallback)${fancyColors.RESET}`);
+        return query.authorization;
+      }
+      
+      if (query.token) {
+        logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query token (fallback)${fancyColors.RESET}`);
+        return query.token;
+      }
     }
 
     logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}No token found in any source${fancyColors.RESET}`, {
@@ -1078,6 +1095,8 @@ export class BaseWebSocketServer {
       fullUrl: req.url,
       authMode: this.authMode,
       queryParamsData: JSON.stringify(query),
+      hasTokenParam: !!query.token,
+      hasAuthorizationParam: !!query.authorization,
       hasAuthHeader: !!req.headers.authorization,
       hasProtocol: !!req.headers['sec-websocket-protocol'],
       hasCookie: !!req.headers.cookie,

@@ -13,33 +13,26 @@ import { Agent } from 'https';
 import { createRequire } from 'module';
 
 // Config
-import config from './config/config.json';
+import config from './config/config.js';
 
 // More Config (for testing)
-const DEFAULT_ENDPOINT = 'monitor';
-const DEFAULT_HOST = 'dev.degenduel.me';
+const DEFAULT_ENDPOINT = 'token-data';
+const DEFAULT_HOST = 'dev.degenduel.me'; // TODO: fix! this is conceptually dev server-only! but db:bonkfa only generates prod tokens!
 const PATH_PREFIX = '/api/v69/ws/';
 
 // Secret Dev Access Token
 const mySDAT = config.wss_testing.test_secret_dev_access_token;
-const SECRET_DEV_ACCESS_TOKEN = mySDAT;
-
-
-
-
 
 // Since I've run out of options, let's try something crazy
 // Maybe I'm the completely crazy one and I just am so dumb that I don't know the difference between tokensand JWTS or whatever so let's just try this hey headers too I mean maybe I don't know the difference between any of these three things
 const my_X_Dev_Access_Token = mySDAT;
-// After all I have no clue if these are the same thing anywaya comma I can't tell a header from a freaking token from a freaking cookie
-
-
-
+// After all I have no clue if these are the same thing anyways; I can't tell a header from a freaking token from a freaking cookie
+// UPDATE: This one seems to work better than the non-"simple" version!
 
 // Parse command line arguments, if any
 const args = process.argv.slice(2);
 const endpoint = args[0] || DEFAULT_ENDPOINT;
-const token = args[1] || '';
+const token = args[1] || mySDAT || '';
 
 // Custom agent with self-signed cert support
 const customAgent = new Agent({
@@ -47,7 +40,7 @@ const customAgent = new Agent({
 });
 
 
-// Custom WebSocket class that attempts to fix the RSV1 issue
+// Custom WebSocket class that attempts (update: and fails) to fix the RSV1 issue
 class FixedWebSocket extends WebSocket {
   constructor(address, protocols, options) {
     console.log(`[INIT] Creating WebSocket with compression disabled`);
@@ -156,11 +149,12 @@ function connect() {
   
   // Build WebSocket URL with clean token
   const cleanToken = token ? token.replace(/\s+/g, '') : '';
-  const wsURL = `wss://${DEFAULT_HOST}${PATH_PREFIX}${endpoint}${cleanToken ? `?token=${encodeURIComponent(cleanToken)}` : ''}`;
+  // Changed parameter from token to authorization as that's what the server expects
+  const wsURL = `wss://${DEFAULT_HOST}${PATH_PREFIX}${endpoint}${cleanToken ? `?authorization=${encodeURIComponent(cleanToken)}` : ''}`;
   
-  console.log(`\n[CONNECT] Connecting to: ${wsURL.replace(/token=([^&]+)/, 'token=***')}`);
+  console.log(`\n[CONNECT] Connecting to: ${wsURL.replace(/authorization=([^&]+)/, 'authorization=***')}`);
   if (cleanToken) {
-    console.log(`[TOKEN] Using token (length: ${cleanToken.length}) first 10 chars: ${cleanToken.substring(0, 10)}...`);
+    console.log(`[TOKEN] Using authorization token (length: ${cleanToken.length}) first 10 chars: ${cleanToken.substring(0, 10)}...`);
   }
   
   try {
