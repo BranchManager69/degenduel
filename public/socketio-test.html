@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket.IO Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #messages {
+      height: 300px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+      padding: 10px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+    #message-form {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    #message-input {
+      flex-grow: 1;
+      padding: 8px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .status {
+      padding: 10px;
+      margin-bottom: 20px;
+      background-color: #dff0d8;
+      border: 1px solid #d6e9c6;
+      color: #3c763d;
+    }
+    .status.disconnected {
+      background-color: #f2dede;
+      border-color: #ebccd1;
+      color: #a94442;
+    }
+    .message {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .message .time {
+      color: #999;
+      font-size: 12px;
+    }
+    .clear-btn {
+      background-color: #f44336;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Socket.IO Test Client</h1>
+  
+  <div id="connection-status" class="status disconnected">Disconnected</div>
+  
+  <button id="clear-btn" class="clear-btn">Clear Messages</button>
+  
+  <div id="messages"></div>
+  
+  <form id="message-form">
+    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+    <button type="submit">Send</button>
+  </form>
+  
+  <div>
+    <button id="ping-btn">Send Ping</button>
+  </div>
+
+  <!-- Socket.IO client script -->
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const messagesContainer = document.getElementById('messages');
+      const messageForm = document.getElementById('message-form');
+      const messageInput = document.getElementById('message-input');
+      const connectionStatus = document.getElementById('connection-status');
+      const clearBtn = document.getElementById('clear-btn');
+      const pingBtn = document.getElementById('ping-btn');
+      
+      // Get the server URL dynamically based on current location
+      const serverUrl = window.location.origin;
+      
+      // Connect to Socket.IO
+      const socket = io(serverUrl, {
+        path: '/api/v69/ws/socketio'
+      });
+      
+      // Display message in the container
+      function addMessage(text, type = 'info') {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        
+        const time = new Date().toLocaleTimeString();
+        messageDiv.innerHTML = `<span class="time">[${time}]</span> ${text}`;
+        
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+      
+      // Connection events
+      socket.on('connect', () => {
+        connectionStatus.textContent = `Connected (ID: ${socket.id})`;
+        connectionStatus.className = 'status';
+        addMessage('Connected to server', 'connect');
+      });
+      
+      socket.on('disconnect', () => {
+        connectionStatus.textContent = 'Disconnected';
+        connectionStatus.className = 'status disconnected';
+        addMessage('Disconnected from server', 'disconnect');
+      });
+      
+      socket.on('connect_error', (error) => {
+        addMessage(`Connection error: ${error.message}`, 'error');
+      });
+      
+      // Welcome message
+      socket.on('welcome', (data) => {
+        addMessage(`Welcome message: ${JSON.stringify(data)}`, 'welcome');
+      });
+      
+      // Echo response
+      socket.on('echo', (data) => {
+        addMessage(`Echo response: ${JSON.stringify(data)}`, 'echo');
+      });
+      
+      // Handle message form submission
+      messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const message = messageInput.value.trim();
+        if (message) {
+          // Send the message
+          socket.emit('message', message);
+          addMessage(`Sent: ${message}`, 'sent');
+          messageInput.value = '';
+        }
+      });
+      
+      // Handle ping button
+      pingBtn.addEventListener('click', () => {
+        socket.emit('message', 'PING');
+        addMessage('Sent: PING', 'sent');
+      });
+      
+      // Clear messages
+      clearBtn.addEventListener('click', () => {
+        messagesContainer.innerHTML = '';
+      });
+    });
+  </script>
+</body>
+</html>

@@ -28,7 +28,7 @@ const WSS_PATH = `/api/v69/ws/token-data`; // path to the WebSocket token data s
 const WSS_REQUIRE_AUTH = false; // whether the WebSocket server requires authentication
 const WSS_PUBLIC_ENDPOINTS = ['public.tokens', 'public.market']; // public endpoints to subscribe to by default
 const WSS_MAX_PAYLOAD = 5 * 1024 * 1024; // 5MB
-const WSS_PER_MESSAGE_DEFLATE = false; // whether to use per-message deflate
+const WSS_PER_MESSAGE_DEFLATE = false; // Disable per-message deflate for compression
 const WSS_RATE_LIMIT = 500; // rate limit for the WebSocket server
 
 // Public channels to subscribe to by default
@@ -42,16 +42,42 @@ class TokenDataWebSocket extends BaseWebSocketServer {
    * @param {http.Server} server - The HTTP server to attach the WebSocket to
    */
   constructor(server) {
-    super(server, {
+    // CRITICAL: Add direct WebSocket options patch to force disable extensions
+    const baseOptions = {
       path: WSS_PATH,
-      requireAuth: WSS_REQUIRE_AUTH,
+      requireAuth: false, // TEMPORARILY disabled auth for testing
       publicEndpoints: WSS_PUBLIC_ENDPOINTS,
       maxPayload: WSS_MAX_PAYLOAD,
-      perMessageDeflate: WSS_PER_MESSAGE_DEFLATE,
       rateLimit: WSS_RATE_LIMIT,
-      authMode: 'query' // Use query auth mode for most reliable browser connections
-    });
-
+      heartbeatInterval: 30000, // 30s heartbeat
+      perMessageDeflate: false, // Disable compression - especially important for Postman
+      useCompression: false, // Alias for clarity
+      authMode: 'query', // Use query auth mode for most reliable browser connections
+      // Override verifyClient to be more permissive for debugging/testing
+      _verifyClient: false, // Disable client verification entirely - let auth happen in the connection handler
+      
+      // DIRECT CLIENT COMPRESSION OVERRIDE: 
+      // Additional options that will be passed directly to the WebSocket.Server
+      // to override any defaults in the ws library.
+      _ws_direct_options: {
+        perMessageDeflate: false,
+        
+        // Special hook to reject any extension headers
+        handleProtocols: (protocols, request) => {
+          // Prevent compression by removing any extension headers from the request
+          if (request.headers['sec-websocket-extensions']) {
+            logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION OVERRIDE ${fancyColors.RESET} Removing WebSocket extensions: ${request.headers['sec-websocket-extensions']}`);
+            delete request.headers['sec-websocket-extensions'];
+          }
+          
+          // Return the first protocol if any, or null
+          return protocols.length > 0 ? protocols[0] : null;
+        }
+      }
+    };
+    
+    super(server, baseOptions);
+    
     // Initialize token-specific state
     this.broadcasts = {
       count: 0,
@@ -91,7 +117,32 @@ class TokenDataWebSocket extends BaseWebSocketServer {
    */
   async onConnection(ws, req) {
     const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
+    if (!clientInfo) {
+      logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN-DATA ERROR ${fancyColors.RESET} onConnection called but clientInfo is missing`);
+      return;
+    }
+
+    // Generate wallet display string for enhanced logging
+    const walletDisplay = clientInfo.authenticated ? 
+                       `${clientInfo.user.role === 'superadmin' || clientInfo.user.role === 'admin' ? 
+                         fancyColors.RED : fancyColors.PURPLE}${clientInfo.user.wallet_address.substring(0,8)}...${fancyColors.RESET}` : 
+                       `${fancyColors.LIGHT_GRAY}unauthenticated${fancyColors.RESET}`;
+    
+    const roleDisplay = clientInfo.authenticated ?
+                      `${clientInfo.user.role === 'superadmin' || clientInfo.user.role === 'admin' ? 
+                        fancyColors.RED : fancyColors.PURPLE}${clientInfo.user.role}${fancyColors.RESET}` :
+                      `${fancyColors.LIGHT_GRAY}none${fancyColors.RESET}`;
+
+    // Enhanced connection logging for debugging
+    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN-DATA CONNECTION ${fancyColors.RESET} Client connected: ${clientInfo.connectionId.substring(0,8)}, IP: ${clientInfo.ip}, Wallet: ${walletDisplay}, Role: ${roleDisplay}`);
+    
+    // Log request details that might be useful for debugging
+    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN-DATA REQUEST ${fancyColors.RESET} URL: ${req.url}, Method: ${req.method}, Headers: ${JSON.stringify(Object.keys(req.headers))}`);
+    
+    // If extension headers are present, log them specifically
+    if (req.headers['sec-websocket-extensions']) {
+      logApi.warn(`${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN-DATA EXTENSIONS ${fancyColors.RESET} Extensions: ${req.headers['sec-websocket-extensions']}`);
+    }
 
     // Subscribe to public channels by default
     for (const channel of this.publicChannels) {

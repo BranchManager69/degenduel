@@ -264,12 +264,52 @@ export function configureMiddleware(app) {
       const shouldLog = LOG_EVERY_REQUEST && (VERBOSE_LOGGING || !isRequestLoggingRoute);
       
       if (shouldLog) {
+        // Get client IP address
+        const clientIp = req.ip || 
+                        req.headers['x-forwarded-for'] || 
+                        req.headers['x-real-ip'] || 
+                        req.connection.remoteAddress;
+        
+        // Log basic info immediately for performance
         logApi.info(`${req.method} ${req.url}`, {
           environment: req.environment,
           origin: req.headers.origin,
-          ip: req.ip,
+          ip: clientIp,
           userAgent: req.headers['user-agent']
         });
+        
+        // Then asynchronously fetch IP info if we have the API key
+        // This happens after the response continues so it doesn't slow down the request
+        if (config.ipinfo.api_key && clientIp) {
+          // Use setTimeout to ensure this doesn't block the request
+          setTimeout(async () => {
+            try {
+              // Use the IP info service we added to the logger
+              const ipInfo = await logApi.getIpInfo(clientIp);
+              if (ipInfo && !ipInfo.bogon && !ipInfo.error) {
+                // Log the detailed info separately
+                logApi.debug(`IP Info: ${clientIp}`, {
+                  ip: clientIp,
+                  path: req.url,
+                  method: req.method,
+                  ip_info: ipInfo,
+                  city: ipInfo.city,
+                  region: ipInfo.region,
+                  country: ipInfo.country,
+                  loc: ipInfo.loc,
+                  org: ipInfo.org,
+                  postal: ipInfo.postal,
+                  timezone: ipInfo.timezone
+                });
+              }
+            } catch (error) {
+              logApi.error(`Failed to get IP info for ${clientIp}:`, {
+                error: error.message,
+                ip: clientIp
+              });
+            }
+          }, 0);
+        }
       }
       next();
     });

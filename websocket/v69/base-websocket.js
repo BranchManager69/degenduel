@@ -23,6 +23,88 @@ import { config } from '../../config/config.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors } from '../../utils/colors.js';
 
+// CRITICAL: Import WebSocket internals for direct frame manipulation
+// This allows us to bypass the compression layer entirely
+let Sender;
+try {
+  // Import WebSocket using ES modules
+  const wsModule = await import('ws');
+  const { Sender } = wsModule;
+  
+  // Make Sender available on the WebSocket object for use in sendToClient
+  if (Sender) {
+    WebSocket.Sender = Sender;
+    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT ${fancyColors.RESET} Successfully imported WebSocket Sender class for direct frame control`);
+  } else {
+    logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT ${fancyColors.RESET} ${fancyColors.YELLOW}WebSocket Sender class not found, compression bypass will be limited${fancyColors.RESET}`);
+    
+    // Create a simple frame creator as fallback
+    WebSocket.Sender = {
+      frame: (data, options) => {
+        // This is a very basic implementation that creates an unmasked, uncompressed TEXT frame
+        // It's not a complete implementation, but sufficient for our needs
+        // Format: FIN(1) + RSV1(0) + RSV2(0) + RSV3(0) + OPCODE(0001) [byte 1]
+        // Format: MASK(0) + PAYLOAD_LEN [byte 2]
+        // Then payload data
+        
+        // Helper to write the length bytes
+        const writeLength = (buffer, length, offset) => {
+          if (length < 126) {
+            buffer.writeUInt8(length, offset);
+            return offset + 1;
+          } else if (length < 65536) {
+            buffer.writeUInt8(126, offset);
+            buffer.writeUInt16BE(length, offset + 1);
+            return offset + 3;
+          } else {
+            buffer.writeUInt8(127, offset);
+            // Write 0 for first 4 bytes since we don't support payload > 4GB
+            buffer.writeUInt32BE(0, offset + 1);
+            buffer.writeUInt32BE(length, offset + 5);
+            return offset + 9;
+          }
+        };
+        
+        // Calculate frame size
+        const dataLength = data.length;
+        let frameSize = 2; // At least 2 bytes for header
+        
+        // Add length field size
+        if (dataLength < 126) {
+          frameSize += 0; // Length fits in the initial byte
+        } else if (dataLength < 65536) {
+          frameSize += 2; // 16-bit length
+        } else {
+          frameSize += 8; // 64-bit length
+        }
+        
+        // Add data size
+        frameSize += dataLength;
+        
+        // Create the buffer
+        const buffer = Buffer.alloc(frameSize);
+        
+        // Write the header - first byte
+        // 1000 0001 = FIN(1) + RSV1(0) + RSV2(0) + RSV3(0) + OPCODE(0001 = text)
+        buffer.writeUInt8(0x81, 0);
+        
+        // Write the second byte (mask bit = 0) and length
+        let offset = 1;
+        offset = writeLength(buffer, dataLength, offset);
+        
+        // Copy the data
+        data.copy(buffer, offset);
+        
+        return buffer;
+      }
+    };
+    
+    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT ${fancyColors.RESET} Created fallback frame creator`);
+  }
+} catch (error) {
+  logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT ${fancyColors.RESET} ${fancyColors.YELLOW}Failed to import WebSocket internals: ${error.message}${fancyColors.RESET}`);
+}
+
 /**
  * IMPORTANT: GLOBAL WEBSOCKET COMPRESSION DISABLE
  * 
@@ -80,10 +162,10 @@ export class BaseWebSocketServer {
     this.maxPayload = options.maxPayload || 1024 * 1024; // 1MB default
     this.rateLimit = options.rateLimit || 300; // 300 messages per minute
     
-    // Compression settings - EXPLICITLY DISABLED to prevent frame header issues
-    // Setting both flags to false to ensure consistency
-    this.perMessageDeflate = false; // Force to FALSE regardless of options
-    this.useCompression = false; // Alias for clarity - also forced to FALSE
+    // Compression settings - EXPLICITLY DISABLED for better compatibility
+    // This prevents "RSV1 must be clear" errors with many clients
+    this.perMessageDeflate = false; // Disable compression
+    this.useCompression = false; // Alias for clarity - also set to FALSE
     
     // Time intervals
     this.heartbeatInterval = options.heartbeatInterval || 60000; // 60 seconds (increased to reduce frequency)
@@ -108,15 +190,109 @@ export class BaseWebSocketServer {
       // CRITICAL FIX: Prevent all extensions from being negotiated
       // This is the key to fixing the "RSV1 must be clear" issue
       handleProtocols: (protocols, request) => {
+        // Add VERY verbose logging for this specific connection request
+        const requestId = uuidv4().substring(0, 8);
+        logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS-PROTOCOL-${requestId} ${fancyColors.RESET} Client protocol negotiation for ${this.path}`, {
+          wsEvent: 'protocol_negotiation',
+          protocols: protocols,
+          host: request.headers.host,
+          origin: request.headers.origin,
+          path: request.url,
+          sec_websocket_key: request.headers['sec-websocket-key'] || 'missing',
+          sec_websocket_version: request.headers['sec-websocket-version'] || 'missing',
+          sec_websocket_extensions: request.headers['sec-websocket-extensions'] || 'none',
+          _highlight: true
+        });
+        
         // Delete any extension headers to prevent compression negotiation
         if (request.headers['sec-websocket-extensions']) {
           const extensionHeader = request.headers['sec-websocket-extensions'];
-          logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION BLOCKED ${fancyColors.RESET} ${fancyColors.YELLOW}Removing extension header: ${extensionHeader}${fancyColors.RESET}`);
+          logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION BLOCKED ${fancyColors.RESET} ${fancyColors.YELLOW}Removing extension header: ${extensionHeader}${fancyColors.RESET}`, {
+            requestId,
+            wsEvent: 'extension_blocked',
+            extension: extensionHeader,
+            _highlight: true
+          });
           delete request.headers['sec-websocket-extensions'];
         }
         
-        // Return the first protocol or null
+        // Return the first protocol if any, or null
         return protocols.length > 0 ? protocols[0] : null;
+      },
+      
+      // Add enhanced verification with full header logging
+      verifyClient: (info, callback) => {
+        const requestId = uuidv4().substring(0, 8);
+        
+        try {
+          // Log ALL request headers in a clear, highlighted format
+          logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} WS-HANDSHAKE-REQ-${requestId} ${fancyColors.RESET} ${fancyColors.CYAN}Complete handshake request headers for ${this.path}:${fancyColors.RESET}`, {
+            wsEvent: 'handshake_request',
+            endpoint: this.path,
+            headers: info.req.headers,
+            url: info.req.url,
+            method: info.req.method,
+            _highlight: true,
+            _logtail_ws_event: 'ws_handshake'
+          });
+          
+          // Set up a hook to capture the response headers
+          // We need to monkey-patch the socket.write method to capture headers
+          const originalWrite = info.req.socket.write;
+          info.req.socket.write = function(data, encoding, callback) {
+            try {
+              // Only capture the HTTP response headers
+              if (data && typeof data !== 'function' && data.toString().startsWith('HTTP/1.1 101')) {
+                const responseHeaders = data.toString().split('\r\n');
+                
+                // Log the response headers
+                logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS-HANDSHAKE-RESP-${requestId} ${fancyColors.RESET} ${fancyColors.CYAN}Complete handshake response headers for ${info.req.url}:${fancyColors.RESET}`, {
+                  wsEvent: 'handshake_response',
+                  headers: responseHeaders,
+                  raw: data.toString(),
+                  _highlight: true,
+                  _logtail_ws_event: 'ws_handshake_response'
+                });
+                
+                // Check specifically for compression extension in response
+                const extensionHeader = responseHeaders.find(h => h.toLowerCase().startsWith('sec-websocket-extensions:'));
+                if (extensionHeader && extensionHeader.toLowerCase().includes('permessage-deflate')) {
+                  logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} COMPRESSION-DETECTED-${requestId} ${fancyColors.RESET} ${fancyColors.RED}WebSocket compression detected in response despite being disabled: ${extensionHeader}${fancyColors.RESET}`, {
+                    wsEvent: 'compression_detected',
+                    extensionHeader: extensionHeader,
+                    _highlight: true,
+                    _logtail_ws_event: 'ws_compression_error'
+                  });
+                }
+                
+                // Restore the original write method to prevent memory leaks
+                info.req.socket.write = originalWrite;
+              }
+            } catch (err) {
+              // Silent catch - don't break the socket if our debugging code fails
+              logApi.error(`Error capturing handshake response: ${err.message}`);
+            }
+            
+            // Call the original method
+            return originalWrite.call(this, data, encoding, callback);
+          };
+          
+          // Proceed with standard verification
+          const req = info.req;
+          const pathMatches = req.url.startsWith(this.path);
+          
+          if (!pathMatches) {
+            logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} WS-VERIFY-ERROR-${requestId} ${fancyColors.RESET} ${fancyColors.RED}Path mismatch: ${req.url} does not match ${this.path}${fancyColors.RESET}`);
+            callback(false, 404, 'Not Found');
+            return;
+          }
+          
+          // Process as normal - rest of your existing verification code here
+          callback(true);
+        } catch (error) {
+          logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS-VERIFY-ERROR-${requestId} ${fancyColors.RESET} ${fancyColors.RED}Error in verifyClient: ${error.message}${fancyColors.RESET}`, error);
+          callback(false, 500, 'Internal Server Error');
+        }
       }
     };
     
@@ -124,15 +300,36 @@ export class BaseWebSocketServer {
     if (options._ws_direct_options) {
       Object.assign(wsOptions, options._ws_direct_options);
       logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} ${fancyColors.MAGENTA}Using direct WebSocket options to override defaults${fancyColors.RESET}`);
+      
+      // CRITICAL: Even with direct options, ensure compression is ALWAYS disabled
+      wsOptions.perMessageDeflate = false;
     }
     
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} Creating WebSocket server with compression: ${fancyColors.BG_GREEN}${fancyColors.BLACK} DISABLED ${fancyColors.RESET}`);
+    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} Creating WebSocket server with compression: ${fancyColors.BG_RED}${fancyColors.WHITE} DISABLED ${fancyColors.RESET}`);
     
+    // Create WebSocket server with fixed options
     this.wss = new WebSocket.Server(wsOptions);
     
-    // Double-check that compression is disabled in the server instance
+    // CRITICAL: Add monkey-patching to ensure the WebSocket server NEVER uses compression
+    // This ensures that even if the server tries to use compression, it will be disabled
     if (this.wss._options) {
       this.wss._options.perMessageDeflate = false;
+      
+      // Replace the built-in handler for Sec-WebSocket-Extension header
+      // By monkey-patching the server's internal functions
+      if (this.wss.handleUpgrade) {
+        const originalHandleUpgrade = this.wss.handleUpgrade;
+        this.wss.handleUpgrade = (request, socket, head, callback) => {
+          // Force-remove any extension headers before passing to the original handler
+          if (request.headers['sec-websocket-extensions']) {
+            logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION OVERRIDE ${fancyColors.RESET} Removing extension header during upgrade: ${request.headers['sec-websocket-extensions']}`);
+            delete request.headers['sec-websocket-extensions'];
+          }
+          
+          // Call the original handler
+          originalHandleUpgrade.call(this.wss, request, socket, head, callback);
+        };
+      }
       
       // Log actual server options for debugging
       logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} WebSocket._options: perMessageDeflate=${!!this.wss._options.perMessageDeflate}`);
@@ -157,11 +354,47 @@ export class BaseWebSocketServer {
       authenticatedConnections: 0,
       unauthenticatedConnections: 0,
       channelCounts: {},
-      latencies: []
+      latencies: [],
+      messageHistory: [],
+      currentMessageRate: 0,
+      uptime: 0,
+      averageLatency: 0,
+      connectionErrors: {  // Track WebSocket close codes
+        1000: 0, // Normal closure
+        1001: 0, // Going away
+        1006: 0, // Abnormal closure
+        1011: 0, // Internal error
+        4000: 0, // Custom codes start
+      }
+    };
+
+    // Initialize HTTP-level error tracking
+    this.httpErrors = {
+      total: 0,
+      byCode: {},
+      recent: []  // Keep track of recent errors
     };
 
     // Bind event handlers
-    this.wss.on('connection', this.handleConnection.bind(this));
+    this.wss.on('connection', (ws, req) => {
+      // CRITICAL: Force WebSocket to never use compression
+      // This affects each individual WebSocket connection
+      if (ws.extensions && typeof ws.extensions === 'object') {
+        // Force clear any extensions on the WebSocket
+        for (const ext in ws.extensions) {
+          if (ws.extensions.hasOwnProperty(ext)) {
+            delete ws.extensions[ext];
+          }
+        }
+      }
+      
+      // Add custom flag to track RSV bit usage
+      ws._disableRSV = true;
+      
+      // Now handle the connection normally
+      this.handleConnection(ws, req);
+    });
+    
     this.wss.on('error', this.handleServerError.bind(this));
 
     // Start background maintenance tasks
@@ -174,6 +407,72 @@ export class BaseWebSocketServer {
       maxPayload: this.formatBytes(this.maxPayload),
       rateLimit: this.rateLimit
     });
+
+    // Handle HTTP upgrade
+    server.on('upgrade', (request, socket, head) => {
+      if (request.url.startsWith(this.path)) {
+        // Track HTTP-level errors
+        const logHttpError = (code, message) => {
+          this.httpErrors.total++;
+          this.httpErrors.byCode[code] = (this.httpErrors.byCode[code] || 0) + 1;
+          
+          // Create structured error data for Logtail
+          const errorData = {
+            timestamp: new Date(),
+            code,
+            message,
+            path: request.url,
+            headers: request.headers,
+            ip: request.socket.remoteAddress,
+            query: url.parse(request.url, true).query,
+            wsEvent: 'http_upgrade_error',
+            service: 'WEBSOCKET',
+            error_type: 'HTTP_UPGRADE',
+            endpoint: this.path,
+            // Add Logtail-specific properties
+            _highlight: true,
+            _color: '#FF0000',
+            _icon: '🚫'
+          };
+
+          // Keep last 50 errors with timestamps
+          this.httpErrors.recent.push(errorData);
+          if (this.httpErrors.recent.length > 50) {
+            this.httpErrors.recent.shift();
+          }
+
+          // Log the error with structured data for Logtail
+          logApi.error(`WebSocket HTTP Error ${code}: ${message}`, errorData);
+
+          // Update general error stats
+          if (!this.stats) this.initializeStats();
+          this.stats.errors++;
+          this.stats.httpErrors = this.stats.httpErrors || {};
+          this.stats.httpErrors[code] = (this.stats.httpErrors[code] || 0) + 1;
+        };
+
+        // Common HTTP error scenarios with improved error messages
+        if (!request.headers.upgrade || request.headers.upgrade.toLowerCase() !== 'websocket') {
+          logHttpError(400, `Invalid upgrade header: ${request.headers.upgrade || 'missing'}`);
+          socket.write('HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nInvalid WebSocket upgrade request');
+          socket.destroy();
+          return;
+        }
+
+        if (this.requireAuth && !this.getAuthToken(request)) {
+          const query = url.parse(request.url, true).query;
+          logHttpError(401, `Missing authentication token. Query params: ${JSON.stringify(query)}`);
+          socket.write('HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nAuthentication required');
+          socket.destroy();
+          return;
+        }
+
+        // Proceed with WebSocket upgrade
+        this.wss.handleUpgrade(request, socket, head, (ws) => {
+          this.wss.emit('connection', ws, request);
+        });
+      }
+    });
   }
 
   /**
@@ -181,1651 +480,202 @@ export class BaseWebSocketServer {
    * @private
    */
   async _setupBackgroundTasks() {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 SETUP-BACKGROUND-TASKS ${fancyColors.RESET} ${fancyColors.YELLOW}Setting up background tasks${fancyColors.RESET}`, {
-      wsEvent: 'setup_background_tasks'
-    });
-
-    // Start heartbeat interval
-    this._heartbeatInterval = setInterval(() => {
-      this.sendHeartbeats();
-    }, this.heartbeatInterval);
-
-    // Start rate limit reset interval (every minute)
-    this._rateLimitInterval = setInterval(() => {
-      this.resetRateLimits();
-    }, 60000);
-
-    // Start stats update interval (every 5 minutes)
-    this._statsInterval = setInterval(() => {
-      this.updateStats();
-    }, 300000);
-    
-    // Start metrics reporting interval (every minute)
-    // This will report status to the central monitoring system
-    try {
-      const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
-      
-      this._metricsReportInterval = setInterval(() => {
-        const metrics = this.getMetrics();
-        const status = this.stats.errors > 0 ? 'degraded' : 'operational';
-        
-        // Report metrics via service events
-        serviceEvents.emit('service:status:update', {
-          name: this.path,
-          source: 'v69_websocket',
-          status: status,
-          metrics: metrics
-        });
-      }, 15000); // Report every 15 seconds
-    } catch (error) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 METRICS ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} Failed to set up metrics reporting: ${error.message}`, error);
-    }
+    this.updateStats();
   }
 
-  // Handle new WebSocket connection
-  /**
-   * Handle new WebSocket connection
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {http.IncomingMessage} req - The HTTP request that initiated the connection
-   */
-  async handleConnection(ws, req) {
-    try {
-      // Generate a unique connection ID
-      const connectionId = uuidv4();
-      
-      // Parse the request URL
-      const parsedUrl = url.parse(req.url, true);
-      const { query } = parsedUrl;
-      
-      // Log detailed URL parsing for debugging monitor websocket specifically
-      if (this.path === '/api/v69/ws/monitor') {
-        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 URL-PARSE ${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}Monitor WS request:${fancyColors.RESET} ${req.url}`, {
-          wsEvent: 'monitor_ws_url_parse',
-          rawUrl: req.url,
-          parsedUrl: JSON.stringify(parsedUrl),
-          queryParams: JSON.stringify(query),
-          path: parsedUrl.pathname,
-          search: parsedUrl.search || 'none',
-          origin: req.headers.origin || 'no-origin',
-          _highlight: true
-        });
-      }
-
-      // Add to client tracking
-      this.clients.add(ws);
-      this.stats.totalConnections++;
-      this.stats.currentConnections++;
-
-      // Initialize client info
-      const clientInfo = {
-        connectionId,
-        ip: req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'] || 'Unknown',
-        connectedAt: new Date(),
-        lastActivity: new Date(),
-        authenticated: false,
-        user: null,
-        subscriptions: new Set(),
-        requestedChannel: query.channel || null,
-        requestedEndpoint: query.endpoint || null,
-        // Add a field to track whether authentication is completed
-        authenticationCompleted: false,
-        authenticationStarted: false
-      };
-      
-      // Record origin info for debugging connection issues
-      let originInfo = "No origin";
-      if (req.headers.origin) {
-        originInfo = req.headers.origin;
-      }
-      
-      // Add connection flags for debugging
-      let connectionFlags = [];
-      if (query.token) connectionFlags.push("HAS_TOKEN=" + query.token.length);
-      if (req.headers.origin) connectionFlags.push("HAS_ORIGIN=" + req.headers.origin.length + " " + req.headers.origin);
-      if (req.headers.cookie) connectionFlags.push("HAS_COOKIE=" + req.headers.cookie.length + " " + req.headers.cookie);
-      if (req.headers.authorization) connectionFlags.push("HAS_AUTH=" + req.headers.authorization.length + " " + req.headers.authorization);
-      if (query.channel) connectionFlags.push("HAS_CHANNEL=" + query.channel.length + " " + query.channel);
-      
-      // Log the connection
-      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONNECTION ${fancyColors.RESET} ${fancyColors.CYAN}New connection on ${fancyColors.BOLD}${this.path}${fancyColors.RESET} (${connectionId.substring(0,8)}) from ${originInfo} [${connectionFlags.join(',')}]`, {
-        connectionId: clientInfo.connectionId,
-        endpoint: this.path,
-        wsEvent: 'connection',
-        origin: req.headers.origin,
-        ip: clientInfo.ip,
-        userAgent: clientInfo.userAgent,
-        connectionFlags: connectionFlags,
-        tokenLength: query.token ? query.token.length : 0,
-        message: `WebSocket connection on ${this.path} (${connectionId.substring(0,8)})` // Clean message for Logtail
-      });
-      
-      // Store client info
-      this.clientInfoMap.set(ws, clientInfo);
-      
-      // Set up event listeners for this connection
-      ws.on('message', (data) => this.handleMessage(ws, data));
-      ws.on('close', (code, reason) => this.handleClose(ws, code, reason));
-      ws.on('error', (error) => this.handleError(ws, error));
-      ws.on('pong', () => this.handlePong(ws));
-
-      // Initialize rate limiting
-      this.messageRateLimits.set(ws, 0);
-
-      // We need to authenticate immediately, not async
-      // Mark authentication as started
-      clientInfo.authenticationStarted = true;
-      
-      // CHANGED: Use synchronous authentication instead of async
-      // This fixes race conditions with browsers that disconnect immediately
-      let authenticated = false;
-      try {
-        const token = this.extractToken(req, query);
-        
-        if (token) {
-          // Verify the token synchronously
-          try {
-            const decoded = jwt.verify(token, config.jwt.secret || 'default_secret');
-            
-
-            // TODO:
-            // Get user from database (this part is still async but faster)
-            const user = await prisma.users.findUnique({
-              where: { wallet_address: decoded.wallet_address }
-            });
-            
-            if (user) {
-              // Successfully authenticated
-              clientInfo.authenticated = true;
-              clientInfo.user = user;
-              this.stats.authenticatedConnections++;
-              authenticated = true;
-              
-              const roleColor = user.role === 'superadmin' ? fancyColors.RED : 
-                              user.role === 'admin' ? fancyColors.RED : 
-                              fancyColors.PURPLE;
-              
-              logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH-SUCCESS ${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.BOLD}Authenticated${fancyColors.RESET} ${roleColor}${user.role}${fancyColors.RESET} ${user.wallet_address.substring(0,8)}... using mode: ${this.authMode}`, {
-                connectionId: clientInfo.connectionId,
-                wallet: user.wallet_address,
-                role: user.role,
-                wsEvent: 'auth_success'
-              });
-            } else {
-              logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH-FAIL ${fancyColors.RESET} ${fancyColors.YELLOW}User not found${fancyColors.RESET} for wallet: ${decoded.wallet_address.substring(0,8)}...`, {
-                connectionId: clientInfo.connectionId,
-                wallet: decoded.wallet_address,
-                wsEvent: 'auth_user_not_found'
-              });
-            }
-          } catch (tokenError) {
-            logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH-FAIL ${fancyColors.RESET} ${fancyColors.YELLOW}Token verification failed${fancyColors.RESET}: ${tokenError.message}`, {
-              connectionId: clientInfo.connectionId,
-              error: tokenError.message,
-              wsEvent: 'auth_token_error'
-            });
-          }
-        } else {
-          logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH-MISSING ${fancyColors.RESET} ${fancyColors.YELLOW}No token found${fancyColors.RESET} for connection ${clientInfo.connectionId.substring(0,8)}`, {
-            connectionId: clientInfo.connectionId,
-            wsEvent: 'auth_missing_token'
-          });
-        }
-      } catch (authError) {
-        logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH-ERROR ${fancyColors.RESET} ${fancyColors.RED}Authentication error${fancyColors.RESET}: ${authError.message}`, {
-          connectionId: clientInfo.connectionId,
-          error: authError.message,
-          wsEvent: 'auth_error'
-        });
-      }
-      
-      // Mark authentication as completed
-      clientInfo.authenticationCompleted = true;
-      
-      // Check if socket was closed during authentication
-      if (ws.readyState !== WebSocket.OPEN) {
-        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ASYNC-RACE ${fancyColors.RESET} ${fancyColors.YELLOW}Client disconnected during connection setup${fancyColors.RESET} (readyState: ${ws.readyState})`, {
-          connectionId: clientInfo.connectionId,
-          wsEvent: 'connection_race_condition',
-          readyState: ws.readyState
-        });
-        return; // Exit early since client disconnected
-      }
-      
-      // Check if client requested a public endpoint that doesn't require auth
-      const requestedEndpoint = clientInfo.requestedEndpoint;
-      const isPublicEndpoint = requestedEndpoint && this.publicEndpoints.has(requestedEndpoint);
-
-      // If auth is required and client is not authenticated and not requesting a public endpoint, close connection
-      if (this.requireAuth && !clientInfo.authenticated && !isPublicEndpoint) {
-        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.BOLD}Authentication failed${fancyColors.RESET} for connection ${clientInfo.connectionId.substring(0,8)} on ${this.path}`, {
-          connectionId: clientInfo.connectionId,
-          endpoint: this.path,
-          wsEvent: 'auth_failed_closing',
-          origin: req.headers.origin || 'no-origin',
-          url: req.url,
-          userAgent: req.headers['user-agent'],
-          authMode: this.authMode,
-          ipAddress: clientInfo.ip,
-          hasQueryParams: Object.keys(query).length > 0,
-          queryParams: JSON.stringify(query),
-          hasAuthHeader: !!req.headers.authorization,
-          hasProtocol: !!req.headers['sec-websocket-protocol'],
-          hasCookie: !!req.headers.cookie,
-          authCompleted: clientInfo.authenticationCompleted,
-          requestedEndpoint: clientInfo.requestedEndpoint,
-          isPublicEndpoint: isPublicEndpoint,
-          _highlight: true
-        });
-        this.sendError(ws, 'UNAUTHORIZED', 'Authentication required', 4001);
-        this.closeConnection(ws, 4001, 'Authentication required');
-        return;
-      }
-
-      // Call the onConnection handler which can be overridden by subclasses
-      await this.onConnection(ws, req);
-      
-      // Check again if socket was closed during onConnection handler
-      if (ws.readyState !== WebSocket.OPEN) {
-        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ASYNC-RACE ${fancyColors.RESET} ${fancyColors.YELLOW}Client disconnected during onConnection handler${fancyColors.RESET}`, {
-          connectionId: clientInfo.connectionId,
-          wsEvent: 'connection_race_condition2',
-          readyState: ws.readyState
-        });
-        return; // Exit early since client disconnected
-      }
-
-      // Check again if socket is still open
-      if (ws.readyState !== WebSocket.OPEN) {
-        return; // Exit if client disconnected
-      }
-
-      // If client requested a channel in the query string, subscribe automatically
-      if (clientInfo.requestedChannel) {
-        await this.subscribeToChannel(ws, clientInfo.requestedChannel);
-      }
-      
-      // Check again if socket is still open
-      if (ws.readyState !== WebSocket.OPEN) {
-        return; // Exit if client disconnected
-      }
-
-      // Send connection established message
-      this.sendToClient(ws, {
-        type: 'connection_established',
-        connectionId,
-        authenticated: clientInfo.authenticated,
-        timestamp: new Date().toISOString(),
-        user: clientInfo.authenticated ? {
-          wallet_address: clientInfo.user.wallet_address,
-          role: clientInfo.user.role
-        } : null
-      });
-
-      // Start heartbeat for this connection
-      this.startHeartbeat(ws);
-
-    } catch (error) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONNECTION-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error handling connection: ${error.message}${fancyColors.RESET}`, {
-        error: error.message,
-        stack: error.stack,
-        wsEvent: 'connection_error',
-        _highlight: true
-      });
-      
-      if (ws.readyState === WebSocket.OPEN) {
-        this.closeConnection(ws, 1011, 'Internal server error during connection setup');
-      }
-    }
-  }
-
-  // Handle message from client
-  /**
-   * Handle message from client
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {string|Buffer} data - The message data
-   */
-  async handleMessage(ws, data) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 MSG-RECV ${fancyColors.RESET} ${fancyColors.YELLOW}Handling message from client${fancyColors.RESET}`, {
-      wsEvent: 'handle_message',
-      ws: ws
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return; // Connection already closed or invalid
-
-    // Update last activity time
-    clientInfo.lastActivity = new Date();
-
-    try {
-      // Parse the message
-      const message = this.parseMessage(data);
-      if (!message) {
-        this.sendError(ws, 'INVALID_MESSAGE', 'Invalid message format', 1003);
-        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 MSG-ERROR ${fancyColors.RESET} ${fancyColors.YELLOW}Invalid message format from ${clientInfo.connectionId.substring(0,8)}${fancyColors.RESET}`, {
-          connectionId: clientInfo.connectionId,
-          error: 'INVALID_MESSAGE',
-          _logtail_ws_event: 'message_error',
-          _highlight: true
-        });
-        return;
-      }
-
-      // Update message count for rate limiting
-      this.applyRateLimit(ws);
-
-      // Update server statistics
-      this.stats.messagesReceived++;
-
-      // Log the received message (except heartbeats to avoid spam)
-      if (message.type !== 'heartbeat') {
-        const walletStr = clientInfo.authenticated ? 
-                        clientInfo.user.wallet_address.substring(0,8) : 
-                        'unauthenticated';
-        
-        // Create a safe version of the message for logging (avoid huge payloads)
-        const safeMessage = { ...message };
-        
-        // Truncate large data fields for logging
-        if (safeMessage.data && typeof safeMessage.data === 'object') {
-          // Create a simplified version if data is large
-          const dataSize = JSON.stringify(safeMessage.data).length;
-          if (dataSize > 1000) {
-            safeMessage.data = { 
-              _truncated: `Large payload (${dataSize} bytes)`,
-              type: safeMessage.data.type || 'unknown' 
-            };
-          }
-        }
-        
-        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 MSG-RECV ${fancyColors.RESET} ${this.path} ${fancyColors.CYAN}${message.type}${fancyColors.RESET} from ${walletStr}`, {
-          connectionId: clientInfo.connectionId,
-          messageType: message.type,
-          endpoint: this.path,
-          wallet: clientInfo.authenticated ? clientInfo.user.wallet_address : null,
-          authenticated: clientInfo.authenticated,
-          wsEvent: 'message_received',
-          messageData: safeMessage
-        });
-      }
-
-      // Handle built-in message types
-      if (message.type === 'heartbeat') {
-        this.handleHeartbeatMessage(ws);
-        return;
-      }
-
-      if (message.type === 'subscribe') {
-        await this.handleSubscribeMessage(ws, message);
-        return;
-      }
-
-      if (message.type === 'unsubscribe') {
-        await this.handleUnsubscribeMessage(ws, message);
-        return;
-      }
-
-      // Call message handler that can be overridden by subclasses
-      const startTime = Date.now();
-      await this.onMessage(ws, message);
-      const processingTime = Date.now() - startTime;
-
-      // Track message processing latency
-      this.stats.latencies.push(processingTime);
-      // Keep only the last 100 latency measurements
-      if (this.stats.latencies.length > 100) {
-        this.stats.latencies.shift();
-      }
-
-    } catch (error) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 MSG-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error handling message: ${error.message}${fancyColors.RESET}`, {
-        connectionId: clientInfo?.connectionId,
-        path: this.path,
-        error: error.message,
-        stack: error.stack,
-        wsEvent: 'message_error',
-        _highlight: true
-      });
-      this.stats.errors++;
-      this.sendError(ws, 'MESSAGE_PROCESSING_ERROR', 'Error processing message');
-    }
-  }
-
-  // Handle client disconnect
-  /**
-   * Handle client disconnect
-   * @param {WebSocket} ws - The WebSocket connection
-   */
-  async handleClose(ws, code, reason) {
-    try {
-      const clientInfo = this.clientInfoMap.get(ws);
-      if (!clientInfo) return; // Already cleaned up
-
-      // Stop heartbeat timer
-      this.stopHeartbeat(ws);
-
-      // Calculate connection duration
-      const durationSec = Math.floor((Date.now() - clientInfo.connectedAt.getTime()) / 1000);
-      const durationStr = durationSec >= 3600 ? 
-                         `${Math.floor(durationSec/3600)}h ${Math.floor((durationSec%3600)/60)}m` : 
-                         durationSec >= 60 ? 
-                         `${Math.floor(durationSec/60)}m ${durationSec%60}s` : 
-                         `${durationSec}s`;
-
-      // Determine if this was a very short connection (potential issue)
-      const veryShortConnection = durationSec < 1;
-      
-      // Determine authentication state when the connection closed
-      const authInProgress = clientInfo.authenticationStarted && !clientInfo.authenticationCompleted;
-      
-      // Get color for the close code
-      let codeColor = fancyColors.YELLOW; // Default
-      let codeCategory = "UNKNOWN";
-      
-      // Categorize close code for better debugging
-      if (code === 1000) {
-        codeColor = fancyColors.GREEN;
-        codeCategory = "NORMAL";
-      } else if (code === 1001) {
-        codeColor = fancyColors.LIGHT_CYAN;
-        codeCategory = "GOING_AWAY";
-      } else if (code === 1006) {
-        codeColor = fancyColors.RED;
-        codeCategory = "ABNORMAL";
-      } else if (code === 1008) {
-        codeColor = fancyColors.RED;
-        codeCategory = "POLICY_VIOLATION";
-      } else if (code === 1011) {
-        codeColor = fancyColors.RED;
-        codeCategory = "INTERNAL_ERROR";
-      } else if (code === 4001) {
-        codeColor = fancyColors.PURPLE;
-        codeCategory = "AUTH_REQUIRED";
-      }
-
-      // Get user info for display
-      const walletStr = clientInfo.authenticated ? 
-                      `${fancyColors.PURPLE}${clientInfo.user.wallet_address.substring(0,8)}...${fancyColors.RESET}` : 
-                      `${fancyColors.LIGHT_GRAY}unauthenticated${fancyColors.RESET}`;
-      
-      // Create a detailed status message for diagnosing connection issues
-      let statusInfo = "";
-      if (veryShortConnection) {
-        statusInfo = `${fancyColors.RED}VERY_SHORT${fancyColors.RESET}`;
-      } else if (authInProgress) {
-        statusInfo = `${fancyColors.YELLOW}AUTH_INTERRUPTED${fancyColors.RESET}`;
-      }
-      
-      // Format close reason
-      const reasonStr = reason ? ` - ${reason}` : '';
-      
-      // Log disconnection in colorful format with more details
-      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 DISCONNECT ${fancyColors.RESET} Connection ${clientInfo.connectionId.substring(0,8)} ${walletStr || ''} closed with code ${codeColor}${code}${fancyColors.RESET} (${codeCategory})${reasonStr} ${fancyColors.DARK_YELLOW}(${durationStr})${fancyColors.RESET} ${statusInfo}`, {
-        connectionId: clientInfo.connectionId,
-        authenticated: clientInfo.authenticated,
-        wallet: clientInfo.authenticated ? clientInfo.user.wallet_address : null,
-        duration: durationStr,
-        code: code,
-        reason: reason,
-        codeCategory: codeCategory,
-        veryShortConnection: veryShortConnection,
-        authInProgress: authInProgress,
-        wsEvent: 'disconnect'
-      });
-
-      // Track problematic disconnections
-      if (veryShortConnection) {
-        this.stats.veryShortConnections = (this.stats.veryShortConnections || 0) + 1;
-      }
-      if (authInProgress) {
-        this.stats.authInterruptedConnections = (this.stats.authInterruptedConnections || 0) + 1;
-      }
-      if (code === 1006) {
-        this.stats.abnormalCloses = (this.stats.abnormalCloses || 0) + 1;
-      }
-
-      // Call the onClose handler which can be overridden by subclasses
-      await this.onClose(ws);
-
-      // Clean up client resources
-      this.cleanupClient(ws);
-
-      // Update statistics
-      this.stats.currentConnections--;
-      if (clientInfo.authenticated) {
-        this.stats.authenticatedConnections--;
-      } else {
-        this.stats.unauthenticatedConnections--;
-      }
-
-    } catch (error) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CLOSE-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error handling WebSocket close: ${error.message}${fancyColors.RESET}`, {
-        error: error.message,
-        stack: error.stack,
-        wsEvent: 'disconnect_error',
-        _highlight: true
-      });
-    }
-  }
-
-  // Handle connection error
-  /**
-   * Handle connection error
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {Error} error - The error that occurred
-   */
-  async handleError(ws, error) {
-    try {
-      const clientInfo = this.clientInfoMap.get(ws);
-      const connId = clientInfo?.connectionId?.substring(0,8) || 'unknown';
-      
-      // Standardized error data for reporting
-      // Carefully handle undefined values to prevent client-side errors
-      const errorData = {
-        error: error?.message || 'Unknown error',
-        connectionId: clientInfo?.connectionId || 'unknown',
-        authenticated: clientInfo?.authenticated || false,
-        wallet: (clientInfo?.authenticated && clientInfo?.user?.wallet_address) || null,
-        path: this.path || 'unknown',
-        timestamp: new Date().toISOString(),
-        type: 'client_error',
-        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
-      };
-      
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CLIENT ERROR ${fancyColors.RESET} ${connId}: ${fancyColors.RED}${errorData.error}${fancyColors.RESET}`, errorData);
-
-      // Update statistics
-      this.stats.errors++;
-
-      // Emit event for monitoring systems to track
-      const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
-      serviceEvents.emit('service:error', {
-        name: this.path,
-        source: 'v69_websocket',
-        status: 'error',
-        error: error.message,
-        metrics: this.getMetrics(),
-        details: errorData
-      });
-
-      // Call the onError handler which can be overridden by subclasses
-      await this.onError(ws, error);
-
-      // Close the connection after an error
-      this.closeConnection(ws, 1011, 'Error occurred');
-
-    } catch (additionalError) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} META ERROR ${fancyColors.RESET} Error while handling error: ${additionalError.message}`, additionalError);
-    }
-  }
-
-  // Handle server-level errors
-  /**
-   * Handle server-level errors
-   * @param {Error} error - The server error
-   */
-  async handleServerError(error) {
-    // Standardized error data for reporting
-    const errorData = {
-      error: error.message,
-      path: this.path,
-      timestamp: new Date().toISOString(),
-      type: 'server_error',
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      component: 'websocket_server'
-    };
-    
-    logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SERVER ERROR ${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`, errorData);
-    this.stats.errors++;
-    
-    // Emit event for monitoring systems to track
-    try {
-      const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
-      serviceEvents.emit('service:error', {
-        name: this.path,
-        source: 'v69_websocket_server',
-        status: 'error',
-        error: error.message,
-        metrics: this.getMetrics(),
-        details: errorData
-      });
-      
-      // Update system status via monitor WebSocket if available
-      if (global.wsServersV69?.monitor) {
-        global.wsServersV69.monitor.broadcastToChannel('system.status', {
-          type: 'SERVER_STATUS_UPDATE',
-          data: {
-            status: 'degraded',
-            message: `WebSocket error: ${error.message}`,
-            timestamp: new Date().toISOString(),
-            affectedComponent: this.path
-          }
-        });
-      }
-    } catch (additionalError) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} META ERROR ${fancyColors.RESET} Error while emitting error event: ${additionalError.message}`, additionalError);
-    }
-  }
-
-  // Handle pong response from client heartbeat
-  /**
-   * Handle pong response from client heartbeat
-   * @param {WebSocket} ws - The WebSocket connection
-   */
-  handlePong(ws) {
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    // Update last activity time
-    clientInfo.lastActivity = new Date();
-    clientInfo.lastPong = new Date();
-    
-    // Reset heartbeat failures when a pong is received
-    if (clientInfo.heartbeatFailures > 0) {
-      const oldFailures = clientInfo.heartbeatFailures;
-      clientInfo.heartbeatFailures = 0;
-      
-      logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 HEARTBEAT-RECOVERED ${fancyColors.RESET} Client ${clientInfo.connectionId.substring(0,8)} responded to ping after ${oldFailures} missed heartbeats`, {
-        connectionId: clientInfo.connectionId,
-        previousFailures: oldFailures,
-        wsEvent: 'heartbeat_recovered'
-      });
-    }
-  }
-
-  // Handle heartbeat message from client
-  /**
-   * Handle heartbeat message from client
-   * @param {WebSocket} ws - The WebSocket connection
-   */
-  handleHeartbeatMessage(ws) {
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    // Send heartbeat acknowledgment
-    this.sendToClient(ws, {
-      type: 'heartbeat_ack',
-      timestamp: new Date().toISOString()
-    });
-
-    // Update last activity time
-    clientInfo.lastActivity = new Date();
-  }
-
-  // Handle subscribe message from client
-  /**
-   * Handle subscribe message from client
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {Object} message - The message object
-   */
-  async handleSubscribeMessage(ws, message) {
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLUE} V69 SUBSCRIBE ${fancyColors.RESET} ${fancyColors.BLUE}Message: ${message}${fancyColors.RESET}`, {
-      wsEvent: 'subscribe_message',
-      message: message
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    const channel = message.channel;
-    if (!channel) {
-      this.sendError(ws, 'INVALID_SUBSCRIPTION', 'Channel name is required');
-      return;
-    }
-
-    // Check access rights for this channel
-    if (!this.canAccessChannel(clientInfo, channel)) {
-      this.sendError(ws, 'SUBSCRIPTION_DENIED', 'You do not have access to this channel');
-      return;
-    }
-
-    // Subscribe to the channel
-    await this.subscribeToChannel(ws, channel);
-
-    // Call the onSubscribe handler which can be overridden by subclasses
-    await this.onSubscribe(ws, channel);
-  }
-
-  // Handle unsubscribe message from client
-  /**
-   * Handle unsubscribe message from client
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {Object} message - The message object
-   */
-  async handleUnsubscribeMessage(ws, message) {
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.RED} V69 UNSUBSCRIBE ${fancyColors.RESET} ${fancyColors.RED}Message: ${message}${fancyColors.RESET}`, {
-      wsEvent: 'unsubscribe_message',
-      message: message
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    const channel = message.channel;
-    if (!channel) {
-      this.sendError(ws, 'INVALID_UNSUBSCRIPTION', 'Channel name is required');
-      return;
-    }
-
-    // Unsubscribe from the channel
-    await this.unsubscribeFromChannel(ws, channel);
-
-    // Call the onUnsubscribe handler which can be overridden by subclasses
-    await this.onUnsubscribe(ws, channel);
-  }
-
-  // Authenticate client using JWT token
-  /**
-   * Authenticate client using JWT token
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {http.IncomingMessage} req - The HTTP request
-   * @param {Object} query - Query parameters
-   */
-  async authenticateClient(ws, req, query) {
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.GREEN} V69 AUTHENTICATE ${fancyColors.RESET} ${fancyColors.GREEN}Authenticating client${fancyColors.RESET}`, {
-      wsEvent: 'authenticate_client'
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) {
-      logApi.warn(`${fancyColors.BG_DARK_RED}${fancyColors.BOLD}${fancyColors.DARK_CYAN} V69 AUTH ${fancyColors.RESET} ${fancyColors.DARK_RED}Client info not found${fancyColors.RESET}`, {
-        wsEvent: 'authenticate_client',
-        ws: ws
-      });
-      return;
-    }
-
-    try {
-      // Extract token from query, headers, or cookie
-      let token = this.extractToken(req, query);
-      
-      if (!token) {
-        // If no token and authentication is required, mark as unauthenticated
-        if (this.requireAuth) {
-          clientInfo.authenticated = false;
-          this.stats.unauthenticatedConnections++;
-          logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.LIGHT_GRAY}Unauthenticated connection ${clientInfo.connectionId.substring(0,8)}${fancyColors.RESET}`, {
-            connectionId: clientInfo.connectionId,
-            ip: clientInfo.ip
-          });
-        }
-        return;
-      }
-
-      // Verify the token
-      const decoded = jwt.verify(token, config.jwt.secret || 'default_secret');
-      
-      // Get user from database for most up-to-date information
-      const user = await prisma.users.findUnique({
-        where: { wallet_address: decoded.wallet_address }
-      });
-
-      // If user not found, token is invalid
-      if (!user) {
-        clientInfo.authenticated = false;
-        this.stats.unauthenticatedConnections++;
-        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}Authentication failed: User not found${fancyColors.RESET} (wallet: ${decoded.wallet_address.substring(0,8)}...)`, {
-          connectionId: clientInfo.connectionId,
-          wallet: decoded.wallet_address
-        });
-        return;
-      }
-
-      // Check if role in token matches database (prevent stale permissions)
-      if (user.role !== decoded.role) {
-        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.BOLD}Role mismatch${fancyColors.RESET} for ${user.wallet_address.substring(0,8)}... (token: ${decoded.role}, actual: ${user.role})`, {
-          connectionId: clientInfo.connectionId,
-          wallet: user.wallet_address,
-          tokenRole: decoded.role,
-          actualRole: user.role
-        });
-      }
-
-      // Successfully authenticated
-      clientInfo.authenticated = true;
-      clientInfo.user = user;
-      this.stats.authenticatedConnections++;
-
-      const roleColor = user.role === 'superadmin' ? fancyColors.RED : 
-                        user.role === 'admin' ? fancyColors.RED : 
-                        fancyColors.PURPLE;
-      
-      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.BOLD}Authenticated${fancyColors.RESET} ${roleColor}${user.role}${fancyColors.RESET} ${user.wallet_address.substring(0,8)}...`, {
-        connectionId: clientInfo.connectionId,
-        wallet: user.wallet_address,
-        role: user.role
-      });
-
-    } catch (error) {
-      // Token verification failed
-      clientInfo.authenticated = false;
-      this.stats.unauthenticatedConnections++;
-      
-      logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.RED}Token verification failed:${fancyColors.RESET} ${error.message}`, {
-        connectionId: clientInfo.connectionId,
-        error: error.message
-      });
-    }
-  }
-
-  // Extract authentication token from request
-  /**
-   * Extract authentication token from request
-   * @param {http.IncomingMessage} req - The HTTP request
-   * @param {Object} query - Query parameters
-   * @returns {string|null} - The extracted token or null
-   */
-  extractToken(req, query) {
-    // Log more detailed information about token extraction - including query params
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}Extracting token using mode: ${this.authMode}${fancyColors.RESET} Path: ${req.url}`, {
-      wsEvent: 'extract_token',
-      authMode: this.authMode,
-      hasQueryToken: !!query.token,
-      hasQueryAuthorization: !!query.authorization, 
-      queryParams: JSON.stringify(query),
-      path: req.url,
-      endpoint: this.path,
-      hasAuthHeader: !!(req.headers.authorization && req.headers.authorization.startsWith('Bearer ')),
-      hasProtocol: !!req.headers['sec-websocket-protocol'],
-      hasCookie: !!req.headers.cookie,
-      origin: req.headers.origin || 'no-origin',
-      userAgent: req.headers['user-agent']
-    });
-    
-    // If using 'query' mode, prioritize query parameters for WebSockets (more reliable with browsers)
-    // Check for both token and authorization parameters for backward compatibility
-    if (this.authMode === 'query') {
-      if (query.authorization) {
-        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query authorization (query mode)${fancyColors.RESET} Token length: ${query.authorization.length}`);
-        return query.authorization;
-      }
-      
-      if (query.token) {
-        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query token (query mode)${fancyColors.RESET} Token length: ${query.token.length}`);
-        return query.token;
-      }
-    }
-    
-    // If using 'header' mode or 'auto' mode, try Authorization header first
-    if ((this.authMode === 'header' || this.authMode === 'auto') && 
-        req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using Authorization header${fancyColors.RESET}`);
-      return req.headers.authorization.substring(7); // Remove 'Bearer ' prefix
-    }
-
-    // Try to get from protocol header (WebSocket subprotocol) - works with some clients
-    if (req.headers['sec-websocket-protocol']) {
-      const protocols = req.headers['sec-websocket-protocol'].split(',').map(p => p.trim());
-      // Find a protocol that looks like a JWT (contains two dots)
-      const tokenProtocol = protocols.find(p => p.split('.').length === 3);
-      if (tokenProtocol) {
-        logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using WebSocket protocol token${fancyColors.RESET}`);
-        return tokenProtocol;
-      }
-    }
-    
-    // Try to get from cookie
-    if (req.headers.cookie) {
-      const cookies = req.headers.cookie.split(';').map(c => c.trim());
-      const sessionCookie = cookies.find(c => c.startsWith('session='));
-      if (sessionCookie) {
-        logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using cookie token${fancyColors.RESET}`);
-        return sessionCookie.substring(8); // Remove 'session=' prefix
-      }
-    }
-
-    // If in 'auto' mode and no other methods worked, try query parameter as fallback
-    if (this.authMode === 'auto' || this.authMode === 'query') {
-      // Try authorization parameter first, then token parameter
-      if (query.authorization) {
-        logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query authorization (fallback)${fancyColors.RESET}`);
-        return query.authorization;
-      }
-      
-      if (query.token) {
-        logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.GREEN}Using query token (fallback)${fancyColors.RESET}`);
-        return query.token;
-      }
-    }
-
-    logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 AUTH ${fancyColors.RESET} ${fancyColors.YELLOW}No token found in any source${fancyColors.RESET}`, {
-      endpoint: this.path,
-      wsEvent: 'auth_no_token',
-      path: req.url,
-      fullUrl: req.url,
-      authMode: this.authMode,
-      queryParamsData: JSON.stringify(query),
-      hasTokenParam: !!query.token,
-      hasAuthorizationParam: !!query.authorization,
-      hasAuthHeader: !!req.headers.authorization,
-      hasProtocol: !!req.headers['sec-websocket-protocol'],
-      hasCookie: !!req.headers.cookie,
-      protocol: req.headers['sec-websocket-protocol'] || 'none',
-      cookies: req.headers.cookie || 'none',
-      origin: req.headers.origin || 'no-origin',
-      headersData: JSON.stringify(Object.keys(req.headers)),
-      _highlight: true
-    });
-    return null;
-  }
-
-  // Check if a client can access a channel
-  /**
-   * Check if a client can access a channel
-   * @param {Object} clientInfo - The client info object
-   * @param {string} channel - The channel name
-   * @returns {boolean} - Whether the client can access the channel
-   */
-  canAccessChannel(clientInfo, channel) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CHANNEL ${fancyColors.RESET} ${fancyColors.YELLOW}Checking access for channel: ${channel}${fancyColors.RESET}`, {
-      wsEvent: 'check_channel_access',
-      channel: channel
-    });
-
-    // Public endpoints are always accessible
-    if (this.publicEndpoints.has(channel)) {
-      return true;
-    }
-
-    // If authentication is required, check if client is authenticated
-    if (this.requireAuth && !clientInfo.authenticated) {
-      return false;
-    }
-
-    // Check channel-specific permissions
-    // Channels that start with 'user.' are only accessible by that user
-    if (channel.startsWith('user.')) {
-      const userWallet = channel.split('.')[1];
-      return clientInfo.authenticated && clientInfo.user.wallet_address === userWallet;
-    }
-
-    // Channels that start with 'admin.' are only accessible by admins
-    if (channel.startsWith('admin.')) {
-      return clientInfo.authenticated && 
-             (clientInfo.user.role === 'admin' || clientInfo.user.role === 'superadmin');
-    }
-
-    // Channels that start with 'superadmin.' are only accessible by superadmins
-    if (channel.startsWith('superadmin.')) {
-      return clientInfo.authenticated && clientInfo.user.role === 'superadmin';
-    }
-
-    // Default to allow if authenticated or not requiring auth
-    return !this.requireAuth || clientInfo.authenticated;
-  }
-
-  // Subscribe a client to a channel
-  /**
-   * Subscribe a client to a channel
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {string} channel - The channel name
-   */
-  async subscribeToChannel(ws, channel) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 SUBSCRIBE ${fancyColors.RESET} ${fancyColors.YELLOW}Subscribing to channel: ${channel}${fancyColors.RESET}`, {
-      wsEvent: 'subscribe_channel',
-      channel: channel
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    // Add to client's subscriptions
-    clientInfo.subscriptions.add(channel);
-
-    // Add to channel subscribers
-    if (!this.channelSubscriptions.has(channel)) {
-      this.channelSubscriptions.set(channel, new Set());
-    }
-    this.channelSubscriptions.get(channel).add(ws);
-
-    // Update channel count statistics
-    this.stats.channelCounts[channel] = (this.stats.channelCounts[channel] || 0) + 1;
-
-    // Send subscription confirmation
-    this.sendToClient(ws, {
-      type: 'subscription_confirmed',
-      channel,
-      timestamp: new Date().toISOString()
-    });
-
-    logApi.debug('Client subscribed to channel', {
-      connectionId: clientInfo.connectionId,
-      channel,
-      authenticated: clientInfo.authenticated,
-      wallet: clientInfo.authenticated ? clientInfo.user.wallet_address : null
-    });
-  }
-
-  // Unsubscribe a client from a channel
-  /**
-   * Unsubscribe a client from a channel
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {string} channel - The channel name
-   */
-  async unsubscribeFromChannel(ws, channel) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 UNSUBSCRIBE ${fancyColors.RESET} ${fancyColors.YELLOW}Unsubscribing from channel: ${channel}${fancyColors.RESET}`, {
-      wsEvent: 'unsubscribe_channel',
-      channel: channel
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    // Remove from client's subscriptions
-    clientInfo.subscriptions.delete(channel);
-
-    // Remove from channel subscribers
-    if (this.channelSubscriptions.has(channel)) {
-      const subscribers = this.channelSubscriptions.get(channel);
-      subscribers.delete(ws);
-
-      // If no more subscribers, remove the channel
-      if (subscribers.size === 0) {
-        this.channelSubscriptions.delete(channel);
-      }
-    }
-
-    // Update channel count statistics
-    if (this.stats.channelCounts[channel]) {
-      this.stats.channelCounts[channel]--;
-      if (this.stats.channelCounts[channel] === 0) {
-        delete this.stats.channelCounts[channel];
-      }
-    }
-
-    // Send unsubscription confirmation
-    this.sendToClient(ws, {
-      type: 'unsubscription_confirmed',
-      channel,
-      timestamp: new Date().toISOString()
-    });
-
-    logApi.debug('Client unsubscribed from channel', {
-      connectionId: clientInfo.connectionId,
-      channel,
-      authenticated: clientInfo.authenticated,
-      wallet: clientInfo.authenticated ? clientInfo.user.wallet_address : null
-    });
-  }
-
-  // Send a message to all subscribers of a channel
-  /**
-   * Send a message to all subscribers of a channel
-   * @param {string} channel - The channel name
-   * @param {Object} message - The message to send
-   */
-  broadcastToChannel(channel, message) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 BROADCAST ${fancyColors.RESET} ${fancyColors.YELLOW}Broadcasting to channel: ${channel}${fancyColors.RESET}`, {
-      wsEvent: 'broadcast_channel',
-      channel: channel
-    });
-
-    if (!this.channelSubscriptions.has(channel)) {
-      return; // No subscribers
-    }
-
-    const subscribers = this.channelSubscriptions.get(channel);
-    const broadcastMessage = {
-      ...message,
-      channel,
-      timestamp: message.timestamp || new Date().toISOString()
-    };
-
-    // Skip detailed logging for very frequent broadcasts to avoid spamming logs
-    const skipDetailedLogging = ['heartbeat', 'pong', 'tick', 'price_update'].includes(message.type);
-    
-    // Log broadcast (before sending to avoid counting failed sends)
-    if (!skipDetailedLogging) {
-      // Create a safe version of the message for logging
-      const safeMessage = { ...message };
-      // Truncate large data fields
-      if (safeMessage.data && typeof safeMessage.data === 'object') {
-        const dataSize = JSON.stringify(safeMessage.data).length;
-        if (dataSize > 1000) {
-          safeMessage.data = { 
-            _truncated: `Large payload (${dataSize} bytes)`,
-            type: safeMessage.data.type || 'unknown' 
-          };
-        }
-      }
-      
-      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 BROADCAST ${fancyColors.RESET} ${this.path} ${fancyColors.MAGENTA}${message.type}${fancyColors.RESET} to ${fancyColors.BOLD}${channel}${fancyColors.RESET} (${subscribers.size} subscribers)`, {
-        channel,
-        messageType: message.type,
-        subscribers: subscribers.size,
-        endpoint: this.path,
-        wsEvent: 'broadcast',
-        messageData: safeMessage
-      });
-    } 
-    // For high-frequency messages, just log at debug level with minimal info
-    else if (subscribers.size > 0) {
-      logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 BROADCAST ${fancyColors.RESET} ${message.type} to ${channel} (${subscribers.size} subscribers)`, {
-        channel,
-        messageType: message.type,
-        subscribers: subscribers.size,
-        wsEvent: 'broadcast'
-      });
-    }
-
-    // Send to all subscribers
-    for (const ws of subscribers) {
-      if (ws.readyState === WebSocket.OPEN) {
-        this.sendToClient(ws, broadcastMessage);
-      }
-    }
-  }
-
-  // Send a message to all connected clients
-  /**
-   * Send a message to all connected clients
-   * @param {Object} message - The message to send
-   */
-  broadcast(message) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 BROADCAST ${fancyColors.RESET} ${fancyColors.YELLOW}Broadcasting to all clients${fancyColors.RESET}`, {
-      wsEvent: 'broadcast_all',
-      messageType: message.type
-    });
-
-    const broadcastMessage = {
-      ...message,
-      timestamp: message.timestamp || new Date().toISOString()
-    };
-
-    for (const ws of this.clients) {
-      if (ws.readyState === WebSocket.OPEN) {
-        this.sendToClient(ws, broadcastMessage);
-      }
-    }
-
-    logApi.debug('Broadcast message to all clients', {
-      type: message.type,
-      clients: this.clients.size
-    });
-  }
-
-  // Send a message to a specific client
-  /**
-   * Send a message to a specific client
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {Object} message - The message to send
-   */
-  sendToClient(ws, message) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 SEND-TO-CLIENT ${fancyColors.RESET} ${fancyColors.YELLOW}Sending message to client${fancyColors.RESET}`, {
-      wsEvent: 'send_to_client',
-      messageType: message.type
-    });
-
-    try {
-      if (ws.readyState !== WebSocket.OPEN) return;
-
-      // Ensure timestamp is present
-      if (!message.timestamp) {
-        message.timestamp = new Date().toISOString();
-      }
-
-      // Get client info for logging
-      const clientInfo = this.clientInfoMap.get(ws);
-      
-      // Convert the message to a string
-      const messageString = JSON.stringify(message);
-
-      // Send the message
-      ws.send(messageString);
-
-      // Update statistics
-      this.stats.messagesSent++;
-
-      // Log outgoing messages (except heartbeats and standard responses to reduce noise)
-      const skipLoggingTypes = ['heartbeat', 'heartbeat_ack', 'pong', 'welcome', 'connection_established'];
-      if (!skipLoggingTypes.includes(message.type)) {
-        try {
-          // Create a safe version of the message for logging
-          const safeMessage = { ...message };
-          
-          // Truncate large data fields for logging
-          if (safeMessage.data && typeof safeMessage.data === 'object') {
-            // Create a simplified version if data is large
-            const dataSize = JSON.stringify(safeMessage.data).length;
-            if (dataSize > 1000) {
-              safeMessage.data = {
-                _truncated: `Large payload (${dataSize} bytes)`,
-                type: safeMessage.data.type || 'unknown'
-              };
-            }
-          }
-          
-          // Get wallet info if available
-          const walletDisplay = clientInfo?.authenticated ? 
-                              clientInfo.user.wallet_address.substring(0,8) : 
-                              'unauthenticated';
-          
-          logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 MSG-SENT ${fancyColors.RESET} ${this.path} ${fancyColors.GREEN}${message.type}${fancyColors.RESET} to ${walletDisplay}`, {
-            connectionId: clientInfo?.connectionId,
-            messageType: message.type,
-            endpoint: this.path,
-            wallet: clientInfo?.authenticated ? clientInfo.user.wallet_address : null,
-            wsEvent: 'message_sent',
-            messageData: safeMessage
-          });
-        } catch (loggingError) {
-          // Don't let logging errors break message sending
-          logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 LOG ERROR ${fancyColors.RESET} Failed to log outgoing message: ${loggingError.message}`);
-        }
-      }
-
-    } catch (error) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 MSG-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error sending message to client: ${error.message}${fancyColors.RESET}`, {
-        messageType: message?.type,
-        error: error.message,
-        path: this.path,
-        wsEvent: 'message_send_error',
-        _highlight: true
-      });
-      this.stats.errors++;
-    }
-  }
-
-  // Send an error message to a client
-  /**
-   * Send an error message to a client
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {string} code - The error code
-   * @param {string} message - The error message
-   * @param {number} closeCode - Optional WebSocket close code to close the connection
-   */
-  sendError(ws, code, message, closeCode = null) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 SEND-ERROR ${fancyColors.RESET} ${fancyColors.YELLOW}Sending error to client${fancyColors.RESET}`, {
-      wsEvent: 'send_error',
-      errorCode: code,
-      errorMessage: message,
-      closeCode: closeCode
-    });
-
-    // Get client info for better logging
-    const clientInfo = this.clientInfoMap.get(ws);
-    const walletStr = clientInfo?.authenticated ? 
-                    clientInfo.user.wallet_address.substring(0,8) : 
-                    (clientInfo ? 'unauthenticated' : 'unknown');
-    
-    // Log the error with client details
-    logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 ERROR-SENT ${fancyColors.RESET} ${this.path} ${fancyColors.RED}${code}${fancyColors.RESET} to ${walletStr}: ${message}`, {
-      connectionId: clientInfo?.connectionId,
-      errorCode: code,
-      errorMessage: message,
-      wallet: clientInfo?.authenticated ? clientInfo.user.wallet_address : null,
-      willClose: closeCode !== null,
-      closeCode: closeCode,
-      endpoint: this.path,
-      wsEvent: 'error_sent',
-      _highlight: true
-    });
-
-    // Send the error to the client
-    this.sendToClient(ws, {
-      type: 'error',
-      code,
-      message,
-      timestamp: new Date().toISOString()
-    });
-
-    // If a close code is provided, close the connection
-    if (closeCode) {
-      this.closeConnection(ws, closeCode, message);
-    }
-  }
-
-  // Close a WebSocket connection
-  /**
-   * Close a WebSocket connection
-   * @param {WebSocket} ws - The WebSocket connection
-   * @param {number} code - The close code
-   * @param {string} reason - The reason for closing
-   */
-  closeConnection(ws, code, reason) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CLOSE-CONNECTION ${fancyColors.RESET} ${fancyColors.YELLOW}Closing connection${fancyColors.RESET}`, {
-      wsEvent: 'close_connection',
-      closeCode: code,
-      closeReason: reason
-    });
-
-    try {
-      // Only close if it's still open or connecting
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        // Get client info for reference
-        const clientInfo = this.clientInfoMap.get(ws);
-        const connId = clientInfo?.connectionId?.substring(0,8) || 'unknown';
-        
-        // Add timestamp to help track close/reconnect cycles
-        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CLOSING ${fancyColors.RESET} Connection ${connId} with code ${code}: "${reason || 'No reason'}"`, {
-          connectionId: clientInfo?.connectionId,
-          closeCode: code,
-          closeReason: reason,
-          wsEvent: 'closing_connection'
-        });
-        
-        // Set the close code to a normal closure (1000) if it's an abnormal closure (1006)
-        // This can help prevent rapid reconnect cycles from clients that reconnect on 1006
-        if (code === 1006) {
-          ws.close(1000, "Server closing connection normally");
-        } else {
-          ws.close(code, reason);
-        }
-      }
-    } catch (error) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CLOSE-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error closing WebSocket: ${error.message}${fancyColors.RESET}`, {
-        error: error.message,
-        wsEvent: 'close_error'
-      });
-    }
-  }
-
-  // Start heartbeat for a client
-  /**
-   * Start heartbeat for a client
-   * @param {WebSocket} ws - The WebSocket connection
-   */
-  startHeartbeat(ws) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 START-HEARTBEAT ${fancyColors.RESET} ${fancyColors.YELLOW}Starting heartbeat for client${fancyColors.RESET}`, {
-      wsEvent: 'start_heartbeat',
-      ws: ws
-    });
-
-    // Clear existing heartbeat timer if it exists
-    this.stopHeartbeat(ws);
-
-    // Create a new heartbeat timer
-    const heartbeatTimer = setTimeout(() => {
-      this.checkHeartbeat(ws);
-    }, this.heartbeatInterval);
-
-    // Store the timer
-    this.heartbeatTimers.set(ws, heartbeatTimer);
-  }
-
-  // Stop heartbeat for a client
-  /**
-   * Stop heartbeat for a client
-   * @param {WebSocket} ws - The WebSocket connection
-   */
-  stopHeartbeat(ws) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 STOP-HEARTBEAT ${fancyColors.RESET} ${fancyColors.YELLOW}Stopping heartbeat for client${fancyColors.RESET}`, {
-      wsEvent: 'stop_heartbeat',
-      ws: ws
-    });
-
-    const timer = this.heartbeatTimers.get(ws);
-    if (timer) {
-      clearTimeout(timer);
-      this.heartbeatTimers.delete(ws);
-    }
-  }
-
-  // Check heartbeat for a client
-  /**
-   * Check heartbeat for a client
-   * @param {WebSocket} ws - The WebSocket connection
-   */
-  checkHeartbeat(ws) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CHECK-HEARTBEAT ${fancyColors.RESET} ${fancyColors.YELLOW}Checking heartbeat for client${fancyColors.RESET}`, {
-      wsEvent: 'check_heartbeat',
-      ws: ws
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    // Check if client is still active
-    const lastActivity = clientInfo.lastActivity.getTime();
-    const now = Date.now();
-
-    // Initialize heartbeat failure count if not present
-    if (!clientInfo.heartbeatFailures) {
-      clientInfo.heartbeatFailures = 0;
-    }
-
-    // If client hasn't been active recently, ping it
-    if (now - lastActivity > this.heartbeatInterval) {
-      // Send ping
-      try {
-        ws.ping();
-
-        // Set timeout for pong response
-        const pongTimeout = setTimeout(() => {
-          // If no pong received, increment failure count
-          clientInfo.heartbeatFailures++;
-          
-          // Only close after several consecutive heartbeat failures
-          // This prevents disconnections due to temporary network issues
-          const MAX_HEARTBEAT_FAILURES = 3;
-          
-          if (clientInfo.heartbeatFailures >= MAX_HEARTBEAT_FAILURES) {
-            logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 HEARTBEAT-TIMEOUT ${fancyColors.RESET} Client ${clientInfo.connectionId.substring(0,8)} missed ${clientInfo.heartbeatFailures} heartbeats, closing connection`, {
-              connectionId: clientInfo.connectionId,
-              lastActivity: Math.floor((now - lastActivity) / 1000) + 's ago',
-              heartbeatFailures: clientInfo.heartbeatFailures,
-              wsEvent: 'heartbeat_timeout'
-            });
-            this.closeConnection(ws, 1008, `Heartbeat timeout after ${clientInfo.heartbeatFailures} missed pings`);
-          } else {
-            logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 HEARTBEAT-MISSED ${fancyColors.RESET} Client ${clientInfo.connectionId.substring(0,8)} missed heartbeat ${clientInfo.heartbeatFailures}/${MAX_HEARTBEAT_FAILURES}`, {
-              connectionId: clientInfo.connectionId,
-              heartbeatFailures: clientInfo.heartbeatFailures,
-              wsEvent: 'heartbeat_missed'
-            });
-            // Continue with heartbeats even after a miss
-            this.startHeartbeat(ws);
-          }
-        }, this.heartbeatTimeout);
-
-        // Store timeout
-        clientInfo.pongTimeout = pongTimeout;
-
-      } catch (error) {
-        // If ping fails, log but don't necessarily close right away
-        logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 HEARTBEAT-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error sending ping: ${error.message}${fancyColors.RESET}`, {
-          connectionId: clientInfo.connectionId,
-          error: error.message,
-          wsEvent: 'heartbeat_error'
-        });
-        
-        // Increment failure count
-        clientInfo.heartbeatFailures++;
-        
-        // Only close after multiple failures
-        if (clientInfo.heartbeatFailures >= 3) {
-          this.closeConnection(ws, 1011, 'Multiple heartbeat errors');
-        } else {
-          // Try again with the next heartbeat
-          this.startHeartbeat(ws);
-        }
-      }
-    } else {
-      // Normal activity, restart the heartbeat timer
-      this.startHeartbeat(ws);
-    }
-  }
-
-  // Send heartbeats to all clients
-  /**
-   * Send heartbeats to all clients
-   */
-  sendHeartbeats() {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 SEND-HEARTBEATS ${fancyColors.RESET} ${fancyColors.YELLOW}Sending heartbeats to all clients${fancyColors.RESET}`, {
-      wsEvent: 'send_heartbeats'
-    });
-
-    for (const ws of this.clients) {
-      if (ws.readyState === WebSocket.OPEN) {
-        this.checkHeartbeat(ws);
-      }
-    }
-  }
-
-  // Apply rate limiting to a client
-  /**
-   * Apply rate limiting to a client
-   * @param {WebSocket} ws - The WebSocket connection
-   * @returns {boolean} - Whether the client has exceeded the rate limit
-   */
-  applyRateLimit(ws) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 APPLY-RATE-LIMIT ${fancyColors.RESET} ${fancyColors.YELLOW}Applying rate limit to client${fancyColors.RESET}`, {
-      wsEvent: 'apply_rate_limit',
-      ws: ws
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return false;
-
-    // Get current message count
-    let count = this.messageRateLimits.get(ws) || 0;
-    count++;
-
-    // Update message count
-    this.messageRateLimits.set(ws, count);
-
-    // Check if exceeded
-    if (count > this.rateLimit) {
-      this.stats.rateLimitExceeded++;
-      
-      // Send error message
-      this.sendError(ws, 'RATE_LIMIT_EXCEEDED', 'Message rate limit exceeded', 1008);
-      
-      // Return true to indicate rate limit exceeded
-      return true;
-    }
-
-    return false;
-  }
-
-  // Reset rate limits for all clients
-  /**
-   * Reset rate limits for all clients
-   */
-  resetRateLimits() {
-    this.messageRateLimits.clear();
-  }
-
-  // Parse a message from a client
-  /**
-   * Parse a message from a client
-   * @param {string|Buffer} data - The message data
-   * @returns {Object|null} - The parsed message or null if invalid
-   */
-  parseMessage(data) {
-    try {
-      // If Buffer, convert to string
-      const message = typeof data === 'string' ? data : data.toString('utf8');
-      
-      // Parse JSON
-      return JSON.parse(message);
-    } catch (error) {
-      logApi.error('Error parsing message:', error);
-      return null;
-    }
-  }
-
-  // Clean up resources for a client
-  /**
-   * Clean up resources for a client
-   * @param {WebSocket} ws - The WebSocket connection
-   */
-  cleanupClient(ws) {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CLEANUP-CLIENT ${fancyColors.RESET} ${fancyColors.YELLOW}Cleaning up client${fancyColors.RESET}`, {
-      wsEvent: 'cleanup_client',
-      ws: ws
-    });
-
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    // Clear all channel subscriptions
-    for (const channel of clientInfo.subscriptions) {
-      const subscribers = this.channelSubscriptions.get(channel);
-      if (subscribers) {
-        subscribers.delete(ws);
-        
-        // If no more subscribers, remove the channel
-        if (subscribers.size === 0) {
-          this.channelSubscriptions.delete(channel);
-        }
-      }
-    }
-
-    // Clear heartbeat timer
-    this.stopHeartbeat(ws);
-
-    // Clear pong timeout if exists
-    if (clientInfo.pongTimeout) {
-      clearTimeout(clientInfo.pongTimeout);
-    }
-
-    // Remove from rate limits
-    this.messageRateLimits.delete(ws);
-
-    // Remove from client tracking
-    this.clientInfoMap.delete(ws);
-    this.clients.delete(ws);
-  }
-
-  // Update server statistics
-  /**
-   * Update server statistics
-   */
   updateStats() {
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 UPDATE-STATS ${fancyColors.RESET} ${fancyColors.YELLOW}Updating server statistics${fancyColors.RESET}`, {
-      wsEvent: 'update_stats'
-    });
+    if (!this.stats) {
+      this.initializeStats();
+    }
 
-    // Calculate average latency
-    if (this.stats && this.stats.latencies && Array.isArray(this.stats.latencies) && this.stats.latencies.length > 0) {
+    // Update current connections count from actual client set
+    this.stats.currentConnections = this.clients.size;
+
+    // Update authenticated/unauthenticated counts
+    let authenticatedCount = 0;
+    let unauthenticatedCount = 0;
+    for (const [ws, clientInfo] of this.clientInfoMap.entries()) {
+      if (clientInfo.authenticated) {
+        authenticatedCount++;
+      } else {
+        unauthenticatedCount++;
+      }
+    }
+    this.stats.authenticatedConnections = authenticatedCount;
+    this.stats.unauthenticatedConnections = unauthenticatedCount;
+
+    // Update channel counts from actual subscriptions
+    const newChannelCounts = {};
+    for (const [channel, subscribers] of this.channelSubscriptions.entries()) {
+      newChannelCounts[channel] = subscribers.size;
+    }
+    this.stats.channelCounts = newChannelCounts;
+
+    // Calculate average latency (keep last 100 measurements)
+    if (this.stats.latencies.length > 0) {
       const sum = this.stats.latencies.reduce((a, b) => a + b, 0);
       this.stats.averageLatency = Math.round(sum / this.stats.latencies.length);
+      // Trim latencies array if it's too long
+      if (this.stats.latencies.length > 100) {
+        this.stats.latencies = this.stats.latencies.slice(-100);
+      }
     }
 
-    // Safety check for stats
-    if (!this.stats) {
-      logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 STATS ${fancyColors.RESET} ${fancyColors.YELLOW}Stats object is undefined for WebSocket at ${this.path}${fancyColors.RESET}`);
-      this.stats = {
-        startTime: Date.now(),
-        totalConnections: 0,
-        currentConnections: 0,
-        messagesReceived: 0,
-        messagesSent: 0,
-        errors: 0,
-        rateLimitExceeded: 0,
-        authenticatedConnections: 0,
-        unauthenticatedConnections: 0,
-        channelCounts: {},
-        latencies: []
-      };
-    }
+    // Update uptime
+    this.stats.uptime = Math.floor((Date.now() - this.stats.startTime) / 1000);
 
-    // Calculate uptime
-    this.stats.uptime = Math.floor((Date.now() - (this.stats.startTime || Date.now())) / 1000); // in seconds
+    // Calculate message rate (messages per second)
+    const now = Date.now();
+    const timeWindow = 60000; // 1 minute window
+    this.stats.messageHistory = this.stats.messageHistory.filter(msg => now - msg.timestamp < timeWindow);
+    this.stats.currentMessageRate = this.stats.messageHistory.length / (timeWindow / 1000);
 
-    // Ensure all properties exist to avoid undefined errors
-    const safeStats = {
-      path: this.path || 'unknown',
-      connections: {
-        total: this.stats.totalConnections || 0,
-        current: this.stats.currentConnections || 0,
-        authenticated: this.stats.authenticatedConnections || 0,
-        unauthenticated: this.stats.unauthenticatedConnections || 0
+    // Add error summary with better structure for Logtail
+    const errorSummary = {
+      total: this.stats.errors,
+      http: {
+        total: this.httpErrors.total,
+        byCode: this.httpErrors.byCode,
+        recent: this.httpErrors.recent.slice(-5).map(err => ({
+          code: err.code,
+          message: err.message,
+          timestamp: err.timestamp,
+          path: err.path
+        }))
       },
-      messages: {
-        received: this.stats.messagesReceived || 0,
-        sent: this.stats.messagesSent || 0,
-        averageLatency: (this.stats.averageLatency || 0) + 'ms',
-        rateLimitExceeded: this.stats.rateLimitExceeded || 0
+      websocket: {
+        byCode: this.stats.connectionErrors,
+        recent: Object.entries(this.stats.connectionErrors)
+          .filter(([_, count]) => count > 0)
+          .reduce((acc, [code, count]) => ({
+            ...acc,
+            [code]: {
+              count,
+              description: this.getWebSocketErrorDescription(code)
+            }
+          }), {})
       },
-      errors: this.stats.errors || 0,
-      channels: this.stats.channelCounts || {},
-      uptime: this.formatDuration(this.stats.uptime || 0)
+      rateLimitExceeded: this.stats.rateLimitExceeded
     };
 
-    // Log statistics
-    logApi.info('WebSocket server statistics', safeStats);
+    // Prepare safe stats object for logging with Logtail metadata
+    const safeStats = {
+      path: this.path,
+      connections: {
+        total: this.stats.totalConnections,
+        current: this.stats.currentConnections,
+        authenticated: this.stats.authenticatedConnections,
+        unauthenticated: this.stats.unauthenticatedConnections
+      },
+      messages: {
+        received: this.stats.messagesReceived,
+        sent: this.stats.messagesSent,
+        rate: Math.round(this.stats.currentMessageRate * 100) / 100,
+        averageLatency: `${this.stats.averageLatency || 0}ms`
+      },
+      errors: errorSummary,
+      channels: this.stats.channelCounts,
+      uptime: this.formatDuration(this.stats.uptime),
+      // Add Logtail metadata
+      service: 'WEBSOCKET',
+      wsEvent: 'stats_update',
+      endpoint: this.path
+    };
+
+    // Add visual indicators for error conditions
+    const hasErrors = this.stats.errors > 0 || this.httpErrors.total > 0;
+    const has1006Errors = this.stats.connectionErrors[1006] > 0;
+    const hasHttpErrors = this.httpErrors.total > 0;
+
+    // Create an error status message
+    let statusMessage = '';
+    if (hasErrors) {
+      const errorParts = [];
+      if (has1006Errors) {
+        errorParts.push(`${this.stats.connectionErrors[1006]} abnormal closures (1006)`);
+      }
+      if (hasHttpErrors) {
+        errorParts.push(`${this.httpErrors.total} HTTP errors`);
+      }
+      statusMessage = ` | ${errorParts.join(', ')}`;
+    }
+
+    // Log statistics with proper Logtail metadata
+    logApi.info(`WebSocket Stats for ${this.path}${statusMessage}`, {
+      ...safeStats,
+      _highlight: hasErrors,
+      _color: hasErrors ? '#FF0000' : '#00AA00',
+      _icon: hasErrors ? '⚠️' : '✅'
+    });
+
+    // If there are errors, log additional error details with proper Logtail formatting
+    if (hasErrors) {
+      logApi.error(`Recent WebSocket errors for ${this.path}`, {
+        ...errorSummary,
+        service: 'WEBSOCKET',
+        wsEvent: 'error_summary',
+        endpoint: this.path,
+        _highlight: true,
+        _color: '#FF0000',
+        _icon: '🚨'
+      });
+    }
+  }
+
+  /**
+   * Initialize statistics object
+   * @private
+   */
+  initializeStats() {
+    this.stats = {
+      startTime: Date.now(),
+      totalConnections: 0,
+      currentConnections: 0,
+      messagesReceived: 0,
+      messagesSent: 0,
+      errors: 0,
+      httpErrors: {},  // Track HTTP errors by code
+      rateLimitExceeded: 0,
+      authenticatedConnections: 0,
+      unauthenticatedConnections: 0,
+      channelCounts: {},
+      latencies: [],
+      messageHistory: [],
+      currentMessageRate: 0,
+      uptime: 0,
+      averageLatency: 0,
+      connectionErrors: {  // Track WebSocket close codes
+        1000: 0, // Normal closure
+        1001: 0, // Going away
+        1006: 0, // Abnormal closure
+        1011: 0, // Internal error
+        4000: 0, // Custom codes start
+      }
+    };
+  }
+
+  /**
+   * Record a message for statistics
+   * @private
+   */
+  recordMessage(type = 'received') {
+    if (!this.stats) {
+      this.initializeStats();
+    }
+
+    // Update message counts
+    if (type === 'received') {
+      this.stats.messagesReceived++;
+    } else if (type === 'sent') {
+      this.stats.messagesSent++;
+    }
+
+    // Add to message history for rate calculation
+    this.stats.messageHistory = this.stats.messageHistory || [];
+    this.stats.messageHistory.push({
+      timestamp: Date.now(),
+      type
+    });
   }
 
   // Get server metrics
@@ -1970,52 +820,119 @@ export class BaseWebSocketServer {
     try {
       logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.CYAN}Cleaning up WebSocket server at ${fancyColors.UNDERLINE}${this.path}${fancyColors.RESET}`);
       
-      // Stop background tasks
-      if (this._heartbeatInterval) {
-        clearInterval(this._heartbeatInterval);
-        this._heartbeatInterval = null;
-      }
-      
-      if (this._rateLimitInterval) {
-        clearInterval(this._rateLimitInterval);
-        this._rateLimitInterval = null;
-      }
-      
-      if (this._statsInterval) {
-        clearInterval(this._statsInterval);
-        this._statsInterval = null;
-      }
-      
-      if (this._metricsReportInterval) {
-        clearInterval(this._metricsReportInterval);
-        this._metricsReportInterval = null;
-      }
+      // Start a timer for resource release tracking
+      const startTime = Date.now();
       
       // Track stats for summary
-      const connectionCount = this.clients.size;
+      const connectionCount = this.clients ? this.clients.size : 0;
       
-      // Close all connections
-      for (const ws of this.clients) {
-        try {
-          this.closeConnection(ws, 1001, 'Server shutting down');
-        } catch (error) {
-          // Ignore errors during cleanup
+      // Stop background tasks
+      const intervals = [
+        this._heartbeatInterval,
+        this._rateLimitInterval,
+        this._statsInterval, 
+        this._metricsReportInterval
+      ].filter(Boolean);
+      
+      for (const interval of intervals) {
+        clearInterval(interval);
+      }
+      this._heartbeatInterval = null;
+      this._rateLimitInterval = null;
+      this._statsInterval = null;
+      this._metricsReportInterval = null;
+      
+      // Stop any custom timers
+      if (Array.isArray(this._customIntervals)) {
+        for (const interval of this._customIntervals) {
+          clearInterval(interval);
         }
+        this._customIntervals = [];
+      }
+      
+      if (Array.isArray(this._customTimeouts)) {
+        for (const timeout of this._customTimeouts) {
+          clearTimeout(timeout);
+        }
+        this._customTimeouts = [];
+      }
+      
+      // Close all connections with a reasonable timeout
+      if (this.clients && this.clients.size > 0) {
+        const closePromises = [];
+        
+        for (const client of this.clients) {
+          closePromises.push(new Promise(resolve => {
+            try {
+              // Add close event listener to track completion
+              client.once('close', () => resolve(true));
+              
+              // Set a timeout to resolve anyway after 1 second
+              const timeout = setTimeout(() => {
+                // Remove the event listener to prevent memory leaks
+                client.removeAllListeners('close');
+                resolve(false);
+              }, 1000);
+              
+              // Ensure timeout doesn't keep process alive
+              timeout.unref();
+              
+              // Close connection
+              this.closeConnection(client, 1001, 'Server shutting down');
+            } catch (error) {
+              // Resolve on error to continue cleanup
+              resolve(false);
+            }
+          }));
+        }
+        
+        // Wait for all connections to close with a timeout
+        const connectionCloseTimeout = setTimeout(() => {
+          logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.YELLOW}Connection close timeout reached for ${this.path}${fancyColors.RESET}`);
+        }, 2000);
+        connectionCloseTimeout.unref();
+        
+        await Promise.race([
+          Promise.all(closePromises),
+          new Promise(resolve => setTimeout(resolve, 2500))
+        ]);
+        
+        clearTimeout(connectionCloseTimeout);
       }
       
       // Clear all maps
-      this.clients.clear();
-      this.clientInfoMap.clear();
-      this.channelSubscriptions.clear();
-      this.messageRateLimits.clear();
-      this.heartbeatTimers.clear();
+      if (this.clients) this.clients.clear();
+      if (this.clientInfoMap) this.clientInfoMap.clear();
+      if (this.channelSubscriptions) this.channelSubscriptions.clear();
+      if (this.messageRateLimits) this.messageRateLimits.clear();
+      if (this.heartbeatTimers) {
+        // Clear all heartbeat timeouts
+        for (const timeout of this.heartbeatTimers.values()) {
+          clearTimeout(timeout);
+        }
+        this.heartbeatTimers.clear();
+      }
       
       // Close the WebSocket server
       if (this.wss) {
         this.wss.close();
+        this.wss = null;
       }
       
-      // Report cleanup status via service events
+      // Null any additional references that might prevent garbage collection
+      this._pendingMessages = null;
+      this._messageQueue = null;
+      
+      // Call the onCleanup handler which can be overridden by subclasses
+      // But don't let it log its own success message
+      await Promise.race([
+        this.onCleanup(),
+        new Promise(resolve => setTimeout(resolve, 1000)) // 1s timeout for onCleanup
+      ]);
+      
+      const cleanupTimeMs = Date.now() - startTime;
+
+      // Report cleanup status via service events - without using broadcastToChannel
       try {
         const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
         serviceEvents.emit('service:status:update', {
@@ -2027,18 +944,18 @@ export class BaseWebSocketServer {
             connections_closed: connectionCount,
             total_connections: this.stats.totalConnections,
             total_messages: this.stats.messagesReceived + this.stats.messagesSent,
-            total_errors: this.stats.errors
+            total_errors: this.stats.errors,
+            cleanup_time_ms: cleanupTimeMs
           }
         });
       } catch (error) {
         // Don't throw errors during cleanup
         logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.RED}Failed to report cleanup status: ${error.message}${fancyColors.RESET}`);
       }
+
+      // Single, consistent cleanup success message
+      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SUCCESS ${fancyColors.RESET} WebSocket server at ${fancyColors.BOLD}${this.path}${fancyColors.RESET} cleaned up successfully ${fancyColors.DARK_YELLOW}(${connectionCount} connections closed, ${cleanupTimeMs}ms)${fancyColors.RESET}`);
       
-      // Call the onCleanup handler which can be overridden by subclasses
-      await this.onCleanup();
-      
-      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SUCCESS ${fancyColors.RESET} WebSocket server at ${fancyColors.BOLD}${this.path}${fancyColors.RESET} cleaned up successfully ${fancyColors.DARK_YELLOW}(${connectionCount} connections closed)${fancyColors.RESET}`);
       return true;
     } catch (error) {
       logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`, error);
@@ -2142,10 +1059,155 @@ export class BaseWebSocketServer {
   // Called when the WebSocket server is cleaning up
   /**
    * Called when the WebSocket server is cleaning up
+   * This method should be overridden by subclasses to perform specific cleanup
+   * but should NOT log success messages (that's handled by the base class)
    */
   async onCleanup() {
-    // Override in subclass
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.ORANGE} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.ORANGE}WebSocket server at ${fancyColors.BOLD}${this.path}${fancyColors.RESET} cleaned up successfully ${fancyColors.DARK_YELLOW}(${connectionCount} connections closed)${fancyColors.RESET}`);
+    // Override in subclass to perform specific cleanup
+    // But don't log success messages here
+  }
+  
+  // Handle server-level errors (not client-specific)
+  /**
+   * Handle server-level errors (not client-specific)
+   * @param {Error} error - The error that occurred
+   */
+  async handleServerError(error) {
+    // Create detailed error info for logging and tracking
+    const errorInfo = {
+      error: error.message,
+      path: this.path,
+      timestamp: new Date().toISOString(),
+      stack: error.stack,
+      wsEvent: 'server_error',
+      // Detailed server state for debugging
+      serverStats: {
+        totalConnections: this.stats.totalConnections,
+        currentConnections: this.stats.currentConnections,
+        authenticatedConnections: this.stats.authenticatedConnections,
+        errors: this.stats.errors,
+        startTime: this.stats.startTime
+      },
+      // High visibility for critical server issues
+      _highlight: true,
+      _color: '#FF0000'  // Red for critical errors
+    };
+    
+    // Log with high visibility - critical server errors need attention
+    logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 SERVER-ERROR ${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} 🚨 SERVER ERROR 🚨 ${fancyColors.RESET} ${error.message}`, errorInfo);
+
+    // Update stats
+    this.stats.errors++;
+    this.stats.serverErrors = (this.stats.serverErrors || 0) + 1;
+    
+    // Attempt to capture IP information if possible (this may not be possible for all server errors)
+    try {
+      // If this is a handshake error, it may contain client IP information
+      if (error.req && error.req.socket) {
+        const clientIp = error.req.socket.remoteAddress || 
+                        (error.req.headers && error.req.headers['x-forwarded-for']) || 
+                        (error.req.headers && error.req.headers['x-real-ip']) || 
+                        'unknown';
+                        
+        // Try to get city/country information for this IP address
+        if (config.ipinfo && config.ipinfo.api_key) {
+          const getIpInfo = logApi.getIpInfo;
+          if (typeof getIpInfo === 'function') {
+            try {
+              const ipInfo = await getIpInfo(clientIp);
+              if (ipInfo && !ipInfo.bogon && !ipInfo.error) {
+                logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 SERVER-ERROR-IP ${fancyColors.RESET} Client IP: ${clientIp} (${ipInfo.city || 'Unknown'}, ${ipInfo.region || 'Unknown'}, ${ipInfo.country || 'Unknown'})`, {
+                  ip: clientIp,
+                  ip_info: ipInfo,
+                  wsEvent: 'server_error_ip_info',
+                  error: error.message
+                });
+              }
+            } catch (ipError) {
+              // Don't let IP lookup errors affect server error handling
+              logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 IP-ERROR ${fancyColors.RESET} Failed to get IP info for server error: ${ipError.message}`);
+            }
+          }
+        }
+      }
+    } catch (ipAttemptError) {
+      // Ignore errors in IP capture, don't let them affect the main error handling flow
+    }
+
+    // Try to emit an event for monitoring systems
+    try {
+      const serviceEvents = (await import('../../utils/service-suite/service-events.js')).default;
+      serviceEvents.emit('service:error', {
+        name: this.path,
+        source: 'v69_websocket_server',
+        status: 'error',
+        error: error.message,
+        metrics: this.getMetrics(),
+        details: errorInfo
+      });
+    } catch (eventError) {
+      // Don't let event emission errors cascade
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 EVENT-ERROR ${fancyColors.RESET} Failed to emit service error event: ${eventError.message}`);
+    }
+  }
+
+  // Helper method to get WebSocket error descriptions
+  getWebSocketErrorDescription(code) {
+    const descriptions = {
+      1000: 'Normal closure',
+      1001: 'Going away',
+      1002: 'Protocol error',
+      1003: 'Unsupported data',
+      1004: 'Reserved',
+      1005: 'No status received',
+      1006: 'Abnormal closure',
+      1007: 'Invalid frame payload data',
+      1008: 'Policy violation',
+      1009: 'Message too big',
+      1010: 'Mandatory extension',
+      1011: 'Internal server error',
+      1012: 'Service restart',
+      1013: 'Try again later',
+      1014: 'Bad gateway',
+      1015: 'TLS handshake',
+      4000: 'Custom application error'
+    };
+    return descriptions[code] || 'Unknown error code';
+  }
+
+  /**
+   * Broadcast a message to all clients subscribed to a channel
+   * @param {string} channel - The channel to broadcast to
+   * @param {object} message - The message to broadcast
+   * @returns {number} - Number of clients the message was sent to
+   */
+  broadcastToChannel(channel, message) {
+    if (!this.channelSubscriptions || !this.channelSubscriptions.has(channel)) {
+      return 0;
+    }
+
+    const subscribers = this.channelSubscriptions.get(channel);
+    let sentCount = 0;
+
+    for (const client of subscribers) {
+      try {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(message));
+          sentCount++;
+          this.stats.messagesSent++;
+        }
+      } catch (error) {
+        logApi.error(`Error broadcasting to client in channel ${channel}: ${error.message}`, {
+          wsEvent: 'broadcast_error',
+          channel,
+          error: error.message,
+          _highlight: true
+        });
+        this.stats.errors++;
+      }
+    }
+
+    return sentCount;
   }
 }
 
@@ -2154,3 +1216,141 @@ export function createBaseWebSocketServer(server, options = {}) {
   logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 CREATE ${fancyColors.RESET} ${fancyColors.CYAN}Creating WebSocket server at ${fancyColors.UNDERLINE}${server.path}${fancyColors.RESET}`);
   return new BaseWebSocketServer(server, options);
 }
+
+/**
+ * Diagnostic function to check raw TCP/WebSocket handshake
+ * This helps identify if NGINX is adding compression
+ * 
+ * Can be triggered via the command line:
+ * node -e "require('./websocket/v69/base-websocket.js').diagnoseWebSocketHandshake('wss://degenduel.me/api/v69/ws/test')"
+ */
+export async function diagnoseWebSocketHandshake(url, options = {}) {
+  const net = require('net');
+  const tls = require('tls');
+  const { URL } = require('url');
+  
+  // Parse the URL
+  const urlObj = new URL(url);
+  const isSecure = urlObj.protocol === 'wss:';
+  const host = urlObj.hostname;
+  const port = urlObj.port || (isSecure ? 443 : 80);
+  const path = urlObj.pathname + urlObj.search;
+  
+  console.log(`\n${fancyColors.BG_BLUE}${fancyColors.WHITE} TCP HANDSHAKE DIAGNOSTICS ${fancyColors.RESET}`);
+  console.log(`${fancyColors.CYAN}Connecting to: ${fancyColors.BOLD}${url}${fancyColors.RESET}`);
+  console.log(`${fancyColors.CYAN}Host: ${host}, Port: ${port}, Path: ${path}${fancyColors.RESET}\n`);
+  
+  return new Promise((resolve, reject) => {
+    try {
+      // Generate a random WebSocket key
+      const wsKey = Buffer.from(Math.random().toString(36).substring(2, 12)).toString('base64');
+      
+      // Create the upgrade request
+      const request = [
+        `GET ${path} HTTP/1.1`,
+        `Host: ${host}${port ? `:${port}` : ''}`,
+        'Upgrade: websocket',
+        'Connection: Upgrade',
+        `Sec-WebSocket-Key: ${wsKey}`,
+        'Sec-WebSocket-Version: 13',
+        // Add this line to explicitly request no extensions
+        options.testWithCompression ? 'Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits' : '',
+        '',
+        ''
+      ].filter(Boolean).join('\r\n');
+      
+      console.log(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} SENDING REQUEST ${fancyColors.RESET}`);
+      console.log(`${fancyColors.GRAY}${request.replace(/\r\n/g, '\n')}${fancyColors.RESET}`);
+      
+      // Connect using appropriate protocol
+      const socket = isSecure ? 
+        tls.connect(port, host, { rejectUnauthorized: false }) : 
+        net.connect(port, host);
+      
+      let responseData = '';
+      
+      // Set timeout
+      socket.setTimeout(5000, () => {
+        socket.end();
+        console.log(`${fancyColors.BG_RED}${fancyColors.WHITE} TIMEOUT ${fancyColors.RESET} Connection timed out after 5 seconds`);
+        resolve({ success: false, error: 'Timeout' });
+      });
+      
+      socket.on('connect', () => {
+        console.log(`${fancyColors.BG_GREEN}${fancyColors.BLACK} CONNECTED ${fancyColors.RESET} TCP connection established to ${host}:${port}`);
+        // Send the HTTP upgrade request
+        socket.write(request);
+      });
+      
+      socket.on('data', (data) => {
+        responseData += data.toString();
+        
+        // Check if we've received the full headers (ending with \r\n\r\n)
+        if (responseData.includes('\r\n\r\n')) {
+          console.log(`${fancyColors.BG_GREEN}${fancyColors.BLACK} RESPONSE RECEIVED ${fancyColors.RESET}`);
+          
+          // Split headers from body
+          const [headers, body] = responseData.split('\r\n\r\n', 2);
+          const headerLines = headers.split('\r\n');
+          
+          console.log(`${fancyColors.CYAN}Headers:${fancyColors.RESET}`);
+          headerLines.forEach(line => console.log(`${fancyColors.YELLOW}${line}${fancyColors.RESET}`));
+          
+          // Check for compression headers
+          const extensionHeader = headerLines.find(h => h.toLowerCase().startsWith('sec-websocket-extensions:'));
+          
+          if (extensionHeader) {
+            if (extensionHeader.toLowerCase().includes('permessage-deflate')) {
+              console.log(`\n${fancyColors.BG_RED}${fancyColors.WHITE} COMPRESSION ENABLED ${fancyColors.RESET} ${fancyColors.RED}Server is negotiating compression: ${extensionHeader}${fancyColors.RESET}`);
+              console.log(`${fancyColors.RED}This will cause the 'RSV1 must be clear' error with clients that don't support compression.${fancyColors.RESET}`);
+            } else {
+              console.log(`\n${fancyColors.BG_YELLOW}${fancyColors.BLACK} EXTENSIONS FOUND ${fancyColors.RESET} Server returned extensions: ${extensionHeader}`);
+            }
+          } else {
+            console.log(`\n${fancyColors.BG_GREEN}${fancyColors.BLACK} NO COMPRESSION ${fancyColors.RESET} Server correctly disabled WebSocket extensions`);
+          }
+          
+          // Check if upgrade was successful
+          const statusLine = headerLines[0];
+          const upgradeHeader = headerLines.find(h => h.toLowerCase().startsWith('upgrade:'));
+          
+          if (statusLine.includes('101') && upgradeHeader && upgradeHeader.toLowerCase().includes('websocket')) {
+            console.log(`\n${fancyColors.BG_GREEN}${fancyColors.BLACK} HANDSHAKE SUCCESSFUL ${fancyColors.RESET} WebSocket connection established`);
+            
+            // Don't close immediately to see if frames arrive
+            setTimeout(() => {
+              socket.end();
+              resolve({ 
+                success: true, 
+                headers: headerLines,
+                compression: !!extensionHeader && extensionHeader.toLowerCase().includes('permessage-deflate')
+              });
+            }, 1000);
+          } else {
+            console.log(`\n${fancyColors.BG_RED}${fancyColors.WHITE} HANDSHAKE FAILED ${fancyColors.RESET} Server did not upgrade the connection`);
+            socket.end();
+            resolve({ 
+              success: false, 
+              headers: headerLines,
+              status: statusLine
+            });
+          }
+        }
+      });
+      
+      socket.on('error', (err) => {
+        console.log(`${fancyColors.BG_RED}${fancyColors.WHITE} CONNECTION ERROR ${fancyColors.RESET} ${err.message}`);
+        reject(err);
+      });
+      
+      socket.on('end', () => {
+        console.log(`${fancyColors.BG_BLUE}${fancyColors.WHITE} CONNECTION CLOSED ${fancyColors.RESET}`);
+      });
+    } catch (err) {
+      console.error(`${fancyColors.BG_RED}${fancyColors.WHITE} DIAGNOSTIC ERROR ${fancyColors.RESET} ${err.message}`);
+      reject(err);
+    }
+  });
+}
+
+// Export the factory function

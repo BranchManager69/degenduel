@@ -13,52 +13,46 @@ import { Agent } from 'https';
 import { createRequire } from 'module';
 
 // Config
-//import config from './config/config.json';
+import config from './config/config.js';
 
 // More Config (for testing)
 const DEFAULT_ENDPOINT = 'monitor';
-const DEFAULT_HOST = 'dev.degenduel.me';
+const DEFAULT_HOST = 'dev.degenduel.me'; // TODO: fix! this is conceptually dev server-only! but db:bonkfa only generates prod tokens!
 const PATH_PREFIX = '/api/v69/ws/';
+
+// Get the magic SDAT
+const mySDAT = config.wss_testing.test_secret_dev_access_token || '';
 
 // Generate a valid Secret Dev Access Token ("SDAT") using our secure "db:bonkfa" function from scripts/db-tools.sh
 //     npm run db:bonkfa; enter a valid passcode in time; then use the SDAT (valid for 1 hour) which automatically gets saved as a new file to data/sensitive/session_token_archive subfolder 
 //     example format:  st_20250325_144155_superadmin_Branch.txt
-let mySDAT = null;
 try {
   // Load the most recently created SDAT file from the folder using best practices
-  const SDAT_FILES = require('./data/sensitive/session_token_archive/');
+  ////const SDAT_FILES = require('./data/sensitive/session_token_archive/'); // (doesnt work)
+  //const SDAT_FILES = ???;
   // Sort them by creation date
-  SDAT_FILES.sort((a, b) => new Date(b.name) - new Date(a.name));
+  //SDAT_FILES.sort((a, b) => new Date(b.name) - new Date(a.name));
   // Get the most recent one
-  const SDAT_FILE = SDAT_FILES[0];
+  //const SDAT_FILE = SDAT_FILES[0];
   // Load the valid SDAT from that file (it's good for 1 hour)
   ////const SDAT_TOKEN = SDAT_FILE.token; // PROBLEM! This is a string, not a JSON object
-  const SDAT_TOKEN = SDAT_FILE;
+  //const SDAT_TOKEN = SDAT_FILE;
   // Use the SDAT token for testing
-  mySDAT = SDAT_TOKEN;
+  //mySDAT = SDAT_TOKEN; 
   // Log our valid SDAT token in celebration!
-  console.log(`VALID SDAT: \t${SDAT_TOKEN}`);
+  console.log(`VALID SDAT: \t${mySDAT}`);
 } catch (error) {
   // Log the error
   console.error(`SDAT ERROR: \tFailed to generate SDAT token. ${error.message}`);
   process.exit(1);
 }
 
-
 // Secret Dev Access Token
 const SECRET_DEV_ACCESS_TOKEN = mySDAT;
-
-
-
-
-
 // Since I've run out of options, let's try something crazy
 // Maybe I'm the completely crazy one and I just am so dumb that I don't know the difference between tokensand JWTS or whatever so let's just try this hey headers too I mean maybe I don't know the difference between any of these three things
-const my_X_Dev_Access_Token = mySDAT;
+const my_X_Dev_Access_Token = SECRET_DEV_ACCESS_TOKEN;
 // After all I have no clue if these are the same thing anywaya comma I can't tell a header from a freaking token from a freaking cookie
-
-
-
 
 // Parse command line arguments, if any
 const args = process.argv.slice(2);
