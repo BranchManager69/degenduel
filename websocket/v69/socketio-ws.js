@@ -2,6 +2,7 @@
 
 import { Server } from 'socket.io';
 import { logApi } from '../../utils/logger-suite/logger.js';
+import http from 'http';
 
 // Global Socket.IO instance
 let io = null;
@@ -16,11 +17,20 @@ export function initSocketIO(httpServer) {
   // Log server info for debugging
   logApi.info(`Initializing Socket.IO with HTTP server: ${httpServer ? 'valid' : 'invalid'}`);
   
-  // Create Socket.IO instance at /socket.io/ path (the default that clients expect)
-  // But with a namespace of /api/v69/ws/socketio
+  // First, add a middleware handler for Socket.IO that will handle both formats 
+  // of Socket.IO requests (with and without trailing slash)
+  httpServer.on('request', (req, res) => {
+    // Check if this is a Socket.IO request
+    if (req.url && req.url.startsWith('/socket.io')) {
+      logApi.info(`Incoming Socket.IO request: ${req.url}`);
+    }
+  });
+  
+  // Create Socket.IO instance with basic configuration
   io = new Server(httpServer, {
-    // Default Socket.IO path
+    // Use default Socket.IO path
     path: '/socket.io/',
+    serveClient: false,
     cors: {
       origin: '*',
       methods: ['GET', 'POST'],
@@ -34,77 +44,68 @@ export function initSocketIO(httpServer) {
     // NGINX proxy settings
     allowUpgrades: true,
     upgradeTimeout: 10000,
-    // Handle proxies correctly
     cookie: false
   });
   
-  // Create a namespace for our specific endpoint
-  const namespace = io.of('/api/v69/ws/socketio');
-  
-  // Log that Socket.IO has been initialized with namespace
-  logApi.info(`Socket.IO server created with namespace: /api/v69/ws/socketio`);
-  
   // Log that Socket.IO has been initialized
-  logApi.info(`Socket.IO server created with path: /api/v69/ws/socketio`);
+  logApi.info(`Socket.IO server created with path: /socket.io/`);
 
-  // Handle main Socket.IO connections - for clients that connect to the default path
+  // Handle Socket.IO connections
   io.on('connection', (socket) => {
-    logApi.info(`Main Socket.IO connection: ${socket.id}`);
+    logApi.info(`Socket.IO connection: ${socket.id}`);
     
     // Send welcome message
     socket.emit('welcome', {
-      message: 'Connected to main Socket.IO server',
+      message: 'Connected to Socket.IO server',
       id: socket.id,
-      time: new Date().toISOString(),
-      note: 'You are connected to the main namespace, try connecting to /api/v69/ws/socketio namespace'
-    });
-    
-    // Echo any messages back
-    socket.on('message', (data) => {
-      logApi.info(`Main Socket.IO message from ${socket.id}: ${typeof data === 'object' ? JSON.stringify(data) : data}`);
-      socket.emit('echo', {
-        original: data,
-        time: new Date().toISOString()
-      });
-    });
-    
-    socket.on('disconnect', () => {
-      logApi.info(`Main Socket.IO disconnect: ${socket.id}`);
-    });
-  });
-  
-  // Handle connections to the specific namespace
-  const namespace = io.of('/api/v69/ws/socketio');
-  
-  namespace.on('connection', (socket) => {
-    logApi.info(`Namespace Socket.IO connection: ${socket.id}`);
-    
-    // Send welcome message
-    socket.emit('welcome', {
-      message: 'Connected to Socket.IO server (namespace: /api/v69/ws/socketio)',
-      id: socket.id,
-      namespace: '/api/v69/ws/socketio',
       time: new Date().toISOString()
     });
     
     // Echo any messages back
     socket.on('message', (data) => {
-      logApi.info(`Namespace Socket.IO message from ${socket.id}: ${typeof data === 'object' ? JSON.stringify(data) : data}`);
+      logApi.info(`Socket.IO message from ${socket.id}: ${typeof data === 'object' ? JSON.stringify(data) : data}`);
       socket.emit('echo', {
         original: data,
         time: new Date().toISOString()
       });
     });
     
+    // Add ping/pong for connection testing
+    socket.on('ping', () => {
+      logApi.info(`Received ping from ${socket.id}`);
+      socket.emit('pong', { 
+        time: new Date().toISOString(), 
+        serverTime: Date.now() 
+      });
+    });
+    
     // Handle disconnection
     socket.on('disconnect', () => {
-      logApi.info(`Namespace Socket.IO disconnect: ${socket.id}`);
+      logApi.info(`Socket.IO disconnect: ${socket.id}`);
     });
   });
 
-  logApi.info("Socket.IO initialized at /api/v69/ws/socketio");
+  // Handle connection errors
+  io.engine.on('connection_error', (err) => {
+    logApi.error(`Socket.IO connection error: ${err.code} - ${err.message}`, { 
+      code: err.code,
+      message: err.message, 
+      url: err.req?.url,
+      method: err.req?.method
+    });
+  });
+
+  logApi.info(`Socket.IO initialized - ready for clients`);
   return true;
 }
 
-// Direct access to the Socket.IO instance
-export default { initSocketIO };
+// Function to get the Socket.IO instance
+export function getSocketIO() {
+  return io;
+}
+
+// Export both functions
+export default { 
+  initSocketIO,
+  getSocketIO
+};
