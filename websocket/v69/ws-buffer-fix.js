@@ -19,6 +19,37 @@ export async function applyWebSocketBufferFix() {
   try {
     logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Applying WebSocket buffer fix for RSV1 issues...`);
     
+    // CRITICAL: Add a global frame processor that patches at the highest level
+    // This will intercept outgoing frames to ensure they don't have RSV1 set
+    try {
+      const wsModule = await import('ws');
+      
+      // Try to patch the WebSocket.prototype.send method
+      if (typeof WebSocket !== 'undefined' && WebSocket.prototype && WebSocket.prototype.send) {
+        const originalSend = WebSocket.prototype.send;
+        
+        WebSocket.prototype.send = function(data, options, callback) {
+          // For Buffer data, check for RSV1 bits
+          if (Buffer.isBuffer(data) && data.length > 0) {
+            // Check first byte for a frame header with RSV1 bit
+            if (data[0] >= 0x80 && data[0] <= 0x8F && (data[0] & 0x40)) {
+              // Clear the RSV1 bit
+              const originalByte = data[0];
+              data[0] = data[0] & 0xBF;
+              logApi.warn(`${fancyColors.BG_MAGENTA}${fancyColors.WHITE} GLOBAL FRAME FIX ${fancyColors.RESET} Cleared RSV1 bit in outgoing frame: 0x${originalByte.toString(16)} -> 0x${data[0].toString(16)}`);
+            }
+          }
+          
+          // Call the original send method
+          return originalSend.call(this, data, options, callback);
+        };
+        
+        logApi.info(`${fancyColors.BG_GREEN}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Successfully patched WebSocket.prototype.send to clear RSV1 bits`);
+      }
+    } catch (patchError) {
+      logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Error patching WebSocket.send: ${patchError.message}`);
+    }
+    
     // Import the WebSocket module
     const WebSocketModule = await import('ws');
     
@@ -81,6 +112,29 @@ export async function applyWebSocketBufferFix() {
                   const skipSize = headersEndPos + 4;
                   logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Skipping ${skipSize} bytes of HTTP headers`);
                   this.consume(skipSize);
+                  
+                  // AGGRESSIVE RSV1 PROTECTION: Add extra inspection after skip
+                  // Check if there are any frames with RSV1 bit set and fix them
+                  if (this._buffers && this._buffers.length > 0) {
+                    const remainingBuf = this._buffers[0];
+                    
+                    // Check if there might still be problematic data in the buffer
+                    if (remainingBuf && remainingBuf.length > 0) {
+                      let inspectOutput = "";
+                      for (let i = 0; i < Math.min(remainingBuf.length, 50); i++) {
+                        inspectOutput += remainingBuf[i].toString(16).padStart(2, '0') + " ";
+                      }
+                      
+                      logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} POST-SKIP BUFFER INSPECT ${fancyColors.RESET} Buffer still has ${remainingBuf.length} bytes after skip. First 50 bytes: ${inspectOutput}`);
+                      
+                      // If first byte has RSV1 bit set, try to clear it (dangerous but necessary)
+                      if (remainingBuf[0] > 128 && (remainingBuf[0] & 0x40) === 0x40) {
+                        const oldByte = remainingBuf[0];
+                        remainingBuf[0] = remainingBuf[0] & 0xBF; // Clear RSV1 bit
+                        logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} FORCED RSV1 CLEAR ${fancyColors.RESET} Changed first byte from 0x${oldByte.toString(16)} to 0x${remainingBuf[0].toString(16)}`);
+                      }
+                    }
+                  }
                 } else {
                   // Can't find header boundary, skip aggressively
                   logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Could not find end of HTTP headers, skipping entire buffer (${buf.length} bytes)`);
@@ -154,6 +208,34 @@ export async function applyWebSocketBufferFix() {
                   const originalByte = buf[0];
                   buf[0] = buf[0] & 0xBF; // Clear the RSV1 bit (0x40)
                   logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Cleared RSV1 bit: 0x${originalByte.toString(16)} -> 0x${buf[0].toString(16)}`);
+                }
+                
+                // VERY AGGRESSIVE: Force clear RSV bits in all chunks of this buffer
+                // This is a desperate measure but may help in persistent cases
+                if (buf.length > 2) {
+                  logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Aggressive RSV bit clearing - scanning entire buffer for frames`);
+                  
+                  // Scan the first 1000 bytes looking for potential frame headers
+                  const scanLength = Math.min(buf.length, 1000);
+                  let clearCount = 0;
+                  
+                  for (let i = 0; i < scanLength; i++) {
+                    // Look for bytes that might be frame headers with RSV1
+                    // Frame headers typically have high bit set (0x80-0x8F range)
+                    if (buf[i] >= 0x80 && buf[i] <= 0x8F && (buf[i] & 0x40)) {
+                      const originalByte = buf[i];
+                      buf[i] = buf[i] & 0xBF; // Clear RSV1 bit
+                      clearCount++;
+                      
+                      if (clearCount <= 5) { // Limit logging to avoid spam
+                        logApi.info(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Fixed potential frame at offset ${i}: 0x${originalByte.toString(16)} -> 0x${buf[i].toString(16)}`);
+                      }
+                    }
+                  }
+                  
+                  if (clearCount > 5) {
+                    logApi.info(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Fixed ${clearCount} total potential frame headers with RSV1 bit set`);
+                  }
                 }
               }
               // Another special case - if the first byte is text content rather than a frame header
