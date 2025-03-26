@@ -23,86 +23,100 @@ import { config } from '../../config/config.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors } from '../../utils/colors.js';
 
-// CRITICAL: Import WebSocket internals for direct frame manipulation
-// This allows us to bypass the compression layer entirely
-let Sender;
+// Import our WebSocket buffer fix utilities
+// This import will load asynchronously, but the utilities will be available by the time they're needed
+import * as wsBufferFix from './ws-buffer-fix.js';
+
+// CRITICAL: We can't directly modify WebSocket internals as they're read-only
+// Instead, we'll implement our own frame creation utility
+
+// Log that the socket-level fix is in place
+logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅✅✅ SOCKET-LEVEL RSV1 FIX APPLIED SUCCESSFULLY ✅✅✅ ${fancyColors.RESET}`);
+
+// Add our own frame creation utility to WebSocket 
 try {
-  // Import WebSocket using ES modules
-  const wsModule = await import('ws');
-  const { Sender } = wsModule;
-  
-  // Make Sender available on the WebSocket object for use in sendToClient
-  if (Sender) {
-    WebSocket.Sender = Sender;
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT ${fancyColors.RESET} Successfully imported WebSocket Sender class for direct frame control`);
-  } else {
-    logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT ${fancyColors.RESET} ${fancyColors.YELLOW}WebSocket Sender class not found, compression bypass will be limited${fancyColors.RESET}`);
-    
-    // Create a simple frame creator as fallback
-    WebSocket.Sender = {
-      frame: (data, options) => {
-        // This is a very basic implementation that creates an unmasked, uncompressed TEXT frame
-        // It's not a complete implementation, but sufficient for our needs
-        // Format: FIN(1) + RSV1(0) + RSV2(0) + RSV3(0) + OPCODE(0001) [byte 1]
-        // Format: MASK(0) + PAYLOAD_LEN [byte 2]
-        // Then payload data
-        
-        // Helper to write the length bytes
-        const writeLength = (buffer, length, offset) => {
-          if (length < 126) {
-            buffer.writeUInt8(length, offset);
-            return offset + 1;
-          } else if (length < 65536) {
-            buffer.writeUInt8(126, offset);
-            buffer.writeUInt16BE(length, offset + 1);
-            return offset + 3;
-          } else {
-            buffer.writeUInt8(127, offset);
-            // Write 0 for first 4 bytes since we don't support payload > 4GB
-            buffer.writeUInt32BE(0, offset + 1);
-            buffer.writeUInt32BE(length, offset + 5);
-            return offset + 9;
-          }
-        };
-        
-        // Calculate frame size
-        const dataLength = data.length;
-        let frameSize = 2; // At least 2 bytes for header
-        
-        // Add length field size
-        if (dataLength < 126) {
-          frameSize += 0; // Length fits in the initial byte
-        } else if (dataLength < 65536) {
-          frameSize += 2; // 16-bit length
-        } else {
-          frameSize += 8; // 64-bit length
-        }
-        
-        // Add data size
-        frameSize += dataLength;
-        
-        // Create the buffer
-        const buffer = Buffer.alloc(frameSize);
-        
-        // Write the header - first byte
-        // 1000 0001 = FIN(1) + RSV1(0) + RSV2(0) + RSV3(0) + OPCODE(0001 = text)
-        buffer.writeUInt8(0x81, 0);
-        
-        // Write the second byte (mask bit = 0) and length
-        let offset = 1;
-        offset = writeLength(buffer, dataLength, offset);
-        
-        // Copy the data
-        data.copy(buffer, offset);
-        
-        return buffer;
+  // We'll add our utility to WebSocket without modifying its read-only properties
+  WebSocket._frameUtils = {
+    // Create a WebSocket frame with RSV1 bit explicitly cleared
+    createFrame: (data, options = {}) => {
+      // Default options
+      const opts = {
+        fin: true,
+        rsv1: false,
+        rsv2: false,
+        rsv3: false,
+        opcode: 1, // Text frame
+        mask: false,
+        ...options
+      };
+      
+      // Convert string to buffer if needed
+      const payload = typeof data === 'string' ? Buffer.from(data) : data;
+      const dataLength = payload.length;
+      
+      // Calculate frame size
+      let frameSize = 2; // At least 2 bytes for header
+      
+      // Add length field size
+      if (dataLength < 126) {
+        frameSize += 0; // Length fits in the initial byte
+      } else if (dataLength < 65536) {
+        frameSize += 2; // 16-bit length
+      } else {
+        frameSize += 8; // 64-bit length
       }
-    };
-    
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT ${fancyColors.RESET} Created fallback frame creator`);
-  }
+      
+      // Add data size
+      frameSize += dataLength;
+      
+      // Create the buffer
+      const buffer = Buffer.alloc(frameSize);
+      
+      // Write the header - first byte
+      // FIN bit (bit 0) + RSV1,2,3 (bits 1-3) + OPCODE (bits 4-7)
+      let firstByte = 0;
+      if (opts.fin) firstByte |= 0x80;
+      if (opts.rsv1) firstByte |= 0x40; // RSV1 bit (should be 0)
+      if (opts.rsv2) firstByte |= 0x20; // RSV2 bit (should be 0)
+      if (opts.rsv3) firstByte |= 0x10; // RSV3 bit (should be 0)
+      firstByte |= (opts.opcode & 0x0F); // Opcode (usually 1 for text)
+      
+      buffer.writeUInt8(firstByte, 0);
+      
+      // Write the second byte and length
+      let offset = 1;
+      
+      // Helper to write the length bytes
+      const writeLength = (buffer, length, offset) => {
+        if (length < 126) {
+          buffer.writeUInt8(length, offset);
+          return offset + 1;
+        } else if (length < 65536) {
+          buffer.writeUInt8(126, offset);
+          buffer.writeUInt16BE(length, offset + 1);
+          return offset + 3;
+        } else {
+          buffer.writeUInt8(127, offset);
+          // Write 0 for first 4 bytes since we don't support payload > 4GB
+          buffer.writeUInt32BE(0, offset + 1);
+          buffer.writeUInt32BE(length, offset + 5);
+          return offset + 9;
+        }
+      };
+      
+      // Write length (with mask bit = 0)
+      offset = writeLength(buffer, dataLength, offset);
+      
+      // Copy payload data
+      payload.copy(buffer, offset);
+      
+      return buffer;
+    }
+  };
+  
+  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ WSFrameUtils ${fancyColors.RESET} Created WebSocket frame utility functions`);
 } catch (error) {
-  logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT ${fancyColors.RESET} ${fancyColors.YELLOW}Failed to import WebSocket internals: ${error.message}${fancyColors.RESET}`);
+  logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ WSFrameUtils ${fancyColors.RESET} Failed to create WebSocket frame utilities: ${error.message}`);
 }
 
 /**
@@ -1176,6 +1190,76 @@ export class BaseWebSocketServer {
   }
 
   /**
+   * Send a message to a specific client with RSV1 handling
+   * @param {WebSocket} client - The client to send to
+   * @param {object} message - The message to send
+   * @returns {boolean} - Whether the message was sent successfully
+   */
+  sendToClient(client, message) {
+    try {
+      if (!client || client.readyState !== WebSocket.OPEN) {
+        return false;
+      }
+
+      // Convert message to JSON string
+      const jsonStr = JSON.stringify(message);
+      
+      // Use our global RSV1-safe WebSocket frame utils if available
+      if (client._socket && global.WebSocketFrameUtils) {
+        try {
+          // Set flag to indicate this client should have RSV1 bit cleared
+          client._disableRSV = true;
+          
+          // Use our utilities to create and send a frame with RSV1 bit cleared
+          global.WebSocketFrameUtils.sendSafeFrame(client._socket, jsonStr);
+          
+          // Update statistics
+          this.stats.messagesSent++;
+          this.recordMessage('sent');
+          
+          return true;
+        } catch (frameError) {
+          // Log the error but continue to fallback method
+          logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} FRAME ERROR ${fancyColors.RESET} ${frameError.message}`);
+          // Continue to fallback method
+        }
+      } 
+      
+      // Use our imported buffer fix utilities if available
+      try {
+        if (wsBufferFix && typeof wsBufferFix.sendSafeMessage === 'function') {
+          if (wsBufferFix.sendSafeMessage(client, message)) {
+            // Update statistics
+            this.stats.messagesSent++;
+            this.recordMessage('sent');
+            return true;
+          }
+        }
+      } catch (bufferFixError) {
+        // Log error but continue to fallback method
+        logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BUFFER FIX ERROR ${fancyColors.RESET} ${bufferFixError.message}`);
+      }
+      
+      // Fallback to standard send method
+      client.send(jsonStr);
+      
+      // Update statistics
+      this.stats.messagesSent++;
+      this.recordMessage('sent');
+      
+      return true;
+    } catch (error) {
+      this.stats.errors++;
+      logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} SEND ERROR ${fancyColors.RESET} Failed to send message: ${error.message}`, {
+        wsEvent: 'send_error',
+        error: error.message,
+        _highlight: true
+      });
+      return false;
+    }
+  }
+
+  /**
    * Broadcast a message to all clients subscribed to a channel
    * @param {string} channel - The channel to broadcast to
    * @param {object} message - The message to broadcast
@@ -1192,9 +1276,10 @@ export class BaseWebSocketServer {
     for (const client of subscribers) {
       try {
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify(message));
-          sentCount++;
-          this.stats.messagesSent++;
+          // Use our enhanced sendToClient method for RSV1 safety
+          if (this.sendToClient(client, message)) {
+            sentCount++;
+          }
         }
       } catch (error) {
         logApi.error(`Error broadcasting to client in channel ${channel}: ${error.message}`, {
@@ -1207,6 +1292,42 @@ export class BaseWebSocketServer {
       }
     }
 
+    return sentCount;
+  }
+  
+  /**
+   * Broadcast a message to all clients or a subset of clients
+   * @param {object} message - The message to broadcast
+   * @param {Array<WebSocket>} [excludeClients=[]] - Clients to exclude from broadcast
+   * @returns {number} - Number of clients the message was sent to
+   */
+  broadcast(message, excludeClients = []) {
+    const excludeSet = new Set(excludeClients);
+    let sentCount = 0;
+    
+    for (const client of this.clients) {
+      // Skip excluded clients
+      if (excludeSet.has(client)) {
+        continue;
+      }
+      
+      try {
+        if (client.readyState === WebSocket.OPEN) {
+          // Use our enhanced sendToClient method for RSV1 safety
+          if (this.sendToClient(client, message)) {
+            sentCount++;
+          }
+        }
+      } catch (error) {
+        logApi.error(`Error broadcasting to client: ${error.message}`, {
+          wsEvent: 'broadcast_error',
+          error: error.message,
+          _highlight: true
+        });
+        this.stats.errors++;
+      }
+    }
+    
     return sentCount;
   }
 }

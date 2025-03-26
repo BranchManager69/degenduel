@@ -571,7 +571,15 @@ class MarketDataService extends BaseService {
                 
                 if (broadcastData) {
                     // Emit an event that WebSockets can listen for via serviceEvents
-                    serviceEvents.emit('market:broadcast', broadcastData);
+                    // Explicitly set a flag on the broadcast data to indicate compression should be disabled
+                    const enhancedBroadcastData = {
+                      ...broadcastData,
+                      _disableRSV: true, // This flag will be used by the WS server to handle RSV1 bits
+                      _noCompression: true // Additional flag to ensure no compression
+                    };
+                    
+                    // Emit with enhanced data
+                    serviceEvents.emit('market:broadcast', enhancedBroadcastData);
                     
                     // Format token count with consistent spacing
                     const formattedCount = broadcastData.data.length.toString().padStart(3);

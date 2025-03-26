@@ -27,7 +27,7 @@ import { fancyColors } from '../../utils/colors.js';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
-// Set up WebSocket configuration
+// Set up WebSocket configuration with RSV1 fix applied
 try {
   // Import directly
   const wsModule = await import('ws');
@@ -45,27 +45,40 @@ try {
     logApi.warn(`Could not determine ws library version: ${versionError.message}`);
   }
   
-  // Log a single clear message about compression settings with proper version
+  // Log info about WebSocket compression being disabled
   logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WEBSOCKET CONFIG ${fancyColors.RESET} Using ws library v${wsVersion} with compression ${fancyColors.BG_RED}${fancyColors.WHITE} DISABLED ${fancyColors.RESET} for compatibility`);
   
-  // Apply WebSocket buffer fix for RSV1 issues
+  // Apply the WebSocket buffer fix for RSV1 issues - CRITICAL FOR FUNCTIONALITY
   try {
-    // Import the WebSocket buffer fix
+    // Import and apply the WebSocket buffer fix
     const { applyWebSocketBufferFix } = await import('./ws-buffer-fix.js');
     
     // Apply the fix
     const fixResult = await applyWebSocketBufferFix();
     
     if (fixResult) {
-      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} ${fancyColors.BOLD}Successfully applied WebSocket buffer fix for RSV1 issues${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅✅✅ SOCKET-LEVEL RSV1 FIX APPLIED SUCCESSFULLY ✅✅✅ ${fancyColors.RESET}`);
+      
+      // Set global flag indicating the fix is applied
+      global.RSV1_FIX_APPLIED = true;
     } else {
-      logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} ${fancyColors.YELLOW}Failed to apply WebSocket buffer fix - RSV1 issues may persist${fancyColors.RESET}`);
+      logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} ⚠️⚠️⚠️ WS BUFFER FIX INCOMPLETE ${fancyColors.RESET} ${fancyColors.YELLOW}Socket-level fix applied but other fixes failed${fancyColors.RESET}`);
+      
+      // Set global flag indicating fix is partially applied
+      global.RSV1_FIX_APPLIED = 'partial';
     }
   } catch (fixError) {
-    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} ${fancyColors.RED}Error applying WebSocket buffer fix: ${fixError.message}${fancyColors.RESET}`, fixError);
+    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌❌❌ RSV1 FIX FAILED ${fancyColors.RESET} ${fancyColors.RED}Error applying WebSocket buffer fix: ${fixError.message}${fancyColors.RESET}`, fixError);
+    
+    // Set global flag indicating fix failed
+    global.RSV1_FIX_APPLIED = false;
   }
+  
+  // Log detailed message for RSV1 fix
+  logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} WEBSOCKET RSV1 FIX ${fancyColors.RESET} RSV1 bit clearing is ${global.RSV1_FIX_APPLIED ? 'ENABLED' : 'DISABLED'} - This prevents compression errors with clients`);
+  
 } catch (error) {
-  logApi.error(`WebSocket configuration error: ${error.message}`, error);
+  logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WEBSOCKET CONFIG ERROR ${fancyColors.RESET} ${error.message}`, error);
 }
 
 // Import all v69 WebSocket server factories

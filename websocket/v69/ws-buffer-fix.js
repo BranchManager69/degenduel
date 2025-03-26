@@ -1,11 +1,12 @@
 /**
- * WebSocket Buffer Fix for RSV1 Issues
+ * WebSocket Buffer Fix for RSV1 Issues (March 26, 2025)
  * 
- * This module provides a fix for WebSocket "RSV1 must be clear" errors
- * by patching the underlying buffer handling in the ws library.
+ * This module provides comprehensive fixes for WebSocket "RSV1 must be clear" errors.
+ * The fix operates at multiple levels to ensure RSV1 bits are cleared:
  * 
- * The fix works by detecting when HTTP headers leak into the WebSocket
- * frame buffer and skipping those bytes before processing frames.
+ * 1. Socket-level patching: Intercepts all outgoing socket data and clears RSV1 bits
+ * 2. Frame-level utilities: Provides helpers to create WebSocket frames without RSV1 bits
+ * 3. Error handling: Catches and logs RSV1-related issues
  */
 
 import { logApi } from '../../utils/logger-suite/logger.js';
@@ -19,338 +20,271 @@ export async function applyWebSocketBufferFix() {
   try {
     logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} 🚨 BUFFER FIX ACTIVATED 🚨 ${fancyColors.RESET} ${fancyColors.BOLD}APPLYING WEBSOCKET RSV1 FIXES${fancyColors.RESET}`);
     
-    logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Applying WebSocket buffer fix for RSV1 issues`);
-    
-    // BRUTE FORCE: We'll patch at multiple levels to ensure we catch the issue
+    // SOCKET-LEVEL PATCH (most effective approach)
+    // This intercepts all outgoing socket data and clears RSV1 bits
     const net = await import('net');
     const originalSocketWrite = net.Socket.prototype.write;
     
-    // 1. SOCKET-LEVEL PATCH (will catch everything, but is most invasive)
     net.Socket.prototype.write = function(data, encoding, callback) {
       try {
         // Only process Buffer data
-        if (Buffer.isBuffer(data) && data.length > 10) {
+        if (Buffer.isBuffer(data) && data.length > 1) {
           let modified = false;
+          let modifiedBytes = 0;
           
-          // Scan for WebSocket frames with RSV1 bit set
+          // Scan for WebSocket frames with RSV1 bit set (0x40)
           for (let i = 0; i < Math.min(data.length, 1000); i++) {
             // WebSocket frames start with byte >= 0x80 (high bit set)
             // RSV1 bit is 0x40
-            if (data[i] >= 0x80 && data[i] <= 0x8F && (data[i] & 0x40) === 0x40) {
-              // Clear RSV1 bit
+            if ((data[i] & 0x80) && (data[i] & 0x40)) {
+              // Clear RSV1 bit (0x40)
               const original = data[i];
               data[i] = data[i] & 0xBF;  // Clear bit 0x40
               modified = true;
+              modifiedBytes++;
               
-              // Log the change (limit logging to avoid spam)
-              if (i < 5) {
-                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} 🔧 SOCKET RSV1 FIX ${fancyColors.RESET} Fixed byte ${i}: 0x${original.toString(16)} → 0x${data[i].toString(16)}`);
+              // Log the first few changes
+              if (modifiedBytes <= 3) {
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} RSV1 FIX ${fancyColors.RESET} Cleared RSV1 bit at byte ${i}: 0x${original.toString(16)} → 0x${data[i].toString(16)}`);
               }
             }
           }
           
           if (modified) {
-            logApi.warn(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ SOCKET RSV1 FIX ${fancyColors.RESET} RSV1 bits cleared in ${data.length} byte buffer`);
+            // Log summary of modifications
+            logApi.warn(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ RSV1 FIX ${fancyColors.RESET} Cleared ${modifiedBytes} RSV1 bits in ${data.length} byte frame buffer`);
           }
         }
       } catch (err) {
         // Never let our patch crash the application
-        logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ SOCKET RSV1 ERROR ${fancyColors.RESET} ${err.message}`);
+        logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ RSV1 ERROR ${fancyColors.RESET} Socket write patch error: ${err.message}`);
       }
       
       // Call original write with possibly modified data
       return originalSocketWrite.call(this, data, encoding, callback);
     };
     
-    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ SOCKET RSV1 FIX ${fancyColors.RESET} Socket-level fix applied - will catch all WebSocket frames`);
+    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅✅✅ SOCKET-LEVEL RSV1 FIX APPLIED SUCCESSFULLY ✅✅✅ ${fancyColors.RESET}`);
     
-    // 2. Try to patch the WebSocket module's send method
-    try {
-      const wsModule = await import('ws');
-      
-      // Directly access the WebSocket constructor
-      const WebSocketClass = wsModule.WebSocket || wsModule.default?.WebSocket;
-      
-      if (WebSocketClass && WebSocketClass.prototype && WebSocketClass.prototype.send) {
-        const originalSend = WebSocketClass.prototype.send;
-        
-        WebSocketClass.prototype.send = function(data, options, callback) {
-          // For Buffer data, check for RSV1 bits
-          if (Buffer.isBuffer(data) && data.length > 0) {
-            // Check first byte for a frame header with RSV1 bit
-            if (data[0] >= 0x80 && data[0] <= 0x8F && (data[0] & 0x40)) {
-              // Clear the RSV1 bit
-              const originalByte = data[0];
-              data[0] = data[0] & 0xBF;
-              logApi.warn(`${fancyColors.BG_MAGENTA}${fancyColors.WHITE} 🔧 WEBSOCKET SEND FIX ${fancyColors.RESET} Fixed RSV1 bit: 0x${originalByte.toString(16)} → 0x${data[0].toString(16)}`);
-            }
+    // Add a WebSocket frame creation utility to the global scope
+    // We need this because the raw WebSocket internals aren't accessible
+    global.WebSocketFrameUtils = {
+      // Create a WebSocket frame with RSV1 bit explicitly cleared
+      createFrame: (data, options = {}) => {
+        try {
+          // Default options
+          const opts = {
+            fin: true,
+            rsv1: false, // Explicitly disable compression
+            rsv2: false,
+            rsv3: false,
+            opcode: 1, // Text frame
+            mask: false, // Server doesn't need to mask
+            ...options
+          };
+          
+          // Convert string to buffer if needed
+          const payload = typeof data === 'string' ? Buffer.from(data) : data;
+          const dataLength = payload.length;
+          
+          // Calculate frame size
+          let frameSize = 2; // At least 2 bytes for header
+          
+          // Add length field size
+          if (dataLength < 126) {
+            frameSize += 0; // Length fits in the initial byte
+          } else if (dataLength < 65536) {
+            frameSize += 2; // 16-bit length
+          } else {
+            frameSize += 8; // 64-bit length
           }
           
-          // Call the original send method
-          return originalSend.call(this, data, options, callback);
-        };
-        
-        logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ WEBSOCKET SEND FIX ${fancyColors.RESET} Successfully patched WebSocket.send method`);
-      } else {
-        logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} ❌ WEBSOCKET SEND FIX ${fancyColors.RESET} Could not patch WebSocket.send - class not found`);
-      }
-    } catch (patchError) {
-      logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ WEBSOCKET SEND ERROR ${fancyColors.RESET} ${patchError.message}`);
-    }
-    
-    // Import the WebSocket module for Receiver class patching
-    const WebSocketModule = await import('ws');
-    
-    // Find the Receiver class that handles buffer processing
-    let Receiver;
-    
-    if (WebSocketModule.Receiver) {
-      Receiver = WebSocketModule.Receiver;
-      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Found Receiver class directly on WebSocketModule`);
-    } else if (WebSocketModule.default && WebSocketModule.default.Receiver) {
-      Receiver = WebSocketModule.default.Receiver;
-      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Found Receiver class on WebSocketModule.default`);
-    } else {
-      // Last attempt - try to find it by checking known paths
-      for (const key of Object.keys(WebSocketModule)) {
-        if (WebSocketModule[key] && WebSocketModule[key].prototype && 
-            typeof WebSocketModule[key].prototype.startLoop === 'function') {
-          Receiver = WebSocketModule[key];
-          logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Found Receiver class at WebSocketModule.${key}`);
-          break;
-        }
-      }
-      
-      if (!Receiver) {
-        logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Could not find WebSocket Receiver class - fix cannot be applied`);
-        return false;
-      }
-    }
-    
-    if (Receiver && Receiver.prototype && Receiver.prototype.startLoop) {
-      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Found startLoop method on Receiver.prototype`);
-      
-      // Store the original startLoop method
-      const originalStartLoop = Receiver.prototype.startLoop;
-      
-      // Patch the startLoop method to detect and skip HTTP headers
-      Receiver.prototype.startLoop = function() {
-        try {
-          // Check if we have buffers to process
-          if (this._buffers && this._buffers.length > 0) {
-            const buf = this._buffers[0];
-            if (buf && buf.length > 4) {
-              // Check for different patterns that indicate HTTP or other non-WS data
-              
-              // Pattern 1: HTTP GET request
-              if (buf[0] === 71 && buf[1] === 69 && buf[2] === 84 && buf[3] === 32) { // "GET "
-                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Detected HTTP GET request in WebSocket buffer (${buf.length} bytes)`);
-                
-                // Convert buffer to string to find header boundary
-                let str = "";
-                for (let i = 0; i < Math.min(buf.length, 500); i++) {
-                  str += String.fromCharCode(buf[i]);
-                }
-                
-                // Find end of HTTP headers
-                const headersEndPos = str.indexOf('\r\n\r\n');
-                
-                if (headersEndPos > 0) {
-                  // Skip headers plus the \r\n\r\n
-                  const skipSize = headersEndPos + 4;
-                  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Skipping ${skipSize} bytes of HTTP headers`);
-                  this.consume(skipSize);
-                  
-                  // AGGRESSIVE RSV1 PROTECTION: Add extra inspection after skip
-                  // Check if there are any frames with RSV1 bit set and fix them
-                  if (this._buffers && this._buffers.length > 0) {
-                    const remainingBuf = this._buffers[0];
-                    
-                    // Check if there might still be problematic data in the buffer
-                    if (remainingBuf && remainingBuf.length > 0) {
-                      let inspectOutput = "";
-                      for (let i = 0; i < Math.min(remainingBuf.length, 50); i++) {
-                        inspectOutput += remainingBuf[i].toString(16).padStart(2, '0') + " ";
-                      }
-                      
-                      logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} POST-SKIP BUFFER INSPECT ${fancyColors.RESET} Buffer still has ${remainingBuf.length} bytes after skip. First 50 bytes: ${inspectOutput}`);
-                      
-                      // If first byte has RSV1 bit set, try to clear it (dangerous but necessary)
-                      if (remainingBuf[0] > 128 && (remainingBuf[0] & 0x40) === 0x40) {
-                        const oldByte = remainingBuf[0];
-                        remainingBuf[0] = remainingBuf[0] & 0xBF; // Clear RSV1 bit
-                        logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} FORCED RSV1 CLEAR ${fancyColors.RESET} Changed first byte from 0x${oldByte.toString(16)} to 0x${remainingBuf[0].toString(16)}`);
-                      }
-                    }
-                  }
-                } else {
-                  // Can't find header boundary, skip aggressively
-                  logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Could not find end of HTTP headers, skipping entire buffer (${buf.length} bytes)`);
-                  this.consume(buf.length);
-                }
-              }
-              // Pattern 2: HTTP POST request
-              else if (buf[0] === 80 && buf[1] === 79 && buf[2] === 83 && buf[3] === 84) { // "POST"
-                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Detected HTTP POST request in WebSocket buffer`);
-                
-                // Convert buffer to string to find header boundary
-                let str = "";
-                for (let i = 0; i < Math.min(buf.length, 500); i++) {
-                  str += String.fromCharCode(buf[i]);
-                }
-                
-                // Find end of HTTP headers
-                const headersEndPos = str.indexOf('\r\n\r\n');
-                
-                if (headersEndPos > 0) {
-                  // Skip headers plus the \r\n\r\n
-                  const skipSize = headersEndPos + 4;
-                  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Skipping ${skipSize} bytes of HTTP headers`);
-                  this.consume(skipSize);
-                } else {
-                  // Can't find header boundary, skip aggressively
-                  logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Could not find end of HTTP headers, skipping entire buffer`);
-                  this.consume(buf.length);
-                }
-              }
-              // Pattern 3: HTTP response header
-              else if (buf[0] === 72 && buf[1] === 84 && buf[2] === 84 && buf[3] === 80) { // "HTTP"
-                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Detected HTTP response in WebSocket buffer`);
-                
-                // Convert buffer to string to find header boundary
-                let str = "";
-                for (let i = 0; i < Math.min(buf.length, 500); i++) {
-                  str += String.fromCharCode(buf[i]);
-                }
-                
-                // Find end of HTTP headers
-                const headersEndPos = str.indexOf('\r\n\r\n');
-                
-                if (headersEndPos > 0) {
-                  // Skip headers plus the \r\n\r\n
-                  const skipSize = headersEndPos + 4;
-                  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Skipping ${skipSize} bytes of HTTP headers`);
-                  this.consume(skipSize);
-                } else {
-                  // Can't find header boundary, skip aggressively
-                  logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Could not find end of HTTP headers, skipping entire buffer`);
-                  this.consume(buf.length);
-                }
-              }
-              // Check for repeated RSV1 errors - this is more dangerous, so we log extensively
-              else if (buf[0] > 128 && (buf[0] & 0x40) === 0x40) { // RSV1 bit is set
-                logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Detected RSV1 bit set in WebSocket frame (0x${buf[0].toString(16)})`);
-                
-                // This is tricky - we'll try a more conservative approach first
-                // Log the first few bytes for debugging
-                let hexDump = '';
-                for (let i = 0; i < Math.min(buf.length, 16); i++) {
-                  hexDump += buf[i].toString(16).padStart(2, '0') + ' ';
-                }
-                
-                logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Frame bytes: ${hexDump}`);
-                
-                // Clear the RSV1 bit by modifying the buffer directly
-                // This is a last resort approach, but can help in some cases
-                if (buf[0] & 0x40) {
-                  const originalByte = buf[0];
-                  buf[0] = buf[0] & 0xBF; // Clear the RSV1 bit (0x40)
-                  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Cleared RSV1 bit: 0x${originalByte.toString(16)} -> 0x${buf[0].toString(16)}`);
-                }
-                
-                // VERY AGGRESSIVE: Force clear RSV bits in all chunks of this buffer
-                // This is a desperate measure but may help in persistent cases
-                if (buf.length > 2) {
-                  logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Aggressive RSV bit clearing - scanning entire buffer for frames`);
-                  
-                  // Scan the first 1000 bytes looking for potential frame headers
-                  const scanLength = Math.min(buf.length, 1000);
-                  let clearCount = 0;
-                  
-                  for (let i = 0; i < scanLength; i++) {
-                    // Look for bytes that might be frame headers with RSV1
-                    // Frame headers typically have high bit set (0x80-0x8F range)
-                    if (buf[i] >= 0x80 && buf[i] <= 0x8F && (buf[i] & 0x40)) {
-                      const originalByte = buf[i];
-                      buf[i] = buf[i] & 0xBF; // Clear RSV1 bit
-                      clearCount++;
-                      
-                      if (clearCount <= 5) { // Limit logging to avoid spam
-                        logApi.info(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Fixed potential frame at offset ${i}: 0x${originalByte.toString(16)} -> 0x${buf[i].toString(16)}`);
-                      }
-                    }
-                  }
-                  
-                  if (clearCount > 5) {
-                    logApi.info(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Fixed ${clearCount} total potential frame headers with RSV1 bit set`);
-                  }
-                }
-              }
-              // Another special case - if the first byte is text content rather than a frame header
-              else if (buf[0] >= 32 && buf[0] <= 126) { // ASCII printable range
-                // This indicates the frame has already been partially processed
-                // We'll log it but not modify it to avoid breaking working connections
-                let preview = '';
-                for (let i = 0; i < Math.min(buf.length, 16); i++) {
-                  if (buf[i] >= 32 && buf[i] <= 126) {
-                    preview += String.fromCharCode(buf[i]);
-                  } else {
-                    preview += '.';
-                  }
-                }
-                
-                logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Detected text content without frame header: "${preview}..."`);
-              }
-            }
+          // Add data size
+          frameSize += dataLength;
+          
+          // Create the buffer
+          const buffer = Buffer.alloc(frameSize);
+          
+          // Write the header - first byte
+          // FIN bit (bit 0) + RSV1,2,3 (bits 1-3) + OPCODE (bits 4-7)
+          let firstByte = 0;
+          if (opts.fin) firstByte |= 0x80;
+          if (opts.rsv1) firstByte |= 0x40; // RSV1 bit (should always be 0)
+          if (opts.rsv2) firstByte |= 0x20; // RSV2 bit (should be 0)
+          if (opts.rsv3) firstByte |= 0x10; // RSV3 bit (should be 0)
+          firstByte |= (opts.opcode & 0x0F); // Opcode (usually 1 for text)
+          
+          buffer.writeUInt8(firstByte, 0);
+          
+          // Helper to write the length bytes
+          let offset = 1;
+          if (dataLength < 126) {
+            buffer.writeUInt8(dataLength, offset);
+            offset += 1;
+          } else if (dataLength < 65536) {
+            buffer.writeUInt8(126, offset);
+            buffer.writeUInt16BE(dataLength, offset + 1);
+            offset += 3;
+          } else {
+            buffer.writeUInt8(127, offset);
+            // Write 0 for first 4 bytes since we don't support payload > 4GB
+            buffer.writeUInt32BE(0, offset + 1);
+            buffer.writeUInt32BE(dataLength, offset + 5);
+            offset += 9;
           }
-        } catch (err) {
-          logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Error in buffer processing: ${err.message}`);
+          
+          // Copy payload data
+          payload.copy(buffer, offset);
+          
+          return buffer;
+        } catch (error) {
+          logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ FRAME ERROR ${fancyColors.RESET} Error creating WebSocket frame: ${error.message}`);
+          throw error;
         }
-        
-        // Call the original startLoop method
-        return originalStartLoop.apply(this, arguments);
-      };
+      },
       
-      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} ${fancyColors.BOLD}Successfully patched WebSocket Receiver - RSV1 issue should be fixed!${fancyColors.RESET}`);
-      return true;
-    }
+      // Create and send a WebSocket text frame with RSV1 bit cleared
+      sendSafeFrame: (socket, data) => {
+        try {
+          if (!socket || !socket.write || typeof socket.write !== 'function') {
+            throw new Error("Invalid socket - must have write method");
+          }
+          
+          // Convert to string if needed
+          const message = typeof data === 'object' ? JSON.stringify(data) : data;
+          
+          // Create a buffer with the frame data
+          const msgBuffer = Buffer.from(message);
+          
+          // Create a WebSocket frame with RSV1 explicitly disabled
+          const frame = global.WebSocketFrameUtils.createFrame(msgBuffer, {
+            fin: true,
+            rsv1: false, // EXPLICITLY disable RSV1 bit
+            opcode: 1,    // Text frame
+            mask: false   // Server doesn't mask
+          });
+          
+          // Send the frame directly
+          socket.write(frame);
+          
+          return true;
+        } catch (error) {
+          logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ SEND ERROR ${fancyColors.RESET} Error sending safe frame: ${error.message}`);
+          return false;
+        }
+      }
+    };
     
-    logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Could not find startLoop method on Receiver.prototype`);
-    return false;
+    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ FRAME UTILS ${fancyColors.RESET} Created WebSocket frame utility functions`);
+    
+    return true;
   } catch (err) {
-    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Failed to apply buffer fix: ${err.message}`, err);
+    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌❌❌ RSV1 FIX FAILED ${fancyColors.RESET} ${err.message}`, err);
     return false;
   }
 }
 
 /**
- * Force skip a specific number of bytes in the WebSocket buffer
- * This can be used as a last resort if automatic detection fails
+ * Create a WebSocket frame with RSV1 bit explicitly cleared
+ * Safe utility function for creating WebSocket frames
  * 
- * @param {WebSocket} ws - The WebSocket instance to patch
- * @param {number} bytesToSkip - Number of bytes to skip in the buffer
+ * @param {string|Buffer} data - The data to send
+ * @param {Object} options - Frame options
+ * @returns {Buffer} - The WebSocket frame buffer
  */
-export function forceSkipBytes(ws, bytesToSkip) {
+export function createSafeFrame(data, options = {}) {
+  if (global.WebSocketFrameUtils && global.WebSocketFrameUtils.createFrame) {
+    return global.WebSocketFrameUtils.createFrame(data, options);
+  }
+  
+  // Fallback implementation if global util not available
   try {
-    if (!ws || !ws._receiver) {
-      logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Invalid WebSocket or missing _receiver property`);
+    // Convert string to buffer if needed
+    const payload = typeof data === 'string' ? Buffer.from(data) : data;
+    const dataLength = payload.length;
+    
+    // Calculate frame size (header + length bytes + payload)
+    let frameSize = 2; // At least 2 bytes for header
+    
+    // Add length field size
+    if (dataLength < 126) {
+      frameSize += 0; // Length fits in one byte
+    } else if (dataLength < 65536) {
+      frameSize += 2; // 16-bit length
+    } else {
+      frameSize += 8; // 64-bit length
+    }
+    
+    // Add payload size
+    frameSize += dataLength;
+    
+    // Create the frame buffer
+    const frame = Buffer.alloc(frameSize);
+    
+    // Write header - first byte: 10000001 (FIN=1, RSV1=0, RSV2=0, RSV3=0, OPCODE=1)
+    frame.writeUInt8(0x81, 0);
+    
+    // Write length
+    let offset = 1;
+    if (dataLength < 126) {
+      frame.writeUInt8(dataLength, offset);
+      offset += 1;
+    } else if (dataLength < 65536) {
+      frame.writeUInt8(126, offset);
+      frame.writeUInt16BE(dataLength, offset + 1);
+      offset += 3;
+    } else {
+      frame.writeUInt8(127, offset);
+      // 64-bit length (high 32 bits are 0 for JavaScript strings)
+      frame.writeUInt32BE(0, offset + 1);
+      frame.writeUInt32BE(dataLength, offset + 5);
+      offset += 9;
+    }
+    
+    // Copy payload
+    payload.copy(frame, offset);
+    
+    return frame;
+  } catch (error) {
+    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ FRAME ERROR ${fancyColors.RESET} Error creating safe frame: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Send a message directly to a WebSocket client bypassing compression
+ * This function sends a manually constructed WebSocket frame with RSV1 cleared
+ * 
+ * @param {WebSocket} ws - The WebSocket client
+ * @param {Object|string} message - The message to send
+ * @returns {boolean} - Whether the send was successful
+ */
+export function sendSafeMessage(ws, message) {
+  try {
+    // Ensure we have a valid WebSocket with socket
+    if (!ws || !ws._socket || typeof ws._socket.write !== 'function') {
+      logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} SEND SAFE ${fancyColors.RESET} Invalid WebSocket or missing socket`);
       return false;
     }
     
-    // Access the _receiver object which has the buffer methods
-    const receiver = ws._receiver;
+    // Convert to string if needed
+    const jsonStr = typeof message === 'object' ? JSON.stringify(message) : message;
+    const msgBuffer = Buffer.from(jsonStr);
     
-    if (typeof receiver.consume !== 'function') {
-      logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} WebSocket receiver doesn't have consume method`);
-      return false;
+    // Use global utility if available
+    if (global.WebSocketFrameUtils && global.WebSocketFrameUtils.createFrame) {
+      const frame = global.WebSocketFrameUtils.createFrame(msgBuffer);
+      ws._socket.write(frame);
+      return true;
     }
     
-    // Force consume bytes from the buffer
-    receiver.consume(bytesToSkip);
-    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Manually skipped ${bytesToSkip} bytes from WebSocket buffer`);
+    // Fallback to direct frame creation
+    const frame = createSafeFrame(msgBuffer);
+    ws._socket.write(frame);
+    
     return true;
-  } catch (err) {
-    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Error in forceSkipBytes: ${err.message}`);
+  } catch (error) {
+    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ SEND ERROR ${fancyColors.RESET} Error sending safe message: ${error.message}`);
     return false;
   }
 }

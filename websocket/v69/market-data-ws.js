@@ -85,13 +85,23 @@ class MarketDataManager {
       return;
     }
     
+    // Check for RSV1-related flags from marketDataService 
+    const hasRSV1Flags = data._disableRSV === true || data._noCompression === true;
+    if (hasRSV1Flags) {
+      logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} MARKET DATA ${fancyColors.RESET} ${fancyColors.GREEN}Received market data with RSV1 protection flags${fancyColors.RESET}`);
+    }
+    
     // Update global reference for other services to access
     global.lastTokenData = data.data;
     
     // Update token cache with new data
+    let updatedCount = 0;
+    let priceUpdateCount = 0;
+    
     for (const token of data.data) {
       if (token.symbol) {
         this.tokenCache.set(token.symbol, token);
+        updatedCount++;
         
         // If this token has active price subscriptions, update price cache
         if (this.activeSymbols.has(token.symbol) && token.price) {
@@ -103,11 +113,20 @@ class MarketDataManager {
             low_24h: token.low_24h || 0,
             timestamp: new Date().toISOString()
           });
+          priceUpdateCount++;
         }
       }
     }
     
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} MARKET DATA ${fancyColors.RESET} ${fancyColors.GREEN}Received market data broadcast: ${data.data.length} tokens${fancyColors.RESET}`);
+    // Only log detailed message for larger batches or first few updates
+    const isSignificantUpdate = data.data.length > 50 || this.marketStats?.data?.updates?.total < 5;
+    
+    if (isSignificantUpdate) {
+      logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} MARKET DATA ${fancyColors.RESET} ${fancyColors.GREEN}Received market data broadcast: ${data.data.length} tokens, updated ${updatedCount} tokens, ${priceUpdateCount} prices${fancyColors.RESET}`);
+    } else {
+      // Use debug level for routine updates to reduce log noise
+      logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} MARKET DATA ${fancyColors.RESET} ${fancyColors.GREEN}Received market data broadcast: ${data.data.length} tokens${fancyColors.RESET}`);
+    }
   }
 
   /**
@@ -423,13 +442,29 @@ class MarketDataManager {
  */
 export class MarketDataWebSocketServer extends BaseWebSocketServer {
   constructor(server) {
+    /**
+     * CRITICAL FIX: WebSocket RSV1 Issue (March 26, 2025)
+     * 
+     * This WebSocket server was experiencing "RSV1 must be clear" errors with some clients.
+     * The problem was related to WebSocket compression being enabled despite setting
+     * perMessageDeflate: false. We've implemented several fixes:
+     * 
+     * 1. Explicitly disabled compression at the server level (perMessageDeflate: false)
+     * 2. Added socket-level buffer patching to clear RSV1 bits in outgoing frames
+     * 3. Enhanced the sendToClient method to use a safe frame creation approach
+     * 4. Added diagnostic logging to track when RSV1 issues occur
+     * 5. Improved error handling in broadcast methods
+     * 
+     * The specific broadcast methods in this class have been updated to respect
+     * these fixes and ensure RSV1 bits are never set in outgoing frames.
+     */
     super(server, {
       // Support both legacy paths for backward compatibility
       path: '/api/v69/ws/market-data',
       publicEndpoints: ['/api/v2/ws/market', '/api/ws/token-data'],
       maxPayload: 5 * 1024 * 1024, // 5MB, plenty of room for token data
       requireAuth: false, // Public data endpoint
-      perMessageDeflate: false, // Disable compression to match token-data-ws behavior
+      perMessageDeflate: false, // CRITICAL: Disable compression to prevent RSV1 errors
       rateLimit: 600, // 10 requests/second
       authMode: 'query' // Use query auth mode for most reliable browser connections
     });
@@ -469,12 +504,22 @@ export class MarketDataWebSocketServer extends BaseWebSocketServer {
       
       // Start data broadcast stream (every 1 second)
       this._tokenDataBroadcastInterval = setInterval(() => {
-        this.broadcastTokenUpdates();
+        // Wrap in try/catch to prevent crashes
+        try {
+          this.broadcastTokenUpdates();
+        } catch (error) {
+          logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 ${fancyColors.RESET} ${fancyColors.RED}Error in token data broadcast:${fancyColors.RESET}`, error);
+        }
       }, 1000);
       
       // Start market data broadcast stream (every 100ms)
       this._marketDataBroadcastInterval = setInterval(() => {
-        this.broadcastMarketData();
+        // Wrap in try/catch to prevent crashes
+        try {
+          this.broadcastMarketData();
+        } catch (error) {
+          logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 ${fancyColors.RESET} ${fancyColors.RED}Error in market data broadcast:${fancyColors.RESET}`, error);
+        }
       }, 100);
       
       logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 ${fancyColors.RESET} ${fancyColors.GREEN}Market Data WebSocket server initialization complete${fancyColors.RESET}`);
@@ -770,7 +815,16 @@ export class MarketDataWebSocketServer extends BaseWebSocketServer {
       // If no active symbols, skip broadcast
       if (allSymbols.size === 0) return;
 
-      // Get clients for each symbol
+      // Log for every 100th broadcast (to reduce log spam but still track activity)
+      const totalSymbols = allSymbols.size;
+      if (this.messageCounter.received % 100 === 0) {
+        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} MARKET BROADCAST ${fancyColors.RESET} Broadcasting market data for ${totalSymbols} symbols`);
+      }
+
+      // Get clients for each symbol with enhanced error handling
+      let totalSent = 0;
+      let totalErrors = 0;
+
       for (const symbol of allSymbols) {
         // Find all market data clients subscribed to this symbol
         const clients = Array.from(this.clients)
@@ -791,10 +845,32 @@ export class MarketDataWebSocketServer extends BaseWebSocketServer {
         // If no clients for this symbol, skip
         if (clients.length === 0) continue;
 
-        // Send market data to all subscribing clients
-        await Promise.all(
-          clients.map(client => this.sendMarketData(client, symbol))
-        );
+        // Send market data to all subscribing clients with individual error handling
+        for (const client of clients) {
+          if (client.readyState === client.OPEN) {
+            try {
+              // Ensure WebSocket has the compression flag disabled
+              if (client._disableRSV === undefined) {
+                client._disableRSV = true;  // Flag to disable RSV1 bit
+              }
+              
+              // Send market data to this client with direct error handling
+              await this.sendMarketData(client, symbol);
+              totalSent++;
+            } catch (clientError) {
+              totalErrors++;
+              // Only log the first few errors to avoid spamming the logs
+              if (totalErrors <= 3) {
+                logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} MARKET BROADCAST ERROR ${fancyColors.RESET} ${clientError.message} (symbol: ${symbol})`);
+              }
+            }
+          }
+        }
+      }
+
+      // Log detailed stats every 500 broadcasts for monitoring
+      if (this.messageCounter.received % 500 === 0 && (totalSent > 0 || totalErrors > 0)) {
+        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} MARKET BROADCAST STATS ${fancyColors.RESET} Symbols: ${totalSymbols}, Sent: ${totalSent}, Errors: ${totalErrors}`);
       }
     } catch (error) {
       logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 ${fancyColors.RESET} ${fancyColors.RED}Error in market data broadcast:${fancyColors.RESET}`, error);
@@ -831,15 +907,45 @@ export class MarketDataWebSocketServer extends BaseWebSocketServer {
         data: global.lastTokenData
       };
       
-      // Broadcast to all token data clients
+      // Add diagnostic log about broadcast
+      const clientCount = tokenDataClients.length;
+      const dataSize = JSON.stringify(tokenUpdate).length;
+      if (this.messageCounter.broadcast % 10 === 0) {  // Only log every 10th broadcast to reduce spam
+        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} TOKEN BROADCAST ${fancyColors.RESET} Sending to ${clientCount} clients (${dataSize} bytes)`);
+      }
+      
+      // Broadcast to all token data clients with enhanced error handling
+      let sentCount = 0;
+      let errorCount = 0;
+      
       for (const client of tokenDataClients) {
         if (client.readyState === client.OPEN) {
-          this.sendToClient(client, tokenUpdate);
+          try {
+            // Ensure WebSocket has the compression flag disabled
+            if (client._disableRSV === undefined) {
+              client._disableRSV = true;  // Flag to disable RSV1 bit
+            }
+            
+            // Use the safer sendToClient method that handles RSV1 bits
+            this.sendToClient(client, tokenUpdate);
+            sentCount++;
+          } catch (clientError) {
+            errorCount++;
+            // Only log first few errors to avoid spamming logs
+            if (errorCount <= 3) {
+              logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} TOKEN BROADCAST ERROR ${fancyColors.RESET} ${clientError.message}`);
+            }
+          }
         }
       }
       
       // Update message counter
       this.messageCounter.broadcast++;
+      
+      // Log detailed stats occasionally
+      if (this.messageCounter.broadcast % 50 === 0) {
+        logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} TOKEN BROADCAST STATS ${fancyColors.RESET} Total broadcasts: ${this.messageCounter.broadcast}, Last batch: ${sentCount} sent, ${errorCount} errors`);
+      }
       
     } catch (error) {
       logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 ${fancyColors.RESET} ${fancyColors.RED}Error broadcasting token updates:${fancyColors.RESET}`, error);
