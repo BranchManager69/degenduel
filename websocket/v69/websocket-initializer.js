@@ -36,7 +36,22 @@ try {
   // Log a single clear message about compression settings
   logApi.info(`WebSocket Configuration: Using ws library v${wsModule.version || 'unknown'} with compression DISABLED for compatibility`);
   
-  // No patching needed - configuration is done through options passed to constructors
+  // Apply WebSocket buffer fix for RSV1 issues
+  try {
+    // Import the WebSocket buffer fix
+    const { applyWebSocketBufferFix } = await import('./ws-buffer-fix.js');
+    
+    // Apply the fix
+    const fixResult = await applyWebSocketBufferFix();
+    
+    if (fixResult) {
+      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} ${fancyColors.BOLD}Successfully applied WebSocket buffer fix for RSV1 issues${fancyColors.RESET}`);
+    } else {
+      logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} ${fancyColors.YELLOW}Failed to apply WebSocket buffer fix - RSV1 issues may persist${fancyColors.RESET}`);
+    }
+  } catch (fixError) {
+    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} ${fancyColors.RED}Error applying WebSocket buffer fix: ${fixError.message}${fancyColors.RESET}`, fixError);
+  }
 } catch (error) {
   logApi.error(`WebSocket configuration error: ${error.message}`, error);
 }
