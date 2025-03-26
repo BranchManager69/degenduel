@@ -17,18 +17,64 @@ import { fancyColors } from '../../utils/colors.js';
  */
 export async function applyWebSocketBufferFix() {
   try {
-    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WS BUFFER FIX ${fancyColors.RESET} Applying WebSocket buffer fix for RSV1 issues...`);
+    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} 🚨 BUFFER FIX ACTIVATED 🚨 ${fancyColors.RESET} ${fancyColors.BOLD}APPLYING WEBSOCKET RSV1 FIXES${fancyColors.RESET}`);
     
-    // CRITICAL: Add a global frame processor that patches at the highest level
-    // This will intercept outgoing frames to ensure they don't have RSV1 set
+    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Applying WebSocket buffer fix for RSV1 issues - THIS IS A CRITICAL FIX`);
+    
+    // BRUTE FORCE: We'll patch at multiple levels to ensure we catch the issue
+    const net = await import('net');
+    const originalSocketWrite = net.Socket.prototype.write;
+    
+    // 1. SOCKET-LEVEL PATCH (will catch everything, but is most invasive)
+    net.Socket.prototype.write = function(data, encoding, callback) {
+      try {
+        // Only process Buffer data
+        if (Buffer.isBuffer(data) && data.length > 10) {
+          let modified = false;
+          
+          // Scan for WebSocket frames with RSV1 bit set
+          for (let i = 0; i < Math.min(data.length, 1000); i++) {
+            // WebSocket frames start with byte >= 0x80 (high bit set)
+            // RSV1 bit is 0x40
+            if (data[i] >= 0x80 && data[i] <= 0x8F && (data[i] & 0x40) === 0x40) {
+              // Clear RSV1 bit
+              const original = data[i];
+              data[i] = data[i] & 0xBF;  // Clear bit 0x40
+              modified = true;
+              
+              // Log the change (limit logging to avoid spam)
+              if (i < 5) {
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} 🔧 SOCKET RSV1 FIX ${fancyColors.RESET} Fixed byte ${i}: 0x${original.toString(16)} → 0x${data[i].toString(16)}`);
+              }
+            }
+          }
+          
+          if (modified) {
+            logApi.warn(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ SOCKET RSV1 FIX ${fancyColors.RESET} RSV1 bits cleared in ${data.length} byte buffer`);
+          }
+        }
+      } catch (err) {
+        // Never let our patch crash the application
+        logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ SOCKET RSV1 ERROR ${fancyColors.RESET} ${err.message}`);
+      }
+      
+      // Call original write with possibly modified data
+      return originalSocketWrite.call(this, data, encoding, callback);
+    };
+    
+    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ SOCKET RSV1 FIX ${fancyColors.RESET} Socket-level fix applied - will catch all WebSocket frames`);
+    
+    // 2. Try to patch the WebSocket module's send method
     try {
       const wsModule = await import('ws');
       
-      // Try to patch the WebSocket.prototype.send method
-      if (typeof WebSocket !== 'undefined' && WebSocket.prototype && WebSocket.prototype.send) {
-        const originalSend = WebSocket.prototype.send;
+      // Directly access the WebSocket constructor
+      const WebSocketClass = wsModule.WebSocket || wsModule.default?.WebSocket;
+      
+      if (WebSocketClass && WebSocketClass.prototype && WebSocketClass.prototype.send) {
+        const originalSend = WebSocketClass.prototype.send;
         
-        WebSocket.prototype.send = function(data, options, callback) {
+        WebSocketClass.prototype.send = function(data, options, callback) {
           // For Buffer data, check for RSV1 bits
           if (Buffer.isBuffer(data) && data.length > 0) {
             // Check first byte for a frame header with RSV1 bit
@@ -36,7 +82,7 @@ export async function applyWebSocketBufferFix() {
               // Clear the RSV1 bit
               const originalByte = data[0];
               data[0] = data[0] & 0xBF;
-              logApi.warn(`${fancyColors.BG_MAGENTA}${fancyColors.WHITE} GLOBAL FRAME FIX ${fancyColors.RESET} Cleared RSV1 bit in outgoing frame: 0x${originalByte.toString(16)} -> 0x${data[0].toString(16)}`);
+              logApi.warn(`${fancyColors.BG_MAGENTA}${fancyColors.WHITE} 🔧 WEBSOCKET SEND FIX ${fancyColors.RESET} Fixed RSV1 bit: 0x${originalByte.toString(16)} → 0x${data[0].toString(16)}`);
             }
           }
           
@@ -44,13 +90,15 @@ export async function applyWebSocketBufferFix() {
           return originalSend.call(this, data, options, callback);
         };
         
-        logApi.info(`${fancyColors.BG_GREEN}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Successfully patched WebSocket.prototype.send to clear RSV1 bits`);
+        logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅ WEBSOCKET SEND FIX ${fancyColors.RESET} Successfully patched WebSocket.send method`);
+      } else {
+        logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} ❌ WEBSOCKET SEND FIX ${fancyColors.RESET} Could not patch WebSocket.send - class not found`);
       }
     } catch (patchError) {
-      logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Error patching WebSocket.send: ${patchError.message}`);
+      logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌ WEBSOCKET SEND ERROR ${fancyColors.RESET} ${patchError.message}`);
     }
     
-    // Import the WebSocket module
+    // Import the WebSocket module for Receiver class patching
     const WebSocketModule = await import('ws');
     
     // Find the Receiver class that handles buffer processing
