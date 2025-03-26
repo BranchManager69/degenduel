@@ -423,7 +423,7 @@ class ReferralService extends BaseService {
                 where: { id: referral.id },
                 data: {
                     status: 'qualified',
-                    converted_at: new Date()
+                    qualified_at: new Date()
                 }
             });
 
@@ -522,7 +522,7 @@ class ReferralService extends BaseService {
             const qualifiedReferrals = await prisma.referrals.count({
                 where: {
                     status: 'qualified',
-                    converted_at: {
+                    qualified_at: {
                         gte: period.start_date,
                         lt: period.end_date
                     }
@@ -582,7 +582,7 @@ class ReferralService extends BaseService {
                 by: ['referrer_id'],
                 where: {
                     status: 'qualified',
-                    converted_at: {
+                    qualified_at: {
                         gte: period.start_date,
                         lt: period.end_date
                     }
