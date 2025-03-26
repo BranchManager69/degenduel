@@ -693,6 +693,15 @@ const customFormat = winston.format.printf(
       ? chalk.gray(JSON.stringify(formatMetadata(metadata, level), null, 0))
       : "";
 
+    // Check for WebSocket RSV1 fix logs - make them MUCH more visible
+    if (message && (
+        message.includes('WS BUFFER FIX') || 
+        message.includes('WEBSOCKET FIX') || 
+        message.includes('SOCKET RSV1'))) {
+      // Always show these logs with maximum priority
+      console.log(`\n${chalk.bgRed(chalk.white(message))}\n`);
+    }
+
     // Sanitize any error objects in metadata
     const cleanMetadata = sanitizeError(metadata);
 
@@ -1179,6 +1188,52 @@ console.error = function() {
   // For all other messages, call the original console.error
   originalConsoleError.apply(console, arguments);
 };
+
+// DIRECT FIX FOR RSV1 WEBSOCKET ISSUES
+// This applies a socket-level patch to fix the "RSV1 must be clear" error
+try {
+  console.log("\n\n🚨🚨🚨 APPLYING DIRECT WEBSOCKET RSV1 FIX FROM LOGGER 🚨🚨🚨\n\n");
+  
+  // Access net module through Node.js require
+  const net = require('net');
+  const originalSocketWrite = net.Socket.prototype.write;
+  
+  // Directly patch Socket.write to find and fix RSV1 bits
+  net.Socket.prototype.write = function(data, encoding, callback) {
+    // Only process Buffer data of sufficient size
+    if (Buffer.isBuffer(data) && data.length > 2) {
+      let modified = false;
+      
+      // Look for WebSocket frame headers (first bytes)
+      for (let i = 0; i < Math.min(data.length, 100); i++) {
+        // WebSocket frames start with byte in range 0x80-0x8F with high bit set
+        // RSV1 bit is 0x40
+        if (data[i] >= 0x80 && data[i] <= 0x8F && (data[i] & 0x40) === 0x40) {
+          // Clear the RSV1 bit
+          const originalByte = data[i];
+          data[i] = data[i] & 0xBF; // 0xBF = binary 10111111 (all bits set except bit 6)
+          modified = true;
+          
+          // Direct console.log for visibility in PM2 logs
+          console.log(`🔧 WEBSOCKET FIX: Cleared RSV1 bit at byte ${i}: 0x${originalByte.toString(16)} → 0x${data[i].toString(16)}`);
+          break; // Only fix the first occurrence to avoid excessive logging
+        }
+      }
+      
+      if (modified) {
+        // Direct console.log for visibility
+        console.log(`✅ WEBSOCKET FIX: RSV1 bits cleared in ${data.length} byte frame`);
+      }
+    }
+    
+    // Call the original write method
+    return originalSocketWrite.call(this, data, encoding, callback);
+  };
+  
+  console.log("\n\n✅✅✅ DIRECT SOCKET-LEVEL RSV1 FIX APPLIED SUCCESSFULLY FROM LOGGER ✅✅✅\n\n");
+} catch (socketError) {
+  console.error(`\n\n❌❌❌ DIRECT SOCKET-LEVEL FIX FAILED: ${socketError.message}\n\n`);
+}
 
 // Export both default and named
 export { ANALYTICS_PATTERNS, LOG_PATTERNS, logApi };
