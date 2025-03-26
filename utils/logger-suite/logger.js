@@ -1199,6 +1199,7 @@ console.error = function() {
 try {
   console.log("\n\n🚨🚨🚨 APPLYING DIRECT WEBSOCKET RSV1 FIX FROM LOGGER 🚨🚨🚨\n\n");
   
+  // APPROACH 1: Patch Socket.write - catches ALL frame traffic
   // Access net module through ES modules import
   import('net').then(netModule => {
     const net = netModule.default || netModule;
@@ -1217,25 +1218,24 @@ try {
       if (Buffer.isBuffer(data) && data.length > 2) {
         let modified = false;
         
-        // Look for WebSocket frame headers (first bytes)
-        for (let i = 0; i < Math.min(data.length, 100); i++) {
-          // WebSocket frames start with byte in range 0x80-0x8F with high bit set
-          // RSV1 bit is 0x40
-          if (data[i] >= 0x80 && data[i] <= 0x8F && (data[i] & 0x40) === 0x40) {
+        // MUCH MORE AGGRESSIVE SCANNING - check every byte that could be a frame header
+        for (let i = 0; i < Math.min(data.length, 500); i++) {
+          // Check for ANY byte with the RSV1 bit pattern - not just those that look like frame headers
+          // High bit set (0x80) AND RSV1 bit set (0x40)
+          if ((data[i] & 0xC0) === 0xC0) {  // 0xC0 = binary 11000000
             // Clear the RSV1 bit
             const originalByte = data[i];
             data[i] = data[i] & 0xBF; // 0xBF = binary 10111111 (all bits set except bit 6)
             modified = true;
             
             // Direct console.log for visibility in PM2 logs
-            console.log(`🔧 WEBSOCKET FIX: Cleared RSV1 bit at byte ${i}: 0x${originalByte.toString(16)} → 0x${data[i].toString(16)}`);
-            break; // Only fix the first occurrence to avoid excessive logging
+            console.log(`🔧 SOCKET FIX: Cleared RSV1 bit at byte ${i}: 0x${originalByte.toString(16)} → 0x${data[i].toString(16)}`);
           }
         }
         
         if (modified) {
           // Direct console.log for visibility
-          console.log(`✅ WEBSOCKET FIX: RSV1 bits cleared in ${data.length} byte frame`);
+          console.log(`✅ SOCKET FIX: RSV1 bits cleared in ${data.length} byte frame`);
         }
       }
       
@@ -1243,9 +1243,71 @@ try {
       return originalSocketWrite.call(this, data, encoding, callback);
     };
     
-    console.log("\n\n✅✅✅ DIRECT SOCKET-LEVEL RSV1 FIX APPLIED SUCCESSFULLY FROM LOGGER ✅✅✅\n\n");
+    console.log("\n\n✅✅✅ SOCKET-LEVEL RSV1 FIX APPLIED SUCCESSFULLY ✅✅✅\n\n");
   }).catch(err => {
-    console.error(`\n\n❌❌❌ DIRECT SOCKET-LEVEL FIX FAILED: Error importing net module: ${err.message}\n\n`);
+    console.error(`\n\n❌❌❌ SOCKET-LEVEL FIX FAILED: Error importing net module: ${err.message}\n\n`);
+  });
+  
+  // APPROACH 2: Patch the WebSocket Sender.frame method directly
+  import('ws').then(wsModule => {
+    // Try to access the Sender class
+    if (wsModule.Sender && wsModule.Sender.prototype && wsModule.Sender.prototype.frame) {
+      const originalFrame = wsModule.Sender.prototype.frame;
+      
+      // Replace the frame method with one that always disables RSV1
+      wsModule.Sender.prototype.frame = function(data, options) {
+        // Force options to have rsv1:false
+        const safeOptions = { ...(options || {}), rsv1: false };
+        
+        // Call the original frame method with safe options
+        return originalFrame.call(this, data, safeOptions);
+      };
+      
+      console.log("\n\n✅✅✅ WEBSOCKET SENDER FRAME PATCHED SUCCESSFULLY ✅✅✅\n\n");
+    } else {
+      console.error("\n\n❌❌❌ WEBSOCKET SENDER FIX FAILED: Could not find Sender.prototype.frame\n\n");
+    }
+  }).catch(err => {
+    console.error(`\n\n❌❌❌ WEBSOCKET SENDER FIX FAILED: Error importing ws module: ${err.message}\n\n`);
+  });
+  
+  // APPROACH 3: Check if WebSocket compression is enabled and disable it in config
+  import('ws').then(wsModule => {
+    const WebSocketServer = wsModule.WebSocketServer || wsModule.Server;
+    
+    if (WebSocketServer && WebSocketServer.prototype) {
+      // Try to modify default options if found
+      if (WebSocketServer.prototype.options) {
+        WebSocketServer.prototype.options.perMessageDeflate = false;
+        console.log("\n\n✅✅✅ DISABLED COMPRESSION IN WEBSOCKET SERVER OPTIONS ✅✅✅\n\n");
+      }
+      
+      // Monkey patch the constructor to ensure perMessageDeflate is always false
+      const originalConstructor = WebSocketServer;
+      
+      // Replace the constructor
+      function PatchedWebSocketServer(options) {
+        // Force perMessageDeflate to false in options
+        const safeOptions = { ...(options || {}), perMessageDeflate: false };
+        
+        // Call the original constructor
+        return new originalConstructor(safeOptions);
+      }
+      
+      // Copy all properties from the original constructor
+      Object.assign(PatchedWebSocketServer, originalConstructor);
+      PatchedWebSocketServer.prototype = originalConstructor.prototype;
+      
+      // Replace the constructor
+      wsModule.WebSocketServer = PatchedWebSocketServer;
+      wsModule.Server = PatchedWebSocketServer;
+      
+      console.log("\n\n✅✅✅ PATCHED WEBSOCKET SERVER CONSTRUCTOR TO DISABLE COMPRESSION ✅✅✅\n\n");
+    } else {
+      console.error("\n\n❌❌❌ WEBSOCKET SERVER FIX FAILED: Could not find WebSocketServer\n\n");
+    }
+  }).catch(err => {
+    console.error(`\n\n❌❌❌ WEBSOCKET SERVER FIX FAILED: Error importing ws module: ${err.message}\n\n`);
   });
 } catch (socketError) {
   console.error(`\n\n❌❌❌ DIRECT SOCKET-LEVEL FIX FAILED: ${socketError.message}\n\n`);
