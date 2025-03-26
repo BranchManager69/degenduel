@@ -33,8 +33,20 @@ try {
   const wsModule = await import('ws');
   const { WebSocket, Server } = wsModule;
   
-  // Log a single clear message about compression settings
-  logApi.info(`WebSocket Configuration: Using ws library v${wsModule.version || 'unknown'} with compression DISABLED for compatibility`);
+  // Find the WebSocket version more reliably
+  let wsVersion = 'unknown';
+  try {
+    // Try to get package version using createRequire
+    const { createRequire } = await import('module');
+    const require = createRequire(import.meta.url);
+    const wsPackage = require('ws/package.json');
+    wsVersion = wsPackage.version;
+  } catch (versionError) {
+    logApi.warn(`Could not determine ws library version: ${versionError.message}`);
+  }
+  
+  // Log a single clear message about compression settings with proper version
+  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WEBSOCKET CONFIG ${fancyColors.RESET} Using ws library v${wsVersion} with compression ${fancyColors.BG_RED}${fancyColors.WHITE} DISABLED ${fancyColors.RESET} for compatibility`);
   
   // Apply WebSocket buffer fix for RSV1 issues
   try {

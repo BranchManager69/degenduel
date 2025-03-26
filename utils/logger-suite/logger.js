@@ -698,8 +698,13 @@ const customFormat = winston.format.printf(
         message.includes('WS BUFFER FIX') || 
         message.includes('WEBSOCKET FIX') || 
         message.includes('SOCKET RSV1'))) {
-      // Always show these logs with maximum priority
-      console.log(`\n${chalk.bgRed(chalk.white(message))}\n`);
+      // Always show these logs with maximum priority, but use appropriate colors
+      // based on the log level to avoid looking like errors
+      let bgColor = level === 'error' ? chalk.bgRed : 
+                   level === 'warn' ? chalk.bgYellow : 
+                   chalk.bgBlue;
+      let textColor = level === 'warn' ? chalk.black : chalk.white;
+      console.log(`\n${bgColor(textColor(message))}\n`);
     }
 
     // Sanitize any error objects in metadata

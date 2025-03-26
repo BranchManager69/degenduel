@@ -17,9 +17,9 @@ import { fancyColors } from '../../utils/colors.js';
  */
 export async function applyWebSocketBufferFix() {
   try {
-    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} 🚨 BUFFER FIX ACTIVATED 🚨 ${fancyColors.RESET} ${fancyColors.BOLD}APPLYING WEBSOCKET RSV1 FIXES${fancyColors.RESET}`);
+    logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} 🚨 BUFFER FIX ACTIVATED 🚨 ${fancyColors.RESET} ${fancyColors.BOLD}APPLYING WEBSOCKET RSV1 FIXES${fancyColors.RESET}`);
     
-    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Applying WebSocket buffer fix for RSV1 issues - THIS IS A CRITICAL FIX`);
+    logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} WS BUFFER FIX ${fancyColors.RESET} Applying WebSocket buffer fix for RSV1 issues`);
     
     // BRUTE FORCE: We'll patch at multiple levels to ensure we catch the issue
     const net = await import('net');
