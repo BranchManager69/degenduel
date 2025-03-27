@@ -98,6 +98,8 @@ import referralRoutes from "./routes/referrals.js";
 import virtualAgentRoutes from "./routes/virtual-agent.js";
 // Device authentication routes
 import deviceRoutes from "./routes/devices.js";
+// AI chat routes
+import aiRoutes from "./routes/ai.js";
 // Path module for static file serving
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -258,6 +260,8 @@ app.use("/api/portfolio-analytics", maintenanceCheck, portfolioAnalyticsRouter);
 app.use("/api/referrals", maintenanceCheck, referralRoutes);
 // Virtual Agent routes (inaccessible when in maintenance mode)
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
+// AI chat routes (inaccessible when in maintenance mode)
+app.use("/api/ai", maintenanceCheck, aiRoutes);
 // Test routes (no maintenance check needed)
 app.use("/api/test", testRoutes);
 
