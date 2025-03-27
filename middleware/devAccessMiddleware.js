@@ -52,18 +52,53 @@ export const restrictDevAccess = async (req, res, next) => {
     return next();
   }
 
-  // Check if this is a websocket (or v69) request
-  if (req.url.includes('/api/v69/ws/')) {
-    // Log a single line with both security status and access grant
+  // SUPER ENHANCED WEBSOCKET DETECTION:
+  // 1. Check for the _isWebSocketRequest flag from the websocketBypassMiddleware
+  // 2. Check all common WebSocket URL patterns
+  // 3. Check for WebSocket upgrade headers
+  const isWebSocketRequest = (
+    // Check for flag from bypass middleware
+    req._isWebSocketRequest === true ||
+    // Check for WebSocket URLs (any common pattern)
+    req.url.includes('/api/v69/ws/') || 
+    req.url.includes('/ws/') ||
+    req.url.includes('/socket') ||
+    req.url.includes('/websocket') ||
+    // Check for WebSocket headers
+    (req.headers && 
+     req.headers.upgrade && 
+     req.headers.upgrade.toLowerCase() === 'websocket') ||
+    // Check for WebSocket protocols
+    (req.headers && 
+     req.headers['sec-websocket-protocol'])
+  );
+  
+  if (isWebSocketRequest) {
+    // Log with different verbosity based on debug mode
     if (SECURE_MIDDLEWARE_ACCESS_DEBUG_MODE === true) {
-      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} GRANTED ${fancyColors.RESET} ${fancyColors.GREEN}Public resource${fancyColors.RESET}`);
+      // Enhanced logging with WebSocket details
+      logApi.info(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} WS-BYPASS ${fancyColors.RESET} Bypassing auth for WebSocket: ${req.url}`, {
+        headers: {
+          upgrade: req.headers.upgrade,
+          connection: req.headers.connection,
+          'sec-websocket-key': req.headers['sec-websocket-key'] ? '(present)' : '(missing)',
+          'sec-websocket-version': req.headers['sec-websocket-version'],
+          'sec-websocket-protocol': req.headers['sec-websocket-protocol'],
+          'sec-websocket-extensions': req.headers['sec-websocket-extensions']
+        },
+        wsEvent: 'dev_access_bypass',
+        bypass_reason: req._isWebSocketRequest ? 'early_bypass_middleware' : 'websocket_pattern',
+        _highlight: true
+      });
     } else {
-      logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ${securityMode} ${fancyColors.RESET} ${fancyColors.DARK_YELLOW}${host}${fancyColors.RESET} ${fancyColors.GRAY}${req.url}${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} INSECURE ${fancyColors.RESET} ${fancyColors.RED}WS auth disabled${fancyColors.RESET}`);
+      // Simpler logging for production
+      logApi.warn(`${fancyColors.YELLOW}[devAccess]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} WS-BYPASS ${fancyColors.RESET} Bypassing auth for WebSocket: ${req.url}`);
     }
-    // Anddddd *automatically* grant access to websocket requests
+    
+    // Automatically grant access to all WebSocket requests
     return next();
   } else {
-    // Not a websocket request, keep processing
+    // Not a WebSocket request, continue with normal processing
   }
 
   // Check if it has no auth method

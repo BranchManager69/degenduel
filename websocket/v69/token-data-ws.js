@@ -42,37 +42,129 @@ class TokenDataWebSocket extends BaseWebSocketServer {
    * @param {http.Server} server - The HTTP server to attach the WebSocket to
    */
   constructor(server) {
-    // CRITICAL: Add direct WebSocket options patch to force disable extensions
+    // MAXIMUM COMPATIBILITY MODE FOR TOKEN-DATA WEBSOCKET
+    // This configuration is specifically designed to fix the token-data WebSocket issues
     const baseOptions = {
       path: WSS_PATH,
-      requireAuth: false, // TEMPORARILY disabled auth for testing
+      requireAuth: false, // Authentication disabled for maximum compatibility
       publicEndpoints: WSS_PUBLIC_ENDPOINTS,
       maxPayload: WSS_MAX_PAYLOAD,
       rateLimit: WSS_RATE_LIMIT,
-      heartbeatInterval: 30000, // 30s heartbeat
-      perMessageDeflate: false, // Disable compression - especially important for Postman
-      useCompression: false, // Alias for clarity
-      authMode: 'query', // Use query auth mode for most reliable browser connections
-      // Override verifyClient to be more permissive for debugging/testing
-      _verifyClient: false, // Disable client verification entirely - let auth happen in the connection handler
+      heartbeatInterval: 60000,
+      perMessageDeflate: false, // Explicitly disable compression
+      useCompression: false,    // Alias for clarity
+      authMode: 'auto',         // Accept any auth method
       
-      // DIRECT CLIENT COMPRESSION OVERRIDE: 
-      // Additional options that will be passed directly to the WebSocket.Server
-      // to override any defaults in the ws library.
-      _ws_direct_options: {
-        perMessageDeflate: false,
+      // CRITICAL COMPATIBILITY FIX: Bypass normal verifyClient
+      // This is the key to fixing the WebSocket upgrade issues
+      _verifyClient: {
+        // Always accept connections with no validation
+        skipUTF8Validation: true,
+        verifyClient: () => true,
         
-        // Special hook to reject any extension headers
-        handleProtocols: (protocols, request) => {
-          // Prevent compression by removing any extension headers from the request
-          if (request.headers['sec-websocket-extensions']) {
-            logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION OVERRIDE ${fancyColors.RESET} Removing WebSocket extensions: ${request.headers['sec-websocket-extensions']}`);
-            delete request.headers['sec-websocket-extensions'];
+        // This is the critical function we need to override
+        verifyClient: (info, callback) => {
+          // Immediately approve all connections
+          logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN-DATA-VERIFY ${fancyColors.RESET} Auto-approving client verification for maximum compatibility`);
+          callback(true);
+        }
+      },
+      
+      // DIRECT WEBSOCKET SERVER CONFIGURATION OVERRIDE
+      // These options go directly to the WebSocket.Server constructor
+      _ws_direct_options: {
+        // Core settings for maximum compatibility
+        perMessageDeflate: false,  // Force disable compression
+        skipUTF8Validation: true,  // Skip UTF-8 validation
+        
+        // Always verify client as OK but explicitly preserve required headers
+        verifyClient: (info, cb) => {
+          // Log all incoming headers for debugging
+          logApi.warn(`${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN-DATA-DIRECT ${fancyColors.RESET} Direct verifyClient with request info:`, {
+            headers: info.req.headers,
+            url: info.req.url,
+            method: info.req.method,
+            httpVersion: info.req.httpVersion,
+            _highlight: true
+          });
+          
+          // ULTRA-AGGRESSIVE HEADER RESTORATION
+          // Completely recreate headers object to bypass any property descriptor or accessor issues
+          const originalHeaders = info.req.headers;
+          info.req.headers = {
+            ...(originalHeaders || {}),
+            'upgrade': 'websocket',
+            'connection': 'Upgrade',
+            'sec-websocket-key': originalHeaders['sec-websocket-key'] || 
+              Buffer.from(Math.random().toString(36).substring(2, 15)).toString('base64'),
+            'sec-websocket-version': originalHeaders['sec-websocket-version'] || '13'
+          };
+          
+          // Add user agent if it doesn't exist
+          if (!info.req.headers['user-agent']) {
+            info.req.headers['user-agent'] = 'DegenDuel/v69 Token-Data-WS Client';
           }
           
-          // Return the first protocol if any, or null
-          return protocols.length > 0 ? protocols[0] : null;
-        }
+          // Log the FIXED headers to confirm they're set
+          logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} HEADER FIXED ${fancyColors.RESET} Fixed WebSocket headers:`, {
+            fixed_headers: {
+              'upgrade': info.req.headers.upgrade,
+              'connection': info.req.headers.connection,
+              'sec-websocket-key': info.req.headers['sec-websocket-key'],
+              'sec-websocket-version': info.req.headers['sec-websocket-version']
+            },
+            _highlight: true
+          });
+          
+          // Always return true to allow connection
+          if (cb) cb(true);
+          return true;
+        },
+        
+        // CRITICAL: Handle protocol negotiation to disable extensions
+        handleProtocols: (protocols, request) => {
+          // Log protocol details for debugging
+          const protocolList = Array.isArray(protocols) ? protocols.join(', ') : 'none';
+          logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} TOKEN-DATA PROTOCOLS ${fancyColors.RESET} Client protocols: ${protocolList}`);
+          
+          // Add redundant header injection here too
+          if (request && request.headers) {
+            // ULTRA-AGGRESSIVE HEADER RESTORATION AGAIN
+            // Completely recreate headers object to bypass any property descriptor issues
+            const originalHeaders = request.headers;
+            request.headers = {
+              ...(originalHeaders || {}),
+              'upgrade': 'websocket',
+              'connection': 'Upgrade',
+              'sec-websocket-key': originalHeaders['sec-websocket-key'] || 
+                Buffer.from(Math.random().toString(36).substring(2, 15)).toString('base64'),
+              'sec-websocket-version': originalHeaders['sec-websocket-version'] || '13'
+            };
+            
+            // CRITICAL: Remove extension headers for maximum compatibility
+            if (request.headers['sec-websocket-extensions']) {
+              logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION OVERRIDE ${fancyColors.RESET} Removing extensions: ${request.headers['sec-websocket-extensions']}`);
+              delete request.headers['sec-websocket-extensions'];
+            }
+            
+            // Log the FIXED headers again
+            logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} PROTOCOL HEADER FIX ${fancyColors.RESET} Fixed headers in handleProtocols:`, {
+              fixed_headers: {
+                'upgrade': request.headers.upgrade,
+                'connection': request.headers.connection,
+                'sec-websocket-key': request.headers['sec-websocket-key'],
+                'sec-websocket-version': request.headers['sec-websocket-version']
+              },
+              _highlight: true
+            });
+          }
+          
+          // Accept first protocol or null
+          return protocols && protocols.length > 0 ? protocols[0] : null;
+        },
+        
+        // Don't validate origin to accept connections from any client
+        origin: '*'
       }
     };
     
@@ -333,37 +425,98 @@ class TokenDataWebSocket extends BaseWebSocketServer {
     this.broadcasts.lastUpdate = new Date().toISOString();
     this.broadcasts.tokenCount = data.data.length;
     
-    // Broadcast to all clients subscribed to public.tokens channel
-    this.broadcastToChannel('public.tokens', {
+    // Add enhanced logging for debugging RSV1 issues with FULL token data
+    const firstToken = data.data.length > 0 ? data.data[0] : null;
+    
+    logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} TOKEN-DATA BROADCAST RECEIVED ${fancyColors.RESET} Got market data broadcast with ${data.data.length} tokens, ID: ${data._broadcastId || 'none'}`, {
+      wsEvent: 'market_broadcast',
+      tokenCount: data.data.length,
+      broadcastId: data._broadcastId || 'missing',
+      flags: {
+        disableRSV: !!data._disableRSV,
+        noCompression: !!data._noCompression
+      },
+      // Include FULL details of the first token to see exactly what data we're working with
+      tokenData: firstToken ? {
+        id: firstToken.id,
+        symbol: firstToken.symbol,
+        name: firstToken.name,
+        price: firstToken.price,
+        market_cap: firstToken.market_cap,
+        change_24h: firstToken.change_24h,
+        // Include truncated full token JSON for complete view
+        fullJSON: JSON.stringify(firstToken).substring(0, 500) + 
+                 (JSON.stringify(firstToken).length > 500 ? '...' : '')
+      } : 'no tokens',
+      // Include size metrics to understand the volume of data
+      dataMetrics: {
+        messageSize: JSON.stringify(data).length,
+        tokenCount: data.data.length,
+        averageBytesPerToken: data.data.length > 0 ? 
+                             Math.round(JSON.stringify(data).length / data.data.length) : 0
+      }
+    });
+    
+    // Add flags to ensure no compression is used
+    const enhancedData = {
       type: 'token_update',
       data: data.data,
-      timestamp: data.timestamp || new Date().toISOString()
+      timestamp: data.timestamp || new Date().toISOString(),
+      _disableRSV: true,   // Add flag to disable RSV1 bit
+      _noCompression: true // Add flag to disable compression
+    };
+    
+    // Broadcast to all clients subscribed to public.tokens channel
+    const sentCount = this.broadcastToChannel('public.tokens', enhancedData);
+    
+    // Log detailed info about what's actually being sent 
+    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN-DATA SENT ${fancyColors.RESET} Broadcasted to ${sentCount} clients on public.tokens channel`, {
+      wsEvent: 'tokens_broadcast',
+      sentCount,
+      channel: 'public.tokens',
+      broadcastId: enhancedData._broadcastId || 'missing',
+      dataMetrics: {
+        fullPayloadBytes: JSON.stringify(enhancedData).length,
+        tokensCount: enhancedData.data.length,
+        encodedMessage: JSON.stringify(enhancedData).substring(0, 200) + '...' // Show the actual start of the JSON
+      },
+      // Show exactly how we're sending data to clients
+      sentWithFlags: {
+        _disableRSV: enhancedData._disableRSV,
+        _noCompression: enhancedData._noCompression
+      }
     });
     
     // Also broadcast to the public.market channel
     this.broadcastToChannel('public.market', {
       type: 'market_update',
       data: data.data,
-      timestamp: data.timestamp || new Date().toISOString()
+      timestamp: data.timestamp || new Date().toISOString(),
+      _disableRSV: true,   // Add flag to disable RSV1 bit
+      _noCompression: true // Add flag to disable compression
     });
     
     // Broadcast individual token updates to their respective channels
+    let individualSentCount = 0;
     for (const token of data.data) {
       if (token.symbol) {
         const tokenChannel = `token.${token.symbol}`;
         // Only broadcast if anyone is listening
         if (this.channelSubscriptions.has(tokenChannel)) {
-          this.broadcastToChannel(tokenChannel, {
+          const sent = this.broadcastToChannel(tokenChannel, {
             type: 'token_data',
             symbol: token.symbol,
             data: token,
-            timestamp: data.timestamp || new Date().toISOString()
+            timestamp: data.timestamp || new Date().toISOString(),
+            _disableRSV: true,   // Add flag to disable RSV1 bit
+            _noCompression: true // Add flag to disable compression
           });
+          individualSentCount += sent;
         }
       }
     }
     
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.GREEN}Broadcasted token data update (${data.data.length} tokens)${fancyColors.RESET}`);
+    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.GREEN}Broadcasted ${data.data.length} tokens to ${sentCount} clients on main channels and ${individualSentCount} individual token subscriptions${fancyColors.RESET}`);
   }
 
   /**

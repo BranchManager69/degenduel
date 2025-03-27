@@ -290,18 +290,25 @@ export async function createTestWebSocket(server) {
     wss.on('connection', (ws, req) => {
       const connectionId = uuidv4().substring(0, 8);
       
+      // Get the real client IP using X-Forwarded-For when behind a proxy
+      const clientIP = req.headers['x-forwarded-for'] 
+        ? req.headers['x-forwarded-for'].split(',')[0].trim() 
+        : req.socket.remoteAddress;
+      
       // Log new connection with full details
       logApi.info(`${fancyColors.BG_PURPLE}${fancyColors.WHITE} TEST-WS-CONNECTION-${connectionId} ${fancyColors.RESET} Client connected`, {
         wsEvent: 'test_connection',
         url: req.url,
         method: req.method,
-        ip: req.socket.remoteAddress,
+        ip: clientIP,
+        direct_ip: req.socket.remoteAddress,
         headers: {
           host: req.headers.host,
           origin: req.headers.origin,
           upgrade: req.headers.upgrade,
           connection: req.headers.connection,
-          user_agent: req.headers['user-agent'] || 'Unknown'
+          user_agent: req.headers['user-agent'] || 'Unknown',
+          forwarded_for: req.headers['x-forwarded-for'] || 'N/A'
         },
         socket: {
           readyState: ws.readyState,

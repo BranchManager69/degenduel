@@ -527,8 +527,26 @@ class MarketDataService extends BaseService {
 
     // Generate broadcast data
     async generateBroadcastData() {
+        const startTime = Date.now();
+        
         try {
+            // Log start of data generation
+            logApi.debug(`${fancyColors.BG_DARK_YELLOW}${fancyColors.BLACK} MKT-DATA GENERATE ${fancyColors.RESET} Starting broadcast data generation`, {
+                service: 'MARKET',
+                event: 'generate_start',
+                timestamp: new Date().toISOString()
+            });
+            
+            // Get all tokens
             const allTokens = await this.getAllTokens();
+            
+            // Log token count retrieved
+            logApi.debug(`${fancyColors.BG_DARK_YELLOW}${fancyColors.BLACK} MKT-DATA TOKENS ${fancyColors.RESET} Retrieved ${allTokens.length} tokens for broadcast`, {
+                service: 'MARKET',
+                event: 'tokens_retrieved',
+                tokenCount: allTokens.length,
+                retrievalTimeMs: Date.now() - startTime
+            });
             
             // Format the data for broadcasting
             const broadcastData = {
@@ -541,20 +559,86 @@ class MarketDataService extends BaseService {
             const hasChanged = !this.lastBroadcastData || 
                 JSON.stringify(broadcastData.data) !== JSON.stringify(this.lastBroadcastData.data);
             
+            // Log change detection results
+            logApi.debug(`${fancyColors.BG_DARK_YELLOW}${fancyColors.BLACK} MKT-DATA CHANGE ${fancyColors.RESET} Token data ${hasChanged ? 'HAS changed' : 'has NOT changed'} since last broadcast`, {
+                service: 'MARKET',
+                event: 'change_detection',
+                hasChanged,
+                tokensCount: allTokens.length,
+                changesOnlyMode: !!this.config.broadcast.changesOnly,
+                willBroadcast: hasChanged || !this.config.broadcast.changesOnly
+            });
+            
             if (hasChanged || !this.config.broadcast.changesOnly) {
-                this.lastBroadcastData = broadcastData;
+                // Make a deep copy to prevent accidental mutations
+                this.lastBroadcastData = JSON.parse(JSON.stringify(broadcastData));
+                
                 if (hasChanged) {
                     this.marketStats.data.broadcasts.changesOnly++;
+                    
+                    // Try to identify what changed
+                    if (this.lastBroadcastData && this.lastBroadcastData.data) {
+                        const oldTokens = this.lastBroadcastData.data;
+                        const newTokens = broadcastData.data;
+                        
+                        // Count tokens with price changes
+                        let priceChanges = 0;
+                        let marketCapChanges = 0;
+                        
+                        for (let i = 0; i < Math.min(oldTokens.length, newTokens.length); i++) {
+                            if (oldTokens[i].price !== newTokens[i].price) {
+                                priceChanges++;
+                            }
+                            if (oldTokens[i].market_cap !== newTokens[i].market_cap) {
+                                marketCapChanges++;
+                            }
+                        }
+                        
+                        // Log what changed
+                        logApi.info(`${fancyColors.BG_PURPLE}${fancyColors.WHITE} MKT-DATA CHANGES ${fancyColors.RESET} Detected ${priceChanges} price changes, ${marketCapChanges} market cap changes`, {
+                            service: 'MARKET',
+                            event: 'changes_detected',
+                            changes: {
+                                prices: priceChanges,
+                                marketCaps: marketCapChanges,
+                                tokenCount: allTokens.length
+                            }
+                        });
+                    }
                 }
+                
                 this.marketStats.data.broadcasts.total++;
                 this.marketStats.data.broadcasts.lastBroadcast = broadcastData.timestamp;
+                
+                // Log final broadcast data stats
+                logApi.debug(`${fancyColors.BG_GREEN}${fancyColors.BLACK} MKT-DATA READY ${fancyColors.RESET} Broadcast data ready: ${allTokens.length} tokens, ${JSON.stringify(broadcastData).length} bytes`, {
+                    service: 'MARKET',
+                    event: 'data_ready',
+                    generationTimeMs: Date.now() - startTime,
+                    tokenCount: allTokens.length,
+                    dataSizeBytes: JSON.stringify(broadcastData).length
+                });
                 
                 return broadcastData;
             }
             
+            // Log skipping broadcast
+            logApi.debug(`${fancyColors.BG_DARK_YELLOW}${fancyColors.BLACK} MKT-DATA SKIP ${fancyColors.RESET} No changes to broadcast, skipping (changesOnly mode)`, {
+                service: 'MARKET',
+                event: 'broadcast_skipped',
+                reason: 'no_changes',
+                changesOnlyMode: !!this.config.broadcast.changesOnly
+            });
+            
             return null; // No changes to broadcast
         } catch (error) {
-            logApi.error(`${fancyColors.MAGENTA}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error generating broadcast data:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} MKT-DATA ERROR ${fancyColors.RESET} Error generating broadcast data: ${error.message}`, {
+                service: 'MARKET',
+                event: 'generate_error',
+                error: error.message,
+                stack: error.stack,
+                elapsedTimeMs: Date.now() - startTime
+            });
             return null;
         }
     }
@@ -567,19 +651,68 @@ class MarketDataService extends BaseService {
         
         this.broadcastInterval = setInterval(async () => {
             try {
+                const broadcastStartTime = Date.now();
+                // Get broadcast data
                 const broadcastData = await this.generateBroadcastData();
                 
                 if (broadcastData) {
+                    // Log token details before broadcast with actual content example
+                    const tokenSymbols = broadcastData.data.map(t => t.symbol).slice(0, 5);
+                    const tokenCount = broadcastData.data.length;
+                    const dataSize = JSON.stringify(broadcastData).length;
+                    
+                    // Get a sample token to show exactly what's being sent
+                    const sampleToken = broadcastData.data.length > 0 ? broadcastData.data[0] : null;
+                    
+                    logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} MKT-DATA PRE-BROADCAST ${fancyColors.RESET} Preparing to broadcast ${tokenCount} tokens, first 5: ${tokenSymbols.join(', ')}`, {
+                        service: 'MARKET',
+                        event: 'pre_broadcast',
+                        tokenCount,
+                        dataSize: `${Math.round(dataSize/1024)}KB`,
+                        sampleTokens: tokenSymbols,
+                        // Include FULL sample of first token
+                        sampleData: sampleToken ? {
+                            id: sampleToken.id,
+                            symbol: sampleToken.symbol,
+                            name: sampleToken.name,
+                            price: sampleToken.price,
+                            market_cap: sampleToken.market_cap,
+                            change_24h: sampleToken.change_24h,
+                            image_url: !!sampleToken.image_url,
+                            fullJSON: JSON.stringify(sampleToken).substring(0, 500) + (JSON.stringify(sampleToken).length > 500 ? '...' : '')
+                        } : 'No tokens',
+                        timestamp: new Date().toISOString()
+                    });
+                    
                     // Emit an event that WebSockets can listen for via serviceEvents
-                    // Explicitly set a flag on the broadcast data to indicate compression should be disabled
+                    // Create enhanced broadcast data with tracking ID
                     const enhancedBroadcastData = {
                       ...broadcastData,
-                      _disableRSV: true, // This flag will be used by the WS server to handle RSV1 bits
-                      _noCompression: true // Additional flag to ensure no compression
+                      _broadcastId: Date.now().toString(36) + Math.random().toString(36).substring(2, 5) // Add unique ID for tracking
                     };
+                    
+                    // Log RIGHT BEFORE emitting the event
+                    logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} MKT-DATA EMITTING ${fancyColors.RESET} Broadcasting event 'market:broadcast' with ID ${enhancedBroadcastData._broadcastId}`, {
+                        service: 'MARKET',
+                        event: 'broadcast_emit',
+                        broadcastId: enhancedBroadcastData._broadcastId,
+                        tokenCount,
+                        hasData: broadcastData.data && broadcastData.data.length > 0,
+                        hasTags: false
+                    });
                     
                     // Emit with enhanced data
                     serviceEvents.emit('market:broadcast', enhancedBroadcastData);
+                    
+                    // Log AFTER emitting the event
+                    const broadcastTime = Date.now() - broadcastStartTime;
+                    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} MKT-DATA BROADCAST SENT ${fancyColors.RESET} Broadcast ID ${enhancedBroadcastData._broadcastId} emitted in ${broadcastTime}ms`, {
+                        service: 'MARKET',
+                        event: 'broadcast_complete',
+                        broadcastId: enhancedBroadcastData._broadcastId,
+                        processingTimeMs: broadcastTime,
+                        timestamp: new Date().toISOString()
+                    });
                     
                     // Format token count with consistent spacing
                     const formattedCount = broadcastData.data.length.toString().padStart(3);
@@ -599,13 +732,31 @@ class MarketDataService extends BaseService {
                     
                     // Log with improved formatting and purple color theme
                     logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} BROADCASTING ${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}(${broadcastDetailsStr})${fancyColors.RESET}`);
+                } else {
+                    // No data to broadcast, log that too
+                    logApi.debug(`${fancyColors.BG_GRAY}${fancyColors.BLACK} MKT-DATA NO BROADCAST ${fancyColors.RESET} No changes to broadcast this cycle`, {
+                        service: 'MARKET',
+                        event: 'no_broadcast',
+                        reason: 'no_changes',
+                        timestamp: new Date().toISOString()
+                    });
                 }
             } catch (error) {
-                logApi.error(`[MktDataSvc] Error in broadcast interval:`, error);
+                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} MKT-DATA ERROR ${fancyColors.RESET} Error in broadcast interval: ${error.message}`, {
+                    service: 'MARKET',
+                    event: 'broadcast_error',
+                    error: error.message,
+                    stack: error.stack
+                });
             }
         }, this.config.broadcast.intervalMs);
         
-        logApi.info(`[MktDataSvc] Started market data broadcast interval (${this.config.broadcast.intervalMs}ms)`);
+        logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} MKT-DATA SETUP ${fancyColors.RESET} Started market data broadcast interval (${this.config.broadcast.intervalMs}ms)`, {
+            service: 'MARKET',
+            event: 'broadcast_setup',
+            intervalMs: this.config.broadcast.intervalMs,
+            timestamp: new Date().toISOString()
+        });
     }
 
     // Cache management
