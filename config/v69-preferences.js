@@ -19,7 +19,7 @@
  * which implementation to use for each service.
  */
 export const websocketPreferences = {
-  // WebSockets confirmed to work with v69 implementation
+  // All WebSockets use v69 implementation now
   analytics: 'v69',
   circuitBreaker: 'v69',
   contest: 'v69',
@@ -32,11 +32,11 @@ export const websocketPreferences = {
   // Consolidated WebSockets
   market: 'v69', // Now handled by market-data-ws.js
   
-  // WebSockets not yet migrated to v69 (default to legacy)
-  adminSpy: 'legacy',
-  broadcastCommand: 'legacy',
-  portfolio: 'v69',  // Updated to use v69 implementation
-  wallet: 'v69',     // Updated to use v69 implementation
+  // Fully migrated to v69
+  adminSpy: 'v69',
+  broadcastCommand: 'v69',
+  portfolio: 'v69',
+  wallet: 'v69',
   
   // Special implementations
   marketData: 'v69', // New consolidated implementation for market + tokenData

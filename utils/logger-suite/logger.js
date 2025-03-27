@@ -24,6 +24,8 @@ import { LogtailTransport } from "@logtail/winston";
 import { Socket } from 'net';
 import { Stream } from 'stream';
 import { fancyColors, logColors, serviceColors } from '../colors.js';
+import axios from 'axios';
+import { IPinfoWrapper } from 'node-ipinfo';
 
 // Config
 import { config } from '../../config/config.js';
@@ -39,6 +41,71 @@ const LOG_DIR = config.logtail.log_dir || path.join(process.cwd(), "logs");
 const SILENT_MODE = config.logtail.silent_mode === 'true';
 const CONSOLE_LEVEL = SILENT_MODE ? 'error' : (config.logtail.console_log_level || "info");
 const FILE_LOG_LEVEL = config.logtail.file_log_level || "info";
+
+// IP Info config
+const IPINFO_API_KEY = config.ipinfo.api_key;
+const IPINFO_API_URL = config.ipinfo.full_url || `https://ipinfo.io`;
+
+// Initialize IPinfo wrapper with built-in caching 
+let ipinfoClient = null;
+
+/**
+ * Fetch detailed IP information from ipinfo.io using the official client
+ * @param {string} ip - IP address to look up
+ * @returns {Promise<Object>} - IP information
+ */
+export const getIpInfo = async (ip) => {
+  // Safely skip for local/private IPs to avoid unnecessary lookups
+  if (!ip || ip === '127.0.0.1' || ip === 'localhost' || 
+      ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.16.')) {
+    return { 
+      ip,
+      bogon: true,
+      private: true
+    };
+  }
+
+  // Initialize client only once - lazy initialization
+  if (ipinfoClient === null && IPINFO_API_KEY) {
+    try {
+      ipinfoClient = new IPinfoWrapper(IPINFO_API_KEY);
+      
+      // SAFETY: Don't use our own logger here to avoid recursion
+      console.log('IPinfo client initialized successfully');
+    } catch (initError) {
+      // SAFETY: Don't use our own logger here to avoid recursion
+      console.error('Failed to initialize IPinfo client:', initError.message);
+      
+      // No need to retry if initialization failed
+      ipinfoClient = false; // Set to false to indicate failed initialization
+    }
+  }
+  
+  // If client initialization failed or no API key, return early
+  if (ipinfoClient === false || !IPINFO_API_KEY) {
+    return {
+      ip,
+      error: "IPinfo client not available",
+      lookup_failed: true
+    };
+  }
+
+  try {
+    // Use the official client which has its own built-in caching
+    const response = await ipinfoClient.lookupIp(ip);
+    
+    // Return the result - the client handles caching internally
+    return response;
+  } catch (error) {
+    // SAFETY: Don't use our own logger here to avoid recursion!
+    // Just silently return an error object
+    return { 
+      ip,
+      error: error.message || "Unknown error in IP lookup",
+      lookup_failed: true
+    };
+  }
+};
 
 // Helper function to handle circular references in objects
 const getCircularReplacer = () => {
@@ -626,6 +693,20 @@ const customFormat = winston.format.printf(
       ? chalk.gray(JSON.stringify(formatMetadata(metadata, level), null, 0))
       : "";
 
+    // Check for WebSocket RSV1 fix logs - make them MUCH more visible
+    if (message && (
+        message.includes('WS BUFFER FIX') || 
+        message.includes('WEBSOCKET FIX') || 
+        message.includes('SOCKET RSV1'))) {
+      // Always show these logs with maximum priority, but use appropriate colors
+      // based on the log level to avoid looking like errors
+      let bgColor = level === 'error' ? chalk.bgRed : 
+                   level === 'warn' ? chalk.bgYellow : 
+                   chalk.bgBlue;
+      let textColor = level === 'warn' ? chalk.black : chalk.white;
+      console.log(`\n${bgColor(textColor(message))}\n`);
+    }
+
     // Sanitize any error objects in metadata
     const cleanMetadata = sanitizeError(metadata);
 
@@ -1059,6 +1140,9 @@ logApi.analytics = {
   },
 };
 
+// Add the IP info lookup functionality
+logApi.getIpInfo = getIpInfo;
+
 // Patch console.log and console.error to capture and reformat specific types of messages
 const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
@@ -1109,6 +1193,8 @@ console.error = function() {
   // For all other messages, call the original console.error
   originalConsoleError.apply(console, arguments);
 };
+
+// Removed WebSocket RSV1 fixes as they interfered with Logtail connectivity
 
 // Export both default and named
 export { ANALYTICS_PATTERNS, LOG_PATTERNS, logApi };

@@ -28,7 +28,7 @@ const WSS_PATH = `/api/v69/ws/token-data`; // path to the WebSocket token data s
 const WSS_REQUIRE_AUTH = false; // whether the WebSocket server requires authentication
 const WSS_PUBLIC_ENDPOINTS = ['public.tokens', 'public.market']; // public endpoints to subscribe to by default
 const WSS_MAX_PAYLOAD = 5 * 1024 * 1024; // 5MB
-const WSS_PER_MESSAGE_DEFLATE = false; // whether to use per-message deflate
+const WSS_PER_MESSAGE_DEFLATE = false; // Disable per-message deflate for compression
 const WSS_RATE_LIMIT = 500; // rate limit for the WebSocket server
 
 // Public channels to subscribe to by default
@@ -42,16 +42,20 @@ class TokenDataWebSocket extends BaseWebSocketServer {
    * @param {http.Server} server - The HTTP server to attach the WebSocket to
    */
   constructor(server) {
-    super(server, {
+    // Standard configuration for token data WebSocket
+    const baseOptions = {
       path: WSS_PATH,
-      requireAuth: WSS_REQUIRE_AUTH,
+      requireAuth: false, // Authentication disabled for public data
       publicEndpoints: WSS_PUBLIC_ENDPOINTS,
       maxPayload: WSS_MAX_PAYLOAD,
-      perMessageDeflate: WSS_PER_MESSAGE_DEFLATE,
       rateLimit: WSS_RATE_LIMIT,
-      authMode: 'query' // Use query auth mode for most reliable browser connections
-    });
-
+      heartbeatInterval: 60000,
+      perMessageDeflate: false, // No compression
+      authMode: 'auto'          // Accept any auth method
+    };
+    
+    super(server, baseOptions);
+    
     // Initialize token-specific state
     this.broadcasts = {
       count: 0,
@@ -79,278 +83,361 @@ class TokenDataWebSocket extends BaseWebSocketServer {
       logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 INIT ${fancyColors.RESET} ${fancyColors.CYAN}Token Data WebSocket initialized${fancyColors.RESET}`);
       return true;
     } catch (error) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 INIT ${fancyColors.RESET} ${fancyColors.RED}Failed to initialize Token Data WebSocket:${fancyColors.RESET} ${error.message}`);
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 INIT-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error initializing Token Data WebSocket: ${error.message}${fancyColors.RESET}`, error);
       return false;
     }
   }
 
   /**
-   * Handle new client connection
+   * Handle market data broadcast from marketDataService
+   * @param {Object} data - Market data to broadcast
+   */
+  async handleMarketDataBroadcast(data) {
+    try {
+      if (!data) return;
+
+      // Update broadcast stats
+      this.broadcasts.count++;
+      this.broadcasts.lastUpdate = new Date();
+      this.broadcasts.tokenCount = data.tokens?.length || 0;
+
+      // Broadcast to public.tokens channel
+      if (data.type === 'token-data' && data.tokens) {
+        this.broadcastToChannel('public.tokens', {
+          type: 'TOKEN_DATA',
+          data: data.tokens,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Broadcast to public.market channel
+      if (data.type === 'market-data' && data.market) {
+        this.broadcastToChannel('public.market', {
+          type: 'MARKET_DATA',
+          data: data.market,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Broadcast specific token updates to their respective channels
+      if (data.type === 'token-update' && data.token) {
+        const token = data.token;
+        
+        // Broadcast to token specific channel
+        if (token.symbol) {
+          this.broadcastToChannel(`token.${token.symbol.toLowerCase()}`, {
+            type: 'TOKEN_UPDATE',
+            data: token,
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 BROADCAST-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error broadcasting market data: ${error.message}${fancyColors.RESET}`, error);
+    }
+  }
+
+  /**
+   * Handle client connection
    * @param {WebSocket} ws - The WebSocket connection
    * @param {http.IncomingMessage} req - The HTTP request
    */
   async onConnection(ws, req) {
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
-
-    // Subscribe to public channels by default
-    for (const channel of this.publicChannels) {
-      await this.subscribeToChannel(ws, channel);
-    }
-
-    // Send initial token data to client
     try {
-      const tokenData = await marketDataService.getAllTokens();
+      const clientInfo = this.clientInfoMap.get(ws);
+      if (!clientInfo) return;
+
+      // Auto-subscribe to public channels
+      if (this.publicChannels && this.publicChannels.length > 0) {
+        for (const channel of this.publicChannels) {
+          await this.handleSubscribe(ws, channel);
+        }
+      }
+
+      // Send initial token data if available and client is subscribed
+      const tokenData = await marketDataService.getTokenData();
       if (tokenData && tokenData.length > 0) {
         this.sendToClient(ws, {
-          type: 'token_update',
+          type: 'TOKEN_DATA',
           timestamp: new Date().toISOString(),
           data: tokenData
         });
+      }
 
-        logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.DARK_GREEN}Sent initial token data (${tokenData.length} tokens) to ${clientInfo.connectionId.substring(0,8)}${fancyColors.RESET}`);
-      } else {
-        logApi.warn(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.YELLOW}No initial token data available${fancyColors.RESET}`);
+      // Send initial market data if available and client is subscribed
+      const marketData = await marketDataService.getMarketSummary();
+      if (marketData) {
+        this.sendToClient(ws, {
+          type: 'MARKET_DATA',
+          timestamp: new Date().toISOString(),
+          data: marketData
+        });
       }
     } catch (error) {
-      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.RED}Error fetching initial token data:${fancyColors.RESET} ${error.message}`);
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONN-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error handling token-data connection: ${error.message}${fancyColors.RESET}`, error);
     }
   }
 
   /**
-   * Handle incoming message from client
+   * Handle client message
    * @param {WebSocket} ws - The WebSocket connection
-   * @param {Object} message - The parsed message
+   * @param {Object} message - The message
    */
   async onMessage(ws, message) {
-    const clientInfo = this.clientInfoMap.get(ws);
-    if (!clientInfo) return;
+    try {
+      // Standard message handling by type
+      const { type, channel, token, tokens } = message;
 
-    // Handle token-specific message types
-    switch (message.type) {
-      case 'subscribe_tokens':
-        // Subscribe to specific tokens
-        if (Array.isArray(message.symbols)) {
-          const validSymbols = [];
-          
-          // Validate symbols exist
-          for (const symbol of message.symbols) {
-            try {
-              const token = await marketDataService.getToken(symbol);
-              if (token) {
-                validSymbols.push(symbol);
-                // Create token-specific channel
-                const tokenChannel = `token.${symbol}`;
-                await this.subscribeToChannel(ws, tokenChannel);
-              }
-            } catch (error) {
-              logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.YELLOW}Invalid token symbol: ${symbol}${fancyColors.RESET}`);
+      switch (type) {
+        case 'SUBSCRIBE':
+          if (channel) {
+            await this.handleSubscribe(ws, channel);
+          } else if (token) {
+            // Support for subscribing to a single token
+            await this.handleSubscribe(ws, `token.${token.toLowerCase()}`);
+          } else if (tokens && Array.isArray(tokens)) {
+            // Support for subscribing to multiple tokens
+            for (const tokenSymbol of tokens) {
+              await this.handleSubscribe(ws, `token.${tokenSymbol.toLowerCase()}`);
             }
           }
-          
-          // Send success response
+          break;
+
+        case 'UNSUBSCRIBE':
+          if (channel) {
+            await this.handleUnsubscribe(ws, channel);
+          } else if (token) {
+            await this.handleUnsubscribe(ws, `token.${token.toLowerCase()}`);
+          } else if (tokens && Array.isArray(tokens)) {
+            for (const tokenSymbol of tokens) {
+              await this.handleUnsubscribe(ws, `token.${tokenSymbol.toLowerCase()}`);
+            }
+          }
+          break;
+
+        case 'GET_TOKEN':
+          if (token) {
+            await this.handleGetToken(ws, token);
+          }
+          break;
+
+        case 'GET_ALL_TOKENS':
+          await this.handleGetAllTokens(ws);
+          break;
+
+        case 'GET_MARKET_DATA':
+          await this.handleGetMarketData(ws);
+          break;
+
+        case 'PING':
           this.sendToClient(ws, {
-            type: 'tokens_subscribed',
-            symbols: validSymbols,
-            count: validSymbols.length,
+            type: 'PONG',
             timestamp: new Date().toISOString()
           });
-          
-          // Send current data for these tokens
-          if (validSymbols.length > 0) {
-            const tokenData = [];
-            for (const symbol of validSymbols) {
-              const token = await marketDataService.getToken(symbol);
-              if (token) {
-                tokenData.push(token);
-              }
-            }
-            
-            if (tokenData.length > 0) {
-              this.sendToClient(ws, {
-                type: 'token_update',
-                timestamp: new Date().toISOString(),
-                data: tokenData
-              });
-            }
-          }
-        }
-        break;
-        
-      case 'unsubscribe_tokens':
-        // Unsubscribe from specific tokens
-        if (Array.isArray(message.symbols)) {
-          for (const symbol of message.symbols) {
-            const tokenChannel = `token.${symbol}`;
-            await this.unsubscribeFromChannel(ws, tokenChannel);
-          }
-          
-          // Send success response
+          break;
+
+        default:
           this.sendToClient(ws, {
-            type: 'tokens_unsubscribed',
-            symbols: message.symbols,
-            count: message.symbols.length,
+            type: 'ERROR',
+            error: `Unknown message type: ${type}`,
             timestamp: new Date().toISOString()
           });
-        }
-        break;
-        
-      case 'get_token':
-        // Get data for a specific token
-        if (message.symbol) {
-          try {
-            const token = await marketDataService.getToken(message.symbol);
-            if (token) {
-              this.sendToClient(ws, {
-                type: 'token_data',
-                timestamp: new Date().toISOString(),
-                symbol: message.symbol,
-                data: token
-              });
-            } else {
-              this.sendError(ws, 'TOKEN_NOT_FOUND', `Token ${message.symbol} not found`);
-            }
-          } catch (error) {
-            this.sendError(ws, 'TOKEN_FETCH_ERROR', `Error fetching token data: ${error.message}`);
-          }
-        } else {
-          this.sendError(ws, 'INVALID_REQUEST', 'Symbol is required for token data request');
-        }
-        break;
-        
-      case 'get_all_tokens':
-        // Get data for all tokens
-        try {
-          const tokens = await marketDataService.getAllTokens();
-          this.sendToClient(ws, {
-            type: 'token_update',
-            timestamp: new Date().toISOString(),
-            data: tokens
-          });
-        } catch (error) {
-          this.sendError(ws, 'TOKEN_FETCH_ERROR', `Error fetching token data: ${error.message}`);
-        }
-        break;
-        
-      // Admin-only: token data providers can send token updates
-      case 'token_update':
-        if (clientInfo.authenticated && (clientInfo.user.role === 'admin' || clientInfo.user.role === 'superadmin')) {
-          if (message.data && Array.isArray(message.data)) {
-            // Store the data in a global reference for other services
-            global.lastTokenData = message.data;
-            
-            // Broadcast to all subscribers
-            this.broadcastToChannel('public.tokens', {
-              type: 'token_update',
-              data: message.data,
-              timestamp: new Date().toISOString()
-            });
-            
-            // Send success response
-            this.sendToClient(ws, {
-              type: 'token_update_received',
-              count: message.data.length,
-              timestamp: new Date().toISOString()
-            });
-            
-            logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.GREEN}Received token update from admin (${message.data.length} tokens)${fancyColors.RESET}`);
-          } else {
-            this.sendError(ws, 'INVALID_DATA', 'Invalid token data format');
-          }
-        } else {
-          this.sendError(ws, 'UNAUTHORIZED', 'Only admins can send token updates');
-        }
-        break;
-      
-      default:
-        // Unknown message type, log it
-        logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.YELLOW}Unknown message type: ${message.type}${fancyColors.RESET}`);
-    }
-  }
-
-  /**
-   * Handle market data broadcast from the market data service
-   * @param {Object} data - The market data broadcast
-   */
-  handleMarketDataBroadcast(data) {
-    if (!data || !data.data || !Array.isArray(data.data)) {
-      return;
-    }
-    
-    // Update our statistics
-    this.broadcasts.count++;
-    this.broadcasts.lastUpdate = new Date().toISOString();
-    this.broadcasts.tokenCount = data.data.length;
-    
-    // Broadcast to all clients subscribed to public.tokens channel
-    this.broadcastToChannel('public.tokens', {
-      type: 'token_update',
-      data: data.data,
-      timestamp: data.timestamp || new Date().toISOString()
-    });
-    
-    // Also broadcast to the public.market channel
-    this.broadcastToChannel('public.market', {
-      type: 'market_update',
-      data: data.data,
-      timestamp: data.timestamp || new Date().toISOString()
-    });
-    
-    // Broadcast individual token updates to their respective channels
-    for (const token of data.data) {
-      if (token.symbol) {
-        const tokenChannel = `token.${token.symbol}`;
-        // Only broadcast if anyone is listening
-        if (this.channelSubscriptions.has(tokenChannel)) {
-          this.broadcastToChannel(tokenChannel, {
-            type: 'token_data',
-            symbol: token.symbol,
-            data: token,
-            timestamp: data.timestamp || new Date().toISOString()
-          });
-        }
       }
+    } catch (error) {
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 MSG-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error handling message: ${error.message}${fancyColors.RESET}`, error);
+      this.sendToClient(ws, {
+        type: 'ERROR',
+        error: `Error processing message: ${error.message}`,
+        timestamp: new Date().toISOString()
+      });
     }
-    
-    logApi.debug(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 TOKEN DATA ${fancyColors.RESET} ${fancyColors.GREEN}Broadcasted token data update (${data.data.length} tokens)${fancyColors.RESET}`);
   }
 
   /**
-   * Override the onCleanup method to remove the market data listener
+   * Handle client subscription to a channel
+   * @param {WebSocket} ws - The WebSocket connection
+   * @param {string} channel - The channel to subscribe to
+   */
+  async handleSubscribe(ws, channel) {
+    // Create channel if it doesn't exist
+    if (!this.channelSubscriptions.has(channel)) {
+      this.channelSubscriptions.set(channel, new Set());
+    }
+
+    // Add client to subscribers
+    this.channelSubscriptions.get(channel).add(ws);
+
+    // Send subscription confirmation
+    this.sendToClient(ws, {
+      type: 'SUBSCRIBED',
+      channel,
+      timestamp: new Date().toISOString()
+    });
+
+    // Call the parent method for additional handling
+    await this.onSubscribe(ws, channel);
+
+    // If this is a token-specific channel, send latest token data
+    if (channel.startsWith('token.')) {
+      const tokenSymbol = channel.split('.')[1];
+      await this.handleGetToken(ws, tokenSymbol);
+    }
+  }
+
+  /**
+   * Handle client unsubscription from a channel
+   * @param {WebSocket} ws - The WebSocket connection
+   * @param {string} channel - The channel to unsubscribe from
+   */
+  async handleUnsubscribe(ws, channel) {
+    // Remove client from subscribers
+    if (this.channelSubscriptions.has(channel)) {
+      this.channelSubscriptions.get(channel).delete(ws);
+    }
+
+    // Send unsubscription confirmation
+    this.sendToClient(ws, {
+      type: 'UNSUBSCRIBED',
+      channel,
+      timestamp: new Date().toISOString()
+    });
+
+    // Call the parent method for additional handling
+    await this.onUnsubscribe(ws, channel);
+  }
+
+  /**
+   * Handle get token request
+   * @param {WebSocket} ws - The WebSocket connection
+   * @param {string} tokenSymbol - The token symbol
+   */
+  async handleGetToken(ws, tokenSymbol) {
+    try {
+      const token = await marketDataService.getTokenBySymbol(tokenSymbol);
+
+      if (token) {
+        this.sendToClient(ws, {
+          type: 'TOKEN',
+          data: token,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        this.sendToClient(ws, {
+          type: 'ERROR',
+          error: `Token not found: ${tokenSymbol}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 GET-TOKEN-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error getting token ${tokenSymbol}: ${error.message}${fancyColors.RESET}`, error);
+      this.sendToClient(ws, {
+        type: 'ERROR',
+        error: `Error getting token: ${error.message}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Handle get all tokens request
+   * @param {WebSocket} ws - The WebSocket connection
+   */
+  async handleGetAllTokens(ws) {
+    try {
+      const tokens = await marketDataService.getTokenData();
+
+      if (tokens && tokens.length > 0) {
+        this.sendToClient(ws, {
+          type: 'TOKEN_DATA',
+          data: tokens,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        this.sendToClient(ws, {
+          type: 'TOKEN_DATA',
+          data: [],
+          timestamp: new Date().toISOString(),
+          message: 'No token data available'
+        });
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 GET-ALL-TOKENS-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error getting all tokens: ${error.message}${fancyColors.RESET}`, error);
+      this.sendToClient(ws, {
+        type: 'ERROR',
+        error: `Error getting all tokens: ${error.message}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Handle get market data request
+   * @param {WebSocket} ws - The WebSocket connection
+   */
+  async handleGetMarketData(ws) {
+    try {
+      const marketData = await marketDataService.getMarketSummary();
+
+      if (marketData) {
+        this.sendToClient(ws, {
+          type: 'MARKET_DATA',
+          data: marketData,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        this.sendToClient(ws, {
+          type: 'MARKET_DATA',
+          data: {},
+          timestamp: new Date().toISOString(),
+          message: 'No market data available'
+        });
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 GET-MARKET-DATA-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error getting market data: ${error.message}${fancyColors.RESET}`, error);
+      this.sendToClient(ws, {
+        type: 'ERROR',
+        error: `Error getting market data: ${error.message}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Clean up resources when the WebSocket server is shutting down
    */
   async onCleanup() {
-    // Remove event listener - use serviceEvents since that's where we added the listener
-    serviceEvents.off('market:broadcast', this.marketDataListener);
-    
-    logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE}${fancyColors.BOLD} V69 CLEANUP ${fancyColors.RESET} ${fancyColors.CYAN}Token Data WebSocket cleaned up${fancyColors.RESET}`, {
-      broadcasts: this.broadcasts.count,
-      lastUpdate: this.broadcasts.lastUpdate
-    });
+    try {
+      // Remove event listeners
+      serviceEvents.off('market:broadcast', this.marketDataListener);
+
+      return true;
+    } catch (error) {
+      logApi.error(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CLEANUP-ERROR ${fancyColors.RESET} ${fancyColors.RED}Error cleaning up TokenDataWebSocket: ${error.message}${fancyColors.RESET}`, error);
+      return false;
+    }
   }
-  
+
   /**
-   * Get custom metrics for this WebSocket
-   * @returns {Object} - Custom metrics
+   * Get metrics for the WebSocket server
    */
-  getCustomMetrics() {
+  getMetrics() {
+    const baseMetrics = super.getMetrics();
+    
     return {
-      broadcasts: {
-        count: this.broadcasts.count,
-        lastUpdate: this.broadcasts.lastUpdate,
-        tokenCount: this.broadcasts.tokenCount
-      },
-      channels: {
-        totalSubscriptions: Array.from(this.channelSubscriptions.entries())
-          .reduce((acc, [_, subs]) => acc + subs.size, 0),
-        mostPopular: Array.from(this.channelSubscriptions.entries())
-          .sort((a, b) => b[1].size - a[1].size)
-          .slice(0, 5)
-          .map(([channel, subs]) => ({ channel, subscribers: subs.size }))
-      }
+      ...baseMetrics,
+      broadcasts: this.broadcasts,
+      tokenCount: this.broadcasts.tokenCount
     };
   }
 }
 
+/**
+ * Create a new TokenDataWebSocket
+ * @param {http.Server} server - The HTTP server to attach the WebSocket to
+ * @returns {TokenDataWebSocket} - The token data WebSocket server
+ */
 export function createTokenDataWebSocket(server) {
   return new TokenDataWebSocket(server);
 }
+
+export default createTokenDataWebSocket;

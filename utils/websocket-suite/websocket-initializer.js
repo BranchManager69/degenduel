@@ -450,231 +450,150 @@ export async function initializeWebSockets(server, initResults = {}) {
     }
 }
 
+// Cleanup WebSocket servers before shutdown
 /**
- * Cleanup all WebSocket connections
- * @returns {Promise<boolean>} Whether cleanup was successful
+ * Cleanup all WebSocket servers before shutdown
+ * @returns {Promise<Object>} - Detailed cleanup results
  */
 export async function cleanupWebSockets() {
-    // Check if global.wsServers exists
-    if (!global.wsServers) {
-        logApi.warn('No WebSocket servers to clean up', {
-            service: 'WEBSOCKET',
-            event_type: 'cleanup_skipped',
-            _color: '#FFA500', // Orange for warning
-            _icon: '⚠️'
-        });
-        return true;
-    }
+  try {
+    logApi.info(`🔌 WebSocket Cleanup Starting`, { event_type: "cleanup_start", _icon: "🧹", _color: "#E91E63" });
+    logApi.info(`🔹 🔄 [WebSocket] Cleanup`, { category: "WebSocket", component: "Cleanup", status: "initializing", details: null, _icon: "🔄", _color: "#0078D7", _highlight: false });
     
-    // Log cleanup start with console formatting
-    logApi.info('WebSocket Cleanup Starting', {
-        service: 'WEBSOCKET',
-        event_type: 'cleanup_start',
-        _icon: '🧹',
-        _color: '#E91E63' // Pink/magenta for WebSocket color
-    });
+    // Phase 1: Clean up v69 WebSocket servers
+    logApi.info(`🔹 Cleaning up v69 WebSocket Servers`, { event_type: "cleanup_start", _icon: "🧹", _color: "#00BFFF" });
+    logApi.info(`🔹 🔄 [WebSocket] V69Cleanup`, { category: "WebSocket", component: "V69Cleanup", status: "initializing", details: null, _icon: "🔄", _color: "#0078D7", _highlight: false });
     
-    // Track cleanup with InitLogger
-    InitLogger.logInit('WebSocket', 'Cleanup', 'initializing');
+    let v69CleanupSuccess = true;
+    let v69Results = { count: 0, success: 0, failed: 0 };
     
-    let allSuccessful = true;
-    let successCount = 0;
-    let failureCount = 0;
-    let v69Success = true;
-    
-    // First clean up v69 WebSockets
-    try {
-        // Log v69 cleanup start
-        logApi.info('Cleaning up v69 WebSocket Servers', {
-            service: 'WEBSOCKET_V69',
-            event_type: 'cleanup_start',
-            _icon: '🧹',
-            _color: '#00BFFF' // Deep sky blue
-        });
-        
-        // Track in InitLogger
-        InitLogger.logInit('WebSocket', 'V69Cleanup', 'initializing');
-        
-        // Use the v69 cleanup function if available
-        if (typeof global.cleanupWebSocketsV69 === 'function') {
-            await global.cleanupWebSocketsV69();
-            
-            // Log successful cleanup
-            logApi.info('v69 WebSocket Servers Cleaned Up', {
-                service: 'WEBSOCKET_V69',
-                event_type: 'cleanup_complete',
-                _icon: '✅',
-                _color: '#00AA00' // Green for success
-            });
-            
-            // Update initialization status
-            InitLogger.logInit('WebSocket', 'V69Cleanup', 'success');
-        } else {
-            // Log warning if cleanup function not available
-            logApi.warn('v69 WebSocket cleanup function not available', {
-                service: 'WEBSOCKET_V69',
-                event_type: 'cleanup_skipped',
-                _icon: '⚠️',
-                _color: '#FFA500', // Orange for warning
-                _html_message: `
-                    <span style="background-color:#FFA500;color:black;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                        WARNING
-                    </span>
-                    <span style="margin-left:6px;">
-                        v69 WebSocket cleanup function not available
-                    </span>
-                `
-            });
-            
-            // Update initialization status
-            InitLogger.logInit('WebSocket', 'V69Cleanup', 'warning', { reason: 'function_not_available' });
-        }
-    } catch (v69Error) {
-        // Log failure
-        logApi.error(`v69 WebSocket cleanup failed: ${v69Error.message}`, {
-            service: 'WEBSOCKET_V69',
-            event_type: 'cleanup_failure',
-            error: v69Error.message,
-            stack: v69Error.stack,
-            _icon: '❌',
-            _color: '#FF0000', // Red for error
-            _highlight: true,
-            _html_message: `
-                <span style="background-color:#FF0000;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                    ERROR
-                </span>
-                <span style="font-weight:bold;margin-left:6px;color:#FF0000;">
-                    v69 WebSocket cleanup failed: ${v69Error.message}
-                </span>
-            `
-        });
-        
-        // Update initialization status
-        InitLogger.logInit('WebSocket', 'V69Cleanup', 'error', { error: v69Error.message });
-        
-        v69Success = false;
-        allSuccessful = false;
-    }
+    if (global.wsServersV69) {
+      // Get v69 servers
+      const servers = Object.keys(global.wsServersV69);
+      logApi.info(`WebSocket cleanup: ${servers.length} servers to close`, { count: servers.length });
+      v69Results.count = servers.length;
 
-    // Then clean up legacy WebSockets
-    logApi.info('Cleaning up legacy WebSocket servers', {
-        service: 'WEBSOCKET',
-        event_type: 'cleanup_progress',
-        servers_count: Object.keys(global.wsServers).length,
-        _icon: '🧹',
-        _color: '#9C27B0', // Purple
-        _html_message: `
-            <span style="background-color:#9C27B0;color:white;padding:2px 6px;border-radius:3px;">
-                CLEANUP
-            </span>
-            <span style="margin-left:6px;">
-                Cleaning up ${Object.keys(global.wsServers).length} legacy WebSocket servers
-            </span>
-        `
-    });
-    
-    // Clean up each legacy WebSocket server
-    for (const [name, ws] of Object.entries(global.wsServers)) {
+      // Clean up each WebSocket server with timeout protection
+      const cleanupPromises = Object.entries(global.wsServersV69).map(async ([name, ws]) => {
+        const WS_CLEANUP_TIMEOUT = 5000; // 5 second timeout per WebSocket server
+        
         try {
-            // Check if ws exists and has a cleanup method
+          // Create a timeout promise
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(`Cleanup timeout for ${name}`)), WS_CLEANUP_TIMEOUT);
+          });
+          
+          // Create the cleanup promise
+          const cleanupPromise = async () => {
             if (ws && typeof ws.cleanup === 'function') {
-                await ws.cleanup();
-                
-                // Log individual service success
-                logApi.debug(`Cleaned up ${name} WebSocket`, {
-                    service: 'WEBSOCKET',
-                    component: name,
-                    event_type: 'service_cleanup_success',
-                    _color: '#00AA00' // Green for success
-                });
-                
-                successCount++;
-            } else {
-                // Log warning if cleanup method not available
-                logApi.warn(`${name} WebSocket has no cleanup method`, {
-                    service: 'WEBSOCKET',
-                    component: name,
-                    event_type: 'service_cleanup_skipped',
-                    _icon: '⚠️',
-                    _color: '#FFA500' // Orange for warning
-                });
-                
-                failureCount++;
-                allSuccessful = false;
+              logApi.info(` V69 CLEANUP  Cleaning up WebSocket server at ${ws.path}`);
+              await ws.cleanup();
+              logApi.info(` V69 CLEANUP   SUCCESS  WebSocket server at ${ws.path} cleaned up successfully (${ws.clients?.size || 0} connections closed)`);
+              return { name, success: true, connections: ws.clients?.size || 0 };
             }
+            return { name, success: false, reason: 'No cleanup method' };
+          };
+          
+          // Race between timeout and cleanup
+          return await Promise.race([cleanupPromise(), timeoutPromise]);
         } catch (error) {
-            // Log individual service failure
-            logApi.error(`Failed to cleanup ${name} WebSocket: ${error.message}`, {
-                service: 'WEBSOCKET',
-                component: name,
-                event_type: 'service_cleanup_failure',
-                error: error.message,
-                _icon: '❌',
-                _color: '#FF0000', // Red for error
-                _highlight: true
-            });
-            
-            failureCount++;
-            allSuccessful = false;
+          logApi.error(`Failed to clean up ${name} WebSocket: ${error.message}`);
+          return { name, success: false, reason: error.message };
         }
+      });
+      
+      // Wait for all cleanup operations to complete
+      const results = await Promise.allSettled(cleanupPromises);
+      
+      // Count successful cleanup operations
+      v69Results.success = results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
+      v69Results.failed = servers.length - v69Results.success;
+      v69CleanupSuccess = v69Results.failed === 0;
+      
+      // Log v69 cleanup status
+      if (v69CleanupSuccess) {
+        logApi.info(`🔹 v69 WebSocket Servers Cleaned Up`, { event_type: "cleanup_complete", _icon: "✅", _color: "#00AA00" });
+        logApi.info(`🔹 ✅ [WebSocket] V69Cleanup`, { category: "WebSocket", component: "V69Cleanup", status: "success", details: null, _icon: "✅", _color: "#00AA00", _highlight: false });
+      } else {
+        logApi.warn(`🔹 v69 WebSocket Cleanup Incomplete`, { event_type: "cleanup_warning", _icon: "⚠️", _color: "#FFA500" });
+        logApi.warn(`🔹 ⚠️ [WebSocket] V69Cleanup`, { category: "WebSocket", component: "V69Cleanup", status: "warning", details: { success: v69Results.success, failed: v69Results.failed }, _icon: "⚠️", _color: "#FFA500", _highlight: true });
+      }
+    } else {
+      logApi.info(`🔹 No v69 WebSocket servers to clean up`, { event_type: "cleanup_skip" });
     }
     
-    // Log overall cleanup result
-    if (successCount > 0 && failureCount === 0) {
-        logApi.info(`Successfully cleaned up ${successCount} WebSocket servers`, {
-            service: 'WEBSOCKET',
-            event_type: 'cleanup_complete',
-            success_count: successCount,
-            v69_success: v69Success,
-            _icon: '✅',
-            _color: '#00AA00', // Green for success
-            _html_message: `
+    // Phase 2: No more legacy WebSocket servers to clean up
+    // We have fully migrated to v69 WebSockets
+    
+    // Final cleanup status - only v69 WebSockets now
+    const allSuccess = v69CleanupSuccess;
+    
+    if (allSuccess) {
+      // Count number of v69 WebSocket servers cleaned up
+      const serverCount = v69Results.count || 0;
+      
+      logApi.info(`🔌 Successfully cleaned up ${serverCount} WebSocket servers`, { 
+        event_type: "cleanup_complete", 
+        success_count: serverCount,
+        _icon: "✅", 
+        _color: "#00AA00",
+        _html_message: `
                 <span style="background-color:#00AA00;color:white;padding:2px 6px;border-radius:3px;font-weight:bold;">
                     SUCCESS
                 </span>
                 <span style="font-weight:bold;margin-left:6px;">
-                    WebSocket cleanup complete: ${successCount} servers
+                    WebSocket cleanup complete: ${serverCount} servers
                 </span>
             `
-        });
-        
-        // Update initialization status
-        InitLogger.logInit('WebSocket', 'Cleanup', 'success', { 
-            count: successCount,
-            v69_success: v69Success
-        });
+      });
+      logApi.info(`🔹 ✅ [WebSocket] Cleanup | {"count":${serverCount}}`, { 
+        category: "WebSocket", 
+        component: "Cleanup", 
+        status: "success", 
+        details: { count: serverCount }, 
+        _icon: "✅", 
+        _color: "#00AA00", 
+        _highlight: false 
+      });
     } else {
-        logApi.warn(`WebSocket cleanup incomplete - ${successCount} succeeded, ${failureCount} failed`, {
-            service: 'WEBSOCKET',
-            event_type: 'cleanup_partial',
-            success_count: successCount,
-            failure_count: failureCount,
-            v69_success: v69Success,
-            _icon: '⚠️',
-            _color: '#FFA500', // Orange for warning
-            _highlight: true,
-            _html_message: `
-                <span style="background-color:#FFA500;color:black;padding:2px 6px;border-radius:3px;font-weight:bold;">
-                    WARNING
-                </span>
-                <span style="font-weight:bold;margin-left:6px;">
-                    WebSocket cleanup: ${successCount} succeeded, ${failureCount} failed
-                </span>
-            `
-        });
-        
-        // Update initialization status
-        InitLogger.logInit('WebSocket', 'Cleanup', 'warning', {
-            success_count: successCount,
-            failure_count: failureCount,
-            v69_success: v69Success
-        });
+      logApi.warn(`🔌 WebSocket cleanup incomplete`, { 
+        event_type: "cleanup_warning", 
+        v69_success_count: v69Results.success,
+        v69_failed_count: v69Results.failed,
+        _icon: "⚠️", 
+        _color: "#FFA500" 
+      });
+      logApi.warn(`🔹 ⚠️ [WebSocket] Cleanup`, { 
+        category: "WebSocket", 
+        component: "Cleanup", 
+        status: "warning", 
+        details: { 
+          success_count: v69Results.success, 
+          failed_count: v69Results.failed 
+        }, 
+        _icon: "⚠️", 
+        _color: "#FFA500", 
+        _highlight: true 
+      });
     }
-    
-    // Generate summary log
-    InitLogger.summarizeInitialization(false);
-    
-    return allSuccessful;
+
+    return {
+      success: allSuccess,
+      v69: v69Results,
+      // No legacy WebSockets anymore
+      legacy: {
+        count: 0,
+        success: 0
+      }
+    };
+  } catch (error) {
+    logApi.error(`WebSocket cleanup error: ${error.message}`, error);
+    logApi.error(`🔹 ❌ [WebSocket] Cleanup`, { category: "WebSocket", component: "Cleanup", status: "error", details: { error: error.message }, _icon: "❌", _color: "#FF0000", _highlight: true });
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 }
 
 export default {

@@ -1007,23 +1007,112 @@ class ServiceManager {
             failed: []
         };
 
-        for (const [serviceName, service] of this.services) {
-            try {
-                await service.stop();
-                results.successful.push(serviceName);
-        } catch (error) {
-                results.failed.push({
-                    service: serviceName,
-                    error: error.message
-                });
+        try {
+            logApi.info(`[ServiceManager] Starting service cleanup in dependency-aware order`);
+            
+            // Calculate proper shutdown order (reverse of initialization order)
+            const initOrder = this.calculateInitializationOrder();
+            const shutdownOrder = [...initOrder].reverse();
+            
+            // Group services by shutdown priority for better visualization
+            const servicesByLayer = {};
+            for (const service of shutdownOrder) {
+                const metadata = getServiceMetadata(service);
+                const layer = metadata?.layer || 'unknown';
+                if (!servicesByLayer[layer]) {
+                    servicesByLayer[layer] = [];
+                }
+                servicesByLayer[layer].push(service);
             }
+            
+            // Log shutdown plan
+            logApi.info(`[ServiceManager] Service shutdown plan:`);
+            Object.entries(servicesByLayer).forEach(([layer, services]) => {
+                logApi.info(`  ${layer}: ${services.join(', ')}`);
+            });
+            
+            // Perform shutdown with timeouts and graceful error handling
+            for (const serviceName of shutdownOrder) {
+                const service = this.services.get(serviceName);
+                
+                if (!service) {
+                    logApi.debug(`[ServiceManager] Service ${serviceName} not running, skipping shutdown`);
+                    continue;
+                }
+                
+                try {
+                    // Create shutdown timeout
+                    const SHUTDOWN_TIMEOUT = 10000; // 10 seconds per service
+                    let shutdownComplete = false;
+                    
+                    const timeoutPromise = new Promise((_, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error(`Service ${serviceName} shutdown timed out after ${SHUTDOWN_TIMEOUT}ms`));
+                        }, SHUTDOWN_TIMEOUT);
+                        timeout.unref(); // Don't keep process alive
+                    });
+                    
+                    // Start measuring shutdown time
+                    const startTime = Date.now();
+                    
+                    // Attempt to stop the service with timeout
+                    await Promise.race([
+                        (async () => {
+                            await service.stop();
+                            shutdownComplete = true;
+                        })(),
+                        timeoutPromise
+                    ]);
+                    
+                    // If we got here without an error, the service was stopped successfully
+                    if (shutdownComplete) {
+                        const shutdownTime = Date.now() - startTime;
+                        logApi.info(`[ServiceManager] Service ${serviceName} stopped successfully in ${shutdownTime}ms`);
+                        results.successful.push(serviceName);
+                    }
+                } catch (error) {
+                    logApi.error(`[ServiceManager] Failed to stop service ${serviceName}: ${error.message}`);
+                    results.failed.push({
+                        service: serviceName,
+                        error: error.message
+                    });
+                    
+                    // Continue shutting down other services even if one fails
+                }
+            }
+
+            // Final cleanup of internal data structures
+            this.services.clear();
+            this.dependencies.clear();
+            this.state.clear();
+
+            return results;
+        } catch (error) {
+            logApi.error(`[ServiceManager] Unexpected error during service cleanup: ${error.message}`);
+            results.failed.push({
+                service: 'ServiceManager',
+                error: error.message
+            });
+            
+            // Attempt to clean up as many services as possible despite error
+            for (const [serviceName, service] of this.services) {
+                try {
+                    await service.stop();
+                    results.successful.push(serviceName);
+                } catch (serviceError) {
+                    results.failed.push({
+                        service: serviceName,
+                        error: serviceError.message
+                    });
+                }
+            }
+            
+            this.services.clear();
+            this.dependencies.clear();
+            this.state.clear();
+            
+            return results;
         }
-
-        this.services.clear();
-        this.dependencies.clear();
-        this.state.clear();
-
-        return results;
     }
 
     /**

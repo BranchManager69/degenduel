@@ -13,53 +13,103 @@ import { Agent } from 'https';
 import { createRequire } from 'module';
 
 // Config
-import config from './config/config.json';
+import config from './config/config.js';
+
+// ANSI Colors for pretty output
+const colors = {
+  reset: '\x1b[0m',
+  // Basic colors
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  white: '\x1b[37m',
+  gray: '\x1b[90m',
+  // Bright colors
+  brightRed: '\x1b[91m',
+  brightGreen: '\x1b[92m',
+  brightYellow: '\x1b[93m',
+  brightBlue: '\x1b[94m',
+  brightMagenta: '\x1b[95m',
+  brightCyan: '\x1b[96m',
+  brightWhite: '\x1b[97m',
+  // Backgrounds
+  bgRed: '\x1b[41m',
+  bgGreen: '\x1b[42m',
+  bgYellow: '\x1b[43m',
+  bgBlue: '\x1b[44m',
+  // Text styles
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  italic: '\x1b[3m',
+  underline: '\x1b[4m'
+};
 
 // More Config (for testing)
-const DEFAULT_ENDPOINT = 'monitor';
-const DEFAULT_HOST = 'dev.degenduel.me';
+const DEFAULT_ENDPOINT = 'token-data';
+const HOSTS = {
+  dev: 'dev.degenduel.me',
+  prod: 'degenduel.me'
+};
 const PATH_PREFIX = '/api/v69/ws/';
 
-// Secret Dev Access Token
-const mySDAT = config.wss_testing.test_secret_dev_access_token;
-const SECRET_DEV_ACCESS_TOKEN = mySDAT;
-
-
-
-
-
-// Since I've run out of options, let's try something crazy
-// Maybe I'm the completely crazy one and I just am so dumb that I don't know the difference between tokensand JWTS or whatever so let's just try this hey headers too I mean maybe I don't know the difference between any of these three things
-const my_X_Dev_Access_Token = mySDAT;
-// After all I have no clue if these are the same thing anywaya comma I can't tell a header from a freaking token from a freaking cookie
-
-
-
+// All available v69 WebSocket endpoints
+const AVAILABLE_ENDPOINTS = {
+  'monitor': { path: 'monitor', auth: 'optional', description: 'System status and monitoring' },
+  'token-data': { path: 'token-data', auth: 'none', description: 'Market data and token prices' },
+  'circuit-breaker': { path: 'circuit-breaker', auth: 'optional', description: 'Circuit breaker status' },
+  'notifications': { path: 'notifications', auth: 'required', description: 'User-specific notifications' },
+  'market-data': { path: 'market-data', auth: 'optional', description: 'Market data and analytics' },
+  'skyduel': { path: 'skyduel', auth: 'optional', description: 'SkyDuel game data' },
+  'analytics': { path: 'analytics', auth: 'optional', description: 'System analytics' },
+  'system-settings': { path: 'system-settings', auth: 'optional', description: 'System settings' },
+  'portfolio': { path: 'portfolio', auth: 'required', description: 'User portfolio data' },
+  'contest': { path: 'contest', auth: 'optional', description: 'Contest data and chat rooms' },
+  'wallet': { path: 'wallet', auth: 'required', description: 'Wallet data' },
+  'test': { path: 'test', auth: 'none', description: 'Test endpoint' }
+};
 
 // Parse command line arguments, if any
 const args = process.argv.slice(2);
 const endpoint = args[0] || DEFAULT_ENDPOINT;
-const token = args[1] || '';
+
+if (!AVAILABLE_ENDPOINTS[endpoint]) {
+  console.log(`
+Error: Unknown endpoint '${endpoint}'
+
+Available endpoints:
+${Object.entries(AVAILABLE_ENDPOINTS).map(([key, info]) => 
+  `  ${key.padEnd(15)} - ${info.description} (Auth: ${info.auth})`
+).join('\n')}
+
+Usage: node ${process.argv[1]} <endpoint>
+Example: node ${process.argv[1]} token-data
+`);
+  process.exit(1);
+}
 
 // Custom agent with self-signed cert support
 const customAgent = new Agent({
   rejectUnauthorized: false // Allow self-signed certificates
 });
 
+// Track connections for both environments
+let devWs = null;
+let prodWs = null;
 
 // Custom WebSocket class that attempts to fix the RSV1 issue
 class FixedWebSocket extends WebSocket {
   constructor(address, protocols, options) {
-    console.log(`[INIT] Creating WebSocket with compression disabled`);
+    console.log(`[INIT] Creating WebSocket with compression DISABLED for ${address}`);
     
-    // Force compression off
+    // Super simple options - just disable compression
     const fixedOptions = {
       ...(options || {}),
       perMessageDeflate: false,
       headers: {
-        ...(options?.headers || {}),
-        'Sec-WebSocket-Extensions': '',
-        'X-Dev-Access-Token': my_X_Dev_Access_Token
+        'Sec-WebSocket-Extensions': '' // Prevent any compression
       }
     };
     
@@ -68,59 +118,215 @@ class FixedWebSocket extends WebSocket {
     
     // Make sure _extensions exists to prevent null reference exceptions
     this._extensions = {};
-    
-    // Set up frame data hook
-    this.on('open', () => {
-      this._ignoreRSV1Errors = true;
-      console.log(`[PATCH] Connection open, patching receiver and close methods`);
-      
-      // ULTRA AGGRESSIVE: Override the WebSocket.close method for this instance
-      // This prevents ANY closure from happening due to internal errors
-      const originalClose = this.close;
-      this.close = function(code, reason) {
-        // Check for internal RSV1-related closure
-        if (code === 1006 || (reason && reason.toString().includes('RSV1'))) {
-          console.log(`[PATCH] Intercepted WebSocket.close call with code=${code} reason=${reason}`);
-          // Don't actually close the connection!
-          return;
-        }
-        
-        // Allow normal close for things like manual disconnection
-        return originalClose.call(this, code, reason);
-      };
-      
-      // Override the error method to ignore RSV1 errors
-      if (this._receiver) {
-        const originalError = this._receiver.error;
-        this._receiver.error = function(reason, code) {
-          // Check if this is an RSV1 error and ignore it
-          if (reason.toString().includes('RSV1')) {
-            console.log(`[PATCH] Intercepted RSV1 error: ${reason}`);
-            return; // Don't propagate the error
-          }
-          
-          // Otherwise call original error method
-          return originalError.call(this, reason, code);
-        };
-        
-        // ADVANCED: If the receiver has a processFrame method, override it
-        if (this._receiver.processFrame) {
-          const originalProcessFrame = this._receiver.processFrame;
-          this._receiver.processFrame = function(frame) {
-            // Modify the frame to clear RSV1 bit if it exists
-            if (frame && frame.rsv1) {
-              console.log(`[PATCH] Clearing RSV1 bit in frame`);
-              frame.rsv1 = false;
-            }
-            // Process with original method
-            return originalProcessFrame.call(this, frame);
-          };
-        }
-        
-        console.log(`[PATCH] Successfully patched WebSocket methods`);
-      }
-    });
   }
+}
+
+// Helper function to format timestamps
+function formatTimestamp() {
+  return new Date().toLocaleTimeString('en-US', { 
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    fractionalSecondDigits: 3
+  });
+}
+
+// Helper function to format message type badges
+function formatBadge(type, text) {
+  switch(type.toLowerCase()) {
+    case 'error':
+      return `${colors.bgRed}${colors.white}${colors.bold} ${text} ${colors.reset}`;
+    case 'warning':
+      return `${colors.bgYellow}${colors.black}${colors.bold} ${text} ${colors.reset}`;
+    case 'success':
+      return `${colors.bgGreen}${colors.black}${colors.bold} ${text} ${colors.reset}`;
+    case 'info':
+      return `${colors.bgBlue}${colors.white}${colors.bold} ${text} ${colors.reset}`;
+    default:
+      return `${colors.gray}${colors.bold} ${text} ${colors.reset}`;
+  }
+}
+
+// Helper function to format environment badges
+function formatEnvBadge(env) {
+  return env.toUpperCase() === 'DEV' 
+    ? `${colors.bgBlue}${colors.white}${colors.bold} DEV ${colors.reset}`
+    : `${colors.bgGreen}${colors.black}${colors.bold} PROD ${colors.reset}`;
+}
+
+// Helper function to format JSON messages
+function formatJSON(data, indent = 0) {
+  try {
+    const obj = typeof data === 'string' ? JSON.parse(data) : data;
+    const formatted = JSON.stringify(obj, null, 2)
+      .split('\n')
+      .map(line => '  '.repeat(indent) + line)
+      .join('\n');
+    return formatted;
+  } catch (e) {
+    return typeof data === 'string' ? data : JSON.stringify(data);
+  }
+}
+
+// Event handlers for each environment
+function createHandlers(env) {
+  return {
+    handleOpen: () => {
+      const envBadge = formatEnvBadge(env);
+      const successBadge = formatBadge('success', 'CONNECTED');
+      console.log(`\n${colors.gray}[${formatTimestamp()}]${colors.reset} ${envBadge} ${successBadge}`);
+      console.log(`${colors.gray}└─${colors.reset} ${colors.cyan}Ready to send/receive messages${colors.reset}`);
+      rl.prompt();
+    },
+    
+    handleMessage: (data) => {
+      const envBadge = formatEnvBadge(env);
+      const msgBadge = formatBadge('info', 'MESSAGE');
+      try {
+        const message = JSON.parse(data);
+        console.log(`\n${colors.gray}[${formatTimestamp()}]${colors.reset} ${envBadge} ${msgBadge}`);
+        
+        // Special handling for different message types
+        if (message.type) {
+          console.log(`${colors.gray}├─${colors.reset} ${colors.cyan}Type:${colors.reset} ${colors.brightYellow}${message.type}${colors.reset}`);
+        }
+        if (message.error) {
+          console.log(`${colors.gray}├─${colors.reset} ${colors.red}Error:${colors.reset} ${message.error}`);
+        }
+        if (message.data) {
+          console.log(`${colors.gray}├─${colors.reset} ${colors.cyan}Data:${colors.reset}`);
+          console.log(`${colors.gray}│${colors.reset}  ${formatJSON(message.data, 1)}`);
+        }
+        
+        // Show full message for debugging
+        console.log(`${colors.gray}└─${colors.reset} ${colors.dim}Full message:${colors.reset}`);
+        console.log(`${colors.gray}   ${colors.reset}${formatJSON(message, 1)}`);
+      } catch (e) {
+        // Raw text message
+        console.log(`\n${colors.gray}[${formatTimestamp()}]${colors.reset} ${envBadge} ${msgBadge}`);
+        console.log(`${colors.gray}└─${colors.reset} ${colors.cyan}Raw:${colors.reset} ${data}`);
+      }
+      rl.prompt();
+    },
+    
+    handleError: (error) => {
+      const envBadge = formatEnvBadge(env);
+      const errorBadge = formatBadge('error', 'ERROR');
+      
+      console.log(`\n${colors.gray}[${formatTimestamp()}]${colors.reset} ${envBadge} ${errorBadge}`);
+      console.log(`${colors.gray}├─${colors.reset} ${colors.red}${error.message}${colors.reset}`);
+      
+      // Enhanced error diagnostics
+      if (error.message.includes('ECONNREFUSED')) {
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Diagnosis:${colors.reset} Server is down or not listening`);
+        console.log(`${colors.gray}└─${colors.reset} ${colors.yellow}Solution:${colors.reset} Check if the server is running on the expected port`);
+      } else if (error.message.includes('ENOTFOUND')) {
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Diagnosis:${colors.reset} Host not found`);
+        console.log(`${colors.gray}└─${colors.reset} ${colors.yellow}Solution:${colors.reset} Check your DNS settings and internet connection`);
+      } else if (error.message.includes('RSV1')) {
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Diagnosis:${colors.reset} WebSocket compression issue`);
+        console.log(`${colors.gray}└─${colors.reset} ${colors.yellow}Solution:${colors.reset} Compression is disabled, this error should be ignored`);
+      } else {
+        console.log(`${colors.gray}└─${colors.reset} ${colors.yellow}Try reconnecting or check server logs${colors.reset}`);
+      }
+      
+      rl.prompt();
+    },
+    
+    handleClose: (code, reason) => {
+      const envBadge = formatEnvBadge(env);
+      const closeBadge = formatBadge('warning', 'CLOSED');
+      
+      console.log(`\n${colors.gray}[${formatTimestamp()}]${colors.reset} ${envBadge} ${closeBadge}`);
+      console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Code:${colors.reset} ${code}`);
+      if (reason) {
+        console.log(`${colors.gray}└─${colors.reset} ${colors.yellow}Reason:${colors.reset} ${reason}`);
+      }
+      
+      if (env === 'dev') {
+        devWs = null;
+      } else {
+        prodWs = null;
+      }
+      rl.prompt();
+    },
+    
+    handleUnexpectedResponse: (req, res) => {
+      const envBadge = formatEnvBadge(env);
+      const errorBadge = formatBadge('error', 'HTTP ERROR');
+      
+      console.log(`\n${colors.gray}[${formatTimestamp()}]${colors.reset} ${envBadge} ${errorBadge}`);
+      console.log(`${colors.gray}├─${colors.reset} ${colors.red}Status:${colors.reset} ${res.statusCode} ${res.statusMessage || ''}`);
+      
+      // Enhanced diagnostics for common status codes
+      if (res.statusCode === 400) {
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Diagnosis:${colors.reset} Bad Request - Server rejected the connection`);
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Possible causes:${colors.reset}`);
+        console.log(`${colors.gray}│${colors.reset}  ${colors.dim}•${colors.reset} Invalid authentication token`);
+        console.log(`${colors.gray}│${colors.reset}  ${colors.dim}•${colors.reset} Wrong authentication parameter name`);
+        console.log(`${colors.gray}│${colors.reset}  ${colors.dim}•${colors.reset} WebSocket protocol mismatch`);
+      } else if (res.statusCode === 401) {
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Diagnosis:${colors.reset} Unauthorized - Authentication required`);
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Required Auth:${colors.reset} ${AVAILABLE_ENDPOINTS[endpoint].auth}`);
+      } else if (res.statusCode === 404) {
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Diagnosis:${colors.reset} Endpoint not found`);
+        console.log(`${colors.gray}├─${colors.reset} ${colors.yellow}Endpoint:${colors.reset} ${PATH_PREFIX}${endpoint}`);
+      }
+      
+      // Show headers for debugging
+      console.log(`${colors.gray}├─${colors.reset} ${colors.dim}Response Headers:${colors.reset}`);
+      Object.entries(res.headers).forEach(([key, value], i, arr) => {
+        const isLast = i === arr.length - 1;
+        console.log(`${colors.gray}${isLast ? '└' : '├'}─${colors.reset} ${colors.dim}${key}:${colors.reset} ${value}`);
+      });
+      
+      rl.prompt();
+    }
+  };
+}
+
+// Function to connect to a specific environment
+function connectToEnv(env) {
+  const wsURL = `wss://${HOSTS[env]}${PATH_PREFIX}${endpoint}`;
+  console.log(`\n[${env.toUpperCase()}] Connecting to: ${wsURL}`);
+  
+  try {
+    const ws = new FixedWebSocket(wsURL, undefined, {
+      agent: customAgent
+    });
+    
+    const handlers = createHandlers(env);
+    
+    // Set up event handlers
+    ws.on('open', handlers.handleOpen);
+    ws.on('message', handlers.handleMessage);
+    ws.on('error', handlers.handleError);
+    ws.on('close', handlers.handleClose);
+    ws.on('unexpected-response', handlers.handleUnexpectedResponse);
+    
+    return ws;
+  } catch (error) {
+    console.error(`[${env.toUpperCase()} ERROR] Failed to create WebSocket: ${error.message}`);
+    return null;
+  }
+}
+
+// Function to connect to WebSocket server
+function connect() {
+  // Clean up any existing connections
+  if (devWs) {
+    try { devWs.terminate(); } catch (err) { /* ignore */ }
+    devWs = null;
+  }
+  if (prodWs) {
+    try { prodWs.terminate(); } catch (err) { /* ignore */ }
+    prodWs = null;
+  }
+  
+  // Connect to both environments
+  devWs = connectToEnv('dev');
+  prodWs = connectToEnv('prod');
 }
 
 // UI elements - readline interface
@@ -130,262 +336,129 @@ const rl = createInterface({
   prompt: '> '
 });
 
-// State tracking
-let isConnected = false;
-let activeWs = null;
-let messageCount = 0;
-
-// Function to connect to WebSocket server
-function connect() {
-  // Clean up any existing connection
-  if (activeWs) {
-    try {
-      activeWs.terminate();
-    } catch (err) {
-      // Ignore errors on cleanup
-    }
-    activeWs = null;
-  }
-  
-  // Build WebSocket URL with clean token
-  const cleanToken = token ? token.replace(/\s+/g, '') : '';
-  const wsURL = `wss://${DEFAULT_HOST}${PATH_PREFIX}${endpoint}${cleanToken ? `?token=${encodeURIComponent(cleanToken)}` : ''}`;
-  
-  console.log(`\n[CONNECT] Connecting to: ${wsURL.replace(/token=([^&]+)/, 'token=***')}`);
-  if (cleanToken) {
-    console.log(`[TOKEN] Using token (length: ${cleanToken.length}) first 10 chars: ${cleanToken.substring(0, 10)}...`);
-  }
-  
-  try {
-    // Create WebSocket with our patched class
-    activeWs = new FixedWebSocket(wsURL, undefined, {
-      agent: customAgent
-    });
-    
-    // Set up event handlers
-    activeWs.on('open', handleOpen);
-    activeWs.on('message', handleMessage);
-    activeWs.on('error', handleError);
-    activeWs.on('close', handleClose);
-    activeWs.on('unexpected-response', handleUnexpectedResponse);
-    
-    return activeWs;
-  } catch (error) {
-    console.error(`[ERROR] Failed to create WebSocket: ${error.message}`);
-    return null;
-  }
-}
-
-// Event handlers
-function handleOpen() {
-  isConnected = true;
-  console.log(`\n[CONNECTED] WebSocket connection established`);
-  console.log(`[STATUS] Ready to send messages`);
-  rl.prompt();
-}
-
-function handleMessage(data) {
-  messageCount++;
-  try {
-    // Try to parse as JSON
-    const jsonData = JSON.parse(data);
-    console.log(`\n[RECEIVED ${messageCount}] ${JSON.stringify(jsonData, null, 2)}`);
-  } catch (error) {
-    // Not JSON, print as text
-    console.log(`\n[RECEIVED ${messageCount}] Raw message: ${data}`);
-  }
-  rl.prompt();
-}
-
-function handleError(error) {
-  console.error(`\n[ERROR] ${error.message}`);
-  
-  if (error.message.includes('RSV1')) {
-    console.log(`[PATCH] RSV1 error detected - ignoring and staying connected!`);
-    // Critically: DO NOT propagate RSV1 errors!
-    return;
-  }
-  
-  rl.prompt();
-}
-
-function handleClose(code, reason) {
-  isConnected = false;
-  console.log(`\n[CLOSED] Connection closed with code ${code}${reason ? ': ' + reason : ''}`);
-  rl.prompt();
-}
-
-function handleUnexpectedResponse(req, res) {
-  console.error(`\n[HTTP ERROR] Server returned HTTP ${res.statusCode} instead of WebSocket upgrade`);
-  console.log(`[HEADERS] Response headers:`, res.headers);
-  
-  let body = '';
-  res.on('data', (chunk) => { body += chunk; });
-  res.on('end', () => {
-    console.log(`[BODY] Response body: ${body}`);
-    rl.prompt();
-  });
-}
-
-// Function to send a message to the WebSocket server
-function sendMessage(message) {
-  if (!activeWs || activeWs.readyState !== WebSocket.OPEN) {
-    console.error(`\n[ERROR] Cannot send message: WebSocket not connected`);
-    return false;
-  }
-  
-  try {
-    // Convert to string if it's an object
-    const messageString = typeof message === 'string' ? message : JSON.stringify(message);
-    activeWs.send(messageString);
-    console.log(`\n[SENT] ${messageString}`);
-    return true;
-  } catch (error) {
-    console.error(`\n[ERROR] Failed to send message: ${error.message}`);
-    return false;
-  }
-}
-
-// Print welcome message
-console.log(`
-====================================================
-  DegenDuel WebSocket Client Diagnostic Tool
-====================================================
-  Endpoint: ${endpoint}
-  Auth: ${token ? 'JWT Token provided' : 'No token provided'}
-  
-  Commands:
-  - Type 'help' for available commands
-  - Type 'quit' or 'exit' to disconnect and exit
-  - Type any JSON to send a custom message
-====================================================
-`);
-
-// Connect to WebSocket server
-connect();
-
 // Handle user input
 rl.on('line', (line) => {
   const trimmedLine = line.trim();
   
   // Handle special commands
-  if (trimmedLine === 'exit' || trimmedLine === 'quit') {
-    console.log(`\n[EXIT] Disconnecting and exiting...`);
-    if (activeWs) {
-      activeWs.close(1000, 'User initiated disconnect');
-    }
-    setTimeout(() => process.exit(0), 500);
-    return;
+  if (trimmedLine === 'quit' || trimmedLine === 'exit') {
+    console.log('\nDisconnecting...');
+    if (devWs) devWs.close();
+    if (prodWs) prodWs.close();
+    process.exit(0);
   }
   
   if (trimmedLine === 'help') {
     console.log(`
 Available commands:
-  exit/quit - Disconnect and exit
-  help - Show this help message
-  status - Show connection status
-  reconnect - Force reconnection
-  
-  # Quick message types
-  heartbeat - Send heartbeat message
-  get_status - Request status from server
-  get_metrics - Request metrics from server
-  subscribe <channel> - Subscribe to a channel
-  
-  # Or type any JSON to send a custom message
-  {"type":"custom_message","data":{"foo":"bar"}}
+- quit/exit: Disconnect and exit
+- help: Show this help message
+- reconnect: Reconnect to both servers
+- status: Show connection status
+- endpoints: List all available endpoints
+- switch <endpoint>: Switch to a different endpoint
+- Any other input will be sent as a message to both servers if connected
+
+Available endpoints:
+${Object.entries(AVAILABLE_ENDPOINTS).map(([key, info]) => 
+  `  ${key.padEnd(15)} - ${info.description} (Auth: ${info.auth})`
+).join('\n')}
 `);
     rl.prompt();
     return;
   }
   
-  if (trimmedLine === 'status') {
-    console.log(`\n[STATUS] Connection: ${isConnected ? 'CONNECTED' : 'DISCONNECTED'}`);
-    console.log(`[STATUS] Messages received: ${messageCount}`);
-    rl.prompt();
-    return;
-  }
-  
   if (trimmedLine === 'reconnect') {
-    console.log(`\n[RECONNECT] Manually reconnecting...`);
+    console.log('\nReconnecting to both servers...');
     connect();
     rl.prompt();
     return;
   }
   
-  if (trimmedLine === 'heartbeat') {
-    sendMessage({
-      type: 'heartbeat',
-      timestamp: new Date().toISOString()
+  if (trimmedLine === 'status') {
+    console.log('\nConnection Status:');
+    console.log(`DEV: ${devWs ? 'Connected' : 'Disconnected'}`);
+    console.log(`PROD: ${prodWs ? 'Connected' : 'Disconnected'}`);
+    rl.prompt();
+    return;
+  }
+  
+  if (trimmedLine === 'endpoints') {
+    console.log(`\nAvailable endpoints:`);
+    Object.entries(AVAILABLE_ENDPOINTS).forEach(([key, info]) => {
+        console.log(`  ${key.padEnd(15)} - ${info.description} (Auth: ${info.auth})`);
     });
     rl.prompt();
     return;
   }
   
-  if (trimmedLine === 'get_status') {
-    sendMessage({
-      type: 'get_status',
-      timestamp: new Date().toISOString()
-    });
-    rl.prompt();
-    return;
-  }
-  
-  if (trimmedLine === 'get_metrics') {
-    sendMessage({
-      type: 'get_metrics',
-      timestamp: new Date().toISOString()
-    });
-    rl.prompt();
-    return;
-  }
-  
-  if (trimmedLine.startsWith('subscribe ')) {
-    const channel = trimmedLine.split(' ')[1];
-    if (channel) {
-      sendMessage({
-        type: 'subscribe',
-        channel: channel,
-        timestamp: new Date().toISOString()
-      });
+  if (trimmedLine.startsWith('switch ')) {
+    const newEndpoint = trimmedLine.split(' ')[1];
+    if (AVAILABLE_ENDPOINTS[newEndpoint]) {
+        console.log(`\nSwitching to endpoint: ${newEndpoint}`);
+        endpoint = newEndpoint;
+        connect();
     } else {
-      console.log(`\n[ERROR] Missing channel name`);
+        console.log(`\nError: Unknown endpoint '${newEndpoint}'`);
+        console.log('Use the "endpoints" command to see available endpoints');
     }
     rl.prompt();
     return;
   }
   
-  // Try to parse as JSON and send as custom message
-  if (trimmedLine) {
-    try {
-      if (trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
-        const jsonMessage = JSON.parse(trimmedLine);
-        sendMessage(jsonMessage);
-      } else {
-        // Send as simple message type
-        sendMessage({
-          type: trimmedLine,
-          timestamp: new Date().toISOString()
-        });
-      }
-    } catch (error) {
-      console.error(`\n[ERROR] Invalid JSON: ${error.message}`);
+  // Try to send the message to both servers
+  try {
+    // Try to parse as JSON first
+    const jsonMessage = JSON.parse(trimmedLine);
+    if (devWs) {
+      devWs.send(JSON.stringify(jsonMessage));
+      console.log('\n[DEV SENT] Message sent as JSON');
+    }
+    if (prodWs) {
+      prodWs.send(JSON.stringify(jsonMessage));
+      console.log('[PROD SENT] Message sent as JSON');
+    }
+  } catch (e) {
+    // Not valid JSON, send as plain text
+    if (devWs) {
+      devWs.send(trimmedLine);
+      console.log('\n[DEV SENT] Message sent as text');
+    }
+    if (prodWs) {
+      prodWs.send(trimmedLine);
+      console.log('[PROD SENT] Message sent as text');
     }
   }
   
   rl.prompt();
 });
 
-// Handle CTRL+C to exit gracefully
-rl.on('SIGINT', () => {
-  console.log(`\n[EXIT] Received SIGINT, disconnecting...`);
+// Update the welcome message with colors
+console.log(`
+${colors.brightCyan}====================================================
+  ${colors.bold}DegenDuel WebSocket Client Diagnostic Tool${colors.reset}${colors.brightCyan}
+====================================================${colors.reset}
+  ${colors.cyan}Current Endpoint:${colors.reset} ${colors.brightYellow}${endpoint}${colors.reset}
+  ${colors.cyan}Description:${colors.reset} ${AVAILABLE_ENDPOINTS[endpoint].description}
+  ${colors.cyan}Auth Required:${colors.reset} ${AVAILABLE_ENDPOINTS[endpoint].auth === 'required' 
+    ? `${colors.red}${AVAILABLE_ENDPOINTS[endpoint].auth}${colors.reset}`
+    : AVAILABLE_ENDPOINTS[endpoint].auth === 'optional'
+      ? `${colors.yellow}${AVAILABLE_ENDPOINTS[endpoint].auth}${colors.reset}`
+      : `${colors.green}${AVAILABLE_ENDPOINTS[endpoint].auth}${colors.reset}`}
+  ${colors.cyan}Testing Environments:${colors.reset}
+    ${formatEnvBadge('dev')} ${colors.gray}wss://dev.degenduel.me${colors.reset}
+    ${formatEnvBadge('prod')} ${colors.gray}wss://degenduel.me${colors.reset}
   
-  if (activeWs && activeWs.readyState === WebSocket.OPEN) {
-    activeWs.close(1000, 'User initiated disconnect');
-  }
-  
-  setTimeout(() => {
-    rl.close();
-    process.exit(0);
-  }, 500);
-});
+  ${colors.cyan}Commands:${colors.reset}
+  ${colors.dim}•${colors.reset} Type ${colors.brightYellow}'help'${colors.reset} for available commands
+  ${colors.dim}•${colors.reset} Type ${colors.brightYellow}'quit'${colors.reset} or ${colors.brightYellow}'exit'${colors.reset} to disconnect and exit
+  ${colors.dim}•${colors.reset} Type ${colors.brightYellow}'status'${colors.reset} to check connection status
+  ${colors.dim}•${colors.reset} Type ${colors.brightYellow}'endpoints'${colors.reset} to list all endpoints
+  ${colors.dim}•${colors.reset} Type ${colors.brightYellow}'switch <endpoint>'${colors.reset} to change endpoint
+  ${colors.dim}•${colors.reset} Type ${colors.brightYellow}'reconnect'${colors.reset} to reconnect to both servers
+  ${colors.dim}•${colors.reset} Type any JSON to send a custom message
+${colors.brightCyan}====================================================${colors.reset}
+`);
+
+// Connect to both servers
+connect();

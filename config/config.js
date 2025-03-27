@@ -53,7 +53,8 @@ const config = {
   },
   // Secure middleware config:
   secure_middleware: {
-    branch_manager_header_token: process.env.BRANCH_MANAGER_ACCESS_SECRET,
+    branch_manager_access_secret: process.env.BRANCH_MANAGER_ACCESS_SECRET,
+    branch_manager_header_token: process.env.BRANCH_MANAGER_ACCESS_SECRET, // alias
     branch_manager_login_secret: process.env.BRANCH_MANAGER_LOGIN_SECRET,
     branch_manager_ip_address: process.env.BRANCH_MANAGER_IP_ADDRESS,
   },
@@ -250,6 +251,12 @@ const config = {
   // Token submission discount percentage per level:
   token_submission_discount_percentage_per_level:
     process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,
+  // IPInfo API:
+  ipinfo: {
+    api_key: process.env.IPINFO_API_KEY,
+    full_url: process.env.IPINFO_API_FULL_URL,
+  },
+  
   // Helper function to get environment:
   getEnvironment: (origin) => {
     // First check if we're explicitly in development mode based on NODE_ENV
