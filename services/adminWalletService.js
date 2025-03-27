@@ -25,6 +25,7 @@ import { getAssociatedTokenAddress, getAccount, createTransferInstruction } from
 import bs58 from 'bs58';
 import crypto from 'crypto';
 import { transferSOL, transferToken } from '../utils/solana-suite/web3-v2/solana-transaction-fixed.js';
+import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.js';
 
 const ADMIN_WALLET_CONFIG = {
     name: SERVICE_NAMES.ADMIN_WALLET,
@@ -64,8 +65,9 @@ class AdminWalletService extends BaseService {
     constructor() {
         super(ADMIN_WALLET_CONFIG);
         
-        // Initialize Solana connection
-        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        // Use SolanaServiceManager instead of creating a new connection
+        // This ensures all RPC calls go through the central request queue
+        this.connection = null; // Will be initialized on demand
         
         // Initialize service-specific stats
         this.walletStats = {
@@ -99,12 +101,36 @@ class AdminWalletService extends BaseService {
                 last_operation_time_ms: 0,
                 average_batch_time_ms: 0
             },
-            dependencies: {} // No dependencies on other services
+            dependencies: {
+                SOLANA: {
+                    required: true,
+                    status: 'pending',
+                    lastCheck: null
+                }
+            }
         };
 
         // Active transfer tracking
         this.activeTransfers = new Map();
         this.transferTimeouts = new Set();
+    }
+    
+    /**
+     * Get the Solana connection via SolanaServiceManager
+     * This ensures all RPC calls go through the central rate limiting system
+     * @returns {Connection} The Solana connection
+     */
+    getConnection() {
+        if (!this.connection) {
+            // Get connection from SolanaServiceManager
+            try {
+                this.connection = SolanaServiceManager.getConnection();
+            } catch (error) {
+                logApi.error('Failed to get Solana connection from SolanaServiceManager:', error);
+                throw new ServiceError('solana_connection_error', 'Failed to get Solana connection');
+            }
+        }
+        return this.connection;
     }
 
     async initialize() {
@@ -221,7 +247,8 @@ class AdminWalletService extends BaseService {
             // Check each wallet's state
             for (const wallet of wallets) {
                 try {
-                    const balance = await this.connection.getBalance(new PublicKey(wallet.wallet_address));
+                    // Use getConnection() to ensure we use the central rate limiting system
+                    const balance = await this.getConnection().getBalance(new PublicKey(wallet.wallet_address));
                     results.checked++;
 
                     if (balance < this.config.wallet.operations.minSOLBalance * LAMPORTS_PER_SOL) {
@@ -705,9 +732,9 @@ class AdminWalletService extends BaseService {
                 };
             }
             
-            // Get current Solana balance
+            // Get current Solana balance via getConnection() for central rate limiting
             const publicKey = new PublicKey(wallet.public_key);
-            const lamports = await this.connection.getBalance(publicKey);
+            const lamports = await this.getConnection().getBalance(publicKey);
             const solBalance = lamports / LAMPORTS_PER_SOL;
             
             // Update wallet metadata with balance info in database

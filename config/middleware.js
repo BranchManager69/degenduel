@@ -7,7 +7,7 @@ import { config } from './config.js';
 import helmet from 'helmet';
 import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
 import { restrictDevAccess } from '../middleware/devAccessMiddleware.js';
-import { websocketBypassMiddleware } from '../middleware/debugMiddleware.js';
+// ⛔ REMOVED: import { websocketBypassMiddleware } from '../middleware/debugMiddleware.js';
 import { fancyColors } from '../utils/colors.js';
 
 // Load from config
@@ -25,35 +25,61 @@ const lobbyOrigin = config.api_urls.lobby;
 const reflectionsOrigin = config.api_urls.reflections;
 
 // Master middleware config
-export function configureMiddleware(app) {  
-  // ENHANCED WEBSOCKET BYPASS: Add the dedicated WebSocket bypass middleware first
-  // This ensures all WebSocket requests preserve their headers and bypass problematic middleware
-  app.use(websocketBypassMiddleware);
+export function configureMiddleware(app) {
+  // ████████████████████████████████████████████████████████████████████████████████
+  // █ CRITICAL WEBSOCKET HANDLING - FIRST MIDDLEWARE - NO OTHER MIDDLEWARE BEFORE █
+  // ████████████████████████████████████████████████████████████████████████████████
   
-  // Add a second layer of WebSocket detection at the HTTP server level
-  // This catches any requests that might have been missed by the bypass middleware
+  // Universal WebSocket Detector - MUST be the first middleware in the chain
   app.use((req, res, next) => {
-    // Check if this is a WebSocket upgrade request that wasn't caught by the bypass
-    if (!req._isWebSocketRequest && req.headers.upgrade && req.headers.upgrade.toLowerCase() === 'websocket') {
-      logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS-SECONDARY-BYPASS ${fancyColors.RESET} WebSocket upgrade request detected in secondary layer: ${req.url}`, {
-        headers: req.headers,
-        url: req.url,
-        _highlight: true
-      });
+    // Method 1: Detect by standard WebSocket headers (most reliable)
+    const hasUpgradeHeader = req.headers.upgrade?.toLowerCase() === 'websocket';
+    const hasConnectionHeader = req.headers.connection?.toLowerCase()?.includes('upgrade');
+    const hasWebSocketKey = !!req.headers['sec-websocket-key'];
+    const hasWebSocketVersion = !!req.headers['sec-websocket-version'];
+    
+    // Method 2: Detect by URL pattern (fallback)
+    const hasWebSocketURL = 
+      req.url.includes('/ws/') || 
+      req.url.includes('/socket') ||
+      req.url.includes('/websocket');
+    
+    // Combined detection - prioritize header evidence, fallback to URL
+    const isWebSocketRequest = 
+      (hasUpgradeHeader || hasConnectionHeader || hasWebSocketKey || hasWebSocketVersion) || 
+      hasWebSocketURL;
+    
+    if (isWebSocketRequest) {
+      // Flag for middleware chain to recognize WebSocket requests
+      req.WEBSOCKET_REQUEST = true;
       
-      // Mark as WebSocket request
-      req._isWebSocketRequest = true;
+      // Log once at detection for diagnostics
+      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WEBSOCKET ${fancyColors.RESET} ${req.url}`, {
+        headers: {
+          upgrade: req.headers.upgrade,
+          connection: req.headers.connection,
+          'sec-websocket-key': hasWebSocketKey ? 'present' : 'missing',
+          'sec-websocket-version': req.headers['sec-websocket-version'] || 'missing'
+        }
+      });
     }
     
-    // If this is a WebSocket request detected by either layer, add a response
-    // header to indicate it's been properly bypassed
-    if (req._isWebSocketRequest) {
-      res.setHeader('X-WebSocket-Bypass', 'true');
-    }
-    
-    // Continue with next middleware
     next();
   });
+
+  /*******************************************************************
+   * ⛔ REMOVED: Legacy websocketBypassMiddleware ⛔
+   * 
+   * The following line used to be here:
+   * app.use(websocketBypassMiddleware);
+   * 
+   * This has been completely removed as the websocketBypassMiddleware
+   * is deprecated and all WebSocket detection now happens in the 
+   * Universal WebSocket Detector above.
+   * 
+   * Last active use: March 27th, 2025
+   * Author of removal: Claude AI
+   *******************************************************************/
 
   // Allowed origins (CORS) - HTTPS only, plus localhost for development
   const allowedOrigins = [
@@ -100,9 +126,23 @@ export function configureMiddleware(app) {
     'http://localhost:56347'
   ];
 
-  // Basic middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // Body Parser middleware with WebSocket bypass
+  app.use((req, res, next) => {
+    // Skip body parsing for WebSocket requests (they don't have bodies)
+    if (req.WEBSOCKET_REQUEST === true) {
+      return next();
+    }
+    
+    // For regular HTTP requests, use standard parsers
+    express.json()(req, res, (err) => {
+      if (err) {
+        // Only log for non-WebSocket requests to reduce noise
+        logApi.warn(`JSON parsing error: ${err.message}`);
+      }
+      
+      express.urlencoded({ extended: true })(req, res, next);
+    });
+  });
   
   // Apply dev access restriction middleware early in the pipeline
   // This will restrict access to the dev subdomain to only authorized users
@@ -114,11 +154,16 @@ export function configureMiddleware(app) {
   // Environment middleware
   app.use(environmentMiddleware);
 
-  // CORS middleware for all routes
+  // CORS middleware with WebSocket bypass
   app.use((req, res, next) => {
+    // Skip CORS entirely for WebSocket requests
+    if (req.WEBSOCKET_REQUEST === true) {
+      return next();
+    }
+    
+    // Process CORS for regular HTTP requests
     let origin = req.headers.origin;
     
-    // If no origin but has referer, extract origin from referer
     if (!origin && req.headers.referer) {
       try {
         const url = new URL(req.headers.referer);
@@ -128,34 +173,17 @@ export function configureMiddleware(app) {
       }
     }
 
-    // If still no origin, try to extract from host header
     if (!origin && req.headers.host) {
       const protocol = req.secure ? 'https' : 'http';
       origin = `${protocol}://${req.headers.host}`;
     }
     
-    // Detailed request logging
-    if (MIDDLEWARE_DEBUG_MODE) {
-      logApi.info('🔍 CORS Request Details:', {
-        origin,
-        referer: req.headers.referer,
-        method: req.method,
-        path: req.path,
-        headers: req.headers,
-        url: req.url,
-        originalUrl: req.originalUrl,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Function to check if origin is allowed, including wildcards for localhost/127.0.0.1
+    // Function to check if origin is allowed
     const isOriginAllowed = (originToCheck) => {
-      // Exact match in allowed origins
       if (allowedOrigins.includes(originToCheck)) {
         return true;
       }
       
-      // Check localhost or 127.0.0.1 with any port
       if (originToCheck && (
           originToCheck.startsWith('http://localhost:') || 
           originToCheck.startsWith('http://127.0.0.1:') ||
@@ -168,33 +196,8 @@ export function configureMiddleware(app) {
       return false;
     };
 
-    // Log origin check
-    if (MIDDLEWARE_DEBUG_MODE) {
-      if (!origin) {
-        logApi.warn('⚠️⚠️ No origin or referer in request');
-      } else {
-        logApi.info(`🔎🔎 Checking origin: ${origin}`);
-        logApi.info(`✓✓ Is origin allowed? ${isOriginAllowed(origin)}`);
-      }
-    }
-
-    // game.degenduel.me
-    if (origin === gameOrigin || origin?.startsWith(gameOrigin)) {
-      if (MIDDLEWARE_DEBUG_MODE) {
-        logApi.info(`📝 Setting CORS headers for ${gameOrigin}`);
-      }
-      // Set special CORS headers for game.degenduel.me
-      res.setHeader('Access-Control-Allow-Origin', gameOrigin);
-      res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Max-Age', '86400');
-    }
-    // Also set headers for other allowed origins including localhost wildcards
-    else if (origin && isOriginAllowed(origin)) {
-      if (MIDDLEWARE_DEBUG_MODE) {
-        logApi.info(`📝 Setting CORS headers for ${origin}`);
-      }
+    // Standard CORS headers for allowed origins
+    if (origin && isOriginAllowed(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
@@ -206,142 +209,46 @@ export function configureMiddleware(app) {
 
     // Handle preflight
     if (req.method === 'OPTIONS') {
-      if (MIDDLEWARE_DEBUG_MODE) {
-        logApi.info('👉 Handling OPTIONS preflight request');
-      }
       return res.status(204).end();
     }
 
     next();
   });
 
-  // Security middleware - after CORS
-  // IMPORTANT: MODIFIED HELMET CONFIG FOR WEBSOCKETS
-  // First add a check to completely bypass Helmet for WebSocket requests
+  // Security middleware (Helmet) with WebSocket bypass
   app.use((req, res, next) => {
-    // Super aggressive WebSocket detection to bypass Helmet entirely
-    if (
-      // Check standard WebSocket headers
-      (req.headers.upgrade && req.headers.upgrade.toLowerCase() === 'websocket') ||
-      // Check for WebSocket URL patterns
-      req.url.includes('/ws/') || 
-      req.url.includes('/socket') ||
-      req.url.includes('/websocket') ||
-      // Check for the flag set by bypass middleware
-      req._isWebSocketRequest === true
-    ) {
-      // Log the Helmet bypass for debugging
-      logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} HELMET BYPASS ${fancyColors.RESET} Bypassing Helmet for WebSocket request: ${req.url}`, {
-        url: req.url,
-        headers: {
-          upgrade: req.headers.upgrade,
-          connection: req.headers.connection,
-          'sec-websocket-key': req.headers['sec-websocket-key'] ? '(present)' : '(missing)'
-        },
-        _highlight: true
-      });
-      // Skip Helmet completely for WebSocket requests
+    // Skip Helmet security for WebSocket requests
+    if (req.WEBSOCKET_REQUEST === true) {
       return next();
     }
     
-    // Apply Helmet only for non-WebSocket requests
+    // Apply Helmet for regular HTTP requests
     return helmet({
-      // CRITICAL: Disable Helmet entirely for WebSocket upgrade requests
-      // This ensures Helmet doesn't interfere with WebSocket handshakes
-      useDefaults: false, // Don't use Helmet defaults that might block WebSockets
+      useDefaults: false,
       contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        connectSrc: [
-          "'self'", 
-          // Allow all WebSocket origins for testing
-          'wss://*',
-          'ws://*',
-          // Specific WebSocket endpoints
-          'wss://degenduel.me', 
-          'wss://game.degenduel.me',
-          'wss://manager.degenduel.me',
-          'wss://talk.degenduel.me',
-          'wss://wallets.degenduel.me',
-          'wss://lobby.degenduel.me',
-          'wss://branch.bet',
-          'wss://app.branch.bet',
-          'wss://reflections.degenduel.me',
-          'wss://data.degenduel.me',
-          'wss://dev.degenduel.me',
-          // HTTP endpoints
-          'https://degenduel.me', 
-          'https://admin.degenduel.me',
-          'https://game.degenduel.me',
-          'https://manager.degenduel.me',
-          'https://talk.degenduel.me',
-          'https://wallets.degenduel.me',
-          'https://lobby.degenduel.me',
-          'https://branch.bet',
-          'https://app.branch.bet',
-          'https://data.degenduel.me',
-          'https://dev.degenduel.me',
-          'https://reflections.degenduel.me',
-          // Development origins for HTTP
-          'http://localhost:*',
-          'http://localhost:3000',
-          'http://localhost:3001',
-          'http://localhost:3002',
-          'http://localhost:3003',
-          'http://localhost:3004',
-          'http://localhost:3005',
-          'http://localhost:3006',
-          'http://localhost:3007',
-          'http://localhost:3008',
-          'http://localhost:3009',
-          'http://localhost:3010',
-          'http://localhost:3011',
-          'http://localhost:3012',
-          'http://localhost:3013',
-          'http://localhost:3014',
-          'http://localhost:3015',
-          'http://localhost:4173',
-          'http://localhost:5000',
-          'http://localhost:5001',
-          'http://localhost:6000',
-          'http://localhost:6001',
-          'http://localhost:56347',
-          // Development origins for WebSockets (ws://)
-          'ws://localhost:*',
-          'ws://localhost:3000',
-          'ws://localhost:3001',
-          'ws://localhost:3002',
-          'ws://localhost:3003',
-          'ws://localhost:3004',
-          'ws://localhost:3005',
-          'ws://localhost:3006',
-          'ws://localhost:3007',
-          'ws://localhost:3008',
-          'ws://localhost:3009',
-          'ws://localhost:3010',
-          'ws://localhost:3011',
-          'ws://localhost:3012',
-          'ws://localhost:3013',
-          'ws://localhost:3014',
-          'ws://localhost:3015',
-          'ws://localhost:4173',
-          'ws://localhost:5000',
-          'ws://localhost:5001',
-          'ws://localhost:6000',
-          'ws://localhost:6001',
-          'ws://localhost:56347'
-        ],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'blob:'],
-        fontSrc: ["'self'"],
-        frameAncestors: ["'none'"]
-      }
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-  })(req, res, next);
+        directives: {
+          defaultSrc: ["'self'"],
+          connectSrc: [
+            "'self'", 
+            // Allow all WebSocket origins
+            'wss://*', 'ws://*',
+            // Specific endpoints
+            'https://*.degenduel.me', 'wss://*.degenduel.me',
+            'https://*.branch.bet', 'wss://*.branch.bet',
+            // Development origins
+            'http://localhost:*', 'ws://localhost:*'
+          ],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'blob:'],
+          fontSrc: ["'self'"],
+          frameAncestors: ["'none'"]
+        }
+      },
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" }
+    })(req, res, next);
   });
 
   // Environment info

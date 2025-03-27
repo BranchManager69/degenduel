@@ -47,7 +47,6 @@ import serviceMetricsRoutes from "./routes/admin/service-metrics.js";
 import tokenSyncRoutes from "./routes/admin/token-sync.js";
 import walletManagementRoutes from "./routes/admin/wallet-management.js";
 import WebSocketInitializer from './utils/websocket-suite/websocket-initializer.js';
-import { initSocketIO } from './websocket/v69/socketio-ws.js';
 // Import WebSocket test & status routes
 import websocketTestRoutes from './routes/admin/websocket-test.js';
 import websocketStatusRoutes from './routes/admin/websocket-status.js';
@@ -124,15 +123,8 @@ const app = express();
 // Use standard PORT environment variable
 const port = process.env.PORT || 3004; // Default to production port if not specified
 
-// Debug log for port configuration
-logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} PORT CONFIG ${fancyColors.RESET} Environment: ${process.env.NODE_ENV}, Port: ${port}`, {
-  environment_variables: {
-    PORT: process.env.PORT,
-    NODE_ENV: process.env.NODE_ENV,
-    pm2_name: process.env.name,
-    pm2_instance: process.env.instance_id
-  }
-});
+// Log port configuration with minimal formatting
+logApi.info(`Server starting | Environment: ${process.env.NODE_ENV}, Port: ${port}`);
 
 // Create HTTP server instance
 const server = createServer(app);
@@ -150,7 +142,7 @@ server.setMaxListeners(20);
 //-------------------------------------------------'
 
 if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
-  logApi.info('\x1b[38;5;208m┣━━━━━━━━━━━ 🔒 Configuring Server Security...\x1b[0m');
+  logApi.info('🔒 Configuring Server Security...');
 }
 
 // Basic Express configuration
@@ -198,183 +190,21 @@ app.use(memoryMonitoring.setupResponseTimeTracking());
 app.use(express.static(path.join(__dirname, 'public')));
 
 if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
-  logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ Basic Express Configuration Complete\x1b[0m');
+  logApi.info('✓ Basic Express Configuration Complete');
 }
 
 /* Import Routes */
 
 // Start with DegenDuel API root route (https://degenduel.me/api)
 if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
-  logApi.info('\x1b[38;5;208m┃           ┣━━━━━━━━━━━ 🌐 Configuring Routes...\x1b[0m');
+  logApi.info('🌐 Configuring Routes...');
 }
 
 app.get("/", (req, res) => {
   res.send(`Welcome to the DegenDuel API! You probably should not be here.`);
 });
 
-// Add Socket.IO test routes (trying multiple paths to ensure one works)
-app.get("/socketio-test", (req, res) => {
-  // Log that the route was hit
-  logApi.info(`Socket.IO test page requested at /socketio-test`);
-  // Use absolute path to the file
-  const filePath = path.resolve(__dirname, 'public/socketio-test.html');
-  logApi.info(`Serving file from: ${filePath}`);
-  res.sendFile(filePath);
-});
-
-// Alternative route at the root path for direct access
-app.get("/socket-test", (req, res) => {
-  logApi.info(`Socket.IO test page requested at /socket-test`);
-  const filePath = path.resolve(__dirname, 'public/socketio-test.html');
-  res.sendFile(filePath);
-});
-
-// Simple HTML page directly in the response for maximum compatibility
-app.get("/socket-io-direct", (req, res) => {
-  logApi.info(`Direct Socket.IO test page requested`);
-  res.send(`
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Direct Socket.IO Test</title>
-  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #messages { height: 300px; border: 1px solid #ccc; overflow: auto; margin: 10px 0; padding: 10px; }
-    .controls { margin: 10px 0; }
-    button { margin-left: 5px; }
-    .connection-info { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
-    .important { font-weight: bold; color: #cc0000; }
-  </style>
-</head>
-<body>
-  <h1>Socket.IO Direct Test</h1>
-  
-  <div class="connection-info">
-    <div><strong>Status:</strong> <span id="status">Disconnected</span></div>
-    <div><strong>Important:</strong> <span class="important">Socket.IO is configured with BOTH default namespace and a custom namespace at /api/v69/ws/socketio</span></div>
-  </div>
-  
-  <div class="controls">
-    <select id="namespace">
-      <option value="default">Default Namespace</option>
-      <option value="custom" selected>Custom Namespace (/api/v69/ws/socketio)</option>
-    </select>
-    <button onclick="connect()">Connect</button>
-    <button onclick="disconnect()">Disconnect</button>
-  </div>
-  
-  <div class="controls">
-    <input id="message" type="text" placeholder="Enter message...">
-    <button onclick="sendMessage()">Send</button>
-    <button onclick="clearMessages()">Clear</button>
-  </div>
-  
-  <div id="messages"></div>
-  
-  <script>
-    const status = document.getElementById('status');
-    const messages = document.getElementById('messages');
-    const messageInput = document.getElementById('message');
-    const namespaceSelect = document.getElementById('namespace');
-    
-    let socket = null;
-    
-    function connect() {
-      // Disconnect if already connected
-      if (socket) {
-        socket.disconnect();
-      }
-      
-      // Get selected namespace
-      const namespaceValue = namespaceSelect.value;
-      const namespace = namespaceValue === 'custom' ? '/api/v69/ws/socketio' : '/';
-      
-      addMessage('Connecting to namespace: ' + namespace);
-      
-      // When connecting to Socket.IO, we use the default path /socket.io/ that Socket.IO expects
-      // and specify our namespace as a separate parameter
-      socket = io(window.location.origin + namespace, {
-        path: '/socket.io/',
-        transports: ['websocket', 'polling']
-      });
-      
-      socket.on('connect', () => {
-        status.textContent = 'Connected: ' + socket.id;
-        addMessage('Connected to server', 'success');
-      });
-      
-      socket.on('connect_error', (error) => {
-        status.textContent = 'Connection Error';
-        addMessage('Connection error: ' + error.message, 'error');
-      });
-      
-      socket.on('disconnect', (reason) => {
-        status.textContent = 'Disconnected: ' + reason;
-        addMessage('Disconnected from server: ' + reason, 'warning');
-      });
-      
-      socket.on('welcome', (data) => {
-        addMessage('Welcome: ' + JSON.stringify(data), 'info');
-      });
-      
-      socket.on('echo', (data) => {
-        addMessage('Echo: ' + JSON.stringify(data), 'echo');
-      });
-    }
-    
-    function disconnect() {
-      if (socket) {
-        socket.disconnect();
-        socket = null;
-      }
-    }
-    
-    function sendMessage() {
-      const msg = messageInput.value.trim();
-      if (msg && socket && socket.connected) {
-        socket.emit('message', msg);
-        addMessage('Sent: ' + msg, 'sent');
-        messageInput.value = '';
-      } else if (!socket || !socket.connected) {
-        addMessage('Not connected. Cannot send message.', 'error');
-      }
-    }
-    
-    function clearMessages() {
-      messages.innerHTML = '';
-    }
-    
-    function addMessage(text, type = 'info') {
-      const div = document.createElement('div');
-      div.style.borderBottom = '1px solid #eee';
-      div.style.padding = '5px 0';
-      
-      // Style based on message type
-      if (type === 'error') div.style.color = '#cc0000';
-      if (type === 'success') div.style.color = '#00aa00';
-      if (type === 'warning') div.style.color = '#cc6600';
-      if (type === 'sent') div.style.color = '#666666';
-      
-      div.innerHTML = '<strong>' + new Date().toLocaleTimeString() + '</strong>: ' + text;
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
-    }
-    
-    // Auto-connect on page load
-    window.onload = connect;
-    
-    // Also handle Enter key on input field
-    messageInput.addEventListener('keyup', function(event) {
-      if (event.key === 'Enter') {
-        sendMessage();
-      }
-    });
-  </script>
-</body>
-</html>
-  `);
-});
+// Note: Socket.IO test routes have been removed as Socket.IO is no longer used
 
 /* Mount Routes */
 // Public Routes
@@ -515,10 +345,10 @@ app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
 app.use(errorHandler);
 
 if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
-  logApi.info('\x1b[38;5;208m┃           ┗━━━━━━━━━━━ ✓ All Routes Mounted\x1b[0m');
+  logApi.info('✓ All Routes Mounted');
 }
 
-// Create unified startup animation function
+// Streamlined startup animation function
 async function displayStartupAnimation(port, initResults = {}, success = true) {
     // Helper to format time
     const formatDuration = (seconds) => {
@@ -528,189 +358,33 @@ async function displayStartupAnimation(port, initResults = {}, success = true) {
         return `${minutes}m ${remainingSeconds.toFixed(0)}s`;
     };
 
-    // Colors
-    const colors = {
-        title: '\x1b[38;5;199m',     // Pink
-        border: '\x1b[38;5;51m',     // Cyan
-        success: '\x1b[38;5;82m',    // Green
-        error: '\x1b[38;5;196m',     // Red
-        warning: '\x1b[38;5;226m',   // Yellow
-        reset: '\x1b[0m',            // Reset
-        accent: '\x1b[38;5;213m',    // Purple
-        gray: '\x1b[38;5;247m',      // Gray
-        blue: '\x1b[38;5;39m'        // Blue
-    };
-
-    // Create banner
-    const banner = `
-${colors.border}╔════════════════════════════════════════════════════════════════════════╗
-║                                                                                  ║
-║  ${colors.title}██████╗ ███████╗ ██████╗ ███████╗███╗   ██╗${colors.border}                           ║
-║  ${colors.title}██╔══██╗██╔════╝██╔════╝ ██╔════╝████╗  ██║${colors.border}                           ║
-║  ${colors.title}██║  ██║█████╗  ██║  ███╗█████╗  ██╔██╗ ██║${colors.border}           ${colors.warning}⚔️  ARENA${colors.border}        ║
-║  ${colors.title}██║  ██║██╔══╝  ██║   ██║██╔══╝  ██║╚██╗██║${colors.border}                        ║
-║  ${colors.title}██████╔╝███████╗╚██████╔╝███████╗██║ ╚████║${colors.border}                        ║
-║  ${colors.title}╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝${colors.border}                        ║
-║                                                                                  ║
-║  ${colors.title}██████╗ ██╗   ██╗███████╗██╗${colors.border}           ${colors.warning}🏆 GLORY AWAITS${colors.border}                 ║
-║  ${colors.title}██╔══██╗██║   ██║██╔════╝██║${colors.border}                                          ║
-║  ${colors.title}██║  ██║██║   ██║█████╗  ██║${colors.border}                                          ║
-║  ${colors.title}██║  ██║██║   ██║██╔══╝  ██║${colors.border}                                          ║
-║  ${colors.title}██████╔╝╚██████╔╝███████╗███████╗${colors.border}                                     ║
-║  ${colors.title}╚═════╝  ╚═════╝ ╚══════╝╚══════╝${colors.border}                                     ║
-╚════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
-
-    // Get core infrastructure services status
-    // TODO: Use the layers and service names we've already defined elsewhere
-    const coreServices = {
-        'Database': { name: 'Database Cluster', success: true },
-        'API': { name: 'API Server', success: true },
-        'WebSocket': { name: 'WebSocket Server', success: true },
-        'Solana': { name: 'Solana Connection', success: true }
-    };
-
-    // Extract services from initResults
-    let services = [];
-    if (initResults && initResults.Services) {
-        // Get initialized services
-        const initialized = initResults.Services.initialized || [];
-        // Get failed services
-        const failed = initResults.Services.failed || [];
-        
-        // Create a service entry for each service
-        if (serviceManager && serviceManager.getServices) {
-            const servicesMap = serviceManager.getServices();
-            services = Array.from(servicesMap.entries()).map(([name, service]) => {
-                const isInitialized = initialized.includes(name);
-                const hasFailed = failed.includes(name);
-                const displayName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                
-                return {
-                    name: displayName,
-                    status: isInitialized ? 'ONLINE' : (hasFailed ? 'ERROR' : 'WAITING'),
-                    symbol: isInitialized ? '✓' : (hasFailed ? '✗' : '⋯'),
-                    details: service.stats || {}
-                };
-            });
-        }
-    }
-
-    // If no services found but we're successful, create some defaults based on service names
-    // TODO: WHAT?????????
-    if (services.length === 0 && success) {
-        const servicesList = SERVICE_NAMES ? Object.values(SERVICE_NAMES) : [];
-        services = servicesList.map(name => {
-            const displayName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            return {
-                name: displayName,
-                status: 'UNKNOWN',
-                symbol: '?',
-                details: {}
-            };
-        });
-    }
-
-    // Create status display header
-    let statusDisplay = `
-${colors.blue}╔═══════════════════════════════ SERVICES STATUS ════════════════════════════════╗${colors.reset}`;
-
-    // Add core services first
-    Object.values(coreServices).forEach(service => {
-        const statusColor = service.success ? colors.success : colors.error;
-        const symbol = service.success ? '✓' : '✗';
-        const status = service.success ? 'ONLINE ' : 'ERROR  ';
-        const bars = service.success ? '■ ■ ■ ■ ■' : '□ □ □ □ □';
-        
-        const nameLength = service.name.length; 
-        const maxNameLength = 50;
-        const namePadding = ' '.repeat(Math.max(0, maxNameLength - nameLength));
-        statusDisplay += `
-${colors.blue}║${colors.reset} ${statusColor}${symbol} ${service.name}${namePadding}${colors.gray}|${colors.reset} ${statusColor}${status}${colors.gray}|${colors.reset} ${statusColor}${bars}${colors.reset} ${colors.blue}║${colors.reset}`;
-    });
-
-    // Add service divider
-    statusDisplay += `
-${colors.blue}╟────────────────────────────────────────────────────────────────────────────────╢${colors.reset}`;
-
-    // Calculate number of columns based on services count
-    const numColumns = 1;
-    const rows = Math.ceil(services.length / numColumns);
-    
-    // Add application services in multiple columns
-    for (let row = 0; row < rows; row++) {
-        let rowDisplay = `
-${colors.blue}║${colors.reset}`;
-        
-        for (let col = 0; col < numColumns; col++) {
-            const index = row * numColumns + col;
-            if (index < services.length) {
-                const service = services[index];
-                const statusColor = service.status === 'ONLINE' ? colors.success : 
-                                   (service.status === 'ERROR' ? colors.error : colors.warning);
-                
-                // Truncate name to 16 chars
-                const name = service.name.length > 16 ? service.name.substring(0, 14) + '...' : service.name;
-                rowDisplay += ` ${statusColor}${service.symbol} ${name.padEnd(16)}${colors.reset}`;
-                
-                if (col < numColumns - 1) {
-                    rowDisplay += ` ${colors.gray}|${colors.reset}`;
-                }
-            } else {
-                // Empty column
-                rowDisplay += ` ${''.padEnd(18)}`;
-                if (col < numColumns - 1) {
-                    rowDisplay += ` ${colors.gray}|${colors.reset}`;
-                }
-            }
-        }
-        
-        rowDisplay += ` ${colors.blue}║${colors.reset}`;
-        statusDisplay += rowDisplay;
-    }
-
-    // Close status display
-    statusDisplay += `
-${colors.blue}╚════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
-
-    // Get system metrics
-    const totalServices = services.length;
-    const onlineServices = services.filter(s => s.status === 'ONLINE').length;
-    const failedServices = services.filter(s => s.status === 'ERROR').length;
-    
-    // Calculate overall system status
-    const systemState = failedServices > 0 ? 'DEGRADED PERFORMANCE ⚠️' : 
-                        (onlineServices === totalServices ? 'FULLY OPERATIONAL ✨' : 'PARTIAL STARTUP ⏳');
+    // Get service metrics from initResults
+    const initializedServices = initResults.Services?.initialized || [];
+    const failedServices = initResults.Services?.failed || [];
+    const totalServices = (initializedServices.length + failedServices.length) || 
+                          (serviceManager ? serviceManager.getServices().size : 0);
     
     // Get duration
-    const duration = initResults.duration ? formatDuration(initResults.duration) : formatDuration(process.uptime());
+    const duration = formatDuration(process.uptime());
     
-    // Create system summary
-    const startupMessage = `
-${colors.border}╔════════════════════════ ${success ? 'INITIALIZATION COMPLETE' : 'INITIALIZATION FAILED'} ═══════════════════════╗
-║ 
-║  ${colors.title}🚀 DEGEN DUEL ARENA ${success ? 'INITIALIZED' : 'STARTING'} ON PORT ${port}${colors.border}
-║  ${success ? colors.warning : colors.error}⚡ SYSTEM STATUS: ${systemState}${colors.border}
-║  ${colors.success}💫 INITIALIZATION TIME: ${duration}${colors.border}
-║  ${colors.accent}🌐 SERVICES: ${onlineServices}/${totalServices} ONLINE · ${failedServices} FAILED${colors.border}
-║ 
-║  ${colors.warning}⚔️  ${success ? `${colors.success}MAKE PvP GREAT AGAIN!${colors.border}` : `${colors.error}MAKE PvP GREAT AGAIN!${colors.border}`}  ⚔️${colors.border}
-║ 
-╚══════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`;
-
-    // Clear console for dramatic effect
-    console.clear(); // TODO: THIS DOES NOT WORK AT ALL; REMOVE IT
+    // Create simple animation
+    const banner = `
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                              ┃
+┃                     DEGEN DUEL ARENA                         ┃
+┃             ${success ? '✅ SERVER INITIALIZATION COMPLETE' : '❌ SERVER INITIALIZATION FAILED'}             ┃
+┃                                                              ┃
+┃  🔢 Port: ${port}                                              ┃
+┃  ⏱️  Startup Time: ${duration}                                   ┃
+┃  🌐 Services: ${initializedServices.length}/${totalServices} Online                               ┃
+┃                                                              ┃
+┃                   ⚔️  GLORY AWAITS  ⚔️                        ┃
+┃                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+`;
     
-    // Add dramatic pause between elements
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms)); // TODO: THIS DOES NOT WORK AT ALL; REMOVE IT
-    
-    // Display startup sequence
-    console.log('\n');
+    // Display startup information
     console.log(banner);
-    await sleep(100);
-    console.log(statusDisplay);
-    await sleep(100);
-    console.log(startupMessage);
-    console.log('\n');
 }
 
 // Set up signal handlers for graceful shutdown
@@ -766,10 +440,9 @@ async function initializeServer() {
         // Log server start action to DegenDuel Admin Logs
         AdminLogger.logAction(process.env.BRANCH_MANAGER_WALLET_ADDRESS, 'SERVER', 'START');
 
-        // Begin amazing initialization logs
-        console.log('\n\x1b[38;5;199m╭───────────────── DegenDuel Initialization Starting ─────────────────╮\x1b[0m');
-        console.log('\x1b[38;5;199m│\x1b[38;5;226m               🔍 Swagger docs available at /api-docs                \x1b[38;5;199m│\x1b[0m');
-        console.log('\x1b[38;5;199m╰─────────────────────────────────────────────────────────────────────╯\x1b[0m\n');
+        // Simple initialization start message
+        console.log('🚀 DegenDuel Initialization Starting');
+        console.log('🔍 Swagger docs available at /api-docs');
 
         // Start amazing initialization logging
         InitLogger.startInitialization();
@@ -777,82 +450,47 @@ async function initializeServer() {
 
         // Initialize Databases
         try {
-            // Colored logs - Start with Red (196)
-            logApi.info('\n\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mDatabase Layer\x1b[0m\x1b[38;5;196m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-            logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ 🔄 ${fancyColors.WHITE}Initializing PostgreSQL...\x1b[0m`);
+            // Simplified database initialization logs
+            logApi.info('\n📊 Database Layer Initialization');
+            
+            // Initialize PostgreSQL with less verbose logging
             await initPgDatabase();
             InitLogger.logInit('Database', 'PostgreSQL', 'success');
             initResults.Database = { success: true };
-            logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ☑️ ${fancyColors.BOLD_GREEN}PostgreSQL Ready\x1b[0m`);
-
-            // Initialize SQLite
-            logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ 🔄 ${fancyColors.WHITE}Initializing SQLite...\x1b[0m`);
+            
+            // Initialize SQLite with less verbose logging
             await initDatabase();
             InitLogger.logInit('Database', 'SQLite', 'success', { path: '/home/websites/degenduel/data/leaderboard.db' });
-            logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ☑️ ${fancyColors.BOLD_GREEN}SQLite Ready\x1b[0m`);
+            
+            // Single summary log after all databases are initialized
+            logApi.info('✅ All databases initialized successfully');
 
             // Initialize WebSocket Layer using the WebSocket Initializer
             try {
+                // Consolidated WebSocket initialization log
+                logApi.info('\n🔌 WebSocket Layer Initialization');
+                
                 // Initialize all WebSocket servers with a single call to the dedicated initializer
                 await WebSocketInitializer.initializeWebSockets(server, initResults);
+                logApi.info('✅ All WebSocket servers initialized successfully');
                 
-                // Initialize Socket.IO
-                logApi.info('🔵 Initializing Socket.IO server at /api/v69/ws/socketio');
-                initSocketIO(server);
+                // Initialize Services Layer with simplified logging
+                logApi.info('\n🛠️ Services Layer Initialization');
                 
-                // Initialize Services Layer (Moved outside WebSocket try-catch)
-                logApi.info('\n\x1b[38;5;27m┏━━━━━━━━━━━━━━━━━━━━━━━ \x1b[1m\x1b[7mServices Layer\x1b[0m\x1b[38;5;27m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-                // (Solana Service Manager is now initialized through the service system)
-                logApi.info(`${fancyColors.RED}┣━━━━━━━━━━━ 🔄 ${fancyColors.BLUE}${fancyColors.UNDERLINE}${fancyColors.BOLD}NOTE${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BLUE}: ${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.LIGHT_BLUE}The Solana Service is now initialized via service system...\x1b[0m`);
-
-                // Initialize grouped services 
-                // (Note: I'm not married to these groupings; I'm open to suggestions)
-                console.log('\n[DEBUG] Initializing grouped services... \n');
                 try {
-                    // First try to register core services
-                    if (VERBOSE_SERVICE_INIT_LOGS) {
-                        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}Registering Core Services...${fancyColors.RESET} \n`);
-                    }
-                    // Register core services
-                    // TODO: I don't think this returns anything
-                    const coreServices = await ServiceInitializer.registerCoreServices().catch(error => {
-                        logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Failed to register core services:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
-                        if (VERBOSE_SERVICE_INIT_LOGS) {
-                            logApi.error('Error details:', {
-                                error: error.message,
-                                stack: error.stack
-                            });
-                        }
+                    // Register core services with minimal logging
+                    await ServiceInitializer.registerCoreServices().catch(error => {
+                        logApi.error(`Failed to register core services: ${error.message}`);
                         throw error;
                     });
                     
-                    if (VERBOSE_SERVICE_INIT_LOGS) {
-                        logApi.info(`┗━━━━━━━━━━━✅ Registered ${Array.isArray(coreServices) ? coreServices.length : 'all'} Core Services`);
-                        //logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Core services:${fancyColors.RESET} \n`, {
-                        //    services: coreServices
-                        //});
-                    } else {
-                        logApi.info(`✅ Registered ${Array.isArray(coreServices) ? coreServices.length : 'all'} core services`);
-                    }
-                    
-                    // Then try to initialize them
-                    if (VERBOSE_SERVICE_INIT_LOGS) {
-                        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}Initializing services...${fancyColors.RESET} \n`);
-                    }
-                    
-                    // Initialize services
+                    // Initialize all services
                     const results = await ServiceInitializer.initializeServices().catch(error => {
-                        logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Failed to initialize services:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
-                        if (VERBOSE_SERVICE_INIT_LOGS) {
-                            logApi.error('Error details:', {
-                                error: error.message,
-                                stack: error.stack
-                            });
-                        }
+                        logApi.error(`Failed to initialize services: ${error.message}`);
                         throw error;
                     });
 
-                    // Store results but only log details when verbose
+                    // Store results for summary
                     initResults.Services = {
                         initialized: Array.isArray(results?.initialized) ? results.initialized : [],
                         failed: Array.isArray(results?.failed) ? results.failed : []
@@ -861,27 +499,27 @@ async function initializeServer() {
                     const successCount = initResults.Services.initialized.length;
                     const failedCount = initResults.Services.failed.length;
 
-                    if (VERBOSE_SERVICE_INIT_LOGS) {
-                        //logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BLUE}Service initialization details:${fancyColors.RESET}`, {
-                        //    initialized: initResults.Services.initialized,
-                        //    failed: initResults.Services.failed
-                        //});
-                    } else if (failedCount > 0) {
-                        // Always show failed services even in non-verbose mode
-                        logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Failed services:${fancyColors.RESET} ${fancyColors.RED}${initResults.Services.failed}${fancyColors.RESET}`);
+                    // Always log failed services regardless of verbosity setting
+                    if (initResults.Services.failed.length > 0) {
+                        logApi.warn(`Failed services: ${initResults.Services.failed.join(', ')}`);
                     }
-                    logApi.info(`🚀 ${fancyColors.BLACK}${fancyColors.BOLD}Services initialization:${fancyColors.RESET} ${fancyColors.GREEN}${successCount} succeeded${fancyColors.RESET}, ${fancyColors.RED}${failedCount} failed${fancyColors.RESET}`);
+                    
+                    // Single summary log for service initialization
+                    logApi.info(`✅ Services initialized: ${successCount} succeeded, ${failedCount} failed`);
 
                 } catch (error) {
-                    // Log service initialization failure
-                    logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Service initialization failed:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
+                    // Simplified error logging for service initialization
+                    logApi.error(`Service initialization failed: ${error.message}`);
+                    
+                    // Only show stack trace in verbose mode
                     if (VERBOSE_SERVICE_INIT_LOGS) {
-                        logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.RED}Detailed error information:${fancyColors.RESET}`, {
+                        logApi.error('Error details:', {
                             error: error.message,
                             stack: error.stack,
                             phase: 'service_initialization'
                         });
                     }
+                    
                     initResults.Services = {
                         initialized: [],
                         failed: ['Service initialization failed: ' + error.message]
@@ -890,27 +528,26 @@ async function initializeServer() {
                 }
 
             } catch (error) {
-                // Log WebSocket initialization failure
-                logApi.error(`${fancyColors.MAGENTA}[WEBSOCKET INIT]${fancyColors.RESET} ${fancyColors.RED}WebSocket initialization failed:${fancyColors.RESET} \n${fancyColors.RED}${fancyColors.ITALIC}${error.message}${fancyColors.RESET}`);
+                // Simplified WebSocket error logging
+                logApi.error(`WebSocket initialization failed: ${error.message}`);
+                
+                // Only show detailed error in verbose mode
                 if (VERBOSE_SERVICE_INIT_LOGS) {
-                    logApi.error(`${fancyColors.MAGENTA}[WEBSOCKET INIT]${fancyColors.RESET} ${fancyColors.RED}WebSocket error details:${fancyColors.RESET}`, error);
+                    logApi.error('WebSocket error details:', error);
                 }
+                
                 initResults.WebSocket = { success: false, error: error.message };
                 throw error;
             }
 
         } catch (error) {
-            // Display server startup error and failure animation
-            logApi.error('\n');
-            logApi.error('\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ ERROR ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-            logApi.error('\x1b[38;5;196m┃           ❌ Server Initialization Failed              ┃\x1b[0m');
-            logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━ Error: ' + error.message + '\x1b[0m');
+            // Display server startup error with simplified formatting
+            logApi.error(`❌ SERVER INITIALIZATION FAILED: ${error.message}`);
             
+            // Only show detailed error in verbose mode
             if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.error(`${fancyColors.MAGENTA}[SERVER INIT]${fancyColors.RESET} ${fancyColors.RED}Full error details:${fancyColors.RESET}`, error);
+                logApi.error('Full error details:', error);
             }
-            
-            logApi.error('\n');
             
             // Only show animation if enabled
             if (SHOW_STARTUP_ANIMATION) {
@@ -923,17 +560,14 @@ async function initializeServer() {
         // Set up shutdown handlers
         setupShutdownHandlers();
         
-        // Start the server
+        // Start the server with simplified logging
         server.listen(port, async () => {
             // Log server start with Logtail-friendly formatting
-            logApi.info(`Server listening on port ${port}`, {
+            logApi.info(`🚀 Server listening on port ${port}`, {
                 service: 'SYSTEM',
                 event_type: 'server_start',
                 port: port,
-                uptime: process.uptime(),
-                _icon: '🚀',
-                _color: '#00AA00', // Green for success
-                _highlight: true
+                uptime: process.uptime()
             });
             
             // Generate initialization summary
@@ -944,31 +578,19 @@ async function initializeServer() {
                 try {
                     // Get current services status for the animation
                     const servicesList = ServiceInitializer.getServiceNames();
-                    const servicesStatus = {
-                        total: servicesList.length,
-                        initialized: servicesList.filter(name => {
-                            const service = serviceManager.services.get(name);
-                            return service && service.isInitialized;
-                        }).length
-                    };
-                    
-                    // Create services list with status
                     const initializedServices = servicesList.filter(name => {
                         const service = serviceManager.services.get(name);
                         return service && service.isInitialized;
                     });
                     
-                    // Pass the complete status data to the animation
+                    // Pass the simplified status data to the animation
                     await displayStartupAnimation(port, {
                         Database: { success: true },
-                        Core: { success: true },
                         WebSocket: { success: true },
-                        'Solana Service Manager': { success: true },
                         Services: {
                             initialized: initializedServices,
                             failed: []
                         },
-                        servicesStatus,
                         duration: process.uptime()
                     }, true);
                 } catch (error) {
@@ -976,34 +598,23 @@ async function initializeServer() {
                     await displayStartupAnimation(port, {}, true);
                 }
             } else {
-                logApi.info(`DegenDuel API Server ready on port ${port}`, {
-                    service: 'SYSTEM',
-                    _color: '#00AA00' // Green for success
-                });
+                logApi.info(`DegenDuel API Server ready on port ${port}`);
             }
         });
         
         return true;
     } catch (error) {
-        // Log server initialization failure with Logtail formatting
-        logApi.error(`Failed to initialize server: ${error.message}`, {
+        // Log server initialization failure with simplified formatting
+        logApi.error(`❌ Failed to initialize server: ${error.message}`, {
             service: 'SYSTEM',
             event_type: 'server_initialization_failure',
-            error: error.message,
-            stack: error.stack,
-            _icon: '❌',
-            _color: '#FF0000', // Red for error
-            _highlight: true
+            error: error.message
         });
         
-        // Log more detailed error information if verbose logging is enabled
+        // Log detailed error only in verbose mode
         if (VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.error('Server initialization failure details', {
-                service: 'SYSTEM',
-                event_type: 'server_initialization_details',
-                error: error.message,
-                stack: error.stack,
-                _color: '#FF0000' // Red for error
+            logApi.error('Error details:', {
+                stack: error.stack
             });
         }
         
@@ -1018,15 +629,15 @@ async function initializeServer() {
     }
 }
 
-// Handle graceful shutdown
+// Handle graceful shutdown with simplified logging
 async function shutdown() {
   try {
-    logApi.info('\n\x1b[38;5;196m┏━━━━━━━━━━━━━━━━━━━━━━━ Shutting Down ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
+    logApi.info('⏳ Server shutdown initiated');
     
     // Start shutdown timer to enforce timeout
     const SHUTDOWN_TIMEOUT_MS = 30000; // 30 seconds max for shutdown
     const shutdownTimer = setTimeout(() => {
-      logApi.error('\x1b[38;5;196m┃ TIMEOUT: Forced shutdown after 30 seconds\x1b[0m');
+      logApi.error('TIMEOUT: Forced shutdown after 30 seconds');
       process.exit(1);
     }, SHUTDOWN_TIMEOUT_MS);
     
@@ -1045,7 +656,7 @@ async function shutdown() {
       
       server.close((err) => {
         if (err) {
-          logApi.warn('\x1b[38;5;196m┃ HTTP server close warning:', err.message, '\x1b[0m');
+          logApi.warn(`HTTP server close warning: ${err.message}`);
           resolve({ component: 'HTTP Server', status: 'warning', error: err.message });
         } else {
           resolve({ component: 'HTTP Server', status: 'success' });
@@ -1054,21 +665,21 @@ async function shutdown() {
     }));
     
     // 2. Cleanup WebSocket servers
-    logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Cleaning up WebSocket servers...\x1b[0m');
+    logApi.info('Cleaning up WebSocket servers...');
     const wsCleanupPromise = WebSocketInitializer.cleanupWebSockets()
       .then(result => ({ component: 'WebSockets', status: 'success', result }))
       .catch(error => ({ component: 'WebSockets', status: 'error', error: error.message }));
     shutdownOperations.push(wsCleanupPromise);
 
     // 3. Cleanup services 
-    logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Cleaning up services...\x1b[0m');
+    logApi.info('Cleaning up services...');
     const serviceCleanupPromise = ServiceInitializer.cleanup()
       .then(result => ({ component: 'Services', status: 'success', result }))
       .catch(error => ({ component: 'Services', status: 'error', error: error.message }));
     shutdownOperations.push(serviceCleanupPromise);
     
     // 4. Close databases using the new utility
-    logApi.info('\x1b[38;5;196m┣━━━━━━━━━━━ Closing databases...\x1b[0m');
+    logApi.info('Closing databases...');
     const databaseCleanupPromise = databaseCleanup.cleanupAllDatabases()
       .then(result => ({ component: 'Databases', status: result.success ? 'success' : 'warning', result }))
       .catch(error => ({ component: 'Databases', status: 'error', error: error.message }));
@@ -1090,23 +701,24 @@ async function shutdown() {
     
     // Print summary
     if (failures > 0) {
-      logApi.warn(`\x1b[38;5;196m┣━━━━━━━━━━━ Shutdown complete with warnings/errors: ${successful} succeeded, ${warnings} warnings, ${failures} failures\x1b[0m`);
+      logApi.warn(`Shutdown completed with warnings/errors: ${successful} succeeded, ${warnings} warnings, ${failures} failures`);
+      
       // Log the specific failures for debugging
       results.forEach(r => {
         if (r.status === 'rejected' || (r.status === 'fulfilled' && r.value.status === 'error')) {
           const component = r.status === 'rejected' ? 'Unknown' : r.value.component;
           const error = r.status === 'rejected' ? r.reason : r.value.error;
-          logApi.error(`\x1b[38;5;196m┃ Failed component: ${component}, Error: ${error}\x1b[0m`);
+          logApi.error(`Failed component: ${component}, Error: ${error}`);
         }
       });
-      logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✓ Shutdown completed with warnings\x1b[0m\n');
+      
       process.exit(1);
     } else {
-      logApi.info('\x1b[38;5;196m┗━━━━━━━━━━━ ✓ Shutdown completed successfully\x1b[0m\n');
+      logApi.info('✅ Shutdown completed successfully');
       process.exit(0);
     }
   } catch (error) {
-    logApi.error('\x1b[38;5;196m┗━━━━━━━━━━━ ✗ Unexpected error during shutdown:', error, '\x1b[0m');
+    logApi.error(`❌ Unexpected error during shutdown: ${error.message}`);
     process.exit(1);
   }
 }
@@ -1116,16 +728,7 @@ initializeServer().then(() => {
     // Server is already listening from inside initializeServer()
     logApi.info('Server initialization completed successfully');
 }).catch(error => {
-    // Log server initialization failure with Logtail formatting
-    logApi.error(`Failed to initialize server: ${error.message}`, {
-        service: 'SYSTEM',
-        event_type: 'server_initialization_failure',
-        error: error.message,
-        stack: error.stack,
-        _icon: '❌',
-        _color: '#FF0000', // Red for error
-        _highlight: true
-    });
-    
+    // Log server initialization failure with simplified formatting
+    logApi.error(`❌ Failed to initialize server: ${error.message}`);
     process.exit(1);
 });

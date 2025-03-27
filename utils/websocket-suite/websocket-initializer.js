@@ -47,13 +47,10 @@ export async function initializeWebSockets(server, initResults = {}) {
         });
     }
     
-    // Log initialization start with console formatting
-    logApi.info('WebSocket Layer Initialization Starting', {
+    // Clean, PM2-friendly log with no escape sequences
+    logApi.info('🔌 WebSocket Layer Initialization Starting', {
         service: 'WEBSOCKET',
-        event_type: 'initialization_start',
-        _icon: '🔌',
-        _highlight: true,
-        _color: '#E91E63' // Pink/magenta for WebSocket color
+        event_type: 'initialization_start'
     });
 
     // Track initialization with InitLogger
@@ -62,11 +59,11 @@ export async function initializeWebSockets(server, initResults = {}) {
     try {
         // Initialize WebSocket monitor first
         const wsMonitor = createWebSocketMonitor(server);
-        logApi.info(`${fancyColors.ORANGE}┃           ┣━━━━━━━━━━━ ${serviceColors.initializing}Monitor WebSocket initialized${fancyColors.RESET}`);
+        logApi.info('📡 Monitor WebSocket initialized');
 
         // Initialize WebSocket circuit breaker second
         const wsCircuitBreaker = createCircuitBreakerWebSocket(server);
-        logApi.info(`${fancyColors.ORANGE}┃           ┣━━━━━━━━━━━ ${serviceColors.initializing}Circuit Breaker WebSocket initialized${fancyColors.RESET}`);
+        logApi.info('🔌 Circuit Breaker WebSocket initialized');
 
         // Initialize v69 WebSockets first
         try {

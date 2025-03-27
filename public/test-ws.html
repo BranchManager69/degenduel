@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test Page - DegenDuel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f7f9fc;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.disconnect {
+            background-color: #f44336;
+        }
+        button.disconnect:hover {
+            background-color: #d32f2f;
+        }
+        #output {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            margin-top: 15px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .disconnected {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+        .connecting {
+            background-color: #fcf8e3;
+            color: #8a6d3b;
+            border: 1px solid #faebcc;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .message {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #3e546b;
+        }
+        .timestamp {
+            color: #95a5a6;
+            font-size: 0.8em;
+        }
+        .header-item {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #34495e;
+            border-radius: 3px;
+        }
+        .message-direction {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .outgoing {
+            color: #2ecc71;
+        }
+        .incoming {
+            color: #3498db;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        #connectionForm {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .header-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .note {
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+        }
+        .ready {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .warning {
+            color: #e67e22;
+            font-weight: bold;
+        }
+        .endpoint-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .endpoint-list li {
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #f5f7fa;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .auth-required {
+            color: #e74c3c;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Test Page - DegenDuel</h1>
+    <p>This page allows you to test WebSocket connections to the DegenDuel API, analyzing headers and connection details to help troubleshoot issues.</p>
+    
+    <div id="connectionForm">
+        <h2>Connection Settings</h2>
+        <div>
+            <label for="serverUrl">Server URL:</label>
+            <input type="text" id="serverUrl" value="wss://dev.degenduel.me/api/v69/ws/test" />
+        </div>
+        <div>
+            <label for="endpointSelect">Quick Select:</label>
+            <select id="endpointSelect">
+                <option value="">-- Select Endpoint --</option>
+                <option value="wss://dev.degenduel.me/api/v69/ws/test">Test WebSocket (v69)</option>
+                <option value="wss://dev.degenduel.me/api/ws/system-settings">System Settings</option>
+                <option value="wss://dev.degenduel.me/api/ws/token-data">Token Data</option>
+                <option value="wss://dev.degenduel.me/api/ws/market">Market Data</option>
+                <option value="wss://dev.degenduel.me/api/ws/monitor">Monitor</option>
+                <option value="wss://dev.degenduel.me/api/ws/circuit-breaker">Circuit Breaker</option>
+            </select>
+        </div>
+        <div>
+            <label for="authToken">Auth Token (for protected endpoints):</label>
+            <input type="text" id="authToken" placeholder="Enter your JWT token (if needed)" />
+        </div>
+        <div>
+            <button id="connectBtn">Connect</button>
+            <button id="disconnectBtn" class="disconnect" disabled>Disconnect</button>
+        </div>
+    </div>
+    
+    <div class="status disconnected" id="connectionStatus">
+        Disconnected
+    </div>
+    
+    <div>
+        <h2>WebSocket Controls</h2>
+        <button id="pingBtn" disabled>Send Ping</button>
+        <button id="echoBtn" disabled>Send Echo</button>
+        <button id="compressionTestBtn" disabled>Test Compression</button>
+        <button id="getHeadersBtn" disabled>Get Headers Info</button>
+    </div>
+    
+    <div class="header-info" id="headerInfo">
+        <h2>WebSocket Header Analysis</h2>
+        <div id="headerStatus">
+            <p>Connect to a WebSocket to analyze headers...</p>
+        </div>
+    </div>
+    
+    <div id="endpoints" style="margin-top: 20px;">
+        <h2>Available Endpoints</h2>
+        <button id="refreshEndpointsBtn">Refresh Available Endpoints</button>
+        <ul id="endpointList" class="endpoint-list">
+            <li>Loading endpoints...</li>
+        </ul>
+    </div>
+    
+    <h2>WebSocket Communication</h2>
+    <div id="output"></div>
+
+    <script>
+        let socket = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const pingBtn = document.getElementById('pingBtn');
+        const echoBtn = document.getElementById('echoBtn');
+        const compressionTestBtn = document.getElementById('compressionTestBtn');
+        const getHeadersBtn = document.getElementById('getHeadersBtn');
+        const refreshEndpointsBtn = document.getElementById('refreshEndpointsBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const output = document.getElementById('output');
+        const headerInfo = document.getElementById('headerInfo');
+        const headerStatus = document.getElementById('headerStatus');
+        const endpointList = document.getElementById('endpointList');
+        const endpointSelect = document.getElementById('endpointSelect');
+        
+        // Update server URL when an endpoint is selected
+        endpointSelect.addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('serverUrl').value = this.value;
+            }
+        });
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            
+            let directionClass = '';
+            let directionText = '';
+            
+            if (type === 'outgoing') {
+                directionClass = 'outgoing';
+                directionText = 'SENT';
+            } else if (type === 'incoming') {
+                directionClass = 'incoming';
+                directionText = 'RECEIVED';
+            } else if (type === 'error') {
+                directionClass = 'error';
+                directionText = 'ERROR';
+            }
+            
+            let formattedMessage = message;
+            if (typeof message === 'object') {
+                formattedMessage = JSON.stringify(message, null, 2);
+            }
+            
+            messageElement.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span>
+                ${directionText ? `<span class="message-direction ${directionClass}">${directionText}</span>` : ''}
+                <pre>${formattedMessage}</pre>
+            `;
+            
+            output.appendChild(messageElement);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function updateConnectionStatus(status) {
+            connectionStatus.className = `status ${status}`;
+            
+            switch (status) {
+                case 'connected':
+                    connectionStatus.textContent = 'Connected';
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    pingBtn.disabled = false;
+                    echoBtn.disabled = false;
+                    compressionTestBtn.disabled = false;
+                    getHeadersBtn.disabled = false;
+                    break;
+                case 'disconnected':
+                    connectionStatus.textContent = 'Disconnected';
+                    connectBtn.disabled = false;
+                    disconnectBtn.disabled = true;
+                    pingBtn.disabled = true;
+                    echoBtn.disabled = true;
+                    compressionTestBtn.disabled = true;
+                    getHeadersBtn.disabled = true;
+                    break;
+                case 'connecting':
+                    connectionStatus.textContent = 'Connecting...';
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = true;
+                    pingBtn.disabled = true;
+                    echoBtn.disabled = true;
+                    compressionTestBtn.disabled = true;
+                    getHeadersBtn.disabled = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        function generateRequestId() {
+            return 'req_' + Math.random().toString(36).substring(2, 15);
+        }
+        
+        function updateHeaderInfo(headers) {
+            if (!headers) {
+                headerStatus.innerHTML = `<p class="warning">No header information available.</p>`;
+                return;
+            }
+            
+            // Check for critical WebSocket headers
+            const criticalHeaders = {
+                'upgrade': 'Upgrade header for WebSocket protocol switch',
+                'connection': 'Connection header for connection type',
+                'sec-websocket-key': 'WebSocket Key for handshake authentication',
+                'sec-websocket-version': 'WebSocket protocol version'
+            };
+            
+            const missingHeaders = [];
+            const presentHeaders = [];
+            
+            for (const [key, description] of Object.entries(criticalHeaders)) {
+                if (headers[key]) {
+                    presentHeaders.push({ key, value: headers[key], description });
+                } else {
+                    missingHeaders.push({ key, description });
+                }
+            }
+            
+            // Build header status HTML
+            let headerHtml = '<h3>Header Analysis</h3>';
+            
+            if (missingHeaders.length === 0) {
+                headerHtml += `<p class="ready">✅ All critical WebSocket headers are present!</p>`;
+            } else {
+                headerHtml += `<p class="warning">⚠️ Missing ${missingHeaders.length} critical headers:</p>`;
+                headerHtml += '<ul>';
+                missingHeaders.forEach(header => {
+                    headerHtml += `<li><strong>${header.key}</strong> - ${header.description}</li>`;
+                });
+                headerHtml += '</ul>';
+            }
+            
+            headerHtml += '<h3>Header Details</h3>';
+            headerHtml += '<div>';
+            
+            // Format all headers
+            for (const [key, value] of Object.entries(headers)) {
+                const isImportant = Object.keys(criticalHeaders).includes(key);
+                headerHtml += `<div class="header-item ${isImportant ? 'important' : ''}">
+                    <strong>${key}:</strong> ${value}
+                </div>`;
+            }
+            
+            headerHtml += '</div>';
+            headerHtml += '<p class="note">Note: Headers are case-insensitive, so "upgrade" and "Upgrade" are the same header.</p>';
+            
+            headerStatus.innerHTML = headerHtml;
+        }
+        
+        function loadAvailableEndpoints() {
+            fetch('/api/admin/websocket/test/endpoints')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.endpoints) {
+                        // Update the endpoint list
+                        endpointList.innerHTML = '';
+                        if (data.endpoints.length === 0) {
+                            endpointList.innerHTML = '<li>No WebSocket endpoints found</li>';
+                            return;
+                        }
+                        
+                        // Add each endpoint to the list
+                        data.endpoints.forEach(endpoint => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `
+                                <strong>${endpoint.name}</strong>: ${endpoint.path}
+                                ${endpoint.requireAuth ? '<span class="auth-required">Auth Required</span>' : ''}
+                                <button class="connect-btn" data-url="${endpoint.publicPath}">Connect</button>
+                            `;
+                            endpointList.appendChild(li);
+                            
+                            // Add to dropdown
+                            const option = document.createElement('option');
+                            option.value = `wss://${window.location.host}${endpoint.publicPath}`;
+                            option.textContent = `${endpoint.name} ${endpoint.requireAuth ? '(Auth Required)' : ''}`;
+                            
+                            // Check if option already exists
+                            let exists = false;
+                            for (let i = 0; i < endpointSelect.options.length; i++) {
+                                if (endpointSelect.options[i].value === option.value) {
+                                    exists = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!exists) {
+                                endpointSelect.appendChild(option);
+                            }
+                        });
+                        
+                        // Add event listeners to the connect buttons
+                        document.querySelectorAll('.connect-btn').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const url = `wss://${window.location.host}${this.dataset.url}`;
+                                document.getElementById('serverUrl').value = url;
+                                connect();
+                            });
+                        });
+                    } else {
+                        endpointList.innerHTML = '<li>Failed to load endpoints</li>';
+                    }
+                })
+                .catch(error => {
+                    endpointList.innerHTML = `<li>Error loading endpoints: ${error.message}</li>`;
+                    console.error('Error loading endpoints:', error);
+                });
+        }
+        
+        function connect() {
+            try {
+                updateConnectionStatus('connecting');
+                
+                const serverUrl = document.getElementById('serverUrl').value;
+                const authToken = document.getElementById('authToken').value;
+                
+                // Create WebSocket connection
+                socket = new WebSocket(serverUrl);
+                
+                socket.onopen = function(event) {
+                    log('WebSocket connection established');
+                    updateConnectionStatus('connected');
+                    reconnectAttempts = 0;
+                    
+                    // Send authentication if token is provided
+                    if (authToken) {
+                        const authMessage = {
+                            type: 'AUTHENTICATE',
+                            token: authToken,
+                            timestamp: new Date().toISOString()
+                        };
+                        socket.send(JSON.stringify(authMessage));
+                        log(authMessage, 'outgoing');
+                    }
+                };
+                
+                socket.onmessage = function(event) {
+                    try {
+                        const message = JSON.parse(event.data);
+                        log(message, 'incoming');
+                        
+                        // If this contains header info, update the header display
+                        if (message.type === 'CONNECTED' || message.type === 'DIAGNOSTIC_CONNECTION_INFO') {
+                            if (message.yourHeaders) {
+                                updateHeaderInfo(message.yourHeaders);
+                            }
+                        }
+                    } catch (e) {
+                        log(`Failed to parse message: ${e.message}`, 'error');
+                        log(event.data, 'incoming');
+                    }
+                };
+                
+                socket.onclose = function(event) {
+                    const reason = event.reason ? `Reason: ${event.reason}` : '';
+                    log(`WebSocket connection closed with code: ${event.code}. ${reason}`);
+                    updateConnectionStatus('disconnected');
+                };
+                
+                socket.onerror = function(error) {
+                    log(`WebSocket error: ${error.message || 'Unknown error'}`, 'error');
+                };
+            } catch (error) {
+                log(`Connection error: ${error.message}`, 'error');
+                updateConnectionStatus('disconnected');
+            }
+        }
+        
+        function disconnect() {
+            if (socket) {
+                socket.close(1000, 'User initiated disconnect');
+                updateConnectionStatus('disconnected');
+            }
+        }
+        
+        // Event Listeners
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        
+        pingBtn.addEventListener('click', function() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: 'ping',
+                    timestamp: new Date().toISOString(),
+                    data: {
+                        client_time: new Date().toISOString()
+                    }
+                };
+                socket.send(JSON.stringify(message));
+                log(message, 'outgoing');
+            } else {
+                log('WebSocket is not connected', 'error');
+            }
+        });
+        
+        echoBtn.addEventListener('click', function() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: 'echo',
+                    timestamp: new Date().toISOString(),
+                    data: {
+                        text: 'Hello WebSocket Server!',
+                        number: Math.floor(Math.random() * 1000),
+                        bool: true
+                    }
+                };
+                socket.send(JSON.stringify(message));
+                log(message, 'outgoing');
+            } else {
+                log('WebSocket is not connected', 'error');
+            }
+        });
+        
+        compressionTestBtn.addEventListener('click', function() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: 'test_compression',
+                    timestamp: new Date().toISOString()
+                };
+                socket.send(JSON.stringify(message));
+                log(message, 'outgoing');
+            } else {
+                log('WebSocket is not connected', 'error');
+            }
+        });
+        
+        getHeadersBtn.addEventListener('click', function() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: 'GET_WEBSOCKET_DIAGNOSTICS',
+                    requestId: generateRequestId(),
+                    timestamp: new Date().toISOString()
+                };
+                socket.send(JSON.stringify(message));
+                log(message, 'outgoing');
+            } else {
+                log('WebSocket is not connected', 'error');
+            }
+        });
+        
+        refreshEndpointsBtn.addEventListener('click', loadAvailableEndpoints);
+        
+        // Initialize
+        updateConnectionStatus('disconnected');
+        log('WebSocket test page initialized');
+        loadAvailableEndpoints();
+    </script>
+</body>
+</html>
