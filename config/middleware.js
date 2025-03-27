@@ -68,6 +68,13 @@ export function configureMiddleware(app) {
     'https://lobby.degenduel.me',
     'https://branch.bet', 
     'https://app.branch.bet',
+    // OAuth provider origins
+    'https://twitter.com',
+    'https://x.com',
+    'https://api.twitter.com',
+    // Local development with IP addresses
+    'http://127.0.0.1:3004',
+    'http://127.0.0.1:3005',
     // Development origins
     'http://localhost:3000',
     'http://localhost:3001',
@@ -141,14 +148,33 @@ export function configureMiddleware(app) {
       });
     }
 
+    // Function to check if origin is allowed, including wildcards for localhost/127.0.0.1
+    const isOriginAllowed = (originToCheck) => {
+      // Exact match in allowed origins
+      if (allowedOrigins.includes(originToCheck)) {
+        return true;
+      }
+      
+      // Check localhost or 127.0.0.1 with any port
+      if (originToCheck && (
+          originToCheck.startsWith('http://localhost:') || 
+          originToCheck.startsWith('http://127.0.0.1:') ||
+          originToCheck.startsWith('https://localhost:') || 
+          originToCheck.startsWith('https://127.0.0.1:')
+      )) {
+        return true;
+      }
+      
+      return false;
+    };
+
     // Log origin check
     if (MIDDLEWARE_DEBUG_MODE) {
       if (!origin) {
         logApi.warn('⚠️⚠️ No origin or referer in request');
       } else {
         logApi.info(`🔎🔎 Checking origin: ${origin}`);
-        logApi.info(`📋📋 Allowed origins:`, allowedOrigins);
-        logApi.info(`✓✓ Is origin allowed? ${allowedOrigins.includes(origin)}`);
+        logApi.info(`✓✓ Is origin allowed? ${isOriginAllowed(origin)}`);
       }
     }
 
@@ -164,8 +190,8 @@ export function configureMiddleware(app) {
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Max-Age', '86400');
     }
-    // Also set headers for other allowed origins
-    else if (origin && allowedOrigins.includes(origin)) {
+    // Also set headers for other allowed origins including localhost wildcards
+    else if (origin && isOriginAllowed(origin)) {
       if (MIDDLEWARE_DEBUG_MODE) {
         logApi.info(`📝 Setting CORS headers for ${origin}`);
       }
