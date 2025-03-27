@@ -646,10 +646,12 @@ router.get('/:wallet', async (req, res) => {
   };
 
   try {
-    //if (!req.params.wallet?.match(/^0x[a-fA-F0-9]{40}$/)) {
-    //  logApi.warn('Invalid wallet address format', logContext);
-    //  throw { status: 400, message: 'Invalid wallet address format' };
-    //}
+    // The commented-out check was for Ethereum addresses - for Solana, we don't need this specific check
+    // Solana addresses are typically base58-encoded strings of varying length
+    if (!req.params.wallet || req.params.wallet.length < 30) {
+      logApi.warn('Invalid wallet address format', logContext);
+      throw { status: 400, message: 'Invalid wallet address format' };
+    }
 
     logApi.debug('Fetching user profile', logContext);
     
@@ -796,19 +798,24 @@ router.get('/:wallet', async (req, res) => {
  *                   type: string
  *                   example: Database error while fetching user
  */
-// Get user profile by username (NO AUTH REQUIRED)
-//   example: GET https://degenduel.me/api/users/by-username/{username}
-router.get('/by-username/:username', async (req, res) => {
+// Get user profile by nickname (NO AUTH REQUIRED)
+//   example: GET https://degenduel.me/api/users/by-username/{nickname}
+router.get('/by-username/:nickname', async (req, res) => {
   const logContext = {
-    path: 'GET /api/users/by-username/:username',
-    username: req.params.username
+    path: 'GET /api/users/by-username/:nickname',
+    nickname: req.params.nickname
   };
 
   try {
-    logApi.debug('Fetching user profile by username', logContext);
+    logApi.debug('Fetching user profile by nickname', logContext);
     
-    const user = await prisma.users.findUnique({
-      where: { username: req.params.username },
+    const user = await prisma.users.findFirst({
+      where: { 
+        nickname: {
+          equals: req.params.nickname,
+          mode: 'insensitive'  // Case insensitive search
+        }
+      },
       include: {
         contest_participants: {
           take: 5,
@@ -819,7 +826,7 @@ router.get('/by-username/:username', async (req, res) => {
         }
       }
     }).catch(error => {
-      logApi.error('Database error while fetching user by username', {
+      logApi.error('Database error while fetching user by nickname', {
         ...logContext,
         error: error instanceof Error ? error.message : error
       });
@@ -827,22 +834,30 @@ router.get('/by-username/:username', async (req, res) => {
     });
 
     if (!user) {
-      logApi.info('User not found by username', logContext);
+      logApi.info('User not found by nickname', logContext);
       throw { status: 404, message: 'User not found' };
     }
 
-    logApi.info('Successfully fetched user profile by username', {
+    logApi.info('Successfully fetched user profile by nickname', {
       ...logContext,
       userId: user.id,
       hasContests: user.contest_participants.length > 0
     });
 
-    res.json(user);
+    // Before sending the response, convert any BigInt values to strings
+    const serializeBigInt = (data) => {
+      return JSON.parse(JSON.stringify(data, (key, value) => 
+        typeof value === 'bigint' ? value.toString() : value
+      ));
+    };
+    
+    // Then use the serialized data in response
+    res.json(serializeBigInt(user));
   } catch (error) {
     const status = error.status || 500;
     const message = error.message || 'Internal server error';
 
-    logApi.error('Error in GET /users/by-username/:username handler', {
+    logApi.error('Error in GET /users/by-username/:nickname handler', {
       ...logContext,
       status,
       message,
@@ -1916,24 +1931,7 @@ router.get('/:wallet/social-profiles', requireAuth, async (req, res) => {
 
     // Fetch social profiles
     const socialProfiles = await prisma.user_social_profiles.findMany({
-      where: { wallet_address: req.params.wallet },
-      select: {
-        platform: true,
-        platform_user_id: true,
-        username: true,
-        verified: true,
-        verification_date: true,
-        last_verified: true,
-        created_at: true,
-        updated_at: true,
-        // Don't include sensitive data like tokens
-        metadata: {
-          select: {
-            name: true,
-            profile_image_url: true
-          }
-        }
-      }
+      where: { wallet_address: req.params.wallet }
     });
 
     logApi.info('Successfully fetched social profiles', {
