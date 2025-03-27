@@ -20,14 +20,12 @@ import { fancyColors } from '../../utils/colors.js';
 /**
  * WebSocket Configuration
  * 
- * For client compatibility, WebSocket compression is explicitly DISABLED
- * This prevents "RSV1 must be clear" errors with many clients including
- * Postman, wscat, and curl-based tools.
+ * Standard WebSocket server configuration
  */
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
-// Set up WebSocket configuration with RSV1 fix applied
+// Set up WebSocket configuration
 try {
   // Import directly
   const wsModule = await import('ws');
@@ -45,37 +43,8 @@ try {
     logApi.warn(`Could not determine ws library version: ${versionError.message}`);
   }
   
-  // Log info about WebSocket compression being disabled
-  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WEBSOCKET CONFIG ${fancyColors.RESET} Using ws library v${wsVersion} with compression ${fancyColors.BG_RED}${fancyColors.WHITE} DISABLED ${fancyColors.RESET} for compatibility`);
-  
-  // Apply the WebSocket buffer fix for RSV1 issues - CRITICAL FOR FUNCTIONALITY
-  try {
-    // Import and apply the WebSocket buffer fix
-    const { applyWebSocketBufferFix } = await import('./ws-buffer-fix.js');
-    
-    // Apply the fix
-    const fixResult = await applyWebSocketBufferFix();
-    
-    if (fixResult) {
-      logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} ✅✅✅ SOCKET-LEVEL RSV1 FIX APPLIED SUCCESSFULLY ✅✅✅ ${fancyColors.RESET}`);
-      
-      // Set global flag indicating the fix is applied
-      global.RSV1_FIX_APPLIED = true;
-    } else {
-      logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} ⚠️⚠️⚠️ WS BUFFER FIX INCOMPLETE ${fancyColors.RESET} ${fancyColors.YELLOW}Socket-level fix applied but other fixes failed${fancyColors.RESET}`);
-      
-      // Set global flag indicating fix is partially applied
-      global.RSV1_FIX_APPLIED = 'partial';
-    }
-  } catch (fixError) {
-    logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ❌❌❌ RSV1 FIX FAILED ${fancyColors.RESET} ${fancyColors.RED}Error applying WebSocket buffer fix: ${fixError.message}${fancyColors.RESET}`, fixError);
-    
-    // Set global flag indicating fix failed
-    global.RSV1_FIX_APPLIED = false;
-  }
-  
-  // Log detailed message for RSV1 fix
-  logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} WEBSOCKET RSV1 FIX ${fancyColors.RESET} RSV1 bit clearing is ${global.RSV1_FIX_APPLIED ? 'ENABLED' : 'DISABLED'} - This prevents compression errors with clients`);
+  // Log WebSocket info
+  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WEBSOCKET CONFIG ${fancyColors.RESET} Using ws library v${wsVersion} with standard configuration`);
   
 } catch (error) {
   logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WEBSOCKET CONFIG ERROR ${fancyColors.RESET} ${error.message}`, error);

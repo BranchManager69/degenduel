@@ -18,20 +18,10 @@ import { fancyColors } from '../utils/colors.js';
 import { config } from '../config/config.js';
 
 /**
- * IMPORTANT: GLOBAL WEBSOCKET COMPRESSION DISABLE
+ * WebSocket Configuration
  * 
- * We need to disable perMessageDeflate compression to resolve client connection issues.
- * Many clients (wscat, Postman, curl) fail with "Invalid WebSocket frame: RSV1 must be clear"
- * 
- * Instead of monkey patching (which causes const reassignment errors), 
- * we'll make sure perMessageDeflate is explicitly set to false in the options.
- * 
- * - Implementation Date: March 25, 2025
- * - Implemented By: BranchManager
- * - Issue: RSV1 compression flag causing client connection failures
+ * Standard WebSocket server implementation with compression disabled by default.
  */
-// NOTE: We can't monkey patch WebSocketServer since it's a const,
-// so we'll explicitly set perMessageDeflate: false in the options below
 
 const VERBOSE_WEBSOCKET_INIT = true;
 
@@ -61,13 +51,11 @@ export class BaseWebSocketServer {
     }
 
     #initializeWSS(server) {
-        // Create WebSocketServer with compression settings from options
-        // Compression is disabled by default - you must explicitly enable it
-        // This is important because compression causes RSV1 flag issues
+        // Create WebSocketServer with basic settings
         this.#wss = new WebSocketServer({
             noServer: true,
             maxPayload: this.options.maxMessageSize,
-            perMessageDeflate: false // Always disable compression to avoid RSV1 flag issues
+            perMessageDeflate: false // Compression disabled
         });
 
         // Handle upgrade requests

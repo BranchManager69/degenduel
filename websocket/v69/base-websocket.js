@@ -29,11 +29,10 @@ import net from 'net';
 // Cache a reference to the WebSocketServer class before we use it
 const WebSocketServer = WebSocket.Server;
 
-// WebSocket frame utilities removed to avoid interference with logging systems
+// Standard WebSocket implementation
 
 /**
- * WebSocket configuration note: Compression is disabled for better compatibility
- * with various clients like wscat, Postman, and curl
+ * WebSocket configuration note: Standard configuration for WebSocket server
  */
 
 // Base WebSocket Server
@@ -77,10 +76,9 @@ export class BaseWebSocketServer {
     this.maxPayload = options.maxPayload || 1024 * 1024; // 1MB default
     this.rateLimit = options.rateLimit || 300; // 300 messages per minute
     
-    // Compression settings - EXPLICITLY DISABLED for better compatibility
-    // This prevents "RSV1 must be clear" errors with many clients
-    this.perMessageDeflate = false; // Disable compression
-    this.useCompression = false; // Alias for clarity - also set to FALSE
+    // Compression settings
+    this.perMessageDeflate = false; // Compression disabled
+    this.useCompression = false; // Alias for clarity
     
     // Time intervals
     this.heartbeatInterval = options.heartbeatInterval || 60000; // 60 seconds (increased to reduce frequency)
@@ -99,38 +97,11 @@ export class BaseWebSocketServer {
       server,
       path: this.path,
       maxPayload: this.maxPayload,
-      // Explicitly disable compression - CRITICAL for client compatibility
+      // Disable compression
       perMessageDeflate: false,
       
-      // CRITICAL FIX: Prevent all extensions from being negotiated
-      // This is the key to fixing the "RSV1 must be clear" issue
+      // Standard protocol handling
       handleProtocols: (protocols, request) => {
-        // Add VERY verbose logging for this specific connection request
-        const requestId = uuidv4().substring(0, 8);
-        logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS-PROTOCOL-${requestId} ${fancyColors.RESET} Client protocol negotiation for ${this.path}`, {
-          wsEvent: 'protocol_negotiation',
-          protocols: protocols,
-          host: request.headers.host,
-          origin: request.headers.origin,
-          path: request.url,
-          sec_websocket_key: request.headers['sec-websocket-key'] || 'missing',
-          sec_websocket_version: request.headers['sec-websocket-version'] || 'missing',
-          sec_websocket_extensions: request.headers['sec-websocket-extensions'] || 'none',
-          _highlight: true
-        });
-        
-        // Delete any extension headers to prevent compression negotiation
-        if (request.headers['sec-websocket-extensions']) {
-          const extensionHeader = request.headers['sec-websocket-extensions'];
-          logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION BLOCKED ${fancyColors.RESET} ${fancyColors.YELLOW}Removing extension header: ${extensionHeader}${fancyColors.RESET}`, {
-            requestId,
-            wsEvent: 'extension_blocked',
-            extension: extensionHeader,
-            _highlight: true
-          });
-          delete request.headers['sec-websocket-extensions'];
-        }
-        
         // Return the first protocol if any, or null
         return protocols.length > 0 ? protocols[0] : null;
       },
@@ -169,16 +140,7 @@ export class BaseWebSocketServer {
                   _logtail_ws_event: 'ws_handshake_response'
                 });
                 
-                // Check specifically for compression extension in response
-                const extensionHeader = responseHeaders.find(h => h.toLowerCase().startsWith('sec-websocket-extensions:'));
-                if (extensionHeader && extensionHeader.toLowerCase().includes('permessage-deflate')) {
-                  logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} COMPRESSION-DETECTED-${requestId} ${fancyColors.RESET} ${fancyColors.RED}WebSocket compression detected in response despite being disabled: ${extensionHeader}${fancyColors.RESET}`, {
-                    wsEvent: 'compression_detected',
-                    extensionHeader: extensionHeader,
-                    _highlight: true,
-                    _logtail_ws_event: 'ws_compression_error'
-                  });
-                }
+                          // Removed RSV1/compression check
                 
                 // Restore the original write method to prevent memory leaks
                 info.req.socket.write = originalWrite;
@@ -216,7 +178,7 @@ export class BaseWebSocketServer {
       Object.assign(wsOptions, options._ws_direct_options);
       logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} ${fancyColors.MAGENTA}Using direct WebSocket options to override defaults${fancyColors.RESET}`);
       
-      // CRITICAL: Even with direct options, ensure compression is ALWAYS disabled
+      // Ensure compression remains disabled
       wsOptions.perMessageDeflate = false;
     }
     
@@ -225,28 +187,11 @@ export class BaseWebSocketServer {
     // Create WebSocket server with fixed options
     this.wss = new WebSocket.Server(wsOptions);
     
-    // CRITICAL: Add monkey-patching to ensure the WebSocket server NEVER uses compression
-    // This ensures that even if the server tries to use compression, it will be disabled
+    // Ensure compression remains disabled in server options
     if (this.wss._options) {
       this.wss._options.perMessageDeflate = false;
       
-      // Replace the built-in handler for Sec-WebSocket-Extension header
-      // By monkey-patching the server's internal functions
-      if (this.wss.handleUpgrade) {
-        const originalHandleUpgrade = this.wss.handleUpgrade;
-        this.wss.handleUpgrade = (request, socket, head, callback) => {
-          // Force-remove any extension headers before passing to the original handler
-          if (request.headers['sec-websocket-extensions']) {
-            logApi.warn(`${fancyColors.BG_RED}${fancyColors.WHITE} EXTENSION OVERRIDE ${fancyColors.RESET} Removing extension header during upgrade: ${request.headers['sec-websocket-extensions']}`);
-            delete request.headers['sec-websocket-extensions'];
-          }
-          
-          // Call the original handler
-          originalHandleUpgrade.call(this.wss, request, socket, head, callback);
-        };
-      }
-      
-      // Log actual server options for debugging
+      // Log server options for debugging
       logApi.info(`${fancyColors.BG_DARK_CYAN}${fancyColors.BLACK} V69 CONFIG ${fancyColors.RESET} WebSocket._options: perMessageDeflate=${!!this.wss._options.perMessageDeflate}`);
     }
 
@@ -292,18 +237,7 @@ export class BaseWebSocketServer {
 
     // Bind event handlers
     this.wss.on('connection', (ws, req) => {
-      // CRITICAL: Force WebSocket to never use compression
-      // This affects each individual WebSocket connection
-      if (ws.extensions && typeof ws.extensions === 'object') {
-        // Force clear any extensions on the WebSocket
-        for (const ext in ws.extensions) {
-          if (ws.extensions.hasOwnProperty(ext)) {
-            delete ws.extensions[ext];
-          }
-        }
-      }
-      
-      // RSV bit tracking removed
+      // No special handling for WebSocket extensions
       
       // Now handle the connection normally
       this.handleConnection(ws, req);
@@ -1827,11 +1761,7 @@ export class BaseWebSocketServer {
       // Convert message to JSON string
       const jsonStr = JSON.stringify(message);
       
-      // Global WebSocket frame utilities have been removed 
-      
-      // Buffer fix utilities have been removed
-      
-      // Fallback to standard send method
+      // Use standard send method
       client.send(jsonStr);
       
       // Update statistics
@@ -1936,133 +1866,6 @@ export function createBaseWebSocketServer(server, options = {}) {
  * Can be triggered via the command line:
  * node -e "require('./websocket/v69/base-websocket.js').diagnoseWebSocketHandshake('wss://degenduel.me/api/v69/ws/test')"
  */
-export async function diagnoseWebSocketHandshake(url, options = {}) {
-  const net = require('net');
-  const tls = require('tls');
-  const { URL } = require('url');
-  
-  // Parse the URL
-  const urlObj = new URL(url);
-  const isSecure = urlObj.protocol === 'wss:';
-  const host = urlObj.hostname;
-  const port = urlObj.port || (isSecure ? 443 : 80);
-  const path = urlObj.pathname + urlObj.search;
-  
-  console.log(`\n${fancyColors.BG_BLUE}${fancyColors.WHITE} TCP HANDSHAKE DIAGNOSTICS ${fancyColors.RESET}`);
-  console.log(`${fancyColors.CYAN}Connecting to: ${fancyColors.BOLD}${url}${fancyColors.RESET}`);
-  console.log(`${fancyColors.CYAN}Host: ${host}, Port: ${port}, Path: ${path}${fancyColors.RESET}\n`);
-  
-  return new Promise((resolve, reject) => {
-    try {
-      // Generate a random WebSocket key
-      const wsKey = Buffer.from(Math.random().toString(36).substring(2, 12)).toString('base64');
-      
-      // Create the upgrade request
-      const request = [
-        `GET ${path} HTTP/1.1`,
-        `Host: ${host}${port ? `:${port}` : ''}`,
-        'Upgrade: websocket',
-        'Connection: Upgrade',
-        `Sec-WebSocket-Key: ${wsKey}`,
-        'Sec-WebSocket-Version: 13',
-        // Add this line to explicitly request no extensions
-        options.testWithCompression ? 'Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits' : '',
-        '',
-        ''
-      ].filter(Boolean).join('\r\n');
-      
-      console.log(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} SENDING REQUEST ${fancyColors.RESET}`);
-      console.log(`${fancyColors.GRAY}${request.replace(/\r\n/g, '\n')}${fancyColors.RESET}`);
-      
-      // Connect using appropriate protocol
-      const socket = isSecure ? 
-        tls.connect(port, host, { rejectUnauthorized: false }) : 
-        net.connect(port, host);
-      
-      let responseData = '';
-      
-      // Set timeout
-      socket.setTimeout(5000, () => {
-        socket.end();
-        console.log(`${fancyColors.BG_RED}${fancyColors.WHITE} TIMEOUT ${fancyColors.RESET} Connection timed out after 5 seconds`);
-        resolve({ success: false, error: 'Timeout' });
-      });
-      
-      socket.on('connect', () => {
-        console.log(`${fancyColors.BG_GREEN}${fancyColors.BLACK} CONNECTED ${fancyColors.RESET} TCP connection established to ${host}:${port}`);
-        // Send the HTTP upgrade request
-        socket.write(request);
-      });
-      
-      socket.on('data', (data) => {
-        responseData += data.toString();
-        
-        // Check if we've received the full headers (ending with \r\n\r\n)
-        if (responseData.includes('\r\n\r\n')) {
-          console.log(`${fancyColors.BG_GREEN}${fancyColors.BLACK} RESPONSE RECEIVED ${fancyColors.RESET}`);
-          
-          // Split headers from body
-          const [headers, body] = responseData.split('\r\n\r\n', 2);
-          const headerLines = headers.split('\r\n');
-          
-          console.log(`${fancyColors.CYAN}Headers:${fancyColors.RESET}`);
-          headerLines.forEach(line => console.log(`${fancyColors.YELLOW}${line}${fancyColors.RESET}`));
-          
-          // Check for compression headers
-          const extensionHeader = headerLines.find(h => h.toLowerCase().startsWith('sec-websocket-extensions:'));
-          
-          if (extensionHeader) {
-            if (extensionHeader.toLowerCase().includes('permessage-deflate')) {
-              console.log(`\n${fancyColors.BG_RED}${fancyColors.WHITE} COMPRESSION ENABLED ${fancyColors.RESET} ${fancyColors.RED}Server is negotiating compression: ${extensionHeader}${fancyColors.RESET}`);
-              console.log(`${fancyColors.RED}This will cause the 'RSV1 must be clear' error with clients that don't support compression.${fancyColors.RESET}`);
-            } else {
-              console.log(`\n${fancyColors.BG_YELLOW}${fancyColors.BLACK} EXTENSIONS FOUND ${fancyColors.RESET} Server returned extensions: ${extensionHeader}`);
-            }
-          } else {
-            console.log(`\n${fancyColors.BG_GREEN}${fancyColors.BLACK} NO COMPRESSION ${fancyColors.RESET} Server correctly disabled WebSocket extensions`);
-          }
-          
-          // Check if upgrade was successful
-          const statusLine = headerLines[0];
-          const upgradeHeader = headerLines.find(h => h.toLowerCase().startsWith('upgrade:'));
-          
-          if (statusLine.includes('101') && upgradeHeader && upgradeHeader.toLowerCase().includes('websocket')) {
-            console.log(`\n${fancyColors.BG_GREEN}${fancyColors.BLACK} HANDSHAKE SUCCESSFUL ${fancyColors.RESET} WebSocket connection established`);
-            
-            // Don't close immediately to see if frames arrive
-            setTimeout(() => {
-              socket.end();
-              resolve({ 
-                success: true, 
-                headers: headerLines,
-                compression: !!extensionHeader && extensionHeader.toLowerCase().includes('permessage-deflate')
-              });
-            }, 1000);
-          } else {
-            console.log(`\n${fancyColors.BG_RED}${fancyColors.WHITE} HANDSHAKE FAILED ${fancyColors.RESET} Server did not upgrade the connection`);
-            socket.end();
-            resolve({ 
-              success: false, 
-              headers: headerLines,
-              status: statusLine
-            });
-          }
-        }
-      });
-      
-      socket.on('error', (err) => {
-        console.log(`${fancyColors.BG_RED}${fancyColors.WHITE} CONNECTION ERROR ${fancyColors.RESET} ${err.message}`);
-        reject(err);
-      });
-      
-      socket.on('end', () => {
-        console.log(`${fancyColors.BG_BLUE}${fancyColors.WHITE} CONNECTION CLOSED ${fancyColors.RESET}`);
-      });
-    } catch (err) {
-      console.error(`${fancyColors.BG_RED}${fancyColors.WHITE} DIAGNOSTIC ERROR ${fancyColors.RESET} ${err.message}`);
-      reject(err);
-    }
-  });
-}
+// Diagnostic function removed
 
 // Export the factory function

@@ -1,15 +1,12 @@
 /**
- * DegenDuel WebSocket Client Workaround
+ * DegenDuel WebSocket Client
  * 
- * This script provides a workaround for the "Invalid WebSocket frame: RSV1 must be clear" error
- * that can occur when using wscat or other WebSocket clients.
+ * This script provides a simple WebSocket client to connect to DegenDuel WebSocket endpoints.
  * 
  * Usage:
- * 1. Save this as a Node.js script (e.g., ws-client-workaround.js)
- * 2. Run it with: node ws-client-workaround.js <url> [token]
- *    Example: node ws-client-workaround.js wss://dev.degenduel.me/api/v69/ws/monitor
- * 
- * This script creates a WebSocket connection that disables compression on the client side.
+ * 1. Save this as a Node.js script (e.g., ws-client.js)
+ * 2. Run it with: node ws-client.js <url> [token]
+ *    Example: node ws-client.js wss://dev.degenduel.me/api/v69/ws/monitor
  */
 
 import readline from 'readline';
@@ -21,16 +18,15 @@ const token = process.argv[3];
 
 if (!url) {
   console.error('Error: WebSocket URL is required');
-  console.error('Usage: node ws-client-workaround.js <url> [token]');
-  console.error('Example: node ws-client-workaround.js wss://dev.degenduel.me/api/v69/ws/monitor');
+  console.error('Usage: node ws-client.js <url> [token]');
+  console.error('Example: node ws-client.js wss://dev.degenduel.me/api/v69/ws/monitor');
   process.exit(1);
 }
 
 console.log(`Connecting to: ${url}`);
 
-// Create a WebSocket connection with compression disabled
+// Create a WebSocket connection
 const options = {
-  perMessageDeflate: false, // Disable compression
   headers: {}
 };
 

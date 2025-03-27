@@ -42,11 +42,7 @@ export const websocketBypassMiddleware = (req, res, next) => {
         req.headers.upgrade = 'websocket';
         req.headers.connection = 'Upgrade';
 
-        // Delete extension headers that cause RSV1 errors
-        if (req.headers['sec-websocket-extensions']) {
-            logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS-BYPASS ${fancyColors.RESET} Removed WebSocket extensions: ${req.headers['sec-websocket-extensions']}`);
-            delete req.headers['sec-websocket-extensions'];
-        }
+        // No special handling needed for WebSocket extensions
 
         // Set a flag to indicate this request is a WebSocket connection
         req._isWebSocketRequest = true;

@@ -921,12 +921,7 @@ export class MarketDataWebSocketServer extends BaseWebSocketServer {
       for (const client of tokenDataClients) {
         if (client.readyState === client.OPEN) {
           try {
-            // Ensure WebSocket has the compression flag disabled
-            if (client._disableRSV === undefined) {
-              client._disableRSV = true;  // Flag to disable RSV1 bit
-            }
-            
-            // Use the safer sendToClient method that handles RSV1 bits
+            // Use normal send method
             this.sendToClient(client, tokenUpdate);
             sentCount++;
           } catch (clientError) {

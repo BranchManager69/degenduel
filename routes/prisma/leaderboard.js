@@ -108,7 +108,6 @@ router.get('/global', async (req, res) => {
             contests_won: true,
             total_prize_money: true,
             best_score: true,
-            highest_score: true,
             avg_score: true
           }
         },
@@ -178,7 +177,7 @@ router.get('/global', async (req, res) => {
         wallet_address: user.wallet_address,
         nickname: user.nickname || 'Anonymous',
         rank_score: user.user_stats?.best_score || 0,
-        highest_rank_score: user.user_stats?.highest_score || user.user_stats?.best_score || 0,
+        highest_rank_score: user.user_stats?.best_score || 0,
         percentile: parseFloat(percentile.toFixed(2)),
         trend: calculateTrend(currentRank, previousRank),
         avg_position: avgPosition ? parseFloat(avgPosition.toFixed(2)) : null,
@@ -292,7 +291,7 @@ router.get('/contests/performance', async (req, res) => {
 
     // Calculate date range based on timeframe
     const dateFilter = timeframe === 'all' ? {} : {
-      created_at: {
+      joined_at: {
         gte: new Date(
           timeframe === 'week'
             ? Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -339,10 +338,10 @@ router.get('/contests/performance', async (req, res) => {
           select: {
             final_rank: true,
             prize_amount: true,
-            created_at: true
+            joined_at: true
           },
           orderBy: {
-            created_at: 'desc'
+            joined_at: 'desc'
           }
         }
       },
