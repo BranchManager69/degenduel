@@ -114,6 +114,12 @@ class TokenWhitelistService extends BaseService {
     // Initialize the service
     async initialize() {
         try {
+            // Check if service is enabled via service profile
+            if (!config.services.token_whitelist) {
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Token Whitelist Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false; // Skip initialization
+            }
+            
             // Call parent initialize first
             await super.initialize();
 

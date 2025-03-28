@@ -145,6 +145,21 @@ class TokenSyncService extends BaseService {
      */
     async initialize() {
         try {
+            // Check if token sync is disabled via service profile
+            if (!config.services.token_sync) {
+                logApi.warn(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Token Sync Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false; // Skip initialization
+            }
+            
+            // Apply check interval from config (if exists)
+            if (config.service_intervals.token_sync_check_interval_ms) {
+                const intervalMs = config.service_intervals.token_sync_check_interval_ms;
+                if (intervalMs > 0) {
+                    this.config.checkIntervalMs = intervalMs;
+                    logApi.info(`${fancyColors.MAGENTA}[tokenSyncService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CUSTOM INTERVAL ${fancyColors.RESET} Using interval from config: ${intervalMs}ms`);
+                }
+            }
+            
             // Call parent initialize first
             await super.initialize();
             

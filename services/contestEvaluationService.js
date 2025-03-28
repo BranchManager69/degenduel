@@ -188,6 +188,12 @@ class ContestEvaluationService extends BaseService {
      */
     async initialize() {
         try {
+            // Check if service is enabled via service profile
+            if (!config.services.contest_evaluation) {
+                logApi.warn(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Contest Evaluation Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false; // Skip initialization
+            }
+            
             // Call parent initialize first
             await super.initialize();
             

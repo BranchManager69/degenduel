@@ -8,6 +8,7 @@ import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.j
 import { PublicKey } from '@solana/web3.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { fancyColors } from '../utils/colors.js';
+import { config } from '../config/config.js';
 
 // Rate limit configuration
 const BALANCE_TRACKING_CONFIG = {
@@ -77,6 +78,12 @@ class UserBalanceTrackingService extends BaseService {
     async initialize() {
         try {
             await super.initialize();
+            
+            // Check if service is enabled via service profile
+            if (!config.services.user_balance_tracking) {
+                logApi.warn(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} User Balance Tracking Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false; // Skip initialization
+            }
             
             // Load settings from database
             const settings = await prisma.system_settings.findUnique({

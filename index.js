@@ -366,8 +366,19 @@ async function displayStartupAnimation(port, initResults = {}, success = true) {
     // Get service metrics from initResults
     const initializedServices = initResults.Services?.initialized || [];
     const failedServices = initResults.Services?.failed || [];
-    const totalServices = (initializedServices.length + failedServices.length) || 
-                          (serviceManager ? serviceManager.getServices().size : 0);
+    
+    // Calculate total services (registered) vs services that should be running (non-disabled)
+    const totalRegisteredServices = serviceManager ? serviceManager.getServices().size : 0;
+    
+    // Don't count intentionally disabled services as failed in the display
+    const intentionallyDisabledCount = Object.values(config.service_profiles[config.services.active_profile] || {})
+        .filter(enabled => !enabled).length;
+    
+    // Calculate effectively available services (registered minus intentionally disabled)
+    const effectiveTotalServices = totalRegisteredServices - intentionallyDisabledCount;
+    
+    // Use for display
+    const totalServices = effectiveTotalServices || (initializedServices.length + failedServices.length);
     
     // Get duration
     const duration = formatDuration(process.uptime());
@@ -448,6 +459,9 @@ async function initializeServer() {
         // Simple initialization start message
         console.log('🚀 DegenDuel Initialization Starting');
         console.log('🔍 Swagger docs available at /api-docs');
+        
+        // Log active service profile
+        config.logServiceProfile();
 
         // Start amazing initialization logging
         InitLogger.startInitialization();

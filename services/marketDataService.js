@@ -137,6 +137,17 @@ class MarketDataService extends BaseService {
     // Initialize the service
     async initialize() {
         try {
+            // Check if service is enabled via service profile
+            if (!config.services.market_data) {
+                logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Market Data Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false; // Skip initialization
+            }
+            
+            // Informational note about TokenSync status
+            if (!config.services.token_sync) {
+                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NOTE ${fancyColors.RESET} TokenSync service is disabled. MarketData will operate with existing data only.`);
+            }
+            
             // Initialize market stats structure
             this.marketStats = {
                 data: {

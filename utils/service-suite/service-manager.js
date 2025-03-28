@@ -11,6 +11,7 @@ import { createCircuitBreakerWebSocket } from '../../websocket/circuit-breaker-w
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
 import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';
+import { config } from '../../config/config.js';
 import { 
     SERVICE_NAMES, 
     SERVICE_LAYERS, 
@@ -588,19 +589,49 @@ class ServiceManager {
                     // Return true if the service initialization completed successfully
                     return true;
                 } else {
-                    // Log the service initialization returned false
-                    const error = new Error(`Service ${serviceName} initialization returned false`);
-                    if (VERBOSE_SERVICE_INIT) {
-                        logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
-                        //    metadata: getServiceMetadata(serviceName)
+                    // Check for service disabled via service profile
+                    if ((serviceName === SERVICE_NAMES.TOKEN_SYNC && !config.services.token_sync) ||
+                        (serviceName === SERVICE_NAMES.MARKET_DATA && !config.services.market_data) ||
+                        (serviceName === SERVICE_NAMES.CONTEST_EVALUATION && !config.services.contest_evaluation) ||
+                        (serviceName === SERVICE_NAMES.TOKEN_WHITELIST && !config.services.token_whitelist) ||
+                        (serviceName === SERVICE_NAMES.LIQUIDITY && !config.services.liquidity) ||
+                        (serviceName === SERVICE_NAMES.USER_BALANCE_TRACKING && !config.services.user_balance_tracking) ||
+                        (serviceName === SERVICE_NAMES.WALLET_RAKE && !config.services.wallet_rake)) {
+                        
+                        // For intentionally disabled services, log as warning instead of error
+                        logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} DISABLED ${fancyColors.RESET} ${fancyColors.YELLOW}Service ${serviceName} is intentionally disabled in the '${config.services.active_profile}' service profile${fancyColors.RESET}`);
+                        
+                        // Add detailed logging regardless of verbosity setting
+                        logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}This is normal based on the active service profile configuration${fancyColors.RESET}`, {
+                            service: serviceName,
+                            status: 'disabled_by_profile',
+                            active_profile: config.services.active_profile,
+                            metadata: getServiceMetadata(serviceName)
                         });
+                        
+                        // Mark as failed for record keeping but with a special status
+                        this.state.set(serviceName, {
+                            ...this.state.get(serviceName) || {},
+                            status: 'disabled_by_config',
+                            running: false
+                        });
+                        
+                        // Still add to failed list for consistency, but with special note
+                        failed.add(serviceName);
+                        return false;
                     } else {
+                        // Log the service initialization returned false
+                        const error = new Error(`Service ${serviceName} initialization returned false`);
+                        // Always log detailed error info regardless of verbosity
                         logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
-                        //    metadata: getServiceMetadata(serviceName)
+                            metadata: getServiceMetadata(serviceName),
+                            service: serviceName,
+                            status: 'init_returned_false'
                         });
+                        
+                        failed.add(serviceName);
+                        return false;
                     }
-                    failed.add(serviceName);
-                    return false;
                 }
             } catch (error) {
                 // Log the service initialization failed

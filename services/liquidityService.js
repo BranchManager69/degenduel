@@ -92,6 +92,12 @@ class LiquidityService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
+            // Check if service is enabled via service profile
+            if (!config.services.liquidity) {
+                logApi.warn(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Liquidity Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false; // Skip initialization
+            }
+            
             // Check dependencies
             const walletGenStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
             if (!walletGenStatus) {

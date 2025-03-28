@@ -143,6 +143,13 @@ const config = {
   service_intervals: {
     // ^^^ = uses RPC calls
 
+    /* TOKEN SYNC SERVICE */
+    // Token sync service check interval:
+    token_sync_check_interval_ms:
+      MASTER_RPC_THROTTLE !== 1 ?
+        parseInt(process.env.TOKEN_SYNC_CHECK_INTERVAL_MS || 60000 + (60000 * MASTER_RPC_THROTTLE)) :
+        60000, // 60 seconds default, modified by RPC throttle ^^^
+    
     /* CONTEST WALLET SERVICE */
 
     // Contest wallet check cycle interval (for Solana balances):
@@ -257,7 +264,9 @@ const config = {
     full_url: process.env.IPINFO_API_FULL_URL,
   },
   
-  // Helper function to get environment:
+  // Helper functions for environment and service configuration:
+  
+  // Get current environment
   getEnvironment: (origin) => {
     // First check if we're explicitly in development mode based on NODE_ENV
     if (process.env.NODE_ENV === 'development') {
@@ -268,6 +277,27 @@ const config = {
       return process.env.NODE_ENV || 'production'; // Default to production if NODE_ENV not set
     }
     return origin.includes('localhost') || origin.includes('127.0.0.1') ? 'development' : 'production';
+  },
+  
+  // Log active service profile during startup
+  logServiceProfile: () => {
+    const profile = config.services.active_profile;
+    const enabledServices = [];
+    const disabledServices = [];
+    
+    Object.entries(config.service_profiles[profile] || {}).forEach(([service, enabled]) => {
+      if (enabled) {
+        enabledServices.push(service);
+      } else {
+        disabledServices.push(service);
+      }
+    });
+    
+    console.log(`🔧 Active Service Profile: ${profile}`);
+    console.log(`  - Enabled: ${enabledServices.join(', ')}`);
+    console.log(`  - Disabled: ${disabledServices.join(', ')}`);
+    
+    return { profile, enabledServices, disabledServices };
   },
   // Device authentication settings:
   device_auth_enabled: 
@@ -282,6 +312,89 @@ const config = {
     auth: process.env.AUTH_DEBUG_MODE || 'false',
     api: process.env.DD_API_DEBUG_MODE || 'false',
     middleware: process.env.MIDDLEWARE_DEBUG_MODE || 'false',
+  },
+  
+  // Service profiles for different environments
+  service_profiles: {
+    // Production profile - all services enabled
+    production: {
+      token_sync: true,
+      market_data: true, 
+      contest_evaluation: true,
+      token_whitelist: true,
+      liquidity: true,
+      user_balance_tracking: true,
+      wallet_rake: true,
+      // Additional services would be defined here as we expand this pattern
+      // wallet_generation: true,
+      // achievement_tracking: true,
+      // etc.
+    },
+    
+    // Development profile - services disabled by default (just API testing)
+    development: {
+      token_sync: false,
+      market_data: false,
+      contest_evaluation: false,
+      token_whitelist: false,
+      liquidity: false,
+      user_balance_tracking: false,
+      wallet_rake: false,
+      // Additional services would be disabled here too
+      // wallet_generation: false,
+      // achievement_tracking: false,
+      // etc.
+    }
+  },
+  
+  // Active service configuration (based on profile)
+  services: {
+    // Get active profile from environment or default to 'development'
+    active_profile: process.env.SERVICES_PROFILE || 
+                   (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
+    
+    // Determine if specific services are enabled based on active profile
+    get token_sync() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.token_sync;
+    },
+    
+    get market_data() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.market_data;
+    },
+    
+    get contest_evaluation() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.contest_evaluation;
+    },
+    
+    get token_whitelist() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.token_whitelist;
+    },
+    
+    get liquidity() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.liquidity;
+    },
+    
+    get user_balance_tracking() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.user_balance_tracking;
+    },
+    
+    get wallet_rake() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.wallet_rake;
+    },
   },
   debug_mode: 
     process.env.DD_API_DEBUG_MODE || 'false',

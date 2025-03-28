@@ -111,6 +111,12 @@ class WalletRakeService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
+            // Check if service is enabled via service profile
+            if (!config.services.wallet_rake) {
+                logApi.warn(`${fancyColors.MAGENTA}[walletRakeService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Wallet Rake Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false; // Skip initialization
+            }
+            
             // Check dependencies
             const contestWalletStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.CONTEST_WALLET);
             if (!contestWalletStatus) {
