@@ -528,7 +528,7 @@ class UnifiedWebSocketServer {
             role: true,
             created_at: true,
             last_login: true,
-            profile_image: true
+            profile_image_url: true
           }
         });
         
@@ -642,7 +642,7 @@ class UnifiedWebSocketServer {
                 role: true,
                 created_at: true,
                 last_login: true,
-                profile_image: true
+                profile_image_url: true
               }
             });
             
