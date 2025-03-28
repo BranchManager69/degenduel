@@ -378,6 +378,7 @@ model users {
   wallet_balances           wallet_balance_history[]
   websocket_messages        websocket_messages[]
   authorized_devices        authorized_devices[]        @relation(name: "UserAuthorizedDevices")
+  ai_conversations          ai_conversations[]          @relation("UserAIConversations")
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -953,4 +954,38 @@ model token_websites {
 
   @@index([token_id])
   @@map("token_websites")
+}
+
+model ai_conversations {
+  id                 String    @id @default(uuid())
+  wallet_address     String    @db.VarChar(44)
+  conversation_id    String    @unique
+  context            String?   @db.VarChar(50)
+  message_count      Int       @default(0)
+  total_tokens_used  Int       @default(0)
+  first_message_at   DateTime  @default(now()) @db.Timestamptz(6)
+  last_message_at    DateTime  @default(now()) @db.Timestamptz(6)
+  is_active          Boolean   @default(true)
+  metadata           Json?     @default("{}")
+  user               users     @relation("UserAIConversations", fields: [wallet_address], references: [wallet_address], onDelete: Cascade)
+  messages           ai_conversation_messages[]
+
+  @@index([wallet_address])
+  @@index([conversation_id])
+  @@index([last_message_at])
+  @@map("ai_conversations")
+}
+
+model ai_conversation_messages {
+  id                 String          @id @default(uuid())
+  conversation_id    String
+  role               String          @db.VarChar(20)
+  content            String          @db.Text
+  tokens             Int?
+  created_at         DateTime        @default(now()) @db.Timestamptz(6)
+  conversation       ai_conversations @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+
+  @@index([conversation_id])
+  @@index([created_at])
+  @@map("ai_conversation_messages")
 }
