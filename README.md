@@ -162,33 +162,23 @@ The application uses PostgreSQL as its primary database with a well-structured s
 
 ### WebSocket Infrastructure
 
-The platform implements multiple specialized WebSocket servers for real-time communication:
+DegenDuel uses a unified WebSocket system for all real-time communications through a single connection point.
 
-**WebSocket Types:**
-1. **Token Data WebSocket**: Real-time token price updates
-2. **Portfolio WebSocket**: Live portfolio valuation
-3. **Contest WebSocket**: Contest updates and real-time chat
-4. **Market WebSocket**: Market data streaming
-5. **Monitor WebSocket**: System health monitoring
-6. **Analytics WebSocket**: User analytics tracking
+**Unified WebSocket System (v69):**
+- **Single Connection**: All data flows through one WebSocket connection
+- **Topic-Based Subscriptions**: Subscribe to specific data channels
+- **JWT Authentication**: Secure access to restricted topics
+- **Path**: `/api/v69/ws`
 
-**Architecture Features:**
-- JWT-based authentication
-- Channel-based subscription model
+**Key Features:**
+- Topic-based subscription model
+- Role-based access control
+- Real-time data streaming
 - Heartbeat mechanism (30-second interval)
-- Connection tracking and analytics
-- Message batching and queuing
-- Rate limiting
+- Initial data delivery on subscription
+- Comprehensive error handling
 
-**Message Format:**
-```json
-{
-  "type": "string",       // Message type identifier
-  "sequence": number,     // Monotonically increasing sequence
-  "timestamp": number,    // Unix timestamp (ms)
-  "data": object          // Message payload
-}
-```
+For complete details on the WebSocket system, including topics, message formats, authentication, and code examples, see the [Unified WebSocket System Documentation](/WEBSOCKET_UNIFIED_SYSTEM.md).
 
 ### Authentication System
 
@@ -514,21 +504,31 @@ async function getWebSocketToken() {
 }
 ```
 
-**WebSocket Connection:**
+**Unified WebSocket Connection:**
 ```javascript
-async function connectToWebSocket(wsType) {
+async function connectToUnifiedWebSocket() {
   // Get authentication token
   const { token } = await getWebSocketToken();
   
-  // Determine WebSocket URL
-  const wsUrl = `${WS_BASE_URL}/${wsType}`;
+  // Connect to unified WebSocket
+  const ws = new WebSocket(`${WS_BASE_URL}/api/v69/ws`);
   
-  // Connect with token as subprotocol
-  const ws = new WebSocket(wsUrl, token);
-  
-  // Setup event handlers
+  // Set up event handlers
   ws.onopen = () => {
-    console.log(`Connected to ${wsType} WebSocket`);
+    console.log('Connected to unified WebSocket');
+    
+    // Subscribe to public topics
+    ws.send(JSON.stringify({
+      type: 'SUBSCRIBE',
+      topics: ['market-data', 'system']
+    }));
+    
+    // Subscribe to authenticated topics
+    ws.send(JSON.stringify({
+      type: 'SUBSCRIBE',
+      topics: ['portfolio', 'user'],
+      authToken: token
+    }));
   };
   
   ws.onmessage = (event) => {
@@ -537,21 +537,39 @@ async function connectToWebSocket(wsType) {
   };
   
   ws.onclose = (event) => {
-    console.log(`Disconnected from ${wsType} WebSocket`);
+    console.log('Disconnected from unified WebSocket');
     // Implement reconnection logic
   };
   
   ws.onerror = (error) => {
-    console.error(`WebSocket error:`, error);
+    console.error('WebSocket error:', error);
   };
   
   return ws;
+}
+
+// Handle different message types
+function handleMessage(message) {
+  switch (message.type) {
+    case 'DATA':
+      handleDataMessage(message);
+      break;
+    case 'SYSTEM':
+      handleSystemMessage(message);
+      break;
+    case 'ERROR':
+      handleErrorMessage(message);
+      break;
+    case 'ACKNOWLEDGMENT':
+      console.log(`${message.operation} acknowledged for topics:`, message.topics);
+      break;
+  }
 }
 ```
 
 **React Hook Example:**
 ```javascript
-function useTokenDataWebSocket() {
+function useMarketDataWebSocket() {
   const [tokens, setTokens] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
@@ -564,17 +582,24 @@ function useTokenDataWebSocket() {
     async function connect() {
       try {
         const { token } = await getWebSocketToken();
-        ws = new WebSocket(`${WS_BASE_URL}/token-data`, token);
+        ws = new WebSocket(`${WS_BASE_URL}/api/v69/ws`);
         
         ws.onopen = () => {
           setIsConnected(true);
           reconnectAttempts = 0;
+          
+          // Subscribe to market data
+          ws.send(JSON.stringify({
+            type: 'SUBSCRIBE',
+            topics: ['market-data']
+          }));
         };
         
         ws.onmessage = (event) => {
           const message = JSON.parse(event.data);
-          if (message.type === 'tokens.update') {
-            setTokens(message.data.tokens);
+          
+          if (message.type === 'DATA' && message.topic === 'market-data') {
+            setTokens(message.data);
           }
         };
         
@@ -1210,291 +1235,62 @@ Response:
 
 ## 🧵 WebSocket Protocol
 
-### Token Data WebSocket
+DegenDuel has migrated to a unified WebSocket system that handles all real-time communications through a single WebSocket connection.
+
+### Unified WebSocket System (v69)
 
 **Connection:**
 ```
-wss://degenduel.me/api/v2/ws/token-data
+wss://degenduel.me/api/v69/ws
 ```
 
-**Subprotocol:**
-- The WebSocket token obtained from `/api/auth/token`
+**Authentication:**
+- Include auth token when subscribing to restricted topics
 
-**Messages:**
+**Available Topics:**
+- `market-data`: Real-time token price and market updates
+- `portfolio`: User portfolio information and updates
+- `system`: System-wide notifications and events
+- `contest`: Contest information and leaderboard updates
+- `user`: User profile and statistics
+- `admin`: Administrative functions (requires admin role)
+- `wallet`: Wallet information and transactions
+- `skyduel`: SkyDuel game data
 
-1. **Subscription:**
-```json
-{
-  "type": "subscribe",
-  "channel": "token.all"
-}
+**Message Types:**
+- Client to Server: `SUBSCRIBE`, `UNSUBSCRIBE`, `REQUEST`, `COMMAND`
+- Server to Client: `DATA`, `ERROR`, `SYSTEM`, `ACKNOWLEDGMENT`
+
+**Basic Usage Example:**
+
+```javascript
+// Connect to WebSocket
+const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
+
+// Subscribe to public topics
+socket.send(JSON.stringify({
+  type: 'SUBSCRIBE',
+  topics: ['market-data', 'system']
+}));
+
+// Subscribe to restricted topics (with auth)
+socket.send(JSON.stringify({
+  type: 'SUBSCRIBE',
+  topics: ['portfolio', 'user'],
+  authToken: 'your-jwt-token'
+}));
+
+// Request specific data
+socket.send(JSON.stringify({
+  type: 'REQUEST',
+  topic: 'market-data',
+  action: 'getToken',
+  symbol: 'SOL',
+  requestId: '123'
+}));
 ```
 
-2. **Token Update:**
-```json
-{
-  "type": "tokens.update",
-  "sequence": 1234,
-  "timestamp": 1672531200000,
-  "data": {
-    "tokens": [
-      {
-        "symbol": "SOL",
-        "price": 101.32,
-        "priceChange": {
-          "1h": 0.5,
-          "24h": 3.45,
-          "7d": -2.1
-        }
-      }
-    ]
-  }
-}
-```
-
-3. **Token Metadata Update:**
-```json
-{
-  "type": "tokens.metadata",
-  "sequence": 1235,
-  "timestamp": 1672531200000,
-  "data": {
-    "token": {
-      "symbol": "SOL",
-      "name": "Solana",
-      "address": "So11111111111111111111111111111111111111111",
-      "logo": "https://assets.coingecko.com/coins/images/4128/small/solana.png",
-      "website": "https://solana.com"
-    }
-  }
-}
-```
-
-### Portfolio WebSocket
-
-**Connection:**
-```
-wss://degenduel.me/api/v2/ws/portfolio
-```
-
-**Subprotocol:**
-- The WebSocket token obtained from `/api/auth/token`
-
-**Messages:**
-
-1. **Subscription:**
-```json
-{
-  "type": "subscribe",
-  "contestId": "contest_123"
-}
-```
-
-2. **Portfolio Update:**
-```json
-{
-  "type": "portfolio.update",
-  "sequence": 5678,
-  "timestamp": 1672531200000,
-  "data": {
-    "contestId": "contest_123",
-    "portfolio": {
-      "totalValue": 11250.75,
-      "cashBalance": 5000.25,
-      "pnl": {
-        "absolute": 1250.75,
-        "percentage": 12.5
-      },
-      "positions": [
-        {
-          "tokenSymbol": "SOL",
-          "amount": 50,
-          "averagePrice": 100.25,
-          "currentPrice": 110.5,
-          "value": 5525,
-          "pnl": {
-            "absolute": 512.5,
-            "percentage": 10.2
-          }
-        }
-      ]
-    }
-  }
-}
-```
-
-3. **Trade Confirmation:**
-```json
-{
-  "type": "trade.confirmed",
-  "sequence": 5679,
-  "timestamp": 1672531200000,
-  "data": {
-    "trade": {
-      "id": "trade_789",
-      "contestId": "contest_123",
-      "tokenSymbol": "SOL",
-      "side": "buy",
-      "amount": 10,
-      "price": 101.32,
-      "value": 1013.2,
-      "timestamp": 1672531200000
-    }
-  }
-}
-```
-
-### Contest WebSocket
-
-**Connection:**
-```
-wss://degenduel.me/api/v2/ws/contest
-```
-
-**Subprotocol:**
-- The WebSocket token obtained from `/api/auth/token`
-
-**Messages:**
-
-1. **Subscription:**
-```json
-{
-  "type": "subscribe",
-  "contestId": "contest_123"
-}
-```
-
-2. **Contest Update:**
-```json
-{
-  "type": "contest.update",
-  "sequence": 9012,
-  "timestamp": 1672531200000,
-  "data": {
-    "contestId": "contest_123",
-    "status": "active",
-    "participantCount": 120,
-    "timeRemaining": 86400
-  }
-}
-```
-
-3. **Leaderboard Update:**
-```json
-{
-  "type": "contest.leaderboard",
-  "sequence": 9013,
-  "timestamp": 1672531200000,
-  "data": {
-    "contestId": "contest_123",
-    "leaderboard": [
-      {
-        "rank": 1,
-        "userId": "user_456",
-        "nickname": "moon_boy",
-        "pnl": 42.5,
-        "portfolioValue": 14250
-      }
-    ],
-    "userRank": {
-      "rank": 15,
-      "pnl": 12.3,
-      "portfolioValue": 11230
-    }
-  }
-}
-```
-
-4. **Chat Message:**
-```json
-{
-  "type": "chat.message",
-  "sequence": 9014,
-  "timestamp": 1672531200000,
-  "data": {
-    "contestId": "contest_123",
-    "message": {
-      "id": "msg_123",
-      "sender": {
-        "id": "user_456",
-        "nickname": "moon_boy"
-      },
-      "content": "Just made a killing on SOL!",
-      "timestamp": 1672531200000
-    }
-  }
-}
-```
-
-### Monitor WebSocket
-
-**Connection:**
-```
-wss://degenduel.me/api/v2/ws/monitor
-```
-
-**Subprotocol:**
-- The WebSocket token obtained from `/api/auth/token` (admin role required)
-
-**Messages:**
-
-1. **Subscription:**
-```json
-{
-  "type": "subscribe",
-  "channel": "system.health"
-}
-```
-
-2. **System Health Update:**
-```json
-{
-  "type": "system.health",
-  "sequence": 3456,
-  "timestamp": 1672531200000,
-  "data": {
-    "services": [
-      {
-        "name": "SolanaService",
-        "status": "healthy",
-        "uptime": 86400,
-        "metrics": {
-          "rpcCalls": 12500,
-          "errors": 12,
-          "avgResponseTime": 150
-        }
-      }
-    ],
-    "system": {
-      "memory": {
-        "total": 16384,
-        "used": 8192,
-        "free": 8192
-      },
-      "cpu": {
-        "usage": 45
-      },
-      "uptime": 604800
-    }
-  }
-}
-```
-
-3. **Circuit Breaker Update:**
-```json
-{
-  "type": "circuit.update",
-  "sequence": 3457,
-  "timestamp": 1672531200000,
-  "data": {
-    "service": "TokenSyncService",
-    "status": "OPEN",
-    "failureCount": 5,
-    "lastFailure": "2023-01-01T12:34:56Z",
-    "resetAttempts": 2
-  }
-}
-```
+For complete documentation on the WebSocket system, including topics, message formats, authentication, error handling, and code examples, see the [Unified WebSocket System Documentation](/WEBSOCKET_UNIFIED_SYSTEM.md).
 
 ---
 
@@ -1661,24 +1457,35 @@ try {
 
 ### WebSocket Testing
 
-DegenDuel includes dedicated tools for WebSocket testing:
+The Unified WebSocket system can be tested directly from your browser's DevTools console:
 
-```bash
-# Test SkyDuel WebSocket
-npm run ws skyduel <token>
+```javascript
+// Connect to the Unified WebSocket
+const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
 
-# Test Token Data WebSocket
-npm run ws token-data <token>
+// Log all messages
+socket.onmessage = (event) => {
+  console.log('Received:', JSON.parse(event.data));
+};
 
-# Test Circuit Breaker WebSocket
-npm run ws circuit-breaker <token>
+// Log connection events
+socket.onopen = () => console.log('Connected');
+socket.onclose = () => console.log('Disconnected');
+socket.onerror = (error) => console.error('Error:', error);
 
-# Test Monitor WebSocket
-npm run ws monitor <token>
+// Helper function to send messages
+function sendWS(data) {
+  socket.send(JSON.stringify(data));
+}
+
+// Example: Subscribe to market data
+sendWS({
+  type: 'SUBSCRIBE',
+  topics: ['market-data']
+});
 ```
 
-**WebSocket Test Client:**
-The repository includes a WebSocket test client in `scripts/test-websocket.js` for manual testing.
+For more advanced testing and complete examples, see the [Unified WebSocket System Documentation](/WEBSOCKET_UNIFIED_SYSTEM.md).
 
 ### API Testing
 
@@ -1698,9 +1505,9 @@ API endpoints are documented with Swagger at `/api-docs`.
 ## 📚 Additional Resources
 
 - **Frontend Repository**: [degenduel-fe](https://github.com/BranchManager69/degenduel-fe)
+- **Unified WebSocket System**: [/WEBSOCKET_UNIFIED_SYSTEM.md](/WEBSOCKET_UNIFIED_SYSTEM.md)
 - **Solana Token Metadata Guide**: `/docs_critical/token_metadata/solana_token_metadata_guide.md`
 - **Service Architecture**: `/docs_important/Core Services/BASE_SERVICE_ARCHITECTURE.md`
-- **WebSocket Specification**: `/docs_important/WEBSOCKET_SPEC.md`
 - **Admin API Overview**: `/docs_important/ADMIN_API_OVERVIEW.md`
 
 ---
