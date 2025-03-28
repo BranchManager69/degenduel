@@ -86,7 +86,7 @@ export async function initializeWebSockets(server) {
   server.setMaxListeners(30);
   logApi.info(`Increased HTTP server MaxListeners to 30`, { event_type: "config_update" });
   
-  // Log WebSocket module details
+  // Log minimal WebSocket module details
   try {
     // Import WS correctly for ES modules
     const wsPath = require.resolve('ws');
@@ -100,38 +100,25 @@ export async function initializeWebSockets(server) {
       const packageData = JSON.parse(readFileSync(wsPackagePath, 'utf8'));
       wsVersion = packageData.version;
     } catch (err) {
-      wsVersion = 'unknown (failed to read package.json)';
+      wsVersion = 'unknown';
     }
     
-    // Get WebSocket constructor to check exports
-    const { WebSocket, Server } = await import('ws');
-    
-    logApi.info(`${fancyColors.BG_BLUE}${fancyColors.BLACK} WS MODULE INFO ${fancyColors.RESET} Using ws library v${wsVersion}`, {
-      version: wsVersion,
-      path: wsPath,
-      WebSocket_exported: typeof WebSocket !== 'undefined',
-      Server_exported: typeof Server !== 'undefined',
-      event_type: "ws_module_info",
-      _highlight: true
-    });
+    // Simple version log
+    logApi.info(`WebSocket library v${wsVersion} loaded`);
   } catch (error) {
     logApi.error(`Failed to get WebSocket module details: ${error.message}`);
   }
   
-  // Log the actual server instance for debugging
-  logApi.info(`${fancyColors.BG_BLUE}${fancyColors.BLACK} SERVER INFO ${fancyColors.RESET} HTTP Server`, {
-    constructor: server.constructor.name,
-    address: server.address() || 'not-listening',
-    events: Object.keys(server._events || {}),
+  // Log basic server info (without excessive details)
+  logApi.info(`HTTP Server ready for WebSocket connections`, {
     maxListeners: server.getMaxListeners(),
-    event_type: "server_info",
-    _highlight: true
+    status: "ready",
+    event_type: "server_ready"
   });
 
   // Master v69 WebSocket server initialization process
   try {
-    logApi.info(`🔌 WebSocket Layer Initialization Starting`, { event_type: "initialization_start", _icon: "🔌", _highlight: true, _color: "#E91E63" });
-    logApi.info(`🔹 🔄 [WebSocket] Initialization`, { category: "WebSocket", component: "Initialization", status: "initializing", details: null, _icon: "🔄", _color: "#0078D7", _highlight: false });
+    logApi.info(`🔌 WebSocket System v69 Initialization Starting`);
 
     // Initialization tracking
     const initResults = [];
@@ -140,49 +127,22 @@ export async function initializeWebSockets(server) {
     // Create all WebSocket instances first with a concise log
     const wsServers = {};
     
-    // DIAGNOSTIC: Add a test WebSocket server first for troubleshooting
-    logApi.info(`🔹 Creating test WebSocket server for diagnostics`, { 
-      event_type: "test_websocket_create",
-      _highlight: true,
-      _color: "#FFA500"
-    });
-    
+    // Create test WebSocket server first without verbose logging
     try {
       // Create test web socket server first as a diagnostic
       wsServers.test = await createTestWebSocket(server);
       
-      // Log success for test WebSocket
-      if (wsServers.test) {
-        logApi.info(`✅ Test WebSocket server created successfully at ${wsServers.test.path}`, {
-          event_type: "test_websocket_success",
-          path: wsServers.test.path,
-          _highlight: true,
-          _color: "#00AA00"
-        });
-      } else {
-        // This would be a critical error
-        logApi.error(`❌ Failed to create test WebSocket server`, {
-          event_type: "test_websocket_failure",
-          _highlight: true,
-          _color: "#FF0000"
-        });
+      // Log minimal success message - details will be in the comprehensive log later
+      if (!wsServers.test) {
+        logApi.error(`Failed to create test WebSocket server`);
         initErrors.push("Failed to create test WebSocket server");
       }
     } catch (testError) {
-      logApi.error(`❌ Error creating test WebSocket server: ${testError.message}`, {
-        event_type: "test_websocket_error",
-        error: testError.message,
-        stack: testError.stack,
-        _highlight: true,
-        _color: "#FF0000"
-      });
+      logApi.error(`Error creating test WebSocket server: ${testError.message}`);
       initErrors.push(`Test WebSocket error: ${testError.message}`);
     }
     
     // Create each WebSocket server and ensure it's properly initialized
-    logApi.info(`🔹 Creating main WebSocket servers...`, {
-      event_type: "creating_websocket_servers"
-    });
     
     // Create all WebSocket servers in sequence to better track errors
     const serverCreators = [
@@ -198,78 +158,71 @@ export async function initializeWebSockets(server) {
       { name: 'wallet', creator: createWalletWebSocket }
     ];
     
-    // Create each WebSocket server with detailed error tracking
+    // Create each WebSocket server without excessive logging
+    // First, collect all server configs
+    const serverConfigs = [];
+    let totalSuccess = 0;
+    let totalFailed = 0;
+    
+    // Create each WebSocket server quietly
     for (const { name, creator } of serverCreators) {
       try {
-        logApi.info(`🔄 Creating WebSocket server: ${name}`, {
-          wsName: name,
-          event_type: "creating_websocket",
-          _color: "#0078D7"
-        });
-        
+        // No log here - reduce noise
         const ws = await creator(server);
         
         if (ws) {
+          // Store server and collect its essential config
           wsServers[name] = ws;
-          logApi.info(`✅ WebSocket server created: ${name} at ${ws.path}`, {
-            wsName: name,
-            path: ws.path,
-            event_type: "websocket_created",
-            _color: "#00AA00"
-          });
+          totalSuccess++;
           
-          // Log the WebSocket server settings for diagnostic purposes
+          // Collect config info for a single comprehensive log later
           if (ws.wss && ws.wss.options) {
-            logApi.info(`📋 WebSocket server options for ${name}:`, {
-              wsName: name,
-              options: JSON.stringify(ws.wss.options),
+            const options = ws.wss.options;
+            serverConfigs.push({
+              name,
               path: ws.path,
-              perMessageDeflate: !!ws.wss.options.perMessageDeflate,
-              event_type: "websocket_options",
-              _color: "#00BFFF"
+              config: {
+                maxPayload: options.maxPayload ? `${(options.maxPayload / (1024 * 1024)).toFixed(0)} MB` : "default",
+                perMessageDeflate: !!options.perMessageDeflate ? "ENABLED" : "DISABLED",
+                publicEndpoints: ws.publicEndpoints || [],
+                requireAuth: !!ws.requireAuth,
+                rateLimit: ws.rateLimiter ? ws.rateLimiter.maxMessagesPerMinute : "none"
+              },
+              channels: getWebSocketEndpointsMetadata()[name]?.channels || [],
+              events: getWebSocketEndpointsMetadata()[name]?.events || []
             });
           }
         } else {
-          logApi.error(`❌ Failed to create WebSocket server: ${name}`, {
-            wsName: name,
-            event_type: "websocket_creation_failed",
-            _color: "#FF0000"
-          });
+          // Only log failures
+          logApi.error(`❌ Failed to create WebSocket server: ${name}`);
           initErrors.push(`Failed to create ${name} WebSocket server`);
+          totalFailed++;
         }
       } catch (error) {
-        logApi.error(`❌ Error creating WebSocket server ${name}: ${error.message}`, {
-          wsName: name,
-          error: error.message,
-          stack: error.stack,
-          event_type: "websocket_creation_error",
-          _color: "#FF0000"
-        });
+        // Only log errors
+        logApi.error(`❌ Error creating WebSocket server ${name}: ${error.message}`);
         initErrors.push(`Error creating ${name} WebSocket: ${error.message}`);
+        totalFailed++;
       }
     }
+    
+    // Single comprehensive log with all WebSocket configurations
+    logApi.info(`📋 Created ${totalSuccess} WebSocket servers, ${totalFailed} failed`, {
+      serverConfigs,
+      successCount: totalSuccess,
+      failedCount: totalFailed,
+      event_type: "websocket_config_summary" 
+    });
     
     // Set global WebSocket servers container
     global.wsServersV69 = wsServers;
     
-    // Log summary of created WebSocket servers
-    const wsCount = Object.keys(wsServers).length;
-    logApi.info(`🔹 Created ${wsCount} WebSocket servers`, {
-      count: wsCount,
-      servers: Object.keys(wsServers),
-      event_type: "websockets_created_summary",
-      _color: "#00BFFF"
-    });
-
-    // Initialize each WebSocket server
-    logApi.info(`🔹 Initializing WebSocket servers...`, {
-      event_type: "initializing_websockets"
-    });
-
-    // Initialize each WebSocket server with a proper error check for each one
+    // Initialize each WebSocket server without verbose logging
+    const initDetails = [];
+    
+    // Initialize each WebSocket server silently
     for (const [name, ws] of Object.entries(wsServers)) {
       try {
-        logApi.info(`V69 INIT Initializing WebSocket server at ${ws.path}`);
         // Ensure the initialize method exists before calling it
         if (!ws || typeof ws.initialize !== 'function') {
           throw new Error(`WebSocket server ${name} does not have an initialize method`);
@@ -278,43 +231,47 @@ export async function initializeWebSockets(server) {
         const result = await ws.initialize();
         initResults.push(result);
         
-        if (result === true) {
-          logApi.info(`V69 INIT SUCCESS WebSocket server at ${ws.path} initialized successfully`);
-        } else {
+        initDetails.push({
+          name,
+          path: ws.path,
+          success: result === true,
+          status: result === true ? "ready" : "failed"
+        });
+        
+        if (result !== true) {
           initErrors.push(`Failed to initialize ${name} WebSocket server`);
-          logApi.warn(`V69 INIT FAILED WebSocket server at ${ws.path} failed to initialize`);
         }
       } catch (err) {
         initResults.push(false);
         initErrors.push(`Error initializing ${name} WebSocket: ${err.message}`);
-        logApi.error(`V69 INIT ERROR WebSocket server ${name} error: ${err.message}`, err);
+        
+        // Add to init details
+        initDetails.push({
+          name,
+          path: ws?.path || "unknown",
+          success: false,
+          status: "error",
+          error: err.message
+        });
       }
     }
+    
+    // Single comprehensive initialization log
+    const successCount = initDetails.filter(d => d.success).length;
+    const failCount = initDetails.length - successCount;
+    
+    logApi.info(`🔌 WebSocket initialization: ${successCount} ready, ${failCount} failed`, {
+      initDetails,
+      successCount, 
+      failCount,
+      event_type: "websocket_init_summary"
+    });
 
     // Check if all initializations were successful
     const allSuccessful = initResults.every(result => result === true);
 
-    // Log a single summary message with the results
-    if (allSuccessful) {
-      logApi.info(`🔹 v69 WebSocket Servers Ready`, { event_type: "initialization_complete", _icon: "✅", _color: "#00AA00" });
-      logApi.info(`🔹 ✅ [WebSocket] V69System | {"count":${Object.keys(wsServers).length},"version":"v69"}`, { category: "WebSocket", component: "V69System", status: "success", details: { count: Object.keys(wsServers).length, version: "v69" }, _icon: "✅", _color: "#00AA00", _highlight: false });
-    } else {
-      logApi.warn(`🔹 ⚠️ [WebSocket] V69System | {"success":${initResults.filter(r => r === true).length},"failed":${initResults.filter(r => r !== true).length},"version":"v69"}`, { 
-        category: "WebSocket", 
-        component: "V69System", 
-        status: "warning", 
-        details: { 
-          success: initResults.filter(r => r === true).length,
-          failed: initResults.filter(r => r !== true).length,
-          errors: initErrors, 
-          version: "v69" 
-        }, 
-        _icon: "⚠️", 
-        _color: "#FFA500", 
-        _highlight: false 
-      });
-    }
-
+    // We've already logged a comprehensive summary - no need for additional logs
+    
     return allSuccessful;
   } catch (error) {
     logApi.error(`❌ WebSocket layer initialization failed: ${error.message}`, {
@@ -399,12 +356,11 @@ function getWebSocketEndpointsMetadata() {
  */
 export async function cleanupWebSockets() {
   try {
-    logApi.info(`🔌 WebSocket cleanup starting`, { event_type: "cleanup_start" });
+    logApi.info(`🔌 WebSocket cleanup starting`);
     
     const servers = Object.keys(global.wsServersV69);
-    logApi.info(`WebSocket cleanup: ${servers.length} servers to close`, { count: servers.length });
-
-    // Clean up each WebSocket server in parallel
+    
+    // Clean up each WebSocket server in parallel without excessive logging
     const cleanupResults = await Promise.allSettled(
       Object.entries(global.wsServersV69).map(async ([name, ws]) => {
         try {
@@ -414,7 +370,8 @@ export async function cleanupWebSockets() {
           }
           return { name, success: false, reason: 'No cleanup method' };
         } catch (error) {
-          logApi.error(`Failed to clean up ${name} WebSocket: ${error.message}`, error);
+          // Only log errors
+          logApi.error(`Failed to clean up ${name} WebSocket: ${error.message}`);
           return { name, success: false, reason: error.message };
         }
       })
@@ -424,25 +381,12 @@ export async function cleanupWebSockets() {
     const succeeded = cleanupResults.filter(r => r.status === 'fulfilled' && r.value?.success).length;
     const failed = servers.length - succeeded;
 
-    // Log a single summary message
-    if (failed === 0) {
-      logApi.info(`🔌 WebSocket cleanup complete: All ${succeeded} servers closed successfully`, { 
-        event_type: "cleanup_complete",
-        success: true,
-        count: succeeded
-      });
-    } else {
-      logApi.warn(`🔌 WebSocket cleanup: ${succeeded} servers closed, ${failed} failed`, { 
-        event_type: "cleanup_partial",
-        success: false,
-        succeeded,
-        failed
-      });
-    }
+    // One concise summary log
+    logApi.info(`🔌 WebSocket cleanup: ${succeeded}/${servers.length} servers closed successfully`);
 
     return failed === 0;
   } catch (error) {
-    logApi.error(`WebSocket cleanup error: ${error.message}`, error);
+    logApi.error(`WebSocket cleanup error: ${error.message}`);
     return false;
   }
 }
@@ -486,14 +430,9 @@ function cleanupNullEventListeners(server) {
     }
   });
   
-  // Log cleanup results
+  // Only log if something was actually cleaned
   if (cleanupCount > 0) {
-    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} EVENT CLEANUP ${fancyColors.RESET} Removed ${cleanupCount} null event listeners`, {
-      cleanupCount,
-      server: server.constructor.name,
-      event_type: "event_cleanup",
-      _highlight: true
-    });
+    logApi.info(`Removed ${cleanupCount} null event listeners from server`);
   }
 }
 

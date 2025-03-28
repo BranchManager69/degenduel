@@ -3,6 +3,11 @@ import express from 'express';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import fetch from 'node-fetch';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -244,5 +249,77 @@ async function checkEndpointAvailability(wsUrl, endpoint, socketType) {
     return false;
   }
 }
+
+/**
+ * WebSocket System Settings Test Page
+ * Provides a simple HTML interface for testing WebSocket connections
+ * and diagnosing header issues.
+ */
+router.get('/admin/websocket/test/system-settings', (req, res) => {
+  try {
+    // Serve the WebSocket test page
+    res.sendFile(path.join(path.dirname(__dirname), 'public', 'system-settings-ws-test.html'));
+    
+    // Log access to the test page
+    logApi.info(`[WebSocket Test] Admin accessed system settings WebSocket test page from ${req.ip}`);
+  } catch (error) {
+    logApi.error('[WebSocket Test] Error serving test page:', error);
+    res.status(500).send('Error serving test page');
+  }
+});
+
+/**
+ * General WebSocket Test Page - No authentication required
+ * Provides a simple HTML interface for testing all WebSocket endpoints.
+ */
+router.get('/admin/websocket/test', (req, res) => {
+  try {
+    // Serve the WebSocket test page
+    res.sendFile(path.join(path.dirname(__dirname), 'public', 'test-ws.html'));
+    
+    // Log access to the test page
+    logApi.info(`[WebSocket Test] User accessed general WebSocket test page from ${req.ip}`);
+  } catch (error) {
+    logApi.error('[WebSocket Test] Error serving test page:', error);
+    res.status(500).send('Error serving test page');
+  }
+});
+
+/**
+ * WebSocket Test API - get the list of available WebSocket endpoints
+ */
+router.get('/api/admin/websocket/test/endpoints', (req, res) => {
+  try {
+    // Get list of available WebSocket endpoints from global.wsServers
+    const endpoints = [];
+    
+    if (global.wsServers && Object.keys(global.wsServers).length > 0) {
+      for (const [name, server] of Object.entries(global.wsServers)) {
+        if (server && server.path) {
+          endpoints.push({
+            name: name,
+            path: server.path,
+            requireAuth: !!server.requireAuth,
+            publicPath: server.publicEndpoints && server.publicEndpoints.length > 0 
+              ? server.publicEndpoints[0] 
+              : server.path
+          });
+        }
+      }
+    }
+    
+    return res.json({
+      success: true,
+      endpoints: endpoints,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logApi.error('[WebSocket Endpoints] Error:', error);
+    return res.status(500).json({
+      success: false, 
+      error: 'Failed to retrieve WebSocket endpoints'
+    });
+  }
+});
 
 export default router;

@@ -646,17 +646,12 @@ router.get('/:wallet', async (req, res) => {
   };
 
   try {
-    // The commented-out check was for Ethereum addresses - for Solana, we don't need this specific check
-    // Solana addresses are typically base58-encoded strings of varying length
-    if (!req.params.wallet || req.params.wallet.length < 30) {
-      logApi.warn('Invalid wallet address format', logContext);
-      throw { status: 400, message: 'Invalid wallet address format' };
-    }
-
+      const lookupParam = req.params.wallet;
     logApi.debug('Fetching user profile', logContext);
     
-    const user = await prisma.users.findUnique({
-      where: { wallet_address: req.params.wallet },
+    // First try to find by wallet address directly
+    let user = await prisma.users.findUnique({
+      where: { wallet_address: lookupParam },
       include: {
         contest_participants: {
           take: 5,
@@ -674,8 +669,44 @@ router.get('/:wallet', async (req, res) => {
       throw { status: 500, message: 'Database error while fetching user' };
     });
 
+    // If not found by wallet, check if it's a nickname
     if (!user) {
-      logApi.info('User not found', logContext);
+      // Check if it exists as a nickname
+      user = await prisma.users.findFirst({
+        where: { 
+          nickname: {
+            equals: lookupParam,
+            mode: 'insensitive'  // Case insensitive search
+          }
+        },
+        include: {
+          contest_participants: {
+            take: 5,
+            orderBy: { joined_at: 'desc' },
+            include: {
+              contests: true
+            }
+          }
+        }
+      }).catch(error => {
+        logApi.error('Database error while checking nickname', {
+          ...logContext,
+          error: error instanceof Error ? error.message : error
+        });
+        throw { status: 500, message: 'Database error while fetching user' };
+      });
+      
+      if (user) {
+        logApi.info('Found user by nickname instead of wallet address', {
+          ...logContext,
+          nickname: lookupParam,
+          wallet: user.wallet_address
+        });
+      }
+    }
+
+    if (!user) {
+      logApi.info('User not found by wallet or nickname', logContext);
       throw { status: 404, message: 'User not found' };
     }
 

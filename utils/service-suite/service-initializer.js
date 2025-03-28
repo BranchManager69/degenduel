@@ -5,8 +5,8 @@
  * It ensures services are registered and initialized in the correct dependency order.
  */
 
-// Service initialization verbosity
-const VERBOSE_SERVICE_INIT_LOGS = true;
+// Service initialization verbosity - disable verbosity
+const VERBOSE_SERVICE_INIT_LOGS = false;
 
 import { logApi } from '../logger-suite/logger.js';
 import AdminLogger from '../admin-logger.js';
@@ -53,7 +53,7 @@ class ServiceInitializer {
      */
     static async registerCoreServices() {
         if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Registering core services...`);
+            logApi.info(`📋 Registering services...`);
         } else {
             logApi.info(`${fancyColors.NEON}╭───────────────────────<< ${fancyColors.BOLD}${fancyColors.BG_BLACK} REGISTERING CORE SERVICES ${fancyColors.RESET}${fancyColors.NEON} >>───────────────────────╮${fancyColors.RESET}`);
             logApi.info(`${fancyColors.NEON}|                                                             |${fancyColors.RESET}`);
@@ -161,7 +161,7 @@ class ServiceInitializer {
                 //    services: registeredServices
                 });
             } else {
-                //logApi.info(`${fancyColors.BG_LIGHT_CYAN}[SERVICE INIT]${fancyColors.RESET} 😎 ${fancyColors.BG_BLACK}     ${fancyColors.YELLOW}Successfully registered ${fancyColors.BOLD}${registeredServices.length}${fancyColors.RESET}${fancyColors.BG_BLACK}${fancyColors.YELLOW} services     ${fancyColors.RESET}`);
+                logApi.info(`🔌 Registered ${registeredServices.length} services`);
             }
 
         } catch (error) {
@@ -202,7 +202,7 @@ class ServiceInitializer {
      */
     static async initializeServices() {
         if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} Initializing services...`);
+            logApi.info(`🚀 Initializing services...`);
         } else {
             logApi.info(`\n${fancyColors.NEON}╭─────────────────────── Initializing Services ───────────────────────╮${fancyColors.RESET}`);
         }
@@ -223,12 +223,12 @@ class ServiceInitializer {
             
             // Log initialization results
             if (!VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${serviceColors.initialized}[ServiceInitializer]${fancyColors.RESET} Services initialization: ${results.initialized.length} succeeded, ${results.failed.length} failed`);
+                logApi.info(`✅ Services initialized: ${results.initialized.length} succeeded, ${results.failed.length} failed`);
                 
                 // Always show failed services, even in non-verbose mode
                 if (results.failed.length > 0) {
                     results.failed.forEach(service => {
-                        logApi.error(`${serviceColors.failed}Failed to initialize service: ${service}${fancyColors.RESET}`);
+                        logApi.error(`❌ Failed to initialize service: ${service}`);
                     });
                 }
             } else {
@@ -273,7 +273,7 @@ class ServiceInitializer {
      */
     static async cleanup() {
         if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`${serviceColors.stopping}[SERVICE CLEANUP]${fancyColors.RESET} Cleaning up services...`);
+            logApi.info(`🧹 Cleaning up services...`);
         } else {
             logApi.info(`\n${fancyColors.NEON}╭───────────────── Cleaning Up Services ─────────────────╮${fancyColors.RESET}`);
         }
@@ -282,12 +282,12 @@ class ServiceInitializer {
             const results = await serviceManager.cleanup();
             
             if (!VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${serviceColors.stopped}[SERVICE CLEANUP]${fancyColors.RESET} Services cleanup: ${results.successful.length} succeeded, ${results.failed.length} failed`);
+                logApi.info(`✅ Services cleanup: ${results.successful.length} succeeded, ${results.failed.length} failed`);
                 
                 // Always show failed cleanups, even in non-verbose mode
                 if (results.failed.length > 0) {
                     results.failed.forEach(service => {
-                        logApi.error(`${serviceColors.failed}Failed to cleanup service: ${service}${fancyColors.RESET}`);
+                        logApi.error(`❌ Failed to cleanup service: ${service}`);
                     });
                 }
             } else {
