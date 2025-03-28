@@ -526,7 +526,6 @@ class UnifiedWebSocketServer {
             wallet_address: true,
             nickname: true,
             role: true,
-            is_active: true,
             created_at: true,
             last_login: true,
             profile_image: true
@@ -641,7 +640,6 @@ class UnifiedWebSocketServer {
                 wallet_address: true,
                 nickname: true,
                 role: true,
-                is_active: true,
                 created_at: true,
                 last_login: true,
                 profile_image: true
