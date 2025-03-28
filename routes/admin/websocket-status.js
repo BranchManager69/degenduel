@@ -4,6 +4,7 @@ import AdminLogger from '../../utils/admin-logger.js';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import fetch from 'node-fetch';
 import serviceEvents from '../../utils/service-suite/service-events.js';
+import config from '../../config/config.js';
 
 const router = express.Router();
 
@@ -95,49 +96,12 @@ router.post('/test', requireAuth, requireAdmin, async (req, res) => {
       system = 'v69';
     }
     
-    // First check the specified system (v69 or legacy)
-    if (system === 'v69' && global.wsServersV69 && Object.keys(global.wsServersV69).length > 0) {
-      // Try to find a matching V69 WebSocket server
-      for (const [serverName, server] of Object.entries(global.wsServersV69)) {
-        if (serverName.toLowerCase().includes(socketType.toLowerCase()) ||
-            (server.name && server.name.toLowerCase().includes(socketType.toLowerCase()))) {
-          targetServer = server;
-          break;
-        }
-      }
-    } else if (system === 'legacy' && global.wsServers && Object.keys(global.wsServers).length > 0) {
-      // Try to find a matching legacy WebSocket server
-      for (const [serverName, server] of Object.entries(global.wsServers)) {
-        if (serverName.toLowerCase().includes(socketType.toLowerCase()) ||
-            (server.name && server.name.toLowerCase().includes(socketType.toLowerCase()))) {
-          targetServer = server;
-          break;
-        }
-      }
-    }
-    
-    // If we couldn't find a server in the specified system, check the other system
-    if (!targetServer) {
-      if (system === 'v69' && global.wsServers && Object.keys(global.wsServers).length > 0) {
-        // Try to find a matching legacy WebSocket server
-        for (const [serverName, server] of Object.entries(global.wsServers)) {
-          if (serverName.toLowerCase().includes(socketType.toLowerCase()) ||
-              (server.name && server.name.toLowerCase().includes(socketType.toLowerCase()))) {
-            targetServer = server;
-            system = 'legacy';
-            break;
-          }
-        }
-      } else if (system === 'legacy' && global.wsServersV69 && Object.keys(global.wsServersV69).length > 0) {
-        // Try to find a matching V69 WebSocket server
-        for (const [serverName, server] of Object.entries(global.wsServersV69)) {
-          if (serverName.toLowerCase().includes(socketType.toLowerCase()) ||
-              (server.name && server.name.toLowerCase().includes(socketType.toLowerCase()))) {
-            targetServer = server;
-            system = 'v69';
-            break;
-          }
-        }
+    // We only have the unified WebSocket now, so simpler logic
+    if (socketType.toLowerCase() === 'unified' || socketType.toLowerCase() === 'v69' || 
+        socketType.toLowerCase().includes('market') || socketType.toLowerCase().includes('token')) {
+      if (config.websocket?.unifiedWebSocket) {
+        targetServer = config.websocket.unifiedWebSocket;
+        system = 'unified';
       }
     }
     
@@ -194,48 +158,21 @@ router.get('/healthcheck', (req, res) => {
       });
     }
     
-    // Look up the WebSocket service status
+    // Check if endpoint is for unified WebSocket
     let serviceStatus = 'unknown';
     let isAvailable = false;
-    let system = 'legacy';
     
-    // Check if the endpoint includes a system prefix
-    const isV69 = endpoint.toLowerCase().startsWith('/api/v69/') || 
-                 endpoint.toLowerCase().includes('v69');
-    if (isV69) {
-      system = 'v69';
-    }
-    
-    // Check if we can find this endpoint in our WebSocket services
-    if (global.wsServers && Object.keys(global.wsServers).length > 0) {
-      // Find a WebSocket server that might handle this endpoint
-      const wsMonitor = global.wsServers['monitor'];
-      if (wsMonitor) {
-        const services = wsMonitor.monitorService?.getServiceMetrics() || [];
+    // All endpoints now go through the unified WebSocket
+    if (endpoint.toLowerCase().includes('/api/v69/ws') || 
+        endpoint.toLowerCase().includes('unified')) {
         
-        // Find matching service
-        const matchingService = services.find(service => 
-          service.name && 
-          endpoint.toLowerCase().includes(service.name.toLowerCase().replace(' websocket', '')) &&
-          (!service.system || service.system === system)
-        );
-        
-        if (matchingService) {
-          serviceStatus = matchingService.status;
-          isAvailable = serviceStatus === 'operational';
-        }
-      }
-    }
-    
-    // If not found and this is a v69 endpoint, check directly in v69 WebSockets
-    if (!isAvailable && system === 'v69' && global.wsServersV69) {
-      for (const [name, server] of Object.entries(global.wsServersV69)) {
-        if (server && server.path && 
-            (endpoint.includes(server.path) || 
-             name.toLowerCase() === endpoint.toLowerCase().replace(/^\/api\/v69\/ws\//, ''))) {
-          serviceStatus = server.isInitialized ? 'operational' : 'initializing';
-          isAvailable = server.isInitialized;
-          break;
+      // Check the unified WebSocket
+      if (config.websocket?.unifiedWebSocket) {
+        const ws = config.websocket.unifiedWebSocket;
+        if (ws && ws.path && 
+            (endpoint.includes(ws.path) || endpoint.toLowerCase().includes('unified'))) {
+          serviceStatus = ws.isInitialized ? 'operational' : 'initializing';
+          isAvailable = ws.isInitialized;
         }
       }
     }
@@ -263,38 +200,40 @@ router.get('/endpoints', requireAuth, requireAdmin, async (req, res) => {
   try {
     const endpoints = [];
     
-    // Get list of WebSocket servers
-    if (global.wsServers && Object.keys(global.wsServers).length > 0) {
-      for (const [serverName, server] of Object.entries(global.wsServers)) {
-        if (server && server.path) {
-          endpoints.push({
-            name: server.name || serverName,
-            type: serverName,
-            path: server.path,
-            status: server.isInitialized ? 'operational' : 'initializing',
-            clients: server.getConnectionsCount ? server.getConnectionsCount() : 0,
-            requiresAuth: server.requireAuth || false,
-            system: 'legacy'
-          });
-        }
-      }
-    }
-    
-    // Get list of V69 WebSocket servers
-    if (global.wsServersV69 && Object.keys(global.wsServersV69).length > 0) {
-      for (const [serverName, server] of Object.entries(global.wsServersV69)) {
-        if (server && server.path) {
-          endpoints.push({
-            name: `V69 ${server.name || serverName}`,
-            type: serverName,
-            path: server.path,
-            status: server.isInitialized ? 'operational' : 'initializing',
-            clients: server.getConnectionsCount ? server.getConnectionsCount() : 0,
-            requiresAuth: server.requireAuth || false,
-            system: 'v69'
-          });
-        }
-      }
+    // We only have the unified WebSocket now
+    const ws = config.websocket?.unifiedWebSocket;
+    if (ws && ws.path) {
+      // Get connection count
+      const connectionsCount = ws.wss?.clients?.size || 0;
+      
+      // Add the unified WebSocket to the list
+      endpoints.push({
+        name: 'Unified WebSocket',
+        type: 'unified',
+        path: ws.path,
+        status: ws.isInitialized ? 'operational' : 'initializing',
+        clients: connectionsCount,
+        requiresAuth: false, // Base endpoint doesn't require auth, only specific topics
+        system: 'unified',
+        topics: Object.values(config.websocket.topics || {}).length
+      });
+      
+      // Add each topic as a virtual endpoint for better UI display
+      Object.entries(config.websocket.topics || {}).forEach(([key, topic]) => {
+        // Get count of subscribers to this topic
+        const subscribers = ws.topicSubscribers?.get(topic)?.size || 0;
+        
+        endpoints.push({
+          name: `Topic: ${topic}`,
+          type: 'topic',
+          path: `${ws.path}#${topic}`,
+          status: ws.isInitialized ? 'operational' : 'initializing',
+          clients: subscribers,
+          requiresAuth: ['PORTFOLIO', 'USER', 'ADMIN', 'WALLET'].includes(key),
+          system: 'unified',
+          parentEndpoint: 'unified'
+        });
+      });
     }
     
     return res.json({
@@ -421,19 +360,14 @@ router.get('/errors', requireAuth, requireAdmin, async (req, res) => {
       }
     }
     
-    // Get error counts by source if available
-    let errorCounts = {};
-    if (global.wsServersV69?.monitor && typeof global.wsServersV69.monitor._getErrorCountsBySource === 'function') {
-      errorCounts = global.wsServersV69.monitor._getErrorCountsBySource();
-    }
-    
+    // With unified approach, error tracking has been simplified
+    // No more monitor-specific error tracking
     return res.json({
       success: true,
       errors,
       counts: {
-        total: global.wsServersV69?.monitor?.errorsCache?.length || 0,
-        filtered: errors.length,
-        bySource: errorCounts
+        total: errors.length,
+        filtered: errors.length
       },
       timestamp: new Date().toISOString()
     });

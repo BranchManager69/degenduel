@@ -26,6 +26,7 @@ import { configureMiddleware } from "./config/middleware.js";
 import { closePgDatabase, initPgDatabase } from "./config/pg-database.js";
 import prisma from "./config/prisma.js";
 import setupSwagger from "./config/swagger.js";
+import config from "./config/config.js";
 import maintenanceCheck from "./middleware/maintenanceMiddleware.js";
 import ipBanMiddleware from "./middleware/ipBanMiddleware.js";
 import ipTrackingMiddleware from "./middleware/ipTrackingMiddleware.js";
@@ -295,15 +296,15 @@ app.get("/api/health", async (req, res) => {
       }
     }
     
-    // Check V69 WebSocket servers
+    // Check unified WebSocket server
     const wsV69Status = {};
-    if (global.wsServersV69) {
-      for (const [name, ws] of Object.entries(global.wsServersV69)) {
-        wsV69Status[name] = {
-          connected: ws?.wss?.clients?.size || 0,
-          status: ws?.isInitialized ? 'ready' : 'initializing'
-        };
-      }
+    if (config.websocket?.unifiedWebSocket) {
+      const ws = config.websocket.unifiedWebSocket;
+      wsV69Status.unified = {
+        connected: ws?.wss?.clients?.size || 0,
+        status: ws?.isInitialized ? 'ready' : 'initializing',
+        path: ws.path
+      };
     }
 
     res.status(200).json({

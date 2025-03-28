@@ -279,15 +279,55 @@ const config = {
   // Debug modes:
   debug_modes: {
     secure_middleware: process.env.SECURE_MIDDLEWARE_DEBUG_MODE || 'false',
-    auth: process.env.DD_API_DEBUG_MODE || 'false',
+    auth: process.env.AUTH_DEBUG_MODE || 'false',
     api: process.env.DD_API_DEBUG_MODE || 'false',
-    middleware: process.env.DD_API_DEBUG_MODE || 'false',
+    middleware: process.env.MIDDLEWARE_DEBUG_MODE || 'false',
   },
   debug_mode: 
     process.env.DD_API_DEBUG_MODE || 'false',
   // v69 WSS testing
   wss_testing: {
     test_secret_dev_access_token: test_secret_dev_access_token,
+  },
+  
+  // WebSocket configuration and registry
+  websocket: {
+    // The unified WebSocket server instance will be stored here during initialization
+    unifiedWebSocket: null,
+    
+    // Configuration for the unified WebSocket
+    config: {
+      path: '/api/v69/ws',
+      maxPayload: 1024 * 50, // 50KB max payload
+      perMessageDeflate: false, // Explicitly disable compression to avoid client issues
+    },
+    
+    // Available topics for the unified WebSocket
+    topics: {
+      MARKET_DATA: 'market-data',
+      PORTFOLIO: 'portfolio',
+      SYSTEM: 'system',
+      CONTEST: 'contest',
+      USER: 'user',
+      ADMIN: 'admin',
+      WALLET: 'wallet',
+      SKYDUEL: 'skyduel'
+    },
+    
+    // Message types for the unified WebSocket
+    messageTypes: {
+      // Client -> Server messages
+      SUBSCRIBE: 'SUBSCRIBE',
+      UNSUBSCRIBE: 'UNSUBSCRIBE',
+      REQUEST: 'REQUEST',
+      COMMAND: 'COMMAND',
+      
+      // Server -> Client messages
+      DATA: 'DATA',
+      ERROR: 'ERROR',
+      SYSTEM: 'SYSTEM',
+      ACKNOWLEDGMENT: 'ACKNOWLEDGMENT'
+    }
   },
 };
 

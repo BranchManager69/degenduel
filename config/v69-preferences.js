@@ -14,32 +14,33 @@
  * - 'v69': Use v69 implementation
  * - 'legacy': Use legacy implementation
  * - 'parallel': Run both implementations simultaneously
+ * - 'unified': Use the unified WebSocket approach (all topics in one WebSocket)
  * 
  * This configuration is used by the WebSocket initializer to determine
  * which implementation to use for each service.
  */
 export const websocketPreferences = {
-  // All WebSockets use v69 implementation now
-  analytics: 'v69',
-  circuitBreaker: 'v69',
-  contest: 'v69',
-  monitor: 'v69',
-  skyDuel: 'v69',
-  systemSettings: 'v69',
-  tokenData: 'v69',
-  userNotification: 'v69',
+  // UNIFIED WEBSOCKET APPROACH
+  // All WebSockets now use the unified WebSocket implementation
   
-  // Consolidated WebSockets
-  market: 'v69', // Now handled by market-data-ws.js
+  // Core services
+  analytics: 'unified',
+  circuitBreaker: 'unified',
+  contest: 'unified',
+  monitor: 'unified',
+  skyDuel: 'unified',
+  systemSettings: 'unified',
+  tokenData: 'unified',
+  userNotification: 'unified',
+  market: 'unified',
+  adminSpy: 'unified',
+  broadcastCommand: 'unified',
+  portfolio: 'unified',
+  wallet: 'unified',
+  marketData: 'unified',
   
-  // Fully migrated to v69
-  adminSpy: 'v69',
-  broadcastCommand: 'v69',
-  portfolio: 'v69',
-  wallet: 'v69',
-  
-  // Special implementations
-  marketData: 'v69', // New consolidated implementation for market + tokenData
+  // Special flag to indicate unified mode
+  useUnifiedWebSocket: true
 };
 
 /**
@@ -49,6 +50,11 @@ export const websocketPreferences = {
  * @returns {boolean} - Whether to use v69 implementation
  */
 export function shouldUseV69(serviceName) {
+  // In unified mode, nothing uses individual v69 implementations
+  if (websocketPreferences.useUnifiedWebSocket) {
+    return false;
+  }
+  
   const preference = websocketPreferences[serviceName] || 'legacy';
   return preference === 'v69' || preference === 'parallel';
 }
@@ -60,12 +66,29 @@ export function shouldUseV69(serviceName) {
  * @returns {boolean} - Whether to use legacy implementation
  */
 export function shouldUseLegacy(serviceName) {
+  // In unified mode, nothing uses individual legacy implementations
+  if (websocketPreferences.useUnifiedWebSocket) {
+    return false;
+  }
+  
   const preference = websocketPreferences[serviceName] || 'legacy';
   return preference === 'legacy' || preference === 'parallel';
+}
+
+/**
+ * Check if a WebSocket service should use unified implementation
+ * 
+ * @param {string} serviceName - The WebSocket service name
+ * @returns {boolean} - Whether to use unified implementation
+ */
+export function shouldUseUnified(serviceName) {
+  const preference = websocketPreferences[serviceName] || 'legacy';
+  return preference === 'unified' || websocketPreferences.useUnifiedWebSocket;
 }
 
 export default {
   websocketPreferences,
   shouldUseV69,
   shouldUseLegacy,
+  shouldUseUnified
 };

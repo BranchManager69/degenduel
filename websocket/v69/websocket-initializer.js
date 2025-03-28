@@ -1,10 +1,10 @@
 // websocket/v69/websocket-initializer.js
 
 /**
- * WebSocket Initializer (v69)
+ * WebSocket Initializer (v69) - Unified Implementation
  * 
- * This module initializes all v69 WebSocket servers and makes them available globally.
- * It runs in parallel with the original WebSocket system without interfering.
+ * This module initializes the unified WebSocket server that handles all topics through
+ * a single connection point. It replaces the previous fragmented approach.
  */
 import http from 'http';
 import events from 'events';
@@ -13,59 +13,16 @@ import events from 'events';
 // Each WebSocket server adds several listeners to the same sockets
 events.defaultMaxListeners = 30; // Increased from default of 10
 
-// Logger - import before patching
+// Logger
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 
-/**
- * WebSocket Configuration
- * 
- * Standard WebSocket server configuration
- */
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-
-// Set up WebSocket configuration
-try {
-  // Import directly
-  const wsModule = await import('ws');
-  const { WebSocket, Server } = wsModule;
-  
-  // Find the WebSocket version more reliably
-  let wsVersion = 'unknown';
-  try {
-    // Try to get package version using createRequire
-    const { createRequire } = await import('module');
-    const require = createRequire(import.meta.url);
-    const wsPackage = require('ws/package.json');
-    wsVersion = wsPackage.version;
-  } catch (versionError) {
-    logApi.warn(`Could not determine ws library version: ${versionError.message}`);
-  }
-  
-  // Log WebSocket info
-  logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WEBSOCKET CONFIG ${fancyColors.RESET} Using ws library v${wsVersion} with standard configuration`);
-  
-} catch (error) {
-  logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} WEBSOCKET CONFIG ERROR ${fancyColors.RESET} ${error.message}`, error);
-}
-
-// Import all v69 WebSocket server factories
-import { createAnalyticsWebSocket } from './analytics-ws.js';
-import { createCircuitBreakerWebSocket } from './circuit-breaker-ws.js';
-import { createContestWebSocket } from './contest-ws.js';
-import { createMonitorWebSocket } from './monitor-ws.js';
-import { createPortfolioWebSocket } from './portfolio-ws.js';
-import { createSkyDuelWebSocket } from './skyduel-ws.js';
-import { createSystemSettingsWebSocket } from './system-settings-ws.js';
-import { createTokenDataWebSocket } from './token-data-ws.js';
-import { createUserNotificationWebSocket } from './user-notification-ws.js';
-import { createWalletWebSocket } from './wallet-ws.js';
-import { createTestWebSocket } from './test-ws.js';
+// Import only the unified WebSocket server
+import { createUnifiedWebSocket } from './unified-ws.js';
 
 
-// Global v69 WebSocket container
-global.wsServersV69 = global.wsServersV69 || {};
+// Import config to store WebSocket instance
+import config from '../../config/config.js';
 
 // Initialize all v69 WebSocket servers
 /**
@@ -84,309 +41,129 @@ export async function initializeWebSockets(server) {
   
   // Increase max listeners on the server object to prevent warnings
   server.setMaxListeners(30);
-  logApi.info(`Increased HTTP server MaxListeners to 30`, { event_type: "config_update" });
   
-  // Log minimal WebSocket module details
   try {
-    // Import WS correctly for ES modules
-    const wsPath = require.resolve('ws');
-    const wsPackagePath = wsPath.replace(/\/index\.js$|\/lib\/websocket\.js$/, '/package.json');
-    
-    const { readFileSync } = await import('fs');
-    let wsVersion;
-    
-    try {
-      // Read package.json directly to get version
-      const packageData = JSON.parse(readFileSync(wsPackagePath, 'utf8'));
-      wsVersion = packageData.version;
-    } catch (err) {
-      wsVersion = 'unknown';
-    }
-    
-    // Simple version log
-    logApi.info(`WebSocket library v${wsVersion} loaded`);
-  } catch (error) {
-    logApi.error(`Failed to get WebSocket module details: ${error.message}`);
-  }
-  
-  // Log basic server info (without excessive details)
-  logApi.info(`HTTP Server ready for WebSocket connections`, {
-    maxListeners: server.getMaxListeners(),
-    status: "ready",
-    event_type: "server_ready"
-  });
+    logApi.info(`🔌 Initializing Unified WebSocket Server`, {
+      _icon: "🌟",
+      _color: "#FF00FF" // Magenta
+    });
 
-  // Master v69 WebSocket server initialization process
-  try {
-    logApi.info(`🔌 WebSocket System v69 Initialization Starting`);
-
-    // Initialization tracking
-    const initResults = [];
-    const initErrors = [];
-    
-    // Create all WebSocket instances first with a concise log
+    // Initialize just the unified WebSocket server
     const wsServers = {};
     
-    // Create test WebSocket server first without verbose logging
-    try {
-      // Create test web socket server first as a diagnostic
-      wsServers.test = await createTestWebSocket(server);
-      
-      // Log minimal success message - details will be in the comprehensive log later
-      if (!wsServers.test) {
-        logApi.error(`Failed to create test WebSocket server`);
-        initErrors.push("Failed to create test WebSocket server");
-      }
-    } catch (testError) {
-      logApi.error(`Error creating test WebSocket server: ${testError.message}`);
-      initErrors.push(`Test WebSocket error: ${testError.message}`);
+    // Create and initialize the unified WebSocket
+    const unifiedWs = await createUnifiedWebSocket(server);
+    
+    if (!unifiedWs) {
+      throw new Error("Failed to create unified WebSocket server");
     }
     
-    // Create each WebSocket server and ensure it's properly initialized
-    
-    // Create all WebSocket servers in sequence to better track errors
-    const serverCreators = [
-      { name: 'monitor', creator: createMonitorWebSocket },
-      { name: 'analytics', creator: createAnalyticsWebSocket },
-      { name: 'circuitBreaker', creator: createCircuitBreakerWebSocket },
-      { name: 'contest', creator: createContestWebSocket },
-      { name: 'portfolio', creator: createPortfolioWebSocket },
-      { name: 'skyDuel', creator: createSkyDuelWebSocket },
-      { name: 'systemSettings', creator: createSystemSettingsWebSocket },
-      { name: 'tokenData', creator: createTokenDataWebSocket },
-      { name: 'userNotification', creator: createUserNotificationWebSocket },
-      { name: 'wallet', creator: createWalletWebSocket }
-    ];
-    
-    // Create each WebSocket server without excessive logging
-    // First, collect all server configs
-    const serverConfigs = [];
-    let totalSuccess = 0;
-    let totalFailed = 0;
-    
-    // Create each WebSocket server quietly
-    for (const { name, creator } of serverCreators) {
-      try {
-        // No log here - reduce noise
-        const ws = await creator(server);
-        
-        if (ws) {
-          // Store server and collect its essential config
-          wsServers[name] = ws;
-          totalSuccess++;
-          
-          // Collect config info for a single comprehensive log later
-          if (ws.wss && ws.wss.options) {
-            const options = ws.wss.options;
-            serverConfigs.push({
-              name,
-              path: ws.path,
-              config: {
-                maxPayload: options.maxPayload ? `${(options.maxPayload / (1024 * 1024)).toFixed(0)} MB` : "default",
-                perMessageDeflate: !!options.perMessageDeflate ? "ENABLED" : "DISABLED",
-                publicEndpoints: ws.publicEndpoints || [],
-                requireAuth: !!ws.requireAuth,
-                rateLimit: ws.rateLimiter ? ws.rateLimiter.maxMessagesPerMinute : "none"
-              },
-              channels: getWebSocketEndpointsMetadata()[name]?.channels || [],
-              events: getWebSocketEndpointsMetadata()[name]?.events || []
-            });
-          }
-        } else {
-          // Only log failures
-          logApi.error(`❌ Failed to create WebSocket server: ${name}`);
-          initErrors.push(`Failed to create ${name} WebSocket server`);
-          totalFailed++;
-        }
-      } catch (error) {
-        // Only log errors
-        logApi.error(`❌ Error creating WebSocket server ${name}: ${error.message}`);
-        initErrors.push(`Error creating ${name} WebSocket: ${error.message}`);
-        totalFailed++;
-      }
+    // Initialize the WebSocket
+    if (typeof unifiedWs.initialize === 'function') {
+      await unifiedWs.initialize();
     }
     
-    // Single comprehensive log with all WebSocket configurations
-    logApi.info(`📋 Created ${totalSuccess} WebSocket servers, ${totalFailed} failed`, {
-      serverConfigs,
-      successCount: totalSuccess,
-      failedCount: totalFailed,
-      event_type: "websocket_config_summary" 
+    // Store in config object rather than global registry
+    // The WebSocket is already stored in config by createUnifiedWebSocket
+    
+    // Log success
+    logApi.info(`✅ Unified WebSocket server initialized successfully at ${unifiedWs.path}`, {
+      _icon: "✅",
+      _color: "#00AA00", // Green for success
+      path: unifiedWs.path
     });
     
-    // Set global WebSocket servers container
-    global.wsServersV69 = wsServers;
-    
-    // Initialize each WebSocket server without verbose logging
-    const initDetails = [];
-    
-    // Initialize each WebSocket server silently
-    for (const [name, ws] of Object.entries(wsServers)) {
-      try {
-        // Ensure the initialize method exists before calling it
-        if (!ws || typeof ws.initialize !== 'function') {
-          throw new Error(`WebSocket server ${name} does not have an initialize method`);
-        }
-        
-        const result = await ws.initialize();
-        initResults.push(result);
-        
-        initDetails.push({
-          name,
-          path: ws.path,
-          success: result === true,
-          status: result === true ? "ready" : "failed"
-        });
-        
-        if (result !== true) {
-          initErrors.push(`Failed to initialize ${name} WebSocket server`);
-        }
-      } catch (err) {
-        initResults.push(false);
-        initErrors.push(`Error initializing ${name} WebSocket: ${err.message}`);
-        
-        // Add to init details
-        initDetails.push({
-          name,
-          path: ws?.path || "unknown",
-          success: false,
-          status: "error",
-          error: err.message
-        });
-      }
-    }
-    
-    // Single comprehensive initialization log
-    const successCount = initDetails.filter(d => d.success).length;
-    const failCount = initDetails.length - successCount;
-    
-    logApi.info(`🔌 WebSocket initialization: ${successCount} ready, ${failCount} failed`, {
-      initDetails,
-      successCount, 
-      failCount,
-      event_type: "websocket_init_summary"
-    });
-
-    // Check if all initializations were successful
-    const allSuccessful = initResults.every(result => result === true);
-
-    // We've already logged a comprehensive summary - no need for additional logs
-    
-    return allSuccessful;
+    return true;
   } catch (error) {
-    logApi.error(`❌ WebSocket layer initialization failed: ${error.message}`, {
+    logApi.error(`❌ Unified WebSocket initialization failed: ${error.message}`, {
       error: error.message,
       stack: error.stack,
-      event_type: "initialization_failed",
-      _color: "#FF0000"
+      _icon: "❌",
+      _color: "#FF0000" // Red for error
     });
     return false;
   }
 }
 
-// Get WebSocket endpoints metadata
 /**
- * Get metadata for all WebSocket endpoints
- * @returns {Object} Structured metadata for WebSocket endpoints
+ * Get metadata for the unified WebSocket endpoint
+ * This function exists for backward compatibility with monitoring systems
+ * @returns {Object} - A simplified metadata object for the unified WebSocket
  */
-function getWebSocketEndpointsMetadata() {
+function getUnifiedWebSocketMetadata() {
   return {
-    analytics: {
-      path: '/api/v69/ws/analytics',
-      channels: ['metrics.[name]', 'dashboard'],
-      events: ['track_event', 'subscribe_dashboard', 'subscribe_metric', 'get_active_users', 'get_server_stats']
-    },
-    circuitBreaker: {
-      path: '/api/v69/ws/circuit-breaker',
-      channels: ['circuit.status', 'circuit.alerts', 'circuit.history'],
-      events: ['get_status', 'reset_circuit', 'subscribe_service', 'unsubscribe_service']
-    },
-    contest: {
-      path: '/api/v69/ws/contest',
-      channels: ['contest.updates', 'contest.entries', 'contest.results'],
-      events: ['join_contest', 'leave_contest', 'get_contest_data', 'subscribe_contest']
-    },
-    monitor: {
-      path: '/api/v69/ws/monitor',
-      channels: ['system.status', 'system.alerts', 'system.metrics'],
-      events: ['get_metrics', 'subscribe_metric', 'unsubscribe_metric', 'get_service_status']
-    },
-    portfolio: {
-      path: '/api/v69/ws/portfolio',
-      channels: ['portfolio.[walletAddress]', 'trades.[walletAddress]', 'performance.[walletAddress]'],
-      events: ['subscribe_portfolio', 'unsubscribe_portfolio', 'get_portfolio_history', 'get_portfolio_performance']
-    },
-    skyDuel: {
-      path: '/api/v69/ws/skyduel',
-      channels: ['service.[name]'],
-      events: ['get_services', 'subscribe_service', 'unsubscribe_service', 'service_command']
-    },
-    systemSettings: {
-      path: '/api/v69/ws/system-settings',
-      channels: ['setting.[key]', 'category.[name]'],
-      events: ['get_all_settings', 'get_setting', 'get_category_settings', 'subscribe_setting', 'update_setting']
-    },
-    tokenData: {
-      path: '/api/v69/ws/token-data',
-      channels: ['public.tokens', 'public.market', 'token.[symbol]'],
-      events: ['subscribe_tokens', 'unsubscribe_tokens', 'get_token', 'get_all_tokens']
-    },
-    notifications: {
-      path: '/api/v69/ws/notifications',
-      channels: ['notifications.all', 'notifications.system', 'notifications.personal'],
-      events: ['mark_read', 'get_notifications', 'clear_notifications']
-    },
-    wallet: {
-      path: '/api/v69/ws/wallet',
-      channels: ['wallet.[walletAddress]', 'transactions.[walletAddress]', 'assets.[walletAddress]'],
-      events: ['subscribe_wallet', 'unsubscribe_wallet', 'request_balance', 'request_transactions', 'request_assets']
-    },
-    test: {
-      path: '/api/v69/ws/test',
-      channels: ['test'],
-      events: ['echo', 'ping', 'test_compression']
+    unified: {
+      path: '/api/v69/ws',
+      topics: [
+        'market-data',
+        'portfolio',
+        'system',
+        'contest',
+        'user',
+        'admin',
+        'wallet',
+        'skyduel'
+      ],
+      messageTypes: [
+        'SUBSCRIBE',
+        'UNSUBSCRIBE',
+        'REQUEST',
+        'COMMAND',
+        'DATA',
+        'ERROR',
+        'SYSTEM',
+        'ACKNOWLEDGMENT'
+      ]
     }
   };
 }
 
 // Cleanup WebSocket servers before shutdown
 /**
- * Cleanup all WebSocket servers before shutdown
+ * Cleanup the unified WebSocket server before shutdown
  * @returns {Promise<boolean>} - Whether cleanup was successful
  */
 export async function cleanupWebSockets() {
   try {
-    logApi.info(`🔌 WebSocket cleanup starting`);
+    logApi.info(`🔌 Unified WebSocket cleanup starting`);
     
-    const servers = Object.keys(global.wsServersV69);
+    // In the unified approach, we only have one WebSocket server to clean up
+    const unifiedWs = config.websocket.unifiedWebSocket;
+    if (!unifiedWs) {
+      logApi.info(`No unified WebSocket server to clean up`);
+      return true;
+    }
     
-    // Clean up each WebSocket server in parallel without excessive logging
-    const cleanupResults = await Promise.allSettled(
-      Object.entries(global.wsServersV69).map(async ([name, ws]) => {
-        try {
-          if (ws && typeof ws.cleanup === 'function') {
-            await ws.cleanup();
-            return { name, success: true };
-          }
-          return { name, success: false, reason: 'No cleanup method' };
-        } catch (error) {
-          // Only log errors
-          logApi.error(`Failed to clean up ${name} WebSocket: ${error.message}`);
-          return { name, success: false, reason: error.message };
-        }
-      })
-    );
-    
-    // Count successful and failed cleanup operations
-    const succeeded = cleanupResults.filter(r => r.status === 'fulfilled' && r.value?.success).length;
-    const failed = servers.length - succeeded;
-
-    // One concise summary log
-    logApi.info(`🔌 WebSocket cleanup: ${succeeded}/${servers.length} servers closed successfully`);
-
-    return failed === 0;
+    try {
+      if (typeof unifiedWs.cleanup === 'function') {
+        await unifiedWs.cleanup();
+        
+        // Clear reference in config after cleanup
+        config.websocket.unifiedWebSocket = null;
+        
+        logApi.info(`✅ Successfully cleaned up unified WebSocket at ${unifiedWs.path}`, {
+          _icon: "✅",
+          _color: "#00AA00" // Green for success
+        });
+        return true;
+      } else {
+        logApi.warn(`⚠️ Unified WebSocket doesn't have a cleanup method`, {
+          _icon: "⚠️",
+          _color: "#FFA500" // Orange for warning
+        });
+        return false;
+      }
+    } catch (error) {
+      logApi.error(`❌ Failed to clean up unified WebSocket: ${error.message}`, {
+        error: error.message,
+        stack: error.stack,
+        _icon: "❌",
+        _color: "#FF0000" // Red for error
+      });
+      return false;
+    }
   } catch (error) {
-    logApi.error(`WebSocket cleanup error: ${error.message}`);
+    logApi.error(`WebSocket cleanup error: ${error.message}`, error);
     return false;
   }
 }
@@ -394,7 +171,6 @@ export async function cleanupWebSockets() {
 // Register cleanup function globally so the main WebSocket initializer can access it
 global.cleanupWebSocketsV69 = cleanupWebSockets;
 
-// Add this new function at the end of the file, before the closing exports
 /**
  * Clean up null event listeners from a server's event emitter
  * This prevents memory leaks and server slowdown from accumulated null references
@@ -432,7 +208,7 @@ function cleanupNullEventListeners(server) {
   
   // Only log if something was actually cleaned
   if (cleanupCount > 0) {
-    logApi.info(`Removed ${cleanupCount} null event listeners from server`);
+    logApi.info(`Cleaned up ${cleanupCount} null event listeners from server`);
   }
 }
 
