@@ -13,25 +13,30 @@ import AdminLogger from '../admin-logger.js';
 import serviceManager from './service-manager.js';
 import { SERVICE_NAMES, SERVICE_LAYERS } from './service-constants.js';
 import { fancyColors, serviceColors } from '../colors.js';
-/* Import all services (14 at the time of writing) */
-// VERIFIED TO BE IN INITIALIZATION INFO LOGS:
-import solanaService from '../../services/solanaService.js'; // #1 of 7
-import liquidityService from '../../services/liquidityService.js'; // #2 of 7
-import marketDataService from '../../services/marketDataService.js'; // #3 of 7
-import contestEvaluationService from '../../services/contestEvaluationService.js'; // #4 of 7
-import contestSchedulerService from '../../services/contestSchedulerService.js'; // New contest scheduler service
-import levelingService from '../../services/levelingService.js'; // #5 of 7
-import contestWalletService from '../../services/contestWalletService.js'; // #6 of 7
-import walletRakeService from '../../services/walletRakeService.js'; // #7 of 7
-// NOT SHOWING UP IN INITIALIZATION INFO LOGS:
-import achievementService from '../../services/achievementService.js';
-import adminWalletService from '../../services/adminWalletService.js';
-import referralService from '../../services/referralService.js';
-import tokenSyncService from '../../services/tokenSyncService.js';
-import tokenWhitelistService from '../../services/tokenWhitelistService.js';
+import { config } from '../../config/config.js';
+/* Import all DegenDuel services */
+// Infrastructure Layer
+import solanaService from '../../services/solanaService.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
+import liquidityService from '../../services/liquidityService.js';
+
+// Data Layer
+import tokenSyncService from '../../services/tokenSyncService.js';
+import marketDataService from '../../services/marketDataService.js';
+import tokenWhitelistService from '../../services/tokenWhitelistService.js';
+
+// Contest Layer
+import contestEvaluationService from '../../services/contestEvaluationService.js';
+import contestSchedulerService from '../../services/contestSchedulerService.js';
+import achievementService from '../../services/achievementService.js';
+import referralService from '../../services/referralService.js';
+import levelingService from '../../services/levelingService.js';
+
+// Wallet Layer
+import contestWalletService from '../../services/contestWalletService.js';
+import walletRakeService from '../../services/walletRakeService.js';
+import adminWalletService from '../../services/adminWalletService.js';
 import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
-// systemSettingsService is not a service, but a WebSocket handler
 
 /**
  * ServiceInitializer class
@@ -49,131 +54,132 @@ class ServiceInitializer {
     }
 
     /**
-     * Register the core services
+     * Register all services with the ServiceManager
+     * Organizes services by layer for clean initialization order
      */
     static async registerCoreServices() {
-        if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`📋 Registering services...`);
-        } else {
-            logApi.info(`${fancyColors.NEON}╭───────────────────────<< ${fancyColors.BOLD}${fancyColors.BG_BLACK} REGISTERING CORE SERVICES ${fancyColors.RESET}${fancyColors.NEON} >>───────────────────────╮${fancyColors.RESET}`);
-            logApi.info(`${fancyColors.NEON}|                                                             |${fancyColors.RESET}`);
-        }
+        // Log header
+        logApi.info(`${VERBOSE_SERVICE_INIT_LOGS ? 
+            `${fancyColors.NEON}╭─────────────── REGISTERING SERVICES BY LAYER ───────────────╮${fancyColors.RESET}` : 
+            `📋 Registering services...`}`);
         
         try {
-            // Infrastructure Layer
-            if (!VERBOSE_SERVICE_INIT_LOGS) {
-                // Register in a less verbose way
-                serviceManager.register(solanaService);
-                serviceManager.register(walletGeneratorService);
-                serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
-            } else {
-                logApi.info(`${fancyColors.RED}┏━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
-                
-                // Register Solana Service first (most fundamental)
-                logApi.info(`${fancyColors.RED}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register solanaService...`);
-                serviceManager.register(solanaService);
-                // Register other infrastructure services
-                logApi.info(`${fancyColors.RED}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register walletGeneratorService...`);
-                serviceManager.register(walletGeneratorService);
-                logApi.info(`${fancyColors.RED}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register liquidityService...`);
-                serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
-                logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ INFRASTRUCTURE LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
+            // Handle token sync service dependency decision before registration
+            const tokenSyncDisabled = config.services.disable_token_sync;
+            if (tokenSyncDisabled) {
+                logApi.info(`${fancyColors.YELLOW}Token sync service disabled via configuration${fancyColors.RESET}`);
             }
+            
+            // Register all services by layer
+            await this.registerInfrastructureLayer();
+            await this.registerDataLayer(tokenSyncDisabled);
+            await this.registerContestLayer();
+            await this.registerWalletLayer();
 
-            // Market Data Layer
-            if (!VERBOSE_SERVICE_INIT_LOGS) {
-                // Register without verbose logging
-                serviceManager.register(tokenSyncService);
-                serviceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
-                serviceManager.register(tokenWhitelistService);
-            } else {
-                logApi.info(`${fancyColors.ORANGE}┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
-                logApi.info(`${fancyColors.ORANGE}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register tokenSyncService...`);
-                serviceManager.register(tokenSyncService);
-                logApi.info(`${fancyColors.ORANGE}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register marketDataService...`);
-                serviceManager.register(marketDataService, [SERVICE_NAMES.TOKEN_SYNC]);
-                logApi.info(`${fancyColors.ORANGE}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} Attempting to register tokenWhitelistService...`);
-                serviceManager.register(tokenWhitelistService);
-                logApi.info(`${fancyColors.ORANGE}┗━━━━━━━━━━━ ✅ DATA LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
-            }
-
-            // Contest Layer
-            if (!VERBOSE_SERVICE_INIT_LOGS) {
-                // Register without verbose logging
-                serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
-                serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
-                serviceManager.register(achievementService, []); // No hard dependencies
-                serviceManager.register(levelingService, []); // No hard dependencies
-                serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-            } else {
-                logApi.info('\x1b[38;5;226m┏━━━━━━━━━━━━━━━━━━━━━━━ Contest Layer (3/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-                // Log service names before registration (only in verbose mode)
-                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Registering Contest Layer services...${fancyColors.RESET}`);
-                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestEvaluationService...${fancyColors.RESET}`);
-                serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
-                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestSchedulerService...${fancyColors.RESET}`);
-                serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
-                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register achievementService...${fancyColors.RESET}`);
-                serviceManager.register(achievementService, []); // No hard dependencies
-                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register levelingService...${fancyColors.RESET}`);
-                serviceManager.register(levelingService, []); // No hard dependencies
-                logApi.info(`${fancyColors.YELLOW}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register referralService...${fancyColors.RESET}`);
-                serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-                logApi.info('\x1b[38;5;226m┗━━━━━━━━━━━ ✅ CONTEST LAYER REGISTRATION COMPLETE\x1b[0m');
-            }
-
-            // Wallet Layer
-            if (!VERBOSE_SERVICE_INIT_LOGS) {
-                // Register wallet services without logging
-                serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-                serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
-                serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
-                
-                // Ensure schema exists for user balance tracking
-                await ensureSchemaExists();
-                serviceManager.register(userBalanceTrackingService, []);
-            } else {
-                logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer (4/4) ━━━━━━━━━━━━━━━━━━━━━━━┓\x1b[0m');
-                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register contestWalletService...${fancyColors.RESET}`);
-                serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register adminWalletService...${fancyColors.RESET}`);
-                serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
-                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register walletRakeService...${fancyColors.RESET}`);
-                serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
-                // (ensure schema exists for user balance tracking)
-                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Ensuring database schema for user balance tracking...${fancyColors.RESET}`);
-                await ensureSchemaExists();
-                logApi.info(`${fancyColors.GREEN}${fancyColors.BOLD}┣${fancyColors.RESET} ${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Attempting to register userBalanceTrackingService...${fancyColors.RESET}`);
-                serviceManager.register(userBalanceTrackingService, []);
-                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━ ✅ WALLET LAYER REGISTRATION COMPLETE\x1b[0m');
-            }
-
-            // Register dependencies
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.DARK_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.PURPLE}${fancyColors.ITALIC}Registering service dependencies...${fancyColors.RESET}`);
+            // Register all service dependencies
             this.registerDependencies();
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.DARK_MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.GREEN}${fancyColors.ITALIC}Service dependencies registered successfully${fancyColors.RESET}`);
-
-            // Log completion of services registration
+            
+            // Log summary
             const registeredServices = Array.from(serviceManager.services.keys());
-            if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${fancyColors.DARK_MAGENTA}[SERVICE INIT]${fancyColors.RESET} 😎 ${fancyColors.PURPLE}${fancyColors.ITALIC}Successfully registered ${registeredServices.length} services:${fancyColors.RESET}`, {
-                //    total: registeredServices.length,
-                //    services: registeredServices
-                });
-            } else {
-                logApi.info(`🔌 Registered ${registeredServices.length} services`);
-            }
-
+            logApi.info(`🔌 Registered ${registeredServices.length} services across 4 layers`);
         } catch (error) {
-            // Log the service registration failed
-            logApi.error(`${serviceColors.failed}┏━━━━━━━━━━━ Service Registration Failed ━━━━━━━━━━━┓${fancyColors.RESET}`);
-            logApi.error(`${serviceColors.failed}┃ Error: ${error.message}${fancyColors.RESET}`);
-            logApi.error(`${serviceColors.failed}┃ Stack: ${error.stack}${fancyColors.RESET}`);
-            logApi.error(`${serviceColors.failed}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${fancyColors.RESET}`);
+            logApi.error(`${serviceColors.failed}Service Registration Failed: ${error.message}${fancyColors.RESET}`, {
+                error: error.message,
+                stack: error.stack
+            });
             throw error;
         }
-
-        logApi.info(`${fancyColors.NEON}╰─────────────────────────────────────────────────────────────╯${fancyColors.RESET}\n`);
+    }
+    
+    /**
+     * Register Infrastructure Layer services
+     * These are the most fundamental services that other services depend on
+     */
+    static async registerInfrastructureLayer() {
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.RED}┏━━━━━━━━━━━━━━━━━━ Infrastructure Layer (1/4) ━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
+        }
+        
+        // Register services - order matters!
+        serviceManager.register(solanaService);
+        serviceManager.register(walletGeneratorService);
+        serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
+        
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ INFRASTRUCTURE LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
+        }
+    }
+    
+    /**
+     * Register Data Layer services
+     * These services provide data to the application
+     * 
+     * @param {boolean} tokenSyncDisabled - Whether token sync service is disabled
+     */
+    static async registerDataLayer(tokenSyncDisabled) {
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.ORANGE}┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
+        }
+        
+        // Always register token sync, even if disabled (initialization will be skipped)
+        serviceManager.register(tokenSyncService);
+        
+        // For market data, use conditional dependencies based on tokenSyncDisabled flag
+        // Dependencies will be formally set in registerDependencies()
+        serviceManager.register(marketDataService);
+        
+        // Register token whitelist service
+        serviceManager.register(tokenWhitelistService);
+        
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.ORANGE}┗━━━━━━━━━━━ ✅ DATA LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
+        }
+    }
+    
+    /**
+     * Register Contest Layer services
+     * These services manage contests and related features
+     */
+    static async registerContestLayer() {
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.YELLOW}┏━━━━━━━━━━━━━━━━━━━━━━━ Contest Layer (3/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
+        }
+        
+        // Register contest related services
+        serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
+        serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
+        
+        // Register additional contest-related services
+        serviceManager.register(achievementService, []); // No hard dependencies
+        serviceManager.register(levelingService, []); // No hard dependencies
+        serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.YELLOW}┗━━━━━━━━━━━ ✅ CONTEST LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
+        }
+    }
+    
+    /**
+     * Register Wallet Layer services
+     * These services manage wallet operations
+     */
+    static async registerWalletLayer() {
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.GREEN}┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer (4/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
+        }
+        
+        // Register wallet services 
+        serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
+        serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
+        
+        // Ensure schema exists for user balance tracking
+        await ensureSchemaExists();
+        serviceManager.register(userBalanceTrackingService, []);
+        
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.GREEN}┗━━━━━━━━━━━ ✅ WALLET LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
+        }
     }
 
     /**
@@ -184,7 +190,13 @@ class ServiceInitializer {
         serviceManager.addDependency(SERVICE_NAMES.LIQUIDITY, SERVICE_NAMES.WALLET_GENERATOR);
 
         // Data Layer Dependencies
-        serviceManager.addDependency(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
+        // Only add TokenSync dependency if it's enabled
+        if (config.services.token_sync) {
+            serviceManager.addDependency(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
+        } else {
+            // Log that we're skipping this dependency
+            logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.YELLOW}TokenSync service is disabled in the '${config.services.active_profile}' profile, not adding it as a dependency for MarketData service${fancyColors.RESET}`);
+        }
 
         // Contest Layer Dependencies
         serviceManager.addDependency(SERVICE_NAMES.CONTEST_EVALUATION, SERVICE_NAMES.MARKET_DATA);
@@ -198,118 +210,97 @@ class ServiceInitializer {
     }
 
     /**
-     * Initialize the services
+     * Initialize all registered services in dependency order
+     * @returns {Promise<Object>} Results of service initialization
      */
     static async initializeServices() {
-        if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`🚀 Initializing services...`);
-        } else {
-            logApi.info(`\n${fancyColors.NEON}╭─────────────────────── Initializing Services ───────────────────────╮${fancyColors.RESET}`);
-        }
+        // Log initialization start
+        logApi.info(VERBOSE_SERVICE_INIT_LOGS ? 
+            `\n${fancyColors.NEON}╭─────────────────────── INITIALIZING SERVICES ───────────────────────╮${fancyColors.RESET}` : 
+            `🚀 Initializing services...`);
 
         try {
-            // Services should already be registered by now
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.ORANGE}${fancyColors.ITALIC}Services already registered.${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Proceeding to initialization...${fancyColors.RESET}`);
-
-            // Get initialization order
+            // Calculate initialization order based on dependencies
             const initOrder = serviceManager.calculateInitializationOrder();
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Ordering initialization of services...${fancyColors.RESET}`, {
-            //    order: initOrder
-            });
-
-            // Initialize all services
-            if (VERBOSE_SERVICE_INIT_LOGS) logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.YELLOW}${fancyColors.ITALIC}Starting service initialization...${fancyColors.RESET}`);
+            
+            // Note if token sync is disabled
+            if (config.services.disable_token_sync) {
+                logApi.info(`${fancyColors.YELLOW}Token Sync Service will be skipped during initialization${fancyColors.RESET}`);
+            }
+            
+            // Initialize all services using ServiceManager
             const results = await serviceManager.initializeAll();
             
-            // Log initialization results
-            if (!VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`✅ Services initialized: ${results.initialized.length} succeeded, ${results.failed.length} failed`);
+            // Always show initialization summary
+            const successCount = results.initialized.length;
+            const failCount = results.failed.length;
+            logApi.info(`✅ Services initialized: ${successCount} succeeded, ${failCount} failed`);
+            
+            // Always show failed services
+            if (failCount > 0) {
+                // Special handling for TOKEN_SYNC if it was intentionally disabled
+                const realFailures = results.failed.filter(service => 
+                    !(service === SERVICE_NAMES.TOKEN_SYNC && config.services.disable_token_sync)
+                );
                 
-                // Always show failed services, even in non-verbose mode
-                if (results.failed.length > 0) {
-                    results.failed.forEach(service => {
+                if (realFailures.length > 0) {
+                    realFailures.forEach(service => {
                         logApi.error(`❌ Failed to initialize service: ${service}`);
                     });
                 }
-            } else {
-                logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━━━━━━━ Initialization Results ━━━━━━━━━━━━━━━━━┓\x1b[0m');
-                if (results.initialized.length > 0) {
-                    logApi.info(`\x1b[38;5;82m┃ Successfully initialized: ${results.initialized.length} services\x1b[0m`);
-                    results.initialized.forEach(service => {
-                        logApi.info(`\x1b[38;5;82m┃ ✓ ${service}\x1b[0m`);
-                    });
-                } else {
-                    logApi.warn('\x1b[38;5;208m┃ No services were initialized!\x1b[0m');
-                }
-                if (results.failed.length > 0) {
-                    logApi.error(`\x1b[38;5;196m┃ Failed to initialize: ${results.failed.length} services\x1b[0m`);
-                    results.failed.forEach(service => {
-                        logApi.error(`\x1b[38;5;196m┃ ✗ ${service}\x1b[0m`);
-                    });
-                }
-                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
             }
-
-            // Log to admin logger (admin logs are always kept for auditing)
+            
+            // Log to admin logger for auditing
             await AdminLogger.logAction(
                 'SYSTEM',
                 AdminLogger.Actions.SERVICE.START,
                 {
                     initialized: results.initialized,
                     failed: results.failed,
+                    intentionallyDisabled: config.services.disable_token_sync ? [SERVICE_NAMES.TOKEN_SYNC] : [],
                     registeredServices: Array.from(serviceManager.services.keys())
                 }
             );
 
             return results;
         } catch (error) {
-            logApi.error(`${serviceColors.failed}[SERVICE INIT] Error initializing services: ${error.message}${fancyColors.RESET}`);
+            logApi.error(`${serviceColors.failed}Service initialization error: ${error.message}${fancyColors.RESET}`, {
+                error: error.message,
+                stack: error.stack
+            });
             throw error;
         }
     }
 
     /**
-     * Cleanup all services
+     * Clean up all services before shutdown
+     * @returns {Promise<Object>} Results of service cleanup
      */
     static async cleanup() {
-        if (!VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`🧹 Cleaning up services...`);
-        } else {
-            logApi.info(`\n${fancyColors.NEON}╭───────────────── Cleaning Up Services ─────────────────╮${fancyColors.RESET}`);
-        }
+        // Log cleanup start
+        logApi.info(VERBOSE_SERVICE_INIT_LOGS ?
+            `\n${fancyColors.NEON}╭───────────────── CLEANING UP SERVICES ─────────────────╮${fancyColors.RESET}` :
+            `🧹 Cleaning up services...`);
 
         try {
+            // Perform cleanup using ServiceManager
             const results = await serviceManager.cleanup();
             
-            if (!VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`✅ Services cleanup: ${results.successful.length} succeeded, ${results.failed.length} failed`);
-                
-                // Always show failed cleanups, even in non-verbose mode
-                if (results.failed.length > 0) {
-                    results.failed.forEach(service => {
-                        logApi.error(`❌ Failed to cleanup service: ${service}`);
-                    });
-                }
-            } else {
-                logApi.info('\x1b[38;5;82m┏━━━━━━━━━━━ Cleanup Results ━━━━━━━━━━━┓\x1b[0m');
-                if (results.successful.length > 0) {
-                    logApi.info(`\x1b[38;5;82m┃ Successfully cleaned: ${results.successful.length} services\x1b[0m`);
-                    results.successful.forEach(service => {
-                        logApi.info(`\x1b[38;5;82m┃ ✓ ${service}\x1b[0m`);
-                    });
-                } else {
-                    logApi.warn('\x1b[38;5;208m┃ No services were cleaned!\x1b[0m');
-                }
-                if (results.failed.length > 0) {
-                    logApi.error(`\x1b[38;5;196m┃ Failed to clean: ${results.failed.length} services\x1b[0m`);
-                    results.failed.forEach(failure => {
-                        logApi.error(`\x1b[38;5;196m┃ - ${failure.service}: ${failure.error}\x1b[0m`);
-                    });
-                }
-                logApi.info('\x1b[38;5;82m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m');
+            // Log cleanup results
+            const successCount = results.successful.length;
+            const failCount = results.failed.length;
+            logApi.info(`✅ Services cleanup: ${successCount} succeeded, ${failCount} failed`);
+            
+            // Always show failed cleanups
+            if (failCount > 0) {
+                results.failed.forEach(failure => {
+                    const serviceName = typeof failure === 'object' ? failure.service : failure;
+                    const errorMsg = typeof failure === 'object' ? failure.error : 'Unknown error';
+                    logApi.error(`❌ Failed to cleanup service: ${serviceName} - ${errorMsg}`);
+                });
             }
-
-            // Log to admin logger (admin logs are always kept for auditing)
+            
+            // Log to admin logger for auditing
             await AdminLogger.logAction(
                 'SYSTEM',
                 AdminLogger.Actions.SERVICE.STOP,
