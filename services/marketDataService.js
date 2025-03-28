@@ -21,7 +21,7 @@ import serviceEvents from '../utils/service-suite/service-events.js';
 // Config
 import { config } from '../config/config.js';
 // Extra Config
-const BROADCAST_INTERVAL = 10 // Broadcast every 10 seconds
+const BROADCAST_INTERVAL = 60 // Broadcast every 60 seconds (increased from 10 seconds to reduce WebSocket traffic)
 
 
 // Initialize the marketDataService's dedicated internal Prisma client to the Market Database
@@ -58,8 +58,8 @@ const MARKET_DATA_CONFIG = {
     },
     cache: {
         maxSize: 10000,
-        ttl: 10000,
-        cleanupInterval: 1000
+        ttl: 60000, // Increased from 10s to 60s to reduce refresh frequency
+        cleanupInterval: 5000 // Increased from 1s to 5s to reduce cleanup operations
     },
     limits: {
         maxConcurrentRequests: 1000,

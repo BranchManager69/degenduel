@@ -53,13 +53,30 @@ export function configureMiddleware(app) {
       // Flag for middleware chain to recognize WebSocket requests
       req.WEBSOCKET_REQUEST = true;
       
-      // Log once at detection for diagnostics
+      // Log COMPLETE headers for WebSocket diagnostics
       logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} WEBSOCKET ${fancyColors.RESET} ${req.url}`, {
-        headers: {
+        url: req.url,
+        method: req.method,
+        path: req.path,
+        detection: {
+          byHeaders: {
+            hasUpgradeHeader,
+            hasConnectionHeader,
+            hasWebSocketKey,
+            hasWebSocketVersion
+          },
+          byURL: hasWebSocketURL
+        },
+        allHeaders: req.headers,
+        originalHeaders: {
           upgrade: req.headers.upgrade,
           connection: req.headers.connection,
-          'sec-websocket-key': hasWebSocketKey ? 'present' : 'missing',
-          'sec-websocket-version': req.headers['sec-websocket-version'] || 'missing'
+          origin: req.headers.origin,
+          host: req.headers.host,
+          'sec-websocket-key': req.headers['sec-websocket-key'],
+          'sec-websocket-version': req.headers['sec-websocket-version'],
+          'sec-websocket-extensions': req.headers['sec-websocket-extensions'],
+          'sec-websocket-protocol': req.headers['sec-websocket-protocol']
         }
       });
     }

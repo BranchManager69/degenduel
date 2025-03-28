@@ -54,12 +54,38 @@ class UnifiedWebSocketServer {
     // Service event listeners
     this.eventHandlers = new Map();
     
-    // Initialize WebSocket server with compression DISABLED
+    // Initialize WebSocket server with ALL compression options explicitly DISABLED
     this.wss = new WebSocketServer({
       server: httpServer,
       path: this.path,
       maxPayload: 1024 * 50,  // 50KB max payload
-      perMessageDeflate: false // EXPLICITLY DISABLE COMPRESSION to avoid client issues
+      perMessageDeflate: false, // EXPLICITLY DISABLE COMPRESSION to avoid client issues
+      // Additional explicit compression options to ensure nothing tries to compress frames
+      skipUTF8Validation: false, // Ensure proper UTF8 validation
+      // Extra safety options to manage RSV1, RSV2, RSV3 bits
+      handleProtocols: (protocols) => {
+        // Accept first protocol if provided, or null otherwise
+        return protocols?.[0] || null;
+      },
+      // Create custom verifyClient function to add more logging
+      verifyClient: (info, callback) => {
+        // Log detailed client info before verification
+        logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENT VERIFY ${fancyColors.RESET}`, {
+          clientConnInfo: {
+            origin: info.origin,
+            secure: info.secure,
+            req: {
+              url: info.req.url,
+              headers: info.req.headers
+            }
+          },
+          _icon: "🔍",
+          _color: "#0088FF"
+        });
+        
+        // Always accept connections - we'll handle auth later
+        callback(true);
+      }
     });
     
     // Set up connection handler
@@ -120,19 +146,42 @@ class UnifiedWebSocketServer {
       // Set up error handler
       ws.on('error', (error) => this.handleError(ws, error));
       
-      // Extract and store all headers for logging and debugging
-      const headerEntries = Object.entries(req.headers);
-      const importantHeaders = ['host', 'origin', 'user-agent', 'sec-websocket-key', 'sec-websocket-version', 'x-forwarded-for', 'x-real-ip'];
+      // Log all available headers BEFORE we process them
+      logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} RAW HEADERS ${fancyColors.RESET}`, {
+        unifiedWS: true,
+        rawHeaders: req.headers,
+        socketInfo: {
+          remoteAddress: req.socket?.remoteAddress,
+          remotePort: req.socket?.remotePort,
+          protocol: req.protocol,
+          url: req.url,
+          method: req.method
+        },
+        _icon: "📋",
+        _color: "#FF8800"
+      });
       
-      // Add client metadata
+      // Extract and store all headers for logging and debugging
+      const headerEntries = Object.entries(req.headers || {});
+      const importantHeaders = ['host', 'origin', 'user-agent', 'sec-websocket-key', 'sec-websocket-version', 'x-forwarded-for', 'x-real-ip', 'sec-websocket-extensions', 'sec-websocket-protocol'];
+      
+      // Add client metadata - include ALL headers to help with debugging
       ws.clientInfo = {
-        ip: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress,
+        ip: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress,
         userAgent: req.headers['user-agent'],
         origin: req.headers['origin'],
         host: req.headers['host'],
         connectedAt: new Date(),
         isAuthenticated: false,
         userId: null,
+        remoteAddress: req.socket?.remoteAddress,
+        remotePort: req.socket?.remotePort,
+        protocol: req.protocol,
+        url: req.url,
+        wsProtocol: req.headers['sec-websocket-protocol'],
+        wsExtensions: req.headers['sec-websocket-extensions'],
+        wsVersion: req.headers['sec-websocket-version'],
+        wsKey: req.headers['sec-websocket-key'],
         headers: headerEntries.reduce((obj, [key, value]) => {
           obj[key] = value;
           return obj;

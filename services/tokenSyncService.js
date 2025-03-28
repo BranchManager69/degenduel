@@ -38,7 +38,7 @@ const SHOW_TOKEN_REFRESH_DURATION_IN_LOGS = false;
 const TOKEN_SYNC_CONFIG = {
     name: SERVICE_NAMES.TOKEN_SYNC,
     description: getServiceMetadata(SERVICE_NAMES.TOKEN_SYNC).description,
-    checkIntervalMs: 30 * 1000, // Check every 30 seconds
+    checkIntervalMs: 60 * 1000, // Check every 60 seconds (increased from 30 seconds to reduce update frequency)
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
