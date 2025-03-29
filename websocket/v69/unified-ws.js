@@ -46,6 +46,7 @@ class UnifiedWebSocketServer {
     this.clientSubscriptions = new Map();        // client -> Set of topics
     this.topicSubscribers = new Map();           // topic -> Set of WebSocket connections
     this.authenticatedClients = new Map();       // client -> userData
+    this.startTime = Date.now();                 // Server start time for uptime tracking
     this.metrics = {
       messagesReceived: 0,
       messagesSent: 0,
@@ -465,6 +466,10 @@ class UnifiedWebSocketServer {
           await this.handleLogsRequest(ws, message);
           break;
           
+        case TOPICS.SYSTEM:
+          await this.handleSystemRequest(ws, message);
+          break;
+          
         // Add cases for other topics as needed
         
         default:
@@ -545,6 +550,70 @@ class UnifiedWebSocketServer {
         
       default:
         this.sendError(ws, `Unknown action for logs: ${message.action}`, 4009);
+    }
+  }
+  
+  /**
+   * Handle system topic requests
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Object} message - Parsed message
+   */
+  async handleSystemRequest(ws, message) {
+    switch (message.action) {
+      case 'getStatus':
+        // Return system status
+        this.send(ws, {
+          type: MESSAGE_TYPES.DATA,
+          topic: TOPICS.SYSTEM,
+          action: 'getStatus',
+          requestId: message.requestId,
+          data: {
+            status: 'operational',
+            version: '1.0.0',
+            serverTime: new Date().toISOString(),
+            uptime: Math.floor((Date.now() - this.startTime) / 1000),
+            connections: this.wss.clients.size
+          },
+          timestamp: new Date().toISOString()
+        });
+        break;
+        
+      case 'ping':
+        // Send a pong response with server timestamp
+        this.send(ws, {
+          type: MESSAGE_TYPES.DATA,
+          topic: TOPICS.SYSTEM,
+          action: 'pong',
+          requestId: message.requestId,
+          data: {
+            serverTime: new Date().toISOString(),
+            clientTime: message.clientTime || null,
+            roundTrip: message.clientTime ? true : false
+          },
+          timestamp: new Date().toISOString()
+        });
+        break;
+        
+      case 'getMetrics':
+        // Return WebSocket metrics (only if authenticated as admin)
+        if (!ws.clientInfo.isAuthenticated || 
+            !ws.clientInfo.role || 
+            !['ADMIN', 'SUPER_ADMIN'].includes(ws.clientInfo.role)) {
+          return this.sendError(ws, 'Admin role required for system metrics', 4012);
+        }
+        
+        this.send(ws, {
+          type: MESSAGE_TYPES.DATA,
+          topic: TOPICS.SYSTEM,
+          action: 'getMetrics',
+          requestId: message.requestId,
+          data: this.getMetrics(),
+          timestamp: new Date().toISOString()
+        });
+        break;
+        
+      default:
+        this.sendError(ws, `Unknown action for system topic: ${message.action}`, 4009);
     }
   }
   
@@ -1032,8 +1101,6 @@ class UnifiedWebSocketServer {
    * Mainly for compatibility with the WebSocket initialization process
    */
   async initialize() {
-    this.startTime = Date.now();
-    
     // Start any periodic tasks
     this.startPeriodicalTasks();
     

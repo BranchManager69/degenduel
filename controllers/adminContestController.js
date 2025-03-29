@@ -3,7 +3,8 @@
 import { logApi } from '../utils/logger-suite/logger.js';
 import contestEvaluationService from '../services/contestEvaluationService.js';
 import AdminLogger from '../utils/admin-logger.js';
-import walletRakeService from '../services/walletRakeService.js';
+// DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
+// import walletRakeService from '../services/walletRakeService.js';
 import prisma from '../config/prisma.js';
 import { fancyColors } from '../utils/colors.js';
 
@@ -277,135 +278,28 @@ async function retryFailedTransaction(req, res) {
     }
 }
 
-// Endpoint for manual wallet rake (outdated by now)
+// REMOVED: Manual wallet rake endpoint (replaced by automatic reclaiming)
+/*
 async function rakeWallet(req, res) {
-    try {
-        const { walletAddress } = req.params;
-        const adminAddress = req.user.wallet_address;
-        
-        const result = await walletRakeService.forceRakeWallet(
-            walletAddress,
-            adminAddress,
-            {
-                ip_address: req.ip,
-                user_agent: req.get('user-agent')
-            }
-        );
-
-        res.json({
-            success: true,
-            message: 'Wallet rake operation completed successfully',
-            data: result
-        });
-    } catch (error) {
-        logApi.error('Admin wallet rake failed:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to rake wallet',
-            error: error.message
-        });
-    }
+    // Endpoint removed - automated reclaiming is now implemented in contestWalletService
 }
+*/
 
-// Add endpoint to get rake service status
+// DEPRECATED: Rake service status endpoint (functionality integrated into contestWalletService)
+/*
 async function getRakeServiceStatus(req, res) {
-    try {
-        const status = {
-            isRunning: walletRakeService.isRunning(),
-            stats: walletRakeService.rakeStats,
-            config: walletRakeService.config,
-            health: walletRakeService.getHealth()
-        };
-
-        await AdminLogger.logAction(
-            req.user.wallet_address,
-            AdminLogger.Actions.SERVICE.STATUS,
-            {
-                service: 'wallet_rake_service',
-                status
-            },
-            {
-                ip_address: req.ip,
-                user_agent: req.get('user-agent')
-            }
-        );
-
-        res.json({
-            success: true,
-            data: status
-        });
-    } catch (error) {
-        logApi.error('Failed to get rake service status:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to get service status',
-            error: error.message
-        });
-    }
+    // Endpoint removed - rake service has been deprecated
+    // Wallet reclaiming is now handled automatically by contestWalletService
 }
+*/
 
-// Add endpoint to control rake service
+// DEPRECATED: Rake service control endpoint (functionality integrated into contestWalletService)
+/*
 async function controlRakeService(req, res) {
-    try {
-        const { action } = req.params;
-        const adminAddress = req.user.wallet_address;
-        
-        if (!['start', 'stop', 'restart'].includes(action)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid action. Must be start, stop, or restart'
-            });
-        }
-
-        let result;
-        switch (action) {
-            case 'start':
-                if (!walletRakeService.isRunning()) {
-                    await walletRakeService.start();
-                }
-                break;
-            case 'stop':
-                if (walletRakeService.isRunning()) {
-                    await walletRakeService.stop();
-                }
-                break;
-            case 'restart':
-                await walletRakeService.stop();
-                await walletRakeService.start();
-                break;
-        }
-
-        await AdminLogger.logAction(
-            adminAddress,
-            AdminLogger.Actions.SERVICE.CONFIGURE,
-            {
-                service: 'wallet_rake_service',
-                action,
-                result: walletRakeService.isRunning() ? 'running' : 'stopped'
-            },
-            {
-                ip_address: req.ip,
-                user_agent: req.get('user-agent')
-            }
-        );
-
-        res.json({
-            success: true,
-            message: `Service ${action} completed successfully`,
-            status: {
-                isRunning: walletRakeService.isRunning(),
-                health: walletRakeService.getHealth()
-            }
-        });
-    } catch (error) {
-        logApi.error(`Failed to ${action} rake service:`, error);
-        res.status(500).json({
-            success: false,
-            message: `Failed to ${action} service`,
-            error: error.message
-        });
-    }
+    // Endpoint removed - rake service has been deprecated
+    // Wallet reclaiming is now handled automatically by contestWalletService
 }
+*/
 
 export default {
     getContestMonitoring,
@@ -413,8 +307,9 @@ export default {
     getContestHistory,
     updateContestState,
     getFailedTransactions,
-    retryFailedTransaction,
-    rakeWallet,
-    getRakeServiceStatus,
-    controlRakeService
+    retryFailedTransaction
+    // DEPRECATED: Rake-related functions removed - functionality integrated into contestWalletService
+    // rakeWallet,
+    // getRakeServiceStatus,
+    // controlRakeService
 }; 

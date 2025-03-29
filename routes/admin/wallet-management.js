@@ -271,60 +271,23 @@ router.get('/contest-wallets', async (req, res) => {
     }
 });
 
-// Reclaim unused funds from completed or cancelled contest wallets
+// REMOVED: Manual reclaim endpoint is no longer needed as reclaiming is automated
+// The contestWalletService now automatically reclaims funds after checking balances
+/*
 router.post('/reclaim-unused-funds', 
-    requireAuth, // First ensure user is authenticated
-    requireAdmin, // Then ensure user is admin
+    requireAuth,
+    requireAdmin,
     [
         body('status_filter').optional().isArray(),
         body('min_balance').optional().isFloat({ min: 0 }),
         body('min_transfer').optional().isFloat({ min: 0 }),
-        body('contest_id').optional().isInt()
+        body('contest_id').optional().isInt(),
+        body('force_status').optional().isBoolean()
     ],
     validateRequest,
     async (req, res) => {
-        try {
-            const { status_filter, min_balance, min_transfer, contest_id } = req.body;
-            const adminAddress = req.user.wallet_address;
-            
-            // Log the admin action
-            await AdminLogger.logAction(
-                adminAddress,
-                AdminLogger.Actions.WALLET.RECLAIM_FUNDS || 'WALLET_RECLAIM_FUNDS',
-                {
-                    status_filter,
-                    min_balance,
-                    min_transfer,
-                    contest_id,
-                    initiated_by: req.user.username
-                },
-                {
-                    ip_address: req.ip,
-                    user_agent: req.get('user-agent')
-                }
-            );
-            
-            // Perform the reclaim operation
-            const results = await contestWalletService.reclaimUnusedFunds({
-                statusFilter: status_filter,
-                minBalance: min_balance,
-                minTransfer: min_transfer,
-                specificContestId: contest_id,
-                adminAddress
-            });
-            
-            res.json({
-                success: true,
-                message: `Reclaim operation completed: ${results.successfulTransfers}/${results.walletsThatMeetCriteria} transfers successful, total reclaimed: ${results.totalAmountReclaimed.toFixed(6)} SOL`,
-                data: results
-            });
-        } catch (error) {
-            logApi.error('Failed to reclaim unused funds:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Failed to reclaim unused funds: ' + error.message
-            });
-        }
+        // Endpoint removed - automated reclaim is now in place
     });
+*/
 
 export default router; 

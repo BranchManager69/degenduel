@@ -605,8 +605,8 @@ class MarketDataService extends BaseService {
                             }
                         }
                         
-                        // Log what changed
-                        logApi.info(`${fancyColors.BG_PURPLE}${fancyColors.WHITE} MKT-DATA CHANGES ${fancyColors.RESET} Detected ${priceChanges} price changes, ${marketCapChanges} market cap changes`, {
+                        // Log what changed - kept at info level but made more concise
+                        logApi.info(`${fancyColors.BG_PURPLE}${fancyColors.WHITE} MKT-DATA ${fancyColors.RESET} ${priceChanges}p/${marketCapChanges}mc changes (${allTokens.length} tokens)`, {
                             service: 'MARKET',
                             event: 'changes_detected',
                             changes: {
@@ -675,7 +675,8 @@ class MarketDataService extends BaseService {
                     // Get a sample token to show exactly what's being sent
                     const sampleToken = broadcastData.data.length > 0 ? broadcastData.data[0] : null;
                     
-                    logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} MKT-DATA PRE-BROADCAST ${fancyColors.RESET} Preparing to broadcast ${tokenCount} tokens, first 5: ${tokenSymbols.join(', ')}`, {
+                    // Changed from info to debug level to reduce log verbosity
+                    logApi.debug(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} MKT-DATA PRE-BROADCAST ${fancyColors.RESET} Preparing to broadcast ${tokenCount} tokens, first 5: ${tokenSymbols.join(', ')}`, {
                         service: 'MARKET',
                         event: 'pre_broadcast',
                         tokenCount,
@@ -689,8 +690,8 @@ class MarketDataService extends BaseService {
                             price: sampleToken.price,
                             market_cap: sampleToken.market_cap,
                             change_24h: sampleToken.change_24h,
-                            image_url: !!sampleToken.image_url,
-                            fullJSON: JSON.stringify(sampleToken).substring(0, 500) + (JSON.stringify(sampleToken).length > 500 ? '...' : '')
+                            image_url: !!sampleToken.image_url
+                            // Removed verbose fullJSON to reduce log size
                         } : 'No tokens',
                         timestamp: new Date().toISOString()
                     });
@@ -702,22 +703,21 @@ class MarketDataService extends BaseService {
                       _broadcastId: Date.now().toString(36) + Math.random().toString(36).substring(2, 5) // Add unique ID for tracking
                     };
                     
-                    // Log RIGHT BEFORE emitting the event
-                    logApi.info(`${fancyColors.BG_BLUE}${fancyColors.WHITE} MKT-DATA EMITTING ${fancyColors.RESET} Broadcasting event 'market:broadcast' with ID ${enhancedBroadcastData._broadcastId}`, {
+                    // Log RIGHT BEFORE emitting the event (changed to debug level)
+                    logApi.debug(`${fancyColors.BG_BLUE}${fancyColors.WHITE} MKT-DATA EMITTING ${fancyColors.RESET} Broadcasting event 'market:broadcast' with ID ${enhancedBroadcastData._broadcastId}`, {
                         service: 'MARKET',
                         event: 'broadcast_emit',
                         broadcastId: enhancedBroadcastData._broadcastId,
                         tokenCount,
-                        hasData: broadcastData.data && broadcastData.data.length > 0,
-                        hasTags: false
+                        hasData: broadcastData.data && broadcastData.data.length > 0
                     });
                     
                     // Emit with enhanced data
                     serviceEvents.emit('market:broadcast', enhancedBroadcastData);
                     
-                    // Log AFTER emitting the event
+                    // Log AFTER emitting the event (changed to debug level for detailed broadcast info)
                     const broadcastTime = Date.now() - broadcastStartTime;
-                    logApi.info(`${fancyColors.BG_GREEN}${fancyColors.BLACK} MKT-DATA BROADCAST SENT ${fancyColors.RESET} Broadcast ID ${enhancedBroadcastData._broadcastId} emitted in ${broadcastTime}ms`, {
+                    logApi.debug(`${fancyColors.BG_GREEN}${fancyColors.BLACK} MKT-DATA BROADCAST SENT ${fancyColors.RESET} Broadcast ID ${enhancedBroadcastData._broadcastId} emitted in ${broadcastTime}ms`, {
                         service: 'MARKET',
                         event: 'broadcast_complete',
                         broadcastId: enhancedBroadcastData._broadcastId,
@@ -728,21 +728,20 @@ class MarketDataService extends BaseService {
                     // Format token count with consistent spacing
                     const formattedCount = broadcastData.data.length.toString().padStart(3);
                     
-                    // Calculate token price stats for the broadcast
-                    const tokensWithPriceChange = broadcastData.data.filter(t => t.change_24h && Math.abs(t.change_24h) > 0.5).length;
+                    // Calculate token price stats for the broadcast (only top gainers)
                     const topGainers = broadcastData.data
-                        .filter(t => t.change_24h && t.change_24h > 2)
+                        .filter(t => t.change_24h && t.change_24h > 5) // Only show tokens with >5% gain to reduce noise
                         .sort((a, b) => b.change_24h - a.change_24h)
-                        .slice(0, 3)
+                        .slice(0, 2) // Reduce from 3 to 2 for brevity
                         .map(t => t.symbol);
                     
-                    // Format broadcast details
-                    const broadcastDetailsStr = topGainers.length > 0 ? 
-                        `${tokensWithPriceChange} with sig. changes · Top gainers: ${topGainers.join(', ')}` : 
-                        `${tokensWithPriceChange} with sig. changes`;
+                    // Simplified broadcast summary - Only show top gainers if they exist, otherwise just token count
+                    const broadcastSummary = topGainers.length > 0 ? 
+                        `${formattedCount} tokens (⬆️ ${topGainers.join(', ')})` : 
+                        `${formattedCount} tokens`;
                     
-                    // Log with improved formatting and purple color theme
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} BROADCASTING ${fancyColors.RESET} ${fancyColors.BOLD_PURPLE}${formattedCount} tokens${fancyColors.RESET} ${fancyColors.LIGHT_PURPLE}(${broadcastDetailsStr})${fancyColors.RESET}`);
+                    // Log with improved formatting and purple color theme, but much more concise
+                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} BCAST ${fancyColors.RESET} ${broadcastSummary}`);
                 } else {
                     // No data to broadcast, log that too
                     logApi.debug(`${fancyColors.BG_GRAY}${fancyColors.BLACK} MKT-DATA NO BROADCAST ${fancyColors.RESET} No changes to broadcast this cycle`, {

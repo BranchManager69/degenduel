@@ -591,10 +591,13 @@ function formatUserInteraction(user, action, details, env) {
     formattedDetails = JSON.stringify(details);
   }
 
-  // Always include environment
+  // Always include environment (use shorter 'dev' instead of 'development')
+  const envLabel = env === 'development' ? 'dev' : env;
+  const envSystemLabel = environment === 'development' ? 'dev' : environment;
+  
   const envPrefix = env ? 
-    `${chalk.bgMagenta(chalk.white(` ${env} `))} ` : 
-    `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${environment} `)) + ' ' : ''}`;
+    `${chalk.bgMagenta(chalk.white(` ${envLabel} `))} ` : 
+    `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
   
   return `${envPrefix}👤 ${userInfo} | ${action} | ${formattedDetails}`;
 }
@@ -677,9 +680,13 @@ const customFormat = winston.format.printf(
 
     // Add service icon and environment if available
     const servicePrefix = service ? `${serviceInfo.icon} ` : "";
+    // Use shorter "dev" instead of "development" to prevent log wrapping
+    const envLabel = metadata.environment === 'development' ? 'dev' : metadata.environment;
+    const envSystemLabel = environment === 'development' ? 'dev' : environment;
+    
     const envPrefix = metadata.environment ? 
-      `${chalk.bgMagenta(chalk.white(` ${metadata.environment} `))} ` : 
-      `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${environment} `)) + ' ' : ''}`;
+      `${chalk.bgMagenta(chalk.white(` ${envLabel} `))} ` : 
+      `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
     
     const formattedMessage =
       envPrefix + 

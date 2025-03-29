@@ -65,10 +65,53 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
       commitment: connection.commitment
     });
     
-    // Get a recent blockhash via SolanaServiceManager
-    const { value: latestBlockhash } = await SolanaServiceManager.executeConnectionMethod(
-      'getLatestBlockhash'
-    );
+    // Get a recent blockhash via SolanaServiceManager with detailed logging
+    // Pass the commitment parameter to ensure the request works correctly
+    logApi.info(`Getting latest blockhash with commitment: ${connection.commitment || 'confirmed'}`);
+    
+    let getBlockhashResult;
+    try {
+      // Try to get blockhash via SolanaServiceManager
+      getBlockhashResult = await SolanaServiceManager.executeConnectionMethod(
+        'getLatestBlockhash', 
+        connection.commitment || 'confirmed'
+      );
+      
+      // Log the result to help diagnose issues
+      if (getBlockhashResult && getBlockhashResult.value && getBlockhashResult.value.blockhash) {
+        logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager)`);
+      } else {
+        logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+      }
+    } catch (serviceError) {
+      // Log the error from SolanaServiceManager
+      logApi.error(`Error getting blockhash via SolanaServiceManager: ${serviceError.message}`, {
+        stack: serviceError.stack,
+        error_name: serviceError.name,
+        is_service_error: !!serviceError.isServiceError
+      });
+      
+      // Try direct connection as fallback
+      try {
+        logApi.warn(`Trying to get blockhash directly from connection as fallback...`);
+        getBlockhashResult = await connection.getLatestBlockhash(connection.commitment || 'confirmed');
+        logApi.info(`Got blockhash directly: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (via direct connection)`);
+      } catch (directError) {
+        logApi.error(`Direct blockhash fetch also failed: ${directError.message}`, {
+          stack: directError.stack
+        });
+        // Let original error be thrown
+        throw serviceError;
+      }
+    }
+    
+    // Final validation check
+    if (!getBlockhashResult || !getBlockhashResult.value || !getBlockhashResult.value.blockhash) {
+      logApi.error(`Invalid blockhash response after all attempts: ${JSON.stringify(getBlockhashResult || 'null')}`);
+      throw new Error('Failed to get latest blockhash from Solana network after multiple attempts');
+    }
+    
+    const { value: latestBlockhash } = getBlockhashResult;
     
     // System Program ID for System Transfer (all zeros in base58)
     const systemProgramId = '11111111111111111111111111111111';
@@ -195,10 +238,53 @@ export async function transferToken(
       ? new PublicKey(mint)
       : mint;
     
-    // Get a recent blockhash via SolanaServiceManager to use centralized queue
-    const { value: latestBlockhash } = await SolanaServiceManager.executeConnectionMethod(
-      'getLatestBlockhash'
-    );
+    // Get a recent blockhash via SolanaServiceManager with detailed logging
+    // Pass the commitment parameter to ensure the request works correctly
+    logApi.info(`Getting latest blockhash with commitment: ${connection.commitment || 'confirmed'}`);
+    
+    let getBlockhashResult;
+    try {
+      // Try to get blockhash via SolanaServiceManager
+      getBlockhashResult = await SolanaServiceManager.executeConnectionMethod(
+        'getLatestBlockhash', 
+        connection.commitment || 'confirmed'
+      );
+      
+      // Log the result to help diagnose issues
+      if (getBlockhashResult && getBlockhashResult.value && getBlockhashResult.value.blockhash) {
+        logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager)`);
+      } else {
+        logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+      }
+    } catch (serviceError) {
+      // Log the error from SolanaServiceManager
+      logApi.error(`Error getting blockhash via SolanaServiceManager: ${serviceError.message}`, {
+        stack: serviceError.stack,
+        error_name: serviceError.name,
+        is_service_error: !!serviceError.isServiceError
+      });
+      
+      // Try direct connection as fallback
+      try {
+        logApi.warn(`Trying to get blockhash directly from connection as fallback...`);
+        getBlockhashResult = await connection.getLatestBlockhash(connection.commitment || 'confirmed');
+        logApi.info(`Got blockhash directly: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (via direct connection)`);
+      } catch (directError) {
+        logApi.error(`Direct blockhash fetch also failed: ${directError.message}`, {
+          stack: directError.stack
+        });
+        // Let original error be thrown
+        throw serviceError;
+      }
+    }
+    
+    // Final validation check
+    if (!getBlockhashResult || !getBlockhashResult.value || !getBlockhashResult.value.blockhash) {
+      logApi.error(`Invalid blockhash response after all attempts: ${JSON.stringify(getBlockhashResult || 'null')}`);
+      throw new Error('Failed to get latest blockhash from Solana network after multiple attempts');
+    }
+    
+    const { value: latestBlockhash } = getBlockhashResult;
     
     // Token Program ID in base58 format
     const tokenProgramId = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
@@ -301,10 +387,53 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
       commitment: connection.commitment
     });
     
-    // Get a recent blockhash via SolanaServiceManager to use centralized queue
-    const { value: latestBlockhash } = await SolanaServiceManager.executeConnectionMethod(
-      'getLatestBlockhash'
-    );
+    // Get a recent blockhash via SolanaServiceManager with detailed logging
+    // Pass the commitment parameter to ensure the request works correctly
+    logApi.info(`Getting latest blockhash with commitment: ${connection.commitment || 'confirmed'}`);
+    
+    let getBlockhashResult;
+    try {
+      // Try to get blockhash via SolanaServiceManager
+      getBlockhashResult = await SolanaServiceManager.executeConnectionMethod(
+        'getLatestBlockhash', 
+        connection.commitment || 'confirmed'
+      );
+      
+      // Log the result to help diagnose issues
+      if (getBlockhashResult && getBlockhashResult.value && getBlockhashResult.value.blockhash) {
+        logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager)`);
+      } else {
+        logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+      }
+    } catch (serviceError) {
+      // Log the error from SolanaServiceManager
+      logApi.error(`Error getting blockhash via SolanaServiceManager: ${serviceError.message}`, {
+        stack: serviceError.stack,
+        error_name: serviceError.name,
+        is_service_error: !!serviceError.isServiceError
+      });
+      
+      // Try direct connection as fallback
+      try {
+        logApi.warn(`Trying to get blockhash directly from connection as fallback...`);
+        getBlockhashResult = await connection.getLatestBlockhash(connection.commitment || 'confirmed');
+        logApi.info(`Got blockhash directly: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (via direct connection)`);
+      } catch (directError) {
+        logApi.error(`Direct blockhash fetch also failed: ${directError.message}`, {
+          stack: directError.stack
+        });
+        // Let original error be thrown
+        throw serviceError;
+      }
+    }
+    
+    // Final validation check
+    if (!getBlockhashResult || !getBlockhashResult.value || !getBlockhashResult.value.blockhash) {
+      logApi.error(`Invalid blockhash response after all attempts: ${JSON.stringify(getBlockhashResult || 'null')}`);
+      throw new Error('Failed to get latest blockhash from Solana network after multiple attempts');
+    }
+    
+    const { value: latestBlockhash } = getBlockhashResult;
     
     // System Program ID (all zeros in base58)
     const systemProgramId = '11111111111111111111111111111111';

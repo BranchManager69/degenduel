@@ -251,12 +251,44 @@ socket.onmessage = (event) => {
 
 ### System Topic (`system`)
 
-- **Auth Required**: No
+- **Auth Required**: No (getStatus/ping), Yes (getMetrics - Admin only)
 - **Subscribe**: Receive system-wide notifications
 - **System Messages**:
   - Connection welcome message
   - Heartbeat messages (every 30 seconds)
   - Server status updates
+- **Actions**:
+  - `getStatus`: Get system status information
+    ```javascript
+    {
+      type: 'REQUEST',
+      topic: 'system',
+      action: 'getStatus',
+      requestId: '127'
+    }
+    ```
+    - Returns: `status`, `version`, `serverTime`, `uptime`, `connections`
+  - `ping`: Get server time for latency calculation
+    ```javascript
+    {
+      type: 'REQUEST',
+      topic: 'system',
+      action: 'ping',
+      clientTime: new Date().toISOString(), // Optional
+      requestId: '128'
+    }
+    ```
+    - Returns: `serverTime`, `clientTime` (if provided), `roundTrip` (boolean)
+  - `getMetrics`: Get detailed WebSocket metrics (Admin only)
+    ```javascript
+    {
+      type: 'REQUEST',
+      topic: 'system',
+      action: 'getMetrics',
+      requestId: '129'
+    }
+    ```
+    - Returns detailed metrics about connections, subscriptions, and message counts
 
 ### SkyDuel Topic (`skyduel`)
 

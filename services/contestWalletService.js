@@ -84,8 +84,30 @@ class ContestWalletService extends BaseService {
             throw new Error("RPC URL is not configured - check SOLANA_MAINNET_HTTP environment variable");
         }
         
-        logApi.info(`[contestWalletService] Initializing with RPC: ${config.rpc_urls.primary}`);
-        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initializing ${fancyColors.RESET} with RPC: ${config.rpc_urls.primary}`);
+        
+        // Instead of using our own connection, try using the one from SolanaServiceManager
+        try {
+            // Try to use SolanaServiceManager but fallback to direct connection if that fails
+            const solanaServiceManager = require('../utils/solana-suite/solana-service-manager.js').default;
+            if (solanaServiceManager && solanaServiceManager.isInitialized) {
+                this.connection = solanaServiceManager.getConnection();
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Using connection from SolanaServiceManager${fancyColors.RESET}`);
+            } else {
+                this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+                logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} FALLBACK ${fancyColors.RESET} SolanaServiceManager not available, using direct connection. This may impact rate limiting.${fancyColors.RESET}`);
+            }
+        } catch (error) {
+            // Fallback to direct connection if SolanaServiceManager fails
+            this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+            logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR FALLBACK ${fancyColors.RESET} Failed to use SolanaServiceManager, falling back to direct connection. Rate limiting may be affected.${fancyColors.RESET}`, {
+                error: error.message,
+                stack: error.stack,
+                rpc_url: config.rpc_urls.primary,
+                commitment: "confirmed",
+                direct_connection: true
+            });
+        }
         
         // Set treasury wallet address from config
         this.treasuryWalletAddress = CONTEST_WALLET_CONFIG.treasury.walletAddress;
@@ -175,28 +197,28 @@ class ContestWalletService extends BaseService {
      */
     async getUnassociatedVanityWallet() {
         try {
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} DEBUG: Searching for vanity wallets... ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Searching ${fancyColors.RESET} for vanity wallets...`);
             
             // Check DUEL folder first (higher priority)
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Checking _DUEL folder first${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Checking _DUEL folder first${fancyColors.RESET}`);
             const duelWallet = await this.getFirstUnassociatedWalletFromFolder('_DUEL');
             if (duelWallet) {
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Found DUEL wallet: ${duelWallet.publicKey}${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Found ${fancyColors.RESET} DUEL wallet: ${duelWallet.publicKey}`);
                 return duelWallet;
             }
             
             // Then try DEGEN folder
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Checking _DEGEN folder next${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Checking _DEGEN folder next${fancyColors.RESET}`);
             const degenWallet = await this.getFirstUnassociatedWalletFromFolder('_DEGEN');
             if (degenWallet) {
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Found DEGEN wallet: ${degenWallet.publicKey}${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Found ${fancyColors.RESET} DEGEN wallet: ${degenWallet.publicKey}`);
                 return degenWallet;
             }
             
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}DEBUG: No vanity wallets found in either folder${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Not Found ${fancyColors.RESET} No vanity wallets in either folder`);
             return null;
         } catch (error) {
-            logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DEBUG: Error finding vanity wallet: ${error.message} ${fancyColors.RESET}`, {
+            logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Finding vanity wallet: ${error.message}`, {
                 error: error.message,
                 stack: error.stack
             });
@@ -216,24 +238,24 @@ class ContestWalletService extends BaseService {
             const fs = await import('fs/promises');
             const dirPath = `/home/websites/degenduel/addresses/keypairs/public/${folderName}`;
             
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Checking directory: ${dirPath}${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Checking directory: ${dirPath}${fancyColors.RESET}`);
             
             // Get files in directory
             const files = await fs.readdir(dirPath);
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Found ${files.length} files in ${folderName} directory${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Found ${files.length} files in ${folderName} directory${fancyColors.RESET}`);
             
             // Filter for JSON files
             const keypairFiles = files.filter(f => f.endsWith('.json'));
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Found ${keypairFiles.length} JSON files in ${folderName} directory${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Found ${keypairFiles.length} JSON files in ${folderName} directory${fancyColors.RESET}`);
             
             if (keypairFiles.length > 0) {
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: First few keypair files: ${keypairFiles.slice(0, 3).join(', ')}${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}First few keypair files: ${keypairFiles.slice(0, 3).join(', ')}${fancyColors.RESET}`);
             }
             
             for (const file of keypairFiles) {
                 // Extract public key from filename
                 const publicKey = file.replace('.json', '');
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Checking wallet: ${publicKey}${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Checking wallet: ${publicKey}${fancyColors.RESET}`);
                 
                 // Check if already in database
                 const existing = await prisma.contest_wallets.findFirst({
@@ -241,7 +263,7 @@ class ContestWalletService extends BaseService {
                 });
                 
                 if (existing) {
-                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}DEBUG: Wallet already used: ${publicKey}${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Already Used ${fancyColors.RESET} Wallet: ${publicKey}`);
                     continue;
                 }
                 
@@ -251,7 +273,7 @@ class ContestWalletService extends BaseService {
                     const keypairPath = `${dirPath}/${file}`;
                     const privateKeyPath = `/home/websites/degenduel/addresses/pkeys/public/${folderName}/${publicKey}.key`;
                     
-                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Looking for private key at: ${privateKeyPath}${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Looking for private key at: ${privateKeyPath}${fancyColors.RESET}`);
                     
                     try {
                         // Check if private key file exists
@@ -259,9 +281,9 @@ class ContestWalletService extends BaseService {
                         
                         // Read unencrypted private key
                         const privateKey = await fs.readFile(privateKeyPath, 'utf8');
-                        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Read private key with length: ${privateKey.length}${fancyColors.RESET}`);
+                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Read private key with length: ${privateKey.length}${fancyColors.RESET}`);
                         
-                        logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Found unassociated vanity wallet:${fancyColors.RESET} ${publicKey}`);
+                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Success ${fancyColors.RESET} Found unassociated vanity wallet: ${publicKey}`);
                         
                         // Return the unassociated wallet without encrypting the private key
                         return { 
@@ -271,17 +293,17 @@ class ContestWalletService extends BaseService {
                             vanityType: folderName.replace('_', '')
                         };
                     } catch (accessError) {
-                        logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}DEBUG: Cannot access private key file: ${accessError.message}${fancyColors.RESET}`);
+                        logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Cannot access private key file: ${accessError.message}`);
                         continue; // Try next wallet
                     }
                 }
             }
             
             // No unassociated wallets found
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}No unassociated wallets found in folder ${folderName}${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Not Found ${fancyColors.RESET} No unassociated wallets in folder ${folderName}`);
             return null;
         } catch (error) {
-            logApi.warn(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DEBUG: Failed to check folder ${folderName}: ${error.message} ${fancyColors.RESET}`, {
+            logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Failed to check folder ${folderName}: ${error.message}`, {
                 error: error.message,
                 stack: error.stack,
                 folder: folderName
@@ -305,15 +327,15 @@ class ContestWalletService extends BaseService {
 
         const startTime = Date.now();
         try {
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting contest wallet creation for contest ID: ${contestId} ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting ${fancyColors.RESET} Contest wallet creation for contest ID: ${contestId}`);
             
             // Try to get a vanity address first
             const vanityWallet = await this.getUnassociatedVanityWallet();
             
             let contestWallet;
             if (vanityWallet) {
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} DEBUG: Using vanity wallet for contest ${contestId} ${fancyColors.RESET}`);
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Vanity details: ${JSON.stringify({
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Using ${fancyColors.RESET} Vanity wallet for contest ${contestId}`);
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Vanity details: ${JSON.stringify({
                     publicKey: vanityWallet.publicKey,
                     privateKeyLength: vanityWallet.privateKey.length,
                     isVanity: vanityWallet.isVanity,
@@ -334,14 +356,14 @@ class ContestWalletService extends BaseService {
                         }
                     });
                     
-                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Successfully created DB record for vanity wallet${fancyColors.RESET}`);
-                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.GREEN}Created contest wallet with ${vanityWallet.vanityType} vanity address${fancyColors.RESET}`, {
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Success ${fancyColors.RESET} Created DB record for vanity wallet`);
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.GREEN}Created contest wallet with ${vanityWallet.vanityType} vanity address${fancyColors.RESET}`, {
                         contest_id: contestId,
                         vanity_type: vanityWallet.vanityType,
                         is_vanity: contestWallet.is_vanity
                     });
                 } catch (dbError) {
-                    logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DEBUG: Failed to create vanity wallet DB record: ${dbError.message} ${fancyColors.RESET}`, {
+                    logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Failed to create vanity wallet DB record: ${dbError.message}`, {
                         error: dbError.message,
                         stack: dbError.stack,
                         contestId,
@@ -350,14 +372,14 @@ class ContestWalletService extends BaseService {
                     throw dbError;
                 }
             } else {
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}DEBUG: No vanity wallet available, generating random wallet${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Fallback ${fancyColors.RESET} No vanity wallet available, generating random wallet`);
                 
                 // Fall back to random address generation
                 const keypair = Keypair.generate();
                 const publicKey = keypair.publicKey.toString();
                 const secretKeyBase64 = Buffer.from(keypair.secretKey).toString('base64');
                 
-                logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}DEBUG: Generated random wallet: ${publicKey}${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Generated random wallet: ${publicKey}${fancyColors.RESET}`);
                 
                 try {
                     contestWallet = await prisma.contest_wallets.create({
@@ -371,13 +393,13 @@ class ContestWalletService extends BaseService {
                         }
                     });
                     
-                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}DEBUG: Successfully created DB record for random wallet${fancyColors.RESET}`);
-                    logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.YELLOW}Created contest wallet with random address (no vanity addresses available)${fancyColors.RESET}`, {
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Success ${fancyColors.RESET} Created DB record for random wallet`);
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} \n\t${fancyColors.YELLOW}Created contest wallet with random address (no vanity addresses available)${fancyColors.RESET}`, {
                         contest_id: contestId,
                         is_vanity: contestWallet.is_vanity
                     });
                 } catch (dbError) {
-                    logApi.error(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DEBUG: Failed to create random wallet DB record: ${dbError.message} ${fancyColors.RESET}`, {
+                    logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Failed to create random wallet DB record: ${dbError.message}`, {
                         error: dbError.message,
                         stack: dbError.stack,
                         contestId,
@@ -399,7 +421,7 @@ class ContestWalletService extends BaseService {
                 (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
 
             // Log success
-            logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.WHITE} Successfully created contest wallet for contest ID: ${contestId} ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Complete ${fancyColors.RESET} Created contest wallet for contest ID: ${contestId}`);
 
             // Log admin action if context provided
             if (adminContext) {
@@ -527,7 +549,7 @@ class ContestWalletService extends BaseService {
      * @returns {Promise<Object>} - The results of the operation
      */
     async updateAllWalletBalances() {
-        logApi.info(`[contestWalletService] Contest wallet balance refresh cycle starting`);
+        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting ${fancyColors.RESET} Contest wallet balance refresh cycle`);
 
         const startTime = Date.now();
         try {
@@ -817,6 +839,14 @@ class ContestWalletService extends BaseService {
                 });
             }
             
+            // Create a map of contest IDs to statuses for faster lookup
+            const contestsStatusMap = new Map();
+            for (const wallet of contestWallets) {
+                if (wallet.contests?.id && wallet.contests?.status) {
+                    contestsStatusMap.set(wallet.contests.id, wallet.contests.status);
+                }
+            }
+            
             // Calculate and format stats with consistent spacing
             const totalTime = Date.now() - startTime;
             const formattedSeconds = (totalTime/1000).toFixed(1).padStart(4);
@@ -868,13 +898,53 @@ class ContestWalletService extends BaseService {
             // Log cooldown completion with better formatting
             logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}RPC cooldown period completed${fancyColors.RESET}`);
             
+            // Auto-reclaim evaluation for wallets with balance over threshold
+            // Only run if there are wallets with SOL
+            if (walletsWithBalance.length > 0) {
+                // Get the configuration values
+                const minBalance = this.config.reclaim.minimumBalanceToReclaim;
+                const minTransfer = this.config.reclaim.minimumAmountToTransfer;
+                const statusFilter = this.config.reclaim.contestStatuses;
+                
+                // Filter wallets eligible for auto-reclaiming
+                const eligibleWallets = walletsWithBalance.filter(wallet => {
+                    // Check wallet has sufficient balance
+                    if (wallet.balance < minBalance) return false;
+                    
+                    // Get the contest info from our database to check status
+                    const contestStatus = contestsStatusMap.get(wallet.contest_id);
+                    
+                    // Only include wallets from completed or cancelled contests
+                    return statusFilter.includes(contestStatus);
+                });
+                
+                if (eligibleWallets.length > 0) {
+                    const totalEligibleSOL = eligibleWallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Auto-Reclaim ${fancyColors.RESET} Found ${eligibleWallets.length} eligible wallets with ${totalEligibleSOL.toFixed(4)} SOL available to reclaim`);
+                    
+                    try {
+                        // Auto-reclaim funds from eligible wallets
+                        await this.reclaimUnusedFunds({
+                            statusFilter,
+                            minBalance,
+                            minTransfer,
+                            adminAddress: 'SYSTEM_AUTO'
+                        });
+                    } catch (reclaimError) {
+                        logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Auto-reclaim operation failed: ${reclaimError.message}`);
+                    }
+                } else {
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}No wallets eligible for auto-reclaim at this time${fancyColors.RESET}`);
+                }
+            }
+            
             return {
                 duration: Date.now() - startTime,
                 ...results
             };
         } catch (error) {
             // Let the base class handle the error and circuit breaker
-            logApi.error(`[contestWalletService] Failed to update wallet balances:`, {
+            logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Failed ${fancyColors.RESET} Could not update wallet balances: ${error.message}`, {
                 error: error.message,
                 stack: error.stack
             });
@@ -950,6 +1020,12 @@ class ContestWalletService extends BaseService {
      */
     decryptPrivateKey(encryptedData) {
         try {
+            // Check if the data might already be in plaintext format (not JSON)
+            if (typeof encryptedData === 'string' && !encryptedData.startsWith('{')) {
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key appears to be in plaintext format already${fancyColors.RESET}`);
+                return encryptedData; // Return as-is if not in JSON format
+            }
+            
             const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
             const decipher = crypto.createDecipheriv(
                 this.config.wallet.encryption_algorithm,
@@ -967,6 +1043,14 @@ class ContestWalletService extends BaseService {
             
             return decrypted.toString();
         } catch (error) {
+            logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Decryption error: ${error.message}, length: ${encryptedData?.length}, preview: ${typeof encryptedData === 'string' ? encryptedData.substring(0, 20) + '...' : 'not a string'}${fancyColors.RESET}`);
+            
+            // If JSON parsing failed, it might be plaintext - return as-is
+            if (error.message && (error.message.includes('JSON') || error.message.includes('Unexpected token'))) {
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key appears to be unencrypted, returning as-is${fancyColors.RESET}`);
+                return encryptedData;
+            }
+            
             throw ServiceError.operation('Failed to decrypt private key', {
                 error: error.message,
                 type: 'DECRYPTION_ERROR'
@@ -983,19 +1067,95 @@ class ContestWalletService extends BaseService {
      */
     async performBlockchainTransfer(sourceWallet, destinationAddress, amount) {
         try {
+            // Log wallet info without revealing sensitive data
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Transfer ${fancyColors.RESET} ${amount} SOL from ${sourceWallet.wallet_address} to ${destinationAddress}`, {
+                is_vanity: sourceWallet.is_vanity,
+                vanity_type: sourceWallet.vanity_type,
+                wallet_db_id: sourceWallet.id,
+                contest_id: sourceWallet.contest_id,
+                wallet_address: sourceWallet.wallet_address,
+                private_key_format: typeof sourceWallet.private_key === 'string' 
+                    ? (sourceWallet.private_key.startsWith('{') ? 'JSON' : 'plaintext') 
+                    : typeof sourceWallet.private_key,
+                private_key_length: sourceWallet.private_key?.length || 0
+            });
+            
             const decryptedPrivateKey = this.decryptPrivateKey(sourceWallet.private_key);
-            const privateKeyBytes = bs58.decode(decryptedPrivateKey);
-            const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
-
-            // Use the new v2 transaction utility
-            const { signature } = await transferSOL(
-                this.connection,
-                fromKeypair,
-                destinationAddress,
-                amount
-            );
-
-            return signature;
+            
+            // Handle many different private key formats used across wallet services
+            let privateKeyBytes;
+            let fromKeypair;
+            
+            // Debug info for key troubleshooting
+            const keyInfo = {
+                wallet_address: sourceWallet.wallet_address,
+                key_length: decryptedPrivateKey.length,
+                key_format: typeof decryptedPrivateKey,
+                is_vanity: sourceWallet.is_vanity,
+                vanity_type: sourceWallet.vanity_type
+            };
+            
+            // Try different formats in order of likelihood
+            try {
+                // Method 1: First check if it might be a hex string (used in solana-wallet.js)
+                if (/^[0-9a-fA-F]+$/.test(decryptedPrivateKey)) {
+                    try {
+                        privateKeyBytes = Buffer.from(decryptedPrivateKey, 'hex');
+                        fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
+                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as hex${fancyColors.RESET}`);
+                        return await this.executeTransfer(fromKeypair, destinationAddress, amount);
+                    } catch (hexError) {
+                        keyInfo.hex_error = hexError.message;
+                        // Continue to next format
+                    }
+                }
+                
+                // Method 2: Try as base58 (commonly used for vanity wallets)
+                try {
+                    privateKeyBytes = bs58.decode(decryptedPrivateKey);
+                    fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as base58${fancyColors.RESET}`);
+                    return await this.executeTransfer(fromKeypair, destinationAddress, amount);
+                } catch (bs58Error) {
+                    keyInfo.bs58_error = bs58Error.message;
+                    // Continue to next format
+                }
+                
+                // Method 3: Try as base64 (used for generated wallets)
+                try {
+                    privateKeyBytes = Buffer.from(decryptedPrivateKey, 'base64');
+                    fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
+                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as base64${fancyColors.RESET}`);
+                    return await this.executeTransfer(fromKeypair, destinationAddress, amount);
+                } catch (base64Error) {
+                    keyInfo.base64_error = base64Error.message;
+                    // Continue to next format
+                }
+                
+                // Method 4: Check if it's a JSON string with secretKey
+                if (decryptedPrivateKey.startsWith('{') && decryptedPrivateKey.includes('secretKey')) {
+                    try {
+                        const keyObject = JSON.parse(decryptedPrivateKey);
+                        if (keyObject.secretKey && Array.isArray(keyObject.secretKey)) {
+                            privateKeyBytes = Uint8Array.from(keyObject.secretKey);
+                            fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
+                            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded from JSON format${fancyColors.RESET}`);
+                            return await this.executeTransfer(fromKeypair, destinationAddress, amount);
+                        }
+                    } catch (jsonError) {
+                        keyInfo.json_error = jsonError.message;
+                        // Continue to next format
+                    }
+                }
+                
+                // If we reach here, all formats failed
+                throw new Error("Failed to decode private key in any supported format");
+                
+            } catch (formatError) {
+                // All attempts to decode the key failed
+                logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Key Format Error ${fancyColors.RESET} Failed to decode private key: ${formatError.message}`, keyInfo);
+                throw new Error(`Cannot decode private key: ${formatError.message}`);
+            }
         } catch (error) {
             throw ServiceError.blockchain('Blockchain transfer failed', {
                 error: error.message,
@@ -1003,6 +1163,59 @@ class ContestWalletService extends BaseService {
                 destination: destinationAddress,
                 amount
             });
+        }
+    }
+    
+    // Helper to execute the actual transfer once we have a valid keypair
+    async executeTransfer(fromKeypair, destinationAddress, amount) {
+        try {
+            // Verify connection before transfer
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Checking connection before transfer`, {
+                connection_exists: !!this.connection,
+                connection_endpoint: this.connection?.rpcEndpoint,
+                connection_commitment: this.connection?.commitment
+            });
+            
+            // Directly try to get blockhash as a health check
+            try {
+                const blockHashTest = await this.connection.getLatestBlockhash();
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Pre-transfer blockhash check successful${fancyColors.RESET}`, {
+                    blockhash: blockHashTest?.value?.blockhash?.substring(0, 8) + '...',
+                    has_value: !!blockHashTest?.value
+                });
+            } catch (bhError) {
+                logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Pre-transfer blockhash check failed${fancyColors.RESET}`, {
+                    error: bhError.message
+                });
+                // Continue despite error - the main transfer will handle it appropriately
+            }
+            
+            // Use the new v2 transaction utility with enhanced error handling
+            const response = await transferSOL(
+                this.connection,
+                fromKeypair,
+                destinationAddress,
+                amount
+            );
+            
+            // Check if response exists and has signature
+            if (!response || !response.signature) {
+                throw new Error("Transfer completed but no signature was returned");
+            }
+            
+            return response.signature;
+        } catch (error) {
+            // Log the specific error with detailed information
+            logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} SOL transfer failed using @solana/transactions v2.1`, {
+                error: error.message,
+                stack: error.stack,
+                from: fromKeypair.publicKey.toString(),
+                to: destinationAddress,
+                amount: amount
+            });
+            
+            // Rethrow to allow the calling function to handle it
+            throw error;
         }
     }
 
@@ -1015,6 +1228,7 @@ class ContestWalletService extends BaseService {
      * @param {number} options.minTransfer Minimum amount to transfer (default: 0.0005 SOL)
      * @param {string} options.specificContestId Optional specific contest ID to reclaim from
      * @param {string} options.adminAddress Admin wallet address for logging
+     * @param {boolean} options.forceStatus Whether to bypass the status filter and reclaim from all contests (emergency use only)
      * @returns {Promise<Object>} Result summary
      */
     async reclaimUnusedFunds(options = {}) {
@@ -1023,10 +1237,16 @@ class ContestWalletService extends BaseService {
             minBalance = this.config.reclaim.minimumBalanceToReclaim,
             minTransfer = this.config.reclaim.minimumAmountToTransfer,
             specificContestId = null,
-            adminAddress = 'SYSTEM'
+            adminAddress = 'SYSTEM',
+            forceStatus = false
         } = options;
 
-        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}Starting reclaim operation for unused contest funds${fancyColors.RESET}`);
+        // Log start of operation with indication if this is a force reclaim
+        if (forceStatus) {
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} EMERGENCY ${fancyColors.RESET} Starting force reclaim operation for ALL contest funds`);
+        } else {
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} Starting ${fancyColors.RESET} Reclaim operation for unused contest funds`);
+        }
         
         try {
             // Get eligible contest wallets based on filters
@@ -1043,14 +1263,16 @@ class ContestWalletService extends BaseService {
                 where: {}
             };
             
-            // Add filters
+            // Add filters - bypass status filter if forceStatus is true
             if (specificContestId) {
+                // If specific contest ID is provided, always use that regardless of force flag
                 query.where.contest_id = parseInt(specificContestId);
-            } else {
+            } else if (!forceStatus) {
+                // Apply status filter only if not in force mode
                 query.where.contests = {
                     status: { in: statusFilter }
                 };
-            }
+            } // If forceStatus=true and no specificContestId, no filters - get all contests
             
             const eligibleWallets = await prisma.contest_wallets.findMany(query);
             
@@ -1122,7 +1344,7 @@ class ContestWalletService extends BaseService {
                             
                             // Check if balance meets minimum criteria
                             if (solBalance < minBalance) {
-                                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping wallet ${wallet.wallet_address} with low balance: ${solBalance.toFixed(6)} SOL`);
+                                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping wallet ${wallet.wallet_address} (low balance: ${solBalance.toFixed(6)} SOL)`);
                                 results.details.push({
                                     contest_id: wallet.contest_id,
                                     contest_code: wallet.contests?.contest_code,
@@ -1157,18 +1379,27 @@ class ContestWalletService extends BaseService {
                             logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Transferring ${transferAmount.toFixed(6)} SOL from contest ${wallet.contest_id} (${wallet.contests?.contest_code || 'Unknown'}) to treasury${fancyColors.RESET}`);
                             
                             try {
-                                // Create a transaction record
+                                // Create a transaction record without wallet_address to avoid foreign key constraint
+                                // Contest wallets don't have a corresponding user record 
+                                // Instead, we'll track the wallet through the contest_id only and 
+                                // store the wallet address in the metadata for reference
                                 const transaction = await prisma.transactions.create({
                                     data: {
-                                        wallet_address: wallet.wallet_address,
+                                        // Removed wallet_address to avoid foreign key constraint with users table
                                         type: config.transaction_types.WITHDRAWAL,
                                         amount: transferAmount,
                                         balance_before: solBalance,
                                         balance_after: solBalance - transferAmount,
                                         contest_id: wallet.contest_id,
                                         description: `Reclaiming unused funds from ${wallet.contests?.contest_code || `Contest #${wallet.contest_id}`} wallet to treasury`,
-                                        status: 'PENDING',
-                                        created_at: new Date()
+                                        status: config.transaction_statuses.PENDING,
+                                        created_at: new Date(),
+                                        // Store additional information in metadata
+                                        metadata: {
+                                            contest_wallet_address: wallet.wallet_address,
+                                            treasury_destination: this.treasuryWalletAddress,
+                                            auto_reclaim: adminAddress === 'SYSTEM_AUTO'
+                                        }
                                     }
                                 });
                                 
@@ -1183,9 +1414,15 @@ class ContestWalletService extends BaseService {
                                 await prisma.transactions.update({
                                     where: { id: transaction.id },
                                     data: {
-                                        status: 'COMPLETED',
+                                        status: config.transaction_statuses.COMPLETED,
                                         blockchain_signature: signature,
-                                        completed_at: new Date()
+                                        completed_at: new Date(),
+                                        // Update metadata with additional transaction details
+                                        metadata: {
+                                            ...transaction.metadata,
+                                            transaction_signature: signature,
+                                            completed_timestamp: new Date().toISOString()
+                                        }
                                     }
                                 });
                                 
@@ -1317,8 +1554,12 @@ class ContestWalletService extends BaseService {
                 }
             }
             
-            // Summary log
-            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}Reclaim operation completed:${fancyColors.RESET} ${results.successfulTransfers}/${results.walletsThatMeetCriteria} transfers successful, total reclaimed: ${results.totalAmountReclaimed.toFixed(6)} SOL`);
+            // Summary log with special formatting for emergency reclaims
+            if (forceStatus) {
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} EMERGENCY COMPLETE ${fancyColors.RESET} Force reclaim operation: ${results.successfulTransfers}/${results.walletsThatMeetCriteria} transfers successful, total reclaimed: ${results.totalAmountReclaimed.toFixed(6)} SOL`);
+            } else {
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} Complete ${fancyColors.RESET} Reclaim operation: ${results.successfulTransfers}/${results.walletsThatMeetCriteria} transfers successful, total reclaimed: ${results.totalAmountReclaimed.toFixed(6)} SOL`);
+            }
             
             return results;
         } catch (error) {

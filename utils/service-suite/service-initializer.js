@@ -34,7 +34,8 @@ import levelingService from '../../services/levelingService.js';
 
 // Wallet Layer
 import contestWalletService from '../../services/contestWalletService.js';
-import walletRakeService from '../../services/walletRakeService.js';
+// DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
+// import walletRakeService from '../../services/walletRakeService.js';
 import adminWalletService from '../../services/adminWalletService.js';
 import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
 
@@ -171,7 +172,8 @@ class ServiceInitializer {
         // Register wallet services 
         serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
         serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
-        serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
+        // DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
+        // serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
         
         // Ensure schema exists for user balance tracking
         await ensureSchemaExists();
@@ -206,7 +208,8 @@ class ServiceInitializer {
         // Wallet Layer Dependencies
         serviceManager.addDependency(SERVICE_NAMES.CONTEST_WALLET, SERVICE_NAMES.CONTEST_EVALUATION);
         serviceManager.addDependency(SERVICE_NAMES.ADMIN_WALLET, SERVICE_NAMES.CONTEST_WALLET);
-        serviceManager.addDependency(SERVICE_NAMES.WALLET_RAKE, SERVICE_NAMES.CONTEST_WALLET);
+        // DEPRECATED: walletRakeService dependency - service is no longer used
+        // serviceManager.addDependency(SERVICE_NAMES.WALLET_RAKE, SERVICE_NAMES.CONTEST_WALLET);
     }
 
     /**
