@@ -379,8 +379,8 @@ async function displayStartupAnimation(port, initResults = {}, success = true) {
     // Use for display
     const totalServices = effectiveTotalServices || (initializedServices.length + failedServices.length);
     
-    // Display our spectacular banner with service data
-    displayStartupBanner(port, initResults, success);
+    // Display our spectacular banner with service data and initialization logs
+    displayStartupBanner(port, initResults, success, { showInitLogs: true });
 }
 
 // Set up signal handlers for graceful shutdown

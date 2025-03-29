@@ -12,11 +12,22 @@ class StartupLogBuffer {
     
     this.logs = [];
     this.enabled = true;
-    this.maxEntries = 15; // Maximum number of log entries to keep
+    this.maxEntries = 8; // Reduced to 8 to keep the banner more concise
+    
+    // Define high priority services and initialization steps
+    this.highPriorityServices = [
+      'Database', 'WebSocket', 'MarketData', 'SolanaService', 
+      'TokenSync', 'Wallet', 'System', 'SYSTEM', 'Server',
+      'ContestService', 'WalletService', 'Achievement'
+    ];
+    
+    // Define keywords to identify important log messages
     this.importantKeywords = [
-      'initialized', 'started', 'connected', 'loaded', 'registered', 
-      'mounted', 'configuring', 'starting', 'online', 'setup', 'ready',
-      'service', 'database', 'routes', 'websocket'
+      'initialized successfully', 'connected', 'loaded', 'registered',
+      'online', 'ready', 'database', 'websocket', 'setup complete',
+      'initialization complete', 'listening on port', 'started',
+      'Service initialized', 'server online', 'HTTP server', 
+      'API server', 'initialization successful'
     ];
     
     StartupLogBuffer.instance = this;
@@ -105,7 +116,7 @@ class StartupLogBuffer {
   }
   
   /**
-   * Check if a message is important based on keywords
+   * Check if a message is important based on keywords and service context
    * @param {string} message - The log message
    * @returns {boolean} Whether the message is important
    */
@@ -113,6 +124,41 @@ class StartupLogBuffer {
     if (typeof message !== 'string') return false;
     
     const lowerMessage = message.toLowerCase();
+    
+    // Always capture server start/ready messages
+    if (
+      lowerMessage.includes('server listening') || 
+      lowerMessage.includes('server ready') ||
+      lowerMessage.includes('server online')
+    ) {
+      return true;
+    }
+    
+    // Always capture database connection success
+    if (
+      lowerMessage.includes('database') && 
+      (lowerMessage.includes('connected') || lowerMessage.includes('initialized'))
+    ) {
+      return true;
+    }
+    
+    // Always capture websocket initialization
+    if (
+      lowerMessage.includes('websocket') && 
+      (lowerMessage.includes('initialized') || lowerMessage.includes('ready'))
+    ) {
+      return true;
+    }
+    
+    // Always capture service initialization success
+    if (
+      lowerMessage.includes('initialized successfully') || 
+      lowerMessage.includes('initialization complete')
+    ) {
+      return true;
+    }
+    
+    // Check against keyword list for other messages
     return this.importantKeywords.some(keyword => 
       lowerMessage.includes(keyword)
     );
@@ -127,7 +173,7 @@ class StartupLogBuffer {
   shouldSkipMessage(message, metadata) {
     if (typeof message !== 'string') return true;
     
-    // Skip raw headers and very technical logs
+    // Skip raw headers, technical logs, and token sync warnings
     const skipPatterns = [
       'RAW HEADERS',
       'X-Forwarded-For',
@@ -136,8 +182,45 @@ class StartupLogBuffer {
       'GET /api/',
       'POST /api/',
       'req.headers',
-      'websocket headers'
+      'websocket headers',
+      'No data received', // Skip token sync warnings
+      'pump [',           // Skip token pumps
+      'Fetching token',   // Skip token fetch messages
+      'Token data',       // Skip token data messages
+      'Syncing token',    // Skip token sync messages
+      'Whitelist update', // Skip whitelist updates
+      'token_id='         // Skip token ID references
     ];
+    
+    // Skip all tokenSyncService logs that aren't critical
+    if (metadata.service === 'tokenSyncService') {
+      // Only keep critical initialization messages from token sync
+      const keepPatterns = [
+        'TokenSyncService initialized successfully', 
+        'TokenSyncService starting', 
+        'Token sync complete'
+      ];
+      
+      // If it's not one of the critical messages, skip it
+      if (!keepPatterns.some(pattern => message.includes(pattern))) {
+        return true;
+      }
+    }
+    
+    // Skip messages containing token IDs, hashes, or addresses
+    // This catches most token-related technical details
+    if (
+      // Token IDs and pumps
+      message.includes('pump [') || 
+      // Alphanumeric strings that look like hashes, keys or IDs
+      message.match(/[A-Za-z0-9]{24,}/) ||
+      // Solana addresses
+      message.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/) ||
+      // Messages with numeric token IDs
+      message.match(/token(_)?id[:=]\s*\d+/)
+    ) {
+      return true;
+    }
     
     return skipPatterns.some(pattern => message.includes(pattern));
   }

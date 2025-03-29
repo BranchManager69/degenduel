@@ -5,6 +5,115 @@ import chalk from 'chalk';
 import gradient from 'gradient-string';
 import boxen from 'boxen';
 import figlet from 'figlet';
+import { startupLogBuffer } from './startup-log-buffer.js';
+
+/**
+ * Format initialization logs for display in the banner
+ * @param {Array} logs - Array of log entries
+ * @param {boolean} success - Whether startup was successful
+ * @returns {string} Formatted logs section
+ */
+function formatInitializationLogs(logs, success) {
+  // Sort logs by timestamp
+  const sortedLogs = [...logs].sort((a, b) => a.timestamp - b.timestamp);
+  
+  // Group logs by service for better organization
+  const serviceGroups = {};
+  
+  // Pre-process logs to clean and categorize them
+  sortedLogs.forEach(log => {
+    // Standardize service name or use 'System' if not available
+    const serviceName = log.service ? 
+      (log.service.includes('Service') ? log.service : `${log.service}`)
+      : 'System';
+    
+    // Initialize service group if needed
+    if (!serviceGroups[serviceName]) {
+      serviceGroups[serviceName] = {
+        errors: [],
+        warnings: [],
+        info: []
+      };
+    }
+    
+    // Add to appropriate category
+    if (log.level === 'error') {
+      serviceGroups[serviceName].errors.push(log);
+    } else if (log.level === 'warn') {
+      serviceGroups[serviceName].warnings.push(log);
+    } else {
+      serviceGroups[serviceName].info.push(log);
+    }
+  });
+  
+  // Get all service names
+  const serviceNames = Object.keys(serviceGroups);
+  
+  // First collect all errors and warnings across services
+  const allErrors = serviceNames.flatMap(name => serviceGroups[name].errors);
+  const allWarnings = serviceNames.flatMap(name => serviceGroups[name].warnings);
+  
+  // Then collect most important info message from each service
+  const importantInfos = serviceNames.map(name => {
+    const infos = serviceGroups[name].info;
+    // Find most important info message
+    return infos.filter(log => log.important).sort((a, b) => b.timestamp - a.timestamp)[0] ||
+           infos.sort((a, b) => b.timestamp - a.timestamp)[0];
+  }).filter(Boolean); // Remove undefined entries
+  
+  // Combine and prioritize logs
+  const prioritizedLogs = [
+    ...allErrors,
+    ...allWarnings,
+    ...importantInfos
+  ].slice(0, 8); // Take only top 8 logs
+  
+  // No logs? Return nothing
+  if (prioritizedLogs.length === 0) return '';
+  
+  // Format each log entry with improved styling
+  const formattedLogs = prioritizedLogs.map(log => {
+    // Choose icon and color based on log level
+    const icon = log.level === 'error' ? '❌' : 
+                 log.level === 'warn' ? '⚠️' : 
+                 log.important ? '✅' : '•';
+    
+    // Choose color based on log level
+    const color = log.level === 'error' ? chalk.red :
+                  log.level === 'warn' ? chalk.yellow :
+                  log.important ? chalk.green :
+                  chalk.gray;
+    
+    // Format service name with consistent styling
+    const serviceName = log.service || 'System';
+    const formattedServiceName = chalk.blueBright(`[${serviceName}]`);
+    
+    // Clean and format the message
+    let message = log.message;
+    
+    // Trim common prefixes that repeat the service name
+    if (log.service && message.startsWith(log.service)) {
+      message = message.substring(log.service.length).trim();
+      // Remove any leading separators
+      message = message.replace(/^[:\-\s]+/, '');
+    }
+    
+    // Capitalize first letter for consistency
+    if (message.length > 0) {
+      message = message.charAt(0).toUpperCase() + message.slice(1);
+    }
+    
+    // Return formatted log entry
+    return `   ${icon} ${formattedServiceName} ${color(message)}`;
+  });
+  
+  // Create section header with more prominence
+  const headerColor = success ? chalk.cyan.bold : chalk.yellow.bold;
+  const header = headerColor('🔍 INITIALIZATION SUMMARY:');
+  
+  // Return complete section with better spacing
+  return [header, ...formattedLogs].join('\n');
+}
 
 /**
  * Creates a spectacular server startup banner
@@ -87,6 +196,12 @@ export function createStartupBanner(options) {
   const formattedTime = now.toLocaleTimeString('en-US', timeOptions);
   const timestampLine = chalk.gray(`Launched: ${formattedDate} at ${chalk.white(formattedTime)}`);
 
+  // Format the initialization logs
+  const initLogs = startupLogBuffer.getLogs();
+  const formattedInitLogs = initLogs.length > 0 
+    ? formatInitializationLogs(initLogs, success) 
+    : '';
+  
   // Build the banner content with vibrant colors
   const content = [
     titleGradient(title),
@@ -99,6 +214,8 @@ export function createStartupBanner(options) {
     environmentLine,
     statusDetailLine,
     '',
+    // Add initialization logs section if there are any
+    ...(formattedInitLogs ? [formattedInitLogs, ''] : []),
     gloryLine,
     '',
     timestampLine
@@ -127,9 +244,13 @@ export function createStartupBanner(options) {
  * @param {number} port - The server port
  * @param {Object} initResults - Service initialization results
  * @param {boolean} success - Whether server started successfully
- * @param {string} environment - Current environment
+ * @param {Object} options - Additional options
+ * @param {boolean} options.showInitLogs - Whether to show initialization logs (defaults to true)
  */
-export function displayStartupBanner(port, initResults = {}, success = true) {
+export function displayStartupBanner(port, initResults = {}, success = true, options = {}) {
+  // Extract options
+  const { showInitLogs = true } = options;
+  
   // Helper to format time
   const formatDuration = (seconds) => {
     if (seconds < 60) return `${seconds.toFixed(2)}s`;
@@ -162,6 +283,10 @@ export function displayStartupBanner(port, initResults = {}, success = true) {
   });
   
   console.log(banner);
+  
+  // After displaying the banner, clear the log buffer to free memory
+  // if we've shown the logs
+  startupLogBuffer.clear();
   
   // Return true to indicate banner was displayed
   return true;
