@@ -30,7 +30,11 @@ import serviceEvents from '../../utils/service-suite/service-events.js';
 
 // Use message types and topics from config
 const MESSAGE_TYPES = config.websocket.messageTypes;
-const TOPICS = config.websocket.topics;
+const TOPICS = {
+  ...config.websocket.topics,
+  // Add client logs topic
+  LOGS: 'logs'
+};
 
 /**
  * Unified WebSocket Server
@@ -245,6 +249,13 @@ class UnifiedWebSocketServer {
         return this.sendError(ws, 'Message type is required', 4001);
       }
       
+      // Special handling for client logs - they can be processed directly
+      // This allows logs to be sent without requiring subscription first
+      if (message.type === 'LOGS' || (message.type === MESSAGE_TYPES.DATA && message.topic === TOPICS.LOGS)) {
+        await this.handleClientLogs(ws, message);
+        return;
+      }
+      
       // Process based on message type
       switch (message.type) {
         case MESSAGE_TYPES.SUBSCRIBE:
@@ -450,6 +461,10 @@ class UnifiedWebSocketServer {
           await this.handleUserRequest(ws, message);
           break;
           
+        case TOPICS.LOGS:
+          await this.handleLogsRequest(ws, message);
+          break;
+          
         // Add cases for other topics as needed
         
         default:
@@ -502,6 +517,104 @@ class UnifiedWebSocketServer {
         
       default:
         this.sendError(ws, `Unknown action for market data: ${message.action}`, 4009);
+    }
+  }
+  
+  /**
+   * Handle logs requests
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Object} message - Parsed message
+   */
+  async handleLogsRequest(ws, message) {
+    switch (message.action) {
+      case 'getStatus':
+        // Return log system status
+        this.send(ws, {
+          type: MESSAGE_TYPES.DATA,
+          topic: TOPICS.LOGS,
+          action: 'getStatus',
+          requestId: message.requestId,
+          data: {
+            status: 'operational',
+            version: '1.0.0',
+            transport: 'websocket'
+          },
+          timestamp: new Date().toISOString()
+        });
+        break;
+        
+      default:
+        this.sendError(ws, `Unknown action for logs: ${message.action}`, 4009);
+    }
+  }
+  
+  /**
+   * Handle client logs directly sent from client
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Object} message - Parsed client log message
+   */
+  async handleClientLogs(ws, message) {
+    try {
+      // Extract logs from message
+      const { logs } = message;
+      
+      if (!logs || !Array.isArray(logs) || logs.length === 0) {
+        return this.sendError(ws, 'Invalid logs format: logs array is required', 4015);
+      }
+      
+      // Process each log entry
+      logs.forEach(logEntry => {
+        // Extract log data
+        const { level, message: logMessage, timestamp, tags, stack, ...details } = logEntry;
+        
+        // Map client level to server level (fallback to info)
+        const serverLevel = ['error', 'warn', 'info', 'http', 'debug'].includes(level) 
+          ? level 
+          : 'info';
+        
+        // Format client information
+        const clientContext = {
+          clientLogger: true,
+          clientIp: ws.clientInfo?.ip,
+          clientInfo: ws.clientInfo,
+          sessionId: details.sessionId || message.sessionId,
+          service: 'CLIENT',
+          userId: details.userId || message.userId || ws.clientInfo?.userId,
+          walletAddress: ws.clientInfo?.userId, // In WebSocket, userId is the wallet address
+          tags: tags || message.tags,
+          stack,
+          batchId: message.batchId,
+          frontend: true,
+          transport: 'websocket'
+        };
+        
+        // Send to server logger
+        if (logApi[serverLevel]) {
+          logApi[serverLevel](
+            `[Client] ${logMessage || 'No message provided'}`, 
+            { ...clientContext, ...details }
+          );
+        } else {
+          logApi.info(
+            `[Client] ${logMessage || 'No message provided'}`, 
+            { level: serverLevel, ...clientContext, ...details }
+          );
+        }
+      });
+      
+      // Send acknowledgment
+      this.send(ws, {
+        type: MESSAGE_TYPES.ACKNOWLEDGMENT,
+        topic: TOPICS.LOGS,
+        message: 'Logs received',
+        count: logs.length,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Log summary (debug level to avoid log flooding)
+      logApi.debug(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Received ${logs.length} client logs via WebSocket${fancyColors.RESET}`);
+    } catch (error) {
+      logApi.error(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.RED}Error processing client logs:${fancyColors.RESET}`, error);
     }
   }
   

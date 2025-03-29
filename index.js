@@ -101,6 +101,8 @@ import virtualAgentRoutes from "./routes/virtual-agent.js";
 import deviceRoutes from "./routes/devices.js";
 // AI chat routes
 import aiRoutes from "./routes/ai.js";
+// Client logging routes
+import logsRoutes from "./routes/logs.js";
 // Path module for static file serving
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -263,6 +265,8 @@ app.use("/api/referrals", maintenanceCheck, referralRoutes);
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
 // AI chat routes (inaccessible when in maintenance mode)
 app.use("/api/ai", maintenanceCheck, aiRoutes);
+// Client logging routes (no maintenance check to collect errors during maintenance)
+app.use("/api/logs", logsRoutes);
 // Test routes (no maintenance check needed)
 app.use("/api/test", testRoutes);
 
