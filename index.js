@@ -357,16 +357,11 @@ if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('✓ All Routes Mounted');
 }
 
+// Import our spectacular startup banner
+import { displayStartupBanner } from './utils/startup-banner.js';
+
 // Streamlined startup animation function
 async function displayStartupAnimation(port, initResults = {}, success = true) {
-    // Helper to format time
-    const formatDuration = (seconds) => {
-        if (seconds < 60) return `${seconds.toFixed(2)}s`;
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}m ${remainingSeconds.toFixed(0)}s`;
-    };
-
     // Get service metrics from initResults
     const initializedServices = initResults.Services?.initialized || [];
     const failedServices = initResults.Services?.failed || [];
@@ -384,27 +379,8 @@ async function displayStartupAnimation(port, initResults = {}, success = true) {
     // Use for display
     const totalServices = effectiveTotalServices || (initializedServices.length + failedServices.length);
     
-    // Get duration
-    const duration = formatDuration(process.uptime());
-    
-    // Create simple animation
-    const banner = `
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                                              ┃
-┃                     DEGEN DUEL ARENA                         ┃
-┃             ${success ? '✅ SERVER INITIALIZATION COMPLETE' : '❌ SERVER INITIALIZATION FAILED'}             ┃
-┃                                                              ┃
-┃  🔢 Port: ${port}                                              ┃
-┃  ⏱️  Startup Time: ${duration}                                   ┃
-┃  🌐 Services: ${initializedServices.length}/${totalServices} Online                               ┃
-┃                                                              ┃
-┃                   ⚔️  GLORY AWAITS  ⚔️                        ┃
-┃                                                              ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-`;
-    
-    // Display startup information
-    console.log(banner);
+    // Display our spectacular banner with service data
+    displayStartupBanner(port, initResults, success);
 }
 
 // Set up signal handlers for graceful shutdown

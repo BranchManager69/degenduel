@@ -312,6 +312,7 @@ const config = {
     auth: process.env.AUTH_DEBUG_MODE || 'false',
     api: process.env.DD_API_DEBUG_MODE || 'false',
     middleware: process.env.MIDDLEWARE_DEBUG_MODE || 'false',
+    websocket: process.env.WEBSOCKET_DEBUG_MODE || 'false',
   },
   
   // Service profiles for different environments

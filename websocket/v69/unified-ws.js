@@ -22,7 +22,9 @@ import prisma from '../../config/prisma.js';
 // Config
 import config from '../../config/config.js';
 const AUTH_DEBUG_MODE = config.debug_modes.auth === true || config.debug_modes.auth === 'true';
+const WS_DEBUG_MODE = config.debug_modes.websocket === true || config.debug_modes.websocket === 'true';
 logApi.info('AUTH_DEBUG_MODE (unified-ws):', AUTH_DEBUG_MODE);
+logApi.info('WS_DEBUG_MODE (unified-ws):', WS_DEBUG_MODE);
 
 // Import services as needed
 import marketDataService from '../../services/marketDataService.js';
@@ -74,19 +76,30 @@ class UnifiedWebSocketServer {
       },
       // Create custom verifyClient function to add more logging
       verifyClient: (info, callback) => {
-        // Log detailed client info before verification
-        logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENT VERIFY ${fancyColors.RESET}`, {
-          clientConnInfo: {
-            origin: info.origin,
-            secure: info.secure,
-            req: {
-              url: info.req.url,
-              headers: info.req.headers
-            }
-          },
-          _icon: "🔍",
-          _color: "#0088FF"
-        });
+        // Log detailed client info before verification (only if debug mode is enabled)
+        if (WS_DEBUG_MODE) {
+          logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENT VERIFY ${fancyColors.RESET}`, {
+            clientConnInfo: {
+              origin: info.origin,
+              secure: info.secure,
+              req: {
+                url: info.req.url,
+                headers: info.req.headers
+              }
+            },
+            _icon: "🔍",
+            _color: "#0088FF"
+          });
+        } else {
+          // Log a more concise verification message in normal mode
+          logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} Connection from ${info.origin}`, {
+            ip: info.req.headers['x-real-ip'] || info.req.headers['x-forwarded-for'] || info.req.socket?.remoteAddress,
+            environment: config.getEnvironment(info.origin),
+            service: 'unified-ws',
+            _icon: "🔌", 
+            _color: "#E91E63"
+          });
+        }
         
         // Always accept connections - we'll handle auth later
         callback(true);
@@ -151,20 +164,22 @@ class UnifiedWebSocketServer {
       // Set up error handler
       ws.on('error', (error) => this.handleError(ws, error));
       
-      // Log all available headers BEFORE we process them
-      logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} RAW HEADERS ${fancyColors.RESET}`, {
-        unifiedWS: true,
-        rawHeaders: req.headers,
-        socketInfo: {
-          remoteAddress: req.socket?.remoteAddress,
-          remotePort: req.socket?.remotePort,
-          protocol: req.protocol,
-          url: req.url,
-          method: req.method
-        },
-        _icon: "📋",
-        _color: "#FF8800"
-      });
+      // Log all available headers BEFORE we process them (only if debug mode is enabled)
+      if (WS_DEBUG_MODE) {
+        logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} RAW HEADERS ${fancyColors.RESET}`, {
+          unifiedWS: true,
+          rawHeaders: req.headers,
+          socketInfo: {
+            remoteAddress: req.socket?.remoteAddress,
+            remotePort: req.socket?.remotePort,
+            protocol: req.protocol,
+            url: req.url,
+            method: req.method
+          },
+          _icon: "📋",
+          _color: "#FF8800"
+        });
+      }
       
       // Extract and store all headers for logging and debugging
       const headerEntries = Object.entries(req.headers || {});
@@ -211,6 +226,8 @@ class UnifiedWebSocketServer {
         origin: ws.clientInfo.origin || 'unknown',
         userAgent: ws.clientInfo.userAgent || 'unknown',
         timestamp: new Date().toISOString(),
+        environment: config.getEnvironment(ws.clientInfo.origin),
+        service: 'unified-ws',
         important_headers: importantHeaders.reduce((obj, key) => {
           obj[key] = req.headers[key] || 'missing';
           return obj;
@@ -329,7 +346,14 @@ class UnifiedWebSocketServer {
           }
           this.clientsByUserId.get(authData.userId).add(ws);
           
-          logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Client authenticated: ${authData.userId}${fancyColors.RESET}`);
+          logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Client authenticated: ${authData.userId}${fancyColors.RESET}`, {
+      environment: config.getEnvironment(ws.clientInfo?.origin),
+      service: 'unified-ws',
+      userId: authData.userId,
+      role: authData.role,
+      _icon: "🔐",
+      _color: "#3F51B5"
+    });
         } catch (error) {
           logApi.error(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.RED}Authentication error:${fancyColors.RESET}`, error);
           return this.sendError(ws, 'Invalid authentication token', 4011);
@@ -386,7 +410,15 @@ class UnifiedWebSocketServer {
       timestamp: new Date().toISOString()
     });
     
-    logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Client subscribed to topics: ${validTopics.join(', ')}${fancyColors.RESET}`);
+    logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Client subscribed to topics: ${validTopics.join(', ')}${fancyColors.RESET}`, {
+      environment: config.getEnvironment(ws.clientInfo?.origin),
+      service: 'unified-ws',
+      topics: validTopics,
+      userId: ws.clientInfo?.userId || null,
+      isAuthenticated: ws.clientInfo?.isAuthenticated || false,
+      _icon: "📥",
+      _color: "#4CAF50"
+    });
   }
   
   /**
@@ -432,7 +464,15 @@ class UnifiedWebSocketServer {
       timestamp: new Date().toISOString()
     });
     
-    logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Client unsubscribed from topics: ${message.topics.join(', ')}${fancyColors.RESET}`);
+    logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Client unsubscribed from topics: ${message.topics.join(', ')}${fancyColors.RESET}`, {
+      environment: config.getEnvironment(ws.clientInfo?.origin),
+      service: 'unified-ws',
+      topics: message.topics,
+      userId: ws.clientInfo?.userId || null,
+      isAuthenticated: ws.clientInfo?.isAuthenticated || false,
+      _icon: "📤",
+      _color: "#FFC107"
+    });
   }
   
   /**
@@ -908,6 +948,8 @@ class UnifiedWebSocketServer {
         userId: userId,
         isAuthenticated: !!authData,
         timestamp: disconnectTime.toISOString(),
+        environment: config.getEnvironment(ws.clientInfo?.origin),
+        service: 'unified-ws',
         connection_duration: {
           ms: durationMs,
           seconds: durationSeconds,
@@ -944,6 +986,8 @@ class UnifiedWebSocketServer {
       userId: ws.clientInfo?.userId || null,
       isAuthenticated: ws.clientInfo?.isAuthenticated || false,
       timestamp: new Date().toISOString(),
+      environment: config.getEnvironment(ws.clientInfo?.origin),
+      service: 'unified-ws',
       clientHeaders: ws.clientInfo?.headers || {},
       connectionAge: ws.clientInfo?.connectedAt 
         ? `${Math.floor((Date.now() - ws.clientInfo.connectedAt) / 1000)}s` 
@@ -1014,7 +1058,14 @@ class UnifiedWebSocketServer {
     }
     
     if (sentCount > 0) {
-      logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Broadcast to topic ${topic}: ${sentCount} clients${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Broadcast to topic ${topic}: ${sentCount} clients${fancyColors.RESET}`, {
+        environment: config.getEnvironment(),
+        service: 'unified-ws',
+        topic: topic,
+        clients: sentCount,
+        _icon: "📢",
+        _color: "#4CAF50"
+      });
     }
     
     // Update metrics
@@ -1043,7 +1094,14 @@ class UnifiedWebSocketServer {
     }
     
     if (sentCount > 0) {
-      logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Sent to user ${userId}: ${sentCount} clients${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Sent to user ${userId}: ${sentCount} clients${fancyColors.RESET}`, {
+        environment: config.getEnvironment(),
+        service: 'unified-ws',
+        userId: userId,
+        clients: sentCount,
+        _icon: "📨",
+        _color: "#2196F3"
+      });
     }
   }
   

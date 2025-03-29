@@ -662,11 +662,123 @@ function formatAdminAction(details) {
 }
 
 // Modify the customFormat to properly handle these special cases
+// Format WebSocket logs more concisely based on debug mode
+function formatWebSocketLog(ts, levelStyle, message, service, metadata, level) {
+  // Check if this is a WebSocket message and if debug mode is enabled
+  const isWebSocketLog = service === 'unified-ws' || message.includes('[unified-ws]');
+  const wsDebugMode = config.debug_modes?.websocket === true || config.debug_modes?.websocket === 'true';
+  
+  // If not a WebSocket log, return null to use normal formatting
+  if (!isWebSocketLog) {
+    return null;
+  }
+  
+  // Handle different WebSocket log patterns
+  const serviceInfo = SERVICE_COLORS[service] || SERVICE_COLORS.WEBSOCKET;
+  
+  // Use shorter "dev" instead of "development" to prevent log wrapping
+  const envLabel = metadata.environment === 'development' ? 'dev' : metadata.environment;
+  const envSystemLabel = environment === 'development' ? 'dev' : environment;
+  const envPrefix = metadata.environment ? 
+    `${chalk.bgMagenta(chalk.white(` ${envLabel} `))} ` : 
+    `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
+  
+  // In full debug mode, show everything
+  if (wsDebugMode) {
+    // Keep original verbose format for debugging
+    const formattedMessage = envPrefix + 
+      `${serviceInfo.icon} ` +
+      chalk.hex(serviceInfo.color)(message);
+    
+    // Format metadata more compactly but still include it
+    const meta = Object.keys(metadata).length
+      ? chalk.gray(JSON.stringify(formatMetadata(metadata, level), null, 0))
+      : "";
+    
+    return `${ts} ${levelStyle.badge} ${formattedMessage}${meta ? " " + meta : ""}`;
+  }
+  
+  // For normal mode, create more concise logs
+  
+  // CONNECTION LOGS - simplify to just show connection status and important details
+  if (message.includes('Client connected') || message.includes('Client disconnected')) {
+    const ip = metadata.ip || 'unknown';
+    const origin = metadata.origin || 'unknown';
+    const userId = metadata.userId || 'anonymous';
+    const isAuth = metadata.isAuthenticated || false;
+    
+    // Create concise connection message
+    const connectionStatus = message.includes('connected') ? 
+      chalk.green('CONNECT') : chalk.yellow('DISCONNECT');
+    
+    const durationInfo = metadata.connection_duration ? 
+      ` (${chalk.cyan(metadata.connection_duration.human)})` : '';
+      
+    const userInfo = userId !== 'anonymous' ? 
+      ` ${chalk.hex('#FFA500')('user:')} ${chalk.yellow(userId.slice(0, 8))}...` : '';
+    
+    return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${connectionStatus} ${chalk.gray(ip)} from ${chalk.cyan(origin.replace(/^https?:\/\//, ''))}${userInfo}${durationInfo}`;
+  }
+  
+  // CLIENT VERIFY - just show a simple verification message
+  if (message.includes('CLIENT VERIFY')) {
+    const clientIP = metadata.clientConnInfo?.req?.headers?.['x-real-ip'] || 
+                    metadata.clientConnInfo?.req?.headers?.['x-forwarded-for'] || 
+                    'unknown';
+    const origin = metadata.clientConnInfo?.origin || 'unknown';
+    
+    return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${chalk.blue('VERIFY')} ${chalk.gray(clientIP)} from ${chalk.cyan(origin.replace(/^https?:\/\//, ''))}`;
+  }
+  
+  // RAW HEADERS - omit completely in normal mode
+  if (message.includes('RAW HEADERS')) {
+    // Skip completely unless in debug mode
+    return null;
+  }
+  
+  // SUBSCRIPTION messages - show topic and counts
+  if (message.includes('subscribed to topics')) {
+    const topics = metadata.topics || [];
+    return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${chalk.green('SUB')} ${chalk.cyan(topics.join(', '))}`;
+  }
+  
+  // UNSUBSCRIPTION messages
+  if (message.includes('unsubscribed from topics')) {
+    const topics = metadata.topics || [];
+    return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${chalk.yellow('UNSUB')} ${chalk.cyan(topics.join(', '))}`;
+  }
+  
+  // BROADCAST messages - just show counts
+  if (message.includes('Broadcast to topic') || message.includes('Broadcast to all')) {
+    const count = message.match(/(\d+) clients/) || ['0', '0'];
+    const topic = message.includes('Broadcast to topic') ? 
+      message.replace('Broadcast to topic ', '').split(':')[0] : 'all';
+    
+    return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${chalk.magenta('BROADCAST')} ${chalk.cyan(topic)} → ${chalk.yellow(count[1])} clients`;
+  }
+  
+  // For other WebSocket logs, use a standard abbreviated format
+  const shortMessage = message.replace('[unified-ws]', '').trim();
+  return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${shortMessage}`;
+}
+
+// Import the startup log buffer to capture initialization logs
+import { startupLogBuffer } from '../startup-log-buffer.js';
+
 const customFormat = winston.format.printf(
   ({ level, message, timestamp, service, ...metadata }) => {
+    // Add to startup log buffer first (this will only capture important logs)
+    startupLogBuffer.addLog(level, message, { service, ...metadata });
+
     const ts = chalk.gray(formatTimestamp(timestamp));
     const levelStyle = LEVEL_STYLES[level] || LEVEL_STYLES.info;
     const serviceInfo = SERVICE_COLORS[service] || SERVICE_COLORS.DEFAULT;
+
+    // Try WebSocket formatter first
+    const wsFormatted = formatWebSocketLog(ts, levelStyle, message, service, metadata, level);
+    if (wsFormatted !== null) {
+      return wsFormatted;
+    }
 
     // Handle Memory Stats
     if (message.includes('Memory Stats')) {
