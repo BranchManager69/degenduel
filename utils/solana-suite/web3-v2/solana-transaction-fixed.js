@@ -60,6 +60,7 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
     
     // Create an RPC client - using the connection directly
     // but all RPC calls will go through the centralized queue
+    logApi.info(`Creating RPC client with endpoint: ${connection.rpcEndpoint}, commitment: ${connection.commitment || 'confirmed'}`);
     const rpc = createSolanaRpc({ 
       url: connection.rpcEndpoint,
       commitment: connection.commitment
@@ -78,10 +79,29 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
       );
       
       // Log the result to help diagnose issues
-      if (getBlockhashResult && getBlockhashResult.value && getBlockhashResult.value.blockhash) {
-        logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager)`);
+      logApi.info(`Raw blockhash result: ${JSON.stringify(getBlockhashResult)}`);
+      
+      // Handle different response formats - direct blockhash or value.blockhash structure
+      if (getBlockhashResult) {
+        if (getBlockhashResult.value && getBlockhashResult.value.blockhash) {
+          // Standard format with value.blockhash
+          logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager - standard format)`);
+        } else if (getBlockhashResult.blockhash) {
+          // Direct format with just blockhash property
+          logApi.info(`Blockhash result: ${getBlockhashResult.blockhash.substring(0, 8)}... (success via SolanaServiceManager - direct format)`);
+          
+          // Normalize the format to match expected structure
+          getBlockhashResult = {
+            value: {
+              blockhash: getBlockhashResult.blockhash,
+              lastValidBlockHeight: getBlockhashResult.lastValidBlockHeight
+            }
+          };
+        } else {
+          logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+        }
       } else {
-        logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+        logApi.warn(`Blockhash result from SolanaServiceManager is null or undefined`);
       }
     } catch (serviceError) {
       // Log the error from SolanaServiceManager
@@ -127,7 +147,13 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
     const view = new DataView(data.buffer, 1);
     view.setBigUint64(0, BigInt(amountInLamports), true);
     
-    // Create the transfer instruction using base58 strings for pubkeys
+    // Log addresses for debugging
+    logApi.info(`Creating transfer instruction with addresses:
+      - From: ${fromKeypair.publicKey.toString()} (${typeof fromKeypair.publicKey.toBase58()}, ${fromKeypair.publicKey.toBase58().length} chars)
+      - To: ${toPubkey.toString()} (${typeof toPubkey.toBase58()}, ${toPubkey.toBase58().length} chars)
+      - Program: ${systemProgramId} (${systemProgramId.length} chars)`);
+    
+    // Create the transfer instruction using PublicKey objects directly but serializing them properly
     const transferInstruction = {
       programId: systemProgramId,
       accounts: [
@@ -141,11 +167,17 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
     // Create an empty transaction message with version 0
     let txMessage = createTransactionMessage({ version: 0 });
     
-    // Set the fee payer using base58 string
+    // Set the fee payer using base58 string as required by the library
     txMessage = setTransactionMessageFeePayer(fromKeypair.publicKey.toBase58(), txMessage);
     
-    // Set transaction lifetime using blockhash
-    txMessage = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash.blockhash, txMessage);
+    // Set transaction lifetime using blockhash - making sure we pass the right object structure
+    // The library expects an object with blockhash property, not just a string
+    const blockHashForLifetime = typeof latestBlockhash === 'string' 
+        ? { blockhash: latestBlockhash } 
+        : latestBlockhash;
+    
+    logApi.info(`Setting lifetime using blockhash structure: ${JSON.stringify(blockHashForLifetime)}`);
+    txMessage = setTransactionMessageLifetimeUsingBlockhash(blockHashForLifetime, txMessage);
     
     // Add the transfer instruction to the message
     txMessage = appendTransactionMessageInstruction(transferInstruction, txMessage);
@@ -251,10 +283,29 @@ export async function transferToken(
       );
       
       // Log the result to help diagnose issues
-      if (getBlockhashResult && getBlockhashResult.value && getBlockhashResult.value.blockhash) {
-        logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager)`);
+      logApi.info(`Raw blockhash result: ${JSON.stringify(getBlockhashResult)}`);
+      
+      // Handle different response formats - direct blockhash or value.blockhash structure
+      if (getBlockhashResult) {
+        if (getBlockhashResult.value && getBlockhashResult.value.blockhash) {
+          // Standard format with value.blockhash
+          logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager - standard format)`);
+        } else if (getBlockhashResult.blockhash) {
+          // Direct format with just blockhash property
+          logApi.info(`Blockhash result: ${getBlockhashResult.blockhash.substring(0, 8)}... (success via SolanaServiceManager - direct format)`);
+          
+          // Normalize the format to match expected structure
+          getBlockhashResult = {
+            value: {
+              blockhash: getBlockhashResult.blockhash,
+              lastValidBlockHeight: getBlockhashResult.lastValidBlockHeight
+            }
+          };
+        } else {
+          logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+        }
       } else {
-        logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+        logApi.warn(`Blockhash result from SolanaServiceManager is null or undefined`);
       }
     } catch (serviceError) {
       // Log the error from SolanaServiceManager
@@ -297,7 +348,7 @@ export async function transferToken(
     const view = new DataView(data.buffer, 1);
     view.setBigUint64(0, BigInt(amount), true);
     
-    // Create the token transfer instruction using base58 strings for pubkeys
+    // Create the token transfer instruction using base58 strings as required by the library
     const transferInstruction = {
       programId: tokenProgramId,
       accounts: [
@@ -312,11 +363,17 @@ export async function transferToken(
     // Create an empty transaction message with version 0
     let txMessage = createTransactionMessage({ version: 0 });
     
-    // Set the fee payer using base58 string
+    // Set the fee payer using base58 string as required by the library
     txMessage = setTransactionMessageFeePayer(fromKeypair.publicKey.toBase58(), txMessage);
     
-    // Set transaction lifetime using blockhash
-    txMessage = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash.blockhash, txMessage);
+    // Set transaction lifetime using blockhash - making sure we pass the right object structure
+    // The library expects an object with blockhash property, not just a string
+    const blockHashForLifetime = typeof latestBlockhash === 'string' 
+        ? { blockhash: latestBlockhash } 
+        : latestBlockhash;
+    
+    logApi.info(`Setting lifetime using blockhash structure: ${JSON.stringify(blockHashForLifetime)}`);
+    txMessage = setTransactionMessageLifetimeUsingBlockhash(blockHashForLifetime, txMessage);
     
     // Add the transfer instruction to the message
     txMessage = appendTransactionMessageInstruction(transferInstruction, txMessage);
@@ -400,10 +457,29 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
       );
       
       // Log the result to help diagnose issues
-      if (getBlockhashResult && getBlockhashResult.value && getBlockhashResult.value.blockhash) {
-        logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager)`);
+      logApi.info(`Raw blockhash result: ${JSON.stringify(getBlockhashResult)}`);
+      
+      // Handle different response formats - direct blockhash or value.blockhash structure
+      if (getBlockhashResult) {
+        if (getBlockhashResult.value && getBlockhashResult.value.blockhash) {
+          // Standard format with value.blockhash
+          logApi.info(`Blockhash result: ${getBlockhashResult.value.blockhash.substring(0, 8)}... (success via SolanaServiceManager - standard format)`);
+        } else if (getBlockhashResult.blockhash) {
+          // Direct format with just blockhash property
+          logApi.info(`Blockhash result: ${getBlockhashResult.blockhash.substring(0, 8)}... (success via SolanaServiceManager - direct format)`);
+          
+          // Normalize the format to match expected structure
+          getBlockhashResult = {
+            value: {
+              blockhash: getBlockhashResult.blockhash,
+              lastValidBlockHeight: getBlockhashResult.lastValidBlockHeight
+            }
+          };
+        } else {
+          logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+        }
       } else {
-        logApi.warn(`Blockhash result from SolanaServiceManager has invalid format: ${JSON.stringify(getBlockhashResult || 'null')}`);
+        logApi.warn(`Blockhash result from SolanaServiceManager is null or undefined`);
       }
     } catch (serviceError) {
       // Log the error from SolanaServiceManager
@@ -446,7 +522,7 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
     const view = new DataView(data.buffer, 1);
     view.setBigUint64(0, BigInt(LAMPORTS_PER_SOL), true);
     
-    // Create the transfer instruction using base58 strings for pubkeys
+    // Create the transfer instruction using base58 strings as required by the library
     const transferInstruction = {
       programId: systemProgramId,
       accounts: [
@@ -460,11 +536,17 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
     // Create an empty transaction message with version 0
     let txMessage = createTransactionMessage({ version: 0 });
     
-    // Set the fee payer using base58 string
+    // Set the fee payer using base58 string as required by the library
     txMessage = setTransactionMessageFeePayer(fromPubkey.toBase58(), txMessage);
     
-    // Set transaction lifetime using blockhash
-    txMessage = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash.blockhash, txMessage);
+    // Set transaction lifetime using blockhash - making sure we pass the right object structure
+    // The library expects an object with blockhash property, not just a string
+    const blockHashForLifetime = typeof latestBlockhash === 'string' 
+        ? { blockhash: latestBlockhash } 
+        : latestBlockhash;
+    
+    logApi.info(`Setting lifetime using blockhash structure: ${JSON.stringify(blockHashForLifetime)}`);
+    txMessage = setTransactionMessageLifetimeUsingBlockhash(blockHashForLifetime, txMessage);
     
     // Add the transfer instruction to the message
     txMessage = appendTransactionMessageInstruction(transferInstruction, txMessage);
