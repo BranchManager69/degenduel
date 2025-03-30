@@ -148,7 +148,18 @@ class ServiceInitializer {
         
         // Register contest related services
         serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
-        serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
+        
+        // Register contest scheduler if enabled in the service profile
+        if (config.services.contest_scheduler) {
+            if (VERBOSE_SERVICE_INIT_LOGS) {
+                logApi.info(`${fancyColors.YELLOW}┃ 🔹 Registering Contest Scheduler Service ${fancyColors.RESET}`);
+            }
+            serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
+        } else {
+            if (VERBOSE_SERVICE_INIT_LOGS) {
+                logApi.info(`${fancyColors.YELLOW}┃ 🚫 Contest Scheduler Service is disabled in this environment ${fancyColors.RESET}`);
+            }
+        }
         
         // Register additional contest-related services
         serviceManager.register(achievementService, []); // No hard dependencies
@@ -186,30 +197,63 @@ class ServiceInitializer {
 
     /**
      * Register the dependencies between the services
+     * Respects service profiles to avoid dependency issues with disabled services
      */
     static registerDependencies() {
+        // Helper function to check if a service is enabled in the current profile
+        const isServiceEnabled = (serviceName) => {
+            // Map service names to config property names
+            const serviceConfigMap = {
+                [SERVICE_NAMES.TOKEN_SYNC]: 'token_sync',
+                [SERVICE_NAMES.MARKET_DATA]: 'market_data',
+                [SERVICE_NAMES.CONTEST_EVALUATION]: 'contest_evaluation',
+                [SERVICE_NAMES.TOKEN_WHITELIST]: 'token_whitelist',
+                [SERVICE_NAMES.LIQUIDITY]: 'liquidity',
+                [SERVICE_NAMES.USER_BALANCE_TRACKING]: 'user_balance_tracking',
+                [SERVICE_NAMES.WALLET_RAKE]: 'wallet_rake',
+                [SERVICE_NAMES.CONTEST_SCHEDULER]: 'contest_scheduler',
+                [SERVICE_NAMES.ACHIEVEMENT]: 'achievement_service',
+                [SERVICE_NAMES.REFERRAL]: 'referral_service',
+                [SERVICE_NAMES.LEVELING]: 'leveling_service',
+                [SERVICE_NAMES.CONTEST_WALLET]: 'contest_wallet_service',
+                [SERVICE_NAMES.ADMIN_WALLET]: 'admin_wallet_service',
+                // Add other services as they get profile support
+            };
+            
+            const configProp = serviceConfigMap[serviceName];
+            if (!configProp) return true; // If no mapping exists, assume enabled
+            
+            // Check if the service is enabled in the current profile
+            return config.services[configProp] !== false;
+        };
+        
+        // Helper function to add dependency only if both services are enabled
+        const addDependencyIfEnabled = (service, dependency) => {
+            if (isServiceEnabled(service) && isServiceEnabled(dependency)) {
+                serviceManager.addDependency(service, dependency);
+                logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.GREEN}Added dependency: ${service} → ${dependency}${fancyColors.RESET}`);
+            } else {
+                // Log skipped dependency
+                logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.YELLOW}Skipping dependency: ${service} → ${dependency} (one or both services are disabled in the '${config.services.active_profile}' profile)${fancyColors.RESET}`);
+            }
+        };
+
         // Infrastructure Layer Dependencies
-        serviceManager.addDependency(SERVICE_NAMES.LIQUIDITY, SERVICE_NAMES.WALLET_GENERATOR);
+        addDependencyIfEnabled(SERVICE_NAMES.LIQUIDITY, SERVICE_NAMES.WALLET_GENERATOR);
 
         // Data Layer Dependencies
-        // Only add TokenSync dependency if it's enabled
-        if (config.services.token_sync) {
-            serviceManager.addDependency(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
-        } else {
-            // Log that we're skipping this dependency
-            logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.YELLOW}TokenSync service is disabled in the '${config.services.active_profile}' profile, not adding it as a dependency for MarketData service${fancyColors.RESET}`);
-        }
+        addDependencyIfEnabled(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
 
         // Contest Layer Dependencies
-        serviceManager.addDependency(SERVICE_NAMES.CONTEST_EVALUATION, SERVICE_NAMES.MARKET_DATA);
-        // Removed hard dependency: serviceManager.addDependency(SERVICE_NAMES.ACHIEVEMENT, SERVICE_NAMES.CONTEST_EVALUATION);
-        // Removed hard dependency: serviceManager.addDependency(SERVICE_NAMES.REFERRAL, SERVICE_NAMES.CONTEST_EVALUATION);
+        addDependencyIfEnabled(SERVICE_NAMES.CONTEST_EVALUATION, SERVICE_NAMES.MARKET_DATA);
+        // We can optionally readd these now that we check if services are enabled:
+        // addDependencyIfEnabled(SERVICE_NAMES.ACHIEVEMENT, SERVICE_NAMES.CONTEST_EVALUATION);
+        // addDependencyIfEnabled(SERVICE_NAMES.REFERRAL, SERVICE_NAMES.CONTEST_EVALUATION);
 
         // Wallet Layer Dependencies
-        serviceManager.addDependency(SERVICE_NAMES.CONTEST_WALLET, SERVICE_NAMES.CONTEST_EVALUATION);
-        serviceManager.addDependency(SERVICE_NAMES.ADMIN_WALLET, SERVICE_NAMES.CONTEST_WALLET);
-        // DEPRECATED: walletRakeService dependency - service is no longer used
-        // serviceManager.addDependency(SERVICE_NAMES.WALLET_RAKE, SERVICE_NAMES.CONTEST_WALLET);
+        // Only add this dependency if both services are enabled
+        addDependencyIfEnabled(SERVICE_NAMES.CONTEST_WALLET, SERVICE_NAMES.CONTEST_EVALUATION);
+        addDependencyIfEnabled(SERVICE_NAMES.ADMIN_WALLET, SERVICE_NAMES.CONTEST_WALLET);
     }
 
     /**
@@ -234,23 +278,37 @@ class ServiceInitializer {
             // Initialize all services using ServiceManager
             const results = await serviceManager.initializeAll();
             
-            // Always show initialization summary
-            const successCount = results.initialized.length;
-            const failCount = results.failed.length;
-            logApi.info(`✅ Services initialized: ${successCount} succeeded, ${failCount} failed`);
+            // Get list of intentionally disabled services
+            const disabledServices = results.failed.filter(service => {
+                // Check against the service profiles
+                const serviceState = serviceManager.state.get(service);
+                return serviceState && serviceState.status === 'disabled_by_config';
+            });
             
-            // Always show failed services
-            if (failCount > 0) {
-                // Special handling for TOKEN_SYNC if it was intentionally disabled
-                const realFailures = results.failed.filter(service => 
-                    !(service === SERVICE_NAMES.TOKEN_SYNC && config.services.disable_token_sync)
-                );
-                
-                if (realFailures.length > 0) {
-                    realFailures.forEach(service => {
-                        logApi.error(`❌ Failed to initialize service: ${service}`);
-                    });
-                }
+            // Get actual failures (not intentionally disabled)
+            const realFailures = results.failed.filter(service => {
+                const serviceState = serviceManager.state.get(service);
+                return !serviceState || serviceState.status !== 'disabled_by_config';
+            });
+            
+            // Show initialization summary with clearer categories
+            const successCount = results.initialized.length;
+            const disabledCount = disabledServices.length;
+            const realFailCount = realFailures.length;
+            
+            logApi.info(`✅ Services summary: ${successCount} succeeded, ${disabledCount} disabled by profile, ${realFailCount} failed`);
+            
+            // Log intentionally disabled services with a clear message
+            if (disabledServices.length > 0) {
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} PROFILE INFO ${fancyColors.RESET} ${fancyColors.YELLOW}Services disabled by profile configuration: ${disabledServices.join(', ')}${fancyColors.RESET}`);
+            }
+            
+            // Always show real failures
+            if (realFailures.length > 0) {
+                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${realFailures.length} services failed to initialize:`);
+                realFailures.forEach(service => {
+                    logApi.error(`❌ Failed to initialize service: ${service}`);
+                });
             }
             
             // Log to admin logger for auditing

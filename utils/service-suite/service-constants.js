@@ -121,7 +121,7 @@ export const SERVICE_METADATA = {
         description: 'Contest wallet management',
         updateFrequency: 'on demand',
         criticalLevel: 'critical',
-        dependencies: [SERVICE_NAMES.CONTEST_EVALUATION]
+        dependencies: [] // Removing hard dependency on CONTEST_EVALUATION
     },
     [SERVICE_NAMES.WALLET_RAKE]: {
         layer: SERVICE_LAYERS.WALLET,

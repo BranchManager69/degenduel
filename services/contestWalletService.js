@@ -68,9 +68,7 @@ const CONTEST_WALLET_CONFIG = {
 };
 
 // Contest Wallet Service
-/**
- * Contest Wallet Service
- * 
+/** 
  * This service is responsible for managing the contest wallets.
  * It allows the admin to create and manage contest wallets.
  */
@@ -151,6 +149,37 @@ class ContestWalletService extends BaseService {
                 last_operation_time_ms: 0
             }
         };
+    }
+    
+    /**
+     * Initialize the contest wallet service
+     * Overrides the BaseService initialize method to add service profile check
+     * 
+     * @returns {Promise<boolean>} - True if initialization succeeded, false otherwise
+     */
+    async initialize() {
+        try {
+            // Check if contest wallet service is disabled via service profile
+            if (!config.services.contest_wallet_service) {
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Contest Wallet Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false;
+            }
+            
+            // Call parent initialize
+            const success = await super.initialize();
+            if (!success) {
+                return false;
+            }
+            
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Contest Wallet Service initialized successfully${fancyColors.RESET}`);
+            return true;
+        } catch (error) {
+            logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Contest Wallet Service initialization error:${fancyColors.RESET}`, {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
     }
 
     // Encrypt wallet private key

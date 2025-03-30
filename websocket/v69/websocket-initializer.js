@@ -18,7 +18,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 
 // Import only the unified WebSocket server
-import { createUnifiedWebSocket } from './unified-ws.js';
+import { createUnifiedWebSocket } from './uni-ws.js';
 
 
 // Import config to store WebSocket instance

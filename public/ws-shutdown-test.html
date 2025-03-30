@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DegenDuel WebSocket Shutdown Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #444;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .column {
+            flex: 1;
+        }
+        .box {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .connecting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .shutdown {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        .log {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: monospace;
+            background-color: #f9f9f9;
+        }
+        .log p {
+            margin: 5px 0;
+            padding: 3px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .log .error {
+            color: #dc3545;
+        }
+        .log .success {
+            color: #28a745;
+        }
+        .log .info {
+            color: #17a2b8;
+        }
+        .log .warn {
+            color: #ffc107;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0069d9;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .notification {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .shutdown-notification {
+            background-color: #cce5ff;
+            border: 1px solid #b8daff;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+    <h1>DegenDuel WebSocket Shutdown Test</h1>
+    
+    <div class="container">
+        <div class="column">
+            <div class="box">
+                <h3>Connection Status</h3>
+                <div id="status" class="status disconnected">Disconnected</div>
+                <p id="status-details">WebSocket not connected</p>
+                <div id="notification-area"></div>
+                <button id="connect-btn">Connect</button>
+                <button id="disconnect-btn" disabled>Disconnect</button>
+            </div>
+            
+            <div class="box">
+                <h3>Subscriptions</h3>
+                <button id="subscribe-market" disabled>Subscribe to Market Data</button>
+                <button id="subscribe-system" disabled>Subscribe to System</button>
+                <button id="ping-system" disabled>Ping System</button>
+            </div>
+            
+            <div class="box">
+                <h3>WebSocket Event Log</h3>
+                <div id="log" class="log"></div>
+            </div>
+        </div>
+        
+        <div class="column">
+            <div class="box">
+                <h3>Testing Graceful Shutdown</h3>
+                <p>This test page demonstrates proper handling of WebSocket shutdowns:</p>
+                <ol>
+                    <li>Connect to the WebSocket server</li>
+                    <li>Subscribe to the 'system' topic</li>
+                    <li>When server shutdown occurs:</li>
+                        <ul>
+                            <li>Server will send a SYSTEM shutdown notification</li>
+                            <li>Then close with code 1000 "Normal Closure"</li>
+                            <li>Client will display a user-friendly message</li>
+                            <li>Client will attempt reconnection after timeout</li>
+                        </ul>
+                </ol>
+                
+                <h4>Expected Behavior:</h4>
+                <ul>
+                    <li>Notification received before disconnection</li>
+                    <li>Clean closure with code 1000 instead of error code 1006</li>
+                    <li>User-friendly message displayed</li>
+                    <li>Automatic reconnection attempt after the specified delay</li>
+                </ul>
+            </div>
+            
+            <div class="box">
+                <h3>Sample Shutdown Message</h3>
+                <pre>{
+  "type": "SYSTEM",
+  "action": "shutdown",
+  "message": "Server is restarting, please reconnect in 30 seconds",
+  "expectedDowntime": 30000,
+  "timestamp": "2025-03-29T12:34:56.789Z"
+}</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const statusEl = document.getElementById('status');
+        const statusDetailsEl = document.getElementById('status-details');
+        const logEl = document.getElementById('log');
+        const connectBtn = document.getElementById('connect-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        const subscribeMarketBtn = document.getElementById('subscribe-market');
+        const subscribeSystemBtn = document.getElementById('subscribe-system');
+        const pingSystemBtn = document.getElementById('ping-system');
+        const notificationArea = document.getElementById('notification-area');
+        
+        // WebSocket variables
+        let socket = null;
+        let reconnectTimer = null;
+        let reconnectAttempts = 0;
+        
+        // Helper to log messages
+        function log(message, type = 'info') {
+            const entry = document.createElement('p');
+            entry.classList.add(type);
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        // Update connection status
+        function updateStatus(isConnected, message) {
+            if (isConnected === true) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                subscribeMarketBtn.disabled = false;
+                subscribeSystemBtn.disabled = false;
+                pingSystemBtn.disabled = false;
+            } else if (isConnected === false) {
+                statusEl.textContent = 'Disconnected';
+                statusEl.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                subscribeMarketBtn.disabled = true;
+                subscribeSystemBtn.disabled = true;
+                pingSystemBtn.disabled = true;
+            } else if (isConnected === 'connecting') {
+                statusEl.textContent = 'Connecting...';
+                statusEl.className = 'status connecting';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = true;
+            } else if (isConnected === 'shutdown') {
+                statusEl.textContent = 'Server Shutdown';
+                statusEl.className = 'status shutdown';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = true;
+                subscribeMarketBtn.disabled = true;
+                subscribeSystemBtn.disabled = true;
+                pingSystemBtn.disabled = true;
+            }
+            
+            if (message) {
+                statusDetailsEl.textContent = message;
+            }
+        }
+        
+        // Display notification
+        function showNotification(message, type = 'shutdown-notification') {
+            // Clear existing notifications
+            notificationArea.innerHTML = '';
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notificationArea.appendChild(notification);
+            
+            // Automatically remove after duration if not a shutdown notification
+            if (type !== 'shutdown-notification') {
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+        }
+        
+        // Connect to WebSocket
+        function connect() {
+            if (socket) {
+                socket.close();
+            }
+            
+            try {
+                updateStatus('connecting', 'Connecting to WebSocket...');
+                log('Connecting to WebSocket server...');
+                
+                // Get hostname dynamically
+                const hostname = window.location.hostname;
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${wsProtocol}//${hostname}${window.location.port ? ':' + window.location.port : ''}/api/v69/ws`;
+                
+                socket = new WebSocket(wsUrl);
+                
+                // Connection opened
+                socket.addEventListener('open', (event) => {
+                    log('Connected to WebSocket server', 'success');
+                    updateStatus(true, `Connected to ${wsUrl}`);
+                    reconnectAttempts = 0;
+                });
+                
+                // Listen for messages
+                socket.addEventListener('message', (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        log(`Received: ${event.data}`);
+                        
+                        // Handle shutdown notification
+                        if (data.type === 'SYSTEM' && data.action === 'shutdown') {
+                            log(`Server shutdown notification: ${data.message}`, 'warn');
+                            updateStatus('shutdown', `Server is shutting down. Will reconnect in ${data.expectedDowntime/1000} seconds.`);
+                            
+                            // Show user-friendly notification
+                            showNotification(`Server maintenance in progress. Reconnecting in ${data.expectedDowntime/1000} seconds.`);
+                            
+                            // Schedule reconnection
+                            if (reconnectTimer) {
+                                clearTimeout(reconnectTimer);
+                            }
+                            
+                            reconnectTimer = setTimeout(() => {
+                                log('Attempting to reconnect after server shutdown...', 'info');
+                                connect();
+                            }, data.expectedDowntime);
+                        }
+                    } catch (error) {
+                        log(`Error parsing message: ${error.message}`, 'error');
+                    }
+                });
+                
+                // Connection closed
+                socket.addEventListener('close', (event) => {
+                    const wasClean = event.wasClean;
+                    const code = event.code;
+                    const reason = event.reason || 'No reason provided';
+                    
+                    if (wasClean && code === 1000) {
+                        log(`Connection closed normally: Code ${code}, Reason: "${reason}"`, 'success');
+                        updateStatus(false, `Connection closed normally: ${reason}`);
+                    } else {
+                        // Don't show error for shutdown-initiated closures
+                        if (statusEl.className !== 'status shutdown') {
+                            log(`Connection closed abnormally: Code ${code}, Reason: "${reason}", Clean: ${wasClean}`, 'error');
+                            updateStatus(false, `Connection closed with code ${code}: ${reason}`);
+                            
+                            // Implement exponential backoff for reconnection
+                            const backoffDelay = Math.min(30000, Math.pow(2, reconnectAttempts) * 1000);
+                            reconnectAttempts++;
+                            
+                            log(`Will attempt to reconnect in ${backoffDelay/1000} seconds (attempt ${reconnectAttempts})`, 'info');
+                            
+                            if (reconnectTimer) {
+                                clearTimeout(reconnectTimer);
+                            }
+                            
+                            reconnectTimer = setTimeout(() => {
+                                log(`Reconnecting (attempt ${reconnectAttempts})...`, 'info');
+                                connect();
+                            }, backoffDelay);
+                        }
+                    }
+                });
+                
+                // Connection error
+                socket.addEventListener('error', (event) => {
+                    log('WebSocket connection error', 'error');
+                });
+                
+            } catch (error) {
+                log(`Error creating WebSocket: ${error.message}`, 'error');
+                updateStatus(false, `Connection error: ${error.message}`);
+            }
+        }
+        
+        // Disconnect from WebSocket
+        function disconnect() {
+            if (socket) {
+                log('Manually disconnecting from server...');
+                socket.close(1000, "User initiated disconnect");
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                }
+            }
+        }
+        
+        // Send subscription request
+        function subscribe(topic) {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                log('Cannot subscribe: WebSocket not connected', 'error');
+                return;
+            }
+            
+            const message = {
+                type: 'SUBSCRIBE',
+                topics: Array.isArray(topic) ? topic : [topic]
+            };
+            
+            socket.send(JSON.stringify(message));
+            log(`Sent subscription request for topic(s): ${Array.isArray(topic) ? topic.join(', ') : topic}`);
+        }
+        
+        // Send ping request
+        function ping() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                log('Cannot ping: WebSocket not connected', 'error');
+                return;
+            }
+            
+            const message = {
+                type: 'REQUEST',
+                topic: 'system',
+                action: 'ping',
+                clientTime: new Date().toISOString(),
+                requestId: `ping-${Date.now()}`
+            };
+            
+            socket.send(JSON.stringify(message));
+            log('Sent ping request to server');
+        }
+        
+        // Event listeners
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        subscribeMarketBtn.addEventListener('click', () => subscribe('market-data'));
+        subscribeSystemBtn.addEventListener('click', () => subscribe('system'));
+        pingSystemBtn.addEventListener('click', ping);
+        
+        // Initial log
+        log('WebSocket test page loaded. Click "Connect" to start.');
+    </script>
+</body>
+</html>

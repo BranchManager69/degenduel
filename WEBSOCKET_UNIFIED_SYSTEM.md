@@ -4,7 +4,7 @@
 
 The DegenDuel Unified WebSocket System provides a centralized WebSocket implementation that replaces multiple separate WebSocket servers. It uses a topic-based subscription model allowing clients to subscribe to specific data channels through a single connection.
 
-- **Implementation**: `/websocket/v69/unified-ws.js`
+- **Implementation**: `/websocket/v69/uni-ws.js`
 - **Connection Path**: `/api/v69/ws`
 - **Initializer**: `/websocket/v69/websocket-initializer.js`
 - **Max Payload Size**: 50KB
@@ -414,8 +414,49 @@ sendWS({
 - Event handlers are registered with `serviceEvents` for broadcasting service events to WebSocket clients
 - The server includes comprehensive metrics tracking and logging for debugging and monitoring
 - All operations include proper cleanup to prevent memory leaks
-- The design supports graceful startup and shutdown
+- Graceful shutdown process:
+  1. Server sends notifications to all clients before shutdown
+  2. Connections are properly closed with WebSocket code 1000 (Normal Closure)
+  3. Resources are systematically released to prevent memory leaks
+  4. Promises ensure proper shutdown sequencing and timing
+
+## Client Implementation Guidelines
+
+### Handling Server Shutdowns
+
+Clients should implement handlers for server shutdown notifications:
+
+```javascript
+socket.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  // Handle shutdown notification
+  if (data.type === 'SYSTEM' && data.action === 'shutdown') {
+    console.log(`Server is shutting down: ${data.message}`);
+    
+    // Show user-friendly message
+    showNotification(`Server maintenance in progress. Reconnecting in ${data.expectedDowntime/1000} seconds.`);
+    
+    // Set reconnection timer
+    setTimeout(() => {
+      console.log('Attempting to reconnect...');
+      // Reconnection logic here
+    }, data.expectedDowntime);
+  }
+};
+
+// Handle normal closure
+socket.onclose = (event) => {
+  if (event.code === 1000) {
+    console.log(`Connection closed normally: ${event.reason}`);
+    // Handle graceful closure - no need to show error message
+  } else {
+    console.error(`Connection closed unexpectedly: Code ${event.code}`);
+    // Handle unexpected closure - show error message
+  }
+};
+```
 
 ---
 
-*Last Updated: March 28, 2025*
+*Last Updated: March 29, 2025*

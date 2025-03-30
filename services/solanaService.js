@@ -76,8 +76,17 @@ class SolanaService extends BaseService {
      */
     async initialize() {
         try {
+            // Check if solana service is disabled via service profile
+            if (!config.services.solana_service) {
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Solana Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false;
+            }
+            
             // Call parent initialization first
-            await super.initialize();
+            const success = await super.initialize();
+            if (!success) {
+                return false;
+            }
             
             // Check if connection is already initialized
             if (this.connection) {

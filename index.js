@@ -11,6 +11,10 @@
 // Import restart monitor (for Logtail alerting)
 import './scripts/pm2-restart-monitor.js';
 
+// Check for cluster mode 
+const isClusterMode = process.env.exec_mode === 'cluster_mode';
+console.log(`Starting DegenDuel API in ${isClusterMode ? 'cluster' : 'fork'} mode`);
+
 //---------------------------------------------------.
 //  Main server initialization and configuration     |
 //---------------------------------------------------|
@@ -514,13 +518,31 @@ async function initializeServer() {
                     const successCount = initResults.Services.initialized.length;
                     const failedCount = initResults.Services.failed.length;
 
-                    // Always log failed services regardless of verbosity setting
-                    if (initResults.Services.failed.length > 0) {
-                        logApi.warn(`Failed services: ${initResults.Services.failed.join(', ')}`);
+                    // Get list of intentionally disabled services vs actual failures
+                    const serviceManager = (await import('./utils/service-suite/service-manager.js')).default;
+                    
+                    const disabledServices = initResults.Services.failed.filter(service => {
+                        const serviceState = serviceManager.state.get(service);
+                        return serviceState && serviceState.status === 'disabled_by_config';
+                    });
+                    
+                    const realFailures = initResults.Services.failed.filter(service => {
+                        const serviceState = serviceManager.state.get(service);
+                        return !serviceState || serviceState.status !== 'disabled_by_config';
+                    });
+
+                    // Log disabled services with a clear message
+                    if (disabledServices.length > 0) {
+                        logApi.info(`Services disabled by profile: ${disabledServices.join(', ')}`);
                     }
                     
-                    // Single summary log for service initialization
-                    logApi.info(`✅ Services initialized: ${successCount} succeeded, ${failedCount} failed`);
+                    // Log real failures separately
+                    if (realFailures.length > 0) {
+                        logApi.error(`Services with initialization errors: ${realFailures.join(', ')}`);
+                    }
+                    
+                    // Single summary log for service initialization with better categories
+                    logApi.info(`✅ Services initialized: ${successCount} succeeded, ${disabledServices.length} disabled by profile, ${realFailures.length} failed`);
 
                 } catch (error) {
                     // Simplified error logging for service initialization
@@ -614,6 +636,12 @@ async function initializeServer() {
                 }
             } else {
                 logApi.info(`DegenDuel API Server ready on port ${port}`);
+            }
+            
+            // Send ready signal to PM2 when using wait_ready option
+            if (process.send) {
+                logApi.info(`Sending ready signal to PM2`);
+                process.send('ready');
             }
         });
         

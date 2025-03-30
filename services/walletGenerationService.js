@@ -83,8 +83,17 @@ class WalletService extends BaseService {
     // Initialize the service
     async initialize() {
         try {
+            // Check if wallet generator service is disabled via service profile
+            if (!config.services.wallet_generator_service) {
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Wallet Generator Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false;
+            }
+            
             // Call parent initialize first
-            await super.initialize();
+            const success = await super.initialize();
+            if (!success) {
+                return false;
+            }
             
             // Load configuration from database
             const settings = await prisma.system_settings.findUnique({

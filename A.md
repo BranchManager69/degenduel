@@ -62,7 +62,7 @@ The system uses an internal event bus (serviceEvents) for inter-service communic
 
 The system now uses a **single unified WebSocket server** with topic-based subscriptions:
 
-- **Implementation**: `/websocket/v69/unified-ws.js`
+- **Implementation**: `/websocket/v69/uni-ws.js`
 - **Connection Point**: `/api/v69/ws`
 - **Key Features**:
   - Topic-based subscription model

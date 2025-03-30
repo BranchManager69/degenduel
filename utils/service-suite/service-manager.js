@@ -450,6 +450,20 @@ class ServiceManager {
 
             // Check each dependency
             for (const dep of dependencies) {
+                // Check if this dependency is disabled by service profile before doing anything else
+                if (failed.has(dep)) {
+                    // Check if it's in failed because it's disabled by profile
+                    const depState = this.state.get(dep);
+                    const isDisabledByProfile = depState && depState.status === 'disabled_by_config';
+                    
+                    if (isDisabledByProfile) {
+                        // This dependency is intentionally disabled, so we can skip it
+                        logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}Dependency ${dep} is disabled by service profile, skipping dependency check for ${serviceName}${fancyColors.RESET}`);
+                        // Skip this dependency entirely
+                        continue;
+                    }
+                }
+                
                 // Return true if the dependency has already been initialized
                 if (!initialized.has(dep)) {
                     try {
@@ -461,37 +475,21 @@ class ServiceManager {
                         // Initialize the dependency
                         const success = await this._initializeService(dep, initialized, failed);
 
-                        // Return false if the dependency initialization failed
+                        // Check if the dependency failed but it's intentionally disabled by service profile
                         if (!success) {
-                            // Log the dependency initialization failed
-                            const error = new Error(`Cannot initialize ${serviceName} - dependency ${dep} failed to initialize`);
-                            if (VERBOSE_SERVICE_INIT) {
-                                logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
-                                    service: serviceName,
-                                    dependency: dep,
-                                    metadata: getServiceMetadata(dep)
-                                });
+                            // Check if the dependency is disabled by service profile
+                            // First, get the state to see if it's a profile-disabled service
+                            const depState = this.state.get(dep);
+                            const isDisabledByProfile = depState && depState.status === 'disabled_by_config';
+                            
+                            if (isDisabledByProfile) {
+                                // This dependency is intentionally disabled, so we can skip it
+                                logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}Dependency ${dep} is disabled by service profile, skipping dependency check for ${serviceName}${fancyColors.RESET}`);
+                                // Continue to the next dependency instead of failing
+                                continue;
                             } else {
-                                logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
-                                    service: serviceName,
-                                    dependency: dep,
-                                    //metadata: getServiceMetadata(dep)
-                                });
-                            }
-                            failed.add(serviceName);
-                            return false;
-                        }
-
-                        // Wait for dependency to be fully started
-                        const depService = this.services.get(dep);
-                        if (!depService.isStarted) {
-                            if (VERBOSE_SERVICE_INIT) {
-                                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Waiting for dependency ${dep} to start`);
-                            }
-                            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a bit
-                            const depStatus = await this.checkServiceHealth(dep);
-                            if (!depStatus) {
-                                const error = new Error(`Cannot initialize ${serviceName} - dependency ${dep} not healthy after start`);
+                                // Log the dependency initialization failed
+                                const error = new Error(`Cannot initialize ${serviceName} - dependency ${dep} failed to initialize`);
                                 if (VERBOSE_SERVICE_INIT) {
                                     logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
                                         service: serviceName,
@@ -507,6 +505,44 @@ class ServiceManager {
                                 }
                                 failed.add(serviceName);
                                 return false;
+                            }
+                        }
+
+                        // Wait for dependency to be fully started
+                        const depService = this.services.get(dep);
+                        if (depService && !depService.isStarted) {
+                            if (VERBOSE_SERVICE_INIT) {
+                                logApi.info(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} Waiting for dependency ${dep} to start`);
+                            }
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a bit
+                            const depStatus = await this.checkServiceHealth(dep);
+                            if (!depStatus) {
+                                // Check if this dependency is disabled by profile
+                                const depState = this.state.get(dep);
+                                const isDisabledByProfile = depState && depState.status === 'disabled_by_config';
+                                
+                                if (isDisabledByProfile) {
+                                    // This dependency is intentionally disabled, so we can skip the health check
+                                    logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.YELLOW}Dependency ${dep} is disabled by service profile, skipping health check for ${serviceName}${fancyColors.RESET}`);
+                                    // Continue without failing
+                                } else {
+                                    const error = new Error(`Cannot initialize ${serviceName} - dependency ${dep} not healthy after start`);
+                                    if (VERBOSE_SERVICE_INIT) {
+                                        logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
+                                            service: serviceName,
+                                            dependency: dep,
+                                            metadata: getServiceMetadata(dep)
+                                        });
+                                    } else {
+                                        logApi.error(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${error.message}`, {
+                                            service: serviceName,
+                                            dependency: dep,
+                                            //metadata: getServiceMetadata(dep)
+                                        });
+                                    }
+                                    failed.add(serviceName);
+                                    return false;
+                                }
                             }
                         }
                     } catch (error) {
@@ -599,7 +635,12 @@ class ServiceManager {
                         (serviceName === SERVICE_NAMES.WALLET_RAKE && !config.services.wallet_rake) ||
                         (serviceName === SERVICE_NAMES.CONTEST_SCHEDULER && !config.services.contest_scheduler) ||
                         (serviceName === SERVICE_NAMES.ACHIEVEMENT && !config.services.achievement_service) ||
-                        (serviceName === SERVICE_NAMES.REFERRAL && !config.services.referral_service)) {
+                        (serviceName === SERVICE_NAMES.REFERRAL && !config.services.referral_service) ||
+                        (serviceName === SERVICE_NAMES.LEVELING && !config.services.leveling_service) ||
+                        (serviceName === SERVICE_NAMES.CONTEST_WALLET && !config.services.contest_wallet_service) ||
+                        (serviceName === SERVICE_NAMES.ADMIN_WALLET && !config.services.admin_wallet_service) ||
+                        (serviceName === SERVICE_NAMES.WALLET_GENERATOR && !config.services.wallet_generator_service) ||
+                        (serviceName === SERVICE_NAMES.SOLANA && !config.services.solana_service)) {
                         
                         // For intentionally disabled services, log as warning instead of error
                         logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} DISABLED ${fancyColors.RESET} ${fancyColors.YELLOW}Service ${serviceName} is intentionally disabled in the '${config.services.active_profile}' service profile${fancyColors.RESET}`);

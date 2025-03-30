@@ -9,8 +9,10 @@ import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import serviceManager from '../utils/service-suite/service-manager.js'; // why is this not being used?
-import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js'; // why is this not being used?
+import serviceManager from '../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import { fancyColors } from '../utils/colors.js';
+import { config } from '../config/config.js';
 
 const LEVELING_SERVICE_CONFIG = {
     name: 'leveling_service',
@@ -34,6 +36,12 @@ class LevelingService extends BaseService {
 
     async initialize() {
         try {
+            // Check if leveling service is disabled via service profile
+            if (!config.services.leveling_service) {
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Leveling Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false;
+            }
+            
             await super.initialize();
             logApi.info('\t\tLeveling Service initialized');
             return true;

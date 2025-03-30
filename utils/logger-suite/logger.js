@@ -665,7 +665,7 @@ function formatAdminAction(details) {
 // Format WebSocket logs more concisely based on debug mode
 function formatWebSocketLog(ts, levelStyle, message, service, metadata, level) {
   // Check if this is a WebSocket message and if debug mode is enabled
-  const isWebSocketLog = service === 'unified-ws' || message.includes('[unified-ws]');
+  const isWebSocketLog = service === 'uni-ws' || message.includes('[uni-ws]');
   const wsDebugMode = config.debug_modes?.websocket === true || config.debug_modes?.websocket === 'true';
   
   // If not a WebSocket log, return null to use normal formatting
@@ -758,7 +758,7 @@ function formatWebSocketLog(ts, levelStyle, message, service, metadata, level) {
   }
   
   // For other WebSocket logs, use a standard abbreviated format
-  const shortMessage = message.replace('[unified-ws]', '').trim();
+  const shortMessage = message.replace('[uni-ws]', '').trim();
   return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${shortMessage}`;
 }
 
