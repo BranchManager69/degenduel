@@ -12,6 +12,7 @@ import serviceManager from './service-manager.js';
 import serviceEvents from './service-events.js';
 import { ServiceError } from './service-error.js';
 import { fancyColors, serviceColors, logColors } from '../colors.js';
+import ServiceConfigUtil from './service-config-util.js';
 const VERBOSE_SERVICE_INIT = false;
 
 /**
