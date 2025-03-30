@@ -84,6 +84,52 @@ class LiquidityService extends BaseService {
         // Active processing tracking
         this.activeOperations = new Map();
         this.operationTimeouts = new Set();
+        
+        // Dynamic interval tracking
+        this.lastIntervalUpdate = Date.now();
+        this.dynamicIntervalCheck();
+    }
+    
+    /**
+     * Periodically check if the service interval has changed in the database
+     * This allows for dynamic adjustment of the service interval without restart
+     */
+    async dynamicIntervalCheck() {
+        try {
+            // Import here to avoid circular dependencies
+            const { getServiceInterval } = await import('../utils/service-suite/service-interval-adapter.js');
+            
+            // Get the current interval from the new service_configuration table
+            const configuredInterval = await getServiceInterval(
+                this.name,
+                this.config.checkIntervalMs // Default from static config
+            );
+            
+            // Only update if different from current interval
+            if (this.config.checkIntervalMs !== configuredInterval) {
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.BLACK} INTERVAL UPDATED ${fancyColors.RESET} ${fancyColors.CYAN}${this.config.checkIntervalMs}ms → ${configuredInterval}ms${fancyColors.RESET}`);
+                
+                // Update the config
+                this.config.checkIntervalMs = configuredInterval;
+                
+                // If the service is already running, restart the interval with new timing
+                if (this.isStarted && this.operationInterval) {
+                    clearInterval(this.operationInterval);
+                    this.operationInterval = setInterval(
+                        () => this.performOperation().catch(error => this.handleError(error)),
+                        this.config.checkIntervalMs
+                    );
+                }
+            }
+        } catch (error) {
+            // Don't let errors in interval checking break the service
+            logApi.error(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.RED}Error checking for interval updates:${fancyColors.RESET}`, {
+                error: error.message
+            });
+        }
+        
+        // Schedule next check (every 30 seconds)
+        setTimeout(() => this.dynamicIntervalCheck(), 30000);
     }
 
     // Initialize the service
