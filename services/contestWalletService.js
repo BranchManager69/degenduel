@@ -1575,13 +1575,13 @@ class ContestWalletService extends BaseService {
                                 continue;
                             }
                             
-                            // Reserve a small amount for fees, approximately 0.0005 SOL (5000 lamports)
-                            const reserveAmount = 0.0005;
-                            const transferAmount = solBalance - reserveAmount;
+                            // Reserve a small buffer reserve
+                            const reserveAmount = 0.0005; // 0.0005 SOL = 5000 lamports
+                            const transferAmount = solBalance - reserveAmount; // amount to transfer after reserving buffer
                             
-                            // Skip if transfer amount is too small
+                            // Skip if transfer amount would be too small after accounting for buffer reserve
                             if (transferAmount < minTransfer) {
-                                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping transfer from ${wallet.wallet_address}, amount too small: ${transferAmount.toFixed(6)} SOL`);
+                                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping transfer from ${wallet.wallet_address} (amount too small: ${(transferAmount - reserveAmount).toFixed(6)} SOL; buffer reserve: ${reserveAmount.toFixed(6)} SOL)`);
                                 results.details.push({
                                     contest_id: wallet.contest_id,
                                     contest_code: wallet.contests?.contest_code,
@@ -1595,8 +1595,8 @@ class ContestWalletService extends BaseService {
                             
                             results.walletsThatMeetCriteria++;
                             
-                            // Perform the transfer
-                            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Transferring ${transferAmount.toFixed(6)} SOL from contest ${wallet.contest_id} (${wallet.contests?.contest_code || 'Unknown'}) to treasury${fancyColors.RESET}`);
+                            // Attempt the contest wallet balance reclaim transfer
+                            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE} TRANSFER ${fancyColors.RESET} ${fancyColors.CYAN}Contest ${wallet.contest_id} (${wallet?.contests?.contest_code}) transferring ${fancyColors.BOLD_CYAN}${transferAmount.toFixed(6)} SOL${fancyColors.RESET} ${fancyColors.CYAN}to DegenDuel treasury...${fancyColors.RESET}`);
                             
                             try {
                                 // Create a transaction record without wallet_address to avoid foreign key constraint

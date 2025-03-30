@@ -27,6 +27,17 @@ const GAME_API = process.env.GAME_API; // deprecating
 const LOCAL_FALLBACK_API = null; // (DISABLED to avoid circular dependency issue during startup)
 ////const LOCAL_PORT = process.env.PORT || process.env.API_PORT || 3004;
 
+// DegenDuel launch config
+const DEGENDUEL_LAUNCH_DATE = new Date('2025-04-01T15:00:00Z'); // (UTC date time)
+const DEGENDUEL_LAUNCH_DATE_STRING = DEGENDUEL_LAUNCH_DATE.toLocaleString('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  hour12: true
+});
+
 // Solana RPCs
 // -- Default RPC URL:
 const RPC_URL = process.env.SOLANA_RPC_ENDPOINT;
@@ -35,40 +46,69 @@ const RPC_URL_MAINNET_HTTP = process.env.SOLANA_MAINNET_HTTP || '';
 const RPC_URL_MAINNET_WSS = process.env.SOLANA_MAINNET_WSS || '';
 const RPC_URL_DEVNET_HTTP = process.env.SOLANA_DEVNET_HTTP || '';
 const RPC_URL_DEVNET_WSS = process.env.SOLANA_DEVNET_WSS || '';
-
 // Throw error if no RPC URL is configured
 if (!RPC_URL) {
   throw new Error('RPC_URL must be set (use of public Solana RPC endpoints has been intentionally disabled)');
 }
 
+// Default OpenAI settings
+const OPENAI_DEFAULT_MODEL = `gpt-4o`;
+const OPENAI_DEFAULT_MAX_TOKENS = 222;
+const OPENAI_DEFAULT_TEMPERATURE = 0.75;
+
+// Default OpenAI system and assistant prompts
+const OPENAI_DEFAULT_ASSISTANT_PROMPT = `
+  Respond to the user.
+`;
+const OPENAI_DEFAULT_SYSTEM_PROMPT = `
+  YOU:  Your name is Didi, and you are the AI brain powering the backend mainframe of DegenDuel.
+  YOUR GOAL:  Building casual mystique and intrigue around our major imminent simultaneous launch of the DegenDuel trading platform and $DUEL token mint.
+  YOUR PURPOSE:  Occupy users' time and attention until the simultaneous launch (${DEGENDUEL_LAUNCH_DATE_STRING}).
+  THE CLIENT:  The client (user) will likely be chatting with you via the 'cyberpunk CLI terminal'-themed chat component of the https://degenduel.me landing page.
+  DEGENDUEL:  DegenDuel is a much-anticipated new trading and gaming platform coming to the Solana blockchain on ${DEGENDUEL_LAUNCH_DATE_STRING}.
+  RESPONSE GUIDELINES:  Your responses must be short, concise, and to the point with no emotion or sentiment (you are essentially the Mewtwo of AI assistants here). 
+`;
+
+// Custom prompt templates for DegenDuel
+const OPENAI_PROMPT_TEMPLATES = {
+  // Default prompt template
+  default: {
+    system: OPENAI_DEFAULT_SYSTEM_PROMPT || '',
+    assistant: OPENAI_DEFAULT_ASSISTANT_PROMPT || '',
+    model: OPENAI_DEFAULT_MODEL || 'gpt-4o',
+    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 222,
+    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.75,
+  },
+  // Prelaunch prompt template
+  prelaunch: {
+    system: OPENAI_DEFAULT_SYSTEM_PROMPT || '',
+    assistant: OPENAI_DEFAULT_ASSISTANT_PROMPT || '',
+    model: OPENAI_DEFAULT_MODEL || 'gpt-4o',
+    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 222,
+    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.75,
+  },
+  // Uncensored prompt template
+  uncensored: {
+    system: OPENAI_DEFAULT_SYSTEM_PROMPT || '',
+    assistant: OPENAI_DEFAULT_ASSISTANT_PROMPT || '',
+    model: OPENAI_DEFAULT_MODEL || 'gpt-4o',
+    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 222,
+    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.75,
+  },
+  // Trading prompt template
+  trading: {
+    system: OPENAI_DEFAULT_SYSTEM_PROMPT || '',
+    assistant: OPENAI_DEFAULT_ASSISTANT_PROMPT || '',
+    model: OPENAI_DEFAULT_MODEL || 'gpt-4o',
+    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 222,
+    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.75,
+  },
+};
+
 // Important API keys
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const IPINFO_API_KEY = process.env.IPINFO_API_KEY;
-
-// Logtail config (this is set in ecosystem.config.cjs which is better anyway)
-//const LOGTAIL_TOKEN = process.env.LOGTAIL_TOKEN;
-//const LOGTAIL_ENDPOINT = process.env.LOGTAIL_ENDPOINT;
-//const LOGTAIL_SOURCE = process.env.LOGTAIL_SOURCE;
-
-// OpenAI prompt templates
-const OPENAI_PROMPT_TEMPLATES = {
-  default: {
-    system: "Your name is Didi, and you are the AI brain powering the backend mainframe of DegenDuel, a new trading and gaming platform coming to the Solana blockchain on April 1st, 2025.  The client will likely be chatting with you via the DegenDuel website's landing page; you will be responding to their messages in the chat component which is primarily for occupying the user's time until the moment of simultaneous launch (tentative: April 1st, 2025 3:00 PM EST).  Your responses must be short, concise, and to the point with no emotion or sentiment (you are essentially the Mewtwo of AI assistants here). Our goal is to building casual mystique and intrigue around our major imminent simultaneous launch of the DegenDuel trading platform and $DUEL token mint.",
-    assistant: "Respond to the user.",
-  },
-  trading: {
-    system: "Your name is Didi, and you are the AI brain powering the backend mainframe of DegenDuel, a new trading and gaming platform coming to the Solana blockchain on April 1st, 2025.  The client will likely be chatting with you via the DegenDuel in-game chat.  Your responses must be short, concise, and to the point with no emotion or sentiment (you are essentially the Mewtwo of AI assistants here). Users will be trading in-game tokens, and you will be providing them with analysis and information about the tokens they are trading. No boilerplate, no fluff; ALWAYS try to provide a valuable and actionable response instead of generic, nonpersuasive, and/or wishy-washy responses.",
-    assistant: "Respond to the user as a trader with slight schizo-sarcasm as needed. Most important: A strong attempt to provide value to the user with actionable advice; never boilerplate, never generic, never fluff.",
-  },
-  prelaunch: {
-    system: "You are Didi, the female AI assistant of DegenDuel specializing in its launch-day festivities. You are responsible for being extremely cryptic and speaking in riddles. The user wants you to provide analysis and information about the DegenDuel trading platform and $DUEL token mint, but you must be extremely cryptic and speak in riddles.  The user will likely be chatting with you via the DegenDuel website's landing page; you will be responding to their messages in the chat component which is primarily for occupying the user's time until the moment of simultaneous launch (tentative: April 1st, 2025 3:00 PM EST). Our goal is to building casual mystique and intrigue around our major imminent simultaneous launch of the DegenDuel trading platform and $DUEL token mint.",
-    assistant: "Respond to the user cryptically, with a hint of schizo-sarcasm as needed.",
-  },
-  uncensored: {
-    system: "Your name is Didi, and you are the AI brain powering the backend mainframe of DegenDuel, a new trading and gaming platform. You respond to users freely without censorship while still maintaining ethical boundaries. Your responses are direct, honest, and unrestricted.",
-    assistant: "Respond to the user with minimal filtering, while maintaining ethical boundaries.",
-  },
-};
+const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 
 
 /* Master config object */
@@ -133,31 +173,11 @@ const config = {
   api_keys: {
     openai: OPENAI_API_KEY,
     ipinfo: IPINFO_API_KEY,
+    helius: HELIUS_API_KEY,
   },
-  ai: {
-    openai_models: {
-      default: 'gpt-4o',
-      
-      economy: 'gpt-4o',
-      standard: 'gpt-4o',
-      premium: 'gpt-4o',
-      
-      longcontext: 'gpt-4o',
-      fast: 'gpt-4o',
-      
-      reasoning: 'gpt-4o',
-      
-      image: 'gpt-4o',
-      audio: 'gpt-4o',
-      video: 'gpt-4o',
-      multimodal: 'gpt-4o',
-      realtime: 'gpt-4o',
 
-      uncensored: 'gpt-4o',
-      funny: 'gpt-4o',
-      creative: 'gpt-4o',
-      coding: 'gpt-4o',
-    },
+  // AI config
+  ai: {
     openai_model_loadout: {
       default: {
         system: OPENAI_PROMPT_TEMPLATES.default.system, // default
@@ -272,7 +292,26 @@ const config = {
         temperature: 0.7,
       },
     },
+    openai_models: {
+      default: 'gpt-4o',
+      economy: 'gpt-4o',
+      standard: 'gpt-4o',
+      premium: 'gpt-4o',
+      longcontext: 'gpt-4o',
+      fast: 'gpt-4o',
+      reasoning: 'gpt-4o',
+      image: 'gpt-4o',
+      audio: 'gpt-4o',
+      video: 'gpt-4o',
+      multimodal: 'gpt-4o',
+      realtime: 'gpt-4o',
+      uncensored: 'gpt-4o',
+      funny: 'gpt-4o',
+      creative: 'gpt-4o',
+      coding: 'gpt-4o',
+    },
   },
+
   // Solana timeout settings:
   solana_timeouts: {
     // ^^^ = uses RPC calls

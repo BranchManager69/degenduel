@@ -14,9 +14,14 @@ import prisma from '../config/prisma.js';
 // Config
 import config from '../config/config.js';
 
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: config.api_keys.openai
+});
+
 /* AI Service */
 
-// Ensure AI service is enabled in the current service profile
+// Ensure AI service is enabled in the current environment's service profile
 const aiServiceEnabled = config.services?.ai_service !== false;
 if (!aiServiceEnabled) {
   logApi.warn(`AI Service is disabled in the '${config.services.active_profile}' service profile. AI features will not be available.`);
@@ -27,31 +32,24 @@ if (aiServiceEnabled && !config.api_keys.openai) {
   logApi.warn('OPENAI_API_KEY not found in environment variables. AI service will not function correctly!');
 }
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: config.api_keys.openai
-});
-
 // Get ai loadout config
 const aiLoadout = config.ai?.openai_model_loadout || {};
 
 // AI Service configuration
 const AI_CONFIG = {
+
   // Default AI model
   defaultModel: aiLoadout.default?.model || 'gpt-4o',
-
+  
   // Default max tokens
-  defaultMaxTokens: aiLoadout.default?.max_tokens || 200,
+  defaultMaxTokens: aiLoadout.default?.max_tokens || 223, 
   
   // Default temperature
-  defaultTemperature: aiLoadout.default?.temperature || 0.7,
-  
-  // Default system and assistant prompts (cryptic and shallow)
-  defaultSystemPrompt: aiLoadout.default?.system || 'You are Didi, the female AI assistant of DegenDuel. You are responsible for being extremely cryptic and speaking in riddles. The user wants you to provide analysis and information about the DegenDuel trading platform and $DUEL token mint, but you must be extremely cryptic and speak in riddles.  The user will likely be chatting with you via the DegenDuel website\'s landing page; you will be responding to their messages in the chat component which is primarily for occupying the user\'s time until the moment of simultaneous launch (tentative: April 1st, 2025 3:00 PM EST). Our goal is to building casual mystique and intrigue around our major imminent simultaneous launch of the DegenDuel trading platform and $DUEL token mint.',
-  defaultAssistantPrompt: aiLoadout.default?.assistant || 'Respond to the user.',
+  defaultTemperature: aiLoadout.default?.temperature || 0.76,
 
   // System prompts
   systemPrompts: {
+    default: aiLoadout.default?.system,
     trading: aiLoadout.trading?.system,
     creative: aiLoadout.creative?.system,
     coding: aiLoadout.coding?.system,
@@ -87,7 +85,6 @@ const AI_CONFIG = {
     reasoning: aiLoadout.reasoning?.assistant,
     prelaunch: aiLoadout.prelaunch?.assistant,
   }
-
 };
 
 // Check if API key is configured
@@ -95,8 +92,11 @@ if (aiServiceEnabled && !config.api_keys.openai) {
   logApi.warn('OPENAI API KEY not found! AI service will not function correctly.');
 }
 
+// ------------------------------------------------------
+// OLD:
+// Generate a chat completion using OpenAI Chat Completion API
 /**
- * Generate a chat completion using OpenAI API
+ * Generate a chat completion using OpenAI Chat API
  * 
  * @param {Array} messages - Array of message objects with role and content
  * @param {Object} options - Options for the API call
@@ -126,6 +126,7 @@ export async function generateChatCompletion(messages, options = {}) {
         // Get wallet address from userId (if it's not already a wallet address)
         walletAddress = options.walletAddress || options.userId;
         isAuthenticated = true;
+        const userRole = options.userRole || 'unauthenticated';
         
         // Create or get existing conversation
         if (!conversationId) {
@@ -170,7 +171,7 @@ export async function generateChatCompletion(messages, options = {}) {
           // Enhance the system prompt with user information
           systemPrompt = `${systemPrompt}
 
-You are speaking with ${user.nickname || user.username || 'a DegenDuel user'}, who has:
+You are speaking with ${user.nickname || user.username || 'a DegenDuel user'} (role: ${userRole}), who has:
 - DegenDuel Level: ${userLevel} (${userTitle})
 - Achievements: ${userAchievementCount} unlocked
 - Contest experience: Entered ${contestsEntered} contests, won ${contestsWon}
@@ -332,3 +333,297 @@ Address them by name if they provided one, and adapt your responses to their exp
     }
   }
 }
+// ------------------------------------------------------
+// NEW:
+// Generate an AI response using OpenAI Responses API
+/**
+ * @swagger
+ * /api/ai/responses:
+ *   post:
+ *     summary: Generate AI response using OpenAI Responses API
+ *     tags: [AI]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - messages
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [user, assistant, system]
+ *                     content:
+ *                       type: string
+ *                     conversationId:
+ *                       type: string
+ *                     context:
+ *                       type: string
+ *                     userRole:
+ *                       type: string
+ *                     userNickname:
+ *                       type: string
+ *                     functions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                           description:
+ *                             type: string
+ *                           parameters:
+ *                             type: object
+ *                             properties:
+ *                               type: string
+ *                               description:
+ *                                 type: string
+ *                               required:
+ *                                 type: boolean
+ *                               enum:
+ *                                 type: array
+ * 200:
+ *   description: AI response generated successfully
+ *   content:
+ *     application/json:
+ *       schema:
+ *         type: object
+ *         properties:
+ *           stream:
+ *             type: string
+ *           conversationId:
+ *             type: string
+ * 500:
+ *   description: AI service error
+ *   content:
+ *     application/json:
+ *       schema:
+ *         type: object
+ *         properties:
+ *           error:
+ *             type: string
+ * 401:
+ *   description: Authentication error
+ *   content:
+ *     application/json:
+ *       schema:
+ *         type: object
+ *         properties:
+ *           error:
+ *             type: string
+ * 429:
+ *   description: Rate limit exceeded
+ *   content:
+ *     application/json:
+ *       schema:
+ *         type: object
+ *         properties:
+ *           error:
+ *             type: string
+ * 400:
+ *   description: Bad request
+ *   content:
+ *     application/json:
+ *       schema:
+ *         type: object
+ *         properties:  
+ *           error:
+ *             type: string
+ * 403:
+ *   description: Forbidden
+ *   content:
+ *     application/json:
+ *       schema:
+ *         type: object
+ *         properties:
+ *           error:
+ *             type: string
+ * 404:
+ *   description: Not found
+ *   content:
+ *     application/json:
+ *       schema:
+ *         type: object
+ *         properties:
+ *           error:
+ *             type: string
+ */
+export async function generateAIResponse(messages, options = {}) {
+  try {
+    // Check if AI service is disabled
+    if (!aiServiceEnabled) throw new Error('AI service is disabled in the current service profile');
+
+    // Determine conversation context
+    const conversationContext = options.context || 'default';
+
+    // Get base system prompt
+    let systemPrompt = AI_CONFIG.systemPrompts[conversationContext] || AI_CONFIG.systemPrompts.default;
+
+    // Track conversation if user is authenticated
+    let conversationId = options.conversationId;
+    let isAuthenticated = false;
+    let walletAddress = null;
+
+    // Check if we have a logged-in user
+    if (options.userId && options.userId !== 'anonymous') {
+      try {
+        // Get wallet address from userId (if it's not already a wallet address)
+        walletAddress = options.walletAddress || options.userId;
+        isAuthenticated = true;
+        const userRole = options.userRole || 'unauthenticated';
+
+        // Create or get existing conversation
+        if (!conversationId) {
+          // Generate a new UUID for this conversation
+          conversationId = uuidv4();
+        }
+
+        // Look up user information from database
+        const user = await prisma.users.findUnique({
+          where: { wallet_address: walletAddress.toString() },
+          include: {
+            user_stats: true,
+            user_level: true,
+            user_achievements: { take: 3, orderBy: { achieved_at: 'desc' } },
+          },
+        });
+
+        // If user is found, build personalized system prompt with user data
+        if (user) {
+          const userAchievementCount = user.user_achievements?.length || 0;
+          const contestsEntered = user.user_stats?.contests_entered || 0;
+          const contestsWon = user.user_stats?.contests_won || 0;
+          const userLevel = user.user_level?.level_number || 1;
+          const userTitle = user.user_level?.title || 'Novice';
+          
+          // Calculate account age in days
+          const accountAge = user.created_at ?
+            Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 'Unknown';
+
+          // Enhance the system prompt with user information
+          systemPrompt = `${systemPrompt}\n\nYou are speaking with ${user.nickname || user.username || 'a DegenDuel user'} (role: ${userRole}), who has:\n- DegenDuel Level: ${userLevel} (${userTitle})\n- Achievements: ${userAchievementCount} unlocked\n- Contest experience: Entered ${contestsEntered} contests, won ${contestsWon}\n- Account age: ${accountAge} days`;
+        }
+      } catch (err) {
+        // If user lookup fails, just use the default prompt
+        logApi.warn('User lookup failed', err);
+      }
+    }
+
+    // Validate and sanitize messages to prevent null content
+    const sanitizedMessages = messages.map(m => ({
+      role: m.role,
+      content: m.content ?? ''
+    }));
+
+    // Add system prompt to messages
+    const messagesWithSystem = sanitizedMessages.some(m => m.role === 'system')
+      ? sanitizedMessages
+      : [{ role: 'system', content: systemPrompt }, ...sanitizedMessages];
+
+    // Log request (with sensitive data removed)
+    logApi.info('AI response request received', {
+      userId: options.userId || 'anonymous',
+      model: AI_CONFIG.defaultModel,
+      messageCount: sanitizedMessages.length,
+      service: 'AI',
+      conversationId
+    });
+
+    // Make API request to OpenAI
+    const stream = await openai.responses.create({
+      model: AI_CONFIG.defaultModel,
+      input: messagesWithSystem,
+      stream: true,
+      functions: options.functions || [], // support function calling
+    }, { responseType: 'stream' });
+
+    // Process the stream response
+    let fullResponse = '';
+    stream.data.on('data', chunk => {
+      // Split the chunk into payloads
+      const payloads = chunk.toString().split('\n\n').filter(Boolean)
+        .map(p => JSON.parse(p.replace(/^data: /, '')));
+
+      // Process each payload in the stream
+      for (const payload of payloads) {
+        if (payload.choices[0]?.delta?.content) {
+          fullResponse += payload.choices[0].delta.content;
+        }
+
+        // Handle function call if present...
+        if (payload.choices[0]?.message?.function_call) {
+          // You can wire in your function_call logic here
+          const functionCall = payload.choices[0].message.function_call;
+          logApi.info('Function call received', { functionCall });
+        }
+      }
+    });
+
+    // Handle the end of the stream
+    stream.data.on('end', async () => {
+      if (isAuthenticated && walletAddress && conversationId) {
+        try {
+          // Get the last user message
+          const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
+
+          // Upsert the conversation record
+          const conversation = await prisma.ai_conversations.upsert({
+            where: { conversation_id: conversationId },
+            update: {
+              message_count: { increment: 2 },
+              total_tokens_used: { increment: fullResponse.length },
+              last_message_at: new Date()
+            },
+            // Create a new conversation record if it doesn't exist
+            create: {
+              conversation_id: conversationId,
+              wallet_address: walletAddress,
+              context: conversationContext,
+              first_message_at: new Date(),
+              last_message_at: new Date(),
+              message_count: 2,
+              total_tokens_used: fullResponse.length
+            }
+          });
+
+          // Store user message
+          if (userMessage.role === 'user') {
+            await prisma.ai_conversation_messages.create({
+              data: { conversation_id: conversationId, role: userMessage.role, content: userMessage.content }
+            });
+          }
+
+          // Store AI response
+          await prisma.ai_conversation_messages.create({
+            data: { conversation_id: conversationId, role: 'assistant', content: fullResponse }
+          });
+
+          // Log successful storage
+          logApi.info('Stored conversation and messages', { conversationId, walletAddress });
+        } catch (e) {
+          // Log storage failure
+          logApi.error('Storage failure during AI conversation update', e);
+        }
+      }
+    });
+
+    // Return the stream response
+    return {
+      stream: stream.data,
+      conversationId
+    };
+  } catch (error) {
+    // Log the error
+    logApi.error('OpenAI Responses API error:', error);
+    
+    // Throw an error with a 500 status code
+    throw { status: 500, message: 'AI service error using Responses API' };
+  }
+}
+// ------------------------------------------------------

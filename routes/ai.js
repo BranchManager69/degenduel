@@ -1,14 +1,25 @@
+// routes/ai.js
+
+/**
+ * @swagger
+ * tags:
+ *   name: AI
+ *   description: AI-related endpoints
+ */
+
 import express from 'express';
 import { generateChatCompletion } from '../services/aiService.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import rateLimit from 'express-rate-limit';
 import prisma from '../config/prisma.js';
+import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
+//import { config } from '../config/config.js';
 
 const router = express.Router();
 
 // Configure rate limiter for AI requests
 const aiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 5 * 60 * 1000, // 5 minutes
   max: 50, // 50 requests per window
   standardHeaders: true,
   legacyHeaders: false,
@@ -17,6 +28,7 @@ const aiLimiter = rateLimit({
     return req.user?.id || req.ip;
   },
   handler: (req, res) => {
+    logApi.warn('Rate limit exceeded for AI service by user:', req.user?.id || req.ip);
     res.status(429).json({
       error: 'Rate limit exceeded for AI service',
       type: 'rate_limit'
@@ -24,6 +36,9 @@ const aiLimiter = rateLimit({
   }
 });
 
+// ------------------------------------------------------
+
+// AI Chat Endpoint (no auth required)
 /**
  * @swagger
  * /api/ai/chat:
@@ -124,14 +139,18 @@ router.post('/chat', aiLimiter, async (req, res) => {
     
     // Get user information if available
     const userId = req.user?.id || 'anonymous';
-    const walletAddress = req.user?.wallet_address;
+    const walletAddress = req.user?.wallet_address || 'unknown';
+    const userRole = req.user?.role || 'unauthenticated';
+    const userNickname = req.user?.nickname || req.user?.username || 'a DegenDuel user';
     
     // Process chat completion with enhanced options
     const result = await generateChatCompletion(messages, {
       conversationId,
       userId,
       walletAddress,
-      context
+      context,
+      userRole,
+      userNickname
     });
     
     // Return response
@@ -151,6 +170,404 @@ router.post('/chat', aiLimiter, async (req, res) => {
   }
 });
 
+// AI Chat Endpoint (authenticated required)
+/**
+ * @swagger
+ * /api/ai/chat:
+ *   post:
+ *     summary: Process AI chat completions
+ *     tags: [AI]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - messages
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 description: Array of message objects representing the conversation
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - role
+ *                     - content
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [user, assistant]
+ *                       description: The role of the message sender (system prompts are added automatically)
+ *                     content:
+ *                       type: string
+ *                       description: The content of the message
+ *               conversationId:
+ *                 type: string
+ *                 description: Optional ID to track conversations for analytics
+ *               context:
+ *                 type: string
+ *                 enum: [default, trading]
+ *                 description: Optional context to determine which system prompt to use
+ *     responses:
+ *       200:
+ *         description: AI response generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 content:
+ *                   type: string
+ *                   description: The AI-generated response
+ *                 usage:
+ *                   type: object
+ *                   properties:
+ *                     promptTokens:
+ *                       type: number
+ *                     completionTokens:
+ *                       type: number
+ *                     totalTokens:
+ *                       type: number
+ *                 conversationId:
+ *                   type: string
+ *       400:
+ *         description: Invalid request parameters
+ *       429:
+ *         description: Rate limit exceeded
+ *       500:
+ *         description: Server error
+ */
+router.post('/chat/degen', requireAuth, aiLimiter, async (req, res) => {
+  try {
+    // Extract request parameters - we only need messages and conversationId
+    const { messages, conversationId, context } = req.body;
+    
+    // Validation
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ 
+        error: 'Invalid request: messages array is required',
+        type: 'invalid_request'
+      });
+    }
+    
+    // Validate message format
+    for (const message of messages) {
+      if (!message.role || typeof message.role !== 'string') {
+        return res.status(400).json({
+          error: 'Invalid request: each message must have a valid role',
+          type: 'invalid_request'
+        });
+      }
+      
+      if (message.content === null || message.content === undefined) {
+        // Convert null or undefined content to empty string
+        message.content = '';
+      } else if (typeof message.content !== 'string') {
+        // Convert non-string content to string
+        message.content = String(message.content);
+      }
+    }
+    
+    // Get user information if available
+    const userId = req.user?.id || 'anonymous';
+    const walletAddress = req.user?.wallet_address || 'unknown';
+    const userRole = req.user?.role || 'unauthenticated';
+    const userNickname = req.user?.nickname || req.user?.username || 'a DegenDuel user';
+    
+    // Process chat completion with enhanced options
+    const result = await generateChatCompletion(messages, {
+      conversationId,
+      userId,
+      walletAddress,
+      context,
+      userRole,
+      userNickname
+    });
+    
+    // Return response
+    return res.status(200).json(result);
+  } catch (error) {
+    // Log detailed error for debugging
+    logApi.error('AI chat error:', error);
+    
+    // Handle errors based on type
+    const status = error.status || 500;
+    const message = error.message || 'Internal server error';
+    
+    return res.status(status).json({
+      error: message,
+      type: getErrorType(status)
+    });
+  }
+});
+
+// AI Chat Endpoint (admin required)
+/**
+ * @swagger
+ * /api/ai/chat:
+ *   post:
+ *     summary: Process AI chat completions
+ *     tags: [AI]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - messages
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 description: Array of message objects representing the conversation
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - role
+ *                     - content
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [user, assistant]
+ *                       description: The role of the message sender (system prompts are added automatically)
+ *                     content:
+ *                       type: string
+ *                       description: The content of the message
+ *               conversationId:
+ *                 type: string
+ *                 description: Optional ID to track conversations for analytics
+ *               context:
+ *                 type: string
+ *                 enum: [default, trading]
+ *                 description: Optional context to determine which system prompt to use
+ *     responses:
+ *       200:
+ *         description: AI response generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 content:
+ *                   type: string
+ *                   description: The AI-generated response
+ *                 usage:
+ *                   type: object
+ *                   properties:
+ *                     promptTokens:
+ *                       type: number
+ *                     completionTokens:
+ *                       type: number
+ *                     totalTokens:
+ *                       type: number
+ *                 conversationId:
+ *                   type: string
+ *       400:
+ *         description: Invalid request parameters
+ *       429:
+ *         description: Rate limit exceeded
+ *       500:
+ *         description: Server error
+ */
+router.post('/chat/admin', requireAdmin, aiLimiter, async (req, res) => {
+  try {
+    // Extract request parameters - we only need messages and conversationId
+    const { messages, conversationId, context } = req.body;
+    
+    // Validation
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ 
+        error: 'Invalid request: messages array is required',
+        type: 'invalid_request'
+      });
+    }
+    
+    // Validate message format
+    for (const message of messages) {
+      if (!message.role || typeof message.role !== 'string') {
+        return res.status(400).json({
+          error: 'Invalid request: each message must have a valid role',
+          type: 'invalid_request'
+        });
+      }
+      
+      if (message.content === null || message.content === undefined) {
+        // Convert null or undefined content to empty string
+        message.content = '';
+      } else if (typeof message.content !== 'string') {
+        // Convert non-string content to string
+        message.content = String(message.content);
+      }
+    }
+    
+    // Get user information if available
+    const userId = req.user?.id || 'anonymous';
+    const walletAddress = req.user?.wallet_address;
+    const userRole = req.user?.role;
+    const userNickname = req.user?.nickname || req.user?.username || 'a DegenDuel user';
+    
+    // Process chat completion with enhanced options
+    const result = await generateChatCompletion(messages, {
+      conversationId,
+      userId,
+      walletAddress,
+      context,
+      userRole,
+      userNickname
+    });
+    
+    // Return response
+    return res.status(200).json(result);
+  } catch (error) {
+    // Log detailed error for debugging
+    logApi.error('AI chat error:', error);
+    
+    // Handle errors based on type
+    const status = error.status || 500;
+    const message = error.message || 'Internal server error';
+    
+    return res.status(status).json({
+      error: message,
+      type: getErrorType(status)
+    });
+  }
+});
+
+// AI Chat Endpoint (superadmin required)
+/**
+ * @swagger
+ * /api/ai/chat:
+ *   post:
+ *     summary: Process AI chat completions
+ *     tags: [AI]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - messages
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 description: Array of message objects representing the conversation
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - role
+ *                     - content
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [user, assistant]
+ *                       description: The role of the message sender (system prompts are added automatically)
+ *                     content:
+ *                       type: string
+ *                       description: The content of the message
+ *               conversationId:
+ *                 type: string
+ *                 description: Optional ID to track conversations for analytics
+ *               context:
+ *                 type: string
+ *                 enum: [default, trading]
+ *                 description: Optional context to determine which system prompt to use
+ *     responses:
+ *       200:
+ *         description: AI response generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 content:
+ *                   type: string
+ *                   description: The AI-generated response
+ *                 usage:
+ *                   type: object
+ *                   properties:
+ *                     promptTokens:
+ *                       type: number
+ *                     completionTokens:
+ *                       type: number
+ *                     totalTokens:
+ *                       type: number
+ *                 conversationId:
+ *                   type: string
+ *       400:
+ *         description: Invalid request parameters
+ *       429:
+ *         description: Rate limit exceeded
+ *       500:
+ *         description: Server error
+ */
+router.post('/chat/superadmin', requireSuperAdmin, aiLimiter, async (req, res) => {
+  try {
+    // Extract request parameters - we only need messages and conversationId
+    const { messages, conversationId, context } = req.body;
+    
+    // Validation
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ 
+        error: 'Invalid request: messages array is required',
+        type: 'invalid_request'
+      });
+    }
+    
+    // Validate message format
+    for (const message of messages) {
+      if (!message.role || typeof message.role !== 'string') {
+        return res.status(400).json({
+          error: 'Invalid request: each message must have a valid role',
+          type: 'invalid_request'
+        });
+      }
+      
+      if (message.content === null || message.content === undefined) {
+        // Convert null or undefined content to empty string
+        message.content = '';
+      } else if (typeof message.content !== 'string') {
+        // Convert non-string content to string
+        message.content = String(message.content);
+      }
+    }
+    
+    // Get user information if available
+    const userId = req.user?.id || 'anonymous';
+    const walletAddress = req.user?.wallet_address;
+    const userRole = req.user?.role;
+    const userNickname = req.user?.nickname || req.user?.username || 'a DegenDuel user';
+    
+    // Process chat completion with enhanced options
+    const result = await generateChatCompletion(messages, {
+      conversationId,
+      userId,
+      walletAddress,
+      context,
+      userRole,
+      userNickname
+    });
+    
+    // Return response
+    return res.status(200).json(result);
+  } catch (error) {
+    // Log detailed error for debugging
+    logApi.error('AI chat error:', error);
+    
+    // Handle errors based on type
+    const status = error.status || 500;
+    const message = error.message || 'Internal server error';
+    
+    return res.status(status).json({
+      error: message,
+      type: getErrorType(status)
+    });
+  }
+});
+
+// ------------------------------------------------------
+
 // Map status codes to error types
 function getErrorType(status) {
   switch (status) {
@@ -162,6 +579,9 @@ function getErrorType(status) {
   }
 }
 
+// ------------------------------------------------------
+
+// Get a user's conversation history
 /**
  * @swagger
  * /api/ai/conversations:
@@ -219,6 +639,7 @@ router.get('/conversations', async (req, res) => {
   }
 });
 
+// Get a specific conversation with messages
 /**
  * @swagger
  * /api/ai/conversations/{conversationId}:
@@ -296,5 +717,7 @@ router.get('/conversations/:conversationId', async (req, res) => {
     });
   }
 });
+
+// ------------------------------------------------------
 
 export default router;
