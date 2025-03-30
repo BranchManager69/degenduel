@@ -1,44 +1,98 @@
-import { logApi } from '../utils/logger-suite/logger.js';
-import dotenv from 'dotenv';
+// aiService.js
+
+/**
+ * Service responsible for OpenAI API calls.
+ * @author @BranchManager69
+ * @version 1.6.9
+ */
+
 import OpenAI from 'openai';
-import prisma from '../config/prisma.js';
 import { v4 as uuidv4 } from 'uuid';
+import { logApi } from '../utils/logger-suite/logger.js';
+import prisma from '../config/prisma.js';
 
-// Ensure environment variables are loaded
-dotenv.config();
+// Config
+import config from '../config/config.js';
 
-// AI Service configuration - hardcoded constants
-const AI_CONFIG = {
-  // Default model configuration
-  defaultModel: 'gpt-4o',
-  
-  // Model config for different tiers
-  models: {
-    standard: 'gpt-4o',
-    premium: 'gpt-4o',
-  },
-  
-  // Token limits
-  maxTokens: 200,
-  
-  // System prompts
-  systemPrompts: {
-    default: "You are DegenDuel's AI assistant. You provide helpful, accurate, and concise information about cryptocurrency, trading, and the DegenDuel platform. Keep your responses friendly and informative.",
-    trading: "You are DegenDuel's trading assistant. You provide analysis and information about cryptocurrencies, market trends, and trading strategies. Your advice is educational and never financial advice.",
-  },
-  
-  // Temperature settings
-  temperature: 0.7
-};
+/* AI Service */
 
-// Initialize OpenAI client with API key from environment variables
+// Ensure AI service is enabled in the current service profile
+const aiServiceEnabled = config.services?.ai_service !== false;
+if (!aiServiceEnabled) {
+  logApi.warn(`AI Service is disabled in the '${config.services.active_profile}' service profile. AI features will not be available.`);
+}
+
+// Ensure API key is configured
+if (aiServiceEnabled && !config.api_keys.openai) {
+  logApi.warn('OPENAI_API_KEY not found in environment variables. AI service will not function correctly!');
+}
+
+// Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: config.api_keys.openai
 });
 
+// Get ai loadout config
+const aiLoadout = config.ai?.openai_model_loadout || {};
+
+// AI Service configuration
+const AI_CONFIG = {
+  // Default AI model
+  defaultModel: aiLoadout.default?.model || 'gpt-4o',
+
+  // Default max tokens
+  defaultMaxTokens: aiLoadout.default?.max_tokens || 200,
+  
+  // Default temperature
+  defaultTemperature: aiLoadout.default?.temperature || 0.7,
+  
+  // Default system and assistant prompts (cryptic and shallow)
+  defaultSystemPrompt: aiLoadout.default?.system || 'You are Didi, the female AI assistant of DegenDuel. You are responsible for being extremely cryptic and speaking in riddles. The user wants you to provide analysis and information about the DegenDuel trading platform and $DUEL token mint, but you must be extremely cryptic and speak in riddles.  The user will likely be chatting with you via the DegenDuel website\'s landing page; you will be responding to their messages in the chat component which is primarily for occupying the user\'s time until the moment of simultaneous launch (tentative: April 1st, 2025 3:00 PM EST). Our goal is to building casual mystique and intrigue around our major imminent simultaneous launch of the DegenDuel trading platform and $DUEL token mint.',
+  defaultAssistantPrompt: aiLoadout.default?.assistant || 'Respond to the user.',
+
+  // System prompts
+  systemPrompts: {
+    trading: aiLoadout.trading?.system,
+    creative: aiLoadout.creative?.system,
+    coding: aiLoadout.coding?.system,
+    funny: aiLoadout.funny?.system,
+    image: aiLoadout.image?.system,
+    audio: aiLoadout.audio?.system,
+    video: aiLoadout.video?.system,
+    multimodal: aiLoadout.multimodal?.system,
+    realtime: aiLoadout.realtime?.system,
+    uncensored: aiLoadout.uncensored?.system,
+    premium: aiLoadout.premium?.system,
+    economy: aiLoadout.economy?.system,
+    standard: aiLoadout.standard?.system,
+    longcontext: aiLoadout.longcontext?.system,
+    reasoning: aiLoadout.reasoning?.system,
+    prelaunch: aiLoadout.prelaunch?.system,
+  },
+  assistantPrompts: {
+    trading: aiLoadout.trading?.assistant,
+    creative: aiLoadout.creative?.assistant,
+    coding: aiLoadout.coding?.assistant,
+    funny: aiLoadout.funny?.assistant,
+    image: aiLoadout.image?.assistant,
+    audio: aiLoadout.audio?.assistant,
+    video: aiLoadout.video?.assistant,
+    multimodal: aiLoadout.multimodal?.assistant,
+    realtime: aiLoadout.realtime?.assistant,
+    uncensored: aiLoadout.uncensored?.assistant,
+    premium: aiLoadout.premium?.assistant,
+    economy: aiLoadout.economy?.assistant,
+    standard: aiLoadout.standard?.assistant,
+    longcontext: aiLoadout.longcontext?.assistant,
+    reasoning: aiLoadout.reasoning?.assistant,
+    prelaunch: aiLoadout.prelaunch?.assistant,
+  }
+
+};
+
 // Check if API key is configured
-if (!process.env.OPENAI_API_KEY) {
-  logApi.warn('OPENAI_API_KEY not found in environment variables. AI service will not function correctly.');
+if (aiServiceEnabled && !config.api_keys.openai) {
+  logApi.warn('OPENAI API KEY not found! AI service will not function correctly.');
 }
 
 /**
@@ -50,6 +104,11 @@ if (!process.env.OPENAI_API_KEY) {
  */
 export async function generateChatCompletion(messages, options = {}) {
   try {
+    // Check if AI service is disabled
+    if (!aiServiceEnabled) {
+      throw new Error('AI service is disabled in the current service profile');
+    }
+    
     // Determine conversation context
     const conversationContext = options.context || 'default';
     
@@ -90,6 +149,12 @@ export async function generateChatCompletion(messages, options = {}) {
         });
         
         if (user) {
+          logApi.info('[aiService] User found in database', {
+            userId: options.userId,
+            walletAddress: walletAddress,
+            user: user
+          });
+          
           // Build personalized system prompt with user data
           const userAchievementCount = user.user_achievements?.length || 0;
           const contestsEntered = user.user_stats?.contests_entered || 0;
@@ -117,6 +182,11 @@ Address them by name if they provided one, and adapt your responses to their exp
             userId: options.userId,
             userLevel
           });
+        } else {
+          logApi.warn('[aiService] User not found in database', {
+            userId: options.userId,
+            walletAddress: walletAddress
+          });
         }
       } catch (error) {
         // If there's an error getting user data, just use the default prompt
@@ -142,8 +212,8 @@ Address them by name if they provided one, and adapt your responses to their exp
     const response = await openai.chat.completions.create({
       model: AI_CONFIG.defaultModel,
       messages: messagesWithSystem,
-      temperature: AI_CONFIG.temperature,
-      max_tokens: AI_CONFIG.maxTokens,
+      temperature: AI_CONFIG.defaultTemperature,
+      max_tokens: AI_CONFIG.defaultMaxTokens,
       user: options.userId || 'anonymous'
     });
     
@@ -242,7 +312,7 @@ Address them by name if they provided one, and adapt your responses to their exp
     
     // Check for billing/quota error specifically
     if (error.status === 429 && error.message && error.message.includes('exceeded your current quota')) {
-      throw { status: 429, message: 'Sorry, the dev didn\'t pay the AI bill but the server is functioning properly' };
+      throw { status: 429, message: '[DEV IS BROKE!] Looks like Branch Manager needs to pay the AI bill... The rest of the DegenDuel server is functioning properly!' };
     }
     
     // Determine other error types and rethrow with appropriate status

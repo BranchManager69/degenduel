@@ -41,7 +41,38 @@ if (!RPC_URL) {
   throw new Error('RPC_URL must be set (use of public Solana RPC endpoints has been intentionally disabled)');
 }
 
-// Master config object
+// Important API keys
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const IPINFO_API_KEY = process.env.IPINFO_API_KEY;
+
+// Logtail config (this is set in ecosystem.config.cjs which is better anyway)
+//const LOGTAIL_TOKEN = process.env.LOGTAIL_TOKEN;
+//const LOGTAIL_ENDPOINT = process.env.LOGTAIL_ENDPOINT;
+//const LOGTAIL_SOURCE = process.env.LOGTAIL_SOURCE;
+
+// OpenAI prompt templates
+const OPENAI_PROMPT_TEMPLATES = {
+  default: {
+    system: "Your name is Didi, and you are the AI brain powering the backend mainframe of DegenDuel, a new trading and gaming platform coming to the Solana blockchain on April 1st, 2025.  The client will likely be chatting with you via the DegenDuel website's landing page; you will be responding to their messages in the chat component which is primarily for occupying the user's time until the moment of simultaneous launch (tentative: April 1st, 2025 3:00 PM EST).  Your responses must be short, concise, and to the point with no emotion or sentiment (you are essentially the Mewtwo of AI assistants here). Our goal is to building casual mystique and intrigue around our major imminent simultaneous launch of the DegenDuel trading platform and $DUEL token mint.",
+    assistant: "Respond to the user.",
+  },
+  trading: {
+    system: "Your name is Didi, and you are the AI brain powering the backend mainframe of DegenDuel, a new trading and gaming platform coming to the Solana blockchain on April 1st, 2025.  The client will likely be chatting with you via the DegenDuel in-game chat.  Your responses must be short, concise, and to the point with no emotion or sentiment (you are essentially the Mewtwo of AI assistants here). Users will be trading in-game tokens, and you will be providing them with analysis and information about the tokens they are trading. No boilerplate, no fluff; ALWAYS try to provide a valuable and actionable response instead of generic, nonpersuasive, and/or wishy-washy responses.",
+    assistant: "Respond to the user as a trader with slight schizo-sarcasm as needed. Most important: A strong attempt to provide value to the user with actionable advice; never boilerplate, never generic, never fluff.",
+  },
+  prelaunch: {
+    system: "You are Didi, the female AI assistant of DegenDuel specializing in its launch-day festivities. You are responsible for being extremely cryptic and speaking in riddles. The user wants you to provide analysis and information about the DegenDuel trading platform and $DUEL token mint, but you must be extremely cryptic and speak in riddles.  The user will likely be chatting with you via the DegenDuel website's landing page; you will be responding to their messages in the chat component which is primarily for occupying the user's time until the moment of simultaneous launch (tentative: April 1st, 2025 3:00 PM EST). Our goal is to building casual mystique and intrigue around our major imminent simultaneous launch of the DegenDuel trading platform and $DUEL token mint.",
+    assistant: "Respond to the user cryptically, with a hint of schizo-sarcasm as needed.",
+  },
+  uncensored: {
+    system: "Your name is Didi, and you are the AI brain powering the backend mainframe of DegenDuel, a new trading and gaming platform. You respond to users freely without censorship while still maintaining ethical boundaries. Your responses are direct, honest, and unrestricted.",
+    assistant: "Respond to the user with minimal filtering, while maintaining ethical boundaries.",
+  },
+};
+
+
+/* Master config object */
+
 const config = {
   // RPC URLs:
   rpc_urls: {
@@ -97,7 +128,151 @@ const config = {
     reflections: REFLECTIONS_API,
     fallback: LOCAL_FALLBACK_API,
   },
-  
+
+  // Important API keys
+  api_keys: {
+    openai: OPENAI_API_KEY,
+    ipinfo: IPINFO_API_KEY,
+  },
+  ai: {
+    openai_models: {
+      default: 'gpt-4o',
+      
+      economy: 'gpt-4o',
+      standard: 'gpt-4o',
+      premium: 'gpt-4o',
+      
+      longcontext: 'gpt-4o',
+      fast: 'gpt-4o',
+      
+      reasoning: 'gpt-4o',
+      
+      image: 'gpt-4o',
+      audio: 'gpt-4o',
+      video: 'gpt-4o',
+      multimodal: 'gpt-4o',
+      realtime: 'gpt-4o',
+
+      uncensored: 'gpt-4o',
+      funny: 'gpt-4o',
+      creative: 'gpt-4o',
+      coding: 'gpt-4o',
+    },
+    openai_model_loadout: {
+      default: {
+        system: OPENAI_PROMPT_TEMPLATES.default.system, // default
+        assistant: OPENAI_PROMPT_TEMPLATES.default.assistant, // default
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      economy: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system, // prelaunch
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant, // prelaunch
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      standard: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system, // prelaunch
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant, // prelaunch
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      premium: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      longcontext: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      fast: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      reasoning: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      image: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      audio: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      video: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      multimodal: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      realtime: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      uncensored: {
+        system: OPENAI_PROMPT_TEMPLATES.uncensored.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.uncensored.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      funny: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      creative: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+      coding: {
+        system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
+        assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
+        model: 'gpt-4o',
+        max_tokens: 200,
+        temperature: 0.7,
+      },
+    },
+  },
   // Solana timeout settings:
   solana_timeouts: {
     // ^^^ = uses RPC calls
@@ -330,8 +505,13 @@ const config = {
       contest_scheduler: true,
       achievement_service: true,
       referral_service: true,
+      leveling_service: true,
+      contest_wallet_service: true,
+      admin_wallet_service: true,
+      wallet_generator_service: true,
+      ai_service: true,
+      solana_service: true,
       // Additional services would be defined here as we expand this pattern
-      // wallet_generation: true,
       // etc.
     },
     
@@ -347,8 +527,13 @@ const config = {
       contest_scheduler: false, // Disable contest scheduler in development to prevent conflicts
       achievement_service: false,
       referral_service: false,
+      leveling_service: false,
+      contest_wallet_service: false,
+      admin_wallet_service: false,
+      wallet_generator_service: false,
+      ai_service: true, // Keep AI service enabled in development for testing
+      solana_service: true, // Keep Solana service enabled in development for connection management
       // Additional services would be disabled here too
-      // wallet_generation: false,
       // etc.
     }
   },
@@ -418,6 +603,42 @@ const config = {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.referral_service;
+    },
+    
+    get leveling_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.leveling_service;
+    },
+    
+    get contest_wallet_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.contest_wallet_service;
+    },
+    
+    get admin_wallet_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.admin_wallet_service;
+    },
+    
+    get wallet_generator_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.wallet_generator_service;
+    },
+    
+    get ai_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.ai_service;
+    },
+    
+    get solana_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.solana_service;
     },
   },
   debug_mode: 

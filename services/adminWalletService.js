@@ -26,6 +26,7 @@ import bs58 from 'bs58';
 import crypto from 'crypto';
 import { transferSOL, transferToken } from '../utils/solana-suite/web3-v2/solana-transaction-fixed.js';
 import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.js';
+import { fancyColors } from '../utils/colors.js';
 
 const ADMIN_WALLET_CONFIG = {
     name: SERVICE_NAMES.ADMIN_WALLET,
@@ -135,11 +136,18 @@ class AdminWalletService extends BaseService {
 
     async initialize() {
         try {
-            // Call parent initialize first
-            await super.initialize();
+            // Check if admin wallet service is disabled via service profile
+            if (!config.services.admin_wallet_service) {
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Admin Wallet Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false;
+            }
             
-            // No dependency checks required for this service
-
+            // Call parent initialize first
+            const success = await super.initialize();
+            if (!success) {
+                return false;
+            }
+            
             // Load configuration from database
             const settings = await prisma.system_settings.findUnique({
                 where: { key: this.name }
@@ -215,14 +223,14 @@ class AdminWalletService extends BaseService {
                 serializableStats
             );
 
-            logApi.info('\t\tAdmin Wallet Service initialized', {
-            //    totalWallets,
-            //    activeWallets
-            });
+            logApi.info(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Admin Wallet Service initialized successfully${fancyColors.RESET}`);
 
             return true;
         } catch (error) {
-            logApi.error('Admin Wallet Service initialization error:', error);
+            logApi.error(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} ${fancyColors.RED}Admin Wallet Service initialization error:${fancyColors.RESET}`, {
+                error: error.message,
+                stack: error.stack
+            });
             await this.handleError(error);
             throw error;
         }
