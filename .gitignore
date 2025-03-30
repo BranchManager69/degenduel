@@ -39,8 +39,8 @@ logs/
 logs-*.txt
 logs-*.log
 
-# Tests
-tests/
+# Tests - Now tracked in repo
+# tests/
 
 # Scripts
 scripts/
@@ -115,7 +115,7 @@ scripts/
 scripts/shortcuts/
 
 # Test outputs and artifacts
-tests/
+# tests/
 
 # Generated assets
 #*.png

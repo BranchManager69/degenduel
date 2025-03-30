@@ -6,6 +6,8 @@
   "scripts": {
     "// MASTER DEGENDUEL RESTART (PREFERRED RESTART METHOD)": "==================================================================================",
     "re": "pm2 delete all && pm2 start ecosystem.config.cjs",
+    "test:contestwalletservice": "NODE_OPTIONS=\"--no-warnings --experimental-vm-modules\" jest tests/services/contestWalletService.test.js",
+    "test": "NODE_OPTIONS=\"--no-warnings --experimental-vm-modules\" jest",
     "// Master DegenDuel Start/Stop/Restart": "==================================================================================================",
     "pm2:start-all": "pm2 start ecosystem.config.cjs",
     "pm2:stop-all": "pm2 stop all",
@@ -30,14 +32,11 @@
     "mcp:up": "pm2 start ecosystem.config.cjs --only mcp-server",
     "mcp:down": "pm2 stop mcp-server",
     "mcp:reload": "pm2 restart mcp-server --update-env",
-    
     "// Twitter/X Scraping Tools": "==========================================================================================================",
     "x": "NODE_OPTIONS=--no-deprecation node scripts/twitter/utils/unified-scraper.cjs https://x.com/falconcrypto_/status/1903630137712591267",
     "xfast": "NODE_OPTIONS=--no-deprecation node scripts/twitter/utils/unified-scraper.cjs https://x.com/falconcrypto_/status/1903630137712591267 --visible=false",
-    
     "contest-reclaim": "curl -X POST http://localhost:3004/admin/wallet-management/reclaim-unused-funds -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRfYWRkcmVzcyI6IkJQdVJoa2VDa29yN0R4TXJjUFZzQjRBZFc2UG1wNW9BQ2pWenBQYjcyTWhwIiwicm9sZSI6InN1cGVyYWRtaW4iLCJzZXNzaW9uX2lkIjoiNTYwZjU2OWQyMTYyMGZkM2JhY2I3Yjg1ZjdiZDA5NTciLCJpYXQiOjE3NDMyMTg5NDAsImV4cCI6MTc0MzI2MjE0MH0.qMhaefdFH6VtWQJVIBvpCotnBuOISXdX-KYcvVXcSzU' -d '{\"status_filter\": [\"completed\", \"cancelled\"], \"min_balance\": 0.001, \"min_transfer\": 0.0005}'",
     "contest-reclaim:force": "curl -X POST http://localhost:3004/admin/wallet-management/reclaim-unused-funds -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRfYWRkcmVzcyI6IkJQdVJoa2VDa29yN0R4TXJjUFZzQjRBZFc2UG1wNW9BQ2pWenBQYjcyTWhwIiwicm9sZSI6InN1cGVyYWRtaW4iLCJzZXNzaW9uX2lkIjoiNTYwZjU2OWQyMTYyMGZkM2JhY2I3Yjg1ZjdiZDA5NTciLCJpYXQiOjE3NDMyMTg5NDAsImV4cCI6MTc0MzI2MjE0MH0.qMhaefdFH6VtWQJVIBvpCotnBuOISXdX-KYcvVXcSzU' -d '{\"status_filter\": [\"completed\", \"cancelled\"],  \"active\"],  \"pending\"], \"min_balance\": 0.001, \"min_transfer\": 0.0005}'",
-    
     "// General DD Services Testing (Pre-March 2025)": "=========================================================================================",
     "test:services": "node scripts/service-status-report.js # Reports saved to reports/service-reports/YYYY-MM-DD/",
     "test:websocket": "node scripts/test-websocket.js",
@@ -200,6 +199,7 @@
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
+    "jest": "^29.7.0",
     "playwright": "^1.51.1",
     "prettier": "^3.4.2",
     "prisma": "^6.3.1",
