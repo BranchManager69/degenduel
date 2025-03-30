@@ -141,6 +141,17 @@ class SolanaServiceManager {
     static async executeConnectionMethod(methodName, ...args) {
         return solanaService.executeConnectionMethod(methodName, ...args);
     }
+    
+    /**
+     * Execute an arbitrary RPC request function through the central queue
+     * This allows executing custom RPC calls through the global rate limiter
+     * @param {Function} rpcCall - Function that performs the RPC call
+     * @param {string} callName - Name of the call for logging
+     * @returns {Promise<any>} - Result of the RPC call
+     */
+    static async executeRpcRequest(rpcCall, callName = 'custom-rpc') {
+        return solanaService.executeRpcRequest(rpcCall, callName);
+    }
 }
 
 export default SolanaServiceManager;
