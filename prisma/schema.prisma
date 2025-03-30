@@ -566,6 +566,33 @@ model system_settings {
   @@map("system_settings")
 }
 
+model service_configuration {
+  id                 String    @id @default(cuid())
+  service_name       String    @unique // Unique service identifier
+  display_name       String    // Human-readable name
+  
+  // Core configuration
+  enabled            Boolean   @default(true)
+  check_interval_ms  Int       @default(60000) // How often the service runs
+  
+  // Optional advanced configuration (stored as JSON for flexibility)
+  circuit_breaker    Json?     // Circuit breaker settings
+  backoff            Json?     // Backoff settings
+  thresholds         Json?     // Various thresholds
+  
+  // Metadata
+  last_updated       DateTime  @default(now()) @updatedAt
+  updated_by         String?   // Admin who made the change
+  
+  // Service status tracking (read-only fields updated by the service)
+  last_run_at        DateTime?
+  last_run_duration_ms Int?
+  last_status        String?   // 'success', 'failure', 'degraded'
+  status_message     String?
+
+  @@map("service_configuration")
+}
+
 model achievement_categories {
   id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(50)

@@ -6,10 +6,16 @@ import fetch from 'node-fetch';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Import route modules
+import serviceConfigRoutes from './admin/service-config.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
+
+// Mount the service configuration routes
+router.use('/admin/service-config', serviceConfigRoutes);
 
 /**
  * Check a WebSocket endpoint's availability
