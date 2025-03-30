@@ -172,8 +172,9 @@ async function customSignTransaction(transaction, fromKeypair) {
  * @returns {Promise<any>} - Result of the RPC call
  */
 async function executeCentralizedRpcRequest(rpcCall, callName = 'RPC Call') {
-  // Using SolanaServiceManager's executeRpcRequest which routes through the central queue
-  return SolanaServiceManager.executeConnectionMethod(callName);
+  // Using SolanaServiceManager to execute the RPC call through the central queue
+  // This provides proper global rate limiting across the entire application
+  return SolanaServiceManager.executeRpcRequest(rpcCall, callName);
 }
 
 /**
@@ -385,10 +386,9 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
     // STEP 4: Encode the signed transaction for sending
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
     
-    // STEP 5: Send the transaction via SolanaServiceManager to use centralized queue
-    // We create a custom RPC method for sendTransaction because it's not directly on Connection
-    // and uses a different signature in @solana/kit
-    const txSignature = await SolanaServiceManager.executeRpcRequest(
+    // STEP 5: Send the transaction via centralized queue to use global rate limiting
+    // We use the executeCentralizedRpcRequest function to ensure proper rate limiting
+    const txSignature = await executeCentralizedRpcRequest(
       () => rpc.sendTransaction(encodedTransaction, { 
         encoding: 'base64',
         skipPreflight: false,
@@ -583,8 +583,9 @@ export async function transferToken(
     // STEP 4: Encode the signed transaction for sending
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
     
-    // STEP 5: Send the transaction via SolanaServiceManager to use centralized queue
-    const txSignature = await SolanaServiceManager.executeRpcRequest(
+    // STEP 5: Send the transaction via centralized queue to use global rate limiting
+    // We use the executeCentralizedRpcRequest function to ensure proper rate limiting
+    const txSignature = await executeCentralizedRpcRequest(
       () => rpc.sendTransaction(encodedTransaction, { 
         encoding: 'base64',
         skipPreflight: false,
@@ -761,14 +762,15 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
     // STEP 4: Encode the signed transaction for simulation
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
     
-    // STEP 5: Simulate the transaction to get the fee via SolanaServiceManager
-    const simulationResult = await SolanaServiceManager.executeRpcRequest(
+    // STEP 5: Simulate the transaction to get the fee via centralized queue
+    // We use the executeCentralizedRpcRequest function to ensure proper rate limiting
+    const simulationResult = await executeCentralizedRpcRequest(
       () => rpc.simulateTransaction(encodedTransaction, {
         commitment: 'confirmed',
         encoding: 'base64',
         replaceRecentBlockhash: true, // Important: this replaces our fake signature with a valid one for simulation
         sigVerify: false // Skip signature verification since we're using a fake signer
-      }),
+      }).send(),
       'simulateTransaction'
     );
     
