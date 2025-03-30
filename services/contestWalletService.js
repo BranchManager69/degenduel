@@ -18,6 +18,9 @@ import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 //import serviceManager from '../utils/service-suite/service-manager.js';
 
+// Solana Service Manager
+import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.js';
+
 // Solana
 import { Keypair, Connection, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
@@ -88,10 +91,9 @@ class ContestWalletService extends BaseService {
         
         // Instead of using our own connection, try using the one from SolanaServiceManager
         try {
-            // Try to use SolanaServiceManager but fallback to direct connection if that fails
-            const solanaServiceManager = require('../utils/solana-suite/solana-service-manager.js').default;
-            if (solanaServiceManager && solanaServiceManager.isInitialized) {
-                this.connection = solanaServiceManager.getConnection();
+            // Use the already imported SolanaServiceManager
+            if (SolanaServiceManager && SolanaServiceManager.isInitialized) {
+                this.connection = SolanaServiceManager.getConnection();
                 logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Using connection from SolanaServiceManager${fancyColors.RESET}`);
             } else {
                 this.connection = new Connection(config.rpc_urls.primary, "confirmed");

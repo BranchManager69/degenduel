@@ -17,31 +17,30 @@ import './scripts/pm2-restart-monitor.js';
 //  This is the main entry point for DegenDuel API   |
 //---------------------------------------------------'
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import express from "express";
 import session from "express-session";
 import fetch from "node-fetch";
-import { closeDatabase, initDatabase } from "./config/database.js"; // SQLite for leaderboard
 import { configureMiddleware } from "./config/middleware.js";
-import { closePgDatabase, initPgDatabase } from "./config/pg-database.js";
 import prisma from "./config/prisma.js";
 import setupSwagger from "./config/swagger.js";
-import config from "./config/config.js";
 import maintenanceCheck from "./middleware/maintenanceMiddleware.js";
 import ipBanMiddleware from "./middleware/ipBanMiddleware.js";
 import ipTrackingMiddleware from "./middleware/ipTrackingMiddleware.js";
 import { errorHandler } from "./utils/errorHandler.js";
 import { logApi } from "./utils/logger-suite/logger.js";
-import { fancyColors } from './utils/colors.js';
 import InitLogger from './utils/logger-suite/init-logger.js';
 import AdminLogger from './utils/admin-logger.js';
 import { memoryMonitoring } from "./scripts/monitor-memory.js";
-import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js"; // why is this not being used?
 import serviceManager from "./utils/service-suite/service-manager.js";
 import ServiceInitializer from "./utils/service-suite/service-initializer.js";
-import { SERVICE_NAMES } from "./utils/service-suite/service-constants.js";
 import { createServer } from 'http';
+import { displayStartupBanner } from './utils/startup-banner.js';
+import { closeDatabase, initDatabase } from "./config/database.js"; // SQLite for leaderboard
+import { closePgDatabase, initPgDatabase } from "./config/pg-database.js";
+import { SERVICE_NAMES } from "./utils/service-suite/service-constants.js";
+import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js"; // why is this not being used?
 import referralScheduler from './scripts/referral-scheduler.js'; // why is this not being used?
+import { fancyColors } from './utils/colors.js';
 // Service-related routes
 import faucetManagementRoutes from "./routes/admin/faucet-management.js";
 import serviceMetricsRoutes from "./routes/admin/service-metrics.js";
@@ -106,37 +105,45 @@ import logsRoutes from "./routes/logs.js";
 // Path module for static file serving
 import path from 'path';
 import { fileURLToPath } from 'url';
+// Import Redis session store
+import { createRedisSessionStore } from './utils/redis-suite/redis-session-store.js';
+
+// Config
+import { config } from './config/config.js';
+
+// Hard-coded logging flags
+const VERBOSE_SERVICE_INIT_LOGS = true; // Show detailed service initialization logs
+const SHOW_STARTUP_ANIMATION = true; // Keep animations but reduce service logs
+const QUIET_EXPRESS_SERVER_INITIALIZATION = false; // Silence detailed Express server and Swagger docs initialization logs
 
 // Get the directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Hard-code all logging flags to reduce verbosity
-const VERBOSE_SERVICE_INIT_LOGS = true; // Show detailed service initialization logs
-const SHOW_STARTUP_ANIMATION = true; // Keep animations but reduce service logs
-const QUIET_EXPRESS_SERVER_INITIALIZATION = false; // Show detailed Express server and Swagger docs initialization logs
-
-dotenv.config();
-
 // Import the database cleanup utility
 import databaseCleanup from './utils/database-cleanup.js';
 
-/* DegenDuel API Server */
+
+/* --- DegenDuel API Server --- */
 
 const app = express();
 
 // Use standard PORT environment variable
-const port = process.env.PORT || 3004; // Default to production port if not specified
+const port = config.port || 3004; // Default to 3004 (prod) if no port specified
 
 // Log port configuration with minimal formatting
-logApi.info(`Server starting | Environment: ${process.env.NODE_ENV}, Port: ${port}`);
+logApi.info(`Server starting | Environment: ${config.getEnvironment()}, Port: ${port}`);
 
 // Create HTTP server instance
 const server = createServer(app);
 
-// Increase the maximum number of listeners to prevent EventEmitter memory leak warnings
-// This is necessary because we're attaching multiple WebSocket servers to the same HTTP server
-server.setMaxListeners(20);
+// NOTE (2025-03-30):
+//      This WAS a temporary fix to prevent EventEmitter memory leak warnings.
+//      We WERE attaching multiple WebSocket servers to the same HTTP server,
+//      so we NEEDED to increase the maximum number of listeners.
+//      However, we have since migrated to a unified WebSocket server and no longer need to increase max listeners.
+server.setMaxListeners(10); // (was 20)
+
 
 //------------------------------------------------.
 //  WebSocket servers and service initialization   |
@@ -146,39 +153,47 @@ server.setMaxListeners(20);
 //  for all components in the server               |
 //-------------------------------------------------'
 
-if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
-  logApi.info('🔒 Configuring Server Security...');
-}
+/* Express server configuration and middleware setup */
 
-// Basic Express configuration
+// Trust proxy
 app.set("trust proxy", 1);
+
+// Cookie parser
 app.use(cookieParser());
 
-// Import Redis session store
-import { createRedisSessionStore } from './utils/redis-suite/redis-session-store.js';
 
 // Create Redis session store or fall back to memory store
 const sessionStore = createRedisSessionStore() || null;
 if (!sessionStore) {
-  logApi.warn(`[\x1b[38;5;208mSession\x1b[0m] \x1b[38;5;226mFalling back to memory session store - not suitable for production!\x1b[0m`);
+  logApi.warn(`[\x1b[38;5;208m Session\x1b[0m] \x1b[38;5;226mFalling back to memory session store - not suitable for production!\x1b[0m`);
 }
 
 // Add session middleware with Redis store for Twitter authentication
 app.use(session({
   store: sessionStore,
-  secret: process.env.JWT_SECRET, // Using the same secret as JWT for simplicity
+  secret: config.jwt.secret, // Using the same secret as JWT for simplicity
   resave: false,
   saveUninitialized: false,
   name: 'degenduel.sid', // Custom cookie name for clarity
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Only use secure cookies in production
+    secure: config.getEnvironment() === 'production', // Only use secure cookies in production
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Cross-site cookies in production
-  }
+    // testing: lax for both dev and prod; none for local (was previously lax for dev and none for prod)
+    sameSite: config.getEnvironment() === 'production' 
+      ? 'lax'       // 'lax', 'none', 'strict'
+      : config.getEnvironment() === 'development' 
+        ? 'lax'     // 'lax', 'none', 'strict'
+        : config.getEnvironment() === 'local' 
+          ? 'none'  // 'lax', 'none', 'strict'
+          : 'lax'   // 'lax', 'none', 'strict'
+  },
 }));
 
+// Setup Swagger
 setupSwagger(app);
+
+// Configure Middleware
 configureMiddleware(app);
 
 // Apply IP Ban middleware early in the middleware chain
@@ -189,29 +204,32 @@ app.use(ipBanMiddleware);
 // This runs after auth middleware sets req.user, but doesn't block requests
 app.use(ipTrackingMiddleware);
 
+// Apply memory monitoring middleware
 app.use(memoryMonitoring.setupResponseTimeTracking());
 
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Log basic Express configuration complete
 if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('✓ Basic Express Configuration Complete');
 }
 
 /* Import Routes */
 
-// Start with DegenDuel API root route (https://degenduel.me/api)
+// Start with DegenDuel API root route (https://degenduel.me/api and https://dev.degenduel.me/api)
 if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('🌐 Configuring Routes...');
 }
 
+// Root route (https://degenduel.me/api and https://dev.degenduel.me/api)
 app.get("/", (req, res) => {
   res.send(`Welcome to the DegenDuel API! You probably should not be here.`);
 });
 
-// Note: Socket.IO test routes have been removed as Socket.IO is no longer used
 
 /* Mount Routes */
+
 // Public Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/status", statusRoutes);
@@ -353,12 +371,10 @@ app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
 // Error handling setup
 app.use(errorHandler);
 
+// Log all routes mounted
 if (!QUIET_EXPRESS_SERVER_INITIALIZATION) {
   logApi.info('✓ All Routes Mounted');
 }
-
-// Import our spectacular startup banner
-import { displayStartupBanner } from './utils/startup-banner.js';
 
 // Streamlined startup animation function
 async function displayStartupAnimation(port, initResults = {}, success = true) {
@@ -434,7 +450,7 @@ function setupShutdownHandlers() {
 async function initializeServer() {
     try {
         // Log server start action to DegenDuel Admin Logs
-        AdminLogger.logAction(process.env.BRANCH_MANAGER_WALLET_ADDRESS, 'SERVER', 'START');
+        AdminLogger.logAction(config.master_wallet.branch_manager_wallet_address, 'SERVER', 'START');
 
         // Simple initialization start message
         console.log('🚀 DegenDuel Initialization Starting');

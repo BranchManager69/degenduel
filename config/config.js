@@ -62,6 +62,7 @@ const config = {
   master_wallet: {
     treasury_address: process.env.DD_MASTER_WALLET, // new
     address: process.env.DD_MASTER_WALLET, // TODO: deprecate
+    branch_manager_wallet_address: process.env.BRANCH_MANAGER_WALLET_ADDRESS,
   },
   // Internal transaction types:
   transaction_types: {

@@ -30,7 +30,9 @@
     "mcp:up": "pm2 start ecosystem.config.cjs --only mcp-server",
     "mcp:down": "pm2 stop mcp-server",
     "mcp:reload": "pm2 restart mcp-server --update-env",
+    
     "// NEW (Late March 2025)": "================================================================================================================",
+    "scrape": "node scripts/twitter/scrape.mjs https://x.com/falconcrypto_/status/1903630137712591267",
     "contest-reclaim": "curl -X POST http://localhost:3004/admin/wallet-management/reclaim-unused-funds -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRfYWRkcmVzcyI6IkJQdVJoa2VDa29yN0R4TXJjUFZzQjRBZFc2UG1wNW9BQ2pWenBQYjcyTWhwIiwicm9sZSI6InN1cGVyYWRtaW4iLCJzZXNzaW9uX2lkIjoiNTYwZjU2OWQyMTYyMGZkM2JhY2I3Yjg1ZjdiZDA5NTciLCJpYXQiOjE3NDMyMTg5NDAsImV4cCI6MTc0MzI2MjE0MH0.qMhaefdFH6VtWQJVIBvpCotnBuOISXdX-KYcvVXcSzU' -d '{\"status_filter\": [\"completed\", \"cancelled\"], \"min_balance\": 0.001, \"min_transfer\": 0.0005}'",
     "contest-reclaim:force": "curl -X POST http://localhost:3004/admin/wallet-management/reclaim-unused-funds -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRfYWRkcmVzcyI6IkJQdVJoa2VDa29yN0R4TXJjUFZzQjRBZFc2UG1wNW9BQ2pWenBQYjcyTWhwIiwicm9sZSI6InN1cGVyYWRtaW4iLCJzZXNzaW9uX2lkIjoiNTYwZjU2OWQyMTYyMGZkM2JhY2I3Yjg1ZjdiZDA5NTciLCJpYXQiOjE3NDMyMTg5NDAsImV4cCI6MTc0MzI2MjE0MH0.qMhaefdFH6VtWQJVIBvpCotnBuOISXdX-KYcvVXcSzU' -d '{\"status_filter\": [\"completed\", \"cancelled\"],  \"active\"],  \"pending\"], \"min_balance\": 0.001, \"min_transfer\": 0.0005}'",
     "// General DD Services Testing (Pre-March 2025)": "=========================================================================================",
@@ -173,7 +175,6 @@
     "pm2": "^5.3.1",
     "puppeteer": "^24.4.0",
     "socket.io": "^4.8.1",
-    "solana-agent-kit": "^1.4.8",
     "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",

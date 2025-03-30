@@ -9,6 +9,14 @@ ecosystem.production.cjs
 ecosystem.development.cjs
 ecosystem.local.cjs
 
+# Keys
+keys/
+keys/**
+
+# Purgatory
+purgatory/
+purgatory/**
+
 # Node.js dependencies
 node_modules/
 
@@ -36,6 +44,9 @@ tests/
 
 # Scripts
 scripts/
+
+# Scrapes
+scrapes/
 
 # Backups
 backups/
