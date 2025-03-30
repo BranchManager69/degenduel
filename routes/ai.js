@@ -104,6 +104,24 @@ router.post('/chat', aiLimiter, async (req, res) => {
       });
     }
     
+    // Validate message format
+    for (const message of messages) {
+      if (!message.role || typeof message.role !== 'string') {
+        return res.status(400).json({
+          error: 'Invalid request: each message must have a valid role',
+          type: 'invalid_request'
+        });
+      }
+      
+      if (message.content === null || message.content === undefined) {
+        // Convert null or undefined content to empty string
+        message.content = '';
+      } else if (typeof message.content !== 'string') {
+        // Convert non-string content to string
+        message.content = String(message.content);
+      }
+    }
+    
     // Get user information if available
     const userId = req.user?.id || 'anonymous';
     const walletAddress = req.user?.wallet_address;

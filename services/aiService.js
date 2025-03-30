@@ -194,16 +194,22 @@ Address them by name if they provided one, and adapt your responses to their exp
       }
     }
     
+    // Validate and sanitize messages to prevent null content
+    const sanitizedMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content === null || msg.content === undefined ? '' : String(msg.content)
+    }));
+    
     // Add system prompt to messages
-    const messagesWithSystem = messages.some(msg => msg.role === 'system') ? 
-      messages : 
-      [{ role: 'system', content: systemPrompt }, ...messages];
+    const messagesWithSystem = sanitizedMessages.some(msg => msg.role === 'system') ? 
+      sanitizedMessages : 
+      [{ role: 'system', content: systemPrompt }, ...sanitizedMessages];
     
     // Log request (with sensitive data removed)
     logApi.info('AI chat request received', {
       userId: options.userId || 'anonymous',
       model: AI_CONFIG.defaultModel,
-      messageCount: messages.length,
+      messageCount: sanitizedMessages.length,
       service: 'AI',
       conversationId
     });
@@ -250,24 +256,25 @@ Address them by name if they provided one, and adapt your responses to their exp
           });
         }
         
-        // Store user message (the last one in the messages array)
-        const userMessage = messages[messages.length - 1];
-        if (userMessage.role === 'user') {
+        // Store user message (the last one in the sanitized messages array)
+        const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
+        if (userMessage?.role === 'user' && userMessage?.content) {
           await prisma.ai_conversation_messages.create({
             data: {
               conversation_id: conversationId,
               role: userMessage.role,
-              content: userMessage.content
+              content: userMessage.content || '' // Ensure content isn't null
             }
           });
         }
         
-        // Store AI response message
+        // Store AI response message - ensure content isn't null
+        const responseContent = response.choices[0]?.message?.content || '';
         await prisma.ai_conversation_messages.create({
           data: {
             conversation_id: conversationId,
             role: 'assistant',
-            content: response.choices[0].message.content,
+            content: responseContent,
             tokens: response.usage.completion_tokens
           }
         });
@@ -296,9 +303,9 @@ Address them by name if they provided one, and adapt your responses to their exp
       }
     }
     
-    // Return formatted response
+    // Return formatted response, ensuring content is never null
     return {
-      content: response.choices[0].message.content,
+      content: response.choices[0]?.message?.content || '',
       usage: {
         promptTokens: response.usage.prompt_tokens,
         completionTokens: response.usage.completion_tokens,
