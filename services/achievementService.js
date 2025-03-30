@@ -99,6 +99,12 @@ class AchievementService extends BaseService {
 
     async initialize() {
         try {
+            // Check if achievement service is disabled via service profile
+            if (!config.services.achievement_service) {
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Achievement Service is disabled in the '${config.services.active_profile}' service profile`);
+                return false;
+            }
+            
             // Call parent initialize first
             await super.initialize();
             

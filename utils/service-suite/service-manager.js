@@ -596,7 +596,9 @@ class ServiceManager {
                         (serviceName === SERVICE_NAMES.TOKEN_WHITELIST && !config.services.token_whitelist) ||
                         (serviceName === SERVICE_NAMES.LIQUIDITY && !config.services.liquidity) ||
                         (serviceName === SERVICE_NAMES.USER_BALANCE_TRACKING && !config.services.user_balance_tracking) ||
-                        (serviceName === SERVICE_NAMES.WALLET_RAKE && !config.services.wallet_rake)) {
+                        (serviceName === SERVICE_NAMES.WALLET_RAKE && !config.services.wallet_rake) ||
+                        (serviceName === SERVICE_NAMES.CONTEST_SCHEDULER && !config.services.contest_scheduler) ||
+                        (serviceName === SERVICE_NAMES.ACHIEVEMENT && !config.services.achievement_service)) {
                         
                         // For intentionally disabled services, log as warning instead of error
                         logApi.warn(`${fancyColors.MAGENTA}[SERVICE INIT]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} DISABLED ${fancyColors.RESET} ${fancyColors.YELLOW}Service ${serviceName} is intentionally disabled in the '${config.services.active_profile}' service profile${fancyColors.RESET}`);

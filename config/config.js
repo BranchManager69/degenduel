@@ -328,9 +328,9 @@ const config = {
       user_balance_tracking: true,
       wallet_rake: true,
       contest_scheduler: true,
+      achievement_service: true,
       // Additional services would be defined here as we expand this pattern
       // wallet_generation: true,
-      // achievement_tracking: true,
       // etc.
     },
     
@@ -342,11 +342,11 @@ const config = {
       token_whitelist: false,
       liquidity: false,
       user_balance_tracking: false,
-      wallet_rake: false,
+      wallet_rake: false, 
       contest_scheduler: false, // Disable contest scheduler in development to prevent conflicts
+      achievement_service: false,
       // Additional services would be disabled here too
       // wallet_generation: false,
-      // achievement_tracking: false,
       // etc.
     }
   },
@@ -404,6 +404,12 @@ const config = {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.contest_scheduler;
+    },
+    
+    get achievement_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.achievement_service;
     },
   },
   debug_mode: 
