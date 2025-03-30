@@ -1,4 +1,5 @@
 import { config } from '../config/config.js';
+import { logApi } from '../utils/logger-suite/logger.js';
 
 export const environmentMiddleware = (req, res, next) => {
   // Get environment from request origin
@@ -14,7 +15,7 @@ export const environmentMiddleware = (req, res, next) => {
   
   // Debug logging - expanded to include NODE_ENV
   if (config.debug_mode === 'true' || config.debug_modes.middleware === 'true') {
-    console.log(`[Environment Middleware] Origin: ${req.headers.origin}, NODE_ENV: ${process.env.NODE_ENV}, Environment: ${environment}, Port: ${process.env.PORT}`);
+    logApi.info(`[Environment Middleware] Origin: ${req.headers.origin}, NODE_ENV: ${config.services.active_profile}, Environment: ${environment}, Port: ${config.port}`, { environment });
   }
   
   next();

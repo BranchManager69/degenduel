@@ -33,10 +33,135 @@ import {
   createSolanaRpc
 } from '@solana/kit';
 
+// Import the Ed25519 signing function from @solana/keys for direct signing
+import { signBytes } from '@solana/keys';
+
 // Import SolanaServiceManager for centralized RPC requests
 import SolanaServiceManager from '../solana-service-manager.js';
 
 import { logApi } from '../../logger-suite/logger.js';
+
+/**
+ * Debug function to log keypair details
+ */
+function logKeypairDetails(keypair, label = 'Keypair') {
+  if (!keypair) {
+    logApi.error(`DEBUG - ${label} is null or undefined`);
+    return;
+  }
+  
+  logApi.info(`DEBUG - ${label} details:`, {
+    publicKey: keypair.publicKey ? keypair.publicKey.toString() : 'undefined',
+    publicKey_type: keypair.publicKey ? typeof keypair.publicKey : 'undefined',
+    secretKey_type: typeof keypair.secretKey,
+    secretKey_is_array: Array.isArray(keypair.secretKey),
+    secretKey_is_uint8array: keypair.secretKey instanceof Uint8Array,
+    secretKey_length: keypair.secretKey ? keypair.secretKey.length : 0,
+    secretKey_first_bytes: keypair.secretKey ? Array.from(keypair.secretKey.slice(0, 4)) : null
+  });
+}
+
+/**
+ * Custom sign function that correctly handles the keypair format expected by v2.1
+ * This avoids the assertIsAddress error by directly signing the message bytes and
+ * constructing the transaction in the expected format manually.
+ * 
+ * @param {Object} transaction - The unsigned transaction to sign
+ * @param {Keypair} fromKeypair - The keypair to sign with
+ */
+async function customSignTransaction(transaction, fromKeypair) {
+  logApi.info(`CUSTOM SIGN: Starting custom transaction signing`);
+  
+  // Check if the transaction doesn't have the expected structure
+  if (!transaction || !transaction.messageBytes || !transaction.signatures) {
+    logApi.error(`CUSTOM SIGN: Invalid transaction format`, {
+      has_transaction: !!transaction,
+      has_messageBytes: !!(transaction && transaction.messageBytes),
+      has_signatures: !!(transaction && transaction.signatures)
+    });
+    throw new Error('Invalid transaction format');
+  }
+  
+  // Log detailed transaction info
+  logApi.info(`CUSTOM SIGN: Transaction details`, {
+    messageBytes_length: transaction.messageBytes ? transaction.messageBytes.length : 0,
+    signatures_keys: transaction.signatures ? Object.keys(transaction.signatures) : []
+  });
+  
+  // Get the expected signer addresses from the transaction
+  const signerAddresses = Object.keys(transaction.signatures);
+  if (signerAddresses.length === 0) {
+    logApi.error(`CUSTOM SIGN: No signers found in transaction signatures object`);
+    throw new Error('No signers required for this transaction');
+  }
+  logApi.info(`CUSTOM SIGN: Found ${signerAddresses.length} required signers: ${signerAddresses.join(', ')}`);
+  
+  // The address of our keypair (what we're signing as)
+  const signerAddress = fromKeypair.publicKey.toBase58();
+  logApi.info(`CUSTOM SIGN: Our keypair address is: ${signerAddress}`);
+  
+  // Check if our keypair is one of the expected signers
+  if (!signerAddresses.includes(signerAddress)) {
+    logApi.error(`CUSTOM SIGN: Keypair address mismatch`, {
+      our_address: signerAddress,
+      expected_signers: signerAddresses
+    });
+    throw new Error(`Keypair address ${signerAddress} is not an expected signer. Expected: ${signerAddresses.join(', ')}`);
+  }
+  logApi.info(`CUSTOM SIGN: Our keypair is a valid signer for this transaction`);
+  
+  // Create a copy of the signatures object
+  const signatures = { ...transaction.signatures };
+  
+  // Sign the message bytes directly using the secretKey
+  try {
+    logApi.info(`CUSTOM SIGN: Creating CryptoKey from keypair secretKey`);
+    
+    // Create a proper CryptoKey for the privateKey
+    const privateKey = {
+      type: 'private',
+      algorithm: { name: 'Ed25519' },
+      extractable: true,
+      usages: ['sign'],
+      _keyMaterial: fromKeypair.secretKey
+    };
+    
+    // Log details about the message we're signing
+    logApi.info(`CUSTOM SIGN: Signing message bytes`, {
+      messageBytes_length: transaction.messageBytes.length,
+      first_few_bytes: Array.from(transaction.messageBytes.slice(0, 8))
+    });
+    
+    // Sign the message bytes directly with @solana/keys signBytes
+    const signature = await signBytes(privateKey, transaction.messageBytes);
+    
+    // Log the resulting signature
+    logApi.info(`CUSTOM SIGN: Signature generated successfully`, {
+      signature_length: signature.length,
+      first_bytes: Array.from(signature.slice(0, 8))
+    });
+    
+    // Add the signature to the signatures map
+    signatures[signerAddress] = signature;
+    logApi.info(`CUSTOM SIGN: Added signature to transaction for address: ${signerAddress}`);
+    
+    // Return a properly signed transaction
+    const signedTx = {
+      ...transaction,
+      signatures: Object.freeze(signatures)
+    };
+    
+    logApi.info(`CUSTOM SIGN: Transaction signing completed successfully`);
+    return signedTx;
+  } catch (error) {
+    logApi.error(`CUSTOM SIGN: Direct signing failed: ${error.message}`, { 
+      error_name: error.name,
+      error_message: error.message,
+      error_stack: error.stack
+    });
+    throw error;
+  }
+}
 
 /**
  * Execute an RPC call using the centralized SolanaService request manager
@@ -51,8 +176,69 @@ async function executeCentralizedRpcRequest(rpcCall, callName = 'RPC Call') {
   return SolanaServiceManager.executeConnectionMethod(callName);
 }
 
+/**
+ * Helper function to ensure a keypair has a properly formatted secretKey
+ * for compatibility with @solana/transactions v2.1
+ */
+function ensureProperKeypair(keypair) {
+  // Check if keypair is already properly formatted
+  if (keypair.secretKey && keypair.secretKey.length === 64 && 
+      keypair.secretKey instanceof Uint8Array) {
+    return keypair;
+  }
+  
+  logApi.warn(`Fixing keypair with improper secretKey format (length=${keypair.secretKey?.length || 0})`);
+  
+  try {
+    // Attempt to create a new keypair from the existing one
+    return Keypair.fromSecretKey(keypair.secretKey);
+  } catch (error) {
+    // If that fails, log the error and create a dummy keypair
+    logApi.error(`Failed to fix keypair: ${error.message}`);
+    throw new Error(`Cannot create valid keypair: ${error.message}`);
+  }
+}
+
+/**
+ * Converts a Solana web3.js Keypair to the format expected by @solana/transactions v2.1
+ * We need to transform the keypair into a CryptoKeyPair object with privateKey and publicKey
+ */
+async function keypairToCryptoKeyPair(keypair) {
+  // Create a proper CryptoKeyPair object as expected by @solana/transactions
+  return {
+    // The publicKey should be a CryptoKey object
+    publicKey: {
+      type: 'public',
+      algorithm: { name: 'Ed25519' },
+      extractable: true,
+      usages: ['verify'],
+      // The actual bytes are what matter
+      _keyMaterial: keypair.publicKey.toBytes()
+    },
+    // The privateKey should be a CryptoKey object
+    privateKey: {
+      type: 'private',
+      algorithm: { name: 'Ed25519' },
+      extractable: true,
+      usages: ['sign'],
+      // The secretKey contains both private and public parts in Solana
+      _keyMaterial: keypair.secretKey
+    }
+  };
+}
+
 export async function transferSOL(connection, fromKeypair, toAddress, amount) {
   try {
+    // Log the input keypair details to debug the format issues
+    logKeypairDetails(fromKeypair, 'Input fromKeypair');
+    
+    // CRITICAL FIX: Ensure we have a properly formatted keypair for v2.1 compatibility
+    // The issue is that signTransaction expects CryptoKeyPair objects, not Solana Keypairs
+    fromKeypair = ensureProperKeypair(fromKeypair);
+    
+    // Log the fixed keypair details 
+    logKeypairDetails(fromKeypair, 'Fixed fromKeypair');
+    
     // Convert string address to PublicKey if needed
     const toPubkey = typeof toAddress === 'string' 
       ? new PublicKey(toAddress) 
@@ -188,11 +374,13 @@ export async function transferSOL(connection, fromKeypair, toAddress, amount) {
     const transaction = compileTransaction(txMessage);
     
     // STEP 3: Sign the transaction with the sender's keypair
-    // Import the signTransaction and getBase64EncodedWireTransaction functions from @solana/transactions
-    const { signTransaction, getBase64EncodedWireTransaction } = await import('@solana/transactions');
+    // Import only getBase64EncodedWireTransaction - we'll use our custom signing method
+    const { getBase64EncodedWireTransaction } = await import('@solana/transactions');
     
-    // Sign the transaction
-    const signedTransaction = await signTransaction([fromKeypair.secretKey], transaction);
+    // CRITICAL FIX: Use our custom signing function that properly formats the keys
+    // This avoids the address validation error by handling the CryptoKeyPair format correctly
+    logApi.info(`Using custom signing to avoid address validation error`);
+    const signedTransaction = await customSignTransaction(transaction, fromKeypair);
     
     // STEP 4: Encode the signed transaction for sending
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
@@ -384,11 +572,13 @@ export async function transferToken(
     const transaction = compileTransaction(txMessage);
     
     // STEP 3: Sign the transaction with the sender's keypair
-    // Import the signTransaction and getBase64EncodedWireTransaction functions from @solana/transactions
-    const { signTransaction, getBase64EncodedWireTransaction } = await import('@solana/transactions');
+    // Import only getBase64EncodedWireTransaction - we'll use our custom signing method
+    const { getBase64EncodedWireTransaction } = await import('@solana/transactions');
     
-    // Sign the transaction
-    const signedTransaction = await signTransaction([fromKeypair.secretKey], transaction);
+    // CRITICAL FIX: Use our custom signing function that properly formats the keys
+    // This avoids the address validation error by handling the CryptoKeyPair format correctly
+    logApi.info(`Using custom signing to avoid address validation error (token transfer)`);
+    const signedTransaction = await customSignTransaction(transaction, fromKeypair);
     
     // STEP 4: Encode the signed transaction for sending
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);
@@ -560,12 +750,13 @@ export async function estimateSOLTransferFee(connection, fromPubkey, toPubkey) {
     // Create a temporary keypair for simulation
     const tempKeypair = Keypair.generate();
     
-    // Import the signTransaction and getBase64EncodedWireTransaction functions
-    const { signTransaction, getBase64EncodedWireTransaction } = await import('@solana/transactions');
+    // Import only getBase64EncodedWireTransaction - we'll use our custom signing method
+    const { getBase64EncodedWireTransaction } = await import('@solana/transactions');
     
-    // Sign the transaction with the temporary keypair
-    // This won't be a valid signature for the real fromPubkey, but works for simulation
-    const signedTransaction = await signTransaction([tempKeypair.secretKey], transaction);
+    // Use our custom signing function for consistency with the rest of the code
+    // For simulation, this doesn't need to be a valid signature
+    logApi.info(`Using custom signing for fee estimation`);
+    const signedTransaction = await customSignTransaction(transaction, tempKeypair);
     
     // STEP 4: Encode the signed transaction for simulation
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction);

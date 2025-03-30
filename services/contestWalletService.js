@@ -1564,7 +1564,9 @@ class ContestWalletService extends BaseService {
                             
                             // Check if balance meets minimum criteria
                             if (solBalance < minBalance) {
-                                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipping wallet ${wallet.wallet_address} (low balance: ${solBalance.toFixed(6)} SOL)`);
+                                // Don't log every skipped wallet - too noisy
+                                // Instead increment a counter for summary logging
+                                results.skipped_zero_balance = (results.skipped_zero_balance || 0) + 1;
                                 results.details.push({
                                     contest_id: wallet.contest_id,
                                     contest_code: wallet.contests?.contest_code,
@@ -1772,6 +1774,11 @@ class ContestWalletService extends BaseService {
                         walletIndex += BATCH_SIZE;
                     }
                 }
+            }
+            
+            // Log summary of skipped wallets instead of individual ones
+            if (results.skipped_zero_balance) {
+                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Skipped ${results.skipped_zero_balance} wallets with zero/low balance`);
             }
             
             // Summary log with special formatting for emergency reclaims

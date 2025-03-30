@@ -71,7 +71,8 @@ export const getIpInfo = async (ip) => {
       ipinfoClient = new IPinfoWrapper(IPINFO_API_KEY);
       
       // SAFETY: Don't use our own logger here to avoid recursion
-      console.log('IPinfo client initialized successfully');
+      // But use a standardized message format that matches our log style
+      console.log(`${formatTimestamp()} ${LEVEL_STYLES.info.badge} ${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${environment} `)) + ' ' : ''}IPinfo client initialized successfully`);
     } catch (initError) {
       // SAFETY: Don't use our own logger here to avoid recursion
       console.error('Failed to initialize IPinfo client:', initError.message);
