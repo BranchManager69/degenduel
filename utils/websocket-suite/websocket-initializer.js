@@ -138,6 +138,7 @@ export async function cleanupWebSockets() {
     try {
       // Call cleanup method if it exists
       if (typeof unifiedWs.cleanup === 'function') {
+        // Wait for the cleanup promise to resolve (handles the notification and graceful closure)
         await unifiedWs.cleanup();
         
         // Clear the reference in config

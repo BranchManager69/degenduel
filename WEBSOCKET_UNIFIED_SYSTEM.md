@@ -257,6 +257,7 @@ socket.onmessage = (event) => {
   - Connection welcome message
   - Heartbeat messages (every 30 seconds)
   - Server status updates
+  - Server shutdown notifications
 - **Actions**:
   - `getStatus`: Get system status information
     ```javascript
@@ -289,6 +290,30 @@ socket.onmessage = (event) => {
     }
     ```
     - Returns detailed metrics about connections, subscriptions, and message counts
+
+### Server Shutdown Process
+
+During server restarts or shutdowns, the WebSocket server will:
+
+1. Send a shutdown notification to all connected clients:
+   ```json
+   {
+     "type": "SYSTEM",
+     "action": "shutdown",
+     "message": "Server is restarting, please reconnect in 30 seconds",
+     "expectedDowntime": 30000,
+     "timestamp": "2025-03-29T12:34:56.789Z"
+   }
+   ```
+
+2. Give clients a brief window (300ms) to receive and process the notification
+
+3. Close all WebSocket connections with status code 1000 ("Normal Closure") and a reason message
+
+Clients should handle this notification by:
+- Displaying appropriate UI feedback to users
+- Waiting for the expected downtime duration
+- Attempting to reconnect after the expected downtime period
 
 ### SkyDuel Topic (`skyduel`)
 

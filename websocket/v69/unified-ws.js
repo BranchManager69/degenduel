@@ -1194,37 +1194,101 @@ class UnifiedWebSocketServer {
   /**
    * Clean up resources
    * Called during server shutdown
+   * @returns {Promise<void>} - Resolves when cleanup is complete
    */
   cleanup() {
-    try {
-      logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Cleaning up unified WebSocket server...${fancyColors.RESET}`);
-      
-      // Remove event listeners
-      for (const [eventName, handler] of this.eventHandlers.entries()) {
-        serviceEvents.removeListener(eventName, handler);
+    return new Promise((resolve, reject) => {
+      try {
+        logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Cleaning up unified WebSocket server...${fancyColors.RESET}`);
+        
+        // Remove event listeners
+        for (const [eventName, handler] of this.eventHandlers.entries()) {
+          serviceEvents.removeListener(eventName, handler);
+        }
+        
+        // First, send shutdown notification to all clients
+        logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Sending shutdown notification to all clients...${fancyColors.RESET}`);
+        
+        const shutdownNotification = {
+          type: MESSAGE_TYPES.SYSTEM,
+          action: "shutdown",
+          message: "Server is restarting, please reconnect in 30 seconds",
+          expectedDowntime: 30000,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Send notification to each client
+        for (const client of this.wss.clients) {
+          if (client.readyState === client.OPEN) {
+            try {
+              client.send(JSON.stringify(shutdownNotification));
+            } catch (err) {
+              logApi.warn(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to send shutdown notification to client: ${err.message}${fancyColors.RESET}`);
+            }
+          }
+        }
+        
+        // Give time for notifications to be delivered (300ms)
+        setTimeout(() => {
+          // Close all connections properly with code 1000 (Normal Closure)
+          let closedCount = 0;
+          const totalClients = this.wss.clients.size;
+          
+          logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Gracefully closing ${totalClients} client connections...${fancyColors.RESET}`);
+          
+          // If no clients, skip to server closure
+          if (totalClients === 0) {
+            closeServerAndFinish();
+            return;
+          }
+          
+          for (const client of this.wss.clients) {
+            if (client.readyState === client.OPEN) {
+              try {
+                // Use proper WebSocket close code (1000 = normal closure) with reason
+                client.close(1000, "Server restarting");
+              } catch (err) {
+                logApi.warn(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to gracefully close client: ${err.message}${fancyColors.RESET}`);
+                // Fallback to terminate if close fails
+                try {
+                  client.terminate();
+                } catch (termErr) {
+                  // Just log and continue
+                  logApi.error(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to terminate client: ${termErr.message}${fancyColors.RESET}`);
+                }
+              }
+              closedCount++;
+            }
+          }
+          
+          // Give connections time to close gracefully before closing server (200ms)
+          setTimeout(closeServerAndFinish, 200);
+          
+        }, 300);
+        
+        // Function to close the server and finish cleanup
+        const closeServerAndFinish = () => {
+          // Close the WebSocket server
+          this.wss.close(() => {
+            logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}WebSocket server closed${fancyColors.RESET}`);
+            
+            // Clear all data structures
+            this.clientsByUserId.clear();
+            this.clientSubscriptions.clear();
+            this.topicSubscribers.clear();
+            this.authenticatedClients.clear();
+            this.eventHandlers.clear();
+            
+            logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket cleanup complete${fancyColors.RESET}`);
+            resolve();
+          });
+        };
+        
+      } catch (error) {
+        logApi.error(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.RED}Error during cleanup:${fancyColors.RESET}`, error);
+        reject(error);
       }
-      
-      // Close all connections
-      for (const client of this.wss.clients) {
-        client.terminate();
-      }
-      
-      // Close the WebSocket server
-      this.wss.close(() => {
-        logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}WebSocket server closed${fancyColors.RESET}`);
-      });
-      
-      // Clear all data structures
-      this.clientsByUserId.clear();
-      this.clientSubscriptions.clear();
-      this.topicSubscribers.clear();
-      this.authenticatedClients.clear();
-      this.eventHandlers.clear();
-      
-      logApi.info(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket cleanup complete${fancyColors.RESET}`);
-    } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[unified-ws]${fancyColors.RESET} ${fancyColors.RED}Error during cleanup:${fancyColors.RESET}`, error);
-    }
+    });
   }
 }
 
