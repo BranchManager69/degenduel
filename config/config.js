@@ -329,6 +329,7 @@ const config = {
       wallet_rake: true,
       contest_scheduler: true,
       achievement_service: true,
+      referral_service: true,
       // Additional services would be defined here as we expand this pattern
       // wallet_generation: true,
       // etc.
@@ -345,6 +346,7 @@ const config = {
       wallet_rake: false, 
       contest_scheduler: false, // Disable contest scheduler in development to prevent conflicts
       achievement_service: false,
+      referral_service: false,
       // Additional services would be disabled here too
       // wallet_generation: false,
       // etc.
@@ -410,6 +412,12 @@ const config = {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.achievement_service;
+    },
+    
+    get referral_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.referral_service;
     },
   },
   debug_mode: 
