@@ -15,7 +15,8 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors } from '../../utils/colors.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
-import SolanaServiceManager from '../../utils/solana-suite/solana-service-manager.js';
+import { solanaEngine } from '../../services/solana-engine/index.js';
+import { PublicKey } from '@solana/web3.js';
 
 // Log prefix for Wallet WebSocket
 const LOG_PREFIX = `${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} WALLET-WS ${fancyColors.RESET}`;
@@ -180,10 +181,11 @@ class WalletWebSocketServer extends BaseWebSocketServer {
       // Get on-chain balance (this can be slow, so use DB value as fallback)
       let solanaBalance = null;
       try {
-        // Get Solana connection from service manager
-        const solanaService = SolanaServiceManager.getService();
-        if (solanaService) {
-          solanaBalance = await solanaService.getWalletBalance(wallet);
+        // Get wallet balance using SolanaEngine
+        if (solanaEngine.isInitialized()) {
+          // Use executeConnectionMethod to call getBalance
+          const publicKey = new PublicKey(wallet);
+          solanaBalance = await solanaEngine.executeConnectionMethod('getBalance', publicKey);
         }
       } catch (error) {
         logApi.warn(`${LOG_PREFIX} ${fancyColors.YELLOW}Failed to get on-chain balance for ${wallet}:${fancyColors.RESET} ${error.message}`);

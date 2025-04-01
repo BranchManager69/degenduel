@@ -3,6 +3,10 @@
 /**
  * User balance tracking service
  * 
+ * This service monitors user wallet balances on Solana.
+ * It has been updated to use SolanaEngine which provides enhanced RPC capabilities
+ * with multi-endpoint support and automatic failover.
+ * 
  * @module services/userBalanceTrackingService
  */
 
@@ -10,7 +14,7 @@ import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.js';
+import { solanaEngine } from '../services/solana-engine/index.js';
 import { PublicKey } from '@solana/web3.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { fancyColors } from '../utils/colors.js';
@@ -109,6 +113,25 @@ class UserBalanceTrackingService extends BaseService {
                 return false; // Skip initialization
             }
             
+            // Verify SolanaEngine is available
+            if (!solanaEngine.isInitialized()) {
+                logApi.warn(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WAITING FOR SOLANA ${fancyColors.RESET} SolanaEngine not yet initialized, will wait...`);
+                
+                // Add some tolerance for initialization order
+                for (let i = 0; i < 5; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    if (solanaEngine.isInitialized()) {
+                        logApi.info(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.GREEN}SolanaEngine now available.${fancyColors.RESET}`);
+                        break;
+                    }
+                }
+                
+                // Final check
+                if (!solanaEngine.isInitialized()) {
+                    throw new Error('SolanaEngine is not available after waiting. Balance tracking requires SolanaEngine.');
+                }
+            }
+            
             // Load settings from database
             const settings = await prisma.system_settings.findUnique({
                 where: { key: this.config.name }
@@ -132,8 +155,14 @@ class UserBalanceTrackingService extends BaseService {
             // Calculate check interval based on user count
             this.calculateCheckInterval(activeUsers);
             
+            // Get SolanaEngine connection status
+            const connectionStatus = solanaEngine.getConnectionStatus();
+            const healthyEndpoints = connectionStatus.healthyEndpoints || 0;
+            const totalEndpoints = connectionStatus.totalEndpoints || 0;
+            
             logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.ORANGE}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.ORANGE}users${fancyColors.RESET}`);
             logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Checking each user every ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} ${fancyColors.ORANGE}minutes${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Using SolanaEngine with ${fancyColors.BOLD_YELLOW}${healthyEndpoints}/${totalEndpoints}${fancyColors.RESET} ${fancyColors.ORANGE}healthy RPC endpoints${fancyColors.RESET}`);
             
             return true;
         } catch (error) {
@@ -533,8 +562,8 @@ class UserBalanceTrackingService extends BaseService {
             
             const nickname = user?.nickname || 'Unknown';
             
-            // Get Solana connection
-            const connection = SolanaServiceManager.getConnection();
+            // Get Solana connection from SolanaEngine
+            const connection = solanaEngine.getConnection();
             
             // Increment Solana request counter
             this.trackingStats.solana.totalRequests++;
@@ -549,8 +578,11 @@ class UserBalanceTrackingService extends BaseService {
                 this.trackingStats.solana.requestsPerHour = 1;
             }
             
-            // Get balance from Solana
-            const balance = await connection.getBalance(new PublicKey(walletAddress));
+            // Get balance from Solana using SolanaEngine
+            const balance = await solanaEngine.executeConnectionMethod(
+                'getBalance', 
+                new PublicKey(walletAddress)
+            );
             
             // Record balance history
             await prisma.wallet_balance_history.create({
@@ -673,6 +705,9 @@ class UserBalanceTrackingService extends BaseService {
     /**
      * Clean up resources
      * 
+     * Note: We don't need to clean up any SolanaEngine resources as SolanaEngine
+     * is managed separately via the service manager and will be stopped independently.
+     * 
      * @returns {Promise<void>} - The results of the operation
      */
     async stop() {
@@ -689,17 +724,28 @@ class UserBalanceTrackingService extends BaseService {
      * @returns {Promise<Object>} - The status of the service
      */
     getServiceStatus() {
-        // TODO: Implement this
-        // const baseStatus = super.getServiceStatus();
+        const baseStatus = super.getServiceStatus();
 
-        // Instead, return our own status
+        // Get SolanaEngine connection status
+        let solanaStatus = { available: false };
+        try {
+            if (solanaEngine.isInitialized()) {
+                solanaStatus = {
+                    available: true,
+                    connectionStatus: solanaEngine.getConnectionStatus()
+                };
+            }
+        } catch (error) {
+            solanaStatus.error = error.message;
+        }
+
         return {
-            isRunning: this.isStarted,
-            status: this.isStarted ? 'running' : 'stopped',
+            ...baseStatus,
             metrics: {
                 ...this.stats,
                 trackingStats: this.trackingStats,
-                serviceStartTime: this.stats.history.lastStarted
+                serviceStartTime: this.stats.history.lastStarted,
+                solanaEngine: solanaStatus
             }
         };
     }
