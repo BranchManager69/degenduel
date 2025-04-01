@@ -274,7 +274,7 @@ class UnifiedWebSocketServer {
   /**
    * Get location info for IP address
    * @param {string} ip - IP address
-   * @returns {Promise<string>} - Location string or empty string
+   * @returns {Promise<Object>} - Location info object or null
    */
   async getLocationInfo(ip) {
     try {
@@ -282,25 +282,40 @@ class UnifiedWebSocketServer {
       if (!ip || ip === '127.0.0.1' || ip === 'localhost' || 
           ip.startsWith('192.168.') || ip.startsWith('10.') || 
           ip.startsWith('172.16.') || ip.includes('::1')) {
-        return '';
+        return null;
       }
       
       // Use the getIpInfo function from logApi
       const ipInfo = await logApi.getIpInfo(ip);
       
-      if (ipInfo && !ipInfo.error && !ipInfo.bogon) {
-        // Format as "City, Country" if available
-        if (ipInfo.city && ipInfo.country) {
-          return `${ipInfo.city}, ${ipInfo.country}`;
-        } else if (ipInfo.country) {
-          return ipInfo.country;
-        }
+      // Log the full ipInfo structure to understand what fields are available
+      if (WS_DEBUG_MODE) {
+        logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} IP Info structure:`, {
+          ipInfo,
+          ip
+        });
       }
       
-      return '';
+      if (ipInfo && !ipInfo.error && !ipInfo.bogon) {
+        // Return full info object instead of just a string
+        return {
+          city: ipInfo.city || null,
+          region: ipInfo.region || null,
+          regionCode: ipInfo.region_code || null,
+          country: ipInfo.country || null,
+          countryCode: ipInfo.country_code || null,
+          formattedString: ipInfo.city && ipInfo.region && ipInfo.country ? 
+            `${ipInfo.city}, ${ipInfo.region}, ${ipInfo.country}` : 
+            (ipInfo.city && ipInfo.country ? 
+              `${ipInfo.city}, ${ipInfo.country}` : 
+              ipInfo.country || '')
+        };
+      }
+      
+      return null;
     } catch (error) {
-      // Silently return empty string on error
-      return '';
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} Error getting IP info:`, error);
+      return null;
     }
   }
   
@@ -326,6 +341,10 @@ class UnifiedWebSocketServer {
    */
   async handleConnection(ws, req) {
     try {
+      // ===== DEBUG LOGGING: Connection start =====
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} CONNECTION START ${fancyColors.RESET} WebSocket connection received`);
+      // ===== END DEBUG LOGGING =====
+      
       // Set up message handler for this connection
       ws.on('message', (message) => this.handleMessage(ws, message, req));
       
@@ -352,7 +371,14 @@ class UnifiedWebSocketServer {
       
       // Get location info (asynchronous)
       const locationInfo = await this.getLocationInfo(clientIp);
-      const locationDisplay = locationInfo ? ` [${locationInfo}]` : '';
+      const locationDisplay = locationInfo ? ` [${locationInfo.formattedString}]` : '';
+      
+      // Directly use the structured location info
+      let locationCity = locationInfo?.city || null;
+      let locationRegion = locationInfo?.region || null; 
+      let locationCountry = locationInfo?.country || null;
+      // Use country code if available (for the 2-char field) otherwise use full name
+      let locationCountryCode = locationInfo?.countryCode || locationCountry;
       
       // Try to extract userId and lookup nickname and balance from auth token in cookie
       let userId = null;
@@ -370,9 +396,17 @@ class UnifiedWebSocketServer {
       };
       
       try {
+        // ===== DEBUG LOGGING: Auth attempt from cookies =====
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} AUTH ATTEMPT ${fancyColors.RESET} Starting auth from cookies`);
+        // ===== END DEBUG LOGGING =====
+        
         // Check for session cookie
         const cookies = req.headers.cookie || '';
         const sessionCookie = cookies.split(';').find(cookie => cookie.trim().startsWith('session='));
+        
+        // ===== DEBUG LOGGING: Cookie check =====
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} COOKIE CHECK ${fancyColors.RESET} Cookie found: ${!!sessionCookie}, cookies: "${cookies.substring(0, 100)}${cookies.length > 100 ? '...' : ''}"`);
+        // ===== END DEBUG LOGGING =====
         
         if (sessionCookie) {
           authFlowState.cookie = true; // Cookie found
@@ -380,18 +414,43 @@ class UnifiedWebSocketServer {
           // Extract the token from the cookie
           const token = sessionCookie.split('=')[1].trim();
           
+          // ===== DEBUG LOGGING: Token extraction =====
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN EXTRACT ${fancyColors.RESET} Token length: ${token.length}, starts with: ${token.substring(0, 10)}...`);
+          // ===== END DEBUG LOGGING =====
+          
           // Store raw token for auth API calls
           ws.clientInfo = ws.clientInfo || {};
           ws.clientInfo._rawToken = token;
           
+          // ===== DEBUG LOGGING: clientInfo initialization =====
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} CLIENTINFO INIT ${fancyColors.RESET} Initial clientInfo object created with token`);
+          // ===== END DEBUG LOGGING ====
+          
           // Decode the token without verifying (to avoid exceptions) 
           try {
+            // ===== DEBUG LOGGING: Token decode attempt =====
+            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN DECODE ${fancyColors.RESET} Attempting to decode JWT token without verification`);
+            // ===== END DEBUG LOGGING =====
+            
             const decoded = jwt.decode(token);
+            
+            // ===== DEBUG LOGGING: Decode result =====
+            if (decoded) {
+              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN SUCCESS ${fancyColors.RESET} Token decoded successfully, has wallet: ${!!decoded.wallet_address}, has role: ${!!decoded.role}`);
+            } else {
+              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN FAIL ${fancyColors.RESET} Failed to decode token`);
+            }
+            // ===== END DEBUG LOGGING =====
+            
             if (decoded && decoded.wallet_address) {
               authFlowState.token = true; // Token decoded
               userId = decoded.wallet_address;
               role = decoded.role;
               authFlowState.wallet = true; // Wallet address found
+              
+              // ===== DEBUG LOGGING: Wallet extraction =====
+              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} WALLET FOUND ${fancyColors.RESET} Wallet: ${userId}, Role: ${role}`);
+              // ===== END DEBUG LOGGING ====
               
               // Look up the user's nickname and balance
               const user = await prisma.users.findUnique({
@@ -402,8 +461,16 @@ class UnifiedWebSocketServer {
                 }
               });
               
+              // ===== DEBUG LOGGING: DB lookup =====
+              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} DB LOOKUP ${fancyColors.RESET} Looking up user in database: ${userId}`);
+              // ===== END DEBUG LOGGING =====
+              
               if (user) {
                 authFlowState.user = true; // User found in DB
+                
+                // ===== DEBUG LOGGING: User found =====
+                logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} USER FOUND ${fancyColors.RESET} Found user in database: ${userId}, has nickname: ${!!user.nickname}, has balance: ${!!user.last_known_balance}`);
+                // ===== END DEBUG LOGGING =====
                 
                 if (user.nickname) {
                   nickname = user.nickname;
@@ -416,15 +483,46 @@ class UnifiedWebSocketServer {
                 }
                 
                 isAuthenticated = true;
+                
+                // ===== DEBUG LOGGING: Auth success =====
+                logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} AUTH SUCCESS ${fancyColors.RESET} User authenticated successfully: ${nickname || userId}`);
+                // ===== END DEBUG LOGGING =====
+              } else {
+                // ===== DEBUG LOGGING: User not found =====
+                logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} USER NOT FOUND ${fancyColors.RESET} User not found in database: ${userId}`);
+                // ===== END DEBUG LOGGING =====
               }
             }
           } catch (tokenErr) {
+            // ===== DEBUG LOGGING: Token error =====
+            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN ERROR ${fancyColors.RESET} Error decoding token: ${tokenErr.message}`);
+            // ===== END DEBUG LOGGING =====
             // Silently continue on token error
           }
+        } else {
+          // ===== DEBUG LOGGING: No cookie =====
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NO COOKIE ${fancyColors.RESET} No session cookie found in request`);
+          // ===== END DEBUG LOGGING =====
         }
       } catch (authErr) {
+        // ===== DEBUG LOGGING: Auth error =====
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} AUTH ERROR ${fancyColors.RESET} Error during authentication: ${authErr.message}`);
+        // ===== END DEBUG LOGGING =====
         // Silently continue on auth error
       }
+      
+      // ===== DEBUG LOGGING: Auth flow summary =====
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} AUTH FLOW SUMMARY ${fancyColors.RESET}`, {
+        cookie: authFlowState.cookie,
+        token: authFlowState.token,
+        wallet: authFlowState.wallet,
+        user: authFlowState.user,
+        nickname: authFlowState.nickname,
+        balance: authFlowState.balance,
+        isAuthenticated,
+        userId: userId || null
+      });
+      // ===== END DEBUG LOGGING =====
       
       // Format the auth flow for visual display in logs
       const authFlowVisual = this.formatAuthFlowVisual(authFlowState, nickname, userId, solanaBalance);
@@ -433,7 +531,47 @@ class UnifiedWebSocketServer {
       const headerEntries = Object.entries(req.headers || {});
       const importantHeaders = ['host', 'origin', 'user-agent', 'sec-websocket-key', 'sec-websocket-version', 'x-forwarded-for', 'x-real-ip', 'sec-websocket-extensions', 'sec-websocket-protocol'];
       
+      // Create enhanced connection log string with consistent field alignment and a visual frame
+      // Define a consistent field width for better alignment
+      const fieldWidth = 11; // Adjust based on the longest field name ("Connection")
+      
+      // Calculate a reasonable box width - allows for maximum value lengths (typically browser is longest)
+      const maxValueWidth = Math.max(
+        connectionId.length + clientIp.length + 3, // Connection: #A1B2C (127.0.0.1)
+        origin.length,
+        this.parseClientInfo(userAgent).length,
+        (locationInfo || 'Unknown').length
+      );
+      
+      // Create a shorter folder-tab style header
+      const headerWidth = 10; // "CONNECTED" length
+      const headerExtension = 5; // Short extension for tab-like appearance
+      const headerBar = '═'.repeat(headerWidth + headerExtension);
+      
+      // Create the enhanced log with cleanly aligned fields and consistent spacing - folder tab style
+      let connectionLog = `
+${wsColors.connect}╔${headerBar}╗${fancyColors.RESET}
+${wsColors.connect}║ CONNECTED ${' '.repeat(headerExtension)}║${fancyColors.RESET}
+${wsColors.connectBoxBg}${wsColors.connectBoxFg}┌${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyColors.RESET}
+${wsColors.connectBoxBg}${wsColors.connectBoxFg}│ ${'Connection:'.padEnd(fieldWidth)} #${connectionId} (${clientIp})${fancyColors.RESET}
+${wsColors.connectBoxBg}${wsColors.connectBoxFg}│ ${'Origin:'.padEnd(fieldWidth)} ${origin.padEnd(maxValueWidth)}${fancyColors.RESET}
+${wsColors.connectBoxBg}${wsColors.connectBoxFg}│ ${'Browser:'.padEnd(fieldWidth)} ${this.parseClientInfo(userAgent).padEnd(maxValueWidth)}${fancyColors.RESET}
+${wsColors.connectBoxBg}${wsColors.connectBoxFg}│ ${'Location:'.padEnd(fieldWidth)} ${(locationInfo || 'Unknown').padEnd(maxValueWidth)}${fancyColors.RESET}
+${wsColors.connectBoxBg}${wsColors.connectBoxFg}└${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyColors.RESET}`;
+
+      // ===== DEBUG LOGGING: Before final clientInfo assignment =====
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CLIENTINFO BEFORE ${fancyColors.RESET} Current state before final assignment:`, {
+        exists: !!ws.clientInfo,
+        rawTokenExists: ws.clientInfo?._rawToken ? 'yes' : 'no',
+        authState: isAuthenticated ? 'authenticated' : 'not authenticated',
+        userId: userId || 'none',
+        hasValues: !!ws.clientInfo && Object.keys(ws.clientInfo).length > 0
+      });
+      // ===== END DEBUG LOGGING =====
+      
       // Add client metadata - include ALL headers to help with debugging
+      const oldClientInfo = ws.clientInfo || {};
+      
       ws.clientInfo = {
         connectionId,
         connectionNumber: connectionCounter,
@@ -456,6 +594,8 @@ class UnifiedWebSocketServer {
         wsKey: req.headers['sec-websocket-key'],
         clientInfo,
         locationInfo,
+        // Preserve any existing raw token
+        _rawToken: oldClientInfo._rawToken || null,
         headers: headerEntries.reduce((obj, [key, value]) => {
           // Mask cookie value for security
           if (key === 'cookie') {
@@ -466,6 +606,18 @@ class UnifiedWebSocketServer {
           return obj;
         }, {})
       };
+      
+      // ===== DEBUG LOGGING: After final clientInfo assignment =====
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CLIENTINFO FINAL ${fancyColors.RESET} Final state after assignment:`, {
+        exists: true,
+        hasAuthentication: 'isAuthenticated' in ws.clientInfo,
+        authState: ws.clientInfo.isAuthenticated ? 'authenticated' : 'not authenticated',
+        hasUserId: !!ws.clientInfo.userId,
+        userId: ws.clientInfo.userId || 'none',
+        connectionId: ws.clientInfo.connectionId,
+        fieldsCount: Object.keys(ws.clientInfo).length
+      });
+      // ===== END DEBUG LOGGING =====
       
       // Log raw headers only in debug mode
       if (WS_DEBUG_MODE) {
@@ -534,7 +686,7 @@ class UnifiedWebSocketServer {
           userAgent: userAgent,
           protocol: req.headers['sec-websocket-version'] || 'unknown',
           extensions: req.headers['sec-websocket-extensions'] || 'none',
-          connectionInfo,
+          connectionLog,
           headers: req.headers
         } : consoleLogObject
       );
@@ -548,9 +700,12 @@ class UnifiedWebSocketServer {
         is_authenticated: isAuthenticated,
         environment: config.getEnvironment(origin),
         origin,
-        country: locationInfo?.split(', ')?.[0] || null,
-        region: locationInfo?.split(', ')?.[1] || null,
-        city: locationInfo?.split(', ')?.[2] || null
+        // Use the country code if available, otherwise use the first 2 chars or null
+        country: locationInfo?.countryCode || 
+                (locationCountry && locationCountry.length >= 2 ? locationCountry.substring(0, 2).toUpperCase() : null),
+        region: locationRegion,
+        city: locationCity
+        // Removed metadata - not providing clear value at this time
       }).catch(err => {
         logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error saving connection to database:${fancyColors.RESET}`, err);
       });
@@ -574,7 +729,8 @@ class UnifiedWebSocketServer {
       };
       
       // Use log level with object to ensure proper console vs logtail handling
-      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.connect}CONN#${connectionId} NEW - ${clientIp} (${clientInfo}) ${authFlowVisual} from ${originDisplay}${locationDisplay}${fancyColors.RESET}`, 
+      const clientInfoStr = this.parseClientInfo(userAgent);
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.connect}CONN#${connectionId} NEW - ${clientIp} (${clientInfoStr}) ${authFlowVisual} from ${originDisplay}${locationDisplay}${fancyColors.RESET}`, 
         config.debug_modes.websocket ? fullLogObject : consoleLogObject
       );
       
@@ -596,6 +752,20 @@ class UnifiedWebSocketServer {
    */
   async handleMessage(ws, rawMessage, req) {
     try {
+      // ===== DEBUG LOGGING: Message received =====
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} MESSAGE RECEIVED ${fancyColors.RESET} New WebSocket message`);
+      
+      // Check clientInfo state
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} MESSAGE CLIENTINFO ${fancyColors.RESET} clientInfo state:`, {
+        exists: !!ws.clientInfo,
+        hasAuth: ws.clientInfo && 'isAuthenticated' in ws.clientInfo,
+        isAuthenticated: ws.clientInfo?.isAuthenticated || false,
+        hasUserId: !!ws.clientInfo?.userId,
+        userId: ws.clientInfo?.userId || 'none',
+        connectionId: ws.clientInfo?.connectionId || 'unknown'
+      });
+      // ===== END DEBUG LOGGING =====
+      
       this.metrics.messagesReceived++;
       
       // Track message count on the connection object for database tracking
@@ -658,6 +828,22 @@ class UnifiedWebSocketServer {
    * @param {Request} req - Original HTTP request
    */
   async handleSubscription(ws, message, req) {
+    // ===== DEBUG LOGGING: Check if clientInfo exists =====
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} SUBSCRIPTION DEBUG ${fancyColors.RESET} clientInfo exists: ${!!ws.clientInfo}, topics: ${JSON.stringify(message.topics)}`);
+    if (ws.clientInfo) {
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENTINFO STATE ${fancyColors.RESET} isAuthenticated: ${ws.clientInfo.isAuthenticated}, userId: ${ws.clientInfo.userId}, connectionId: ${ws.clientInfo.connectionId}`);
+    } else {
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} MISSING CLIENTINFO ${fancyColors.RESET} WebSocket connection has no clientInfo object`);
+      // Detailed object inspection (safely)
+      try {
+        const wsKeys = Object.keys(ws).filter(k => k !== '_events' && k !== '_eventsCount');
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} WS KEYS ${fancyColors.RESET} Available WebSocket properties: ${wsKeys.join(', ')}`);
+      } catch (err) {
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} KEYS ERROR ${fancyColors.RESET} Error inspecting WebSocket: ${err.message}`);
+      }
+    }
+    // ===== END DEBUG LOGGING =====
+
     // Validate topics
     if (!message.topics || !Array.isArray(message.topics) || message.topics.length === 0) {
       return this.sendError(ws, 'Subscription requires at least one topic', 4003);
@@ -667,9 +853,75 @@ class UnifiedWebSocketServer {
     const restrictedTopics = [TOPICS.ADMIN, TOPICS.PORTFOLIO, TOPICS.USER, TOPICS.WALLET];
     const hasRestrictedTopic = message.topics.some(topic => restrictedTopics.includes(topic));
     
-    if (hasRestrictedTopic && !ws.clientInfo.isAuthenticated) {
-      // Try to authenticate if auth token is provided
-      if (message.authToken) {
+    // ===== DEBUG LOGGING: Topic restriction check =====
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} TOPIC CHECK ${fancyColors.RESET} hasRestrictedTopic: ${hasRestrictedTopic}, clientInfo exists: ${!!ws.clientInfo}`);
+    // ===== END DEBUG LOGGING =====
+    
+    // Try/catch to safely handle potential null/undefined
+    try {
+      // First, check if clientInfo exists at all
+      if (!ws.clientInfo) {
+        // ENHANCED DIAGNOSTICS: Create a visually distinctive error box for critical state errors
+        const errorHeaderBar = '═'.repeat(30);
+        const criticalErrorLog = `
+${fancyColors.BG_RED}${fancyColors.WHITE}╔${errorHeaderBar}╗${fancyColors.RESET}
+${fancyColors.BG_RED}${fancyColors.WHITE}║ CRITICAL STATE ERROR         ║${fancyColors.RESET}
+${fancyColors.BG_RED}${fancyColors.WHITE}╚${errorHeaderBar}╝${fancyColors.RESET}
+${fancyColors.BG_RED}${fancyColors.WHITE}┌────────────────────────────────┐${fancyColors.RESET}
+${fancyColors.BG_RED}${fancyColors.WHITE}│ Missing clientInfo object      │${fancyColors.RESET}
+${fancyColors.BG_RED}${fancyColors.WHITE}│ During subscription processing │${fancyColors.RESET}
+${fancyColors.BG_RED}${fancyColors.WHITE}└────────────────────────────────┘${fancyColors.RESET}`;
+
+        // Log the fancy error box to console for high visibility
+        console.log(criticalErrorLog);
+        
+        // Also log through the regular logging system
+        logApi.warn(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CRITICAL STATE ERROR ${fancyColors.RESET} Missing clientInfo during subscription processing`);
+        
+        // Add connection details to help diagnose the issue
+        const diagnosticInfo = {
+          messageTopics: message.topics,
+          wsState: ws.readyState,
+          hasAuthToken: !!message.authToken,
+          timestamp: new Date().toISOString(),
+          headers: req?.headers ? Object.keys(req.headers).join(',') : 'unknown',
+          ip: req?.socket?.remoteAddress || 'unknown'
+        };
+        
+        logApi.warn(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CONNECTION DIAGNOSTICS ${fancyColors.RESET}`, diagnosticInfo);
+        
+        // If attempting to access restricted topics, send a specific error with recovery instructions
+        if (hasRestrictedTopic) {
+          return this.send(ws, {
+            type: MESSAGE_TYPES.ERROR,
+            code: 4050,
+            reason: 'connection_state_invalid',
+            message: 'Connection state is invalid. Please refresh your page to reestablish connection.',
+            recoverable: true,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        // For public topics, we'll let it proceed but log that we're allowing it
+        logApi.warn(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ALLOWING PUBLIC TOPICS ${fancyColors.RESET} Despite missing clientInfo, allowing public topic subscription`);
+        
+        // Create a minimal tracking object just for this request (not assigned to ws.clientInfo)
+        // This way we can still track some information without affecting the connection state
+        const requestTracker = {
+          isRequestOnly: true,
+          isAuthenticated: false,
+          connectionId: 'UNTRACKED-' + Math.random().toString(16).substring(2, 8).toUpperCase(),
+          timestamp: new Date().toISOString()
+        };
+        
+        // We'll use this for logging later but NOT modify the actual ws object
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} CREATED TRACKER ${fancyColors.RESET} Temporary request tracker: ${requestTracker.connectionId}`);
+        
+        // Continue to topic processing (for public topics only)
+      } else if (hasRestrictedTopic && !ws.clientInfo.isAuthenticated) {
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} AUTH NEEDED ${fancyColors.RESET} Restricted topic requires authentication`);
+        // Try to authenticate if auth token is provided
+        if (message.authToken) {
         try {
           // Track JWT tokens that were already denied to prevent repeated log spam
           if (!ws.authFailedTokens) {
@@ -732,13 +984,31 @@ class UnifiedWebSocketServer {
             ? `"${userNickname}" (${shortWallet})` 
             : shortWallet;
           
-          // Create fancy auth log with yellow theme
+          // Create fancy auth log with enhanced formatting and visual frame
+          // Define a consistent field width for better alignment
+          const authFieldWidth = 8; // Longest field name is "Session"
+          
+          // Calculate a reasonable box width based on maximum value lengths
+          const authMaxValueWidth = Math.max(
+            (userNickname || 'Unknown').length + authData.role.length + 3, // User: Unknown (ROLE)
+            authData.userId.length,                                         // Wallet: address
+            (decoded.session_id || 'unknown').length + 12                   // Session: id ✅ Validated
+          );
+          
+          // Create a shorter folder-tab style header
+          const authHeaderWidth = 14; // "AUTHENTICATION" length
+          const authHeaderExtension = 5; // Short extension for tab-like appearance
+          const authHeaderBar = '═'.repeat(authHeaderWidth + authHeaderExtension);
+          
+          // Create the enhanced auth log with box drawing characters and consistent spacing - folder tab style
           const authLog = `
-${wsColors.auth}AUTHENTICATION${fancyColors.RESET}
-${wsColors.boxFg}│ User: ${userNickname || 'Unknown'} (${authData.role})
-│ Wallet: ${authData.userId}
-│ Session: ${decoded.session_id || 'unknown'} ${wsColors.success} ✅ Validated ${fancyColors.RESET}
-${fancyColors.RESET}`;
+${wsColors.auth}╔${authHeaderBar}╗${fancyColors.RESET}
+${wsColors.auth}║ AUTHENTICATION ${' '.repeat(authHeaderExtension)}║${fancyColors.RESET}
+${wsColors.authBoxBg}${wsColors.authBoxFg}┌${'─'.repeat(authFieldWidth + authMaxValueWidth + 3)}${fancyColors.RESET}
+${wsColors.authBoxBg}${wsColors.authBoxFg}│ ${'User:'.padEnd(authFieldWidth)} ${(userNickname || 'Unknown')} (${authData.role})${' '.repeat(Math.max(0, authMaxValueWidth - (userNickname || 'Unknown').length - authData.role.length - 3))}${fancyColors.RESET}
+${wsColors.authBoxBg}${wsColors.authBoxFg}│ ${'Wallet:'.padEnd(authFieldWidth)} ${authData.userId}${' '.repeat(Math.max(0, authMaxValueWidth - authData.userId.length))}${fancyColors.RESET}
+${wsColors.authBoxBg}${wsColors.authBoxFg}│ ${'Session:'.padEnd(authFieldWidth)} ${decoded.session_id || 'unknown'} ${wsColors.success}✅ Validated${' '.repeat(Math.max(0, authMaxValueWidth - (decoded.session_id || 'unknown').length - 12))} ${fancyColors.RESET}
+${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + authMaxValueWidth + 3)}${fancyColors.RESET}`;
           
           // Log authentication with improved format
           logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.auth}CONN#${ws.clientInfo.connectionId} AUTH - User ${userDisplay} [${authData.role}]${fancyColors.RESET}`, {
@@ -790,9 +1060,12 @@ ${fancyColors.RESET}`;
     }
     
     // Check for admin-only topics
-    if (message.topics.includes(TOPICS.ADMIN) && 
-        (!ws.clientInfo.role || !['ADMIN', 'SUPER_ADMIN'].includes(ws.clientInfo.role))) {
-      return this.sendError(ws, 'Admin role required for admin topics', 4012);
+    if (message.topics.includes(TOPICS.ADMIN)) {
+      // If we've gotten this far without clientInfo, we should have the temporary tracker
+      // but we know it's not authenticated as an admin
+      if (!ws.clientInfo || !ws.clientInfo.role || !['ADMIN', 'SUPER_ADMIN'].includes(ws.clientInfo.role)) {
+        return this.sendError(ws, 'Admin role required for admin topics', 4012);
+      }
     }
     
     // Process valid topics
@@ -840,13 +1113,18 @@ ${fancyColors.RESET}`;
     const topicsDisplay = validTopics.join(',');
     const topicCount = validTopics.length;
     
+    // Get a connection ID - if clientInfo is missing, use the temporary tracker we created or UNTRACKED
+    const connectionId = ws.clientInfo?.connectionId || 
+                        (typeof requestTracker !== 'undefined' ? requestTracker.connectionId : 'UNTRACKED');
+    
     // Create simplified log object for console output
     const consoleLogObject = {
-      connectionId: ws.clientInfo.connectionId,
+      connectionId: connectionId,
       topics: validTopics,
       userId: ws.clientInfo?.userId || null,
       nickname: ws.clientInfo?.nickname || null,
       isAuthenticated: ws.clientInfo?.isAuthenticated || false,
+      hasClientInfo: !!ws.clientInfo,
       _icon: "📥",
       _color: "#4CAF50"
     };
@@ -857,12 +1135,12 @@ ${fancyColors.RESET}`;
       environment: config.getEnvironment(ws.clientInfo?.origin),
       service: 'uni-ws',
       topicCount: topicCount,
-      ip: ws.clientInfo?.ip || 'unknown',
-      origin: ws.clientInfo?.origin || 'unknown'
+      ip: ws.clientInfo?.ip || req?.socket?.remoteAddress || 'unknown',
+      origin: ws.clientInfo?.origin || req?.headers?.origin || 'unknown'
     };
 
-    // Log subscription with appropriate detail level
-    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.subscribe}CONN#${ws.clientInfo.connectionId} SUBS - ${topicsDisplay} (${topicCount} ${topicCount === 1 ? 'topic' : 'topics'})${fancyColors.RESET}`, 
+    // Log subscription with appropriate detail level - use safe access for connectionId
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.subscribe}CONN#${connectionId} SUBS - ${topicsDisplay} (${topicCount} ${topicCount === 1 ? 'topic' : 'topics'})${fancyColors.RESET}`, 
       config.debug_modes.websocket ? fullLogObject : consoleLogObject
     );
   }
@@ -1532,9 +1810,48 @@ ${fancyColors.RESET}`;
         subscribed_topics: subscribedTopics
       };
       
-      // Log disconnect with improved format
+      // Create enhanced disconnect log formatting with consistent visual style
+      const disconnectFieldWidth = 12; // "Subscription:" is the longest field name
+      
+      // Calculate a reasonable box width for display
+      const disconnectMaxValueWidth = Math.max(
+        clientIdentifier.length + humanDuration.length + 3, // IP (duration)
+        (userInfo ? userInfo.length : 0) + 3,
+        (topicsSummary ? topicsSummary.length : 0) + 3,
+        (ws.closeCode ? `Code ${ws.closeCode}`.length : 0) + (ws.closeReason ? `: ${ws.closeReason}`.length : 0)
+      );
+      
+      // Create a shorter folder-tab style header
+      const disconnectHeaderWidth = 12; // "DISCONNECTED" length
+      const disconnectHeaderExtension = 5; // Short extension for tab-like appearance
+      const disconnectHeaderBar = '═'.repeat(disconnectHeaderWidth + disconnectHeaderExtension);
+      
+      // Prepare topics list if any exist
+      const topicsList = subscribedTopics.length > 0 
+        ? subscribedTopics.join(', ') 
+        : 'None';
+      
+      // Create the enhanced disconnect log with box drawing characters - more compact
+      const disconnectLog = `
+${wsColors.disconnect}╔${disconnectHeaderBar}╗${fancyColors.RESET}
+${wsColors.disconnect}║ DISCONNECTED ${' '.repeat(disconnectHeaderExtension)}║${fancyColors.RESET}
+${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}┌${'─'.repeat(disconnectFieldWidth + disconnectMaxValueWidth + 3)}${fancyColors.RESET}
+${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'Connection:'.padEnd(disconnectFieldWidth)} #${connectionId} (${humanDuration})${' '.repeat(Math.max(0, disconnectMaxValueWidth - connectionId.length - humanDuration.length - 3))}${fancyColors.RESET}
+${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'IP:'.padEnd(disconnectFieldWidth)} ${clientIdentifier}${' '.repeat(Math.max(0, disconnectMaxValueWidth - clientIdentifier.length))}${fancyColors.RESET}
+${userId ? `${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'User:'.padEnd(disconnectFieldWidth)} ${nickname || 'Unknown'} (${userId.slice(0, 6)}...)${' '.repeat(Math.max(0, disconnectMaxValueWidth - (nickname || 'Unknown').length - 11))}${fancyColors.RESET}` : ''}
+${subscribedTopics.length > 0 ? `${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'Topics:'.padEnd(disconnectFieldWidth)} ${topicsList.length > disconnectMaxValueWidth ? topicsList.slice(0, disconnectMaxValueWidth - 3) + '...' : topicsList}${' '.repeat(Math.max(0, disconnectMaxValueWidth - Math.min(topicsList.length, disconnectMaxValueWidth)))}${fancyColors.RESET}` : ''}
+${ws.closeCode ? `${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'Close Code:'.padEnd(disconnectFieldWidth)} ${ws.closeCode}${ws.closeReason ? `: ${ws.closeReason}` : ''}${' '.repeat(Math.max(0, disconnectMaxValueWidth - (ws.closeCode ? `${ws.closeCode}${ws.closeReason ? `: ${ws.closeReason}` : ''}`.length : 0)))}${fancyColors.RESET}` : ''}
+${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}└${'─'.repeat(disconnectFieldWidth + disconnectMaxValueWidth + 3)}${fancyColors.RESET}`;
+      
+      // Log the enhanced disconnect format to console
+      console.log(disconnectLog);
+      
+      // Also log through the regular logging system
       logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}CONN#${connectionId} CLOSE - ${clientIdentifier} (${humanDuration})${userInfo}${topicsSummary}${fancyColors.RESET}`, 
-        config.debug_modes.websocket ? fullLogObject : consoleLogObject
+        {
+          ...(config.debug_modes.websocket ? fullLogObject : consoleLogObject),
+          disconnectLog
+        }
       );
       
       // Record disconnect in database
@@ -1936,24 +2253,57 @@ ${fancyColors.RESET}`;
    */
   async saveConnectionToDatabase(connectionId, connectionData) {
     try {
+      // Prepare the data to be saved
+      const dataToSave = {
+        connection_id: connectionId,
+        ip_address: connectionData.ip_address,
+        user_agent: connectionData.user_agent,
+        wallet_address: connectionData.wallet_address,
+        nickname: connectionData.nickname,
+        is_authenticated: connectionData.is_authenticated,
+        environment: connectionData.environment,
+        origin: connectionData.origin,
+        country: connectionData.country,
+        region: connectionData.region,
+        city: connectionData.city
+        // Removed metadata field - not providing clear value at this time
+      };
+      
+      // Log the full data being saved to help debug field length issues
+      logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BLUE}Saving connection data:${fancyColors.RESET}`, {
+        connectionId,
+        dataFields: Object.entries(dataToSave).map(([key, value]) => ({
+          field: key,
+          type: typeof value,
+          value: value,
+          length: typeof value === 'string' ? value.length : null,
+        }))
+      });
+      
       // Create a new connection record
       return await prisma.websocket_connections.create({
-        data: {
-          connection_id: connectionId,
-          ip_address: connectionData.ip_address,
-          user_agent: connectionData.user_agent,
-          wallet_address: connectionData.wallet_address,
-          nickname: connectionData.nickname,
-          is_authenticated: connectionData.is_authenticated,
-          environment: connectionData.environment,
-          origin: connectionData.origin,
-          country: connectionData.country,
-          region: connectionData.region,
-          city: connectionData.city
-        }
+        data: dataToSave
       });
     } catch (error) {
-      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to save connection to database:${fancyColors.RESET}`, error);
+      // Enhanced error logging with field data when a length error occurs
+      if (error.code === 'P2000') {
+        // This is a field length error
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Field length error saving connection to database:${fancyColors.RESET}`, {
+          error: error.message,
+          connectionId,
+          // Add the data that was being saved to help identify which field is too long
+          connectionData: Object.entries(connectionData).map(([key, value]) => ({
+            field: key,
+            type: typeof value,
+            value: value,
+            length: typeof value === 'string' ? value.length : null,
+          }))
+        });
+      } else {
+        // Other types of errors
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to save connection to database:${fancyColors.RESET}`, error);
+      }
+      
       // Don't throw error here to prevent affecting the connection handling
       return null;
     }
