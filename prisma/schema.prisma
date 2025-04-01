@@ -380,6 +380,7 @@ model users {
   websocket_messages        websocket_messages[]
   authorized_devices        authorized_devices[]        @relation(name: "UserAuthorizedDevices")
   ai_conversations          ai_conversations[]          @relation("UserAIConversations")
+  client_errors             client_errors[]
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -1018,6 +1019,39 @@ model ai_conversation_messages {
   @@map("ai_conversation_messages")
 }
 
+// AI analysis for client errors
+model ai_error_analyses {
+  id                     Int       @id @default(autoincrement())
+  summary                String    @db.Text
+  analyzed_at            DateTime  @default(now()) @db.Timestamptz(6)
+  error_count            Int
+  time_window_minutes    Int
+  severity_distribution  Json?     @default("{}")
+  browser_distribution   Json?     @default("{}")
+  os_distribution        Json?     @default("{}")
+  top_errors             Json?     @default("[]")
+  created_by             String?   @db.VarChar(44)
+
+  @@index([analyzed_at])
+  @@map("ai_error_analyses")
+}
+
+// AI analysis for admin actions
+model ai_admin_action_analyses {
+  id                     Int       @id @default(autoincrement())
+  summary                String    @db.Text
+  analyzed_at            DateTime  @default(now()) @db.Timestamptz(6)
+  action_count           Int
+  time_window_minutes    Int
+  action_distribution    Json?     @default("{}")
+  admin_distribution     Json?     @default("{}")
+  top_actions            Json?     @default("[]")
+  created_by             String?   @db.VarChar(44)
+
+  @@index([analyzed_at])
+  @@map("ai_admin_action_analyses")
+}
+
 model websocket_connections {
   id                 Int       @id @default(autoincrement())
   connection_id      String    // Unique session identifier for the WebSocket connection
@@ -1049,4 +1083,44 @@ model websocket_connections {
   @@index([disconnected_at])
   @@index([is_authenticated])
   @@map("websocket_connections")
+}
+
+model client_errors {
+  id              Int       @id @default(autoincrement())
+  error_id        String    @unique // Unique identifier for grouping similar errors
+  wallet_address  String?   @db.VarChar(44)
+  user_id         Int?      // References users.id
+  message         String    @db.Text
+  level           String    @default("error") @db.VarChar(20)
+  stack_trace     String?   @db.Text
+  source_url      String?   @db.Text
+  line_number     Int?
+  column_number   Int?
+  browser         String?   @db.VarChar(100)
+  browser_version String?   @db.VarChar(50)
+  os              String?   @db.VarChar(50)
+  device          String?   @db.VarChar(50)
+  ip_address      String?   @db.VarChar(45)
+  session_id      String?   @db.VarChar(100)
+  environment     String?   @db.VarChar(20) // 'production', 'development', etc.
+  status          String?   @default("open") @db.VarChar(20)
+  resolved_at     DateTime? @db.Timestamptz(6)
+  resolved_by     String?   @db.VarChar(44)
+  resolution_note String?   @db.Text
+  is_critical     Boolean?  @default(false)
+  occurrences     Int       @default(1)
+  last_occurred_at DateTime? @default(now()) @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  metadata        Json?     @default("{}")
+  tags            String[]
+  
+  user            users?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([wallet_address], map: "idx_client_errors_wallet")
+  @@index([status], map: "idx_client_errors_status")
+  @@index([created_at], map: "idx_client_errors_created")
+  @@index([last_occurred_at], map: "idx_client_errors_occurred")
+  @@index([is_critical], map: "idx_client_errors_critical")
+  @@index([session_id], map: "idx_client_errors_session")
+  @@map("client_errors")
 }

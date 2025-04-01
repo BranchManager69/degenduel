@@ -11,6 +11,9 @@ import serviceConfigRoutes from './admin/service-config.js';
 import adminLogsRoutes from './admin/admin-logs.js';
 import websocketMonitorRoutes from './admin/websocket-monitor.js';
 import walletMonitoringRoutes from './admin/wallet-monitoring.js';
+import clientErrorRoutes from './admin/client-errors.js';
+import aiSqlRoutes from './admin/ai-sql.js';
+import aiAnalysisRoutes from './admin/ai-analysis.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,6 +31,15 @@ router.use('/admin/websocket-monitor', websocketMonitorRoutes);
 
 // Mount the Wallet monitoring routes
 router.use('/admin/wallet-monitoring', walletMonitoringRoutes);
+
+// Mount the Client Error routes
+router.use('/admin/client-errors', clientErrorRoutes);
+
+// Mount the AI SQL routes
+router.use('/admin/ai/sql', aiSqlRoutes);
+
+// Mount the AI Analysis routes
+router.use('/admin/ai-analysis', aiAnalysisRoutes);
 
 /**
  * Check a WebSocket endpoint's availability
