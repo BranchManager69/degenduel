@@ -1,5 +1,11 @@
 // services/userBalanceTrackingService.js
 
+/**
+ * User balance tracking service
+ * 
+ * @module services/userBalanceTrackingService
+ */
+
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import { logApi } from '../utils/logger-suite/logger.js';
@@ -8,33 +14,49 @@ import SolanaServiceManager from '../utils/solana-suite/solana-service-manager.j
 import { PublicKey } from '@solana/web3.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { fancyColors } from '../utils/colors.js';
-import { config } from '../config/config.js';
 
-// Rate limit configuration
+// Config
+import { config } from '../config/config.js';
+const USER_BALANCE_TRACKING_DYNAMIC_TARGET_RPC_CALLS_PER_DAY = config.service_thresholds.user_balance_tracking_dynamic_target_rpc_calls_per_day; // dynamic target RPC calls per day (specific to user balance tracking service)
+const USER_BALANCE_TRACKING_CHECK_INTERVAL = config.service_intervals.user_balance_tracking_check_interval; // cycle interval (minutes)
+const USER_BALANCE_TRACKING_MIN_CHECK_INTERVAL = config.service_thresholds.user_balance_tracking_min_check_interval; // Hard minimum between balance checks (minutes)
+const USER_BALANCE_TRACKING_MAX_CHECK_INTERVAL = config.service_thresholds.user_balance_tracking_max_check_interval; // Hard maximum between checks (minutes)
+const USER_BALANCE_TRACKING_BATCH_SIZE = config.service_thresholds.user_balance_tracking_batch_size; // in users (hard maximum = 20; do not exceed)
+
+// User balance tracking service configuration
 const BALANCE_TRACKING_CONFIG = {
     name: SERVICE_NAMES.USER_BALANCE_TRACKING || 'user_balance_tracking',
     description: 'Tracks user wallet balances on Solana',
-    checkIntervalMs: 1 * 60 * 1000, // Check every 1 minute for new users/scheduling
+    checkIntervalMs: USER_BALANCE_TRACKING_CHECK_INTERVAL * 60 * 1000,
     maxRetries: 3,
-    retryDelayMs: 5000,
+    retryDelayMs: 5 * 1000,
     circuitBreaker: {
         failureThreshold: 5,
-        resetTimeoutMs: 60000,
-        minHealthyPeriodMs: 120000
+        resetTimeoutMs: 60 * 1000,
+        minHealthyPeriodMs: 120 * 1000
     },
     rateLimit: {
         // Configurable rate limits
-        queriesPerHour: 1000, // Default, can be changed via system settings
-        minCheckIntervalMs: 60 * 1000, // Minimum 1 minute between balance checks for any user
-        maxCheckIntervalMs: 30 * 60 * 1000, // Maximum 30 minutes between checks
+        queriesPerHour: Math.round(USER_BALANCE_TRACKING_DYNAMIC_TARGET_RPC_CALLS_PER_DAY / 24), // dynamic RPC queries per hour for the user balance tracking service
+        // Hard min/max between dynamic balance checks
+        minCheckIntervalMs: USER_BALANCE_TRACKING_MIN_CHECK_INTERVAL * 60 * 1000, // Hard minimum between balance checks
+        maxCheckIntervalMs: USER_BALANCE_TRACKING_MAX_CHECK_INTERVAL * 60 * 1000, // Hard maximum between checks
     },
-    batchSize: 20 // Max users to check in parallel
+    // Hard max users to check in parallel (do not exceed)
+    batchSize: USER_BALANCE_TRACKING_BATCH_SIZE || 20
 };
 
 /**
  * Service for tracking user Solana wallet balances
+ * 
+ * @extends BaseService
  */
 class UserBalanceTrackingService extends BaseService {
+    /**
+     * Constructor for the user balance tracking service
+     * 
+     * @returns {UserBalanceTrackingService} - The user balance tracking service
+     */
     constructor() {
         super(BALANCE_TRACKING_CONFIG);
         
@@ -74,6 +96,8 @@ class UserBalanceTrackingService extends BaseService {
     
     /**
      * Initialize the service and load configs
+     * 
+     * @returns {Promise<boolean>} - True if the service is initialized, false otherwise
      */
     async initialize() {
         try {
@@ -108,8 +132,8 @@ class UserBalanceTrackingService extends BaseService {
             // Calculate check interval based on user count
             this.calculateCheckInterval(activeUsers);
             
-            logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.DARK_CYAN}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.DARK_CYAN}users${fancyColors.RESET}`);
-            logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}Checking each user every ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} ${fancyColors.DARK_CYAN}minutes${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.ORANGE}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.ORANGE}users${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Checking each user every ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} ${fancyColors.ORANGE}minutes${fancyColors.RESET}`);
             
             return true;
         } catch (error) {
@@ -120,6 +144,8 @@ class UserBalanceTrackingService extends BaseService {
     
     /**
      * Calculate optimal check interval based on user count and rate limits
+     * 
+     * @param {number} userCount - The number of active users
      */
     calculateCheckInterval(userCount) {
         const { queriesPerHour, minCheckIntervalMs, maxCheckIntervalMs } = this.config.rateLimit;
@@ -141,21 +167,93 @@ class UserBalanceTrackingService extends BaseService {
             Math.min(calculatedIntervalMs, maxCheckIntervalMs)
         );
         
-        logApi.info(`${fancyColors.BOLD}${fancyColors.DARK_CYAN}Balance check interval calculated to be${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000)} ${fancyColors.DARK_CYAN}${fancyColors.BOLD}seconds (unbuffered)${fancyColors.RESET}`);
+        // Calculate the user count boundary values
+        const minBoundaryUsers = Math.ceil((minCheckIntervalMs * queriesPerHour) / 3600000);
+        const maxBoundaryUsers = Math.floor((maxCheckIntervalMs * queriesPerHour) / 3600000);
+        
+        // Determine which constraint (if any) was applied
+        let constraintStatus;
+        if (this.effectiveCheckIntervalMs === minCheckIntervalMs) {
+            constraintStatus = `${fancyColors.BG_YELLOW}${fancyColors.BLACK} MIN CONSTRAINT ${fancyColors.RESET}`;
+        } else if (this.effectiveCheckIntervalMs === maxCheckIntervalMs) {
+            constraintStatus = `${fancyColors.BG_YELLOW}${fancyColors.BLACK} MAX CONSTRAINT ${fancyColors.RESET}`;
+        } else {
+            constraintStatus = `${fancyColors.BG_GREEN}${fancyColors.BLACK} DYNAMIC RANGE ${fancyColors.RESET}`;
+        }
+        
+        // Log the calculated interval with constraint information
+        logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Balance check interval${fancyColors.RESET}: ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000 / 60, 2)} minutes${fancyColors.RESET} ${constraintStatus}`);
+        
+        // Log the dynamic calculation boundary information
+        logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Dynamic calculation bounds${fancyColors.RESET}: ${fancyColors.BOLD_YELLOW}${minBoundaryUsers}${fancyColors.RESET} ${fancyColors.ORANGE}to${fancyColors.RESET} ${fancyColors.BOLD_YELLOW}${maxBoundaryUsers}${fancyColors.RESET} ${fancyColors.ORANGE}users${fancyColors.RESET} (Current: ${fancyColors.BOLD_YELLOW}${userCount}${fancyColors.RESET} users)`);
+        
+        // Log RPC usage projection
+        const checksPerHour = 60 / (this.effectiveCheckIntervalMs / 60000);
+        const dailyRpcCalls = Math.round(userCount * checksPerHour * 24);
+        const monthlyRpcCalls = dailyRpcCalls * 30;
+        
+        logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Projected RPC usage${fancyColors.RESET}: ${fancyColors.BOLD_YELLOW}${dailyRpcCalls.toLocaleString()}${fancyColors.RESET} ${fancyColors.ORANGE}calls/day${fancyColors.RESET} ${fancyColors.ORANGE}(${fancyColors.BOLD_YELLOW}${monthlyRpcCalls.toLocaleString()}${fancyColors.RESET} ${fancyColors.ORANGE}calls/month with current ${fancyColors.BOLD_YELLOW}${userCount}${fancyColors.RESET} ${fancyColors.ORANGE}users)${fancyColors.RESET}`);
+        
+        // Create visual representation (0 to 5000 users scale)
+        const maxScale = 5000;
+        const barWidth = 40; // characters wide
+        const minBoundaryPos = Math.floor((minBoundaryUsers / maxScale) * barWidth);
+        const maxBoundaryPos = Math.floor((maxBoundaryUsers / maxScale) * barWidth);
+        const userPos = Math.floor((userCount / maxScale) * barWidth);
+        
+        // Build the visual bar
+        let visualBar = '';
+        for (let i = 0; i < barWidth; i++) {
+            if (i === userPos) {
+                // Current user position
+                visualBar += `${fancyColors.BG_WHITE}${fancyColors.BLACK}|${fancyColors.RESET}`;
+            } else if (i >= minBoundaryPos && i <= maxBoundaryPos) {
+                // Dynamic range
+                visualBar += `${fancyColors.BG_GREEN}${fancyColors.BLACK}█${fancyColors.RESET}`;
+            } else if (i < minBoundaryPos) {
+                // Min constraint zone
+                visualBar += `${fancyColors.BG_YELLOW}${fancyColors.BLACK}█${fancyColors.RESET}`;
+            } else {
+                // Max constraint zone
+                visualBar += `${fancyColors.BG_RED}${fancyColors.BLACK}█${fancyColors.RESET}`;
+            }
+        }
+        
+        // Create labels
+        const scaleLabels = `${fancyColors.GRAY}0${' '.repeat(barWidth-8)}${Math.round(maxScale/2)}${' '.repeat(barWidth-String(maxScale).length-9)}${maxScale}${fancyColors.RESET}`;
+        
+        // Log visual representation
+        logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}User count range [0-${maxScale}]${fancyColors.RESET}:`);
+        logApi.info(`${visualBar}`);
+        logApi.info(`${scaleLabels}`);
+        logApi.info(
+            `${fancyColors.BG_YELLOW}${fancyColors.BLACK}█${fancyColors.RESET} Min Constraint (≤${minBoundaryUsers}) ` +
+            `${fancyColors.BG_GREEN}${fancyColors.BLACK}█${fancyColors.RESET} Dynamic Range (${minBoundaryUsers+1}-${maxBoundaryUsers}) ` +
+            `${fancyColors.BG_RED}${fancyColors.BLACK}█${fancyColors.RESET} Max Constraint (≥${maxBoundaryUsers+1}) ` +
+            `${fancyColors.BG_WHITE}${fancyColors.BLACK}|${fancyColors.RESET} Current (${userCount})`
+        );
     }
     
     /**
      * Required implementation of performOperation - main service loop
+     * 
+     * @returns {Promise<Object>} - The results of the operation
      */
     async performOperation() {
         const startTime = Date.now();
         
         try {
+            // Add log at the start of each operation cycle with timestamp
+            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Starting balance refresh cycle${fancyColors.RESET} | Users tracked: ${fancyColors.BOLD_YELLOW}${this.trackingStats.users.trackedUsers.size}${fancyColors.RESET} | Interval: ${Math.round(this.effectiveCheckIntervalMs/1000)}s`);
+            
             // 1. Update user count and recalculate interval if needed
             await this.updateUserCount();
             
             // 2. Schedule balance checks for any new users
-            await this.scheduleNewUsers();
+            const newUsersCount = await this.scheduleNewUsers();
+            if (newUsersCount > 0) {
+                logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE USERS ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Added ${fancyColors.BOLD_YELLOW}${newUsersCount}${fancyColors.RESET}${fancyColors.ORANGE} new users to balance tracking${fancyColors.RESET}`);
+            }
             
             // 3. Execute scheduled balance checks
             const results = await this.executeScheduledChecks();
@@ -174,20 +272,30 @@ class UserBalanceTrackingService extends BaseService {
             // 5. Record success
             await this.recordSuccess();
             
+            // Add log at the end of the cycle with timing information
+            const duration = Date.now() - startTime;
+            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Completed cycle in ${fancyColors.YELLOW}${duration}ms${fancyColors.RESET} | Next cycle: ${new Date(Date.now() + this.config.checkIntervalMs).toLocaleTimeString()}`);
+            
             return {
-                duration: Date.now() - startTime,
+                duration: duration,
                 checksPerformed: results.checksPerformed,
                 checksScheduled: results.checksScheduled
             };
         } catch (error) {
             this.trackingStats.operations.failed++;
             this.trackingStats.operations.total++;
+            
+            // Log error at cycle level with red background
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE ERROR ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.RED}Cycle failed: ${error.message}${fancyColors.RESET}`);
+            
             throw error;
         }
     }
     
     /**
      * Update user count and recalculate check interval if needed
+     * 
+     * @returns {Promise<number>} - The number of active users
      */
     async updateUserCount() {
         // Get the active user count
@@ -205,6 +313,8 @@ class UserBalanceTrackingService extends BaseService {
     
     /**
      * Schedule new users for balance tracking
+     * 
+     * @returns {Promise<number>} - The number of new users scheduled
      */
     async scheduleNewUsers() {
         // Get all users that aren't in our tracking map yet
@@ -243,10 +353,15 @@ class UserBalanceTrackingService extends BaseService {
     
     /**
      * Execute scheduled balance checks
+     * 
+     * @returns {Promise<Object>} - The results of the balance checks
      */
     async executeScheduledChecks() {
         const now = Date.now();
         const checksToExecute = [];
+        
+        // Log upcoming checks schedule every cycle
+        const shouldLogSchedule = true; // Show schedule every cycle
         
         // Find users due for checks
         for (const [walletAddress, schedule] of this.userSchedule.entries()) {
@@ -259,6 +374,66 @@ class UserBalanceTrackingService extends BaseService {
             if (checksToExecute.length >= this.config.batchSize) break;
         }
         
+        // If enabled, log the upcoming check schedule
+        if (shouldLogSchedule) {
+            try {
+                // Get upcoming check schedule for all users
+                const checkSchedule = [];
+                const walletData = new Map();
+                
+                // Get all wallet addresses first
+                const walletAddresses = Array.from(this.userSchedule.keys());
+                
+                // Lookup wallet nicknames in batch
+                const users = await prisma.users.findMany({
+                    where: { wallet_address: { in: walletAddresses } },
+                    select: { wallet_address: true, nickname: true }
+                });
+                
+                // Create a map for quick lookup
+                for (const user of users) {
+                    walletData.set(user.wallet_address, { nickname: user.nickname });
+                }
+                
+                // Collect data for each wallet
+                for (const [walletAddress, schedule] of this.userSchedule.entries()) {
+                    const userData = walletData.get(walletAddress) || { nickname: 'Unknown' };
+                    const nextCheck = new Date(schedule.nextCheck);
+                    const timeTillCheck = Math.max(0, Math.round((schedule.nextCheck - now) / 1000));
+                    
+                    checkSchedule.push({
+                        wallet: walletAddress.slice(0, 8) + '...',
+                        nickname: userData.nickname,
+                        nextCheck,
+                        timeLeft: timeTillCheck,
+                        isActive: this.activeChecks.has(walletAddress)
+                    });
+                }
+                
+                // Sort by next check time
+                checkSchedule.sort((a, b) => a.timeLeft - b.timeLeft);
+                
+                // Log the schedule
+                logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE SCHEDULE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Upcoming check schedule:${fancyColors.RESET}`);
+                checkSchedule.forEach((item, i) => {
+                    const status = item.isActive ? `${fancyColors.GREEN}[ACTIVE]${fancyColors.RESET}` : 
+                                  (item.timeLeft === 0 ? `${fancyColors.YELLOW}[DUE]${fancyColors.RESET}` : `${fancyColors.BLUE}[${Math.ceil(item.timeLeft/60)}m]${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.ORANGE}${i+1}.${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.YELLOW}${item.nickname || 'Unknown'}${fancyColors.RESET} (${item.wallet}): ${item.nextCheck.toLocaleTimeString()} ${status}`);
+                });
+            } catch (error) {
+                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE ERROR ${fancyColors.RESET} Error getting check schedule: ${error.message}`);
+            }
+        }
+        
+        // Always log the batch status, even when no checks are due
+        if (checksToExecute.length > 0) {
+            // Clearer message explaining why not all wallets are being checked - emphasize the staggered schedule
+            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE BATCH ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Starting batch check of ${fancyColors.BOLD_YELLOW}${checksToExecute.length}/${this.userSchedule.size}${fancyColors.RESET}${fancyColors.ORANGE} wallets${fancyColors.RESET} (others on staggered schedule - 10m interval per wallet)`);
+        } else {
+            // Add this log to show why no wallets are being checked
+            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE BATCH ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}No wallets due for checks${fancyColors.RESET} (${this.userSchedule.size} in schedule, next check time: ${new Date(Math.min(...Array.from(this.userSchedule.values()).map(s => s.nextCheck))).toLocaleTimeString()})`);
+        }
+        
         // Execute checks in batches
         const checkResults = await Promise.allSettled(
             checksToExecute.map(wallet => this.checkWalletBalance(wallet))
@@ -268,7 +443,9 @@ class UserBalanceTrackingService extends BaseService {
         let successful = 0;
         let failed = 0;
         
-        checkResults.forEach((result, index) => {
+        // Use a for loop instead of forEach to allow async/await
+        for (let index = 0; index < checkResults.length; index++) {
+            const result = checkResults[index];
             const wallet = checksToExecute[index];
             const schedule = this.userSchedule.get(wallet);
             
@@ -293,18 +470,39 @@ class UserBalanceTrackingService extends BaseService {
                 );
                 schedule.nextCheck = now + backoffMs;
                 
-                logApi.warn(`Failed balance check for ${wallet}, retry in ${Math.round(backoffMs/1000)}s:`, result.reason);
+                // Get nickname for better logging
+                let nickname = 'Unknown';
+                try {
+                    const user = await prisma.users.findUnique({
+                        where: { wallet_address: wallet },
+                        select: { nickname: true }
+                    });
+                    nickname = user?.nickname || 'Unknown';
+                } catch (userLookupError) {
+                    // Ignore errors from the user lookup
+                }
+
+                // Improve the warning log format with nickname and Solscan link
+                const solscanUrl = `https://solscan.io/account/${wallet}`;
+                // Format the wallet address for display with proper spacing
+                const shortWallet = `${wallet.slice(0, 8)}...${wallet.slice(-4)}`;
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE RETRY ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}[userBalanceTrackingService]${fancyColors.RESET} Failed for ${fancyColors.BOLD}${fancyColors.YELLOW}${nickname || 'Unknown'}${fancyColors.RESET} (${fancyColors.DARK_ORANGE}${shortWallet}${fancyColors.RESET}), retry in ${fancyColors.YELLOW}${Math.round(backoffMs/1000)}s${fancyColors.RESET}: ${result.reason?.message || 'Unknown error'} | ${fancyColors.UNDERLINE}${fancyColors.GRAY}${solscanUrl}${fancyColors.RESET}`);
             }
             
             // Update schedule
             this.userSchedule.set(wallet, schedule);
-        });
+        }
         
         // Update stats
         this.trackingStats.balanceChecks.total += checksToExecute.length;
         this.trackingStats.balanceChecks.successful += successful;
         this.trackingStats.balanceChecks.failed += failed;
         this.trackingStats.balanceChecks.lastCheck = now;
+        
+        // Always log completion status, even when no checks were executed
+        if (checksToExecute.length > 0) {
+            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE BATCH ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Completed: ${fancyColors.GREEN}${successful} successful${fancyColors.RESET}${fancyColors.ORANGE}, ${fancyColors.RED}${failed} failed${fancyColors.RESET}${fancyColors.ORANGE}, next cycle in ~${Math.round(this.effectiveCheckIntervalMs/1000/60)}m${fancyColors.RESET}`);
+        }
         
         return {
             checksPerformed: checksToExecute.length,
@@ -316,11 +514,25 @@ class UserBalanceTrackingService extends BaseService {
     
     /**
      * Check balance for a specific wallet
+     * 
+     * @param {string} walletAddress - The wallet address to check
+     * @returns {Promise<Object>} - The balance and timestamp
      */
     async checkWalletBalance(walletAddress) {
         const startTime = Date.now();
         
         try {
+            // Get user info first for better logging
+            const user = await prisma.users.findUnique({
+                where: { wallet_address: walletAddress },
+                select: { 
+                    nickname: true,
+                    is_banned: true 
+                }
+            });
+            
+            const nickname = user?.nickname || 'Unknown';
+            
             // Get Solana connection
             const connection = SolanaServiceManager.getConnection();
             
@@ -358,14 +570,40 @@ class UserBalanceTrackingService extends BaseService {
                 }
             });
             
+            const duration = Date.now() - startTime;
+            // Log successful balance update with orange formatting and Solscan link
+            const solscanUrl = `https://solscan.io/account/${walletAddress}`;
+            // Format the wallet address for display with proper spacing
+            const shortWallet = `${walletAddress.slice(0, 8)}...${walletAddress.slice(-4)}`;
+            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.GREEN}💰 Updated${fancyColors.RESET} for ${fancyColors.BOLD}${fancyColors.YELLOW}${nickname || 'Unknown'}${fancyColors.RESET} (${fancyColors.DARK_ORANGE}${shortWallet}${fancyColors.RESET}): ${fancyColors.BOLD}${fancyColors.YELLOW}${balance / 1_000_000_000} SOL${fancyColors.RESET} ${fancyColors.ORANGE}(${duration}ms)${fancyColors.RESET} | ${fancyColors.UNDERLINE}${fancyColors.GRAY}${solscanUrl}${fancyColors.RESET}`);
+            
             return {
                 wallet: walletAddress,
+                nickname: nickname,
                 balance: balance,
                 timestamp: new Date(),
-                duration: Date.now() - startTime
+                duration: duration
             };
         } catch (error) {
             this.trackingStats.solana.errors++;
+            
+            // Try to get user info for better error logging
+            let nickname = 'Unknown';
+            try {
+                const user = await prisma.users.findUnique({
+                    where: { wallet_address: walletAddress },
+                    select: { nickname: true }
+                });
+                nickname = user?.nickname || 'Unknown';
+            } catch (userLookupError) {
+                // Ignore errors from the user lookup, we'll just use 'Unknown'
+            }
+            
+            // Log error with red background for errors and include nickname and Solscan link
+            const solscanUrl = `https://solscan.io/account/${walletAddress}`;
+            // Format the wallet address for display with proper spacing
+            const shortWallet = `${walletAddress.slice(0, 8)}...${walletAddress.slice(-4)}`;
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE ERROR ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.RED}❌ Failed${fancyColors.RESET} for ${fancyColors.BOLD}${fancyColors.YELLOW}${nickname || 'Unknown'}${fancyColors.RESET} (${fancyColors.DARK_ORANGE}${shortWallet}${fancyColors.RESET}): ${error.message} | ${fancyColors.UNDERLINE}${fancyColors.GRAY}${solscanUrl}${fancyColors.RESET}`);
             throw new ServiceError(
                 'balance_check_failed',
                 `Failed to check balance for ${walletAddress}: ${error.message}`
@@ -376,6 +614,9 @@ class UserBalanceTrackingService extends BaseService {
     /**
      * Manually trigger a balance check for a specific wallet
      * Used by external services that need immediate balance info
+     * 
+     * @param {string} walletAddress - The wallet address to check
+     * @returns {Promise<Object>} - The results of the operation
      */
     async forceBalanceCheck(walletAddress) {
         try {
@@ -431,6 +672,8 @@ class UserBalanceTrackingService extends BaseService {
     
     /**
      * Clean up resources
+     * 
+     * @returns {Promise<void>} - The results of the operation
      */
     async stop() {
         await super.stop();
@@ -442,6 +685,8 @@ class UserBalanceTrackingService extends BaseService {
 
     /**
      * Get detailed service status for monitoring
+     * 
+     * @returns {Promise<Object>} - The status of the service
      */
     getServiceStatus() {
         // TODO: Implement this
@@ -461,20 +706,26 @@ class UserBalanceTrackingService extends BaseService {
 }
 
 // Verify Prisma schema is properly set up for wallet balance tracking
+
+/**
+ * Verify the wallet balance tracking schema exists
+ * 
+ * @returns {Promise<boolean>} - True if the schema exists, false otherwise
+ */
 async function ensureSchemaExists() {
     try {
+        // Since we've already generated the Prisma client with the new schema, this works.
+        //
         // We no longer need to create tables manually as they'll be created by Prisma
         // This function now just verifies the tables exist through Prisma
         
         // Verify wallet_balance_history table exists by doing a count query
-        const historyCount = await prisma.wallet_balance_history.count();
         
-        // Since we've already generated the Prisma client with the new schema,
-        // this should work. If it fails, it means there may be a discrepancy
-        // between our Prisma schema and the database
+        // No need to log the table count
+        //const historyCount = await prisma.wallet_balance_history.count();
+        //logApi.info(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.ORANGE} ✅ ${fancyColors.BOLD}${fancyColors.ORANGE}wallet_balance_history${fancyColors.RESET} ${fancyColors.ORANGE}table exists (records: ${historyCount})`);
         
-        logApi.info(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.DARK_CYAN} ✅ ${fancyColors.BOLD}${fancyColors.DARK_CYAN}wallet_balance_history${fancyColors.RESET} ${fancyColors.DARK_CYAN}table exists (records: ${historyCount})`);
-        
+        // No need to do anything at all!
         return true;
     } catch (error) {
         logApi.error('Error verifying balance tracking schema:', error);
@@ -483,10 +734,25 @@ async function ensureSchemaExists() {
 }
 
 // First ensure schema exists, then create and export service
+/**
+ * Create and export the user balance tracking service
+ * 
+ * @returns {UserBalanceTrackingService} - The user balance tracking service
+ */
 const userBalanceTrackingService = new UserBalanceTrackingService();
 
 // Export with schema check wrapper
+/**
+ * Export the user balance tracking service
+ * 
+ * @returns {UserBalanceTrackingService} - The user balance tracking service
+ */
 export default userBalanceTrackingService;
 
 // Export schema check function for initialization
+/**
+ * Export the schema check function for initialization
+ * 
+ * @returns {Promise<boolean>} - True if the schema exists, false otherwise
+ */
 export { ensureSchemaExists };
