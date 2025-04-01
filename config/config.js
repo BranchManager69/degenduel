@@ -46,6 +46,9 @@ const RPC_URL_MAINNET_HTTP = process.env.SOLANA_MAINNET_HTTP || '';
 const RPC_URL_MAINNET_WSS = process.env.SOLANA_MAINNET_WSS || '';
 const RPC_URL_DEVNET_HTTP = process.env.SOLANA_DEVNET_HTTP || '';
 const RPC_URL_DEVNET_WSS = process.env.SOLANA_DEVNET_WSS || '';
+// -- Additional RPC URLs:
+const RPC_URL_MAINNET_HTTP_2 = process.env.SOLANA_MAINNET_HTTP_2 || '';
+const RPC_URL_MAINNET_HTTP_3 = process.env.SOLANA_MAINNET_HTTP_3 || '';
 // Throw error if no RPC URL is configured
 if (!RPC_URL) {
   throw new Error('RPC_URL must be set (use of public Solana RPC endpoints has been intentionally disabled)');
@@ -54,7 +57,7 @@ if (!RPC_URL) {
 // Default OpenAI settings
 const OPENAI_DEFAULT_MODEL = `gpt-4o`;
 const OPENAI_DEFAULT_MAX_TOKENS = 222;
-const OPENAI_DEFAULT_TEMPERATURE = 0.75;
+const OPENAI_DEFAULT_TEMPERATURE = 0.74;
 
 // Default OpenAI system and assistant prompts
 const OPENAI_DEFAULT_ASSISTANT_PROMPT = `
@@ -113,8 +116,8 @@ const PRIVY_JWKS_URL = process.env.PRIVY_JWKS_URL;
 // Other Important API keys
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const IPINFO_API_KEY = process.env.IPINFO_API_KEY;
+const JUPITER_API_KEY = process.env.JUPITER_API_KEY;
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
-
 
 /* Master config object */
 
@@ -126,6 +129,15 @@ const config = {
     mainnet_wss: RPC_URL_MAINNET_WSS,
     devnet_http: RPC_URL_DEVNET_HTTP,
     devnet_wss: RPC_URL_DEVNET_WSS,
+    // Additional RPC endpoints
+    mainnet_http_2: RPC_URL_MAINNET_HTTP_2,
+    mainnet_http_3: RPC_URL_MAINNET_HTTP_3,
+    // All available mainnet HTTP endpoints in an array for rotation
+    mainnet_http_all: [
+      RPC_URL_MAINNET_HTTP,
+      ...(RPC_URL_MAINNET_HTTP_2 ? [RPC_URL_MAINNET_HTTP_2] : []),
+      ...(RPC_URL_MAINNET_HTTP_3 ? [RPC_URL_MAINNET_HTTP_3] : [])
+    ].filter(url => url && url.length > 0), // Filter out empty URLs
   },
   
   // Secure middleware config:
@@ -194,6 +206,7 @@ const config = {
     openai: OPENAI_API_KEY,
     ipinfo: IPINFO_API_KEY,
     helius: HELIUS_API_KEY,
+    jupiter: JUPITER_API_KEY,
   },
 
   // AI config
@@ -598,6 +611,7 @@ const config = {
       wallet_generator_service: true,
       ai_service: true,
       solana_service: true,
+      solana_engine_service: true, // New SolanaEngine service
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
@@ -620,6 +634,7 @@ const config = {
       wallet_generator_service: false,
       ai_service: true, // Keep AI service enabled in development for testing
       solana_service: true, // Keep Solana service enabled in development for connection management
+      solana_engine_service: true, // Keep SolanaEngine service enabled in development for testing
       // Additional services would be disabled here too
       // etc.
     }
@@ -726,6 +741,12 @@ const config = {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.solana_service;
+    },
+    
+    get solana_engine_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.solana_engine_service;
     },
   },
   debug_mode: 
