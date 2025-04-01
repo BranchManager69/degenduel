@@ -182,36 +182,154 @@ For complete details on the WebSocket system, including topics, message formats,
 
 ### Authentication System
 
-DegenDuel uses a Web3 wallet-based authentication system:
+DegenDuel supports multiple authentication methods in a unified system:
 
-**Authentication Flow:**
-1. **Challenge Generation**:
-   - Client requests a challenge for a specific wallet address
-   - Server generates a random nonce with 15-minute expiration
+<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #4285f4;">
 
-2. **Signature Verification**:
-   - Client signs a message containing the nonce
-   - Server verifies the signature against the wallet's public key
-   - Nonce is consumed (one-time use)
+#### Authentication Methods
 
-3. **Session Establishment**:
-   - JWT token generated with wallet_address, role, session_id
-   - Token delivered via HTTP-only cookie
-   - Default expiration: 12 hours
+DegenDuel supports multiple authentication methods:
 
-**Role-Based Access:**
+1. **Web3 Wallet Authentication** (Primary Method)
+   - Direct wallet connection and signature
+   - Used for account creation and login
+   - Endpoint: `/api/auth/verify-wallet`
+
+2. **Privy Authentication** (Primary/Secondary Method)
+   - Email, social login, or passkeys through Privy
+   - Can create accounts (if `auto_create_accounts=true`) or link to existing ones
+   - Endpoints: 
+     - `/api/auth/verify-privy` - Login/registration
+     - `/api/auth/link-privy` - Account linking
+
+3. **Twitter Authentication** (Secondary Method)
+   - Social authentication via Twitter
+   - Only for linking to existing accounts (no direct registration)
+   - Endpoints:
+     - `/api/auth/twitter/login` - Start Twitter OAuth
+     - `/api/auth/twitter/callback` - OAuth callback
+     - `/api/auth/twitter/link` - Link Twitter to existing account
+     
+4. **Biometric Authentication** (Upcoming - In Development)
+   - Fingerprint/Face ID authentication using WebAuthn
+   - Includes custodial wallet generation for users
+   - Creates server-managed wallets for users without existing wallets
+   - Endpoints (planned):
+     - `/api/auth/register-biometric` - Register new device
+     - `/api/auth/biometric-challenge` - Generate challenge
+     - `/api/auth/verify-biometric` - Verify biometric auth
+
+#### Authentication Status
+
+All authentication methods are tracked through the unified status endpoint:
+- `/api/auth/status` - Returns comprehensive auth status
+
+#### Authentication Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     DegenDuel Platform                      │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Authentication Methods                    │
+└───────┬─────────────────────┬─────────────────────┬─────────┘
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌───────────────┐     ┌───────────────┐     ┌───────────────┐
+│  Web3 Wallet  │     │     Privy     │     │    Twitter    │
+│ Authentication│     │ Authentication│     │ Authentication│
+└───────┬───────┘     └───────┬───────┘     └───────┬───────┘
+        │                     │                     │
+        │ /verify-wallet      │ /verify-privy       │ /twitter/login
+        │                     │                     │ /twitter/callback
+        ▼                     ▼                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Authentication Verification                │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            │ JWT Token + Cookie
+                            │ Session Creation
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Account Check                           │
+└───────┬─────────────────────────────────────┬───────────────┘
+        │                                     │
+        │ Account Exists                      │ No Account
+        │                                     │
+        ▼                                     ▼
+┌───────────────────┐                 ┌───────────────────┐
+│                   │                 │   Create Account?  │
+│     Log In        │                 │                   │
+│                   │                 │  Web3 ✓  Privy ✓  │
+│                   │                 │  Twitter ✗        │
+└───────┬───────────┘                 └─────────┬─────────┘
+        │                                       │
+        │                                       │ If allowed
+        │                                       │ (auto_create=true for Privy)
+        │                                       │
+        │                                       ▼
+        │                             ┌───────────────────┐
+        │                             │                   │
+        │                             │  Create Account   │
+        │                             │                   │
+        │                             └─────────┬─────────┘
+        │                                       │
+        └───────────────────┬───────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Authenticated User                       │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            │ Optional: Link Additional
+                            │ Authentication Methods
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Account Linking Options                     │
+├───────────────────────────┬─────────────────────────────────┤
+│                           │                                 │
+│  /link-privy              │  /twitter/link                 │
+│  Link Privy Account       │  Link Twitter Account          │
+│                           │                                 │
+└───────────────────────────┴─────────────────────────────────┘
+```
+
+#### Authentication Method Comparison
+
+| Feature              | Web3 Wallet | Privy         | Twitter      | Biometric (Planned) |
+|----------------------|-------------|---------------|--------------|---------------------|
+| Account Creation     | ✓ Yes       | ✓ Yes*        | ✗ No         | ✓ Yes‡              |
+| Login to Account     | ✓ Yes       | ✓ Yes         | ✓ Yes        | ✓ Yes               |
+| Link to Account      | N/A         | ✓ Yes         | ✓ Yes        | ✓ Yes               |
+| Required for Account | ✓ Yes**     | ✓ Optional**  | ✗ No         | ✓ Optional**        |
+| Custodial Wallet     | ✗ No        | ✗ No          | ✗ No         | ✓ Yes               |
+| Device-Specific      | ✗ No        | Varies†       | ✗ No         | ✓ Yes               |
+
+\* *Privy can create accounts if `auto_create_accounts=true` in config*  
+\** *One of: Web3 Wallet, Privy, or Biometric is required for account creation*  
+\† *Privy can use passkeys which are device-specific, but also supports email which is not*  
+\‡ *Creates a custodial wallet managed by DegenDuel*
+
+</div>
+
+#### Security Features
+- HTTP-only cookies
+- Secure flag in production
+- SameSite cookie policy
+- Wallet address validation
+- Signature verification
+- Input validation
+- JWT tokens with expiration
+
+#### Role-Based Access
 - `user`: Standard user role
 - `admin`: Administrative privileges
 - `superadmin`: Highest level of access
 - Middleware for role-based access control
 
-**Security Features:**
-- HTTP-only cookies
-- Secure flag in production
-- SameSite cookie policy
-- Wallet address validation
-- Rate limiting
-- Input validation
+For complete documentation on the authentication system, see [Authentication Flow Documentation](/routes/auth-flow-documentation.md).
 
 ---
 
