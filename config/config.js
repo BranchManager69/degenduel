@@ -127,6 +127,7 @@ const config = {
     devnet_http: RPC_URL_DEVNET_HTTP,
     devnet_wss: RPC_URL_DEVNET_WSS,
   },
+  
   // Secure middleware config:
   secure_middleware: {
     branch_manager_access_secret: process.env.BRANCH_MANAGER_ACCESS_SECRET,
@@ -134,12 +135,14 @@ const config = {
     branch_manager_login_secret: process.env.BRANCH_MANAGER_LOGIN_SECRET,
     branch_manager_ip_address: process.env.BRANCH_MANAGER_IP_ADDRESS,
   },
+  
   // Some master wallet stuff:
   master_wallet: {
     treasury_address: process.env.DD_MASTER_WALLET, // new
     address: process.env.DD_MASTER_WALLET, // TODO: deprecate
     branch_manager_wallet_address: process.env.BRANCH_MANAGER_WALLET_ADDRESS,
   },
+  
   // Internal transaction types:
   transaction_types: {
     PRIZE_PAYOUT: 'PRIZE_PAYOUT',
@@ -150,6 +153,7 @@ const config = {
     WITHDRAWAL: 'WITHDRAWAL',
     DEPOSIT: 'DEPOSIT'
   },
+  
   // Internal transaction statuses:
   transaction_statuses: {
     PENDING: 'pending',
@@ -157,13 +161,16 @@ const config = {
     FAILED: 'failed',
     CANCELLED: 'cancelled'
   },
+  
   // DegenDuel server port:
   port:
-    process.env.PORT || process.env.API_PORT || 3004,
-  // JWT secret:
+    process.env.PORT || process.env.API_PORT,
+  
+    // JWT secret:
   jwt: {
     secret: process.env.JWT_SECRET
   },
+  
   // DD API URLs:
   api_urls: {
     dd_serv: DD_SERV_API,
@@ -371,16 +378,23 @@ const config = {
   service_intervals: {
     // ^^^ = uses RPC calls
 
+    /* USER BALANCE TRACKING SERVICE */
+
+    // User balance tracking service check interval:
+    user_balance_tracking_check_interval:
+      parseInt(process.env.USER_BALANCE_TRACKING_CHECK_INTERVAL || 5), // 5 minutes default (does not affect RPC calls; service uses a dynamic approach)
+
     /* TOKEN SYNC SERVICE */
+
     // Token sync service check interval:
-    token_sync_check_interval_ms:
+    token_sync_check_interval:
       MASTER_RPC_THROTTLE !== 1 ?
-        parseInt(process.env.TOKEN_SYNC_CHECK_INTERVAL_MS || 60000 + (60000 * MASTER_RPC_THROTTLE)) :
-        60000, // 60 seconds default, modified by RPC throttle ^^^
+        parseInt(process.env.TOKEN_SYNC_CHECK_INTERVAL || 60 + (60 * MASTER_RPC_THROTTLE)) :
+        60, // 60 seconds default, modified by RPC throttle ^^^
     
     /* CONTEST WALLET SERVICE */
 
-    // Contest wallet check cycle interval (for Solana balances):
+    // Contest wallet check cycle interval (for SOL balance checks):
     contest_wallet_check_cycle_interval:
       MASTER_RPC_THROTTLE !== 1 ? 
         process.env.CONTEST_WALLET_CHECK_CYCLE_INTERVAL || 60 + (60 * MASTER_RPC_THROTTLE) : 
@@ -424,6 +438,21 @@ const config = {
 
   // Service threshold settings:
   service_thresholds: {
+
+    /* USER BALANCE TRACKING SERVICE */
+
+    // User balance tracking minimum check interval:
+    user_balance_tracking_min_check_interval:
+      process.env.USER_BALANCE_TRACKING_MIN_CHECK_INTERVAL || 1, // Hard minimum between balance checks (minutes)
+    // User balance tracking maximum check interval:
+    user_balance_tracking_max_check_interval:
+      process.env.USER_BALANCE_TRACKING_MAX_CHECK_INTERVAL || 60, // Hard maximum between checks (minutes)
+    // User balance tracking dynamic target RPC calls per day:
+    user_balance_tracking_dynamic_target_rpc_calls_per_day:
+      process.env.USER_BALANCE_TRACKING_DYNAMIC_TARGET_RPC_CALLS_PER_DAY || 50000, // Target RPC calls per day specifically for the user balance tracking service
+    // User balance tracking batch size:
+    user_balance_tracking_batch_size:
+      process.env.USER_BALANCE_TRACKING_BATCH_SIZE || 20, // max users to check in parallel
     
     /* CONTEST WALLET SERVICE */
 
@@ -462,6 +491,7 @@ const config = {
       process.env.CONTEST_EVALUATION_MIN_PRIZE_AMOUNT || 0.001, // SOL - min amount to distribute as prize
   
   },
+  
   // Logtail config:
   logtail: {
     token: process.env.LOGTAIL_TOKEN,
@@ -477,22 +507,27 @@ const config = {
     verbose: process.env.VERBOSE_LOGGING === 'true' || false,
     request_logging: process.env.REQUEST_LOGGING === 'true' || true,
   },
+  
   // DegenDuel treasury wallet:
   degenduel_treasury_wallet:
     process.env.TREASURY_WALLET_ADDRESS,
+  
   // Token submission cost:
   token_submission_cost:
     process.env.TOKEN_SUBMISSION_COST,
+  
   // Token submission discount percentage per level:
   token_submission_discount_percentage_per_level:
     process.env.TOKEN_SUBMISSION_DISCOUNT_PERCENTAGE_PER_LEVEL,
+  
   // IPInfo API:
   ipinfo: {
     api_key: process.env.IPINFO_API_KEY,
     full_url: process.env.IPINFO_API_FULL_URL,
   },
   
-  // Helper functions for environment and service configuration:
+
+  /* Helper functions for environment and service configuration */
   
   // Get current environment
   getEnvironment: (origin) => {
