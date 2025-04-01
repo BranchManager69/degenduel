@@ -6,10 +6,13 @@
   "scripts": {
     "// MASTER DEGENDUEL RESTART (PREFERRED RESTART METHOD)": "==================================================================================",
     "re": "pm2 delete all && pm2 start ecosystem.config.cjs",
+    "latency": "python3 tests/solana_rpc_benchmark_enhanced.py --simple",
     "monitor:ghibli": "node scripts/twitter/utils/twitter-monitor.cjs --query=\"\\$ghibli\" --interval=300",
     "monitor:ghibli:discord": "node scripts/twitter/utils/twitter-monitor.cjs --query=\"\\$ghibli\" --interval=300 --webhook=\"REPLACE_WITH_YOUR_DISCORD_WEBHOOK_URL\"",
     "test:contestwalletservice": "NODE_OPTIONS=\"--no-warnings --experimental-vm-modules\" jest tests/services/contestWalletService.test.js",
     "test": "NODE_OPTIONS=\"--no-warnings --experimental-vm-modules\" jest",
+    "demo:service": "node /home/websites/degenduel/service-theme-demo.js",
+    "demo:color": "node /home/websites/degenduel/color-demo.js",
     "// Master DegenDuel Start/Stop/Restart": "==================================================================================================",
     "pm2:start-all": "pm2 start ecosystem.config.cjs",
     "pm2:stop-all": "pm2 stop all",
