@@ -11,8 +11,8 @@ import rateLimit from 'express-rate-limit';
 import { body, param, query } from 'express-validator';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { requireAuth, requireAdmin, requireSuperAdmin } from '../../middleware/auth.js';
-import AdminWalletService from '../../services/adminWalletService.js';
-import contestWalletService from '../../services/contestWalletService.js';
+import AdminWalletService from '../../services/admin-wallet/index.js';
+import contestWalletService from '../../services/contest-wallet/index.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 

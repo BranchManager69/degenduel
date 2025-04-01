@@ -16,7 +16,7 @@ import { fancyColors, serviceColors } from '../colors.js';
 import { config } from '../../config/config.js';
 /* Import all DegenDuel services */
 // Infrastructure Layer
-import solanaService from '../../services/solanaService.js';
+import solanaEngine from '../../services/solana-engine/index.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
 import liquidityService from '../../services/liquidityService.js';
 
@@ -24,6 +24,8 @@ import liquidityService from '../../services/liquidityService.js';
 import tokenSyncService from '../../services/tokenSyncService.js';
 import marketDataService from '../../services/marketDataService.js';
 import tokenWhitelistService from '../../services/tokenWhitelistService.js';
+// Legacy solana service - imported but not used as primary
+import solanaService from '../../services/solanaService.js';
 
 // Contest Layer
 import contestEvaluationService from '../../services/contestEvaluationService.js';
@@ -33,10 +35,10 @@ import referralService from '../../services/referralService.js';
 import levelingService from '../../services/levelingService.js';
 
 // Wallet Layer
-import contestWalletService from '../../services/contestWalletService.js';
+import contestWalletService from '../../services/contest-wallet/index.js';
 // DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
 // import walletRakeService from '../../services/walletRakeService.js';
-import adminWalletService from '../../services/adminWalletService.js';
+import adminWalletService from '../../services/admin-wallet/index.js';
 import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
 
 /**
@@ -102,7 +104,11 @@ class ServiceInitializer {
         }
         
         // Register services - order matters!
+        // SolanaEngine is the primary Solana connection service
+        serviceManager.register(solanaEngine);
+        // Legacy solanaService kept for compatibility until full migration
         serviceManager.register(solanaService);
+        
         serviceManager.register(walletGeneratorService);
         serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
         
@@ -217,6 +223,7 @@ class ServiceInitializer {
                 [SERVICE_NAMES.LEVELING]: 'leveling_service',
                 [SERVICE_NAMES.CONTEST_WALLET]: 'contest_wallet_service',
                 [SERVICE_NAMES.ADMIN_WALLET]: 'admin_wallet_service',
+                [SERVICE_NAMES.SOLANA_ENGINE]: 'solana_engine_service',
                 // Add other services as they get profile support
             };
             
@@ -243,6 +250,8 @@ class ServiceInitializer {
 
         // Data Layer Dependencies
         addDependencyIfEnabled(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
+        // No dependency on solanaService as SolanaEngine uses Helius directly
+        // addDependencyIfEnabled(SERVICE_NAMES.SOLANA_ENGINE, SERVICE_NAMES.SOLANA);
 
         // Contest Layer Dependencies
         addDependencyIfEnabled(SERVICE_NAMES.CONTEST_EVALUATION, SERVICE_NAMES.MARKET_DATA);

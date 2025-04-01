@@ -14,7 +14,7 @@ import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PE
 import walletMonitoringRouter from './admin-api/wallet-monitoring.js';
 // Services
 import walletGenerationService from '../services/walletGenerationService.js';
-import adminWalletService from '../services/adminWalletService.js';
+import adminWalletService from '../services/admin-wallet/index.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
