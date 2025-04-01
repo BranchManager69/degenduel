@@ -15,7 +15,7 @@
 
 import { WebSocketServer } from 'ws';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../utils/colors.js';
+import { fancyColors, wsColors } from '../../utils/colors.js';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/prisma.js';
 
@@ -78,7 +78,7 @@ class UnifiedWebSocketServer {
       verifyClient: (info, callback) => {
         // Log detailed client info before verification (only if debug mode is enabled)
         if (WS_DEBUG_MODE) {
-          logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENT VERIFY ${fancyColors.RESET}`, {
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENT VERIFY ${fancyColors.RESET}`, {
             clientConnInfo: {
               origin: info.origin,
               secure: info.secure,
@@ -92,7 +92,7 @@ class UnifiedWebSocketServer {
           });
         } else {
           // Log a more concise verification message in normal mode
-          logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} Connection from ${info.origin}`, {
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} Connection from ${info.origin}`, {
             ip: info.req.headers['x-real-ip'] || info.req.headers['x-forwarded-for'] || info.req.socket?.remoteAddress,
             environment: config.getEnvironment(info.origin),
             service: 'uni-ws',
@@ -112,7 +112,7 @@ class UnifiedWebSocketServer {
     // Initialize topic handlers
     this.initializeTopicHandlers();
     
-    logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket server initialized at ${this.path}${fancyColors.RESET}`);
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.success}Unified WebSocket server initialized at ${this.path}${fancyColors.RESET}`);
   }
   
   /**
@@ -180,6 +180,96 @@ class UnifiedWebSocketServer {
     
     return `${browser}/${os}`;
   }
+  
+  /**
+   * Format authentication flow state into a visual representation
+   * @param {Object} authFlowState - Auth flow state object
+   * @param {string} nickname - User nickname if available
+   * @param {string} userId - User wallet address if available
+   * @param {BigInt} solanaBalance - User's SOL balance in lamports
+   * @returns {string} - Formatted visual representation
+   */
+  formatAuthFlowVisual(authFlowState, nickname, userId, solanaBalance) {
+    // Define color codes and symbols
+    const GREEN = '\x1b[32m';
+    const RED = '\x1b[31m';
+    const YELLOW = '\x1b[33m';
+    const BLUE = '\x1b[34m';
+    const CYAN = '\x1b[36m';
+    const RESET = '\x1b[0m';
+    const BOLD = '\x1b[1m';
+    
+    const SUCCESS = '✓';
+    const FAILURE = '✗';
+    const ARROW = '→';
+    
+    // Format the balance in SOL if available
+    let balanceStr = '';
+    if (solanaBalance) {
+      // Convert lamports to SOL (1 SOL = 1,000,000,000 lamports)
+      const solBalance = Number(solanaBalance) / 1000000000;
+      balanceStr = ` ${CYAN}${BOLD}$SOL:${solBalance.toFixed(2)}${RESET}`;
+    }
+    
+    // Format wallet address
+    const walletStr = userId ? `${userId.slice(0, 6)}...` : 'none';
+    
+    // Create visual flow with stages
+    const cookieStep = authFlowState.cookie ? 
+      `${GREEN}🍪${SUCCESS}${RESET}` : `${RED}🍪${FAILURE}${RESET}`;
+      
+    const tokenStep = authFlowState.cookie ? 
+      (authFlowState.token ? `${GREEN}🔑${SUCCESS}${RESET}` : `${RED}🔑${FAILURE}${RESET}`) : '';
+      
+    const walletStep = authFlowState.token ? 
+      (authFlowState.wallet ? `${GREEN}👛${SUCCESS}${RESET}` : `${RED}👛${FAILURE}${RESET}`) : '';
+      
+    const userStep = authFlowState.wallet ? 
+      (authFlowState.user ? `${GREEN}👤${SUCCESS}${RESET}` : `${RED}👤${FAILURE}${RESET}`) : '';
+      
+    const nicknameStep = authFlowState.user ? 
+      (authFlowState.nickname ? `${GREEN}📝${SUCCESS}${RESET}` : `${YELLOW}📝${FAILURE}${RESET}`) : '';
+      
+    const balanceStep = authFlowState.user ? 
+      (authFlowState.balance ? `${GREEN}💰${SUCCESS}${RESET}` : `${YELLOW}💰${FAILURE}${RESET}`) : '';
+      
+    const authResult = authFlowState.user ? 
+      `${GREEN}🔓${RESET}` : `${RED}🔒${RESET}`;
+      
+    // Build the flow with arrows
+    const arrowStr = ` ${BLUE}${ARROW}${RESET} `;
+    
+    // Construct the visual representation based on how far the auth process got
+    let visual = `[${cookieStep}`;
+    
+    if (tokenStep) {
+      visual += `${arrowStr}${tokenStep}`;
+    }
+    
+    if (walletStep) {
+      visual += `${arrowStr}${walletStep}`;
+    }
+    
+    if (userStep) {
+      visual += `${arrowStr}${userStep}`;
+    }
+    
+    if (nicknameStep) {
+      visual += `${arrowStr}${nicknameStep}`;
+    }
+    
+    if (balanceStep) {
+      visual += `${arrowStr}${balanceStep}`;
+    }
+    
+    visual += `${arrowStr}${authResult}]`;
+    
+    // Add name and balance if available
+    const nameStr = nickname ? `"${nickname}"` : (userId ? walletStr : 'anonymous');
+    visual += ` ${nameStr}${balanceStr}`;
+    
+    return visual;
+  }
 
   /**
    * Get location info for IP address
@@ -226,7 +316,7 @@ class UnifiedWebSocketServer {
     // Register with service events
     serviceEvents.on(eventName, handler);
     
-    logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.BLUE}Registered handler for event: ${eventName}${fancyColors.RESET}`);
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BLUE}Registered handler for event: ${eventName}${fancyColors.RESET}`);
   }
   
   /**
@@ -240,7 +330,12 @@ class UnifiedWebSocketServer {
       ws.on('message', (message) => this.handleMessage(ws, message, req));
       
       // Set up close handler
-      ws.on('close', () => this.handleDisconnect(ws));
+      ws.on('close', (code, reason) => {
+        // Store close code and reason on the ws object for the disconnect handler
+        ws.closeCode = code;
+        ws.closeReason = reason ? reason.toString() : null;
+        this.handleDisconnect(ws);
+      });
       
       // Set up error handler
       ws.on('error', (error) => this.handleError(ws, error));
@@ -259,6 +354,81 @@ class UnifiedWebSocketServer {
       const locationInfo = await this.getLocationInfo(clientIp);
       const locationDisplay = locationInfo ? ` [${locationInfo}]` : '';
       
+      // Try to extract userId and lookup nickname and balance from auth token in cookie
+      let userId = null;
+      let nickname = null;
+      let isAuthenticated = false;
+      let role = null;
+      let solanaBalance = null;
+      let authFlowState = {
+        cookie: false,     // Cookie found
+        token: false,      // Token decoded
+        wallet: false,     // Wallet found
+        user: false,       // User found in DB
+        nickname: false,   // Nickname found
+        balance: false     // Balance found
+      };
+      
+      try {
+        // Check for session cookie
+        const cookies = req.headers.cookie || '';
+        const sessionCookie = cookies.split(';').find(cookie => cookie.trim().startsWith('session='));
+        
+        if (sessionCookie) {
+          authFlowState.cookie = true; // Cookie found
+          
+          // Extract the token from the cookie
+          const token = sessionCookie.split('=')[1].trim();
+          
+          // Store raw token for auth API calls
+          ws.clientInfo = ws.clientInfo || {};
+          ws.clientInfo._rawToken = token;
+          
+          // Decode the token without verifying (to avoid exceptions) 
+          try {
+            const decoded = jwt.decode(token);
+            if (decoded && decoded.wallet_address) {
+              authFlowState.token = true; // Token decoded
+              userId = decoded.wallet_address;
+              role = decoded.role;
+              authFlowState.wallet = true; // Wallet address found
+              
+              // Look up the user's nickname and balance
+              const user = await prisma.users.findUnique({
+                where: { wallet_address: userId },
+                select: { 
+                  nickname: true, 
+                  last_known_balance: true 
+                }
+              });
+              
+              if (user) {
+                authFlowState.user = true; // User found in DB
+                
+                if (user.nickname) {
+                  nickname = user.nickname;
+                  authFlowState.nickname = true; // Nickname found
+                }
+                
+                if (user.last_known_balance) {
+                  solanaBalance = user.last_known_balance;
+                  authFlowState.balance = true; // Balance found
+                }
+                
+                isAuthenticated = true;
+              }
+            }
+          } catch (tokenErr) {
+            // Silently continue on token error
+          }
+        }
+      } catch (authErr) {
+        // Silently continue on auth error
+      }
+      
+      // Format the auth flow for visual display in logs
+      const authFlowVisual = this.formatAuthFlowVisual(authFlowState, nickname, userId, solanaBalance);
+      
       // Extract and store all headers for logging and debugging
       const headerEntries = Object.entries(req.headers || {});
       const importantHeaders = ['host', 'origin', 'user-agent', 'sec-websocket-key', 'sec-websocket-version', 'x-forwarded-for', 'x-real-ip', 'sec-websocket-extensions', 'sec-websocket-protocol'];
@@ -272,9 +442,10 @@ class UnifiedWebSocketServer {
         origin,
         host: req.headers['host'],
         connectedAt: new Date(),
-        isAuthenticated: false,
-        userId: null,
-        nickname: null,
+        isAuthenticated,
+        userId,
+        nickname,
+        role,
         remoteAddress: req.socket?.remoteAddress,
         remotePort: req.socket?.remotePort,
         protocol: req.protocol,
@@ -304,7 +475,7 @@ class UnifiedWebSocketServer {
           maskedHeaders.cookie = maskedHeaders.cookie.replace(/(session=)[^;]+/, '$1***JWT_TOKEN***');
         }
         
-        logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} RAW HEADERS ${fancyColors.RESET}`, {
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} RAW HEADERS ${fancyColors.RESET}`, {
           unifiedWS: true,
           rawHeaders: maskedHeaders,
           connectionId,
@@ -335,18 +506,63 @@ class UnifiedWebSocketServer {
       // Format origin for display (removing protocol)
       const originDisplay = origin.replace(/^https?:\/\//, '');
       
-      // Log connection with improved format
-      logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}CONN#${connectionId} NEW - ${clientIp} (${clientInfo}) from ${originDisplay}${locationDisplay}${fancyColors.RESET}`, {
+      // Log connection with format consistent with disconnection logging
+      // Create a simplified log object for console output
+      const consoleLogObject = {
         ip: clientIp,
         origin: origin,
-        userAgent: userAgent,
         connectionId,
-        connectionNumber: connectionCounter,
         timestamp: new Date().toISOString(),
         environment: config.getEnvironment(origin),
         service: 'uni-ws',
+        userId: userId,
+        nickname: nickname,
+        isAuthenticated,
+        solanaBalance: solanaBalance ? Number(solanaBalance) / 1000000000 : null, // convert to SOL
+        authFlow: authFlowVisual,
+        _icon: "🔌",
+        _color: "#FFA500" // Match orange color used for disconnect
+      };
+      
+      // Format user info for consistent display
+      const userInfo = userId ? (nickname ? ` "${nickname}" (${userId.slice(0, 6)}...)` : ` ${userId.slice(0, 6)}...`) : '';
+      
+      // Log connect with format matching disconnect
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}CONN#${connectionId} CONNECT - ${clientIp}${userInfo} (${locationInfo || 'Unknown'})${fancyColors.RESET}`, 
+        config.debug_modes.websocket ? {
+          ...consoleLogObject,
+          userAgent: userAgent,
+          protocol: req.headers['sec-websocket-version'] || 'unknown',
+          extensions: req.headers['sec-websocket-extensions'] || 'none',
+          connectionInfo,
+          headers: req.headers
+        } : consoleLogObject
+      );
+      
+      // Track connection in database
+      this.saveConnectionToDatabase(connectionId, {
+        ip_address: clientIp,
+        user_agent: userAgent,
+        wallet_address: userId,
+        nickname: nickname,
+        is_authenticated: isAuthenticated,
+        environment: config.getEnvironment(origin),
+        origin,
+        country: locationInfo?.split(', ')?.[0] || null,
+        region: locationInfo?.split(', ')?.[1] || null,
+        city: locationInfo?.split(', ')?.[2] || null
+      }).catch(err => {
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error saving connection to database:${fancyColors.RESET}`, err);
+      });
+      
+      // Create a detailed log object for Logtail with all details
+      const fullLogObject = {
+        ...consoleLogObject,
+        userAgent: userAgent,
+        connectionNumber: connectionCounter,
         clientInfo,
         locationInfo,
+        connectionLog, // Add the new formatted log
         important_headers: importantHeaders.reduce((obj, key) => {
           if (key === 'cookie' && req.headers[key]) {
             obj[key] = req.headers[key].replace(/(session=)[^;]+/, '$1***JWT_TOKEN***');
@@ -354,13 +570,20 @@ class UnifiedWebSocketServer {
             obj[key] = req.headers[key] || 'missing';
           }
           return obj;
-        }, {}),
-        _icon: "🔌",
-        _color: "#00AA00", // Green for successful connection
-        _highlight: false
-      });
+        }, {})
+      };
+      
+      // Use log level with object to ensure proper console vs logtail handling
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.connect}CONN#${connectionId} NEW - ${clientIp} (${clientInfo}) ${authFlowVisual} from ${originDisplay}${locationDisplay}${fancyColors.RESET}`, 
+        config.debug_modes.websocket ? fullLogObject : consoleLogObject
+      );
+      
+      // Log the fancy connection format to console only if WS_DEBUG_MODE is enabled
+      if (WS_DEBUG_MODE) {
+        console.log(connectionLog);
+      }
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling connection:${fancyColors.RESET}`, error);
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling connection:${fancyColors.RESET}`, error);
       ws.terminate();
     }
   }
@@ -374,6 +597,9 @@ class UnifiedWebSocketServer {
   async handleMessage(ws, rawMessage, req) {
     try {
       this.metrics.messagesReceived++;
+      
+      // Track message count on the connection object for database tracking
+      ws.messagesReceived = (ws.messagesReceived || 0) + 1;
       this.metrics.lastActivity = new Date();
       
       // Parse message
@@ -419,7 +645,7 @@ class UnifiedWebSocketServer {
           this.sendError(ws, `Unknown message type: ${message.type}`, 4002);
       }
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling message:${fancyColors.RESET}`, error);
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling message:${fancyColors.RESET}`, error);
       this.metrics.errors++;
       this.sendError(ws, 'Internal server error', 5000);
     }
@@ -484,7 +710,7 @@ class UnifiedWebSocketServer {
             userNickname = user?.nickname || null;
           } catch (dbError) {
             // Silently continue if database lookup fails
-            logApi.debug(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to fetch nickname for ${authData.userId}: ${dbError.message}${fancyColors.RESET}`);
+            logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to fetch nickname for ${authData.userId}: ${dbError.message}${fancyColors.RESET}`);
           }
           
           // Update client info
@@ -506,8 +732,16 @@ class UnifiedWebSocketServer {
             ? `"${userNickname}" (${shortWallet})` 
             : shortWallet;
           
+          // Create fancy auth log with yellow theme
+          const authLog = `
+${wsColors.auth}AUTHENTICATION${fancyColors.RESET}
+${wsColors.boxFg}│ User: ${userNickname || 'Unknown'} (${authData.role})
+│ Wallet: ${authData.userId}
+│ Session: ${decoded.session_id || 'unknown'} ${wsColors.success} ✅ Validated ${fancyColors.RESET}
+${fancyColors.RESET}`;
+          
           // Log authentication with improved format
-          logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}CONN#${ws.clientInfo.connectionId} AUTH - User ${userDisplay} [${authData.role}]${fancyColors.RESET}`, {
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.auth}CONN#${ws.clientInfo.connectionId} AUTH - User ${userDisplay} [${authData.role}]${fancyColors.RESET}`, {
             environment: config.getEnvironment(ws.clientInfo?.origin),
             service: 'uni-ws',
             connectionId: ws.clientInfo.connectionId,
@@ -515,9 +749,13 @@ class UnifiedWebSocketServer {
             nickname: userNickname,
             role: authData.role,
             ip: ws.clientInfo.ip,
+            authLog, // Add fancy auth log
             _icon: "🔐",
             _color: "#3F51B5"
           });
+          
+          // Also log the fancy auth format to console
+          console.log(authLog);
         } catch (error) {
           // Detect the type of error
           const expiredJwt = error.name === 'TokenExpiredError';
@@ -529,7 +767,7 @@ class UnifiedWebSocketServer {
           
           // Only log the first occurrence of each expired token to reduce spam
           if (!expiredJwt || !authToken) {
-            logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Authentication error:${fancyColors.RESET}`, error);
+            logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Authentication error:${fancyColors.RESET}`, error);
           }
           
           // Special handling for expired tokens
@@ -602,18 +840,31 @@ class UnifiedWebSocketServer {
     const topicsDisplay = validTopics.join(',');
     const topicCount = validTopics.length;
     
-    logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}CONN#${ws.clientInfo.connectionId} SUBS - ${topicsDisplay} (${topicCount} ${topicCount === 1 ? 'topic' : 'topics'})${fancyColors.RESET}`, {
-      environment: config.getEnvironment(ws.clientInfo?.origin),
-      service: 'uni-ws',
+    // Create simplified log object for console output
+    const consoleLogObject = {
       connectionId: ws.clientInfo.connectionId,
       topics: validTopics,
-      topicCount: topicCount,
       userId: ws.clientInfo?.userId || null,
       nickname: ws.clientInfo?.nickname || null,
       isAuthenticated: ws.clientInfo?.isAuthenticated || false,
       _icon: "📥",
       _color: "#4CAF50"
-    });
+    };
+    
+    // Create detailed log object for Logtail
+    const fullLogObject = {
+      ...consoleLogObject,
+      environment: config.getEnvironment(ws.clientInfo?.origin),
+      service: 'uni-ws',
+      topicCount: topicCount,
+      ip: ws.clientInfo?.ip || 'unknown',
+      origin: ws.clientInfo?.origin || 'unknown'
+    };
+
+    // Log subscription with appropriate detail level
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.subscribe}CONN#${ws.clientInfo.connectionId} SUBS - ${topicsDisplay} (${topicCount} ${topicCount === 1 ? 'topic' : 'topics'})${fancyColors.RESET}`, 
+      config.debug_modes.websocket ? fullLogObject : consoleLogObject
+    );
   }
   
   /**
@@ -659,7 +910,7 @@ class UnifiedWebSocketServer {
       timestamp: new Date().toISOString()
     });
     
-    logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Client unsubscribed from topics: ${message.topics.join(', ')}${fancyColors.RESET}`, {
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}Client unsubscribed from topics: ${message.topics.join(', ')}${fancyColors.RESET}`, {
       environment: config.getEnvironment(ws.clientInfo?.origin),
       service: 'uni-ws',
       topics: message.topics,
@@ -711,7 +962,7 @@ class UnifiedWebSocketServer {
           this.sendError(ws, `Request handling not implemented for topic: ${message.topic}`, 5001);
       }
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling request:${fancyColors.RESET}`, error);
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling request:${fancyColors.RESET}`, error);
       this.sendError(ws, 'Error processing request', 5002);
     }
   }
@@ -916,9 +1167,9 @@ class UnifiedWebSocketServer {
       });
       
       // Log summary (debug level to avoid log flooding)
-      logApi.debug(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Received ${logs.length} client logs via WebSocket${fancyColors.RESET}`);
+      logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Received ${logs.length} client logs via WebSocket${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error processing client logs:${fancyColors.RESET}`, error);
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error processing client logs:${fancyColors.RESET}`, error);
     }
   }
   
@@ -988,6 +1239,56 @@ class UnifiedWebSocketServer {
         });
         break;
         
+      case 'getAuthStatus':
+        // Fetch comprehensive auth status from API endpoint
+        try {
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.CYAN}Auth status requested by user ${ws.clientInfo.userId.substring(0, 8)}...${fancyColors.RESET}`);
+          
+          const authStatusRes = await fetch(`http://localhost:${config.port || process.env.PORT || 3000}/api/auth/status`, {
+            method: 'GET',
+            headers: {
+              'Cookie': `session=${ws.clientInfo._rawToken || ''}`,
+              'User-Agent': 'UniWS Internal Request',
+              'X-Device-Id': ws.clientInfo.headers['x-device-id'] || message.deviceId || ''
+            }
+          });
+          
+          if (authStatusRes.ok) {
+            const authStatus = await authStatusRes.json();
+            
+            // Log summary of auth methods
+            const activeAuthMethods = Object.entries(authStatus.methods)
+              .filter(([_, info]) => info.active)
+              .map(([method]) => method);
+              
+            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.CYAN}Auth status sent:${fancyColors.RESET} User ${ws.clientInfo.userId.substring(0, 8)}... is using ${activeAuthMethods.join(', ') || 'no'} auth methods`);
+            
+            this.send(ws, {
+              type: MESSAGE_TYPES.DATA,
+              topic: TOPICS.USER,
+              action: 'authStatus',
+              requestId: message.requestId,
+              data: authStatus,
+              timestamp: new Date().toISOString()
+            });
+          } else {
+            // Handle error response
+            const errorText = await authStatusRes.text();
+            logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Auth status API error:${fancyColors.RESET}`, {
+              status: authStatusRes.status,
+              statusText: authStatusRes.statusText,
+              errorText,
+              userId: ws.clientInfo.userId
+            });
+            
+            this.sendError(ws, 'Failed to retrieve auth status', 5002);
+          }
+        } catch (error) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error fetching auth status:${fancyColors.RESET}`, error);
+          this.sendError(ws, 'Internal error retrieving auth status', 5003);
+        }
+        break;
+        
       default:
         this.sendError(ws, `Unknown action for user data: ${message.action}`, 4009);
     }
@@ -1009,7 +1310,7 @@ class UnifiedWebSocketServer {
       return this.sendError(ws, 'Command requires topic and action', 4014);
     }
     
-    logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Command received: ${message.topic}/${message.action}${fancyColors.RESET}`);
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Command received: ${message.topic}/${message.action}${fancyColors.RESET}`);
     
     // Handle command based on topic
     try {
@@ -1020,7 +1321,7 @@ class UnifiedWebSocketServer {
           this.sendError(ws, `Commands not implemented for topic: ${message.topic}`, 5003);
       }
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling command:${fancyColors.RESET}`, error);
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling command:${fancyColors.RESET}`, error);
       this.sendError(ws, 'Error processing command', 5004);
     }
   }
@@ -1071,6 +1372,33 @@ class UnifiedWebSocketServer {
                 timestamp: new Date().toISOString(),
                 initialData: true
               });
+              
+              // Also send auth status as part of initial data
+              try {
+                const authStatusRes = await fetch(`http://localhost:${config.port || process.env.PORT || 3000}/api/auth/status`, {
+                  method: 'GET',
+                  headers: {
+                    'Cookie': `session=${ws.clientInfo._rawToken || ''}`,
+                    'User-Agent': 'UniWS Internal Request'
+                  }
+                });
+                
+                if (authStatusRes.ok) {
+                  const authStatus = await authStatusRes.json();
+                  this.send(ws, {
+                    type: MESSAGE_TYPES.DATA,
+                    topic: TOPICS.USER,
+                    action: 'authStatus',
+                    data: authStatus,
+                    timestamp: new Date().toISOString(),
+                    initialData: true
+                  });
+                  
+                  logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} Sent initial auth status to user ${ws.clientInfo.userId.substring(0, 8)}...`);
+                }
+              } catch (error) {
+                logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error fetching auth status:${fancyColors.RESET}`, error);
+              }
             }
           }
           break;
@@ -1082,7 +1410,7 @@ class UnifiedWebSocketServer {
           break;
       }
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error sending initial data for ${topic}:${fancyColors.RESET}`, error);
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error sending initial data for ${topic}:${fancyColors.RESET}`, error);
     }
   }
   
@@ -1090,7 +1418,7 @@ class UnifiedWebSocketServer {
    * Handle client disconnection
    * @param {WebSocket} ws - WebSocket connection
    */
-  handleDisconnect(ws) {
+  async handleDisconnect(ws) {
     try {
       // Get connection ID and info
       const connectionId = ws.clientInfo?.connectionId || 'UNKNOWN';
@@ -1157,36 +1485,70 @@ class UnifiedWebSocketServer {
       // Format user information if authenticated
       let userInfo = '';
       if (userId) {
+        // If we have a user ID but no nickname, try to look it up
+        if (!nickname) {
+          try {
+            const user = await prisma.users.findUnique({
+              where: { wallet_address: userId },
+              select: { nickname: true }
+            });
+            nickname = user?.nickname || null;
+          } catch (dbError) {
+            logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to fetch nickname for ${userId} during disconnect: ${dbError.message}${fancyColors.RESET}`);
+          }
+        }
+        
         const shortWallet = userId.slice(0, 6) + '...';
         userInfo = nickname 
           ? ` for user "${nickname}" (${shortWallet})` 
           : ` for wallet ${shortWallet}`;
       }
       
-      // Log disconnect with improved format
-      logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}CONN#${connectionId} CLOSE - ${clientIdentifier} (${humanDuration})${userInfo}${topicsSummary}${fancyColors.RESET}`, {
+      // Create a simplified log object for console output
+      const consoleLogObject = {
         connectionId,
         ip: ws.clientInfo?.ip || 'unknown',
-        origin: ws.clientInfo?.origin || 'unknown',
-        userAgent: ws.clientInfo?.userAgent || 'unknown',
         userId,
         nickname,
         isAuthenticated: !!authData,
         timestamp: disconnectTime.toISOString(),
         environment: config.getEnvironment(ws.clientInfo?.origin),
+        connection_duration: { human: humanDuration },
+        _icon: "🔌",
+        _color: "#FFA500" // Orange for disconnect
+      };
+      
+      // Create a detailed log object for Logtail with all details
+      const fullLogObject = {
+        ...consoleLogObject,
+        origin: ws.clientInfo?.origin || 'unknown',
+        userAgent: ws.clientInfo?.userAgent || 'unknown',
         service: 'uni-ws',
         connection_duration: {
           ms: durationMs,
           seconds: durationSeconds,
           human: humanDuration
         },
-        subscribed_topics: subscribedTopics,
-        _icon: "🔌",
-        _color: "#FFA500", // Orange for disconnect
-        _highlight: false
+        subscribed_topics: subscribedTopics
+      };
+      
+      // Log disconnect with improved format
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}CONN#${connectionId} CLOSE - ${clientIdentifier} (${humanDuration})${userInfo}${topicsSummary}${fancyColors.RESET}`, 
+        config.debug_modes.websocket ? fullLogObject : consoleLogObject
+      );
+      
+      // Record disconnect in database
+      this.updateConnectionOnDisconnect(connectionId, {
+        code: ws.closeCode,
+        reason: ws.closeReason,
+        subscribedTopics,
+        messagesReceived: ws.messagesReceived || 0,
+        messagesSent: ws.messagesSent || 0
+      }).catch(err => {
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error updating connection disconnect in database:${fancyColors.RESET}`, err);
       });
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling disconnect:${fancyColors.RESET}`, error);
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling disconnect:${fancyColors.RESET}`, error);
     }
   }
   
@@ -1199,7 +1561,7 @@ class UnifiedWebSocketServer {
     this.metrics.errors++;
     
     // Log error with detailed context
-    logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}WebSocket error:${fancyColors.RESET}`, {
+    logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.error}WebSocket error:${fancyColors.RESET}`, {
       error: error.message,
       code: error.code,
       stack: error.stack,
@@ -1236,9 +1598,12 @@ class UnifiedWebSocketServer {
       if (ws.readyState === ws.OPEN) {
         ws.send(JSON.stringify(data));
         this.metrics.messagesSent++;
+        
+        // Track message count on the connection object for database tracking
+        ws.messagesSent = (ws.messagesSent || 0) + 1;
       }
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error sending message:${fancyColors.RESET}`, error);
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error sending message:${fancyColors.RESET}`, error);
       this.metrics.errors++;
     }
   }
@@ -1281,7 +1646,7 @@ class UnifiedWebSocketServer {
     }
     
     if (sentCount > 0) {
-      logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Broadcast to topic ${topic}: ${sentCount} clients${fancyColors.RESET}`, {
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.notification}Broadcast to topic ${topic}: ${sentCount} clients${fancyColors.RESET}`, {
         environment: config.getEnvironment(),
         service: 'uni-ws',
         topic: topic,
@@ -1317,7 +1682,7 @@ class UnifiedWebSocketServer {
     }
     
     if (sentCount > 0) {
-      logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Sent to user ${userId}: ${sentCount} clients${fancyColors.RESET}`, {
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.message}Sent to user ${userId}: ${sentCount} clients${fancyColors.RESET}`, {
         environment: config.getEnvironment(),
         service: 'uni-ws',
         userId: userId,
@@ -1343,7 +1708,7 @@ class UnifiedWebSocketServer {
     }
     
     if (sentCount > 0) {
-      logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Broadcast to all: ${sentCount} clients${fancyColors.RESET}`);
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Broadcast to all: ${sentCount} clients${fancyColors.RESET}`);
     }
   }
   
@@ -1385,7 +1750,7 @@ class UnifiedWebSocketServer {
     // Start any periodic tasks
     this.startPeriodicalTasks();
     
-    logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket server fully initialized${fancyColors.RESET}`);
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket server fully initialized${fancyColors.RESET}`);
     return true;
   }
   
@@ -1422,7 +1787,7 @@ class UnifiedWebSocketServer {
   cleanup() {
     return new Promise((resolve, reject) => {
       try {
-        logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Cleaning up unified WebSocket server...${fancyColors.RESET}`);
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.warning}Cleaning up unified WebSocket server...${fancyColors.RESET}`);
         
         // Remove event listeners
         for (const [eventName, handler] of this.eventHandlers.entries()) {
@@ -1430,7 +1795,7 @@ class UnifiedWebSocketServer {
         }
         
         // First, send shutdown notification to all clients
-        logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Sending shutdown notification to all clients...${fancyColors.RESET}`);
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.warning}Sending shutdown notification to all clients...${fancyColors.RESET}`);
         
         const shutdownNotification = {
           type: MESSAGE_TYPES.SYSTEM,
@@ -1446,18 +1811,18 @@ class UnifiedWebSocketServer {
             try {
               client.send(JSON.stringify(shutdownNotification));
             } catch (err) {
-              logApi.warn(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to send shutdown notification to client: ${err.message}${fancyColors.RESET}`);
+              logApi.warn(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to send shutdown notification to client: ${err.message}${fancyColors.RESET}`);
             }
           }
         }
         
         // Give time for notifications to be delivered (300ms)
-        setTimeout(() => {
+        setTimeout(async () => {
           // Close all connections properly with code 1000 (Normal Closure)
           let closedCount = 0;
           const totalClients = this.wss.clients.size;
           
-          logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Gracefully closing ${totalClients} client connections...${fancyColors.RESET}`);
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Gracefully closing ${totalClients} client connections...${fancyColors.RESET}`);
           
           // If no clients, skip to server closure
           if (totalClients === 0) {
@@ -1468,16 +1833,65 @@ class UnifiedWebSocketServer {
           for (const client of this.wss.clients) {
             if (client.readyState === client.OPEN) {
               try {
+                // Get user info for enhanced logging
+                const clientInfo = client.clientInfo || {};
+                const connectionId = clientInfo.connectionId || 'UNKNOWN';
+                const ip = clientInfo.ip || 'unknown';
+                const userId = clientInfo.userId;
+                let nickname = clientInfo.nickname;
+                
+                // Try to get nickname if we have userId but no nickname
+                if (userId && !nickname) {
+                  try {
+                    const user = await prisma.users.findUnique({
+                      where: { wallet_address: userId },
+                      select: { nickname: true }
+                    });
+                    nickname = user?.nickname || null;
+                  } catch (dbError) {
+                    // Silently continue on DB error
+                  }
+                }
+                
+                // Format user info for logging
+                const userInfo = userId ? (nickname ? ` "${nickname}" (${userId.slice(0, 6)}...)` : ` ${userId.slice(0, 6)}...`) : '';
+                
+                // Create a simplified log object for console output
+                const consoleLogObject = {
+                  connectionId,
+                  ip,
+                  userId,
+                  nickname,
+                  reason: "server_shutdown",
+                  timestamp: new Date().toISOString(),
+                  environment: config.getEnvironment(clientInfo.origin),
+                  _icon: "🔌",
+                  _color: "#FFA500" // Orange for disconnect
+                };
+                
+                // Create a detailed log object for Logtail with all extra details
+                const fullLogObject = {
+                  ...consoleLogObject,
+                  origin: clientInfo.origin || 'unknown',
+                  userAgent: clientInfo.userAgent || 'unknown', 
+                  service: 'uni-ws'
+                };
+                
+                // Enhanced log with user info
+                logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}CONN#${connectionId} SHUTDOWN - ${ip}${userInfo}${fancyColors.RESET}`, 
+                  config.debug_modes.websocket ? fullLogObject : consoleLogObject
+                );
+                
                 // Use proper WebSocket close code (1000 = normal closure) with reason
                 client.close(1000, "Server restarting");
               } catch (err) {
-                logApi.warn(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to gracefully close client: ${err.message}${fancyColors.RESET}`);
+                logApi.warn(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to gracefully close client: ${err.message}${fancyColors.RESET}`);
                 // Fallback to terminate if close fails
                 try {
                   client.terminate();
                 } catch (termErr) {
                   // Just log and continue
-                  logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to terminate client: ${termErr.message}${fancyColors.RESET}`);
+                  logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to terminate client: ${termErr.message}${fancyColors.RESET}`);
                 }
               }
               closedCount++;
@@ -1493,7 +1907,7 @@ class UnifiedWebSocketServer {
         const closeServerAndFinish = () => {
           // Close the WebSocket server
           this.wss.close(() => {
-            logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}WebSocket server closed${fancyColors.RESET}`);
+            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}WebSocket server closed${fancyColors.RESET}`);
             
             // Clear all data structures
             this.clientsByUserId.clear();
@@ -1502,16 +1916,91 @@ class UnifiedWebSocketServer {
             this.authenticatedClients.clear();
             this.eventHandlers.clear();
             
-            logApi.info(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket cleanup complete${fancyColors.RESET}`);
+            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket cleanup complete${fancyColors.RESET}`);
             resolve();
           });
         };
         
       } catch (error) {
-        logApi.error(`${fancyColors.MAGENTA}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error during cleanup:${fancyColors.RESET}`, error);
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error during cleanup:${fancyColors.RESET}`, error);
         reject(error);
       }
     });
+  }
+  
+  /**
+   * Save WebSocket connection to database
+   * @param {string} connectionId - Unique connection identifier
+   * @param {Object} connectionData - Connection data
+   * @returns {Promise} Database operation result
+   */
+  async saveConnectionToDatabase(connectionId, connectionData) {
+    try {
+      // Create a new connection record
+      return await prisma.websocket_connections.create({
+        data: {
+          connection_id: connectionId,
+          ip_address: connectionData.ip_address,
+          user_agent: connectionData.user_agent,
+          wallet_address: connectionData.wallet_address,
+          nickname: connectionData.nickname,
+          is_authenticated: connectionData.is_authenticated,
+          environment: connectionData.environment,
+          origin: connectionData.origin,
+          country: connectionData.country,
+          region: connectionData.region,
+          city: connectionData.city
+        }
+      });
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to save connection to database:${fancyColors.RESET}`, error);
+      // Don't throw error here to prevent affecting the connection handling
+      return null;
+    }
+  }
+  
+  /**
+   * Update WebSocket connection in database upon disconnection
+   * @param {string} connectionId - Unique connection identifier
+   * @param {Object} disconnectData - Disconnect data
+   * @returns {Promise} Database operation result
+   */
+  async updateConnectionOnDisconnect(connectionId, disconnectData) {
+    try {
+      // Find the connection by ID
+      const connection = await prisma.websocket_connections.findFirst({
+        where: { connection_id: connectionId }
+      });
+      
+      if (!connection) {
+        logApi.warn(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.warning}Connection not found in database for disconnect: ${connectionId}${fancyColors.RESET}`);
+        return null;
+      }
+      
+      // Calculate duration in seconds
+      const connectedAt = connection.connected_at;
+      const disconnectedAt = new Date();
+      const durationSeconds = Math.round((disconnectedAt - connectedAt) / 1000);
+      
+      // Update the connection record with disconnect data
+      return await prisma.websocket_connections.update({
+        where: { id: connection.id },
+        data: {
+          disconnected_at: disconnectedAt,
+          duration_seconds: durationSeconds,
+          close_code: disconnectData.code,
+          close_reason: disconnectData.reason,
+          subscribed_topics: disconnectData.subscribedTopics || [],
+          messages_received: disconnectData.messagesReceived || 0,
+          messages_sent: disconnectData.messagesSent || 0,
+          connection_error: disconnectData.error || null
+        }
+      });
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to update connection on disconnect:${fancyColors.RESET}`, error);
+      // Don't throw error here to prevent affecting the disconnect handling
+      return null;
+    }
   }
 }
 

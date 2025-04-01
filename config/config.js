@@ -105,7 +105,12 @@ const OPENAI_PROMPT_TEMPLATES = {
   },
 };
 
-// Important API keys
+// Privy API
+const PRIVY_APP_ID = process.env.PRIVY_APP_ID;
+const PRIVY_APP_SECRET = process.env.PRIVY_APP_SECRET;
+const PRIVY_JWKS_URL = process.env.PRIVY_JWKS_URL;
+
+// Other Important API keys
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const IPINFO_API_KEY = process.env.IPINFO_API_KEY;
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
@@ -167,6 +172,14 @@ const config = {
     lobby: LOBBY_API,
     reflections: REFLECTIONS_API,
     fallback: LOCAL_FALLBACK_API,
+  },
+
+  // Privy API
+  privy: {
+    app_id: PRIVY_APP_ID,
+    app_secret: PRIVY_APP_SECRET,
+    jwks_url: PRIVY_JWKS_URL,
+    auto_create_accounts: process.env.PRIVY_AUTO_CREATE_ACCOUNTS === 'true' || true, // Default to true for backward compatibility
   },
 
   // Important API keys

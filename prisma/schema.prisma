@@ -147,6 +147,7 @@ model contests {
   token_mint                String?                     @db.VarChar(44)
   name                      String
   description               String?
+  image_url                 String?                     @db.VarChar(255)
   start_time                DateTime                    @db.Timestamptz(6)
   end_time                  DateTime                    @db.Timestamptz(6)
   entry_fee                 Decimal?                    @default(0) @db.Decimal(20, 8)
@@ -1015,4 +1016,37 @@ model ai_conversation_messages {
   @@index([conversation_id])
   @@index([created_at])
   @@map("ai_conversation_messages")
+}
+
+model websocket_connections {
+  id                 Int       @id @default(autoincrement())
+  connection_id      String    // Unique session identifier for the WebSocket connection
+  ip_address         String    @db.VarChar(45) // IPv6 can be longer
+  user_agent         String?   @db.Text
+  wallet_address     String?   @db.VarChar(44)
+  nickname           String?   @db.VarChar(100)
+  is_authenticated   Boolean   @default(false)
+  environment        String?   @db.VarChar(20) // 'production', 'development', etc.
+  origin             String?   @db.Text
+  connected_at       DateTime  @default(now()) @db.Timestamptz(6)
+  disconnected_at    DateTime? @db.Timestamptz(6)
+  duration_seconds   Int?
+  close_code         Int?
+  close_reason       String?   @db.Text
+  subscribed_topics  Json?     @default("[]")
+  messages_received  Int       @default(0)
+  messages_sent      Int       @default(0)
+  connection_error   String?   @db.Text
+  country            String?   @db.VarChar(2)
+  region             String?   @db.VarChar(100)
+  city               String?   @db.VarChar(100)
+  metadata           Json?     @default("{}")
+
+  @@index([connection_id])
+  @@index([ip_address])
+  @@index([wallet_address])
+  @@index([connected_at])
+  @@index([disconnected_at])
+  @@index([is_authenticated])
+  @@map("websocket_connections")
 }

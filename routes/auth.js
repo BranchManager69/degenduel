@@ -14,6 +14,7 @@ import crypto from 'crypto';
 // No need to import sign directly as jwt already includes it
 import axios from 'axios';
 import { randomBytes } from 'crypto';
+import privyClient from '../utils/privy-auth.js';
 
 const router = express.Router();
 // Destructure jwt.sign into a variable
@@ -838,22 +839,35 @@ router.get('/twitter/login', async (req, res) => {
 
     // Store code verifier in cookie instead of session
     // This is more reliable than session storage for this specific use case
+    authLogger.info(`Twitter OAuth: Creating cookie with verifier (first 6 chars: ${codeVerifier.substring(0, 6)}...) \n\t`, {
+      domain: req.get('host'),
+      environment: config.getEnvironment(),
+      cookieSettings: {
+        httpOnly: true,
+        secure: config.getEnvironment() === 'production',
+        sameSite: 'lax',
+        maxAge: '10 minutes'
+      }
+    });
+    
+    // SameSite=lax allows cookies to be sent during top-level navigations (like redirects)
+    // but restricts cookies during cross-site subrequests (like image loads)
     res.cookie('twitter_oauth_verifier', codeVerifier, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: config.getEnvironment() === 'production',
+      sameSite: 'lax', // Important: SameSite=lax needed for OAuth redirects to work
       maxAge: 10 * 60 * 1000 // 10 minutes
     });
 
-    // Determine which callback URI to use
-    const callbackUri = process.env.NODE_ENV === 'development' 
+    // Determine which callback URI to use based on environment
+    const callbackUri = config.getEnvironment() === 'development' 
       ? process.env.X_CALLBACK_URI_DEVELOPMENT 
       : process.env.X_CALLBACK_URI;
 
     // Check if callback URI is properly configured
     if (!callbackUri) {
       authLogger.error(`Twitter OAuth failed: Missing callback URI \n\t`, {
-        environment: process.env.NODE_ENV,
+        environment: config.getEnvironment(),
         devCallback: process.env.X_CALLBACK_URI_DEVELOPMENT,
         prodCallback: process.env.X_CALLBACK_URI
       });
@@ -986,23 +1000,55 @@ async function loginWithTwitter(twitterId, twitterUser) {
     
     // Check if we should update the user's profile image
     try {
+      authLogger.info(`Checking whether to update profile image for ${socialProfile.wallet_address} \n\t`, {
+        twitterUsername: twitterUser.username,
+        hasTwitterProfileImage: !!twitterUser.profile_image_url,
+        twitterImageUrl: twitterUser.profile_image_url || 'none'
+      });
+      
       // Get the current user profile details
       const userProfile = await prisma.users.findUnique({
         where: { wallet_address: socialProfile.wallet_address },
         select: { profile_image_url: true }
       });
       
+      authLogger.info(`Current profile image status \n\t`, {
+        wallet: socialProfile.wallet_address,
+        hasProfileImage: !!userProfile.profile_image_url,
+        currentImageUrl: userProfile.profile_image_url || 'none'
+      });
+      
       // Check if profile image is Twitter-sourced by URL pattern
       const isTwitterProfileImage = userProfile.profile_image_url && 
         userProfile.profile_image_url.includes('pbs.twimg.com/profile_images');
       
+      authLogger.info(`Profile image analysis \n\t`, {
+        wallet: socialProfile.wallet_address,
+        isTwitterImage: isTwitterProfileImage,
+        needsUpdate: !userProfile.profile_image_url || isTwitterProfileImage
+      });
+      
       // If user has no profile image or has a Twitter profile image that may be outdated
       if (!userProfile.profile_image_url || isTwitterProfileImage) {
         // Get full size image by removing "_normal" suffix
-        const fullSizeImageUrl = twitterUser.profile_image_url.replace('_normal', '');
+        const fullSizeImageUrl = twitterUser.profile_image_url ? 
+          twitterUser.profile_image_url.replace('_normal', '') : null;
         
-        // Update profile image if it's different from current one
-        if (fullSizeImageUrl !== userProfile.profile_image_url) {
+        authLogger.info(`Processing Twitter profile image \n\t`, {
+          wallet: socialProfile.wallet_address,
+          originalTwitterImage: twitterUser.profile_image_url || 'none',
+          convertedFullSizeUrl: fullSizeImageUrl || 'none',
+          isDifferent: fullSizeImageUrl !== userProfile.profile_image_url
+        });
+        
+        // Update profile image if it's different from current one and available
+        if (fullSizeImageUrl && fullSizeImageUrl !== userProfile.profile_image_url) {
+          authLogger.info(`About to update profile image in database \n\t`, {
+            wallet: socialProfile.wallet_address,
+            oldImage: userProfile.profile_image_url || 'none',
+            newImage: fullSizeImageUrl
+          });
+          
           await prisma.users.update({
             where: { wallet_address: socialProfile.wallet_address },
             data: {
@@ -1011,17 +1057,25 @@ async function loginWithTwitter(twitterId, twitterUser) {
             }
           });
           
-          authLogger.info(`Updated Twitter profile image on login \n\t`, {
+          authLogger.info(`Successfully updated Twitter profile image on login \n\t`, {
             wallet: socialProfile.wallet_address,
             oldImage: userProfile.profile_image_url || 'none',
-            newImage: fullSizeImageUrl
+            newImage: fullSizeImageUrl,
+            success: true
+          });
+        } else {
+          authLogger.info(`No profile image update needed \n\t`, {
+            wallet: socialProfile.wallet_address,
+            reason: !fullSizeImageUrl ? 'No Twitter image available' : 'Images are identical'
           });
         }
       }
     } catch (imageError) {
       authLogger.warn(`Failed to sync Twitter profile image on login \n\t`, {
         wallet: socialProfile.wallet_address,
-        error: imageError.message
+        error: imageError.message,
+        stack: imageError.stack,
+        twitterImageUrl: twitterUser.profile_image_url || 'none'
       });
       // Continue with login despite image sync error
     }
@@ -1125,8 +1179,8 @@ router.get('/twitter/callback', (req, res, next) => {
     // We'll still log the state for debugging but won't enforce it
     authLogger.info(`Twitter OAuth state received: ${state.substring(0, 6)}... \n\t`);
     
-    // Determine which callback URI to use
-    const callbackUri = process.env.NODE_ENV === 'development' 
+    // Determine which callback URI to use based on environment
+    const callbackUri = config.getEnvironment() === 'development' 
       ? process.env.X_CALLBACK_URI_DEVELOPMENT 
       : process.env.X_CALLBACK_URI;
     
@@ -1146,8 +1200,22 @@ router.get('/twitter/callback', (req, res, next) => {
     
     // Get code verifier from cookie instead of session
     const codeVerifier = req.cookies.twitter_oauth_verifier;
+    
+    // Check for all cookies (debug)
+    authLogger.info(`Twitter OAuth: Cookies received in callback \n\t`, {
+      allCookies: req.cookies ? Object.keys(req.cookies).join(', ') : 'none',
+      hasVerifierCookie: !!codeVerifier,
+      verifierFirstChars: codeVerifier ? codeVerifier.substring(0, 6) + '...' : 'missing',
+      domain: req.get('host'),
+      referer: req.get('referer') || 'none',
+      userAgent: req.get('user-agent')
+    });
+    
     if (!codeVerifier) {
-      authLogger.error(`Twitter OAuth missing code verifier cookie \n\t`);
+      authLogger.error(`Twitter OAuth missing code verifier cookie \n\t`, {
+        allHeaders: req.headers,
+        allCookies: req.cookies
+      });
       return res.status(400).json({
         error: 'twitter_oauth_error',
         error_type: 'missing_code_verifier',
@@ -1156,6 +1224,7 @@ router.get('/twitter/callback', (req, res, next) => {
     }
     
     // Clear the verifier cookie since it's no longer needed
+    authLogger.info(`Twitter OAuth: Clearing verifier cookie \n\t`);
     res.clearCookie('twitter_oauth_verifier');
     
     // Exchange code for access token with detailed error handling
@@ -1286,7 +1355,7 @@ router.get('/twitter/callback', (req, res, next) => {
       };
       
       // Adjust cookie settings based on environment
-      if (process.env.NODE_ENV === 'production') {
+      if (config.getEnvironment() === 'production') {
         cookieOptions.sameSite = 'none';
         cookieOptions.secure = true;
         cookieOptions.domain = '.degenduel.me';
@@ -1299,7 +1368,7 @@ router.get('/twitter/callback', (req, res, next) => {
       
       authLogger.info(`Setting auth cookie with options \n\t`, { 
         ...cookieOptions,
-        environment: process.env.NODE_ENV || 'development'
+        environment: config.getEnvironment()
       });
       
       res.cookie('session', token, cookieOptions);
@@ -1307,7 +1376,8 @@ router.get('/twitter/callback', (req, res, next) => {
       authLogger.info(`Twitter login: created session for wallet ${loginResult.wallet_address} \n\t`);
       
       // Redirect to the proper /me profile page
-      const baseUrl = process.env.NODE_ENV === 'development' ? 'https://dev.degenduel.me' : 'https://degenduel.me';
+      const baseUrl = config.getEnvironment() === 'development' ? 'https://dev.degenduel.me' : 'https://degenduel.me';
+      authLogger.info(`Redirecting to ${baseUrl}/me after successful Twitter login \n\t`);
       return res.redirect(`${baseUrl}/me`);
     }
     
@@ -1347,7 +1417,9 @@ router.get('/twitter/callback', (req, res, next) => {
           await linkTwitterToWallet(decoded.wallet_address, twitterUser, access_token, refresh_token);
           
           // Redirect to the proper /me profile page
-          const baseUrl = process.env.NODE_ENV === 'development' ? 'https://dev.degenduel.me' : 'https://degenduel.me';
+          const baseUrl = config.getEnvironment() === 'development' ? 'https://dev.degenduel.me' : 'https://degenduel.me';
+          authLogger.info(`Redirecting to ${baseUrl}/me?twitter_linked=true after linking 
+	`);
           return res.redirect(`${baseUrl}/me?twitter_linked=true`);
         }
       } catch (error) {
@@ -1357,7 +1429,8 @@ router.get('/twitter/callback', (req, res, next) => {
     }
     
     // If no wallet is connected yet, redirect to a page where user can connect wallet
-    const baseUrl = process.env.NODE_ENV === 'development' ? 'https://dev.degenduel.me' : 'https://degenduel.me';
+    const baseUrl = config.getEnvironment() === 'development' ? 'https://dev.degenduel.me' : 'https://degenduel.me';
+    authLogger.info(`Redirecting to ${baseUrl}/connect-wallet?twitter=pending to complete flow \n\t`);
     return res.redirect(`${baseUrl}/connect-wallet?twitter=pending`);
   } catch (error) {
     authLogger.error(`Twitter OAuth callback failed \n\t`, {
@@ -1486,6 +1559,13 @@ async function linkTwitterToWallet(walletAddress, twitterUser, accessToken, refr
   
   // If the Twitter profile has an image, update user's profile image if not already set
   try {
+    authLogger.info(`Twitter account linking: checking profile image \n\t`, {
+      wallet: walletAddress,
+      twitterUsername: twitterUser.username,
+      hasTwitterImage: !!twitterUser.profile_image_url,
+      twitterImageUrl: twitterUser.profile_image_url || 'none'
+    });
+    
     if (twitterUser.profile_image_url) {
       // Get the user to check if they already have a profile image
       const user = await prisma.users.findUnique({
@@ -1493,10 +1573,22 @@ async function linkTwitterToWallet(walletAddress, twitterUser, accessToken, refr
         select: { profile_image_url: true }
       });
       
+      authLogger.info(`Twitter link: current user profile status \n\t`, {
+        wallet: walletAddress,
+        hasExistingImage: !!user.profile_image_url,
+        currentImageUrl: user.profile_image_url || 'none'
+      });
+      
       // If user has no profile image, use the Twitter profile image
       // The Twitter API provides a "_normal" size by default, remove this to get full size
       if (!user.profile_image_url) {
         const fullSizeImageUrl = twitterUser.profile_image_url.replace('_normal', '');
+        
+        authLogger.info(`Twitter link: preparing to update profile image \n\t`, {
+          wallet: walletAddress,
+          normalImageUrl: twitterUser.profile_image_url,
+          fullSizeImageUrl: fullSizeImageUrl
+        });
         
         await prisma.users.update({
           where: { wallet_address: walletAddress },
@@ -1506,17 +1598,32 @@ async function linkTwitterToWallet(walletAddress, twitterUser, accessToken, refr
           }
         });
         
-        authLogger.info(`Updated user profile image from Twitter \n\t`, {
+        authLogger.info(`Twitter link: successfully updated user profile image \n\t`, {
           wallet: walletAddress,
-          imageUrl: fullSizeImageUrl
+          imageUrl: fullSizeImageUrl,
+          success: true,
+          updatedAt: now.toISOString()
+        });
+      } else {
+        authLogger.info(`Twitter link: skipping profile image update (user already has one) \n\t`, {
+          wallet: walletAddress,
+          existingImage: user.profile_image_url
         });
       }
+    } else {
+      authLogger.info(`Twitter link: no profile image available from Twitter \n\t`, {
+        wallet: walletAddress,
+        twitterUsername: twitterUser.username
+      });
     }
   } catch (imageError) {
     // Log warning but don't prevent the linking if image update fails
-    authLogger.warn(`Failed to update profile image from Twitter, but account linking succeeded \n\t`, {
+    authLogger.error(`Failed to update profile image from Twitter, but account linking succeeded \n\t`, {
       wallet: walletAddress,
-      error: imageError.message
+      error: imageError.message,
+      stack: imageError.stack,
+      twitterUsername: twitterUser.username,
+      twitterImageUrl: twitterUser.profile_image_url || 'none'
     });
   }
   
@@ -1524,6 +1631,908 @@ async function linkTwitterToWallet(walletAddress, twitterUser, accessToken, refr
     twitterUsername: twitterUser.username
   });
 }
+
+/**
+ * @swagger
+ * /api/auth/verify-privy:
+ *   post:
+ *     summary: Verify Privy authentication token and login user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - userId
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Privy authentication token
+ *               userId:
+ *                 type: string
+ *                 description: Privy user ID
+ *     responses:
+ *       200:
+ *         description: User authenticated successfully
+ *       401:
+ *         description: Invalid Privy token
+ *       400:
+ *         description: Missing required fields or wallet address
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/verify-privy', async (req, res) => {
+  try {
+    const { token, userId, device_id, device_name, device_type } = req.body;
+    
+    authLogger.info(`Privy verification request received \n\t`, { 
+      userId, 
+      hasToken: !!token, 
+      hasDeviceInfo: !!device_id,
+      requestHeaders: {
+        userAgent: req.headers['user-agent'],
+        origin: req.headers['origin'],
+        referer: req.headers['referer']
+      }
+    });
+
+    if (!token || !userId) {
+      authLogger.warn(`Missing required fields for Privy verification \n\t`, { 
+        hasToken: !!token, 
+        hasUserId: !!userId,
+        requestIp: req.ip
+      });
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Log token format (first 10 chars only for security)
+    const truncatedToken = token.substring(0, 10) + '...';
+    authLogger.debug(`Processing Privy token verification \n\t`, {
+      tokenPrefix: truncatedToken,
+      tokenLength: token.length,
+      userId
+    });
+
+    let authClaims;
+    try {
+      // Verify the token with Privy
+      authLogger.debug(`Calling Privy client to verify token \n\t`, {
+        clientConfigured: !!privyClient,
+        appId: process.env.PRIVY_APP_ID ? 'configured' : 'missing',
+        appSecret: process.env.PRIVY_APP_SECRET ? 'configured' : 'missing'
+      });
+      
+      const verifyStartTime = performance.now();
+      authClaims = await privyClient.verifyAuthToken(token);
+      const verifyEndTime = performance.now();
+      
+      authLogger.info(`Privy token verified successfully \n\t`, { 
+        userId: authClaims.userId,
+        tokenUserId: userId,
+        tokenMatch: authClaims.userId === userId,
+        verificationTimeMs: (verifyEndTime - verifyStartTime).toFixed(2),
+        tokenClaims: {
+          iss: authClaims.iss,
+          sub: authClaims.sub,
+          exp: new Date(authClaims.exp * 1000).toISOString(),
+          iat: new Date(authClaims.iat * 1000).toISOString(),
+          hasEmail: !!authClaims.email,
+          hasPhone: !!authClaims.phone
+        }
+      });
+      
+      // Verify that the userId in the token matches the userId in the request
+      if (authClaims.userId !== userId) {
+        authLogger.warn(`User ID mismatch in Privy verification \n\t`, { 
+          tokenUserId: authClaims.userId, 
+          requestUserId: userId,
+          requestIp: req.ip
+        });
+        return res.status(401).json({ error: 'Invalid user ID' });
+      }
+    } catch (error) {
+      authLogger.error(`Failed to verify Privy token \n\t`, {
+        error: error.message,
+        errorName: error.name,
+        stack: error.stack,
+        userId,
+        requestIp: req.ip,
+        headers: {
+          userAgent: req.headers['user-agent'],
+          origin: req.headers['origin']
+        }
+      });
+      return res.status(401).json({ error: 'Invalid Privy token' });
+    }
+
+    // Get user details from Privy
+    authLogger.debug(`Retrieving Privy user details for userId: ${userId} \n\t`);
+    let privyUser;
+    try {
+      const userStartTime = performance.now();
+      privyUser = await privyClient.getUser(userId);
+      const userEndTime = performance.now();
+      
+      authLogger.info(`Retrieved Privy user details successfully \n\t`, {
+        userId,
+        retrievalTimeMs: (userEndTime - userStartTime).toFixed(2),
+        userDetails: {
+          hasWallet: !!privyUser.wallet,
+          walletAddress: privyUser.wallet?.address ? `${privyUser.wallet.address.substring(0, 6)}...${privyUser.wallet.address.slice(-4)}` : 'none',
+          hasEmail: !!privyUser.email?.address,
+          hasPhone: !!privyUser.phone?.number,
+          hasFido: !!privyUser.fido,
+          linkedAccounts: privyUser.linkedAccounts?.length || 0
+        }
+      });
+    } catch (error) {
+      authLogger.error(`Failed to get Privy user details \n\t`, {
+        error: error.message,
+        errorName: error.name,
+        stack: error.stack,
+        userId,
+        requestIp: req.ip
+      });
+      return res.status(500).json({ error: 'Failed to get user details from Privy' });
+    }
+
+    // Handle wallet address from Privy user data
+    const walletAddress = privyUser.wallet?.address;
+
+    if (!walletAddress) {
+      authLogger.warn(`No wallet address found in Privy user data \n\t`, {
+        userId,
+        privyUserFields: Object.keys(privyUser || {}).join(', '),
+        hasWalletField: !!privyUser?.wallet,
+        walletFields: privyUser?.wallet ? Object.keys(privyUser.wallet).join(', ') : 'none'
+      });
+      return res.status(400).json({ error: 'No wallet address found in Privy user data' });
+    }
+
+    // Check if this is a new user or returning user
+    let existingUser;
+    try {
+      existingUser = await prisma.users.findUnique({
+        where: { wallet_address: walletAddress }
+      });
+      
+      authLogger.debug(`User lookup for wallet ${walletAddress} \n\t`, {
+        userExists: !!existingUser,
+        isNewUser: !existingUser,
+        userId
+      });
+    } catch (dbError) {
+      authLogger.error(`Database error during user lookup \n\t`, {
+        error: dbError.message,
+        stack: dbError.stack,
+        wallet: walletAddress,
+        userId
+      });
+      // Continue with the flow, will create user if needed
+    }
+
+    // Create or update user in the database, respecting auto_create_accounts flag
+    const nowIso = new Date().toISOString();
+    const newUserDefaultNickname = `degen_${walletAddress.slice(0, 6)}`;
+    
+    // Check if we should auto-create accounts
+    const shouldAutoCreate = config.privy.auto_create_accounts;
+    
+    authLogger.debug(`Processing user database operation \n\t`, {
+      wallet: walletAddress,
+      isNewUser: !existingUser,
+      nickname: existingUser?.nickname || newUserDefaultNickname,
+      userId,
+      shouldAutoCreate,
+      autoCreateConfigured: config.privy.auto_create_accounts
+    });
+    
+    // If user exists, update them
+    // If user doesn't exist and auto-create is enabled, create them
+    // If user doesn't exist and auto-create is disabled, return error
+    let user;
+    
+    if (existingUser) {
+      // User exists, just update last login
+      user = await prisma.users.update({
+        where: { wallet_address: walletAddress },
+        data: { last_login: nowIso }
+      });
+    } else if (shouldAutoCreate) {
+      // User doesn't exist but auto-create is enabled
+      user = await prisma.users.create({
+        data: {
+          wallet_address: walletAddress,
+          nickname: newUserDefaultNickname,
+          created_at: nowIso,
+          last_login: nowIso,
+          role: UserRole.user
+        }
+      });
+      
+      authLogger.info(`Auto-created new user account from Privy auth \n\t`, {
+        wallet: walletAddress,
+        nickname: newUserDefaultNickname,
+        userId
+      });
+    } else {
+      // User doesn't exist and auto-create is disabled
+      authLogger.warn(`Privy auth: User doesn't exist and auto-create accounts is disabled \n\t`, {
+        wallet: walletAddress,
+        userId,
+        privyUserExists: true
+      });
+      
+      return res.status(404).json({ 
+        error: 'No user found with this wallet address', 
+        details: 'Auto-creation of accounts from Privy is disabled. Please register through wallet authentication first.'
+      });
+    }
+
+    // Handle device authorization if device_id is provided
+    let deviceInfo = null;
+    if (config.device_auth_enabled && device_id) {
+      try {
+        authLogger.debug(`Processing device authorization for Privy auth \n\t`, {
+          wallet: walletAddress,
+          device_id,
+          device_name,
+          device_type
+        });
+        
+        // Check if this is the first device for this user
+        const deviceCount = await prisma.authorized_devices.count({
+          where: { wallet_address: walletAddress }
+        });
+
+        // If auto-authorize is enabled, and this is the first device, auto-authorize it
+        const shouldAutoAuthorize = config.device_auth.auto_authorize_first_device && deviceCount === 0;
+        
+        // Check if device is already authorized
+        let existingDevice = await prisma.authorized_devices.findUnique({
+          where: {
+            wallet_address_device_id: {
+              wallet_address: walletAddress,
+              device_id: device_id
+            }
+          }
+        });
+        
+        // If the device is already authorized, update it
+        if (existingDevice) {
+          // Update existing device
+          deviceInfo = await prisma.authorized_devices.update({
+            where: { id: existingDevice.id },
+            data: {
+              device_name: device_name || existingDevice.device_name,
+              device_type: device_type || existingDevice.device_type,
+              last_used: new Date(),
+              is_active: existingDevice.is_active
+            }
+          });
+          
+          authLogger.info(`Updated existing device for Privy auth user \n\t`, {
+            wallet: walletAddress,
+            device_id,
+            is_authorized: deviceInfo.is_active,
+            device_name: deviceInfo.device_name
+          });
+        } else if (shouldAutoAuthorize) {
+          // Auto-authorize first device
+          deviceInfo = await prisma.authorized_devices.create({
+            data: {
+              wallet_address: walletAddress,
+              device_id: device_id,
+              device_name: device_name || 'First Privy Device',
+              device_type: device_type || 'Unknown',
+              is_active: true
+            }
+          });
+          
+          authLogger.info(`Auto-authorized first device for Privy auth user \n\t`, {
+            wallet: walletAddress,
+            device_id,
+            device_name: deviceInfo.device_name,
+            auth_method: 'privy'
+          });
+        } else {
+          // Create unauthorized device record
+          deviceInfo = await prisma.authorized_devices.create({
+            data: {
+              wallet_address: walletAddress,
+              device_id: device_id,
+              device_name: device_name || 'Unknown Privy Device',
+              device_type: device_type || 'Unknown',
+              is_active: false // Not authorized yet
+            }
+          });
+          
+          authLogger.info(`Created unauthorized device record for Privy auth \n\t`, {
+            wallet: walletAddress,
+            device_id,
+            device_name: deviceInfo.device_name,
+            requires_authorization: true
+          });
+        }
+      } catch (deviceError) {
+        authLogger.error(`Error handling device authorization for Privy auth \n\t`, {
+          wallet: walletAddress,
+          device_id,
+          error: deviceError.message,
+          stack: deviceError.stack
+        });
+        // Continue with login even if device handling fails
+      }
+    }
+
+    // Generate session ID for tracking and analytics
+    const sessionId = Buffer.from(crypto.randomBytes(16)).toString('hex');
+
+    // Track session with analytics
+    authLogger.analytics.trackSession(user, {
+      ...req.headers,
+      'x-real-ip': req.ip,
+      'x-forwarded-for': req.headers['x-forwarded-for'],
+      'user-agent': req.headers['user-agent'],
+      'sec-ch-ua-platform': req.headers['sec-ch-ua-platform'],
+      'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile'],
+      'x-device-id': device_id,
+      'auth-method': 'privy',
+      'privy-user-id': userId
+    });
+
+    // Create JWT token for session
+    authLogger.debug(`Creating JWT token for Privy auth user \n\t`, {
+      wallet: user.wallet_address,
+      role: user.role,
+      sessionId,
+      expiryHours: 12
+    });
+    
+    const jwtToken = jwt.sign(
+      {
+        wallet_address: user.wallet_address,
+        role: user.role,
+        session_id: sessionId
+      },
+      config.jwt.secret,
+      { expiresIn: '12h' }
+    );
+
+    // Set cookie
+    const cookieOptions = {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+      maxAge: 12 * 60 * 60 * 1000, // 12 hours
+      domain: '.degenduel.me'
+    };
+
+    authLogger.debug(`Setting session cookie for Privy auth \n\t`, {
+      wallet: user.wallet_address,
+      cookieSettings: {
+        ...cookieOptions,
+        maxAge: cookieOptions.maxAge / 1000 + ' seconds'
+      }
+    });
+    
+    res.cookie('session', jwtToken, cookieOptions);
+
+    // Return device authorization status
+    const deviceAuthStatus = deviceInfo ? {
+      device_authorized: deviceInfo.is_active,
+      device_id: deviceInfo.device_id,
+      device_name: deviceInfo.device_name,
+      requires_authorization: config.device_auth_enabled && !deviceInfo.is_active
+    } : null;
+
+    // Log successful authentication
+    authLogger.info(`Privy authentication successful \n\t`, {
+      wallet: user.wallet_address,
+      role: user.role,
+      privyUserId: userId,
+      sessionId,
+      deviceAuthStatus: deviceInfo ? {
+        isAuthorized: deviceInfo.is_active,
+        requiresAuthorization: config.device_auth_enabled && !deviceInfo.is_active
+      } : 'no device info'
+    });
+
+    return res.json({
+      verified: true,
+      user: {
+        wallet_address: user.wallet_address,
+        role: user.role,
+        nickname: user.nickname
+      },
+      device: deviceAuthStatus
+    });
+  } catch (error) {
+    authLogger.error(`Privy authentication failed \n\t`, {
+      error: error.message,
+      errorName: error.name, 
+      stack: error.stack,
+      requestBody: {
+        hasUserId: !!req.body?.userId,
+        hasToken: !!req.body?.token
+      },
+      requestIp: req.ip
+    });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/status:
+ *   get:
+ *     summary: Get comprehensive authentication status
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Comprehensive authentication status including all methods
+ */
+router.get('/status', async (req, res) => {
+  try {
+    authLogger.info(`Authentication status check requested \n\t`, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
+    // Check JWT/Session Auth Status
+    let jwtStatus = {
+      active: false,
+      method: 'jwt',
+      details: {}
+    };
+    
+    const token = req.cookies.session;
+    if (token) {
+      try {
+        // Verify token
+        const decoded = jwt.verify(token, config.jwt.secret);
+        
+        // Check if user exists
+        const user = await prisma.users.findUnique({
+          where: { wallet_address: decoded.wallet_address }
+        });
+        
+        if (user) {
+          jwtStatus.active = true;
+          jwtStatus.details = {
+            wallet_address: decoded.wallet_address,
+            role: user.role,
+            nickname: user.nickname,
+            expires: new Date(decoded.exp * 1000).toISOString(),
+            session_id: decoded.session_id,
+            last_login: user.last_login
+          };
+        } else {
+          jwtStatus.details.error = 'Valid token but user not found';
+        }
+      } catch (error) {
+        jwtStatus.details.error = error.message;
+        jwtStatus.details.errorType = error.name;
+      }
+    }
+
+    // Check for Twitter connection
+    let twitterStatus = {
+      active: false,
+      method: 'twitter',
+      details: {}
+    };
+    
+    try {
+      if (jwtStatus.active) {
+        // Check if user has Twitter linked
+        const twitterProfile = await prisma.user_social_profiles.findFirst({
+          where: {
+            wallet_address: jwtStatus.details.wallet_address,
+            platform: 'twitter'
+          }
+        });
+        
+        if (twitterProfile) {
+          twitterStatus.active = true;
+          twitterStatus.details = {
+            username: twitterProfile.username,
+            verified: twitterProfile.verified,
+            last_verified: twitterProfile.last_verified,
+            profile_image: twitterProfile.metadata?.profile_image_url || null
+          };
+        }
+      }
+      
+      // Also check for any pending Twitter auth in session
+      if (req.session?.twitter_user) {
+        twitterStatus.pending = true;
+        twitterStatus.details.pendingUsername = req.session.twitter_user.username;
+      }
+    } catch (error) {
+      authLogger.error(`Error checking Twitter status \n\t`, {
+        error: error.message,
+        stack: error.stack
+      });
+      twitterStatus.details.error = 'Error checking Twitter connection';
+    }
+
+    // Check for Privy auth info - both recent auth usage and linked status
+    let privyStatus = {
+      active: false,
+      linked: false,
+      method: 'privy',
+      details: {}
+    };
+
+    // Get both authentication and linking status
+    try {
+      if (jwtStatus.active) {
+        const walletAddress = jwtStatus.details.wallet_address;
+        
+        // 1. Check if this user's wallet is linked to a Privy account
+        const privyProfile = await prisma.user_social_profiles.findFirst({
+          where: {
+            wallet_address: walletAddress,
+            platform: 'privy',
+          }
+        });
+        
+        // Update linked status if a profile was found
+        if (privyProfile) {
+          privyStatus.linked = true;
+          privyStatus.details.linked = {
+            userId: privyProfile.platform_user_id,
+            username: privyProfile.username,
+            verified: privyProfile.verified,
+            last_verified: privyProfile.last_verified
+          };
+        }
+        
+        // 2. Check if the user has been authenticated via Privy recently by querying for API calls
+        const recentPrivyAuth = await prisma.api_request_log.findFirst({
+          where: {
+            endpoint: '/api/auth/verify-privy',
+            user_id: walletAddress,
+            created_at: {
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+            },
+            response_code: 200
+          },
+          orderBy: {
+            created_at: 'desc'
+          }
+        });
+        
+        // Update active status if there was a recent login
+        if (recentPrivyAuth) {
+          privyStatus.active = true;
+          privyStatus.details.last_login = {
+            timestamp: recentPrivyAuth.created_at,
+            success: true
+          };
+          
+          // Try to get any Privy-specific data from the log
+          try {
+            const requestBody = JSON.parse(recentPrivyAuth.request_body);
+            if (requestBody.userId) {
+              privyStatus.details.last_login.userId = requestBody.userId;
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
+        }
+      }
+    } catch (error) {
+      authLogger.error(`Error checking Privy status \n\t`, {
+        error: error.message, 
+        stack: error.stack
+      });
+      privyStatus.details.error = 'Error checking Privy connection';
+    }
+
+    // Check device authorization status
+    let deviceAuthStatus = {
+      active: false,
+      method: 'device',
+      details: {}
+    };
+    
+    try {
+      if (jwtStatus.active && req.headers['x-device-id']) {
+        const deviceId = req.headers['x-device-id'];
+        
+        const device = await prisma.authorized_devices.findUnique({
+          where: {
+            wallet_address_device_id: {
+              wallet_address: jwtStatus.details.wallet_address,
+              device_id: deviceId
+            }
+          }
+        });
+        
+        if (device) {
+          deviceAuthStatus.active = device.is_active;
+          deviceAuthStatus.details = {
+            device_id: device.device_id,
+            device_name: device.device_name,
+            device_type: device.device_type,
+            authorized: device.is_active,
+            last_used: device.last_used,
+            created_at: device.created_at
+          };
+        } else {
+          deviceAuthStatus.details.error = 'Device not registered';
+        }
+      } else if (config.device_auth_enabled) {
+        deviceAuthStatus.details.error = 'No device ID provided';
+        deviceAuthStatus.details.required = config.device_auth_enabled;
+      } else {
+        deviceAuthStatus.details.required = false;
+      }
+    } catch (error) {
+      authLogger.error(`Error checking device auth status \n\t`, {
+        error: error.message,
+        stack: error.stack
+      });
+      deviceAuthStatus.details.error = 'Error checking device authorization';
+    }
+
+    // Compile comprehensive status
+    const status = {
+      timestamp: new Date().toISOString(),
+      authenticated: jwtStatus.active,
+      methods: {
+        jwt: jwtStatus,
+        twitter: twitterStatus,
+        privy: privyStatus,
+        device: deviceAuthStatus
+      },
+      device_auth_required: config.device_auth_enabled,
+      environment: process.env.NODE_ENV || 'development'
+    };
+    
+    authLogger.debug(`Authentication status compiled \n\t`, { 
+      authenticated: status.authenticated,
+      activeAuthMethods: Object.entries(status.methods)
+        .filter(([_, info]) => info.active)
+        .map(([method]) => method)
+    });
+    
+    return res.json(status);
+  } catch (error) {
+    authLogger.error(`Failed to generate auth status \n\t`, {
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/link-privy:
+ *   post:
+ *     summary: Link Privy account to existing authenticated user
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - userId
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Privy authentication token
+ *               userId:
+ *                 type: string
+ *                 description: Privy user ID
+ *     responses:
+ *       200:
+ *         description: Privy account linked successfully
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Invalid Privy token or not authenticated
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/link-privy', requireAuth, async (req, res) => {
+  try {
+    const { token, userId } = req.body;
+    const authenticatedWallet = req.user.wallet_address;
+    
+    authLogger.info(`Link Privy request received \n\t`, { 
+      userId, 
+      authenticatedWallet,
+      hasToken: !!token
+    });
+
+    // Validate request data
+    if (!token || !userId) {
+      authLogger.warn(`Missing required fields for Privy linking \n\t`, { 
+        hasToken: !!token, 
+        hasUserId: !!userId,
+        authenticatedWallet
+      });
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Verify the Privy token
+    let authClaims;
+    try {
+      const verifyStartTime = performance.now();
+      authClaims = await privyClient.verifyAuthToken(token);
+      const verifyEndTime = performance.now();
+      
+      authLogger.info(`Privy token verified for linking \n\t`, { 
+        userId: authClaims.userId,
+        tokenUserId: userId,
+        tokenMatch: authClaims.userId === userId,
+        verificationTimeMs: (verifyEndTime - verifyStartTime).toFixed(2),
+        authenticatedWallet
+      });
+      
+      // Verify that the userId in the token matches the userId in the request
+      if (authClaims.userId !== userId) {
+        authLogger.warn(`User ID mismatch in Privy linking \n\t`, { 
+          tokenUserId: authClaims.userId, 
+          requestUserId: userId,
+          authenticatedWallet
+        });
+        return res.status(401).json({ error: 'Invalid user ID' });
+      }
+    } catch (error) {
+      authLogger.error(`Failed to verify Privy token for linking \n\t`, {
+        error: error.message,
+        stack: error.stack,
+        userId,
+        authenticatedWallet
+      });
+      return res.status(401).json({ error: 'Invalid Privy token' });
+    }
+
+    // Get user details from Privy
+    let privyUser;
+    try {
+      privyUser = await privyClient.getUser(userId);
+      
+      authLogger.info(`Retrieved Privy user details for linking \n\t`, {
+        userId,
+        userDetails: {
+          hasWallet: !!privyUser.wallet,
+          walletAddress: privyUser.wallet?.address 
+            ? `${privyUser.wallet.address.substring(0, 6)}...${privyUser.wallet.address.slice(-4)}` 
+            : 'none',
+          hasEmail: !!privyUser.email?.address,
+          hasPhone: !!privyUser.phone?.number,
+          hasFido: !!privyUser.fido,
+          linkedAccounts: privyUser.linkedAccounts?.length || 0
+        },
+        authenticatedWallet
+      });
+    } catch (error) {
+      authLogger.error(`Failed to get Privy user details for linking \n\t`, {
+        error: error.message,
+        stack: error.stack,
+        userId,
+        authenticatedWallet
+      });
+      return res.status(500).json({ error: 'Failed to get user details from Privy' });
+    }
+
+    // Since we don't yet have a proper table migration, use user_social_profiles
+    // This follows your existing pattern for social identities
+    
+    // Check if this Privy account is already linked to another wallet
+    const existing = await prisma.user_social_profiles.findFirst({
+      where: { 
+        platform: 'privy',
+        platform_user_id: userId
+      }
+    });
+
+    if (existing && existing.wallet_address !== authenticatedWallet) {
+      authLogger.warn(`Privy account already linked to a different wallet \n\t`, {
+        privyUserId: userId,
+        existingWallet: existing.wallet_address,
+        requestingWallet: authenticatedWallet
+      });
+      
+      return res.status(400).json({
+        error: 'Privy account already linked',
+        details: 'This Privy account is already linked to a different wallet address'
+      });
+    }
+
+    // Create or update the Privy link in user_social_profiles
+    const now = new Date();
+    
+    // Prepare metadata
+    const metadata = {
+      email: privyUser.email?.address,
+      phone: privyUser.phone?.number,
+      linkedAccounts: privyUser.linkedAccounts?.map(account => ({
+        type: account.type,
+        linkedAt: account.linkedAt
+      })),
+      lastVerified: now.toISOString()
+    };
+
+    // We'll use user_social_profiles which already exists in your schema
+    try {
+      // Upsert the social profile
+      await prisma.user_social_profiles.upsert({
+        where: {
+          wallet_address_platform: {
+            wallet_address: authenticatedWallet,
+            platform: 'privy'
+          }
+        },
+        update: {
+          platform_user_id: userId,
+          username: privyUser.email?.address || `privy_user_${userId.substring(0, 8)}`,
+          verified: true,
+          last_verified: now,
+          metadata: metadata,
+          updated_at: now
+        },
+        create: {
+          wallet_address: authenticatedWallet,
+          platform: 'privy',
+          platform_user_id: userId,
+          username: privyUser.email?.address || `privy_user_${userId.substring(0, 8)}`,
+          verified: true,
+          verification_date: now,
+          last_verified: now,
+          metadata: metadata,
+          created_at: now,
+          updated_at: now
+        }
+      });
+      
+      authLogger.info(`Privy account successfully linked \n\t`, {
+        wallet: authenticatedWallet,
+        privyUserId: userId,
+        linkTime: now.toISOString()
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Privy account linked successfully',
+        wallet: authenticatedWallet,
+        privy_user_id: userId
+      });
+    } catch (upsertError) {
+      // Log and return any errors
+      authLogger.error(`Failed to link Privy account \n\t`, {
+        error: upsertError.message,
+        stack: upsertError.stack,
+        authenticatedWallet,
+        privyUserId: userId
+      });
+      return res.status(500).json({ error: 'Failed to link Privy account' });
+    }
+  } catch (error) {
+    authLogger.error(`Privy account linking failed \n\t`, {
+      error: error.message,
+      stack: error.stack,
+      wallet: req.user?.wallet_address
+    });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 export default router;
 

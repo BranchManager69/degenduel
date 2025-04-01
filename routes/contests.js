@@ -10,6 +10,7 @@ import { colors, fancyColors } from '../utils/colors.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import prisma from '../config/prisma.js';
 import ReferralService from '../services/referralService.js';
+import contestImageService from '../services/contestImageService.js';
 import cache from '../utils/cache.js';
 import { config } from '../config/config.js';
 ////import { sendSMSAlert, formatContestWalletAlert } from '../utils/notification-suite/sms-alerts.js';
@@ -661,14 +662,37 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         }
       });
 
-      logApi.info({
+      logApi.info(`🏆 ${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} Contest created, generating wallet`, {
         requestId,
-        message: 'Contest created, generating wallet',
-        data: {
-          contest_id: contest.id,
-          contest_code: contest.contest_code
-        }
+        contest_id: contest.id,
+        contest_code: contest.contest_code
       });
+      
+      // Generate AI image for the contest (non-blocking)
+      // We don't await this to avoid slowing down contest creation
+      setTimeout(() => {
+        contestImageService.generateContestImage(contest)
+          .then(imageUrl => {
+            // Update contest with image URL
+            return prisma.contests.update({
+              where: { id: contest.id },
+              data: { image_url: imageUrl }
+            });
+          })
+          .then(() => {
+            logApi.info(`🎨 ${fancyColors.GREEN}[routes/contests]${fancyColors.RESET} Contest image generated and saved`, {
+              contest_id: contest.id,
+              contest_name: contest.name
+            });
+          })
+          .catch(error => {
+            logApi.error(`❌ ${fancyColors.RED}[routes/contests]${fancyColors.RESET} Failed to generate contest image`, {
+              contest_id: contest.id,
+              error: error.message,
+              stack: error.stack
+            });
+          });
+      }, 100); // Small delay to ensure transaction completes first
 
       // 2. Use contestWalletService to create wallet (for proper vanity wallet support)
       let contestWallet;

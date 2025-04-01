@@ -243,3 +243,28 @@ export const perfColors = {
   poor: fancyColors.PERF_POOR,
   critical: fancyColors.PERF_CRITICAL,
 };
+
+// WebSocket color scheme - primarily yellows and oranges
+export const wsColors = {
+  // Base websocket tag color (replace magenta)
+  tag: '\x1b[1m\x1b[38;5;226m', // Bold yellow
+  
+  // Variations for different websocket operations
+  connect: '\x1b[1m\x1b[38;5;226m\x1b[48;5;236m', // Bold yellow on dark gray
+  auth: '\x1b[1m\x1b[38;5;208m\x1b[48;5;236m',    // Bold orange on dark gray
+  subscribe: '\x1b[38;5;220m',                    // Gold
+  message: '\x1b[38;5;214m',                      // Light orange
+  disconnect: '\x1b[38;5;208m',                   // Orange
+  error: '\x1b[1m\x1b[38;5;196m\x1b[48;5;236m',   // Bold red on dark gray
+  
+  // Box drawing theme colors
+  boxFg: '\x1b[38;5;226m',                        // Yellow text
+  boxBg: '\x1b[48;5;236m',                        // Dark gray background
+  highlightFg: '\x1b[1m\x1b[38;5;16m',            // Bold black text
+  highlightBg: '\x1b[48;5;226m',                  // Yellow background
+  
+  // Special combinations
+  notification: '\x1b[1m\x1b[38;5;226m\x1b[48;5;208m', // Bold yellow on orange
+  success: '\x1b[1m\x1b[38;5;16m\x1b[48;5;226m',       // Bold black on yellow
+  warning: '\x1b[1m\x1b[38;5;16m\x1b[48;5;208m',       // Bold black on orange
+};

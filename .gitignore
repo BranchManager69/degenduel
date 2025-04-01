@@ -9,6 +9,10 @@ ecosystem.production.cjs
 ecosystem.development.cjs
 ecosystem.local.cjs
 
+# Public images
+public/images/
+public/images/**
+
 # Keys
 keys/
 keys/**

@@ -8,6 +8,9 @@ import { fileURLToPath } from 'url';
 
 // Import route modules
 import serviceConfigRoutes from './admin/service-config.js';
+import adminLogsRoutes from './admin/admin-logs.js';
+import websocketMonitorRoutes from './admin/websocket-monitor.js';
+import walletMonitoringRoutes from './admin/wallet-monitoring.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +19,15 @@ const router = express.Router();
 
 // Mount the service configuration routes
 router.use('/admin/service-config', serviceConfigRoutes);
+
+// Mount the admin logs routes
+router.use('/admin/admin-logs', adminLogsRoutes);
+
+// Mount the WebSocket monitoring routes
+router.use('/admin/websocket-monitor', websocketMonitorRoutes);
+
+// Mount the Wallet monitoring routes
+router.use('/admin/wallet-monitoring', walletMonitoringRoutes);
 
 /**
  * Check a WebSocket endpoint's availability
