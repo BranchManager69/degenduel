@@ -1270,3 +1270,27 @@ model config_ai_service {
   
   @@map("config_ai_service")
 }
+
+model rpc_benchmark_results {
+  id              Int       @id @default(autoincrement())
+  test_run_id     String    // Unique identifier for test run batch
+  timestamp       DateTime  @default(now())
+  provider        String    // RPC provider name (e.g., "Helius", "BranchRPC")
+  method          String    // RPC method tested (e.g., "getLatestBlockhash")
+  test_type       String    // Type of test (e.g., "rpc", "network")
+  min_latency     Float?    // Minimum latency in ms
+  max_latency     Float?    // Maximum latency in ms
+  avg_latency     Float?    // Average latency in ms
+  median_latency  Float?    // Median latency in ms
+  stdev           Float?    // Standard deviation of latencies
+  success_count   Int       @default(0)
+  failure_count   Int       @default(0)
+  raw_latencies   Json?     // Raw latency measurements as JSON array
+  notes           String?   // Optional notes about the test
+
+  @@index([test_run_id])
+  @@index([provider])
+  @@index([method])
+  @@index([timestamp])
+  @@map("rpc_benchmark_results")
+}

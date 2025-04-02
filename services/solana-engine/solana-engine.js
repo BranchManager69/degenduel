@@ -1,17 +1,34 @@
-// services/new-market-data/market-data-service.js
+// services/solana-engine/solana-engine.js
+
+/**
+ * Solana Engine Service
+ * 
+ * This service provides comprehensive Solana integration using Helius and Jupiter APIs.
+ * It offers token metadata, market data, and blockchain operations.
+ * 
+ * NOTE: This service operates independently and does NOT depend on solanaService.
+ * It will eventually replace solanaService, tokenSyncService, and marketDataService
+ * with a more robust implementation using premium APIs.
+ * 
+ * @module services/solana-engine/solana-engine
+ * @version 1.0.0
+ * @author BranchManager69
+ */
 
 import { BaseService } from '../../utils/service-suite/base-service.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceColors, fancyColors } from '../../utils/colors.js';
 import { heliusClient } from './helius-client.js';
 import { jupiterClient } from './jupiter-client.js';
-import { redisManager } from '../../utils/redis-suite/redis-manager.js';
-import config from '../../config/config.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import { Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { ServiceError } from '../../utils/service-suite/service-error.js';
-import connectionManager from './connection-manager.js';
 import { PrismaClient } from '@prisma/client';
+import connectionManager from './connection-manager.js';
+import redisManager from '../../utils/redis-suite/redis-manager.js';
+
+// Config
+import config from '../../config/config.js';
 
 // Formatting helpers for consistent logging
 const formatLog = {
@@ -26,6 +43,7 @@ const formatLog = {
   count: (num) => `${serviceColors.solanaEngine.count}${num}${fancyColors.RESET}`,
 };
 
+// SolanaEngine Service
 /**
  * SolanaEngine Service
  * Comprehensive Solana integration using Helius and Jupiter APIs

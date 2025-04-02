@@ -1,4 +1,5 @@
 // websocket/v69/uni-ws.js
+// @ts-nocheck
 
 /**
  * Unified WebSocket Server
@@ -905,103 +906,104 @@ ${fancyColors.BG_RED}${fancyColors.WHITE}└────────────
         // For public topics, we'll let it proceed but log that we're allowing it
         logApi.warn(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ALLOWING PUBLIC TOPICS ${fancyColors.RESET} Despite missing clientInfo, allowing public topic subscription`);
         
-        // Create a minimal tracking object just for this request (not assigned to ws.clientInfo)
-        // This way we can still track some information without affecting the connection state
-        const requestTracker = {
+        // Create a minimal tracking object just for this request
+        // Store it directly on the ws object (NOT inside an if-block scoped variable)
+        // so it's available throughout the request lifecycle and accessible in outer scopes
+        ws.temporaryTracker = {
           isRequestOnly: true,
           isAuthenticated: false,
           connectionId: 'UNTRACKED-' + Math.random().toString(16).substring(2, 8).toUpperCase(),
           timestamp: new Date().toISOString()
         };
         
-        // We'll use this for logging later but NOT modify the actual ws object
-        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} CREATED TRACKER ${fancyColors.RESET} Temporary request tracker: ${requestTracker.connectionId}`);
+        // Log that we created a temporary tracker
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} CREATED TRACKER ${fancyColors.RESET} Temporary request tracker: ${ws.temporaryTracker.connectionId}`);
         
         // Continue to topic processing (for public topics only)
       } else if (hasRestrictedTopic && !ws.clientInfo.isAuthenticated) {
         logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} AUTH NEEDED ${fancyColors.RESET} Restricted topic requires authentication`);
         // Try to authenticate if auth token is provided
         if (message.authToken) {
-        try {
-          // Track JWT tokens that were already denied to prevent repeated log spam
-          if (!ws.authFailedTokens) {
-            ws.authFailedTokens = new Set();
-          }
-          
-          const authToken = message.authToken;
-          
-          // Skip verification if this token already failed (prevents log spam)
-          if (ws.authFailedTokens.has(authToken)) {
-            return this.send(ws, {
-              type: MESSAGE_TYPES.ERROR,
-              code: 4401,
-              reason: 'token_expired',
-              message: 'Your session has expired. Please log in again.',
-              timestamp: new Date().toISOString()
-            });
-          }
-          
-          // Manually verify token instead of using the imported function
-          const decoded = jwt.verify(authToken, config.jwt.secret);
-          const authData = {
-            userId: decoded.wallet_address,
-            role: decoded.role
-          };
-          
-          if (!authData || !authData.userId) {
-            return this.sendError(ws, 'Authentication required for restricted topics', 4010);
-          }
-          
-          // Get user's nickname from database
-          let userNickname = null;
           try {
-            const user = await prisma.users.findUnique({
-              where: { wallet_address: authData.userId },
-              select: { nickname: true }
-            });
-            userNickname = user?.nickname || null;
-          } catch (dbError) {
-            // Silently continue if database lookup fails
-            logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to fetch nickname for ${authData.userId}: ${dbError.message}${fancyColors.RESET}`);
-          }
+            // Track JWT tokens that were already denied to prevent repeated log spam
+            if (!ws.authFailedTokens) {
+              ws.authFailedTokens = new Set();
+            }
+            
+            const authToken = message.authToken;
+            
+            // Skip verification if this token already failed (prevents log spam)
+            if (ws.authFailedTokens.has(authToken)) {
+              return this.send(ws, {
+                type: MESSAGE_TYPES.ERROR,
+                code: 4401,
+                reason: 'token_expired',
+                message: 'Your session has expired. Please log in again.',
+                timestamp: new Date().toISOString()
+              });
+            }
+            
+            // Manually verify token instead of using the imported function
+            const decoded = jwt.verify(authToken, config.jwt.secret);
+            const authData = {
+              userId: decoded.wallet_address,
+              role: decoded.role
+            };
+            
+            if (!authData || !authData.userId) {
+              return this.sendError(ws, 'Authentication required for restricted topics', 4010);
+            }
+            
+            // Get user's nickname from database
+            let userNickname = null;
+            try {
+              const user = await prisma.users.findUnique({
+                where: { wallet_address: authData.userId },
+                select: { nickname: true }
+              });
+              userNickname = user?.nickname || null;
+            } catch (dbError) {
+              // Silently continue if database lookup fails
+              logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to fetch nickname for ${authData.userId}: ${dbError.message}${fancyColors.RESET}`);
+            }
+            
+            // Update client info
+            ws.clientInfo.isAuthenticated = true;
+            ws.clientInfo.userId = authData.userId;
+            ws.clientInfo.role = authData.role;
+            ws.clientInfo.nickname = userNickname;
+            this.authenticatedClients.set(ws, { ...authData, nickname: userNickname });
+            
+            // Associate this connection with the user ID
+            if (!this.clientsByUserId.has(authData.userId)) {
+              this.clientsByUserId.set(authData.userId, new Set());
+            }
+            this.clientsByUserId.get(authData.userId).add(ws);
+            
+            // Format wallet address for display (first 6 chars)
+            const shortWallet = authData.userId.slice(0, 6) + '...';
+            const userDisplay = userNickname 
+              ? `"${userNickname}" (${shortWallet})` 
+              : shortWallet;
+            
+            // Create fancy auth log with enhanced formatting and visual frame
+            // Define a consistent field width for better alignment
+            const authFieldWidth = 8; // Longest field name is "Session"
+            
+            // Calculate a reasonable box width based on maximum value lengths
+            const authMaxValueWidth = Math.max(
+              (userNickname || 'Unknown').length + authData.role.length + 3, // User: Unknown (ROLE)
+              authData.userId.length,                                         // Wallet: address
+              (decoded.session_id || 'unknown').length + 12                   // Session: id ✅ Validated
+            );
+            
+            // Create a shorter folder-tab style header
+            const authHeaderWidth = 14; // "AUTHENTICATION" length
+            const authHeaderExtension = 5; // Short extension for tab-like appearance
+            const authHeaderBar = '═'.repeat(authHeaderWidth + authHeaderExtension);
           
-          // Update client info
-          ws.clientInfo.isAuthenticated = true;
-          ws.clientInfo.userId = authData.userId;
-          ws.clientInfo.role = authData.role;
-          ws.clientInfo.nickname = userNickname;
-          this.authenticatedClients.set(ws, { ...authData, nickname: userNickname });
-          
-          // Associate this connection with the user ID
-          if (!this.clientsByUserId.has(authData.userId)) {
-            this.clientsByUserId.set(authData.userId, new Set());
-          }
-          this.clientsByUserId.get(authData.userId).add(ws);
-          
-          // Format wallet address for display (first 6 chars)
-          const shortWallet = authData.userId.slice(0, 6) + '...';
-          const userDisplay = userNickname 
-            ? `"${userNickname}" (${shortWallet})` 
-            : shortWallet;
-          
-          // Create fancy auth log with enhanced formatting and visual frame
-          // Define a consistent field width for better alignment
-          const authFieldWidth = 8; // Longest field name is "Session"
-          
-          // Calculate a reasonable box width based on maximum value lengths
-          const authMaxValueWidth = Math.max(
-            (userNickname || 'Unknown').length + authData.role.length + 3, // User: Unknown (ROLE)
-            authData.userId.length,                                         // Wallet: address
-            (decoded.session_id || 'unknown').length + 12                   // Session: id ✅ Validated
-          );
-          
-          // Create a shorter folder-tab style header
-          const authHeaderWidth = 14; // "AUTHENTICATION" length
-          const authHeaderExtension = 5; // Short extension for tab-like appearance
-          const authHeaderBar = '═'.repeat(authHeaderWidth + authHeaderExtension);
-          
-          // Create the enhanced auth log with box drawing characters and consistent spacing - folder tab style
-          const authLog = `
+            // Create the enhanced auth log with box drawing characters and consistent spacing - folder tab style
+            const authLog = `
 ${wsColors.auth}╔${authHeaderBar}╗${fancyColors.RESET}
 ${wsColors.auth}║ AUTHENTICATION ${' '.repeat(authHeaderExtension)}║${fancyColors.RESET}
 ${wsColors.authBoxBg}${wsColors.authBoxFg}┌${'─'.repeat(authFieldWidth + authMaxValueWidth + 3)}${fancyColors.RESET}
@@ -1009,54 +1011,59 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}│ ${'User:'.padEnd(authFieldWidth)} 
 ${wsColors.authBoxBg}${wsColors.authBoxFg}│ ${'Wallet:'.padEnd(authFieldWidth)} ${authData.userId}${' '.repeat(Math.max(0, authMaxValueWidth - authData.userId.length))}${fancyColors.RESET}
 ${wsColors.authBoxBg}${wsColors.authBoxFg}│ ${'Session:'.padEnd(authFieldWidth)} ${decoded.session_id || 'unknown'} ${wsColors.success}✅ Validated${' '.repeat(Math.max(0, authMaxValueWidth - (decoded.session_id || 'unknown').length - 12))} ${fancyColors.RESET}
 ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + authMaxValueWidth + 3)}${fancyColors.RESET}`;
-          
-          // Log authentication with improved format
-          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.auth}CONN#${ws.clientInfo.connectionId} AUTH - User ${userDisplay} [${authData.role}]${fancyColors.RESET}`, {
-            environment: config.getEnvironment(ws.clientInfo?.origin),
-            service: 'uni-ws',
-            connectionId: ws.clientInfo.connectionId,
-            userId: authData.userId,
-            nickname: userNickname,
-            role: authData.role,
-            ip: ws.clientInfo.ip,
-            authLog, // Add fancy auth log
-            _icon: "🔐",
-            _color: "#3F51B5"
-          });
-          
-          // Also log the fancy auth format to console
-          console.log(authLog);
-        } catch (error) {
-          // Detect the type of error
-          const expiredJwt = error.name === 'TokenExpiredError';
-          
-          // Store this token in the failed tokens set to prevent repeated attempts
-          if (authToken) {
-            ws.authFailedTokens.add(authToken);
-          }
-          
-          // Only log the first occurrence of each expired token to reduce spam
-          if (!expiredJwt || !authToken) {
-            logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Authentication error:${fancyColors.RESET}`, error);
-          }
-          
-          // Special handling for expired tokens
-          if (expiredJwt) {
-            // Send a special error type that clients can detect to clear their tokens and redirect to login
-            return this.send(ws, {
-              type: MESSAGE_TYPES.ERROR,
-              code: 4401,
-              reason: 'token_expired',
-              message: 'Your session has expired. Please log in again.',
-              timestamp: new Date().toISOString()
+            
+            // Log authentication with improved format
+            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.auth}CONN#${ws.clientInfo.connectionId} AUTH - User ${userDisplay} [${authData.role}]${fancyColors.RESET}`, {
+              environment: config.getEnvironment(ws.clientInfo?.origin),
+              service: 'uni-ws',
+              connectionId: ws.clientInfo.connectionId,
+              userId: authData.userId,
+              nickname: userNickname,
+              role: authData.role,
+              ip: ws.clientInfo.ip,
+              authLog, // Add fancy auth log
+              _icon: "🔐",
+              _color: "#3F51B5"
             });
-          } else {
-            return this.sendError(ws, 'Invalid authentication token', 4011);
+            
+            // Also log the fancy auth format to console
+            console.log(authLog);
+          } catch (error) {
+            // Detect the type of error
+            const expiredJwt = error.name === 'TokenExpiredError';
+            
+            // Store this token in the failed tokens set to prevent repeated attempts
+            if (authToken) {
+              ws.authFailedTokens.add(authToken);
+            }
+            
+            // Only log the first occurrence of each expired token to reduce spam
+            if (!expiredJwt || !authToken) {
+              logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Authentication error:${fancyColors.RESET}`, error);
+            }
+            
+            // Special handling for expired tokens
+            if (expiredJwt) {
+              // Send a special error type that clients can detect to clear their tokens and redirect to login
+              return this.send(ws, {
+                type: MESSAGE_TYPES.ERROR,
+                code: 4401,
+                reason: 'token_expired',
+                message: 'Your session has expired. Please log in again.',
+                timestamp: new Date().toISOString()
+              });
+            } else {
+              return this.sendError(ws, 'Invalid authentication token', 4011);
+            }
           }
         }
       } else {
         return this.sendError(ws, 'Authentication required for restricted topics', 4010);
       }
+    } catch (error) {
+      // Handle any errors that occurred during client info or auth processing
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error during subscription authentication:${fancyColors.RESET}`, error);
+      return this.sendError(ws, 'Internal error during subscription processing', 5000);
     }
     
     // Check for admin-only topics
@@ -1113,9 +1120,10 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + aut
     const topicsDisplay = validTopics.join(',');
     const topicCount = validTopics.length;
     
-    // Get a connection ID - if clientInfo is missing, use the temporary tracker we created or UNTRACKED
+    // Get a connection ID - if clientInfo is missing, try to use temporaryTracker, 
+    // or fall back to UNTRACKED
     const connectionId = ws.clientInfo?.connectionId || 
-                        (typeof requestTracker !== 'undefined' ? requestTracker.connectionId : 'UNTRACKED');
+                         (ws.temporaryTracker?.connectionId || 'UNTRACKED');
     
     // Create simplified log object for console output
     const consoleLogObject = {

@@ -5,7 +5,7 @@ import WebSocket from 'ws';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { jupiterConfig } from '../../config/external-api/jupiter-config.js';
-import { redisManager } from '../../utils/redis-suite/redis-manager.js';
+import redisManager from '../../utils/redis-suite/redis-manager.js';
 import connectionManager from './connection-manager.js';
 
 // Formatting helpers for consistent logging

@@ -213,6 +213,12 @@ const SERVICE_COLORS = {
   USER: { color: "#03A9F4", icon: "👤" },
   ANALYTICS: { color: "#8BC34A", icon: "📈" },
   NOTIFICATION: { color: "#FF5722", icon: "🔔" },
+  // New exotic colors from our color demo
+  DDCOMMENT: { color: "#5F5FAF", icon: "💬" },      // Indigo (93)
+  AI_SERVICE: { color: "#87AF5F", icon: "🤖" },     // Lime (112)
+  ADMIN_TOOLS: { color: "#FF875F", icon: "🛠️" },    // Salmon (209)
+  MARKET_ANALYTICS: { color: "#00D7AF", icon: "📊" }, // Teal (43)
+  BALANCE_TRACKING: { color: "#00875F", icon: "💲" }, // Sea Green (29)
 };
 
 // Helper to format timestamp in EST

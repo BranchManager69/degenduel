@@ -1,5 +1,15 @@
 // utils/redis-suite/redis-manager.js
 
+/**
+ * Redis Manager
+ * 
+ * This module provides a singleton instance of the Redis client.
+ * It handles the connection to the Redis server and provides methods for getting and setting values in Redis.
+ * 
+ * @module utils/redis-suite/redis-manager
+ * @version 1.0.0
+ */
+
 import Redis from 'ioredis';
 import { logApi } from '../logger-suite/logger.js';
 import { fancyColors } from '../colors.js';

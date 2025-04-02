@@ -19,7 +19,7 @@ export const fancyColors = {
   MAGENTA: '\x1b[38;5;201m',
   ORANGE: '\x1b[38;5;208m',
   PURPLE: '\x1b[38;5;129m',
-  GOLD: '\x1b[38;5;220m',       // Added gold color for system services
+  GOLD: '\x1b[38;5;220m',         // Added gold color for system services
   BOLD_PURPLE: '\x1b[1m\x1b[38;5;129m', // Added bold purple
   LIGHT_PURPLE: '\x1b[38;5;141m', // Added light purple 
   BOLD_CYAN: '\x1b[1m\x1b[38;5;51m', // Added bold cyan
@@ -161,110 +161,190 @@ export const fancyColors = {
   CRITICAL: '\x1b[5m\x1b[1m\x1b[38;5;231m\x1b[48;5;196m', // Blinking bold white on red
   CELEBRATION: '\x1b[5m\x1b[1m\x1b[38;5;226m\x1b[48;5;21m', // Blinking bold yellow on blue
   
-  // Standardized log levels (for consistent logging)
-  LOG_TRACE: '\x1b[38;5;240m', // Gray for trace logs
-  LOG_DEBUG: '\x1b[38;5;51m', // Cyan for debug logs
-  LOG_INFO: '\x1b[38;5;46m', // Green for info logs
-  LOG_WARN: '\x1b[38;5;226m', // Yellow for warning logs
-  LOG_ERROR: '\x1b[38;5;196m', // Red for error logs
-  LOG_FATAL: '\x1b[1m\x1b[38;5;231m\x1b[48;5;196m', // Bold white on red for fatal logs
+  // New exotic colors (from demo)
+  INDIGO: '\x1b[38;5;93m',       // Indigo (93) - deep purple-blue
+  BOLD_INDIGO: '\x1b[1m\x1b[38;5;93m', // Bold Indigo
+  BG_INDIGO: '\x1b[48;5;93m',    // Indigo background
   
-  // Service lifecycle standardized colors
-  SERVICE_INITIALIZING: '\x1b[1m\x1b[38;5;226m', // Bold yellow for initializing
-  SERVICE_INITIALIZED: '\x1b[1m\x1b[38;5;46m', // Bold green for initialized
-  SERVICE_RUNNING: '\x1b[38;5;46m', // Green for running
-  SERVICE_STOPPING: '\x1b[38;5;226m', // Yellow for stopping
-  SERVICE_STOPPED: '\x1b[38;5;196m', // Red for stopped
-  SERVICE_FAILED: '\x1b[1m\x1b[38;5;196m', // Bold red for failed
+  LIME: '\x1b[38;5;112m',        // Lime (112) - vibrant green
+  BOLD_LIME: '\x1b[1m\x1b[38;5;112m', // Bold Lime
+  BG_LIME: '\x1b[48;5;112m',     // Lime background
   
-  // Database operation colors
-  DB_QUERY: '\x1b[38;5;51m', // Cyan for queries
-  DB_INSERT: '\x1b[38;5;46m', // Green for inserts
-  DB_UPDATE: '\x1b[38;5;226m', // Yellow for updates
-  DB_DELETE: '\x1b[38;5;196m', // Red for deletes
-  DB_ERROR: '\x1b[1m\x1b[38;5;196m', // Bold red for errors
+  SALMON: '\x1b[38;5;209m',      // Salmon (209) - pinkish-orange
+  BOLD_SALMON: '\x1b[1m\x1b[38;5;209m', // Bold Salmon
+  BG_SALMON: '\x1b[48;5;209m',   // Salmon background
   
-  // API endpoint colors
-  API_GET: '\x1b[38;5;46m', // Green for GET requests
-  API_POST: '\x1b[38;5;226m', // Yellow for POST requests
-  API_PUT: '\x1b[38;5;208m', // Orange for PUT requests
-  API_DELETE: '\x1b[38;5;196m', // Red for DELETE requests
-  API_ERROR: '\x1b[1m\x1b[38;5;196m', // Bold red for API errors
+  TEAL: '\x1b[38;5;43m',         // Teal (43) - blue-green
+  BOLD_TEAL: '\x1b[1m\x1b[38;5;43m', // Bold Teal
+  BG_TEAL: '\x1b[48;5;43m',      // Teal background
   
-  // Performance monitoring
-  PERF_EXCELLENT: '\x1b[38;5;46m', // Green for excellent performance
-  PERF_GOOD: '\x1b[38;5;226m', // Yellow for good performance
-  PERF_POOR: '\x1b[38;5;208m', // Orange for poor performance
-  PERF_CRITICAL: '\x1b[38;5;196m', // Red for critical performance
+  SEA_GREEN: '\x1b[38;5;29m',    // Sea Green (29) - darker green
+  BOLD_SEA_GREEN: '\x1b[1m\x1b[38;5;29m', // Bold Sea Green
+  BG_SEA_GREEN: '\x1b[48;5;29m', // Sea Green background
+  
+  LAVENDER: '\x1b[38;5;141m',    // Lavender (141) - light purple
+  BOLD_LAVENDER: '\x1b[1m\x1b[38;5;141m', // Bold Lavender
+  BG_LAVENDER: '\x1b[48;5;141m', // Lavender background
+  
+  TURQUOISE: '\x1b[38;5;80m',    // Turquoise (80) - blue-green
+  BOLD_TURQUOISE: '\x1b[1m\x1b[38;5;80m', // Bold Turquoise
+  BG_TURQUOISE: '\x1b[48;5;80m', // Turquoise background
 };
 
-// Standardized logging color scheme
+// Standardized logging color scheme - Updated with new exotic colors
 export const logColors = {
-  trace: fancyColors.LOG_TRACE,
-  debug: fancyColors.LOG_DEBUG,
-  info: fancyColors.LOG_INFO,
-  warn: fancyColors.LOG_WARN,
-  error: fancyColors.LOG_ERROR,
-  fatal: fancyColors.LOG_FATAL,
+  trace: fancyColors.INDIGO,           // Changed to Indigo (was GRAY)
+  debug: fancyColors.TEAL,             // Changed to Teal (was CYAN)
+  info: fancyColors.LIME,              // Changed to Lime (was GREEN)
+  warn: fancyColors.SALMON,            // Changed to Salmon (was YELLOW)
+  error: fancyColors.RED,              // Kept as RED for consistency
+  fatal: fancyColors.LOG_FATAL,        // Kept as is for consistency
 };
 
 // Standardized service lifecycle color scheme
 export const serviceColors = {
-  initializing: fancyColors.SERVICE_INITIALIZING,
-  initialized: fancyColors.SERVICE_INITIALIZED,
-  running: fancyColors.SERVICE_RUNNING,
-  stopping: fancyColors.SERVICE_STOPPING,
-  stopped: fancyColors.SERVICE_STOPPED,
-  failed: fancyColors.SERVICE_FAILED,
+  initializing: fancyColors.BOLD_INDIGO,   // Changed to Bold Indigo
+  initialized: fancyColors.BOLD_LIME,      // Changed to Bold Lime
+  running: fancyColors.LIME,               // Changed to Lime
+  stopping: fancyColors.SALMON,            // Changed to Salmon
+  stopped: fancyColors.RED,                // Kept as RED for consistency
+  failed: fancyColors.SERVICE_FAILED,      // Kept as is for consistency
+};
+
+// Service-specific colors using our exotic new colors
+export const serviceSpecificColors = {
+  // Current service colors
+  tokenSync: {
+    tag: '\x1b[1m\x1b[38;5;201m',                   // Magenta (201)
+    header: '\x1b[1m\x1b[38;5;201m\x1b[48;5;236m',  // Magenta on dark gray
+    info: '\x1b[38;5;201m',                         // Regular magenta
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  contestWallet: {
+    tag: '\x1b[1m\x1b[38;5;51m',                    // Cyan (51)
+    header: '\x1b[1m\x1b[38;5;51m\x1b[48;5;236m',   // Cyan on dark gray
+    info: '\x1b[38;5;51m',                          // Regular cyan
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  heliusClient: {
+    tag: '\x1b[1m\x1b[38;5;127m',                   // Purple (127)
+    header: '\x1b[1m\x1b[38;5;127m\x1b[48;5;236m',  // Purple on dark gray
+    info: '\x1b[38;5;127m',                         // Regular purple
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  jupiterClient: {
+    tag: '\x1b[1m\x1b[38;5;208m',                   // Orange (208)
+    header: '\x1b[1m\x1b[38;5;208m\x1b[48;5;236m',  // Orange on dark gray
+    info: '\x1b[38;5;208m',                         // Regular orange
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  solanaEngine: {
+    tag: '\x1b[1m\x1b[38;5;75m',                    // Blue (75)
+    header: '\x1b[1m\x1b[38;5;75m\x1b[48;5;236m',   // Blue on dark gray
+    info: '\x1b[38;5;75m',                          // Regular blue
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  
+  // New service colors using our exotic theme additions
+  ddcomment: {
+    tag: '\x1b[1m\x1b[38;5;93m',                    // Bold Indigo (93)
+    header: '\x1b[1m\x1b[38;5;93m\x1b[48;5;236m',   // Bold Indigo on dark gray
+    info: '\x1b[38;5;93m',                          // Regular Indigo
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  aiService: {
+    tag: '\x1b[1m\x1b[38;5;112m',                   // Bold Lime (112)
+    header: '\x1b[1m\x1b[38;5;112m\x1b[48;5;236m',  // Bold Lime on dark gray
+    info: '\x1b[38;5;112m',                         // Regular Lime
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  adminTools: {
+    tag: '\x1b[1m\x1b[38;5;209m',                   // Bold Salmon (209)
+    header: '\x1b[1m\x1b[38;5;209m\x1b[48;5;236m',  // Bold Salmon on dark gray
+    info: '\x1b[38;5;209m',                         // Regular Salmon
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  marketAnalytics: {
+    tag: '\x1b[1m\x1b[38;5;43m',                    // Bold Teal (43)
+    header: '\x1b[1m\x1b[38;5;43m\x1b[48;5;236m',   // Bold Teal on dark gray
+    info: '\x1b[38;5;43m',                          // Regular Teal
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  },
+  balanceTracking: {
+    tag: '\x1b[1m\x1b[38;5;29m',                    // Bold Sea Green (29)
+    header: '\x1b[1m\x1b[38;5;29m\x1b[48;5;236m',   // Bold Sea Green on dark gray
+    info: '\x1b[38;5;29m',                          // Regular Sea Green
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+  }
 };
 
 // Standardized database operation color scheme
 export const dbColors = {
-  query: fancyColors.DB_QUERY,
-  insert: fancyColors.DB_INSERT,
-  update: fancyColors.DB_UPDATE,
-  delete: fancyColors.DB_DELETE,
-  error: fancyColors.DB_ERROR,
+  query: fancyColors.TEAL,               // Changed to Teal
+  insert: fancyColors.LIME,              // Changed to Lime
+  update: fancyColors.SALMON,            // Changed to Salmon
+  delete: fancyColors.RED,               // Kept as RED for consistency
+  error: fancyColors.DB_ERROR,           // Kept as is for consistency
 };
 
 // Standardized API endpoint color scheme
 export const apiColors = {
-  get: fancyColors.API_GET,
-  post: fancyColors.API_POST,
-  put: fancyColors.API_PUT,
-  delete: fancyColors.API_DELETE,
-  error: fancyColors.API_ERROR,
+  get: fancyColors.TEAL,                 // Changed to Teal
+  post: fancyColors.LIME,                // Changed to Lime
+  put: fancyColors.SALMON,               // Changed to Salmon
+  delete: fancyColors.RED,               // Kept as RED for consistency
+  error: fancyColors.API_ERROR,          // Kept as is for consistency
 };
 
 // Standardized performance monitoring color scheme
 export const perfColors = {
-  excellent: fancyColors.PERF_EXCELLENT,
-  good: fancyColors.PERF_GOOD,
-  poor: fancyColors.PERF_POOR,
-  critical: fancyColors.PERF_CRITICAL,
+  excellent: fancyColors.LIME,           // Changed to Lime
+  good: fancyColors.TEAL,                // Changed to Teal
+  poor: fancyColors.SALMON,              // Changed to Salmon
+  critical: fancyColors.RED,             // Kept as RED for consistency
 };
 
-// WebSocket color scheme - primarily yellows and oranges
+// WebSocket color scheme - updated with exotic colors
 export const wsColors = {
   // Base websocket tag color (replace magenta)
-  tag: '\x1b[1m\x1b[38;5;226m', // Bold yellow
+  tag: '\x1b[1m\x1b[38;5;93m',                      // Bold Indigo
   
   // Variations for different websocket operations
-  connect: '\x1b[1m\x1b[38;5;226m\x1b[48;5;236m', // Bold yellow on dark gray
-  auth: '\x1b[1m\x1b[38;5;208m\x1b[48;5;236m',    // Bold orange on dark gray
-  subscribe: '\x1b[38;5;220m',                    // Gold
-  message: '\x1b[38;5;214m',                      // Light orange
-  disconnect: '\x1b[38;5;208m',                   // Orange
-  error: '\x1b[1m\x1b[38;5;196m\x1b[48;5;236m',   // Bold red on dark gray
+  connect: '\x1b[1m\x1b[38;5;93m\x1b[48;5;236m',    // Bold Indigo on dark gray
+  auth: '\x1b[1m\x1b[38;5;112m\x1b[48;5;236m',      // Bold Lime on dark gray
+  subscribe: '\x1b[38;5;43m',                       // Teal
+  message: '\x1b[38;5;141m',                        // Lavender
+  disconnect: '\x1b[38;5;209m',                     // Salmon
+  error: '\x1b[1m\x1b[38;5;196m\x1b[48;5;236m',     // Bold red on dark gray (kept as is)
   
   // Box drawing theme colors
-  boxFg: '\x1b[38;5;226m',                        // Yellow text
-  boxBg: '\x1b[48;5;236m',                        // Dark gray background
-  highlightFg: '\x1b[1m\x1b[38;5;16m',            // Bold black text
-  highlightBg: '\x1b[48;5;226m',                  // Yellow background
+  boxFg: '\x1b[38;5;93m',                           // Indigo text
+  boxBg: '\x1b[48;5;236m',                          // Dark gray background
+  highlightFg: '\x1b[1m\x1b[38;5;16m',              // Bold black text
+  highlightBg: '\x1b[48;5;93m',                     // Indigo background
   
   // Special combinations
-  notification: '\x1b[1m\x1b[38;5;226m\x1b[48;5;208m', // Bold yellow on orange
-  success: '\x1b[1m\x1b[38;5;16m\x1b[48;5;226m',       // Bold black on yellow
-  warning: '\x1b[1m\x1b[38;5;16m\x1b[48;5;208m',       // Bold black on orange
+  notification: '\x1b[1m\x1b[38;5;93m\x1b[48;5;209m', // Bold Indigo on Salmon
+  success: '\x1b[1m\x1b[38;5;16m\x1b[48;5;112m',      // Bold black on Lime
+  warning: '\x1b[1m\x1b[38;5;16m\x1b[48;5;209m',      // Bold black on Salmon
 };

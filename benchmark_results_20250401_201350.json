@@ -1,0 +1,622 @@
+{
+  "results": {
+    "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+    "timestamp": "2025-04-01T20:13:13.729375",
+    "methods": {
+      "getHealth": {
+        "Helius": {
+          "min": 36.568641662597656,
+          "max": 57.00063705444336,
+          "avg": 44.5099671681722,
+          "median": 39.960622787475586,
+          "stdev": 10.949383984669316,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            57.00063705444336,
+            39.960622787475586,
+            36.568641662597656
+          ]
+        },
+        "Official": {
+          "min": 42.357683181762695,
+          "max": 66.19071960449219,
+          "avg": 50.79023043314616,
+          "median": 43.822288513183594,
+          "stdev": 13.357303890821917,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            66.19071960449219,
+            43.822288513183594,
+            42.357683181762695
+          ]
+        },
+        "QuikNode": {
+          "min": 29.572725296020508,
+          "max": 30.079126358032227,
+          "avg": 29.908418655395508,
+          "median": 30.07340431213379,
+          "stdev": 0.2907330547059805,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            30.079126358032227,
+            30.07340431213379,
+            29.572725296020508
+          ]
+        },
+        "BranchRPC": {
+          "min": 17.252206802368164,
+          "max": 19.55437660217285,
+          "avg": 18.02714665730794,
+          "median": 17.274856567382812,
+          "stdev": 1.3226684132211137,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            19.55437660217285,
+            17.252206802368164,
+            17.274856567382812
+          ]
+        }
+      },
+      "getLatestBlockhash": {
+        "Helius": {
+          "min": 45.80545425415039,
+          "max": 163.92970085144043,
+          "avg": 121.2910811106364,
+          "median": 154.13808822631836,
+          "stdev": 65.55553993285078,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            163.92970085144043,
+            45.80545425415039,
+            154.13808822631836
+          ]
+        },
+        "Official": {
+          "min": 33.47921371459961,
+          "max": 36.23509407043457,
+          "avg": 35.26910146077474,
+          "median": 36.09299659729004,
+          "stdev": 1.551715673343358,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            33.47921371459961,
+            36.23509407043457,
+            36.09299659729004
+          ]
+        },
+        "QuikNode": {
+          "min": 28.179645538330078,
+          "max": 29.466629028320312,
+          "avg": 28.772513071695965,
+          "median": 28.6712646484375,
+          "stdev": 0.6494382636449015,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            28.6712646484375,
+            29.466629028320312,
+            28.179645538330078
+          ]
+        },
+        "BranchRPC": {
+          "min": 16.841411590576172,
+          "max": 17.931222915649414,
+          "avg": 17.393986384073894,
+          "median": 17.409324645996094,
+          "stdev": 0.545067544230593,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            17.409324645996094,
+            16.841411590576172,
+            17.931222915649414
+          ]
+        }
+      },
+      "getSlot": {
+        "Helius": {
+          "min": 108.18243026733398,
+          "max": 137.7732753753662,
+          "avg": 122.27090199788411,
+          "median": 120.85700035095215,
+          "stdev": 14.846005083937106,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            108.18243026733398,
+            120.85700035095215,
+            137.7732753753662
+          ]
+        },
+        "Official": {
+          "min": 42.369842529296875,
+          "max": 45.60136795043945,
+          "avg": 43.7169075012207,
+          "median": 43.17951202392578,
+          "stdev": 1.6814531100020176,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            43.17951202392578,
+            45.60136795043945,
+            42.369842529296875
+          ]
+        },
+        "QuikNode": {
+          "min": 27.299165725708008,
+          "max": 28.74016761779785,
+          "avg": 27.883052825927734,
+          "median": 27.609825134277344,
+          "stdev": 0.7583611552981061,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            28.74016761779785,
+            27.299165725708008,
+            27.609825134277344
+          ]
+        },
+        "BranchRPC": {
+          "min": 17.543315887451172,
+          "max": 18.301725387573242,
+          "avg": 18.038272857666016,
+          "median": 18.269777297973633,
+          "stdev": 0.4289428538633782,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            17.543315887451172,
+            18.269777297973633,
+            18.301725387573242
+          ]
+        }
+      },
+      "getVersion": {
+        "Helius": {
+          "min": 89.2939567565918,
+          "max": 149.58882331848145,
+          "avg": 126.67560577392578,
+          "median": 141.1440372467041,
+          "stdev": 32.647654822220865,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            141.1440372467041,
+            149.58882331848145,
+            89.2939567565918
+          ]
+        },
+        "Official": {
+          "min": 40.79461097717285,
+          "max": 51.43332481384277,
+          "avg": 45.320590337117515,
+          "median": 43.733835220336914,
+          "stdev": 5.49398779349846,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            43.733835220336914,
+            40.79461097717285,
+            51.43332481384277
+          ]
+        },
+        "QuikNode": {
+          "min": 28.701066970825195,
+          "max": 29.78682518005371,
+          "avg": 29.079596201578777,
+          "median": 28.750896453857422,
+          "stdev": 0.6129848002526976,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            28.750896453857422,
+            29.78682518005371,
+            28.701066970825195
+          ]
+        },
+        "BranchRPC": {
+          "min": 16.446352005004883,
+          "max": 19.377708435058594,
+          "avg": 18.13650131225586,
+          "median": 18.5854434967041,
+          "stdev": 1.51636883499272,
+          "count": 3,
+          "failures": 0,
+          "raw_latencies": [
+            16.446352005004883,
+            18.5854434967041,
+            19.377708435058594
+          ]
+        }
+      }
+    },
+    "network": {
+      "Helius": {
+        "min": 2.0322799682617188,
+        "max": 3.5314559936523438,
+        "avg": 2.528715133666992,
+        "stddev": 0.6116929717823993,
+        "count": 5,
+        "failures": 0
+      },
+      "Official": {
+        "min": 9.359359741210938,
+        "max": 23.157358169555664,
+        "avg": 12.616109848022461,
+        "stddev": 5.914383905486001,
+        "count": 5,
+        "failures": 0
+      },
+      "QuikNode": {
+        "min": 7.903099060058594,
+        "max": 16.436338424682617,
+        "avg": 10.3363037109375,
+        "stddev": 3.4986390400168714,
+        "count": 5,
+        "failures": 0
+      },
+      "BranchRPC": {
+        "min": null,
+        "max": null,
+        "avg": null,
+        "stddev": null,
+        "count": 0,
+        "failures": 5
+      }
+    }
+  },
+  "database_records": [
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Helius",
+      "method": "getHealth",
+      "test_type": "rpc",
+      "min_latency": 36.568641662597656,
+      "max_latency": 57.00063705444336,
+      "avg_latency": 44.5099671681722,
+      "median_latency": 39.960622787475586,
+      "stdev": 10.949383984669316,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        57.00063705444336,
+        39.960622787475586,
+        36.568641662597656
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Official",
+      "method": "getHealth",
+      "test_type": "rpc",
+      "min_latency": 42.357683181762695,
+      "max_latency": 66.19071960449219,
+      "avg_latency": 50.79023043314616,
+      "median_latency": 43.822288513183594,
+      "stdev": 13.357303890821917,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        66.19071960449219,
+        43.822288513183594,
+        42.357683181762695
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "QuikNode",
+      "method": "getHealth",
+      "test_type": "rpc",
+      "min_latency": 29.572725296020508,
+      "max_latency": 30.079126358032227,
+      "avg_latency": 29.908418655395508,
+      "median_latency": 30.07340431213379,
+      "stdev": 0.2907330547059805,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        30.079126358032227,
+        30.07340431213379,
+        29.572725296020508
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "BranchRPC",
+      "method": "getHealth",
+      "test_type": "rpc",
+      "min_latency": 17.252206802368164,
+      "max_latency": 19.55437660217285,
+      "avg_latency": 18.02714665730794,
+      "median_latency": 17.274856567382812,
+      "stdev": 1.3226684132211137,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        19.55437660217285,
+        17.252206802368164,
+        17.274856567382812
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Helius",
+      "method": "getLatestBlockhash",
+      "test_type": "rpc",
+      "min_latency": 45.80545425415039,
+      "max_latency": 163.92970085144043,
+      "avg_latency": 121.2910811106364,
+      "median_latency": 154.13808822631836,
+      "stdev": 65.55553993285078,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        163.92970085144043,
+        45.80545425415039,
+        154.13808822631836
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Official",
+      "method": "getLatestBlockhash",
+      "test_type": "rpc",
+      "min_latency": 33.47921371459961,
+      "max_latency": 36.23509407043457,
+      "avg_latency": 35.26910146077474,
+      "median_latency": 36.09299659729004,
+      "stdev": 1.551715673343358,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        33.47921371459961,
+        36.23509407043457,
+        36.09299659729004
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "QuikNode",
+      "method": "getLatestBlockhash",
+      "test_type": "rpc",
+      "min_latency": 28.179645538330078,
+      "max_latency": 29.466629028320312,
+      "avg_latency": 28.772513071695965,
+      "median_latency": 28.6712646484375,
+      "stdev": 0.6494382636449015,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        28.6712646484375,
+        29.466629028320312,
+        28.179645538330078
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "BranchRPC",
+      "method": "getLatestBlockhash",
+      "test_type": "rpc",
+      "min_latency": 16.841411590576172,
+      "max_latency": 17.931222915649414,
+      "avg_latency": 17.393986384073894,
+      "median_latency": 17.409324645996094,
+      "stdev": 0.545067544230593,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        17.409324645996094,
+        16.841411590576172,
+        17.931222915649414
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Helius",
+      "method": "getSlot",
+      "test_type": "rpc",
+      "min_latency": 108.18243026733398,
+      "max_latency": 137.7732753753662,
+      "avg_latency": 122.27090199788411,
+      "median_latency": 120.85700035095215,
+      "stdev": 14.846005083937106,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        108.18243026733398,
+        120.85700035095215,
+        137.7732753753662
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Official",
+      "method": "getSlot",
+      "test_type": "rpc",
+      "min_latency": 42.369842529296875,
+      "max_latency": 45.60136795043945,
+      "avg_latency": 43.7169075012207,
+      "median_latency": 43.17951202392578,
+      "stdev": 1.6814531100020176,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        43.17951202392578,
+        45.60136795043945,
+        42.369842529296875
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "QuikNode",
+      "method": "getSlot",
+      "test_type": "rpc",
+      "min_latency": 27.299165725708008,
+      "max_latency": 28.74016761779785,
+      "avg_latency": 27.883052825927734,
+      "median_latency": 27.609825134277344,
+      "stdev": 0.7583611552981061,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        28.74016761779785,
+        27.299165725708008,
+        27.609825134277344
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "BranchRPC",
+      "method": "getSlot",
+      "test_type": "rpc",
+      "min_latency": 17.543315887451172,
+      "max_latency": 18.301725387573242,
+      "avg_latency": 18.038272857666016,
+      "median_latency": 18.269777297973633,
+      "stdev": 0.4289428538633782,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        17.543315887451172,
+        18.269777297973633,
+        18.301725387573242
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Helius",
+      "method": "getVersion",
+      "test_type": "rpc",
+      "min_latency": 89.2939567565918,
+      "max_latency": 149.58882331848145,
+      "avg_latency": 126.67560577392578,
+      "median_latency": 141.1440372467041,
+      "stdev": 32.647654822220865,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        141.1440372467041,
+        149.58882331848145,
+        89.2939567565918
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Official",
+      "method": "getVersion",
+      "test_type": "rpc",
+      "min_latency": 40.79461097717285,
+      "max_latency": 51.43332481384277,
+      "avg_latency": 45.320590337117515,
+      "median_latency": 43.733835220336914,
+      "stdev": 5.49398779349846,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        43.733835220336914,
+        40.79461097717285,
+        51.43332481384277
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "QuikNode",
+      "method": "getVersion",
+      "test_type": "rpc",
+      "min_latency": 28.701066970825195,
+      "max_latency": 29.78682518005371,
+      "avg_latency": 29.079596201578777,
+      "median_latency": 28.750896453857422,
+      "stdev": 0.6129848002526976,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        28.750896453857422,
+        29.78682518005371,
+        28.701066970825195
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "BranchRPC",
+      "method": "getVersion",
+      "test_type": "rpc",
+      "min_latency": 16.446352005004883,
+      "max_latency": 19.377708435058594,
+      "avg_latency": 18.13650131225586,
+      "median_latency": 18.5854434967041,
+      "stdev": 1.51636883499272,
+      "success_count": 3,
+      "failure_count": 0,
+      "raw_latencies": [
+        16.446352005004883,
+        18.5854434967041,
+        19.377708435058594
+      ]
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Helius",
+      "method": "network_latency",
+      "test_type": "network",
+      "min_latency": 2.0322799682617188,
+      "max_latency": 3.5314559936523438,
+      "avg_latency": 2.528715133666992,
+      "median_latency": null,
+      "stdev": 0.6116929717823993,
+      "success_count": 5,
+      "failure_count": 0
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "Official",
+      "method": "network_latency",
+      "test_type": "network",
+      "min_latency": 9.359359741210938,
+      "max_latency": 23.157358169555664,
+      "avg_latency": 12.616109848022461,
+      "median_latency": null,
+      "stdev": 5.914383905486001,
+      "success_count": 5,
+      "failure_count": 0
+    },
+    {
+      "test_run_id": "c9809d43-f134-4225-a2d0-9483d21f4d59",
+      "timestamp": "2025-04-01T20:13:13.729375",
+      "provider": "QuikNode",
+      "method": "network_latency",
+      "test_type": "network",
+      "min_latency": 7.903099060058594,
+      "max_latency": 16.436338424682617,
+      "avg_latency": 10.3363037109375,
+      "median_latency": null,
+      "stdev": 3.4986390400168714,
+      "success_count": 5,
+      "failure_count": 0
+    }
+  ]
+}
