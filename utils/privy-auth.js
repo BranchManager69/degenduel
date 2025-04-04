@@ -1,3 +1,14 @@
+// utils/privy-auth.js
+
+/**
+ * This file is used to initialize the Privy client.
+ * It is used to verify auth tokens and get user information.
+ * 
+ * @author @BranchManager69
+ * @version 1.6.9
+ * @lastModified 2025-04-02
+ */
+
 // Import Privy SDK
 import { PrivyClient } from '@privy-io/server-auth';
 import { logApi } from './logger-suite/logger.js';
@@ -43,17 +54,8 @@ try {
     stack: error.stack
   });
   
-  // Create a dummy client that logs errors when methods are called
-  privyClient = {
-    verifyAuthToken: async () => {
-      privyLogger.error(`Attempted to verify auth token with unconfigured Privy client \n\t`);
-      throw new Error('Privy client not properly initialized');
-    },
-    getUser: async () => {
-      privyLogger.error(`Attempted to get user with unconfigured Privy client \n\t`);
-      throw new Error('Privy client not properly initialized');
-    }
-  };
+  // Immediately throw error instead of using a dummy client
+  throw new Error('Privy client initialization failed');
 }
 
 export default privyClient;
