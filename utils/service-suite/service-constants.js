@@ -42,7 +42,9 @@ export const SERVICE_NAMES = {
     LIQUIDITY: 'liquidity_service',
     WALLET_GENERATOR: 'wallet_generator_service',
     SOLANA: 'solana_service', // New Solana service
+    SOLANA_ENGINE: 'solana_engine_service', // Solana Engine service
     SYSTEM_SETTINGS: 'system_settings_service', // New System Settings service
+    AI_SERVICE: 'ai_service', // AI Analysis and Processing Service
     /* TESTING BELOW THIS POINT */
     NOTIFICATION: 'notification_service', // New Notification service
 };
@@ -169,6 +171,24 @@ export const SERVICE_METADATA = {
         criticalLevel: 'critical',
         dependencies: []
     },
+    
+    // Solana Engine service metadata
+    [SERVICE_NAMES.SOLANA_ENGINE]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'Advanced Solana blockchain integration service',
+        updateFrequency: '30s',
+        criticalLevel: 'critical',
+        dependencies: []
+    },
+
+    // AI Service metadata
+    [SERVICE_NAMES.AI_SERVICE]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'AI Analysis and Processing Service',
+        updateFrequency: '10m',
+        criticalLevel: 'medium',
+        dependencies: []
+    },
 
     // New System Settings service metadata
     [SERVICE_NAMES.SYSTEM_SETTINGS]: {
@@ -235,6 +255,7 @@ export function getServicesInLayer(layer) {
  * @returns {boolean} True if the service name exists, false otherwise
  */
 export function validateServiceName(serviceName) {
+    if (serviceName === undefined || serviceName === null) return false;
     return Object.values(SERVICE_NAMES).includes(serviceName);
 }
 

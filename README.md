@@ -178,7 +178,7 @@ DegenDuel uses a unified WebSocket system for all real-time communications throu
 - Initial data delivery on subscription
 - Comprehensive error handling
 
-For complete details on the WebSocket system, including topics, message formats, authentication, and code examples, see the [Unified WebSocket System Documentation](/WEBSOCKET_UNIFIED_SYSTEM.md).
+For complete details on the WebSocket system, including topics, message formats, authentication, and code examples, see the [Unified WebSocket System Documentation](/docs/services/WEBSOCKET_UNIFIED_SYSTEM.md).
 
 ### Authentication System
 
@@ -1408,7 +1408,7 @@ socket.send(JSON.stringify({
 }));
 ```
 
-For complete documentation on the WebSocket system, including topics, message formats, authentication, error handling, and code examples, see the [Unified WebSocket System Documentation](/WEBSOCKET_UNIFIED_SYSTEM.md).
+For complete documentation on the WebSocket system, including topics, message formats, authentication, error handling, and code examples, see the [Unified WebSocket System Documentation](/docs/services/WEBSOCKET_UNIFIED_SYSTEM.md).
 
 ---
 
@@ -1623,7 +1623,7 @@ API endpoints are documented with Swagger at `/api-docs`.
 ## 📚 Additional Resources
 
 - **Frontend Repository**: [degenduel-fe](https://github.com/BranchManager69/degenduel-fe)
-- **Unified WebSocket System**: [/WEBSOCKET_UNIFIED_SYSTEM.md](/WEBSOCKET_UNIFIED_SYSTEM.md)
+- **Unified WebSocket System**: [/docs/services/WEBSOCKET_UNIFIED_SYSTEM.md](/docs/services/WEBSOCKET_UNIFIED_SYSTEM.md)
 - **Solana Token Metadata Guide**: `/docs_critical/token_metadata/solana_token_metadata_guide.md`
 - **Service Architecture**: `/docs_important/Core Services/BASE_SERVICE_ARCHITECTURE.md`
 - **Admin API Overview**: `/docs_important/ADMIN_API_OVERVIEW.md`

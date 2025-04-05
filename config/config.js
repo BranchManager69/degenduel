@@ -777,6 +777,7 @@ const config = {
       USER: 'user',
       ADMIN: 'admin',
       WALLET: 'wallet',
+      WALLET_BALANCE: 'wallet-balance', // Add wallet balance topic
       SKYDUEL: 'skyduel'
     },
     

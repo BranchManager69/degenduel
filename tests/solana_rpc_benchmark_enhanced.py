@@ -561,7 +561,12 @@ def run_simple_benchmark():
     
     # Generate timestamp for filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"benchmark_results_{timestamp}.json"
+    results_dir = os.path.join("performance_reports", "benchmark_results")
+    
+    # Ensure directory exists
+    os.makedirs(results_dir, exist_ok=True)
+    
+    filename = os.path.join(results_dir, f"benchmark_results_{timestamp}.json")
     export_results_json(results, filename)
     
     return 0
@@ -608,7 +613,12 @@ def main():
     export_filename = args.export
     if not export_filename:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        export_filename = f"benchmark_results_{timestamp}.json"
+        results_dir = os.path.join("performance_reports", "benchmark_results")
+        
+        # Ensure directory exists
+        os.makedirs(results_dir, exist_ok=True)
+        
+        export_filename = os.path.join(results_dir, f"benchmark_results_{timestamp}.json")
     
     export_results_json(results, export_filename)
     

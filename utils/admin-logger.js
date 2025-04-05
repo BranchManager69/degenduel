@@ -6,6 +6,10 @@ class AdminLogger {
     static async logAction(adminAddress, action, details = {}, context = {}) {
         try {
             // Check for critical server events that should trigger alerts
+            // Make sure action is defined before comparison
+            if (action === undefined || action === null) {
+                action = 'UNKNOWN_ACTION';
+            }
             const isServerEvent = action === AdminLogger.Actions.SERVER.START || 
                                  action === AdminLogger.Actions.SERVER.STOP || 
                                  action === AdminLogger.Actions.SERVER.RESTART;

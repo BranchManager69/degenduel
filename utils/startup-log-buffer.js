@@ -202,7 +202,7 @@ class StartupLogBuffer {
       ];
       
       // If it's not one of the critical messages, skip it
-      if (!keepPatterns.some(pattern => message.includes(pattern))) {
+      if (message === undefined || message === null || !keepPatterns.some(pattern => message.includes(pattern))) {
         return true;
       }
     }
@@ -211,18 +211,18 @@ class StartupLogBuffer {
     // This catches most token-related technical details
     if (
       // Token IDs and pumps
-      message.includes('pump [') || 
+      message !== undefined && message !== null && message.includes('pump [') || 
       // Alphanumeric strings that look like hashes, keys or IDs
-      message.match(/[A-Za-z0-9]{24,}/) ||
+      (message !== undefined && message !== null && message.match(/[A-Za-z0-9]{24,}/)) ||
       // Solana addresses
-      message.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/) ||
+      (message !== undefined && message !== null && message.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/)) ||
       // Messages with numeric token IDs
-      message.match(/token(_)?id[:=]\s*\d+/)
+      (message !== undefined && message !== null && message.match(/token(_)?id[:=]\s*\d+/))
     ) {
       return true;
     }
     
-    return skipPatterns.some(pattern => message.includes(pattern));
+    return message !== undefined && message !== null && skipPatterns.some(pattern => message.includes(pattern));
   }
   
   /**

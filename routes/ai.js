@@ -8,7 +8,7 @@
  */
 
 import express from 'express';
-import { generateChatCompletion } from '../services/aiService.js';
+import aiService, { generateChatCompletion } from '../services/aiService.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import rateLimit from 'express-rate-limit';
 import prisma from '../config/prisma.js';

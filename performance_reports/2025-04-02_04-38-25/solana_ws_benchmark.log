@@ -1,0 +1,144 @@
+
+[1m[93mRunning simplified WebSocket RPC benchmark...[0m
+
+[44m[1m SOLANA WEBSOCKET RPC ENDPOINT COMPARISON [0m
+[96mTimestamp: 2025-04-02 04:39:22[0m
+[96mTests per method: 3[0m
+
+[43m[1m WEBSOCKET CONNECTION TESTS [0m
+[1m[4mTesting WebSocket connection to wss://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40...[0m
+  Connection 1: [93m173.54ms[0m
+  Connection 2: [93m102.84ms[0m
+  Connection 3: [93m130.86ms[0m
+
+[1mWebSocket connection latency to wss://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40:[0m
+  Min: [93m102.84ms[0m [93m███████████████[0m░░░░░░░░░░░░░░░
+  Avg: [93m135.75ms[0m [93m████████████████████[0m░░░░░░░░░░
+  Max: [93m173.54ms[0m [93m█████████████████████████[0m░░░░░
+  Stddev: [96m35.60ms[0m
+
+[1m[4mTesting WebSocket connection to wss://api.mainnet-beta.solana.com...[0m
+  Connection 1: [91m241.88ms[0m
+  Connection 2: [91m234.80ms[0m
+  Connection 3: [91m240.50ms[0m
+
+[1mWebSocket connection latency to wss://api.mainnet-beta.solana.com:[0m
+  Min: [91m234.80ms[0m [91m████████████████████████[0m░░░░░░
+  Avg: [91m239.06ms[0m [91m█████████████████████████[0m░░░░░
+  Max: [91m241.88ms[0m [91m█████████████████████████[0m░░░░░
+  Stddev: [96m3.75ms[0m
+
+[1m[4mTesting WebSocket connection to ws://162.249.175.2:8900...[0m
+  Connection 1: [92m18.11ms[0m
+  Connection 2: [92m23.18ms[0m
+  Connection 3: [92m17.85ms[0m
+
+[1mWebSocket connection latency to ws://162.249.175.2:8900:[0m
+  Min: [92m17.85ms[0m [92m███████████████████[0m░░░░░░░░░░░
+  Avg: [92m19.71ms[0m [92m█████████████████████[0m░░░░░░░░░
+  Max: [92m23.18ms[0m [92m█████████████████████████[0m░░░░░
+  Stddev: [96m3.01ms[0m
+
+
+[46m[1m Testing 'getHealth' method [0m
+[1m[96mHeliusWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+[1m[96mOfficialWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+[1m[96mBranchWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+
+[46m[1m Testing 'getLatestBlockhash' method [0m
+[1m[96mHeliusWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+[1m[96mOfficialWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+[1m[96mBranchWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+
+[46m[1m Testing 'getSlot' method [0m
+[1m[96mHeliusWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+[1m[96mOfficialWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+[1m[96mBranchWS:[0m
+  Test 1: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 2: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  Test 3: [91mError: {'code': -32601, 'message': 'Method not found'}[0m
+  [91mAll tests failed[0m
+
+[46m[1m Testing 'getVersion' method [0m
+[1m[96mHeliusWS:[0m
+  Test 1: [92m17.32ms[0m
+  Test 2: [92m17.64ms[0m
+  Test 3: [92m17.41ms[0m
+  Min: [92m17.32ms[0m [92m█████████████████████████[0m░░░░░
+  Median: [92m17.41ms[0m [92m█████████████████████████[0m░░░░░
+  Avg: [92m17.46ms[0m [92m█████████████████████████[0m░░░░░
+  Max: [92m17.64ms[0m [92m█████████████████████████[0m░░░░░
+[1m[96mOfficialWS:[0m
+  Test 1: [94m81.12ms[0m
+  Test 2: [94m81.55ms[0m
+  Test 3: [94m81.75ms[0m
+  Min: [94m81.12ms[0m [94m█████████████████████████[0m░░░░░
+  Median: [94m81.55ms[0m [94m█████████████████████████[0m░░░░░
+  Avg: [94m81.47ms[0m [94m█████████████████████████[0m░░░░░
+  Max: [94m81.75ms[0m [94m█████████████████████████[0m░░░░░
+[1m[96mBranchWS:[0m
+  Test 1: [94m56.51ms[0m
+  Test 2: [92m17.07ms[0m
+  Test 3: [92m16.47ms[0m
+  Min: [92m16.47ms[0m [92m███████[0m░░░░░░░░░░░░░░░░░░░░░░░
+  Median: [92m17.07ms[0m [92m████████[0m░░░░░░░░░░░░░░░░░░░░░░
+  Avg: [92m30.02ms[0m [92m█████████████[0m░░░░░░░░░░░░░░░░░
+  Max: [94m56.51ms[0m [94m█████████████████████████[0m░░░░░
+
+[45m[1m WEBSOCKET PERFORMANCE SUMMARY [0m
+
+[1m[4mConnection Latency:[0m
+  [1mBranchWS  [0m: [92m18.11ms[0m [92m███[0m░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+  [1mHeliusWS  [0m: [93m130.86ms[0m [93m██████████████████[0m░░░░░░░░░░░░░░░░░░░░░░
+  [1mOfficialWS[0m: [91m240.50ms[0m [91m█████████████████████████████████[0m░░░░░░░
+
+[1m[4mgetHealth:[0m
+  [91mNo successful results for this method[0m
+
+[1m[4mgetLatestBlockhash:[0m
+  [91mNo successful results for this method[0m
+
+[1m[4mgetSlot:[0m
+  [91mNo successful results for this method[0m
+
+[1m[4mgetVersion:[0m
+  [1mBranchWS  [0m: [92m17.07ms[0m [92m███████[0m░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+  [1mHeliusWS  [0m: [92m17.41ms[0m [92m███████[0m░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+  [1mOfficialWS[0m: [94m81.55ms[0m [94m█████████████████████████████████[0m░░░░░░░
+
+[44m[1m OVERALL WEBSOCKET RANKING [0m
+  🥇 [1mBranchWS[0m: [96m1.00[0m average rank [92m████████████████████████████████████████[0m
+  🥈 [1mHeliusWS[0m: [96m2.00[0m average rank [94m███████████████████████████[0m░░░░░░░░░░░░░
+  🥉 [1mOfficialWS[0m: [96m3.00[0m average rank [93m█████████████[0m░░░░░░░░░░░░░░░░░░░░░░░░░░░

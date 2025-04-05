@@ -5,7 +5,11 @@
  * 
  * This module initializes the unified WebSocket server that handles all topics through
  * a single connection point. It replaces the previous fragmented approach.
+ * 
+ * @author BranchManager69
+ * @version 0.6.9
  */
+
 import http from 'http';
 import events from 'events';
 
@@ -15,14 +19,15 @@ events.defaultMaxListeners = 30; // Increased from default of 10
 
 // Logger
 import { logApi } from '../../utils/logger-suite/logger.js';
+import AdminLogger from '../../utils/admin-logger.js';
 import { fancyColors } from '../../utils/colors.js';
-
-// Import only the unified WebSocket server
-import { createUnifiedWebSocket } from './uni-ws.js';
-
 
 // Import config to store WebSocket instance
 import config from '../../config/config.js';
+
+// Import the unified WebSocket server
+import { createUnifiedWebSocket } from './uni-ws.js';
+
 
 // Initialize all v69 WebSocket servers
 /**

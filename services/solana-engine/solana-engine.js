@@ -30,17 +30,30 @@ import redisManager from '../../utils/redis-suite/redis-manager.js';
 // Config
 import config from '../../config/config.js';
 
-// Formatting helpers for consistent logging
+// Default solanaEngine colors if not found in serviceColors
+const defaultSolanaEngineColors = {
+  tag: '\x1b[1m\x1b[38;5;75m',                    // Blue (75)
+  header: '\x1b[1m\x1b[38;5;75m\x1b[48;5;236m',   // Blue on dark gray
+  info: '\x1b[38;5;75m',                          // Regular blue
+  success: '\x1b[38;5;46m',                       // Standard green
+  warning: '\x1b[38;5;214m',                      // Standard orange
+  error: '\x1b[38;5;196m',                        // Standard red
+  highlight: '\x1b[1m\x1b[38;5;75m',              // Bold blue
+  token: '\x1b[1m\x1b[38;5;75m',                  // Bold blue
+  count: '\x1b[1m\x1b[38;5;75m',                  // Bold blue
+};
+
+// Formatting helpers for consistent logging with fallbacks
 const formatLog = {
-  tag: () => `${serviceColors.solanaEngine.tag}[SolanaEngine]${fancyColors.RESET}`,
-  header: (text) => `${serviceColors.solanaEngine.header} ${text} ${fancyColors.RESET}`,
-  success: (text) => `${serviceColors.solanaEngine.success}${text}${fancyColors.RESET}`,
-  warning: (text) => `${serviceColors.solanaEngine.warning}${text}${fancyColors.RESET}`,
-  error: (text) => `${serviceColors.solanaEngine.error}${text}${fancyColors.RESET}`,
-  info: (text) => `${serviceColors.solanaEngine.info}${text}${fancyColors.RESET}`,
-  highlight: (text) => `${serviceColors.solanaEngine.highlight}${text}${fancyColors.RESET}`,
-  token: (symbol) => `${serviceColors.solanaEngine.token}${symbol}${fancyColors.RESET}`,
-  count: (num) => `${serviceColors.solanaEngine.count}${num}${fancyColors.RESET}`,
+  tag: () => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).tag}[SolanaEngine]${fancyColors.RESET}`,
+  header: (text) => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).header} ${text} ${fancyColors.RESET}`,
+  success: (text) => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).success}${text}${fancyColors.RESET}`,
+  warning: (text) => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).warning}${text}${fancyColors.RESET}`,
+  error: (text) => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).error}${text}${fancyColors.RESET}`,
+  info: (text) => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).info}${text}${fancyColors.RESET}`,
+  highlight: (text) => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).highlight}${text}${fancyColors.RESET}`,
+  token: (symbol) => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).token}${symbol}${fancyColors.RESET}`,
+  count: (num) => `${(serviceColors.solanaEngine || defaultSolanaEngineColors).count}${num}${fancyColors.RESET}`,
 };
 
 // SolanaEngine Service
@@ -55,7 +68,12 @@ const formatLog = {
  */
 class SolanaEngineService extends BaseService {
   constructor() {
-    super(SERVICE_NAMES.SOLANA_ENGINE);
+    // Create proper config object for BaseService
+    super({
+      name: SERVICE_NAMES.SOLANA_ENGINE,
+      layer: 'INFRASTRUCTURE', 
+      criticalLevel: 'high'
+    });
     
     // Redis keys for caching data
     this.redisKeys = {

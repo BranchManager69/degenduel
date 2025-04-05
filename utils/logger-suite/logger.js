@@ -14,6 +14,9 @@
  * Log files are stored in the /logs directory.
  */
 
+// Get environment from NODE_ENV - declaring before any references to ensure it's available
+const environment = process.env.NODE_ENV || 'production';
+
 import dotenv from "dotenv";
 import chalk from "chalk";
 import path from "path";
@@ -72,7 +75,7 @@ export const getIpInfo = async (ip) => {
       
       // SAFETY: Don't use our own logger here to avoid recursion
       // But use a standardized message format that matches our log style
-      console.log(`${formatTimestamp()} ${LEVEL_STYLES.info.badge} ${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${environment} `)) + ' ' : ''}IPinfo client initialized successfully`);
+      console.log(`${formatTimestamp()} ${LEVEL_STYLES.info.badge} ${typeof environment !== 'undefined' && environment !== 'production' ? chalk.bgBlue(chalk.white(` ${environment} `)) + ' ' : ''}IPinfo client initialized successfully`);
     } catch (initError) {
       // SAFETY: Don't use our own logger here to avoid recursion
       console.error('Failed to initialize IPinfo client:', initError.message);
@@ -235,6 +238,11 @@ const formatTimestamp = (timestamp) => {
 
 // Helper to detect special log patterns
 const detectLogPattern = (message) => {
+  // Make sure message is a string before calling startsWith
+  if (message === undefined || message === null || typeof message !== 'string') {
+    return null;
+  }
+  
   for (const [key, pattern] of Object.entries(LOG_PATTERNS)) {
     if (message.startsWith(pattern)) {
       return { type: key, showInGroup: key.includes("CORS_") };
@@ -600,11 +608,11 @@ function formatUserInteraction(user, action, details, env) {
 
   // Always include environment (use shorter 'dev' instead of 'development')
   const envLabel = env === 'development' ? 'dev' : env;
-  const envSystemLabel = environment === 'development' ? 'dev' : environment;
+  const envSystemLabel = typeof environment !== 'undefined' && environment === 'development' ? 'dev' : environment;
   
   const envPrefix = env ? 
     `${chalk.bgMagenta(chalk.white(` ${envLabel} `))} ` : 
-    `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
+    `${typeof environment !== 'undefined' && environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
   
   return `${envPrefix}👤 ${userInfo} | ${action} | ${formattedDetails}`;
 }
@@ -671,8 +679,13 @@ function formatAdminAction(details) {
 // Modify the customFormat to properly handle these special cases
 // Format WebSocket logs more concisely based on debug mode
 function formatWebSocketLog(ts, levelStyle, message, service, metadata, level) {
+  // Make sure message is a string or empty string before using it
+  const safeMessage = (message === undefined || message === null || typeof message !== 'string') ? 
+    (typeof message === 'object' ? JSON.stringify(message) : String(message || '')) : 
+    message;
+  
   // Check if this is a WebSocket message and if debug mode is enabled
-  const isWebSocketLog = service === 'uni-ws' || message.includes('[uni-ws]');
+  const isWebSocketLog = service === 'uni-ws' || safeMessage.includes('[uni-ws]');
   const wsDebugMode = config.debug_modes?.websocket === true || config.debug_modes?.websocket === 'true';
   
   // If not a WebSocket log, return null to use normal formatting
@@ -683,12 +696,15 @@ function formatWebSocketLog(ts, levelStyle, message, service, metadata, level) {
   // Handle different WebSocket log patterns
   const serviceInfo = SERVICE_COLORS[service] || SERVICE_COLORS.WEBSOCKET;
   
+  // Ensure metadata is defined before accessing properties
+  const safeMetadata = metadata || {};
+  
   // Use shorter "dev" instead of "development" to prevent log wrapping
-  const envLabel = metadata.environment === 'development' ? 'dev' : metadata.environment;
-  const envSystemLabel = environment === 'development' ? 'dev' : environment;
-  const envPrefix = metadata.environment ? 
+  const envLabel = safeMetadata.environment === 'development' ? 'dev' : safeMetadata.environment;
+  const envSystemLabel = typeof environment !== 'undefined' && environment === 'development' ? 'dev' : environment;
+  const envPrefix = safeMetadata.environment ? 
     `${chalk.bgMagenta(chalk.white(` ${envLabel} `))} ` : 
-    `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
+    `${typeof environment !== 'undefined' && environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
   
   // In full debug mode, show everything
   if (wsDebugMode) {
@@ -698,8 +714,8 @@ function formatWebSocketLog(ts, levelStyle, message, service, metadata, level) {
       chalk.hex(serviceInfo.color)(message);
     
     // Format metadata more compactly but still include it
-    const meta = Object.keys(metadata).length
-      ? chalk.gray(JSON.stringify(formatMetadata(metadata, level), null, 0))
+    const meta = safeMetadata && Object.keys(safeMetadata).length
+      ? chalk.gray(JSON.stringify(formatMetadata(safeMetadata, level), null, 0))
       : "";
     
     return `${ts} ${levelStyle.badge} ${formattedMessage}${meta ? " " + meta : ""}`;
@@ -708,14 +724,14 @@ function formatWebSocketLog(ts, levelStyle, message, service, metadata, level) {
   // For normal mode, create more concise logs
   
   // CONNECTION LOGS - simplify to just show connection status and important details
-  if (message.includes('Client connected') || message.includes('Client disconnected')) {
-    const ip = metadata.ip || 'unknown';
-    const origin = metadata.origin || 'unknown';
-    const userId = metadata.userId || 'anonymous';
-    const isAuth = metadata.isAuthenticated || false;
+  if (safeMessage.includes('Client connected') || safeMessage.includes('Client disconnected')) {
+    const ip = safeMetadata.ip || 'unknown';
+    const origin = safeMetadata.origin || 'unknown';
+    const userId = safeMetadata.userId || 'anonymous';
+    const isAuth = safeMetadata.isAuthenticated || false;
     
     // Create concise connection message
-    const connectionStatus = message.includes('connected') ? 
+    const connectionStatus = safeMessage.includes('connected') ? 
       chalk.green('CONNECT') : chalk.yellow('DISCONNECT');
     
     const durationInfo = metadata.connection_duration ? 
@@ -728,44 +744,44 @@ function formatWebSocketLog(ts, levelStyle, message, service, metadata, level) {
   }
   
   // CLIENT VERIFY - just show a simple verification message
-  if (message.includes('CLIENT VERIFY')) {
-    const clientIP = metadata.clientConnInfo?.req?.headers?.['x-real-ip'] || 
-                    metadata.clientConnInfo?.req?.headers?.['x-forwarded-for'] || 
+  if (safeMessage.includes('CLIENT VERIFY')) {
+    const clientIP = safeMetadata.clientConnInfo?.req?.headers?.['x-real-ip'] || 
+                    safeMetadata.clientConnInfo?.req?.headers?.['x-forwarded-for'] || 
                     'unknown';
-    const origin = metadata.clientConnInfo?.origin || 'unknown';
+    const origin = safeMetadata.clientConnInfo?.origin || 'unknown';
     
     return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${chalk.blue('VERIFY')} ${chalk.gray(clientIP)} from ${chalk.cyan(origin.replace(/^https?:\/\//, ''))}`;
   }
   
   // RAW HEADERS - omit completely in normal mode
-  if (message.includes('RAW HEADERS')) {
+  if (safeMessage.includes('RAW HEADERS')) {
     // Skip completely unless in debug mode
     return null;
   }
   
   // SUBSCRIPTION messages - show topic and counts
-  if (message.includes('subscribed to topics')) {
-    const topics = metadata.topics || [];
+  if (safeMessage.includes('subscribed to topics')) {
+    const topics = safeMetadata.topics || [];
     return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${chalk.green('SUB')} ${chalk.cyan(topics.join(', '))}`;
   }
   
   // UNSUBSCRIPTION messages
-  if (message.includes('unsubscribed from topics')) {
-    const topics = metadata.topics || [];
+  if (safeMessage.includes('unsubscribed from topics')) {
+    const topics = safeMetadata.topics || [];
     return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${chalk.yellow('UNSUB')} ${chalk.cyan(topics.join(', '))}`;
   }
   
   // BROADCAST messages - just show counts
-  if (message.includes('Broadcast to topic') || message.includes('Broadcast to all')) {
-    const count = message.match(/(\d+) clients/) || ['0', '0'];
-    const topic = message.includes('Broadcast to topic') ? 
-      message.replace('Broadcast to topic ', '').split(':')[0] : 'all';
+  if (safeMessage.includes('Broadcast to topic') || safeMessage.includes('Broadcast to all')) {
+    const count = safeMessage.match(/(\d+) clients/) || ['0', '0'];
+    const topic = safeMessage.includes('Broadcast to topic') ? 
+      safeMessage.replace('Broadcast to topic ', '').split(':')[0] : 'all';
     
     return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${chalk.magenta('BROADCAST')} ${chalk.cyan(topic)} → ${chalk.yellow(count[1])} clients`;
   }
   
   // For other WebSocket logs, use a standard abbreviated format
-  const shortMessage = message.replace('[uni-ws]', '').trim();
+  const shortMessage = safeMessage.replace('[uni-ws]', '').trim();
   return `${ts} ${levelStyle.badge} ${envPrefix}${chalk.hex(serviceInfo.color)('WS')} ${shortMessage}`;
 }
 
@@ -777,23 +793,28 @@ const customFormat = winston.format.printf(
     // Add to startup log buffer first (this will only capture important logs)
     startupLogBuffer.addLog(level, message, { service, ...metadata });
 
+    // Make sure message is a string or empty string
+    const safeMessage = (message === undefined || message === null || typeof message !== 'string') ? 
+      (typeof message === 'object' ? JSON.stringify(message) : String(message || '')) : 
+      message;
+
     const ts = chalk.gray(formatTimestamp(timestamp));
     const levelStyle = LEVEL_STYLES[level] || LEVEL_STYLES.info;
     const serviceInfo = SERVICE_COLORS[service] || SERVICE_COLORS.DEFAULT;
 
     // Try WebSocket formatter first
-    const wsFormatted = formatWebSocketLog(ts, levelStyle, message, service, metadata, level);
+    const wsFormatted = formatWebSocketLog(ts, levelStyle, safeMessage, service, metadata, level);
     if (wsFormatted !== null) {
       return wsFormatted;
     }
 
     // Handle Memory Stats
-    if (message.includes('Memory Stats')) {
+    if (safeMessage.includes('Memory Stats')) {
       return `${ts} ${levelStyle.badge} ${formatMemoryStats(metadata)}`;
     }
 
     // Handle API Performance Stats
-    if (message.includes('API Performance Stats')) {
+    if (safeMessage.includes('API Performance Stats')) {
       return `${ts} ${levelStyle.badge} ${formatPerformanceStats(metadata)}`;
     }
 
@@ -801,18 +822,18 @@ const customFormat = winston.format.printf(
     const servicePrefix = service ? `${serviceInfo.icon} ` : "";
     // Use shorter "dev" instead of "development" to prevent log wrapping
     const envLabel = metadata.environment === 'development' ? 'dev' : metadata.environment;
-    const envSystemLabel = environment === 'development' ? 'dev' : environment;
+    const envSystemLabel = typeof environment !== 'undefined' && environment === 'development' ? 'dev' : environment;
     
     const envPrefix = metadata.environment ? 
       `${chalk.bgMagenta(chalk.white(` ${envLabel} `))} ` : 
-      `${environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
+      `${typeof environment !== 'undefined' && environment !== 'production' ? chalk.bgBlue(chalk.white(` ${envSystemLabel} `)) + ' ' : ''}`;
     
     const formattedMessage =
       envPrefix + 
       servicePrefix +
       (service
-        ? chalk.hex(serviceInfo.color)(message)
-        : levelStyle.color(message));
+        ? chalk.hex(serviceInfo.color)(safeMessage)
+        : levelStyle.color(safeMessage));
 
     // Format metadata more compactly
     const meta = Object.keys(metadata).length
@@ -820,40 +841,39 @@ const customFormat = winston.format.printf(
       : "";
 
     // Check for WebSocket RSV1 fix logs - make them MUCH more visible
-    if (message && (
-        message.includes('WS BUFFER FIX') || 
-        message.includes('WEBSOCKET FIX') || 
-        message.includes('SOCKET RSV1'))) {
+    if (safeMessage.includes('WS BUFFER FIX') || 
+        safeMessage.includes('WEBSOCKET FIX') || 
+        safeMessage.includes('SOCKET RSV1')) {
       // Always show these logs with maximum priority, but use appropriate colors
       // based on the log level to avoid looking like errors
       let bgColor = level === 'error' ? chalk.bgRed : 
                    level === 'warn' ? chalk.bgYellow : 
                    chalk.bgBlue;
       let textColor = level === 'warn' ? chalk.black : chalk.white;
-      console.log(`\n${bgColor(textColor(message))}\n`);
+      console.log(`\n${bgColor(textColor(safeMessage))}\n`);
     }
 
     // Sanitize any error objects in metadata
     const cleanMetadata = sanitizeError(metadata);
 
     // Format circuit breaker logs
-    if (message.includes('Circuit breaker opened')) {
+    if (safeMessage.includes('Circuit breaker opened')) {
       return `${ts} ${LEVEL_STYLES.error.badge} ${formatCircuitBreaker(service, metadata)}`;
     }
 
     // Format user interaction logs
-    if (message === ANALYTICS_PATTERNS.USER_INTERACTION) {
+    if (safeMessage === ANALYTICS_PATTERNS.USER_INTERACTION) {
       const { user, action, details, environment: env } = metadata;
       return `${ts} ${levelStyle.badge} ${formatUserInteraction(user, action, details, env || metadata.environment || environment)}`;
     }
 
     // Format event loop lag logs
-    if (message.includes('Event loop lag detected')) {
+    if (safeMessage.includes('Event loop lag detected')) {
       return `${ts} ${levelStyle.badge} ${formatEventLoopLag(metadata.lag_ms)}`;
     }
 
     // Format admin action logs
-    if (message.includes('Admin action logged')) {
+    if (safeMessage.includes('Admin action logged')) {
       return `${ts} ${levelStyle.badge} ${formatAdminAction(metadata)}`;
     }
 
@@ -867,7 +887,13 @@ const fileFormat = winston.format.printf(
   ({ level, message, timestamp, service, ...metadata }) => {
     // Ensure metadata exists and is an object
     const safeMetadata = metadata || {};
-    const pattern = message ? detectLogPattern(message) : null;
+    
+    // Make sure message is a string or empty string
+    const safeMessage = (message === undefined || message === null || typeof message !== 'string') ? 
+      (typeof message === 'object' ? JSON.stringify(message) : String(message || '')) : 
+      message;
+    
+    const pattern = safeMessage ? detectLogPattern(safeMessage) : null;
     const formattedMeta = formatMetadata(safeMetadata, level);
 
     // Create a structured log entry that's easy to parse in the frontend
@@ -875,7 +901,7 @@ const fileFormat = winston.format.printf(
       timestamp: timestamp || new Date().toISOString(),
       formatted_time: formatTimestamp(timestamp),
       level: level ? level.toLowerCase() : 'info',
-      message: message || '',
+      message: safeMessage || '',
       service,
       service_icon: service ? SERVICE_COLORS[service]?.icon : null,
       level_icon: level ? LEVEL_STYLES[level]?.icon : null,
@@ -930,8 +956,7 @@ const debugRotateFileTransport = new winston.transports.DailyRotateFile({
 
 /* LOGTAIL TRANSPORT */
 
-// Get environment from NODE_ENV
-const environment = process.env.NODE_ENV || 'production';
+// Using environment variable defined at the top of the file
 
 // Create logtail instance with environment metadata
 const logtail = new Logtail(LOGTAIL_TOKEN, {
@@ -983,7 +1008,9 @@ const addLogtailFormatting = (level, message, metadata) => {
 
 // Helper to determine if a message is a Solana rate limit error
 const isSolanaRateLimit = (message) => {
-  return typeof message === 'string' && 
+  return message !== undefined && 
+         message !== null && 
+         typeof message === 'string' && 
          message.includes('429 Too Many Requests') && 
          message.includes('Retrying after');
 };
@@ -1282,7 +1309,7 @@ const processMessage = function(args) {
   if (args.length > 0 && typeof args[0] === 'string') {
     const message = args[0];
     
-    if (isSolanaRateLimit(message)) {
+    if (message !== undefined && message !== null && isSolanaRateLimit(message)) {
       // Use our standardized formatter (true = formatted for console)
       const formatted = formatRateLimitError(message, true);
       

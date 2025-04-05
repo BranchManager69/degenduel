@@ -10,6 +10,7 @@
  */
 
 import config from '../../../config/config.js';
+import { SERVICE_NAMES } from '../../../utils/service-suite/service-constants.js';
 
 // Get AI loadout config from application config
 const aiLoadout = config.ai?.openai_model_loadout || {};
@@ -18,7 +19,7 @@ const aiLoadout = config.ai?.openai_model_loadout || {};
  * AI Service configuration with all loadouts
  */
 const AI_SERVICE_CONFIG = {
-  name: 'AI_SERVICE',
+  name: SERVICE_NAMES.AI_SERVICE,
   description: 'AI Analysis and Processing Service',
   layer: 'application',
   criticalLevel: 'non-critical',

@@ -253,6 +253,9 @@ export const serviceSpecificColors = {
     success: '\x1b[38;5;46m',                       // Standard green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;75m',              // Bold blue for highlights
+    token: '\x1b[1m\x1b[38;5;75m',                  // Bold blue for token
+    count: '\x1b[1m\x1b[38;5;75m',                  // Bold blue for count
   },
   
   // New service colors using our exotic theme additions

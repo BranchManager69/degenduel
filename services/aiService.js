@@ -28,7 +28,7 @@ const aiLoadout = config.ai?.openai_model_loadout || {};
 
 // AI Service configuration
 const AI_SERVICE_CONFIG = {
-  name: SERVICE_NAMES.AI_SERVICE,
+  name: SERVICE_NAMES.AI_SERVICE, // Using service name from constants
   description: 'AI Analysis and Processing Service',
   layer: 'application',
   criticalLevel: 'non-critical',
@@ -970,6 +970,9 @@ Address them by name if they provided one, and adapt your responses to their exp
 const aiService = new AIService();
 
 // Register with service manager
-serviceManager.registerService(aiService);
+serviceManager.register(aiService);
+
+// Export the generateChatCompletion method directly for routes
+export const generateChatCompletion = aiService.generateChatCompletion.bind(aiService);
 
 export default aiService;

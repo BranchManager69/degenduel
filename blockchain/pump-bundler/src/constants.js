@@ -18,8 +18,8 @@ export const TX_MODE = {
 
 // Connection endpoints
 export const RPC_ENDPOINTS = {
-  DEFAULT: "https://api.mainnet-beta.solana.com",
-  HELIUS: process.env.HELIUS_RPC_URL || "https://mainnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY",
+  DEFAULT: process.env.DEFAULT_RPC_URL || "https://api.mainnet-beta.solana.com",
+  HELIUS: process.env.HELIUS_RPC_URL || "https://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40",
   JITO: process.env.JITO_RPC_URL || "https://jito-mainnet-rpc-url" 
 };
 

@@ -541,6 +541,6 @@ class AIService extends BaseService {
 const aiService = new AIService();
 
 // Register with service manager
-serviceManager.registerService(aiService);
+serviceManager.register(aiService);
 
 export default aiService;

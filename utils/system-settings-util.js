@@ -234,7 +234,7 @@ class SystemSettingsUtil {
             logApi.error(`Error upserting system setting ${key}:`, error);
             
             // If we still have issues, try with an extremely simplified value
-            if (error.message.includes('recursion limit exceeded') || error.code === 'InvalidArg') {
+            if ((error.message !== undefined && error.message !== null && typeof error.message === 'string' && error.message.includes('recursion limit exceeded')) || error.code === 'InvalidArg') {
                 try {
                     // Try to delete existing record to avoid unique constraint issues
                     try {
@@ -303,7 +303,7 @@ class SystemSettingsUtil {
             return true;
         } catch (error) {
             // If the record doesn't exist, that's fine
-            if (!error.message.includes('Record to delete does not exist')) {
+            if (!(error.message !== undefined && error.message !== null && typeof error.message === 'string' && error.message.includes('Record to delete does not exist'))) {
                 logApi.error(`Error deleting system setting ${key}:`, error);
             }
             return false;
