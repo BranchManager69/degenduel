@@ -1,6 +1,6 @@
 // Implementation of trade commands for Pump.fun tokens
 import fs from 'fs';
-import { getActiveWallet, getActiveRpcUrl } from '../../core/settings/settings-manager.js';
+import settingsManager from '../../core/settings/settings-manager.js';
 import { clearScreen, printHeader, printSuccess, printError, printInfo, printWarning, spinnerStart, spinnerStop } from '../../core/ui.js';
 import { registerKeyHandler } from '../../core/keypress.js';
 import { initializeSettingsKeyboardShortcuts, showSettingsKeyboardHelp } from '../../core/settings/keyboard-handler.js';
@@ -42,7 +42,7 @@ async function getConnection() {
   if (connection) return connection;
   
   const { solanaWeb3 } = await initWeb3();
-  const rpcUrl = getActiveRpcUrl();
+  const rpcUrl = settingsManager.getActiveRpcUrl();
   
   connection = new solanaWeb3.Connection(rpcUrl, {
     commitment: 'confirmed',
@@ -67,12 +67,12 @@ async function loadWallet(walletPath) {
       keyPair = solanaWeb3.Keypair.fromSecretKey(secretKey);
     } else {
       // Get active wallet from settings
-      const activeWallet = getActiveWallet();
-      if (!activeWallet || !activeWallet.path) {
+      const activeWalletPath = settingsManager.getActiveWalletPath();
+      if (!activeWalletPath) {
         throw new Error('No active wallet found in settings');
       }
       
-      const secretKey = new Uint8Array(JSON.parse(fs.readFileSync(activeWallet.path, 'utf-8')));
+      const secretKey = new Uint8Array(JSON.parse(fs.readFileSync(activeWalletPath, 'utf-8')));
       keyPair = solanaWeb3.Keypair.fromSecretKey(secretKey);
     }
     
