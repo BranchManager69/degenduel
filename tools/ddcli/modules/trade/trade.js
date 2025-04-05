@@ -2,7 +2,7 @@
 import fs from 'fs';
 import settingsManager from '../../core/settings/settings-manager.js';
 import { clearScreen, printHeader, printSuccess, printError, printInfo, printWarning, spinnerStart, spinnerStop } from '../../core/ui.js';
-import { registerKeyHandler } from '../../core/keypress.js';
+import { setupKeypress } from '../../core/keypress.js';
 import { initializeSettingsKeyboardShortcuts, showSettingsKeyboardHelp } from '../../core/settings/keyboard-handler.js';
 
 // Cache for web3 to avoid reloading
