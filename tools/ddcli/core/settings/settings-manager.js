@@ -324,6 +324,7 @@ function showRpcSelectionMenu(onSelect) {
   createMenu({
     title: 'Select RPC Endpoint',
     items: menuItems,
+    isSubmenu: true,
     onSelect: (value) => {
       if (value === 'back') {
         if (typeof onSelect === 'function') {
@@ -419,6 +420,7 @@ function showWalletSelectionMenu(onSelect) {
   createMenu({
     title: 'Select Wallet',
     items: menuItems,
+    isSubmenu: true,
     onSelect: (value) => {
       if (value === 'back') {
         if (typeof onSelect === 'function') {
@@ -486,6 +488,7 @@ function showSettingsMenu(onClose) {
   createMenu({
     title: 'DDCLI Settings',
     items: menuItems,
+    isSubmenu: true,
     onSelect: (value) => {
       if (value === 'close') {
         if (typeof onClose === 'function') {

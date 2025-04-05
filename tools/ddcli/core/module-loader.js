@@ -82,13 +82,7 @@ export async function showModuleMenu(program) {
     value: 'exit'
   });
   
-  // Display banner
-  const figlet = await import('figlet');
-  const gradient = await import('gradient-string');
-  const banner = figlet.default.textSync('DDCLI', { font: 'ANSI Shadow' });
-  console.log(gradient.default.rainbow(banner));
-  console.log(chalk.blue('DegenDuel Command Line Interface'));
-  console.log(chalk.dim('━'.repeat(process.stdout.columns || 80)));
+  // Banner is now handled by the menu system
 
   // Create the menu
   createMenu({
