@@ -2,19 +2,12 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import figlet from 'figlet';
-import gradient from 'gradient-string';
 import { loadModules, showModuleMenu } from './core/module-loader.js';
-
-// Display fancy banner
-const banner = figlet.textSync('DDCLI', { font: 'ANSI Shadow' });
-console.log(gradient.rainbow(banner));
-console.log(chalk.blue('DegenDuel Command Line Interface'));
-console.log(chalk.dim('━'.repeat(process.stdout.columns || 80)));
 
 // Check if no arguments provided, show the menu directly
 if (process.argv.length <= 2) {
   // If no command provided, show the interactive menu
+  console.clear(); // Clear the screen before showing the menu
   const program = new Command();
   await loadModules(program);
   showModuleMenu(program);

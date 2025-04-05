@@ -16,8 +16,10 @@ export function createMenu(options) {
   
   // Clear the console area for the menu
   const clearMenu = () => {
-    // Move cursor to beginning of line and clear down
-    process.stdout.write('\x1B[1G\x1B[J');
+    // Use ANSI escape sequences to:
+    // 1. Clear the entire screen (2J)
+    // 2. Move cursor to home position (H)
+    console.clear();
   };
   
   // Render the menu
