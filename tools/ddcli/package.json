@@ -1,0 +1,28 @@
+{
+  "name": "ddcli",
+  "version": "1.0.0",
+  "description": "DegenDuel Command Line Interface",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "ddcli": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "x": "node index.js twitter x"
+  },
+  "keywords": [
+    "cli",
+    "degenduel"
+  ],
+  "author": "DegenDuel",
+  "license": "ISC",
+  "dependencies": {
+    "boxen": "^8.0.1",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "figlet": "^1.8.0",
+    "gradient-string": "^3.0.0",
+    "ora": "^8.2.0"
+  }
+}

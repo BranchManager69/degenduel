@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+
+// Simple executable wrapper for ddcli
+import '../index.js';
