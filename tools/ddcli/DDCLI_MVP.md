@@ -84,7 +84,13 @@ This document tracks the development progress of the DegenDuel Command Line Inte
 ## Completed Milestones
 - ✅ Core menu system with keyboard navigation
 - ✅ Settings persistence and management
-- ✅ Basic PumpFun integration for token trading
+- ⬜ PumpFun integration for token trading (currently placeholder code only)
 - ✅ Wallet management system
+
+## PumpFun Integration Requirements
+- ⬜ Implement proper Pump.fun IDL for accurate instruction serialization
+- ⬜ Add proper account resolution for token trading operations
+- ⬜ Implement token pool price calculations
+- ⬜ Add token metadata retrieval
 
 Last Updated: April 5, 2025

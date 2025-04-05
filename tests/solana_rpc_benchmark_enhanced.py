@@ -15,6 +15,9 @@ import sys
 import os
 import uuid
 
+# Global constants
+BAR_START_POSITION = 36  # Position where all bars should start (used across all sections)
+
 # ANSI color codes for pretty output
 class Colors:
     HEADER = '\033[95m'
@@ -37,16 +40,23 @@ class Colors:
     BG_CYAN = '\033[46m'
     BG_WHITE = '\033[47m'
 
+# Flag to enable/disable Branch RPC (defaults to False - disabled)
+ENABLE_BRANCH_RPC = False
+
 # Default RPC endpoints - you can modify these or add your own
 DEFAULT_ENDPOINTS = {
     "Helius": "https://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40",
     "Official": "https://api.mainnet-beta.solana.com",
-    "QuikNode": "https://still-neat-log.solana-mainnet.quiknode.pro/2a0ede8be35aa5c655c08939f1831e8fb52ddeba/",
-    "BranchRPC": "http://162.249.175.2:8898/"
-    # Note: WebSocket and gRPC endpoints need different testing approaches
-    # "BranchWS": "ws://162.249.175.2:8900",  # WebSocket endpoint - requires WS client
-    # "BranchGRPC": "http://162.249.175.2:10000/"  # gRPC/Geyser endpoint - requires gRPC client
+    "QuikNode": "https://still-neat-log.solana-mainnet.quiknode.pro/2a0ede8be35aa5c655c08939f1831e8fb52ddeba/"
 }
+
+# Conditional Branch RPC addition (only if enabled)
+if ENABLE_BRANCH_RPC:
+    DEFAULT_ENDPOINTS["BranchRPC"] = "http://162.249.175.2:8898/"
+    
+# Note: WebSocket and gRPC endpoints need different testing approaches
+# "BranchWS": "ws://162.249.175.2:8900",  # WebSocket endpoint - requires WS client
+# "BranchGRPC": "http://162.249.175.2:10000/"  # gRPC/Geyser endpoint - requires gRPC client
 
 # Methods to test - you can modify or expand these
 DEFAULT_METHODS = [
@@ -90,22 +100,50 @@ def latency_color(latency, thresholds=(50, 100, 200)):
 def test_network_latency(host):
     """Tests basic network latency to the host using socket connection"""
     try:
-        host = host.replace("https://", "").replace("http://", "").split("/")[0].split("?")[0]
-        print(f"{Colors.BOLD}{Colors.UNDERLINE}Testing network latency to {host}...{Colors.END}")
+        # Preserve original host string for display
+        original_host = host
+        
+        # Check if specific port is included
+        port = 443  # Default to HTTPS port
+        
+        # Extract host and port if specified (like "host:8898")
+        if "://" in host:
+            # Remove protocol
+            host = host.replace("https://", "").replace("http://", "")
+        
+        # Keep everything before the first slash or question mark
+        host = host.split("/")[0].split("?")[0]
+        
+        # Extract port if explicitly specified
+        if ":" in host:
+            host_parts = host.split(":")
+            host = host_parts[0]
+            # Try to parse port number
+            try:
+                port = int(host_parts[1])
+            except (IndexError, ValueError):
+                # If port parsing fails, fall back to default
+                port = 443
+        
+        # For BranchRPC specifically, use port 8898
+        if "162.249.175.2" in host:
+            port = 8898
+        
+        print(f"{Colors.BOLD}{Colors.UNDERLINE}Testing network latency to {host}:{port}...{Colors.END}")
         
         latencies = []
         for i in range(5):
             start_time = time.time()
             try:
-                # Create a socket connection to port 443 (HTTPS)
+                # Create a socket connection to the appropriate port
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(3)
-                s.connect((host, 443))
+                s.connect((host, port))
                 s.close()
                 latency = (time.time() - start_time) * 1000  # ms
                 latencies.append(latency)
                 color = latency_color(latency)
-                print(f"  Connection {i+1}: {color}{latency:.2f}ms{Colors.END}")
+                print(f"  Connection {i+1}: {color}{latency:<8.2f}ms{Colors.END}")
             except Exception as e:
                 print(f"  Connection {i+1}: {Colors.RED}Failed - {str(e)}{Colors.END}")
             time.sleep(0.5)
@@ -119,20 +157,29 @@ def test_network_latency(host):
             # Min latency with bar
             min_lat = min(latencies)
             color = latency_color(min_lat)
-            bar = create_horizontal_bar(min_lat, max_latency, width=30, color=color)
-            print(f"  Min: {color}{min_lat:.2f}ms{Colors.END} {bar}")
+            bar = create_horizontal_bar(min_lat, max_latency, width=40, color=color)
+            value_str = f"{color}{min_lat:<8.2f}ms{Colors.END}"
+            label_str = f"  Min:"
+            padding = max(0, BAR_START_POSITION - len(label_str) - len(value_str) + len(color)*2 + len(Colors.END)*2)
+            print(f"{label_str} {value_str}{' ' * padding}{bar}")
             
             # Avg latency with bar
             avg_lat = statistics.mean(latencies)
             color = latency_color(avg_lat)
-            bar = create_horizontal_bar(avg_lat, max_latency, width=30, color=color)
-            print(f"  Avg: {color}{avg_lat:.2f}ms{Colors.END} {bar}")
+            bar = create_horizontal_bar(avg_lat, max_latency, width=40, color=color)
+            value_str = f"{color}{avg_lat:<8.2f}ms{Colors.END}"
+            label_str = f"  Avg:"
+            padding = max(0, BAR_START_POSITION - len(label_str) - len(value_str) + len(color)*2 + len(Colors.END)*2)
+            print(f"{label_str} {value_str}{' ' * padding}{bar}")
             
             # Max latency with bar
             max_lat = max(latencies)
             color = latency_color(max_lat)
-            bar = create_horizontal_bar(max_lat, max_latency, width=30, color=color)
-            print(f"  Max: {color}{max_lat:.2f}ms{Colors.END} {bar}")
+            bar = create_horizontal_bar(max_lat, max_latency, width=40, color=color)
+            value_str = f"{color}{max_lat:<8.2f}ms{Colors.END}"
+            label_str = f"  Max:"
+            padding = max(0, BAR_START_POSITION - len(label_str) - len(value_str) + len(color)*2 + len(Colors.END)*2)
+            print(f"{label_str} {value_str}{' ' * padding}{bar}")
             
             if len(latencies) > 1:
                 std_dev = statistics.stdev(latencies)
@@ -211,7 +258,7 @@ def test_rpc_latency(name, endpoint, method, params=None, num_tests=5, verbose=T
             responses.append(response_data)
             if verbose:
                 color = latency_color(latency)
-                print(f"  Test {i+1}: {color}{latency:.2f}ms{Colors.END}")
+                print(f"  Test {i+1}: {color}{latency:<8.2f}ms{Colors.END}")
             
         except Exception as e:
             if verbose:
@@ -240,26 +287,38 @@ def test_rpc_latency(name, endpoint, method, params=None, num_tests=5, verbose=T
             # Min latency with bar
             min_lat = result['min']
             color = latency_color(min_lat)
-            bar = create_horizontal_bar(min_lat, max_latency, width=30, color=color)
-            print(f"  Min: {color}{min_lat:.2f}ms{Colors.END} {bar}")
+            bar = create_horizontal_bar(min_lat, max_latency, width=40, color=color)
+            value_str = f"{color}{min_lat:<8.2f}ms{Colors.END}"
+            label_str = f"  Min:"
+            padding = max(0, BAR_START_POSITION - len(label_str) - len(value_str) + len(color)*2 + len(Colors.END)*2)
+            print(f"{label_str} {value_str}{' ' * padding}{bar}")
             
             # Median with bar
             median_lat = result['median']
             color = latency_color(median_lat)
-            bar = create_horizontal_bar(median_lat, max_latency, width=30, color=color)
-            print(f"  Median: {color}{median_lat:.2f}ms{Colors.END} {bar}")
+            bar = create_horizontal_bar(median_lat, max_latency, width=40, color=color)
+            value_str = f"{color}{median_lat:<8.2f}ms{Colors.END}"
+            label_str = f"  Median:"
+            padding = max(0, BAR_START_POSITION - len(label_str) - len(value_str) + len(color)*2 + len(Colors.END)*2)
+            print(f"{label_str} {value_str}{' ' * padding}{bar}")
             
             # Avg latency with bar
             avg_lat = result['avg']
             color = latency_color(avg_lat)
-            bar = create_horizontal_bar(avg_lat, max_latency, width=30, color=color)
-            print(f"  Avg: {color}{avg_lat:.2f}ms{Colors.END} {bar}")
+            bar = create_horizontal_bar(avg_lat, max_latency, width=40, color=color)
+            value_str = f"{color}{avg_lat:<8.2f}ms{Colors.END}"
+            label_str = f"  Avg:"
+            padding = max(0, BAR_START_POSITION - len(label_str) - len(value_str) + len(color)*2 + len(Colors.END)*2)
+            print(f"{label_str} {value_str}{' ' * padding}{bar}")
             
             # Max latency with bar
             max_lat = result['max']
             color = latency_color(max_lat)
-            bar = create_horizontal_bar(max_lat, max_latency, width=30, color=color)
-            print(f"  Max: {color}{max_lat:.2f}ms{Colors.END} {bar}")
+            bar = create_horizontal_bar(max_lat, max_latency, width=40, color=color)
+            value_str = f"{color}{max_lat:<8.2f}ms{Colors.END}"
+            label_str = f"  Max:"
+            padding = max(0, BAR_START_POSITION - len(label_str) - len(value_str) + len(color)*2 + len(Colors.END)*2)
+            print(f"{label_str} {value_str}{' ' * padding}{bar}")
             
             if result['failures'] > 0:
                 print(f"  Failures: {Colors.RED}{result['failures']}/{num_tests}{Colors.END}")
@@ -379,18 +438,46 @@ def print_summary(results, endpoints):
             continue
             
         all_medians = [valid_results[provider]["median"] for provider in valid_results]
-        max_median = max(all_medians) * 1.2 if all_medians else 100  # Add 20% padding
+        
+        # Find best (lowest) and worst (highest) values for relative scaling
+        best_median = min(all_medians)
+        worst_median = max(all_medians)
+        
+        # When all providers have the same value, avoid division by zero
+        range_median = max(0.001, worst_median - best_median)  # Avoid division by zero
         
         # Display median values with bars
         providers_sorted = sorted(valid_results.keys(), 
-                               key=lambda x: valid_results[x]["median"])
+                              key=lambda x: valid_results[x]["median"])
         
         for provider in providers_sorted:
             median = valid_results[provider]["median"]
             color = latency_color(median)
-            bar = create_horizontal_bar(median, max_median, width=40, color=color)
-            provider_display = f"{provider.ljust(10)}"
-            print(f"  {Colors.BOLD}{provider_display}{Colors.END}: {color}{median:.2f}ms{Colors.END} {bar}")
+            
+            # Create a truly relative bar:
+            # - Best provider gets a full bar (100%)
+            # - Worst provider gets a proportionally sized bar based on actual performance
+            # - Others get bars proportional to their relative performance
+            if worst_median == best_median:  # All providers have same performance
+                bar_width = 40  # Full width for all
+            else:
+                # Direct inverse proportion: if you're 2x slower, your bar is 1/2 as long
+                # If latency is twice the best_median, bar should be half as long
+                ratio = best_median / median  # This gives 1.0 for best, and smaller values for worse
+                bar_width = int(ratio * 40)
+                
+            # Create a bar based on relative performance
+            bar = color + '█' * bar_width + Colors.END
+            
+            # Format the provider and value with exact spacing to align bars
+            provider_str = f"{Colors.BOLD}{provider:<10}{Colors.END}"
+            value_str = f"{color}{median:<8.2f}ms{Colors.END}"
+            
+            # Calculate padding needed to reach BAR_START_POSITION
+            current_len = 2 + 10 + 2 + 8 + 2  # "  " + provider(10) + ": " + value(8) + "ms "
+            padding = max(0, BAR_START_POSITION - current_len)
+            
+            print(f"  {provider_str}: {value_str}{' ' * padding}{bar}")
         
         # Compare each provider with every other provider
         provider_names = list(valid_results.keys())
@@ -401,13 +488,16 @@ def print_summary(results, endpoints):
                     faster = provider2 if diff > 0 else provider1
                     percent = abs(diff) / max(valid_results[provider1]["median"], valid_results[provider2]["median"]) * 100
                     
-                    # Color code based on which one is faster
+                    # Format consistently with the bars above
                     if faster == provider1:
-                        print(f"  {Colors.GREEN}{provider1}{Colors.END} vs {Colors.RED}{provider2}{Colors.END}: " +
-                              f"{Colors.BOLD}{abs(diff):.2f}ms{Colors.END} ({percent:.1f}%) faster")
+                        comp_str = f"  {Colors.GREEN}{provider1:<10}{Colors.END} vs {Colors.RED}{provider2:<10}{Colors.END}"
                     else:
-                        print(f"  {Colors.RED}{provider1}{Colors.END} vs {Colors.GREEN}{provider2}{Colors.END}: " +
-                              f"{Colors.BOLD}{abs(diff):.2f}ms{Colors.END} ({percent:.1f}%) slower")
+                        comp_str = f"  {Colors.RED}{provider1:<10}{Colors.END} vs {Colors.GREEN}{provider2:<10}{Colors.END}"
+                    
+                    result_str = f"{Colors.BOLD}{abs(diff):<8.2f}ms{Colors.END} ({percent:.1f}%)"
+                    speed_str = "faster" if faster == provider1 else "slower"
+                    
+                    print(f"{comp_str}: {result_str} {speed_str}")
     
     # Ranking for transaction-critical operations
     critical_methods = ["getLatestBlockhash", "getSlot"]
@@ -431,10 +521,53 @@ def print_summary(results, endpoints):
             
             print(f"{Colors.BOLD}Median latency ranking (fastest to slowest):{Colors.END}")
             for i, (provider, latency) in enumerate(providers):
-                medal = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"{i+1}."
+                # Adjust spacing for medal/rank
+                if i <= 2:
+                    medal = "🥇" if i == 0 else "🥈" if i == 1 else "🥉"
+                    medal_spacer = " "  # Emoji needs a full space
+                else:
+                    medal = f"{i+1}."
+                    medal_spacer = ""  # Numeric ranks need no extra space
+                    
                 color = latency_color(latency)
-                bar = create_horizontal_bar(latency, max_latency, width=40, color=color)
-                print(f"  {medal} {Colors.BOLD}{provider}{Colors.END}: {color}{latency:.2f}ms{Colors.END} {bar}")
+                
+                # Find best (lowest) and worst (highest) values for relative scaling
+                best_latency = providers[0][1]  # First item is the fastest
+                worst_latency = providers[-1][1]  # Last item is the slowest
+                range_latency = max(0.001, worst_latency - best_latency)  # Avoid division by zero
+                
+                # Create a relative bar:
+                # - Best provider gets a full bar (100%)
+                # - Worst provider gets a minimal bar (10%)
+                # - Others get bars proportional to their relative performance
+                if worst_latency == best_latency:  # All providers have same performance
+                    bar_width = 40  # Full width for all
+                else:
+                    # Direct inverse proportion: if you're 2x slower, your bar is 1/2 as long
+                    # If latency is twice the best_latency, bar should be half as long
+                    ratio = best_latency / latency  # This gives 1.0 for best, and smaller values for worse
+                    bar_width = int(ratio * 40)
+                
+                # Create a bar based on relative performance
+                bar = color + '█' * bar_width + Colors.END
+                
+                # Format provider and value with exact spacing
+                provider_str = f"{Colors.BOLD}{provider:<10}{Colors.END}"
+                value_str = f"{color}{latency:<8.2f}ms{Colors.END}"
+                
+                # Calculate padding based on whether it's medal or number
+                # Always use the same space after the position indicator (medal or number)
+                # Medals always get one space, numbers should too
+                if i <= 2:
+                    position_part = f"{medal} "  # Medal with space after
+                else:
+                    position_part = f"{medal} "  # Number with space after
+                    
+                # Calculate padding needed for bar alignment
+                prefix_len = 2 + 3 + 1 + 10 + 2 + 8 + 2  # "  " + position(3) + space(1) + provider(10) + ": " + value(8) + "ms "
+                padding = max(0, BAR_START_POSITION - prefix_len)
+                
+                print(f"  {position_part}{provider_str}: {value_str}{' ' * padding}{bar}")
     
     # Overall winner based on average ranking across all methods
     provider_rankings = {provider: [] for provider in endpoints}
@@ -465,12 +598,52 @@ def print_summary(results, endpoints):
     max_rank = max([r for _, r in avg_rankings]) if avg_rankings else 3
     
     for i, (provider, avg_rank) in enumerate(avg_rankings):
-        medal = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"{i+1}."
-        # Invert the scale for ranks (lower is better)
-        bar_value = max_rank - avg_rank + 1
-        bar = create_horizontal_bar(bar_value, max_rank, width=40, 
-                               color=Colors.GREEN if i == 0 else Colors.BLUE if i == 1 else Colors.YELLOW)
-        print(f"  {medal} {Colors.BOLD}{provider}{Colors.END}: {Colors.CYAN}{avg_rank:.2f}{Colors.END} average rank {bar}")
+        # Adjust spacing for medal/rank
+        if i <= 2:
+            medal = "🥇" if i == 0 else "🥈" if i == 1 else "🥉"
+            medal_spacer = " "  # Emoji needs a full space
+        else:
+            medal = f"{i+1}."
+            medal_spacer = ""  # Numeric ranks need no extra space
+            
+        # For overall ranking, create a relative bar based on average rank
+        # The best (lowest) rank gets 100%, the worst gets 10%
+        best_rank = avg_rankings[0][1]  # First item has the best (lowest) rank
+        worst_rank = avg_rankings[-1][1]  # Last item has the worst (highest) rank
+        rank_range = max(0.001, worst_rank - best_rank)  # Avoid division by zero
+        
+        # Determine color based on position
+        bar_color = Colors.GREEN if i == 0 else Colors.BLUE if i == 1 else Colors.YELLOW
+        
+        # Calculate relative bar width
+        if worst_rank == best_rank:  # All providers have same rank
+            bar_width = 40  # Full width for all
+        else:
+            # Direct inverse proportion for ranks:
+            # For ranks, we need to invert ratio since lower ranks are better
+            # Best rank is 1.0, others are scaled relative to it
+            # For example, if best is 1.0 and another is 2.0, the other gets 1.0/2.0 = 0.5 * bar width
+            ratio = best_rank / avg_rank  # This gives 1.0 for best, and smaller values for worse
+            bar_width = int(ratio * 40)
+            
+        # Create bar based on relative performance
+        bar = bar_color + '█' * bar_width + Colors.END
+                               
+        # Format provider and value with exact spacing
+        provider_str = f"{Colors.BOLD}{provider:<10}{Colors.END}"
+        value_str = f"{Colors.CYAN}{avg_rank:<5.2f}{Colors.END} average rank"
+        
+        # Always use the same space after the position indicator (medal or number)
+        if i <= 2:
+            position_part = f"{medal} "  # Medal with space after
+        else:
+            position_part = f"{medal} "  # Number with space after
+            
+        # Calculate padding needed for bar alignment
+        prefix_len = 2 + 3 + 1 + 10 + 2 + 5 + 13  # "  " + position(3) + space(1) + provider(10) + ": " + value(5) + " average rank "
+        padding = max(0, BAR_START_POSITION - prefix_len)
+        
+        print(f"  {position_part}{provider_str}: {value_str}{' ' * padding}{bar}")
 
 def prepare_for_database(results):
     """
@@ -548,8 +721,16 @@ def export_results_json(results, filename):
     
     return db_records
 
-def run_simple_benchmark():
+def run_simple_benchmark(enable_branch=False):
     """Run a simple benchmark with default settings for npm script"""
+    # Check for --enable-branch flag in the command line arguments
+    if '--enable-branch' in sys.argv:
+        global ENABLE_BRANCH_RPC
+        ENABLE_BRANCH_RPC = True
+        # Re-add the Branch endpoint since the dictionary was already created
+        DEFAULT_ENDPOINTS["BranchRPC"] = "http://162.249.175.2:8898/"
+        print(f"\n{Colors.BOLD}{Colors.YELLOW}Branch RPC endpoints enabled for testing{Colors.END}")
+        
     print(f"\n{Colors.BOLD}{Colors.YELLOW}Running simplified RPC benchmark...{Colors.END}")
     results = compare_endpoints(
         endpoints=DEFAULT_ENDPOINTS,
@@ -583,8 +764,16 @@ def main():
     parser.add_argument('--no-network-test', action='store_true', help='Skip network latency tests')
     parser.add_argument('--export', type=str, help='Export results to JSON file')
     parser.add_argument('--simple', action='store_true', help='Run in simplified mode for npm script')
+    parser.add_argument('--enable-branch', action='store_true', help='Enable testing of Branch RPC endpoints')
     
     args = parser.parse_args()
+    
+    # Enable Branch RPC if requested
+    global ENABLE_BRANCH_RPC
+    if args.enable_branch:
+        ENABLE_BRANCH_RPC = True
+        # Re-add the Branch endpoint since the dictionary was already created
+        DEFAULT_ENDPOINTS["BranchRPC"] = "http://162.249.175.2:8898/"
     
     if args.simple:
         return run_simple_benchmark()

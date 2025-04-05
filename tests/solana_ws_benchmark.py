@@ -35,12 +35,18 @@ class Colors:
     BG_CYAN = '\033[46m'
     BG_WHITE = '\033[47m'
 
+# Flag to enable/disable Branch RPC (defaults to False - disabled)
+ENABLE_BRANCH_RPC = False
+
 # Default WebSocket endpoints
 DEFAULT_ENDPOINTS = {
     "HeliusWS": "wss://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40",
-    "OfficialWS": "wss://api.mainnet-beta.solana.com",
-    "BranchWS": "ws://162.249.175.2:8900"
+    "OfficialWS": "wss://api.mainnet-beta.solana.com"
 }
+
+# Conditional Branch RPC addition (only if enabled)
+if ENABLE_BRANCH_RPC:
+    DEFAULT_ENDPOINTS["BranchWS"] = "ws://162.249.175.2:8900"
 
 # Methods to test
 DEFAULT_METHODS = [
