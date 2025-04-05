@@ -123,6 +123,10 @@ export async function getTokenPrice(tokenAddress) {
   printHeader('Pump.fun Token Price');
   printInfo(`Fetching price for: ${tokenAddress}`);
   
+  // Initialize settings keyboard shortcuts
+  initializeSettingsKeyboardShortcuts();
+  showSettingsKeyboardHelp();
+  
   const spinner = spinnerStart('Connecting to Solana...');
   
   try {
@@ -169,6 +173,10 @@ export async function getTokenPrice(tokenAddress) {
 export async function getTokenBalance(tokenAddress, options) {
   clearScreen();
   printHeader('Token Balance Check');
+  
+  // Initialize settings keyboard shortcuts
+  initializeSettingsKeyboardShortcuts();
+  showSettingsKeyboardHelp();
   
   const spinner = spinnerStart('Loading wallet...');
   
@@ -230,6 +238,10 @@ export async function buyToken(tokenAddress, options) {
   printInfo(`Token: ${tokenAddress}`);
   printInfo(`Amount: ${options.amount} SOL`);
   printInfo(`Slippage: ${options.slippage} basis points (${options.slippage / 100}%)`);
+  
+  // Initialize settings keyboard shortcuts
+  initializeSettingsKeyboardShortcuts();
+  showSettingsKeyboardHelp();
   
   const spinner = spinnerStart('Loading wallet...');
   
@@ -334,6 +346,10 @@ export async function sellToken(tokenAddress, options) {
   }
   
   printInfo(`Slippage: ${options.slippage} basis points (${options.slippage / 100}%)`);
+  
+  // Initialize settings keyboard shortcuts
+  initializeSettingsKeyboardShortcuts();
+  showSettingsKeyboardHelp();
   
   const spinner = spinnerStart('Loading wallet...');
   
