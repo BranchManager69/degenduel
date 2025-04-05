@@ -37,6 +37,13 @@ ddcli lp monitor <pool-address>  # Monitor a Pump.fun liquidity pool
 ddcli lp list                    # List active Pump.fun liquidity pools
 ddcli lp list -c 20              # Show top 20 liquidity pools
 
+# Trade Tokens
+ddcli trade buy <token-address> -a 0.05     # Buy tokens with 0.05 SOL
+ddcli trade sell <token-address> -p 50      # Sell 50% of tokens
+ddcli trade sell <token-address> -a 1000    # Sell exactly 1000 tokens
+ddcli trade price <token-address>           # Get current token price
+ddcli trade balance <token-address>         # Check token balance
+
 # Settings Management
 ddcli settings menu              # Open interactive settings menu
 ddcli settings status            # Show current settings
@@ -79,6 +86,26 @@ While using any interactive command (like monitoring a liquidity pool), you can:
 - `lp monitor <address>` - Monitor a Pump.fun liquidity pool
   - `-i, --interval <seconds>` - Polling interval in seconds (default: 15)
   - `-c, --change-threshold <percent>` - Minimum change threshold to highlight (default: 1.0)
+
+### Trading Commands
+
+- `trade buy <tokenAddress>` - Buy tokens on Pump.fun
+  - `-a, --amount <amount>` - Amount of SOL to spend (default: 0.01)
+  - `-s, --slippage <slippage>` - Slippage tolerance in basis points (default: 500)
+  - `-p, --priority-fee <fee>` - Optional priority fee in microLamports
+  - `-w, --wallet <walletPath>` - Path to wallet keyfile (uses active wallet by default)
+
+- `trade sell <tokenAddress>` - Sell tokens on Pump.fun
+  - `-p, --percentage <percentage>` - Percentage of tokens to sell (default: 100)
+  - `-a, --amount <amount>` - Exact amount of tokens to sell (overrides percentage)
+  - `-s, --slippage <slippage>` - Slippage tolerance in basis points (default: 500)
+  - `-f, --priority-fee <fee>` - Optional priority fee in microLamports
+  - `-w, --wallet <walletPath>` - Path to wallet keyfile (uses active wallet by default)
+
+- `trade price <tokenAddress>` - Get current price of a token on Pump.fun
+
+- `trade balance <tokenAddress>` - Check token balance for an address
+  - `-w, --wallet <walletPath>` - Path to wallet keyfile (uses active wallet by default)
 
 ### Settings Commands
 
@@ -123,17 +150,29 @@ The wallet system scans and manages keypairs from the following locations:
 
 ```
 ddcli/
-├── core/               # Core utilities
-│   ├── keypress.js     # Keyboard input handling
-│   ├── menu.js         # Interactive menu system
-│   ├── module-loader.js # Module discovery and loading
-│   └── ui.js           # UI utilities and styling
-├── modules/            # Command modules
-│   └── twitter-monitor/ # Twitter monitoring module
-│       ├── index.js    # Command registration
-│       ├── twitter-monitor.js # Tweet monitoring logic
-│       └── twitter-scraper.js # Tweet scraping logic
-├── index.js            # CLI entry point
-├── package.json        # Project metadata
-└── README.md           # Documentation
+├── core/                 # Core utilities
+│   ├── keypress.js       # Keyboard input handling
+│   ├── menu.js           # Interactive menu system
+│   ├── module-loader.js  # Module discovery and loading
+│   ├── ui.js             # UI utilities and styling
+│   └── settings/         # Settings management
+│       ├── config-store.js    # Configuration storage
+│       ├── keyboard-handler.js # Settings keyboard shortcuts
+│       └── settings-manager.js # Settings API
+├── modules/              # Command modules
+│   ├── twitter-monitor/  # Twitter monitoring module
+│   │   ├── index.js      # Command registration
+│   │   ├── twitter-monitor.js # Tweet monitoring logic
+│   │   └── twitter-scraper.js # Tweet scraping logic
+│   ├── lp-monitor/       # Liquidity pool monitoring module
+│   │   ├── index.js      # Command registration
+│   │   └── lp-monitor.js # Liquidity pool monitoring logic
+│   ├── settings/         # Settings module
+│   │   └── index.js      # Settings commands registration
+│   └── trade/            # Trading module
+│       ├── index.js      # Command registration
+│       └── trade.js      # Buy/sell implementation
+├── index.js              # CLI entry point
+├── package.json          # Project metadata
+└── README.md             # Documentation
 ```

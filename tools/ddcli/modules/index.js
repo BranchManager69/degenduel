@@ -5,3 +5,4 @@
 import './twitter-monitor/index.js';
 import './lp-monitor/index.js';
 import './settings/index.js';
+import './trade/index.js';
