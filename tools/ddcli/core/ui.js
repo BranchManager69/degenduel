@@ -3,6 +3,79 @@ import boxen from 'boxen';
 import ora from 'ora';
 
 /**
+ * Clear the terminal screen
+ */
+export function clearScreen() {
+  console.clear();
+}
+
+/**
+ * Display a formatted header
+ * @param {string} text The header text to display
+ */
+export function printHeader(text) {
+  console.log('');
+  console.log(chalk.bold.blue(text));
+  console.log(chalk.dim('━'.repeat(process.stdout.columns || 80)));
+}
+
+/**
+ * Display a success message
+ * @param {string} text The text to display
+ */
+export function printSuccess(text) {
+  console.log(chalk.green(text));
+}
+
+/**
+ * Display an info message
+ * @param {string} text The text to display
+ */
+export function printInfo(text) {
+  console.log(chalk.blue(text));
+}
+
+/**
+ * Display a warning message
+ * @param {string} text The text to display
+ */
+export function printWarning(text) {
+  console.log(chalk.yellow(text));
+}
+
+/**
+ * Display an error message
+ * @param {string} text The text to display
+ */
+export function printError(text) {
+  console.log(chalk.red(text));
+}
+
+/**
+ * Start a spinner with the given text
+ * @param {string} text The spinner text
+ * @returns {ora.Ora} The spinner instance
+ */
+export function spinnerStart(text) {
+  const spinner = ora({
+    text,
+    color: 'blue',
+  });
+  spinner.start();
+  return spinner;
+}
+
+/**
+ * Stop a spinner
+ * @param {ora.Ora} spinner The spinner to stop
+ */
+export function spinnerStop(spinner) {
+  if (spinner && spinner.stop) {
+    spinner.stop();
+  }
+}
+
+/**
  * UI utilities for consistent CLI styling
  */
 const ui = {
