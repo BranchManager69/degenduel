@@ -2,6 +2,10 @@
 """
 Solana RPC Benchmark - Tests the performance of multiple RPC providers
 Enhanced version with colorized output, visual charts, and database logging capabilities
+
+SECURITY NOTE: 
+This script uses API keys to connect to RPC providers. Never hardcode API keys in this file.
+API keys are loaded from environment variables or config files, and are sanitized in logs and exports.
 """
 
 import time
@@ -40,15 +44,51 @@ class Colors:
     BG_CYAN = '\033[46m'
     BG_WHITE = '\033[47m'
 
+# Load API keys from environment or config if available
+def get_api_key(key_name, default=""):
+    """Try to get API key from environment or configuration file"""
+    try:
+        # First try environment variable
+        import os
+        env_var = f"SOLANA_{key_name.upper()}_API_KEY"
+        if env_var in os.environ:
+            return os.environ[env_var]
+        
+        # If not in environment, try to load from Node.js config
+        # This is a simple approach and might need adjustment based on your config structure
+        config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                  "config", "config.js")
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                content = f.read()
+                import re
+                # Look for API key in config
+                match = re.search(fr"{key_name.lower()}_?api_?key['\"]?\s*:\s*['\"]([^'\"]+)", content, re.IGNORECASE)
+                if match:
+                    return match.group(1)
+    except Exception as e:
+        print(f"{Colors.YELLOW}Warning: Failed to load API key for {key_name}: {str(e)}{Colors.END}")
+    return default
+
 # Flag to enable/disable Branch RPC (defaults to False - disabled)
 ENABLE_BRANCH_RPC = False
 
-# Default RPC endpoints - you can modify these or add your own
+# Get API keys securely
+helius_api_key = get_api_key("helius")
+quiknode_api_key = get_api_key("quiknode")
+
+# Default RPC endpoints - with API keys properly handled
 DEFAULT_ENDPOINTS = {
-    "Helius": "https://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40",
     "Official": "https://api.mainnet-beta.solana.com",
-    "QuikNode": "https://still-neat-log.solana-mainnet.quiknode.pro/2a0ede8be35aa5c655c08939f1831e8fb52ddeba/"
 }
+
+# Add Helius endpoint if API key is available
+if helius_api_key:
+    DEFAULT_ENDPOINTS["Helius"] = f"https://mainnet.helius-rpc.com/?api-key={helius_api_key}"
+
+# Add QuikNode endpoint if API key is available
+if quiknode_api_key:
+    DEFAULT_ENDPOINTS["QuikNode"] = f"https://still-neat-log.solana-mainnet.quiknode.pro/{quiknode_api_key}/"
 
 # Conditional Branch RPC addition (only if enabled)
 if ENABLE_BRANCH_RPC:
@@ -96,6 +136,28 @@ def latency_color(latency, thresholds=(50, 100, 200)):
         return Colors.YELLOW
     else:
         return Colors.RED
+        
+def sanitize_url_for_display(url):
+    """Sanitizes a URL by hiding API keys in the output"""
+    import re
+    
+    # Function to replace API key with asterisks
+    def replace_api_key(match):
+        key = match.group(2)
+        # Keep first and last 4 chars visible if key is long enough
+        if len(key) > 12:
+            return f"{match.group(1)}={key[:4]}...{key[-4:]}"
+        # Otherwise just show asterisks
+        return f"{match.group(1)}=********"
+    
+    # Replace API keys in URL query parameters
+    sanitized = re.sub(r'(api-?key)=([^&]+)', replace_api_key, url)
+    
+    # Replace API keys that might be part of the path
+    sanitized = re.sub(r'(/[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12})', 
+                       r'/****-****-****-****', sanitized)
+    
+    return sanitized
 
 def test_network_latency(host):
     """Tests basic network latency to the host using socket connection"""
@@ -223,6 +285,9 @@ def test_rpc_latency(name, endpoint, method, params=None, num_tests=5, verbose=T
     if params is None:
         params = []
     
+    # Sanitize endpoint for display (but use actual endpoint for requests)
+    safe_endpoint = sanitize_url_for_display(endpoint)
+    
     headers = {
         'Content-Type': 'application/json',
     }
@@ -239,7 +304,7 @@ def test_rpc_latency(name, endpoint, method, params=None, num_tests=5, verbose=T
     latencies = []
     responses = []
     if verbose:
-        print(f"{Colors.BOLD}{Colors.CYAN}{name}:{Colors.END}")
+        print(f"{Colors.BOLD}{Colors.CYAN}{name} ({safe_endpoint}):{Colors.END}")
     
     for i in range(num_tests):
         start_time = time.time()
@@ -343,11 +408,17 @@ def compare_endpoints(endpoints, methods, num_tests=5, verbose=True, network_tes
     test_run_id = str(uuid.uuid4())
     timestamp = datetime.now().isoformat()
     
+    # Create sanitized copy of endpoints for storage/display
+    sanitized_endpoints = {}
+    for name, endpoint in endpoints.items():
+        sanitized_endpoints[name] = sanitize_url_for_display(endpoint)
+    
     results = {
         "test_run_id": test_run_id,
         "timestamp": timestamp,
         "methods": {},
-        "network": {}
+        "network": {},
+        "endpoints": sanitized_endpoints  # Store sanitized endpoints for reference
     }
     
     terminal_width = get_terminal_width()
@@ -702,10 +773,20 @@ def export_results_json(results, filename):
     # Prepare results for database/log storage
     db_records = prepare_for_database(results)
     
-    # Save full results to one file
+    # Create sanitized copy of results for export to remove API keys
+    sanitized_results = results.copy()
+    
+    # Sanitize any endpoint URLs in the results to hide API keys
+    if "endpoints" in sanitized_results:
+        sanitized_endpoints = {}
+        for name, endpoint in sanitized_results["endpoints"].items():
+            sanitized_endpoints[name] = sanitize_url_for_display(endpoint)
+        sanitized_results["endpoints"] = sanitized_endpoints
+    
+    # Save full results to one file with sensitive data sanitized
     with open(filename, 'w') as f:
         json.dump({
-            "results": results,
+            "results": sanitized_results,
             "database_records": db_records
         }, f, indent=2)
     

@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
 Solana WebSocket Benchmark - Tests the performance of WebSocket RPC providers
+
+SECURITY NOTE: 
+This script uses API keys to connect to RPC providers. Never hardcode API keys in this file.
+API keys are loaded from environment variables or config files, and are sanitized in logs and exports.
 """
 
 import time
@@ -39,12 +43,47 @@ class Colors:
 # Flag to enable/disable Branch RPC (defaults to False - disabled)
 ENABLE_BRANCH_RPC = False
 
-# Default WebSocket endpoints
+# Load API keys from environment or config if available
+def get_api_key(key_name, default=""):
+    """Try to get API key from environment or configuration file"""
+    try:
+        # First try environment variable
+        import os
+        env_var = f"SOLANA_{key_name.upper()}_API_KEY"
+        if env_var in os.environ:
+            return os.environ[env_var]
+        
+        # If not in environment, try to load from Node.js config
+        # This is a simple approach and might need adjustment based on your config structure
+        config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                  "config", "config.js")
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                content = f.read()
+                import re
+                # Look for API key in config
+                match = re.search(fr"{key_name.lower()}_?api_?key['\"]?\s*:\s*['\"]([^'\"]+)", content, re.IGNORECASE)
+                if match:
+                    return match.group(1)
+    except Exception as e:
+        print(f"{Colors.YELLOW}Warning: Failed to load API key for {key_name}: {str(e)}{Colors.END}")
+    return default
+
+# Default WebSocket endpoints - with sensitive data redacted in logs
+helius_api_key = get_api_key("helius")
+quiknode_api_key = get_api_key("quiknode")
+
 DEFAULT_ENDPOINTS = {
-    "HeliusWS": "wss://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40",
+    "HeliusWS": f"wss://mainnet.helius-rpc.com/?api-key={helius_api_key}" if helius_api_key else None,
     "OfficialWS": "wss://api.mainnet-beta.solana.com",
-    "QuikNodeWS": "wss://still-neat-log.solana-mainnet.quiknode.pro/2a0ede8be35aa5c655c08939f1831e8fb52ddeba/"
 }
+
+# Only add QuikNode if API key is available
+if quiknode_api_key:
+    DEFAULT_ENDPOINTS["QuikNodeWS"] = f"wss://still-neat-log.solana-mainnet.quiknode.pro/{quiknode_api_key}/"
+
+# Remove any None values (endpoints without API keys)
+DEFAULT_ENDPOINTS = {k: v for k, v in DEFAULT_ENDPOINTS.items() if v is not None}
 
 # Conditional Branch RPC addition 
 if ENABLE_BRANCH_RPC:
@@ -111,9 +150,33 @@ def latency_color(latency, thresholds=(50, 100, 200)):
     else:
         return Colors.RED
 
+def sanitize_url_for_display(url):
+    """Sanitizes a URL by hiding API keys in the output"""
+    import re
+    
+    # Function to replace API key with asterisks
+    def replace_api_key(match):
+        key = match.group(2)
+        # Keep first and last 4 chars visible if key is long enough
+        if len(key) > 12:
+            return f"{match.group(1)}={key[:4]}...{key[-4:]}"
+        # Otherwise just show asterisks
+        return f"{match.group(1)}=********"
+    
+    # Replace API keys in URL query parameters
+    sanitized = re.sub(r'(api-?key)=([^&]+)', replace_api_key, url)
+    
+    # Replace API keys that might be part of the path
+    sanitized = re.sub(r'(/[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12})', 
+                       r'/****-****-****-****', sanitized)
+    
+    return sanitized
+
 async def test_ws_connection(endpoint, num_tests=3):
     """Tests basic WebSocket connection latency"""
-    print(f"{Colors.BOLD}{Colors.UNDERLINE}Testing WebSocket connection to {endpoint}...{Colors.END}")
+    # Sanitize the endpoint for display
+    safe_endpoint = sanitize_url_for_display(endpoint)
+    print(f"{Colors.BOLD}{Colors.UNDERLINE}Testing WebSocket connection to {safe_endpoint}...{Colors.END}")
     
     latencies = []
     for i in range(num_tests):
@@ -129,7 +192,7 @@ async def test_ws_connection(endpoint, num_tests=3):
         await asyncio.sleep(0.5)
     
     if latencies:
-        print(f"\n{Colors.BOLD}WebSocket connection latency to {endpoint}:{Colors.END}")
+        print(f"\n{Colors.BOLD}WebSocket connection latency to {safe_endpoint}:{Colors.END}")
         
         # We just use absolute values here, as we'll do real relative comparison in the summary
         max_latency = max(latencies) * 1.2  # Add 20% padding
@@ -156,7 +219,7 @@ async def test_ws_connection(endpoint, num_tests=3):
             std_dev = statistics.stdev(latencies)
             print(f"  Stddev: {Colors.CYAN}{std_dev:.2f}ms{Colors.END}")
     else:
-        print(f"\n{Colors.RED}No successful connections to {endpoint}{Colors.END}")
+        print(f"\n{Colors.RED}No successful connections to {safe_endpoint}{Colors.END}")
     
     print("")
     return latencies
@@ -301,11 +364,16 @@ async def compare_ws_endpoints(endpoints, methods, num_tests=3, export_file=None
     # Export results to file if requested
     if export_file:
         try:
+            # Create a sanitized copy of endpoints for export
+            sanitized_endpoints = {}
+            for name, endpoint in endpoints.items():
+                sanitized_endpoints[name] = sanitize_url_for_display(endpoint)
+            
             export_data = {
                 "timestamp": timestamp_str,
                 "timestamp_unix": int(timestamp.timestamp()),
                 "test_count": num_tests,
-                "endpoints": endpoints,
+                "endpoints": sanitized_endpoints,  # Use sanitized endpoints
                 "connection_results": connection_results,
                 "method_results": results,
             }

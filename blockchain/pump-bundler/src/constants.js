@@ -16,10 +16,14 @@ export const TX_MODE = {
   BUNDLE: "bundle"
 };
 
-// Connection endpoints
+// Connection endpoints - load API keys from environment
 export const RPC_ENDPOINTS = {
   DEFAULT: process.env.PUMP_BUNDLER_RPC_URL || process.env.SOLANA_RPC_ENDPOINT || "https://api.mainnet-beta.solana.com",
-  HELIUS: process.env.HELIUS_RPC_URL || process.env.SOLANA_MAINNET_HTTP || "https://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40",
+  // Always load Helius API key from environment
+  HELIUS: process.env.HELIUS_RPC_URL || process.env.SOLANA_MAINNET_HTTP || 
+          (process.env.HELIUS_API_KEY ? 
+           `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}` :
+           "https://api.mainnet-beta.solana.com"), // Fallback to public RPC if no API key
   JITO: process.env.JITO_RPC_URL || "https://jito-mainnet-rpc-url",
   WS: process.env.PUMP_BUNDLER_WS_URL || process.env.SOLANA_MAINNET_WSS || "wss://api.mainnet-beta.solana.com",
   GRPC: process.env.PUMP_BUNDLER_GRPC_URL || "http://localhost:10000/"

@@ -16,6 +16,28 @@ const KEYPAIRS_DIR = path.join(ADDRESSES_ROOT_DIR, 'keypairs');
 const PRIVATE_WALLETS_DIR = path.join(KEYPAIRS_DIR, 'private');
 const PUBLIC_WALLETS_DIR = path.join(KEYPAIRS_DIR, 'public');
 
+// Function to load API keys from environment
+function getApiKeyFromEnv(key) {
+  // Check several possible environment variable names
+  const possibleEnvVars = [
+    `${key.toUpperCase()}_API_KEY`,
+    `SOLANA_${key.toUpperCase()}_API_KEY`,
+    `${key.toUpperCase()}_KEY`
+  ];
+  
+  for (const envVar of possibleEnvVars) {
+    if (process.env[envVar]) {
+      return process.env[envVar];
+    }
+  }
+  
+  return null;
+}
+
+// Get API keys from environment
+const heliusApiKey = getApiKeyFromEnv('helius');
+const quiknodeApiKey = getApiKeyFromEnv('quiknode');
+
 // Default RPC configurations - grouped by quality and type
 const DEFAULT_RPC_CONFIGS = {
   // === PREMIUM HIGH-PERFORMANCE ENDPOINTS ===
@@ -25,33 +47,28 @@ const DEFAULT_RPC_CONFIGS = {
   'BranchRPC - WS': 'ws://162.249.175.2:8900',
   'BranchRPC - gRPC': 'http://162.249.175.2:10000/',
   
-  // Helius Premium RPC endpoints - High throughput
-  'Helius - Staked HTTP': 'https://staked.helius-rpc.com?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40',
-  'Helius - Eclipse HTTP': 'https://eclipse.helius-rpc.com/',
-  'Helius - Geyser WS': 'wss://atlas-mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40',
-
-  // QuikNode dedicated endpoints
-  'QuikNode - HTTP': 'https://still-neat-log.solana-mainnet.quiknode.pro/2a0ede8be35aa5c655c08939f1831e8fb52ddeba/',
-  'QuikNode - WS': 'wss://still-neat-log.solana-mainnet.quiknode.pro/2a0ede8be35aa5c655c08939f1831e8fb52ddeba/',
-  
-  // === STANDARD ENDPOINTS ===
-  
-  // Helius standard endpoints
-  'Helius - Standard HTTP': 'https://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40',
-  'Helius - Standard WS': 'wss://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40',
-  
-  // === PUBLIC ENDPOINTS (Rate Limited) ===
-  
-  // Official Solana public endpoints (unreliable/slow)
+  // Public endpoints (always available)
   'Public - Solana Mainnet': 'https://api.mainnet-beta.solana.com',
   'Public - Solana Mainnet WS': 'wss://api.mainnet-beta.solana.com',
-  
-  // === TESTNET/DEVNET ENDPOINTS ===
-  
-  // Development endpoints
   'Devnet - Solana HTTP': 'https://api.devnet.solana.com',
   'Devnet - Solana WS': 'wss://api.devnet.solana.com'
 };
+
+// Add API key-based endpoints only if keys are available
+if (heliusApiKey) {
+  // Helius Premium RPC endpoints - High throughput
+  DEFAULT_RPC_CONFIGS['Helius - Staked HTTP'] = `https://staked.helius-rpc.com?api-key=${heliusApiKey}`;
+  DEFAULT_RPC_CONFIGS['Helius - Eclipse HTTP'] = 'https://eclipse.helius-rpc.com/'; // No API key needed
+  DEFAULT_RPC_CONFIGS['Helius - Geyser WS'] = `wss://atlas-mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+  DEFAULT_RPC_CONFIGS['Helius - Standard HTTP'] = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+  DEFAULT_RPC_CONFIGS['Helius - Standard WS'] = `wss://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+}
+
+if (quiknodeApiKey) {
+  // QuikNode dedicated endpoints
+  DEFAULT_RPC_CONFIGS['QuikNode - HTTP'] = `https://still-neat-log.solana-mainnet.quiknode.pro/${quiknodeApiKey}/`;
+  DEFAULT_RPC_CONFIGS['QuikNode - WS'] = `wss://still-neat-log.solana-mainnet.quiknode.pro/${quiknodeApiKey}/`;
+}
 
 // Default config
 const DEFAULT_CONFIG = {

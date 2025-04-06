@@ -58,6 +58,14 @@ backups/
 # Reports
 reports/
 
+# Screenshots
+screenshots/
+screenshots/**
+
+# Twitter monitor output
+twitter-monitor-output/
+twitter-monitor-output/**
+
 # Archives
 archive
 archive/
