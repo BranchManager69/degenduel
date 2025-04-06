@@ -21,12 +21,15 @@
     "boxen": "^8.0.1",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
     "figlet": "^1.8.0",
     "gradient-string": "^3.0.0",
-    "ora": "^8.2.0"
+    "node-fetch": "^3.3.2",
+    "ora": "^8.2.0",
+    "puppeteer": "^24.6.0"
   },
   "optionalDependencies": {
-    "@solana/web3.js": "^1.89.1",
-    "@coral-xyz/anchor": "^0.29.0"
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.89.1"
   }
 }
