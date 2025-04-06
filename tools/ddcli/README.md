@@ -42,6 +42,11 @@ ddcli twitter x https://x.com/username/status/123456789 -f  # Fast mode (skip vi
 # Twitter Session Management
 ddcli twitter login  # Get instructions to create a new Twitter session
 
+# AI Code Search
+ddcli s "websocket implementation"  # Quick search shorthand
+ddcli search query "how to handle websocket connections"  # Detailed search
+ddcli search status  # Check AI API server status
+
 # Liquidity Pool Monitor
 ddcli lp monitor <pool-address>  # Monitor a Pump.fun liquidity pool
 ddcli lp list                    # List active Pump.fun liquidity pools
@@ -93,6 +98,20 @@ While using any interactive command (like monitoring a liquidity pool), you can:
   - `-f, --fast` - Skip visible elements collection for faster results
   
 - `twitter login` - Generate a new Twitter session file with step-by-step guidance
+
+### AI Code Search Commands
+
+- `s <query>` - Quick search shorthand
+  - `-l, --limit <number>` - Maximum number of results (default: 5)
+  - `-e, --endpoint <string>` - API endpoint to use (default: search)
+  - `-f, --format <string>` - Output format (terminal, json) (default: terminal)
+
+- `search query <query>` - Search for code matching a query
+  - `-l, --limit <number>` - Maximum number of results (default: 5)
+  - `-e, --endpoint <string>` - API endpoint to use (default: search)
+  - `-f, --format <string>` - Output format (terminal, json) (default: terminal)
+
+- `search status` - Check the AI API server status
 
 ### Liquidity Pool Commands
 
