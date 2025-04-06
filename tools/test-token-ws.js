@@ -34,14 +34,40 @@ try {
 }
 
 // Configuration
-const WS_URL = 'ws://localhost:3005/api/v69/ws/token-data';
+const WS_URL = 'ws://localhost:3005/api/v69/ws';
 const RECONNECT_INTERVAL = 5000; // 5 seconds
+
+// Define message types based on the unified WebSocket protocol
+const MESSAGE_TYPES = {
+  SUBSCRIBE: 'SUBSCRIBE',
+  UNSUBSCRIBE: 'UNSUBSCRIBE',
+  REQUEST: 'REQUEST',
+  COMMAND: 'COMMAND',
+  DATA: 'DATA',
+  ERROR: 'ERROR',
+  SYSTEM: 'SYSTEM',
+  ACKNOWLEDGMENT: 'ACKNOWLEDGMENT'
+};
+
+// Topics available in the unified WebSocket
+const TOPICS = {
+  MARKET_DATA: 'market-data',
+  TOKEN_DATA: 'market-data', // Token data is now part of market-data topic
+  PORTFOLIO: 'portfolio',
+  SYSTEM: 'system',
+  CONTEST: 'contest',
+  USER: 'user',
+  ADMIN: 'admin',
+  WALLET: 'wallet',
+  SKYDUEL: 'skyduel'
+};
 
 let ws = null;
 let reconnectTimer = null;
 let connected = false;
 let lastTokens = [];
 let connectionAttempt = 0;
+let subscribedTopics = [];
 
 function connect() {
   connectionAttempt++;
@@ -70,17 +96,28 @@ function connect() {
     connected = true;
     console.log(`${fancyColors.BG_GREEN}${fancyColors.BLACK} CONNECTED ${fancyColors.RESET} WebSocket connection established`);
     
-    // Send a ping message
+    // Send a ping via a REQUEST message (unified WS uses REQUEST for operations)
     console.log(`${fancyColors.CYAN}Sending ping...${fancyColors.RESET}`);
     ws.send(JSON.stringify({
-      type: 'ping',
+      type: MESSAGE_TYPES.REQUEST,
+      topic: TOPICS.SYSTEM,
+      action: 'ping',
       timestamp: new Date().toISOString()
     }));
     
-    // Also request all tokens
+    // Subscribe to market data to get token updates
+    console.log(`${fancyColors.CYAN}Subscribing to market-data topic for token updates...${fancyColors.RESET}`);
+    ws.send(JSON.stringify({
+      type: MESSAGE_TYPES.SUBSCRIBE,
+      topics: [TOPICS.MARKET_DATA]
+    }));
+    
+    // Also request current token data
     console.log(`${fancyColors.CYAN}Requesting token data...${fancyColors.RESET}`);
     ws.send(JSON.stringify({
-      type: 'get_all_tokens'
+      type: MESSAGE_TYPES.REQUEST,
+      topic: TOPICS.MARKET_DATA,
+      action: 'getAllTokens'
     }));
   });
   
@@ -88,36 +125,58 @@ function connect() {
     try {
       const message = JSON.parse(data);
       
-      if (message.type === 'pong') {
-        console.log(`${fancyColors.CYAN}Received pong response${fancyColors.RESET}`);
-        return;
-      }
-      
-      if (message.type === 'CONNECTED') {
-        console.log(`${fancyColors.BG_GREEN}${fancyColors.BLACK} CONNECTION CONFIRMED ${fancyColors.RESET} ID: ${message.connectionId}, Authenticated: ${message.authenticated}`);
-        return;
-      }
-      
-      if (message.type === 'token_update') {
-        const tokens = message.data;
-        lastTokens = tokens;
-        
-        console.log(`${fancyColors.BG_PURPLE}${fancyColors.WHITE} TOKEN UPDATE ${fancyColors.RESET} Received ${tokens.length} tokens at ${new Date().toLocaleTimeString()}`);
-        
-        // Print first 3 tokens
-        tokens.slice(0, 3).forEach(token => {
-          const change = token.change_24h >= 0 
-            ? `${fancyColors.GREEN}+${token.change_24h}%${fancyColors.RESET}`
-            : `${fancyColors.RED}${token.change_24h}%${fancyColors.RESET}`;
+      // Handle the different message types from the unified WebSocket
+      switch (message.type) {
+        case MESSAGE_TYPES.ACKNOWLEDGMENT:
+          if (message.operation === 'subscribe') {
+            subscribedTopics = message.topics;
+            console.log(`${fancyColors.GREEN}Subscribed to topics: ${message.topics.join(', ')}${fancyColors.RESET}`);
+          } else if (message.operation === 'unsubscribe') {
+            subscribedTopics = subscribedTopics.filter(t => !message.topics.includes(t));
+            console.log(`${fancyColors.YELLOW}Unsubscribed from topics: ${message.topics.join(', ')}${fancyColors.RESET}`);
+          }
+          break;
           
-          console.log(`${fancyColors.BOLD}${token.symbol}${fancyColors.RESET} (${token.name}): $${token.price} ${change}`);
-        });
-        
-        console.log(`... and ${tokens.length - 3} more tokens`);
-      } else if (message.type === 'ERROR') {
-        console.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${message.code}: ${message.message}`);
-      } else {
-        console.log(`${fancyColors.YELLOW}Received message (${message.type}):${fancyColors.RESET}`, JSON.stringify(message).substring(0, 100) + '...');
+        case MESSAGE_TYPES.SYSTEM:
+          console.log(`${fancyColors.BG_PURPLE}${fancyColors.WHITE} SYSTEM ${fancyColors.RESET} ${message.message}`);
+          if (message.topics) {
+            console.log(`${fancyColors.CYAN}Available topics: ${message.topics.join(', ')}${fancyColors.RESET}`);
+          }
+          break;
+          
+        case MESSAGE_TYPES.DATA:
+          if (message.topic === TOPICS.MARKET_DATA) {
+            // Check if this is token data
+            if (message.data && Array.isArray(message.data.tokens)) {
+              const tokens = message.data.tokens;
+              lastTokens = tokens;
+              
+              console.log(`${fancyColors.BG_PURPLE}${fancyColors.WHITE} TOKEN UPDATE ${fancyColors.RESET} Received ${tokens.length} tokens at ${new Date().toLocaleTimeString()}`);
+              
+              // Print first 3 tokens
+              tokens.slice(0, 3).forEach(token => {
+                const change = token.change_24h >= 0 
+                  ? `${fancyColors.GREEN}+${token.change_24h}%${fancyColors.RESET}`
+                  : `${fancyColors.RED}${token.change_24h}%${fancyColors.RESET}`;
+                
+                console.log(`${fancyColors.BOLD}${token.symbol}${fancyColors.RESET} (${token.name}): $${token.price} ${change}`);
+              });
+              
+              console.log(`... and ${tokens.length - 3} more tokens`);
+            } else {
+              console.log(`${fancyColors.YELLOW}Received market data:${fancyColors.RESET}`, JSON.stringify(message.data).substring(0, 100) + '...');
+            }
+          } else {
+            console.log(`${fancyColors.YELLOW}Received data for topic ${message.topic}:${fancyColors.RESET}`, JSON.stringify(message.data).substring(0, 100) + '...');
+          }
+          break;
+          
+        case MESSAGE_TYPES.ERROR:
+          console.error(`${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${message.code}: ${message.message}`);
+          break;
+          
+        default:
+          console.log(`${fancyColors.YELLOW}Received message (${message.type}):${fancyColors.RESET}`, JSON.stringify(message).substring(0, 100) + '...');
       }
     } catch (error) {
       console.error(`${fancyColors.RED}Error parsing message:${fancyColors.RESET}`, error.message);
@@ -131,6 +190,7 @@ function connect() {
   
   ws.on('close', (code, reason) => {
     connected = false;
+    subscribedTopics = [];
     console.log(`${fancyColors.BG_RED}${fancyColors.WHITE} DISCONNECTED ${fancyColors.RESET} WebSocket closed with code ${code}: ${reason || 'No reason'}`);
     
     // Schedule reconnect
@@ -174,6 +234,7 @@ function showDiagnostics() {
     console.log(`${fancyColors.CYAN}ReadyState: ${states[ws.readyState]} (${ws.readyState})${fancyColors.RESET}`);
   }
   
+  console.log(`${fancyColors.CYAN}Subscribed Topics: ${subscribedTopics.join(', ') || 'None'}${fancyColors.RESET}`);
   console.log(`${fancyColors.CYAN}Last Token Count: ${lastTokens.length}${fancyColors.RESET}`);
   console.log(`${fancyColors.CYAN}Connection Attempts: ${connectionAttempt}${fancyColors.RESET}`);
   console.log(`${fancyColors.BOLD}${fancyColors.CYAN}==================================${fancyColors.RESET}\n`);
@@ -181,9 +242,12 @@ function showDiagnostics() {
 
 // Start the client
 console.clear();
-console.log(`${fancyColors.BOLD}${fancyColors.CYAN}DegenDuel Token WebSocket Client${fancyColors.RESET}`);
+console.log(`${fancyColors.BOLD}${fancyColors.CYAN}DegenDuel Token WebSocket Client (Unified WebSocket)${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}Press Ctrl+C to exit${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}Press 'd' + Enter for diagnostics${fancyColors.RESET}`);
+console.log(`${fancyColors.CYAN}Press 'r' + Enter to reconnect${fancyColors.RESET}`);
+console.log(`${fancyColors.CYAN}Press 'p' + Enter to send ping${fancyColors.RESET}`);
+console.log(`${fancyColors.CYAN}Press 's' + Enter to show available topics${fancyColors.RESET}`);
 
 // Simple command processor
 process.stdin.setEncoding('utf8');
@@ -201,11 +265,24 @@ process.stdin.on('data', (data) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       console.log(`${fancyColors.CYAN}Sending ping...${fancyColors.RESET}`);
       ws.send(JSON.stringify({
-        type: 'ping',
+        type: MESSAGE_TYPES.REQUEST,
+        topic: TOPICS.SYSTEM,
+        action: 'ping',
         timestamp: new Date().toISOString()
       }));
     } else {
       console.log(`${fancyColors.YELLOW}Not connected, cannot send ping${fancyColors.RESET}`);
+    }
+  } else if (input === 's') {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      console.log(`${fancyColors.CYAN}Requesting available topics...${fancyColors.RESET}`);
+      ws.send(JSON.stringify({
+        type: MESSAGE_TYPES.REQUEST,
+        topic: TOPICS.SYSTEM,
+        action: 'getTopics'
+      }));
+    } else {
+      console.log(`${fancyColors.YELLOW}Not connected, cannot request topics${fancyColors.RESET}`);
     }
   }
 });
