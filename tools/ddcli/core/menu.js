@@ -29,10 +29,11 @@ export function cleanupAllMenus() {
  * @param {Function} options.onSelect Callback when item is selected
  * @param {Function} options.onExit Callback when menu is exited
  * @param {boolean} options.isSubmenu Whether this is a submenu
+ * @param {number} options.initialIndex Initial selected index
  */
 export function createMenu(options) {
-  const { title, items, onSelect, onExit, isSubmenu = false } = options;
-  let selectedIndex = 0;
+  const { title, items, onSelect, onExit, isSubmenu = false, initialIndex = 0 } = options;
+  let selectedIndex = initialIndex;
   let active = true;
   
   // Clean up any existing menu if this is not a submenu

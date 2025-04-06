@@ -9,8 +9,13 @@ import { PUMP_FUN_PROGRAM, PUMP_FUN_ACCOUNT, GLOBAL, TX_MODE, RPC_ENDPOINTS, DEF
 class PumpFunClient {
   constructor(options = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...options };
+    
+    // Force use of the PUMP_BUNDLER_RPC_URL if available
+    let rpcEndpoint = process.env.PUMP_BUNDLER_RPC_URL || RPC_ENDPOINTS.DEFAULT;
+    
+    console.log(`Using Solana RPC endpoint: ${rpcEndpoint}`);
     this.connection = new Connection(
-      this.options.useJito ? RPC_ENDPOINTS.JITO : RPC_ENDPOINTS.HELIUS,
+      rpcEndpoint,
       { commitment: 'confirmed' }
     );
     this.programId = new PublicKey(PUMP_FUN_PROGRAM);

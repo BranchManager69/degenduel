@@ -1,8 +1,12 @@
 // Trade module for buying and selling tokens on Pump.fun
 import { Command } from 'commander';
 import * as trade from './trade.js';
+import { showTradeMenu } from './interactive.js';
 
 export const description = 'Trade Pump.fun tokens (buy/sell)';
+
+// Export interactive menu function
+export { showTradeMenu as showInteractiveMenu };
 
 export function registerCommands(program) {
   const tradeCmd = new Command('trade')

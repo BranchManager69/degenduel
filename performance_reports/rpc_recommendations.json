@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-04-05T21:38:05.268Z",
+  "rpc": {
+    "provider": "BranchRPC",
+    "endpoint": "http://162.249.175.2:8898/",
+    "description": "Best overall RPC based on latency tests"
+  },
+  "websocket": {
+    "provider": "Official",
+    "endpoint": "wss://api.mainnet-beta.solana.com",
+    "description": "Best WebSocket for real-time data"
+  },
+  "bundler": {
+    "provider": null,
+    "endpoint": null,
+    "description": "Best RPC for Pump.fun operations"
+  }
+}

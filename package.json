@@ -62,7 +62,7 @@
     "pump:test": "node scripts/mm/test-pumpfun.ts",
     "pump:idl": "node scripts/doctor.js",
     "pump:bundler": "node blockchain/pump-bundler/cli.js",
-    "pump:bundler:test": "node blockchain/pump-bundler/test.js",
+    "pump:bundler:test": "blockchain/pump-bundler/run.sh",
     "pump:visualize": "node blockchain/pump-bundler/visualize-tokens.js",
     "pump:analyze": "node blockchain/pump-bundler/analyze-token.js",
     "// DD Market Maker Testing": "==============================================================================================================",

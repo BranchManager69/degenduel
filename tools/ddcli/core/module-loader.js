@@ -88,13 +88,40 @@ export async function showModuleMenu(program) {
   createMenu({
     title: 'DegenDuel CLI Modules',
     items: menuItems,
-    onSelect: (value) => {
+    onSelect: async (value) => {
       if (value === 'exit') {
         process.exit(0);
       } else {
-        // Run the help command for the selected module
-        console.log('');
-        program.parse([process.argv[0], process.argv[1], value, '--help']);
+        try {
+          // Try to load the module
+          const module = await import(`../modules/${value}/index.js`);
+          
+          // Check if the module has an interactive mode
+          if (typeof module.showInteractiveMenu === 'function') {
+            // Launch the module's interactive menu
+            await module.showInteractiveMenu();
+            
+            // After the interactive session, show the main menu again
+            showModuleMenu(program);
+          } else {
+            // Fall back to showing help if no interactive mode
+            console.log(chalk.yellow(`Module '${value}' does not support interactive mode. Showing help instead.`));
+            console.log('');
+            program.parse([process.argv[0], process.argv[1], value, '--help']);
+            
+            // Return to the main menu after a brief pause
+            setTimeout(() => {
+              showModuleMenu(program);
+            }, 3000);
+          }
+        } catch (err) {
+          console.error(chalk.red(`Error launching module '${value}':`, err));
+          
+          // Return to the main menu after a brief pause
+          setTimeout(() => {
+            showModuleMenu(program);
+          }, 3000);
+        }
       }
     },
     onExit: () => {

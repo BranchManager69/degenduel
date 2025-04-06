@@ -9,8 +9,13 @@ import { TX_MODE, RPC_ENDPOINTS, DEFAULT_OPTIONS } from './constants.js';
 class PumpBundler {
   constructor(options = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...options };
+    
+    // Force use of the PUMP_BUNDLER_RPC_URL if available
+    let rpcEndpoint = process.env.PUMP_BUNDLER_RPC_URL || RPC_ENDPOINTS.DEFAULT;
+    
+    console.log(`Bundler using Solana RPC endpoint: ${rpcEndpoint}`);
     this.connection = new Connection(
-      this.options.useJito ? RPC_ENDPOINTS.JITO : RPC_ENDPOINTS.HELIUS,
+      rpcEndpoint,
       { commitment: 'confirmed' }
     );
     this.pumpFunClient = new PumpFunClient(options);
