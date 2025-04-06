@@ -54,6 +54,8 @@ export async function search(query, options = {}) {
   } = options;
   
   try {
+    console.log(`Connecting to API: ${API_BASE_URL}/api/${endpoint}`);
+    
     const requestData = {
       query,
       limit: parseInt(limit, 10)
@@ -64,23 +66,43 @@ export async function search(query, options = {}) {
     if (options.context) requestData.context = options.context;
     if (options.mode) requestData.mode = options.mode;
     
-    const response = await fetch(`${API_BASE_URL}/api/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Server returned ${response.status}: ${errorText}`);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server returned ${response.status}: ${errorText}`);
+      }
+      
+      return await response.json();
+    } catch (fetchErr) {
+      if (fetchErr.name === 'AbortError') {
+        throw new Error('Request timed out after 15 seconds. Is the API server running?');
+      }
+      throw fetchErr;
     }
-    
-    return await response.json();
   } catch (err) {
     console.error(chalk.red('Search failed:'), err.message);
-    throw new Error(`Search failed: ${err.message}`);
+    
+    // Return a structured error object that the display code can handle
+    return {
+      error: true,
+      message: err.message,
+      matches: [],
+      summary: `Search failed: ${err.message}\n\nPlease check that the API server is running at ${API_BASE_URL}`
+    };
   }
 }
 

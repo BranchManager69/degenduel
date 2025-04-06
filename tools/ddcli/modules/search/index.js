@@ -34,6 +34,23 @@ export function registerCommands(program) {
         
         const result = await search(query, options);
         
+        // Handle error responses
+        if (result.error) {
+          spinner.fail('Search failed');
+          ui.box(
+            `${chalk.bold.red('Error')}\n\n${result.message}`,
+            { padding: 1, borderColor: 'red', borderStyle: 'round' }
+          );
+          
+          if (result.summary) {
+            ui.box(
+              `${chalk.bold('Troubleshooting')}\n\n${result.summary}`,
+              { padding: 1, borderColor: 'yellow', borderStyle: 'round' }
+            );
+          }
+          return;
+        }
+        
         spinner.succeed('Search completed');
         
         if (options.format === 'json') {
@@ -114,6 +131,23 @@ export function registerCommands(program) {
         spinner.start();
         
         const result = await search(query, options);
+        
+        // Handle error responses
+        if (result.error) {
+          spinner.fail('Search failed');
+          ui.box(
+            `${chalk.bold.red('Error')}\n\n${result.message}`,
+            { padding: 1, borderColor: 'red', borderStyle: 'round' }
+          );
+          
+          if (result.summary) {
+            ui.box(
+              `${chalk.bold('Troubleshooting')}\n\n${result.summary}`,
+              { padding: 1, borderColor: 'yellow', borderStyle: 'round' }
+            );
+          }
+          return;
+        }
         
         spinner.succeed('Search completed');
         
