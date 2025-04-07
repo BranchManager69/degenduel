@@ -35,6 +35,7 @@ export const SERVICE_NAMES = {
     WALLET_RAKE: 'wallet_rake_service',
     ADMIN_WALLET: 'admin_wallet_service',
     USER_BALANCE_TRACKING: 'user_balance_tracking_service',
+    VANITY_WALLET: 'vanity_wallet_service', // New Vanity Wallet service
     //// WALLET_SERVICE: 'wallet_service',
     //// WALLET_GENERATOR: 'wallet_generator_service',
 
@@ -143,6 +144,13 @@ export const SERVICE_METADATA = {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Track user Solana wallet balances',
         updateFrequency: '1m',
+        criticalLevel: 'low',
+        dependencies: []
+    },
+    [SERVICE_NAMES.VANITY_WALLET]: {
+        layer: SERVICE_LAYERS.WALLET,
+        description: 'Vanity wallet generation and management',
+        updateFrequency: '5m',
         criticalLevel: 'low',
         dependencies: []
     },

@@ -40,6 +40,7 @@ import contestWalletService from '../../services/contest-wallet/index.js';
 // import walletRakeService from '../../services/walletRakeService.js';
 import adminWalletService from '../../services/admin-wallet/index.js';
 import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
+import vanityWalletService from '../../services/vanity-wallet/index.js';
 
 /**
  * ServiceInitializer class
@@ -196,6 +197,9 @@ class ServiceInitializer {
         await ensureSchemaExists();
         serviceManager.register(userBalanceTrackingService, []);
         
+        // Register vanity wallet service
+        serviceManager.register(vanityWalletService, []);
+        
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.GREEN}┗━━━━━━━━━━━ ✅ WALLET LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
         }
@@ -224,6 +228,7 @@ class ServiceInitializer {
                 [SERVICE_NAMES.CONTEST_WALLET]: 'contest_wallet_service',
                 [SERVICE_NAMES.ADMIN_WALLET]: 'admin_wallet_service',
                 [SERVICE_NAMES.SOLANA_ENGINE]: 'solana_engine_service',
+                [SERVICE_NAMES.VANITY_WALLET]: 'vanity_wallet_service',
                 // Add other services as they get profile support
             };
             

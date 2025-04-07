@@ -94,6 +94,9 @@ class SolanaEngineService extends BaseService {
     
     // Reference to the WebSocket server
     this.wsServer = null;
+    
+    // Track initialization status separately from property
+    this._initialized = false;
   }
 
   /**
@@ -137,15 +140,51 @@ class SolanaEngineService extends BaseService {
         byEndpoint: {}
       };
       
-      // Mark as initialized
-      this.setInitialized(true);
+      // Mark as initialized (BaseService sets this.isInitialized = true)
+      await super.initialize();
+      
+      // Set our own tracking property
+      this._initialized = true;
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('SolanaEngine Service initialized successfully')}`);
       return true;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize SolanaEngine Service:')} ${error.message}`);
-      this.setInitialized(false);
+      this._initialized = false;
       return false;
+    }
+  }
+  
+  /**
+   * Check if the service is initialized
+   * @returns {boolean} - True if initialized, false otherwise
+   */
+  isInitialized() {
+    // Use our separate property to avoid name collision
+    return this._initialized === true;
+  }
+  
+  /**
+   * Get the connection status
+   * @returns {Object} - Connection status information
+   */
+  getConnectionStatus() {
+    if (!connectionManager) {
+      return {
+        status: "unavailable",
+        message: "Connection manager not initialized"
+      };
+    }
+    
+    try {
+      const status = connectionManager.getStatus();
+      return status;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Error getting connection status:')} ${error.message}`);
+      return {
+        status: "error",
+        message: error.message
+      };
     }
   }
   
