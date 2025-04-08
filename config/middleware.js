@@ -115,6 +115,24 @@ export function configureMiddleware(app) {
     'https://twitter.com',
     'https://x.com',
     'https://api.twitter.com',
+    // GPU Server origins - allowing all possible origins from this range
+    'http://192.222.51.100',
+    'http://192.222.51.101',
+    'http://192.222.51.102',
+    'http://192.222.51.110',
+    'http://192.222.51.111',
+    'http://192.222.51.112',
+    'http://192.222.51.120',
+    'http://192.222.51.121',
+    'http://192.222.51.122',
+    'http://192.222.51.123',
+    'http://192.222.51.124',
+    'http://192.222.51.125',
+    'http://192.222.51.126',
+    'http://192.222.51.127',
+    'http://192.222.51.128',
+    'http://192.222.51.129',
+    'http://192.222.51.130',
     // Local development with IP addresses
     'http://127.0.0.1:3004',
     'http://127.0.0.1:3005',
@@ -171,11 +189,44 @@ export function configureMiddleware(app) {
   // Environment middleware
   app.use(environmentMiddleware);
 
-  // CORS middleware with WebSocket bypass
+  // CORS middleware with WebSocket bypass and special handling for GPU server endpoints
   app.use((req, res, next) => {
     // Skip CORS entirely for WebSocket requests
     if (req.WEBSOCKET_REQUEST === true) {
       return next();
+    }
+
+    // Special CORS bypass for vanity wallet endpoints used by GPU server
+    // This ensures the GPU server can always access these endpoints regardless of origin
+    if (req.path.includes('/api/admin/vanity-wallets/jobs/') || req.path.includes('/api/admin/vanity-callback')) {
+      // Get client IP for validation
+      const clientIp = req.headers['x-forwarded-for'] || 
+                      req.connection.remoteAddress || 
+                      req.socket.remoteAddress;
+                      
+      // Remove IPv6 prefix if present
+      let ipAddress = clientIp;
+      if (ipAddress && ipAddress.startsWith('::ffff:')) {
+        ipAddress = ipAddress.substring(7);
+      }
+      
+      // Check if this is a request from the GPU server IP range (192.222.51.*)
+      if (ipAddress && ipAddress.startsWith('192.222.51.')) {
+        logApi.info(`${fancyColors.BLUE}💎 CORS bypass for GPU server at ${ipAddress} accessing ${req.path}${fancyColors.RESET}`);
+        
+        // Set permissive CORS headers for GPU server
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        
+        // Handle preflight
+        if (req.method === 'OPTIONS') {
+          return res.status(204).end();
+        }
+        
+        return next();
+      }
     }
     
     // Process CORS for regular HTTP requests

@@ -5,6 +5,7 @@
  */
 
 import dotenv from 'dotenv';
+import os from 'os';
 dotenv.config();
 
 // v69 WSS testing
@@ -174,6 +175,12 @@ const config = {
     CANCELLED: 'cancelled'
   },
   
+  // GPU Server config:
+  gpuServer: {
+    ip: process.env.GPU_SERVER_IP || 'No GPU Server IP configured',
+    port: process.env.GPU_SERVER_PORT || 80,
+  },
+
   // DegenDuel server port:
   port:
     process.env.PORT || process.env.API_PORT,
@@ -591,11 +598,17 @@ const config = {
     websocket: process.env.WEBSOCKET_DEBUG_MODE || 'false',
   },
   
+  // Force disable specific services (overrides service profiles)
+  disable_services: {
+    // token_sync has been permanently removed
+    token_whitelist: true, // Permanently disable token_whitelist service (using token.is_active flag instead)
+  },
+  
   // Service profiles for different environments
   service_profiles: {
     // Production profile - all services enabled
     production: {
-      token_sync: true,
+      // token_sync has been permanently removed
       market_data: true, 
       contest_evaluation: true,
       token_whitelist: true,
@@ -609,6 +622,7 @@ const config = {
       contest_wallet_service: true,
       admin_wallet_service: true,
       wallet_generator_service: true,
+      vanity_wallet_service: true, // Vanity Wallet Service
       ai_service: true,
       solana_service: true,
       solana_engine_service: true, // New SolanaEngine service
@@ -618,12 +632,12 @@ const config = {
     
     // Development profile - services disabled by default (just API testing)
     development: {
-      token_sync: false,
-      market_data: false,
+      // token_sync has been permanently removed
+      market_data: false, // Disabled to prevent token fetching in dev environment
       contest_evaluation: false,
       token_whitelist: false,
-      liquidity: false,
-      user_balance_tracking: false,
+      liquidity: false, // Require wallet_generator_service, fails because it's disabled in dev
+      user_balance_tracking: false, // Requires SolanaEngine service
       wallet_rake: false, 
       contest_scheduler: false, // Disable contest scheduler in development to prevent conflicts
       achievement_service: false,
@@ -632,6 +646,7 @@ const config = {
       contest_wallet_service: false,
       admin_wallet_service: false,
       wallet_generator_service: false,
+      vanity_wallet_service: false, // Disable vanity wallet service in development
       ai_service: true, // Keep AI service enabled in development for testing
       solana_service: true, // Keep Solana service enabled in development for connection management
       solana_engine_service: true, // Keep SolanaEngine service enabled in development for testing
@@ -640,6 +655,33 @@ const config = {
     }
   },
   
+  // GPU Server Configuration
+  gpuServer: {
+    // Allow multiple IPs separated by commas, or IP patterns with wildcards
+    // First IP in the list is used as the default when connecting to the server
+    allowedIps: (process.env.ALLOWED_GPU_SERVER_IPS || '192.222.51.124,192.222.51.*,127.0.0.1,localhost').split(','),
+    port: process.env.GPU_SERVER_PORT || 80,
+  },
+  
+  // Vanity Wallet Generator Configuration
+  vanityWallet: {
+    // Number of worker threads to use for generation (default: CPU cores - 1)
+    numWorkers: parseInt(process.env.VANITY_WALLET_NUM_WORKERS || (os.cpus().length - 1)), 
+    // Number of addresses to check per batch
+    batchSize: parseInt(process.env.VANITY_WALLET_BATCH_SIZE || 10000),
+    // Maximum number of attempts before giving up
+    maxAttempts: parseInt(process.env.VANITY_WALLET_MAX_ATTEMPTS || 50000000),
+    // Target counts for automatic generation
+    targetCounts: {
+      DUEL: parseInt(process.env.VANITY_WALLET_TARGET_DUEL || 5), // Keep original targets
+      DEGEN: parseInt(process.env.VANITY_WALLET_TARGET_DEGEN || 3) // Keep original targets
+    },
+    // Check interval in minutes
+    checkIntervalMinutes: parseInt(process.env.VANITY_WALLET_CHECK_INTERVAL || 30), // Increased from 5 to 30 minutes
+    // Maximum concurrent generation jobs
+    maxConcurrentJobs: parseInt(process.env.VANITY_WALLET_MAX_CONCURRENT_JOBS || 1),
+  },
+
   // Active service configuration (based on profile)
   services: {
     // Get active profile from environment or default to 'development'
@@ -666,9 +708,8 @@ const config = {
     },
     
     get token_whitelist() {
-      const profile = config.service_profiles[config.services.active_profile] || 
-                     config.service_profiles.development;
-      return profile.token_whitelist;
+      // Token whitelist service is permanently disabled - using token.is_active flag instead
+      return false;
     },
     
     get liquidity() {
@@ -747,6 +788,12 @@ const config = {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.solana_engine_service;
+    },
+    
+    get vanity_wallet_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.vanity_wallet_service;
     },
   },
   debug_mode: 

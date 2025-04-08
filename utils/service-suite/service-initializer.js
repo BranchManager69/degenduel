@@ -21,9 +21,9 @@ import walletGeneratorService from '../../services/walletGenerationService.js';
 import liquidityService from '../../services/liquidityService.js';
 
 // Data Layer
-import tokenSyncService from '../../services/tokenSyncService.js';
+// tokenSyncService has been permanently removed
+// tokenWhitelistService has been permanently disabled (using token.is_active flag instead)
 import marketDataService from '../../services/marketDataService.js';
-import tokenWhitelistService from '../../services/tokenWhitelistService.js';
 // Legacy solana service - imported but not used as primary
 import solanaService from '../../services/solanaService.js';
 
@@ -68,15 +68,9 @@ class ServiceInitializer {
             `📋 Registering services...`}`);
         
         try {
-            // Handle token sync service dependency decision before registration
-            const tokenSyncDisabled = config.services.disable_token_sync;
-            if (tokenSyncDisabled) {
-                logApi.info(`${fancyColors.YELLOW}Token sync service disabled via configuration${fancyColors.RESET}`);
-            }
-            
             // Register all services by layer
             await this.registerInfrastructureLayer();
-            await this.registerDataLayer(tokenSyncDisabled);
+            await this.registerDataLayer();
             await this.registerContestLayer();
             await this.registerWalletLayer();
 
@@ -110,8 +104,18 @@ class ServiceInitializer {
         // Legacy solanaService kept for compatibility until full migration
         serviceManager.register(solanaService);
         
-        serviceManager.register(walletGeneratorService);
-        serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
+        // Only register wallet generator and liquidity services if they're enabled in the config
+        if (config.services.wallet_generator_service) {
+            serviceManager.register(walletGeneratorService);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of wallet_generator_service - disabled in config${fancyColors.RESET}`);
+        }
+        
+        if (config.services.liquidity) {
+            serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of liquidity_service - disabled in config${fancyColors.RESET}`);
+        }
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ INFRASTRUCTURE LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
@@ -124,20 +128,22 @@ class ServiceInitializer {
      * 
      * @param {boolean} tokenSyncDisabled - Whether token sync service is disabled
      */
-    static async registerDataLayer(tokenSyncDisabled) {
+    static async registerDataLayer() {
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.ORANGE}┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
         }
         
-        // Always register token sync, even if disabled (initialization will be skipped)
-        serviceManager.register(tokenSyncService);
+        // tokenSyncService has been permanently removed
         
-        // For market data, use conditional dependencies based on tokenSyncDisabled flag
-        // Dependencies will be formally set in registerDependencies()
-        serviceManager.register(marketDataService);
+        // Register market data service only if enabled in config
+        if (config.services.market_data) {
+            serviceManager.register(marketDataService);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of market_data_service - disabled in config${fancyColors.RESET}`);
+        }
         
-        // Register token whitelist service
-        serviceManager.register(tokenWhitelistService);
+        // Token whitelist service has been permanently disabled (using token.is_active flag instead)
+        logApi.info(`${fancyColors.YELLOW}Skipping registration of token_whitelist_service - permanently disabled (using token.is_active flag instead)${fancyColors.RESET}`);
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.ORANGE}┗━━━━━━━━━━━ ✅ DATA LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
@@ -153,8 +159,12 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.YELLOW}┏━━━━━━━━━━━━━━━━━━━━━━━ Contest Layer (3/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
         }
         
-        // Register contest related services
-        serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
+        // Register contest related services only if enabled in config
+        if (config.services.contest_evaluation) {
+            serviceManager.register(contestEvaluationService, [SERVICE_NAMES.MARKET_DATA]);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of contest_evaluation_service - disabled in config${fancyColors.RESET}`);
+        }
         
         // Register contest scheduler if enabled in the service profile
         if (config.services.contest_scheduler) {
@@ -163,15 +173,27 @@ class ServiceInitializer {
             }
             serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
         } else {
-            if (VERBOSE_SERVICE_INIT_LOGS) {
-                logApi.info(`${fancyColors.YELLOW}┃ 🚫 Contest Scheduler Service is disabled in this environment ${fancyColors.RESET}`);
-            }
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of contest_scheduler_service - disabled in config${fancyColors.RESET}`);
         }
         
-        // Register additional contest-related services
-        serviceManager.register(achievementService, []); // No hard dependencies
-        serviceManager.register(levelingService, []); // No hard dependencies
-        serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        // Register additional contest-related services only if enabled in config
+        if (config.services.achievement_service) {
+            serviceManager.register(achievementService, []); // No hard dependencies
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of achievement_service - disabled in config${fancyColors.RESET}`);
+        }
+        
+        if (config.services.leveling_service) {
+            serviceManager.register(levelingService, []); // No hard dependencies
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of leveling_service - disabled in config${fancyColors.RESET}`);
+        }
+        
+        if (config.services.referral_service) {
+            serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of referral_service - disabled in config${fancyColors.RESET}`);
+        }
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.YELLOW}┗━━━━━━━━━━━ ✅ CONTEST LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
@@ -187,18 +209,35 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.GREEN}┏━━━━━━━━━━━━━━━━━━━━━━━ Wallet Layer (4/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
         }
         
-        // Register wallet services 
-        serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
-        serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
+        // Register wallet services only if enabled in config
+        if (config.services.contest_wallet_service) {
+            serviceManager.register(contestWalletService, [SERVICE_NAMES.CONTEST_EVALUATION]);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of contest_wallet_service - disabled in config${fancyColors.RESET}`);
+        }
+        
+        if (config.services.admin_wallet_service) {
+            serviceManager.register(adminWalletService, [SERVICE_NAMES.CONTEST_WALLET]);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of admin_wallet_service - disabled in config${fancyColors.RESET}`);
+        }
+        
         // DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
-        // serviceManager.register(walletRakeService, [SERVICE_NAMES.CONTEST_WALLET]);
         
         // Ensure schema exists for user balance tracking
-        await ensureSchemaExists();
-        serviceManager.register(userBalanceTrackingService, []);
+        if (config.services.user_balance_tracking) {
+            await ensureSchemaExists();
+            serviceManager.register(userBalanceTrackingService, []);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of user_balance_tracking_service - disabled in config${fancyColors.RESET}`);
+        }
         
-        // Register vanity wallet service
-        serviceManager.register(vanityWalletService, []);
+        // Register vanity wallet service only if enabled in config
+        if (config.services.vanity_wallet_service) {
+            serviceManager.register(vanityWalletService, []);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of vanity_wallet_service - disabled in config${fancyColors.RESET}`);
+        }
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.GREEN}┗━━━━━━━━━━━ ✅ WALLET LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
@@ -214,10 +253,10 @@ class ServiceInitializer {
         const isServiceEnabled = (serviceName) => {
             // Map service names to config property names
             const serviceConfigMap = {
-                [SERVICE_NAMES.TOKEN_SYNC]: 'token_sync',
+                // TOKEN_SYNC has been permanently removed
+                // TOKEN_WHITELIST has been permanently disabled
                 [SERVICE_NAMES.MARKET_DATA]: 'market_data',
                 [SERVICE_NAMES.CONTEST_EVALUATION]: 'contest_evaluation',
-                [SERVICE_NAMES.TOKEN_WHITELIST]: 'token_whitelist',
                 [SERVICE_NAMES.LIQUIDITY]: 'liquidity',
                 [SERVICE_NAMES.USER_BALANCE_TRACKING]: 'user_balance_tracking',
                 [SERVICE_NAMES.WALLET_RAKE]: 'wallet_rake',
@@ -234,6 +273,13 @@ class ServiceInitializer {
             
             const configProp = serviceConfigMap[serviceName];
             if (!configProp) return true; // If no mapping exists, assume enabled
+            
+            // Check if this service is in the forced disabled list
+            const forcedDisabledServices = config.disable_services || {};
+            if (forcedDisabledServices[configProp] === true) {
+                logApi.info(`${fancyColors.YELLOW}Service ${serviceName} is forcefully disabled via config.disable_services${fancyColors.RESET}`);
+                return false;
+            }
             
             // Check if the service is enabled in the current profile
             return config.services[configProp] !== false;
@@ -254,7 +300,9 @@ class ServiceInitializer {
         addDependencyIfEnabled(SERVICE_NAMES.LIQUIDITY, SERVICE_NAMES.WALLET_GENERATOR);
 
         // Data Layer Dependencies
-        addDependencyIfEnabled(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
+        // Removed dependency on TOKEN_SYNC as it's no longer needed
+        // addDependencyIfEnabled(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
+        
         // No dependency on solanaService as SolanaEngine uses Helius directly
         // addDependencyIfEnabled(SERVICE_NAMES.SOLANA_ENGINE, SERVICE_NAMES.SOLANA);
 
@@ -284,10 +332,7 @@ class ServiceInitializer {
             // Calculate initialization order based on dependencies
             const initOrder = serviceManager.calculateInitializationOrder();
             
-            // Note if token sync is disabled
-            if (config.services.disable_token_sync) {
-                logApi.info(`${fancyColors.YELLOW}Token Sync Service will be skipped during initialization${fancyColors.RESET}`);
-            }
+            // Token Sync Service has been removed completely
             
             // Initialize all services using ServiceManager
             const results = await serviceManager.initializeAll();
@@ -332,7 +377,7 @@ class ServiceInitializer {
                 {
                     initialized: results.initialized,
                     failed: results.failed,
-                    intentionallyDisabled: config.services.disable_token_sync ? [SERVICE_NAMES.TOKEN_SYNC] : [],
+                    intentionallyDisabled: [],
                     registeredServices: Array.from(serviceManager.services.keys())
                 }
             );

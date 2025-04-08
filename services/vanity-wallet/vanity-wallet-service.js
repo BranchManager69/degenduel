@@ -135,6 +135,90 @@ class VanityWalletService extends BaseService {
       // Check current count of available addresses for each pattern
       const counts = {};
       
+      // Also check for pending and processing jobs to avoid creating too many
+      const pendingJobsCount = await prisma.vanity_wallet_pool.count({
+        where: {
+          status: { in: ['pending', 'processing'] }
+        }
+      });
+      
+      // If there are too many pending jobs already, skip creating more
+      const MAX_PENDING_JOBS = 10; // Hard limit to avoid endless generation
+      if (pendingJobsCount >= MAX_PENDING_JOBS) {
+        logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} TOO MANY JOBS ${fancyColors.RESET} There are already ${pendingJobsCount} pending/processing vanity wallet jobs. Limiting to ${MAX_PENDING_JOBS} maximum.`);
+        
+        // Clean up any excess jobs if there are too many (50+)
+        if (pendingJobsCount > 50) {
+          logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CLEANUP ${fancyColors.RESET} Cancelling excess jobs (${pendingJobsCount} > 50)`);
+          
+          // First, check for stuck processing jobs (they may indicate a problem)
+          const stuckProcessingJobs = await prisma.vanity_wallet_pool.findMany({
+            where: {
+              status: 'processing',
+              updated_at: {
+                lt: new Date(Date.now() - 1000 * 60 * 30) // Older than 30 minutes
+              }
+            },
+            orderBy: {
+              created_at: 'asc'
+            }
+          });
+          
+          // If there are stuck processing jobs, cancel them first
+          if (stuckProcessingJobs.length > 0) {
+            logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} STUCK JOBS ${fancyColors.RESET} Found ${stuckProcessingJobs.length} stuck processing jobs older than 30 minutes`);
+            
+            for (const job of stuckProcessingJobs) {
+              try {
+                await prisma.vanity_wallet_pool.update({
+                  where: { id: job.id },
+                  data: {
+                    status: 'cancelled',
+                    updated_at: new Date(),
+                    completed_at: new Date()
+                  }
+                });
+                
+                logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Cancelled stuck processing job #${job.id} for pattern ${job.pattern}${fancyColors.RESET}`);
+              } catch (cancelError) {
+                logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to cancel stuck job #${job.id}: ${cancelError.message}${fancyColors.RESET}`);
+              }
+            }
+          }
+          
+          // Find the oldest pending and processing jobs to cancel
+          const jobsToCancel = await prisma.vanity_wallet_pool.findMany({
+            where: {
+              status: { in: ['pending', 'processing'] }
+            },
+            orderBy: {
+              created_at: 'asc'
+            },
+            take: pendingJobsCount - 10 // Leave 10 jobs in the queue
+          });
+          
+          // Cancel these jobs
+          for (const job of jobsToCancel) {
+            try {
+              await prisma.vanity_wallet_pool.update({
+                where: { id: job.id },
+                data: {
+                  status: 'cancelled',
+                  updated_at: new Date(),
+                  completed_at: new Date()
+                }
+              });
+              
+              logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Cancelled excess job #${job.id} for pattern ${job.pattern} (status: ${job.status})${fancyColors.RESET}`);
+            } catch (cancelError) {
+              logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to cancel job #${job.id}: ${cancelError.message}${fancyColors.RESET}`);
+            }
+          }
+        }
+        
+        return; // Skip generating more addresses
+      }
+      
       for (const pattern of this.patterns) {
         // Count available addresses for this pattern
         const count = await prisma.vanity_wallet_pool.count({
@@ -147,23 +231,33 @@ class VanityWalletService extends BaseService {
           }
         });
         
+        // Also count pending/processing jobs for this pattern
+        const pendingCount = await prisma.vanity_wallet_pool.count({
+          where: {
+            pattern,
+            status: { in: ['pending', 'processing'] }
+          }
+        });
+        
         counts[pattern] = count;
         
-        // Check if we need to generate more
+        // Check if we need to generate more, accounting for pending jobs
         const target = this.targetCounts[pattern] || 0;
-        const needed = Math.max(0, target - count);
+        const effectiveCount = count + pendingCount; // Count existing + in-progress
+        const needed = Math.max(0, target - effectiveCount);
         
         if (needed > 0) {
-          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Need to generate ${needed} ${pattern} addresses (current: ${count}, target: ${target})`);
+          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Need to generate ${needed} ${pattern} addresses (current: ${count}, pending: ${pendingCount}, target: ${target})`);
           
           // Generate addresses one by one (not all at once to avoid CPU spikes)
-          const jobsToCreate = Math.min(needed, this.maxConcurrentJobs);
+          const remainingJobSlots = MAX_PENDING_JOBS - pendingJobsCount;
+          const jobsToCreate = Math.min(needed, this.maxConcurrentJobs, remainingJobSlots);
           
           for (let i = 0; i < jobsToCreate; i++) {
             await this.generateVanityAddress(pattern);
           }
         } else {
-          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Have enough ${pattern} addresses (${count} available, target: ${target})${fancyColors.RESET}`);
+          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Have enough ${pattern} addresses (${count} available + ${pendingCount} pending, target: ${target})${fancyColors.RESET}`);
         }
       }
       

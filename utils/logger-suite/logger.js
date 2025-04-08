@@ -537,7 +537,8 @@ const formatMetadata = (metadata, level) => {
 // Sanitize error objects to prevent circular references
 const sanitizeError = (obj) => {
   if (!obj) return obj;
-
+  
+  // Handle Error objects
   if (obj instanceof Error) {
     return {
       name: obj.name,
@@ -547,22 +548,51 @@ const sanitizeError = (obj) => {
       status: obj.status,
     };
   }
-
-  if (typeof obj !== "object") return obj;
-
-  const clean = {};
-  for (const [key, value] of Object.entries(obj)) {
-    // Skip known circular reference properties
-    if (["socket", "parser", "req", "res"].includes(key)) continue;
-    try {
-      // Test if value can be stringified
-      JSON.stringify(value);
-      clean[key] = value;
-    } catch (e) {
-      clean[key] = "[Circular]";
+  
+  if (typeof obj !== "object" || obj === null) return obj;
+  
+  // Use WeakSet to track objects we've already seen (prevent circular refs)
+  const seen = new WeakSet();
+  
+  // Helper function to deep sanitize objects
+  const _sanitize = (value) => {
+    // Handle primitives
+    if (value === null || value === undefined || typeof value !== 'object') {
+      return value;
     }
-  }
-  return clean;
+    
+    // Check for circular references
+    if (seen.has(value)) {
+      return "[Circular Reference]";
+    }
+    
+    // Add to seen objects
+    seen.add(value);
+    
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return value.map(item => _sanitize(item));
+    }
+    
+    // Handle special objects known to cause circular refs
+    if (value.constructor && ['ClientRequest', 'IncomingMessage', 'ServerResponse', 'Socket'].includes(value.constructor.name)) {
+      return `[${value.constructor.name}]`;
+    }
+    
+    // Skip known problematic properties
+    const skipKeys = ["socket", "parser", "req", "res", "_httpMessage", "connection"];
+    
+    // Process regular objects
+    const clean = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (skipKeys.includes(key)) continue;
+      clean[key] = _sanitize(val);
+    }
+    
+    return clean;
+  };
+  
+  return _sanitize(obj);
 };
 
 // Format circuit breaker logs
@@ -668,7 +698,18 @@ function formatEventLoopLag(lagMs) {
 // Format admin action logs
 function formatAdminAction(details) {
   const { admin, action, details: actionDetails } = details;
-  const formattedDetails = JSON.stringify(actionDetails, null, 2)
+  
+  // Helper function to safely stringify objects with circular references
+  const safeStringify = (obj) => {
+    try {
+      return JSON.stringify(obj, null, 2);
+    } catch (error) {
+      // If error, sanitize and retry
+      return JSON.stringify(sanitizeError(obj), null, 2);
+    }
+  };
+  
+  const formattedDetails = safeStringify(actionDetails)
     .split('\n')
     .map(line => '    ' + line)
     .join('\n');
@@ -793,9 +834,38 @@ const customFormat = winston.format.printf(
     // Add to startup log buffer first (this will only capture important logs)
     startupLogBuffer.addLog(level, message, { service, ...metadata });
 
+    // Helper function to safely stringify objects that might contain circular references
+    const safeStringify = (obj) => {
+      try {
+        // Try to directly stringify the object
+        return JSON.stringify(obj);
+      } catch (error) {
+        // If that fails (likely due to circular references), use this workaround
+        const seen = new WeakSet();
+        return JSON.stringify(obj, (key, value) => {
+          // Skip null/undefined values
+          if (value === null || value === undefined) return undefined;
+          
+          // Handle circular references for objects
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+              return '[Circular Reference]';
+            }
+            seen.add(value);
+            
+            // Special handling for HTTP objects that often cause circular references
+            if (value.constructor && ['ClientRequest', 'IncomingMessage', 'ServerResponse'].includes(value.constructor.name)) {
+              return `[${value.constructor.name}]`;
+            }
+          }
+          return value;
+        }, null, 0);
+      }
+    };
+    
     // Make sure message is a string or empty string
     const safeMessage = (message === undefined || message === null || typeof message !== 'string') ? 
-      (typeof message === 'object' ? JSON.stringify(message) : String(message || '')) : 
+      (typeof message === 'object' ? safeStringify(message) : String(message || '')) : 
       message;
 
     const ts = chalk.gray(formatTimestamp(timestamp));
@@ -835,9 +905,10 @@ const customFormat = winston.format.printf(
         ? chalk.hex(serviceInfo.color)(safeMessage)
         : levelStyle.color(safeMessage));
 
-    // Format metadata more compactly
+    // Use safeStringify from above for metadata
+    // Format metadata more compactly with safe handling of circular references
     const meta = Object.keys(metadata).length
-      ? chalk.gray(JSON.stringify(formatMetadata(metadata, level), null, 0))
+      ? chalk.gray(safeStringify(formatMetadata(metadata, level)))
       : "";
 
     // Check for WebSocket RSV1 fix logs - make them MUCH more visible
@@ -888,9 +959,38 @@ const fileFormat = winston.format.printf(
     // Ensure metadata exists and is an object
     const safeMetadata = metadata || {};
     
+    // Helper function to safely stringify objects that might contain circular references
+    const safeStringify = (obj) => {
+      try {
+        // Try to directly stringify the object
+        return JSON.stringify(obj);
+      } catch (error) {
+        // If that fails (likely due to circular references), use this workaround
+        const seen = new WeakSet();
+        return JSON.stringify(obj, (key, value) => {
+          // Skip null/undefined values
+          if (value === null || value === undefined) return undefined;
+          
+          // Handle circular references for objects
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+              return '[Circular Reference]';
+            }
+            seen.add(value);
+            
+            // Special handling for HTTP objects that often cause circular references
+            if (value.constructor && ['ClientRequest', 'IncomingMessage', 'ServerResponse'].includes(value.constructor.name)) {
+              return `[${value.constructor.name}]`;
+            }
+          }
+          return value;
+        }, null, 0);
+      }
+    };
+    
     // Make sure message is a string or empty string
     const safeMessage = (message === undefined || message === null || typeof message !== 'string') ? 
-      (typeof message === 'object' ? JSON.stringify(message) : String(message || '')) : 
+      (typeof message === 'object' ? safeStringify(message) : String(message || '')) : 
       message;
     
     const pattern = safeMessage ? detectLogPattern(safeMessage) : null;
@@ -912,10 +1012,10 @@ const fileFormat = winston.format.printf(
     };
 
     try {
-      return JSON.stringify(logEntry);
+      return safeStringify(logEntry);
     } catch (err) {
       // If JSON stringify fails, return a simplified version
-      return JSON.stringify({
+      return safeStringify({
         timestamp: new Date().toISOString(),
         level: 'error',
         message: 'Error serializing log entry',
@@ -1188,7 +1288,7 @@ const logApi = winston.createLogger({
         })(),
         customFormat
       ),
-      level: CONSOLE_LEVEL,
+      level: CONSOLE_LEVEL, // Back to the original config level
     }),
     // File transports (JSON formatted for parsing)
     dailyRotateFileTransport,     // All logs

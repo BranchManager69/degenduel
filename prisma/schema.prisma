@@ -206,31 +206,49 @@ model token_buckets {
 
 model token_prices {
   token_id   Int       @id
-  price      Decimal   @db.Decimal(20, 8)
+  price      Decimal?  @db.Decimal(20, 8)
+  change_24h Decimal?  @db.Decimal(5, 2)
+  market_cap Decimal?  @db.Decimal(20, 0)
+  volume_24h Decimal?  @db.Decimal(20, 0)
+  liquidity  Decimal?  @db.Decimal(20, 0)
+  fdv        Decimal?  @db.Decimal(20, 0)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  tokens     tokens    @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens     tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([updated_at(sort: Desc)], map: "idx_token_prices_updated")
   @@map("token_prices")
 }
 
+model token_price_history {
+  id         Int      @id @default(autoincrement())
+  token_id   Int
+  price      Decimal  @db.Decimal(20, 8)
+  source     String?  @db.VarChar(50) // Where the price came from: "jupiter", "helius", "manual", etc.
+  timestamp  DateTime @default(now()) @db.Timestamptz(6)
+  tokens     tokens   @relation(fields: [token_id], references: [id], onDelete: Cascade)
+
+  @@index([token_id])
+  @@index([timestamp(sort: Desc)])
+  @@index([token_id, timestamp(sort: Desc)])
+  @@map("token_price_history")
+}
+
 model tokens {
   id                        Int                         @id @default(autoincrement())
   address                   String                      @unique(map: "unique_token_address")
-  symbol                    String                      @unique(map: "unique_token_symbol")
-  name                      String
-  decimals                  Int?                        @default(18)
-  is_active                 Boolean?                    @default(true)
+  symbol                    String?                     
+  name                      String?                     
+  decimals                  Int?                        @default(9)
+  is_active                 Boolean                     @default(true)
   created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
-  market_cap                Decimal?                    @db.Decimal(20, 0)
-  change_24h                Decimal?                    @db.Decimal(5, 2)
-  volume_24h                Decimal?                    @db.Decimal(20, 0)
-  image_url                 String?                     @db.VarChar(255)    // IS THIS RIGHT?
+  updated_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  image_url                 String?                     @db.VarChar(255)
+  color                     String?                     @default("#888888")
   description               String?
-  twitter_url               String?                     @db.VarChar(255)    // REMOVE!  We have token_socials[] now
-  telegram_url              String?                     @db.VarChar(255)    // REMOVE!  We have token_socials[] now
-  discord_url               String?                     @db.VarChar(255)    // REMOVE!  We have token_socials[] now     
-  website_url               String?                     @db.VarChar(255)    // REMOVE!  We have token_websites[] now
+  twitter_url               String?                     @db.VarChar(255)
+  telegram_url              String?                     @db.VarChar(255)
+  discord_url               String?                     @db.VarChar(255)
+  website_url               String?                     @db.VarChar(255)
   ai_decisions              ai_decisions[]
   contest_portfolio_trades  contest_portfolio_trades[]
   contest_portfolios        contest_portfolios[]
@@ -241,6 +259,7 @@ model tokens {
   token_prices              token_prices?
   token_socials             token_socials[]
   token_websites            token_websites[]
+  price_history             token_price_history[]
 
   @@index([symbol], map: "idx_tokens_symbol")
   @@map("tokens")
@@ -381,6 +400,7 @@ model users {
   authorized_devices        authorized_devices[]        @relation(name: "UserAuthorizedDevices")
   ai_conversations          ai_conversations[]          @relation("UserAIConversations")
   client_errors             client_errors[]
+  biometric_credentials     biometric_credentials[]
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -444,9 +464,25 @@ model auth_challenges {
   nonce          String
   expires_at     DateTime  @db.Timestamptz(6)
   created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  credential_id  String?   // Added for biometric auth challenges
 
   @@index([expires_at], map: "idx_auth_challenges_expires")
   @@map("auth_challenges")
+}
+
+model biometric_credentials {
+  id            Int       @id @default(autoincrement())
+  user_id       String    @db.VarChar(44)
+  credential_id String    @unique
+  public_key    String
+  device_info   Json?     @default("{}")
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  last_used     DateTime? @db.Timestamptz(6)
+  counter       BigInt    @default(0)
+  user          users     @relation(fields: [user_id], references: [wallet_address], onDelete: Cascade)
+
+  @@index([user_id], map: "idx_biometric_credentials_user")
+  @@map("biometric_credentials")
 }
 
 model blockchain_transactions {
@@ -673,19 +709,39 @@ model websocket_messages {
 }
 
 model vanity_wallet_pool {
-  id              Int       @id @default(autoincrement())
-  wallet_address  String    @unique
-  private_key     String
-  pattern         String
-  is_used         Boolean   @default(false)
-  used_at         DateTime?
-  used_by_contest Int?      @unique
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
-  contest         contests? @relation(fields: [used_by_contest], references: [id])
+  id              Int               @id @default(autoincrement())
+  wallet_address  String?           @unique // Null until address is generated
+  private_key     String?           // Encrypted private key, null until generated
+  pattern         String            // The pattern to match (e.g., "DUEL" or "DEGEN")
+  is_suffix       Boolean           @default(false) // Whether pattern should be at end of address
+  case_sensitive  Boolean           @default(true)  // Whether pattern matching is case sensitive
+  is_used         Boolean           @default(false) // Whether this vanity address has been assigned
+  used_at         DateTime?         // When the vanity address was assigned 
+  used_by_contest Int?              @unique         // The contest using this vanity address
+  job_id          String?           @unique         // External GPU job ID
+  status          VanityWalletStatus @default(pending) // Status of the generation request
+  attempts        BigInt?           // Number of attempts made to find this address
+  duration_ms     BigInt?           // Time taken to generate in milliseconds
+  requested_by    String?           // Admin who requested this wallet
+  request_ip      String?           // IP address that requested this wallet
+  callback_url    String?           // URL for job completion callback
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  completed_at    DateTime?         // When the address generation was completed
+  contest         contests?         @relation(fields: [used_by_contest], references: [id])
 
   @@index([is_used])
   @@index([pattern])
+  @@index([status])
+  @@index([job_id])
+}
+
+enum VanityWalletStatus {
+  pending     // Just created, not yet sent to GPU service
+  processing  // Sent to GPU service, awaiting result
+  completed   // Successfully generated
+  failed      // Failed to generate
+  cancelled   // Request was cancelled
 }
 
 model referrals {

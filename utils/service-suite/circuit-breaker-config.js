@@ -11,17 +11,12 @@ import { SERVICE_NAMES, DEFAULT_CIRCUIT_BREAKER_CONFIG, getServiceMetadata } fro
 // Service-specific configurations
 export const SERVICE_SPECIFIC_CONFIGS = {
     // Data Layer Services
-    [SERVICE_NAMES.TOKEN_SYNC]: {
-        failureThreshold: 4,
-        resetTimeoutMs: 45000,
-        description: getServiceMetadata(SERVICE_NAMES.TOKEN_SYNC).description,
-        reason: 'Handles external API calls, needs balanced error tolerance'
-    },
+    // TOKEN_SYNC service has been removed
     [SERVICE_NAMES.MARKET_DATA]: {
         failureThreshold: 5,          // Increased from 3 to be more tolerant
         resetTimeoutMs: 60000,        // Increased from 30000 to give more recovery time
         minHealthyPeriodMs: 120000,   // Increased from 60000 to ensure stability
-        description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA).description,
+        description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA)?.description || 'Market data service',
         reason: 'Critical for real-time trading operations, balanced with stability'
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {

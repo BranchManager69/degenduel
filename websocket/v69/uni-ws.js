@@ -541,7 +541,7 @@ class UnifiedWebSocketServer {
         connectionId.length + clientIp.length + 3, // Connection: #A1B2C (127.0.0.1)
         origin.length,
         this.parseClientInfo(userAgent).length,
-        (locationInfo || 'Unknown').length
+        (locationInfo?.formattedString || 'Unknown').length
       );
       
       // Create a shorter folder-tab style header
@@ -550,15 +550,19 @@ class UnifiedWebSocketServer {
       const headerBar = '═'.repeat(headerWidth + headerExtension);
       
       // Create the enhanced log with cleanly aligned fields and consistent spacing - folder tab style
+      const bgColor = wsColors.connectBoxBg || ''; // Ensure we have a default if undefined
+      const fgColor = wsColors.connectBoxFg || ''; // Ensure we have a default if undefined
+      const connectColor = wsColors.connect || ''; // Ensure we have a default if undefined
+
       let connectionLog = `
-${wsColors.connect}╔${headerBar}╗${fancyColors.RESET}
-${wsColors.connect}║ CONNECTED ${' '.repeat(headerExtension)}║${fancyColors.RESET}
-${wsColors.connectBoxBg}${wsColors.connectBoxFg}┌${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyColors.RESET}
-${wsColors.connectBoxBg}${wsColors.connectBoxFg}│ ${'Connection:'.padEnd(fieldWidth)} #${connectionId} (${clientIp})${fancyColors.RESET}
-${wsColors.connectBoxBg}${wsColors.connectBoxFg}│ ${'Origin:'.padEnd(fieldWidth)} ${origin.padEnd(maxValueWidth)}${fancyColors.RESET}
-${wsColors.connectBoxBg}${wsColors.connectBoxFg}│ ${'Browser:'.padEnd(fieldWidth)} ${this.parseClientInfo(userAgent).padEnd(maxValueWidth)}${fancyColors.RESET}
-${wsColors.connectBoxBg}${wsColors.connectBoxFg}│ ${'Location:'.padEnd(fieldWidth)} ${(locationInfo || 'Unknown').padEnd(maxValueWidth)}${fancyColors.RESET}
-${wsColors.connectBoxBg}${wsColors.connectBoxFg}└${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyColors.RESET}`;
+${connectColor}╔${headerBar}╗${fancyColors.RESET}
+${connectColor}║ CONNECTED ${' '.repeat(headerExtension)}║${fancyColors.RESET}
+${bgColor}${fgColor}┌${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyColors.RESET}
+${bgColor}${fgColor}│ ${'Connection:'.padEnd(fieldWidth)} #${connectionId} (${clientIp})${fancyColors.RESET}
+${bgColor}${fgColor}│ ${'Origin:'.padEnd(fieldWidth)} ${origin.padEnd(maxValueWidth)}${fancyColors.RESET}
+${bgColor}${fgColor}│ ${'Browser:'.padEnd(fieldWidth)} ${this.parseClientInfo(userAgent).padEnd(maxValueWidth)}${fancyColors.RESET}
+${bgColor}${fgColor}│ ${'Location:'.padEnd(fieldWidth)} ${(locationInfo?.formattedString ? locationInfo.formattedString.padEnd(maxValueWidth) : 'Unknown'.padEnd(maxValueWidth))}${fancyColors.RESET}
+${bgColor}${fgColor}└${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyColors.RESET}`;
 
       // ===== DEBUG LOGGING: Before final clientInfo assignment =====
       logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CLIENTINFO BEFORE ${fancyColors.RESET} Current state before final assignment:`, {
@@ -681,7 +685,7 @@ ${wsColors.connectBoxBg}${wsColors.connectBoxFg}└${'─'.repeat(fieldWidth + m
       const userInfo = userId ? (nickname ? ` "${nickname}" (${userId.slice(0, 6)}...)` : ` ${userId.slice(0, 6)}...`) : '';
       
       // Log connect with format matching disconnect
-      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}CONN#${connectionId} CONNECT - ${clientIp}${userInfo} (${locationInfo || 'Unknown'})${fancyColors.RESET}`, 
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}CONN#${connectionId} CONNECT - ${clientIp}${userInfo} (${locationInfo?.formattedString || 'Unknown'})${fancyColors.RESET}`, 
         config.debug_modes.websocket ? {
           ...consoleLogObject,
           userAgent: userAgent,
@@ -735,10 +739,8 @@ ${wsColors.connectBoxBg}${wsColors.connectBoxFg}└${'─'.repeat(fieldWidth + m
         config.debug_modes.websocket ? fullLogObject : consoleLogObject
       );
       
-      // Log the fancy connection format to console only if WS_DEBUG_MODE is enabled
-      if (WS_DEBUG_MODE) {
-        console.log(connectionLog);
-      }
+      // Log the fancy connection format to console - always show this for readability
+      console.log(connectionLog);
     } catch (error) {
       logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling connection:${fancyColors.RESET}`, error);
       ws.terminate();
@@ -1840,16 +1842,21 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + aut
         : 'None';
       
       // Create the enhanced disconnect log with box drawing characters - more compact
+      // Ensure we have default values for colors if they're undefined
+      const disconnectColor = wsColors.disconnect || '';
+      const disconnectBgColor = wsColors.disconnectBoxBg || '';
+      const disconnectFgColor = wsColors.disconnectBoxFg || '';
+      
       const disconnectLog = `
-${wsColors.disconnect}╔${disconnectHeaderBar}╗${fancyColors.RESET}
-${wsColors.disconnect}║ DISCONNECTED ${' '.repeat(disconnectHeaderExtension)}║${fancyColors.RESET}
-${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}┌${'─'.repeat(disconnectFieldWidth + disconnectMaxValueWidth + 3)}${fancyColors.RESET}
-${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'Connection:'.padEnd(disconnectFieldWidth)} #${connectionId} (${humanDuration})${' '.repeat(Math.max(0, disconnectMaxValueWidth - connectionId.length - humanDuration.length - 3))}${fancyColors.RESET}
-${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'IP:'.padEnd(disconnectFieldWidth)} ${clientIdentifier}${' '.repeat(Math.max(0, disconnectMaxValueWidth - clientIdentifier.length))}${fancyColors.RESET}
-${userId ? `${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'User:'.padEnd(disconnectFieldWidth)} ${nickname || 'Unknown'} (${userId.slice(0, 6)}...)${' '.repeat(Math.max(0, disconnectMaxValueWidth - (nickname || 'Unknown').length - 11))}${fancyColors.RESET}` : ''}
-${subscribedTopics.length > 0 ? `${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'Topics:'.padEnd(disconnectFieldWidth)} ${topicsList.length > disconnectMaxValueWidth ? topicsList.slice(0, disconnectMaxValueWidth - 3) + '...' : topicsList}${' '.repeat(Math.max(0, disconnectMaxValueWidth - Math.min(topicsList.length, disconnectMaxValueWidth)))}${fancyColors.RESET}` : ''}
-${ws.closeCode ? `${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}│ ${'Close Code:'.padEnd(disconnectFieldWidth)} ${ws.closeCode}${ws.closeReason ? `: ${ws.closeReason}` : ''}${' '.repeat(Math.max(0, disconnectMaxValueWidth - (ws.closeCode ? `${ws.closeCode}${ws.closeReason ? `: ${ws.closeReason}` : ''}`.length : 0)))}${fancyColors.RESET}` : ''}
-${wsColors.disconnectBoxBg}${wsColors.disconnectBoxFg}└${'─'.repeat(disconnectFieldWidth + disconnectMaxValueWidth + 3)}${fancyColors.RESET}`;
+${disconnectColor}╔${disconnectHeaderBar}╗${fancyColors.RESET}
+${disconnectColor}║ DISCONNECTED ${' '.repeat(disconnectHeaderExtension)}║${fancyColors.RESET}
+${disconnectBgColor}${disconnectFgColor}┌${'─'.repeat(disconnectFieldWidth + disconnectMaxValueWidth + 3)}${fancyColors.RESET}
+${disconnectBgColor}${disconnectFgColor}│ ${'Connection:'.padEnd(disconnectFieldWidth)} #${connectionId} (${humanDuration})${' '.repeat(Math.max(0, disconnectMaxValueWidth - connectionId.length - humanDuration.length - 3))}${fancyColors.RESET}
+${disconnectBgColor}${disconnectFgColor}│ ${'IP:'.padEnd(disconnectFieldWidth)} ${clientIdentifier}${' '.repeat(Math.max(0, disconnectMaxValueWidth - clientIdentifier.length))}${fancyColors.RESET}
+${userId ? `${disconnectBgColor}${disconnectFgColor}│ ${'User:'.padEnd(disconnectFieldWidth)} ${nickname || 'Unknown'} (${userId.slice(0, 6)}...)${' '.repeat(Math.max(0, disconnectMaxValueWidth - (nickname || 'Unknown').length - 11))}${fancyColors.RESET}` : ''}
+${subscribedTopics.length > 0 ? `${disconnectBgColor}${disconnectFgColor}│ ${'Topics:'.padEnd(disconnectFieldWidth)} ${topicsList.length > disconnectMaxValueWidth ? topicsList.slice(0, disconnectMaxValueWidth - 3) + '...' : topicsList}${' '.repeat(Math.max(0, disconnectMaxValueWidth - Math.min(topicsList.length, disconnectMaxValueWidth)))}${fancyColors.RESET}` : ''}
+${ws.closeCode ? `${disconnectBgColor}${disconnectFgColor}│ ${'Close Code:'.padEnd(disconnectFieldWidth)} ${ws.closeCode}${ws.closeReason ? `: ${ws.closeReason}` : ''}${' '.repeat(Math.max(0, disconnectMaxValueWidth - (ws.closeCode ? `${ws.closeCode}${ws.closeReason ? `: ${ws.closeReason}` : ''}`.length : 0)))}${fancyColors.RESET}` : ''}
+${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth + disconnectMaxValueWidth + 3)}${fancyColors.RESET}`;
       
       // Log the enhanced disconnect format to console
       console.log(disconnectLog);

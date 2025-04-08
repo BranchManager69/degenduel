@@ -15,6 +15,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 import config from '../../config/config.js';
 import { PrismaClient } from '@prisma/client';
+import { clearInterval } from 'timers';
 
 // Logging helpers
 const formatLog = {
@@ -27,11 +28,27 @@ const formatLog = {
   endpoint: (id) => `${fancyColors.CYAN}${id}${fancyColors.RESET}`
 };
 
+// Default cache TTL values that can be imported by other modules
+export const defaultCacheTTLs = {
+  tokenMetadataTTL: 60 * 60 * 24, // 24 hours
+  tokenPriceTTL: 60 * 60,        // 1 hour
+  walletDataTTL: 60 * 5          // 5 minutes
+};
+
+// Global reference to current TTL settings that will be updated by ConnectionManager
+export const cacheTTLs = { 
+  // First read from environment variables, then use defaults
+  tokenMetadataTTL: parseInt(process.env.TOKEN_METADATA_TTL || '0') || defaultCacheTTLs.tokenMetadataTTL,
+  tokenPriceTTL: parseInt(process.env.TOKEN_PRICE_TTL || '0') || defaultCacheTTLs.tokenPriceTTL,
+  walletDataTTL: parseInt(process.env.WALLET_DATA_TTL || '0') || defaultCacheTTLs.walletDataTTL
+};
+
 /**
  * Connection Manager for RPC endpoint management
  */
 class ConnectionManager {
   constructor() {
+    this.TAG = 'SolanaEngine';
     // Maps endpoint IDs to connection objects
     this.connections = new Map();
     
@@ -73,6 +90,9 @@ class ConnectionManager {
       rateLimitHits: 0,
       byEndpoint: {}
     };
+    
+    // Initialize cache TTL values - will be properly set in loadConfiguration()
+    this.cacheTTLs = { ...cacheTTLs };
   }
   
   /**
@@ -141,12 +161,24 @@ class ConnectionManager {
         adminBypassCache: dbConfig.admin_bypass_cache
       };
       
-      // Cache TTLs for clients
-      this.cacheTTLs = {
-        tokenMetadataTTL: dbConfig.token_metadata_ttl,
-        tokenPriceTTL: dbConfig.token_price_ttl,
-        walletDataTTL: dbConfig.wallet_data_ttl
+      // Cache TTLs - prioritize environment variables over database values
+      // Read from .env first, then fallback to database, then to defaults
+      const ttlUpdates = {
+        tokenMetadataTTL: parseInt(process.env.TOKEN_METADATA_TTL || '0') || dbConfig.token_metadata_ttl || defaultCacheTTLs.tokenMetadataTTL,
+        tokenPriceTTL: parseInt(process.env.TOKEN_PRICE_TTL || '0') || dbConfig.token_price_ttl || defaultCacheTTLs.tokenPriceTTL,
+        walletDataTTL: parseInt(process.env.WALLET_DATA_TTL || '0') || dbConfig.wallet_data_ttl || defaultCacheTTLs.walletDataTTL
       };
+      
+      // Update instance TTLs
+      this.cacheTTLs = ttlUpdates;
+      
+      // Update the global cacheTTLs reference
+      Object.keys(ttlUpdates).forEach(key => {
+        cacheTTLs[key] = ttlUpdates[key];
+      });
+      
+      // Log the TTL values being used
+      logApi.info(`${formatLog.tag()} Cache TTLs - Token Metadata: ${cacheTTLs.tokenMetadataTTL}s, Token Price: ${cacheTTLs.tokenPriceTTL}s, Wallet Data: ${cacheTTLs.walletDataTTL}s`);
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Configuration loaded from database')}`);
       await prisma.$disconnect();
@@ -161,8 +193,14 @@ class ConnectionManager {
    */
   async initializeEndpoints() {
     try {
-      // Get all available RPC endpoints from config
-      const endpoints = config.rpc_urls.mainnet_http_all || [];
+      // Get all available RPC endpoints from config or environment variables
+      let endpoints = config.rpc_urls.mainnet_http_all || [];
+      
+      // If no endpoints are configured in config, try using SOLANA_RPC_ENDPOINT from environment
+      if (endpoints.length === 0 && process.env.SOLANA_RPC_ENDPOINT) {
+        logApi.info(`${formatLog.tag()} ${formatLog.info('Using SOLANA_RPC_ENDPOINT from environment')}`);
+        endpoints = [process.env.SOLANA_RPC_ENDPOINT];
+      }
       
       if (endpoints.length === 0) {
         throw new Error('No RPC endpoints configured');
@@ -179,8 +217,8 @@ class ConnectionManager {
             {
               commitment: 'confirmed',
               confirmTransactionInitialTimeout: config.solana_timeouts.rpc_initial_connection_timeout * 1000,
-              // Only set WS for primary endpoint
-              wsEndpoint: index === 0 ? config.rpc_urls.mainnet_wss : undefined,
+              // Use WebSocket from environment variable if available, otherwise use from config
+              wsEndpoint: index === 0 ? (process.env.SOLANA_MAINNET_WSS || config.rpc_urls.mainnet_wss) : undefined,
               maxSupportedTransactionVersion: 0, // Support versioned transactions
               httpHeaders: {
                 'X-DegenDuel-Request-Priority': 'normal',

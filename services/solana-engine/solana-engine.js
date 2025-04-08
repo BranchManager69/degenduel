@@ -26,6 +26,8 @@ import { ServiceError } from '../../utils/service-suite/service-error.js';
 import { PrismaClient } from '@prisma/client';
 import connectionManager from './connection-manager.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
+import { EventEmitter } from 'events';
+import { cacheTTLs } from './connection-manager.js';
 
 // Config
 import config from '../../config/config.js';
@@ -140,14 +142,14 @@ class SolanaEngineService extends BaseService {
         byEndpoint: {}
       };
       
-      // Mark as initialized (BaseService sets this.isInitialized = true)
-      await super.initialize();
+      // Mark as initialized using BaseService
+      const result = await super.initialize();
       
       // Set our own tracking property
-      this._initialized = true;
+      this._initialized = result === true;
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('SolanaEngine Service initialized successfully')}`);
-      return true;
+      return result;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize SolanaEngine Service:')} ${error.message}`);
       this._initialized = false;
@@ -162,6 +164,22 @@ class SolanaEngineService extends BaseService {
   isInitialized() {
     // Use our separate property to avoid name collision
     return this._initialized === true;
+  }
+  
+  /**
+   * Property getter for backward compatibility
+   * Some services access this as a property, others as a method
+   */
+  get isInitialized() {
+    return this._initialized === true;
+  }
+  
+  /**
+   * Property setter for backward compatibility
+   * Allows BaseService to set isInitialized
+   */
+  set isInitialized(value) {
+    this._initialized = value === true;
   }
   
   /**
@@ -505,7 +523,7 @@ class SolanaEngineService extends BaseService {
    */
   async start() {
     try {
-      if (!this.isInitialized()) {
+      if (this._initialized !== true) {
         await this.initialize();
       }
       
@@ -515,13 +533,13 @@ class SolanaEngineService extends BaseService {
       await this.loadCachedTokens();
       
       // Set as running
-      this.setRunning(true);
+      this.isStarted = true;
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('SolanaEngine Service started successfully')}`);
       return true;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to start SolanaEngine Service:')} ${error.message}`);
-      this.setRunning(false);
+      this.isStarted = false;
       return false;
     }
   }
@@ -540,7 +558,7 @@ class SolanaEngineService extends BaseService {
       }
       
       // Set as not running
-      this.setRunning(false);
+      this.isStarted = false;
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('SolanaEngine Service stopped successfully')}`);
       return true;
@@ -714,7 +732,7 @@ class SolanaEngineService extends BaseService {
         await redisManager.set(
           `${this.redisKeys.tokenData}${mintAddress}`, 
           JSON.stringify(tokenData), 
-          60 * 60 * 24 // 24 hours
+          cacheTTLs.tokenMetadataTTL // Use the global TTL setting
         );
       }
       
@@ -752,7 +770,7 @@ class SolanaEngineService extends BaseService {
         await redisManager.set(
           `${this.redisKeys.tokenData}${mintAddress}`, 
           JSON.stringify(tokenData), 
-          60 * 60 // 1 hour
+          cacheTTLs.tokenPriceTTL // Use the global TTL setting
         );
       }
       

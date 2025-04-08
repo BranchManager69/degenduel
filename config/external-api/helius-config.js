@@ -15,7 +15,7 @@ if (!HELIUS_API_KEY) {
 
 // Base URLs for different Helius API endpoints
 const HELIUS_BASE_URL = 'https://api.helius.xyz';
-const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+const HELIUS_RPC_URL = process.env.SOLANA_RPC_ENDPOINT || `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 const HELIUS_WEBHOOK_URL = `${HELIUS_BASE_URL}/v0/webhooks`;
 
 // Specific API endpoints
@@ -50,7 +50,7 @@ const websocket = {
   enabled: true,
   reconnectInterval: 5000, // Reconnect interval in ms
   maxReconnectAttempts: 10,
-  url: `wss://mainnet.helius-rpc.com/v0?api-key=${HELIUS_API_KEY}`,
+  url: process.env.SOLANA_MAINNET_WSS || `wss://mainnet.helius-rpc.com/v0?api-key=${HELIUS_API_KEY}`,
 };
 
 // Rate limiting configuration

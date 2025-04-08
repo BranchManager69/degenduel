@@ -15,6 +15,9 @@ import clientErrorRoutes from './admin/client-errors.js';
 import aiSqlRoutes from './admin/ai-sql.js';
 import aiAnalysisRoutes from './admin/ai-analysis.js';
 import serviceMetricsRoutes from './admin/service-metrics.js';
+import vanityWalletsRoutes from './admin/vanity-wallets.js';
+import vanityCallbackRoutes from './admin/vanity-callback.js';
+import tokenSyncRoutes from './admin/token-sync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +47,15 @@ router.use('/admin/ai-analysis', aiAnalysisRoutes);
 
 // Mount the Service Metrics routes
 router.use('/admin/metrics', serviceMetricsRoutes);
+
+// Mount the Token Sync routes
+router.use('/admin/token-sync', tokenSyncRoutes);
+
+// Mount the Vanity Wallets routes
+router.use('/admin/vanity-wallets', vanityWalletsRoutes);
+
+// Mount the Vanity Callback routes
+router.use('/admin/vanity-callback', vanityCallbackRoutes);
 
 /**
  * Check a WebSocket endpoint's availability

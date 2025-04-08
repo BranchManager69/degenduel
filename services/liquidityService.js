@@ -454,7 +454,7 @@ class LiquidityService extends BaseService {
             };
         } catch (error) {
             this.liquidityStats.operations.failed++;
-            throw new ServiceError.operation('Balance check failed', error);
+            throw ServiceError.operation('Balance check failed', error);
         }
     }
 

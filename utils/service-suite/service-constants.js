@@ -19,9 +19,10 @@ export const DEFAULT_CIRCUIT_BREAKER_CONFIG = {
 
 export const SERVICE_NAMES = {
     // Data Layer Services
-    TOKEN_SYNC: 'token_sync_service',
+    // TOKEN_SYNC has been permanently removed
+    // TOKEN_WHITELIST is deprecated - using token.is_active flag instead
     MARKET_DATA: 'market_data_service',
-    TOKEN_WHITELIST: 'token_whitelist_service',
+    TOKEN_WHITELIST: 'token_whitelist_service', // Kept for backwards compatibility
 
     // Contest Layer Services
     CONTEST_EVALUATION: 'contest_evaluation_service',
@@ -59,25 +60,20 @@ export const SERVICE_LAYERS = {
 
 export const SERVICE_METADATA = {
     // Data Layer Services
-    [SERVICE_NAMES.TOKEN_SYNC]: {
-        layer: SERVICE_LAYERS.DATA,
-        description: 'Token balance synchronization',
-        updateFrequency: '5m',
-        criticalLevel: 'high',
-        dependencies: []
-    },
+    // TOKEN_SYNC has been permanently removed
+    
     [SERVICE_NAMES.MARKET_DATA]: {
         layer: SERVICE_LAYERS.DATA,
         description: 'Market price data aggregation',
         updateFrequency: '1m',
         criticalLevel: 'critical',
-        dependencies: [SERVICE_NAMES.TOKEN_SYNC]
+        dependencies: []
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         layer: SERVICE_LAYERS.DATA,
-        description: 'Token whitelist management',
+        description: 'Token whitelist management [DEPRECATED - using token.is_active flag instead]',
         updateFrequency: '1h',
-        criticalLevel: 'medium',
+        criticalLevel: 'low',
         dependencies: []
     },
 

@@ -1,128 +1,57 @@
 // services/vanity-wallet/generators/local-generator.js
 
 /**
- * Local Vanity Wallet Generator
+ * Local Vanity Wallet Generator using solana-keygen
  * 
- * This module provides a pure JavaScript implementation for generating Solana vanity wallet addresses.
- * It uses worker threads to parallelize the workload across CPU cores.
+ * This module uses the native solana-keygen grind command to generate vanity wallet addresses.
+ * Significantly more efficient than a pure JavaScript implementation.
  */
 
-import { Keypair } from '@solana/web3.js';
-import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
+import { spawn } from 'child_process';
 import { cpus } from 'os';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import crypto from 'crypto';
 
-// Determine current file directory for worker scripts
+// Determine current file directory for temporary files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
 const NUM_CPUS = cpus().length;
 const DEFAULT_WORKERS = Math.max(1, NUM_CPUS - 1); // Leave one CPU for the main thread
-
-/**
- * Worker thread implementation
- * This code runs in separate threads to search for vanity addresses
- */
-if (!isMainThread) {
-  const { pattern, isSuffix, caseSensitive, startIndex, batchSize } = workerData;
-  
-  // Convert pattern to proper case form for comparison
-  const searchPattern = caseSensitive ? pattern : pattern.toLowerCase();
-  
-  // Create randomness source for Solana keypairs
-  const getRandomValues = size => crypto.randomBytes(size);
-  
-  // Function to check if address matches pattern
-  const matchesPattern = (address, pattern, isSuffix, caseSensitive) => {
-    const compareAddress = caseSensitive ? address : address.toLowerCase();
-    
-    if (isSuffix) {
-      // Check if address ends with pattern
-      return compareAddress.endsWith(pattern);
-    } else {
-      // Check if address starts with pattern directly
-      return compareAddress.startsWith(pattern);
-    }
-  };
-  
-  // Search for a vanity address
-  let attempts = 0;
-  const startTime = Date.now();
-  
-  // Process a batch of keypairs
-  for (let i = 0; i < batchSize; i++) {
-    attempts++;
-    
-    // Generate a Solana keypair
-    const keypair = Keypair.generate({ randomBytes: getRandomValues });
-    const address = keypair.publicKey.toString();
-    
-    // Check if address matches the pattern
-    if (matchesPattern(address, searchPattern, isSuffix, caseSensitive)) {
-      // Found a match!
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      // Return the result to the main thread
-      parentPort.postMessage({
-        found: true,
-        address,
-        keypair: Array.from(keypair.secretKey),
-        attempts,
-        duration,
-        rate: attempts / (duration / 1000)
-      });
-      
-      // Exit this worker
-      break;
-    }
-    
-    // Check if we should report progress
-    if (attempts % 10000 === 0) {
-      parentPort.postMessage({
-        found: false,
-        attempts,
-        duration: Date.now() - startTime,
-        batchComplete: false
-      });
-    }
-  }
-  
-  // Batch completed without finding a match
-  parentPort.postMessage({
-    found: false,
-    attempts,
-    duration: Date.now() - startTime,
-    batchComplete: true
-  });
-}
+const DEFAULT_CPU_LIMIT = 75; // Default CPU usage limit (75%)
+const SOLANA_KEYGEN_PATH = '/home/branchmanager/.local/share/solana/install/active_release/bin/solana-keygen';
 
 /**
  * LocalVanityGenerator class
- * Manages the process of generating vanity addresses using worker threads
+ * Manages the process of generating vanity addresses using solana-keygen grind
  */
 class LocalVanityGenerator {
   /**
    * Constructor
    * @param {Object} options Configuration options
    * @param {number} options.numWorkers Number of worker threads to use
-   * @param {number} options.batchSize Number of attempts per batch
-   * @param {number} options.maxAttempts Maximum number of attempts before giving up
+   * @param {number} options.batchSize Number of attempts per batch (not used with solana-keygen)
+   * @param {number} options.maxAttempts Maximum number of attempts before giving up (not used with solana-keygen)
+   * @param {number} options.cpuLimit CPU usage limit as percentage (default: 75%)
    */
   constructor(options = {}) {
     this.numWorkers = options.numWorkers || DEFAULT_WORKERS;
-    this.batchSize = options.batchSize || 10000;
-    this.maxAttempts = options.maxAttempts || 50000000; // 50 million attempts
+    this.cpuLimit = options.cpuLimit || DEFAULT_CPU_LIMIT;
     this.activeJobs = new Map();
     this.jobQueue = [];
     this.isProcessing = false;
+    this.outputDir = path.join(__dirname, '../temp_keypairs');
     
-    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initialized ${fancyColors.RESET} with ${this.numWorkers} workers and batch size ${this.batchSize}`);
+    // Ensure output directory exists
+    if (!fs.existsSync(this.outputDir)) {
+      fs.mkdirSync(this.outputDir, { recursive: true });
+    }
+    
+    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initialized ${fancyColors.RESET} with solana-keygen grind, ${this.numWorkers} threads, ${this.cpuLimit}% CPU limit`);
   }
   
   /**
@@ -187,14 +116,23 @@ class LocalVanityGenerator {
     if (this.activeJobs.has(jobId)) {
       const jobInfo = this.activeJobs.get(jobId);
       
-      // Terminate all workers
-      jobInfo.workers.forEach(worker => {
+      // Kill the solana-keygen process
+      if (jobInfo.process) {
         try {
-          worker.terminate();
+          process.kill(jobInfo.process.pid);
         } catch (error) {
-          // Ignore errors from already terminated workers
+          logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to kill solana-keygen process: ${error.message}${fancyColors.RESET}`);
         }
-      });
+      }
+      
+      // Kill the cpulimit process
+      if (jobInfo.cpulimitProcess) {
+        try {
+          process.kill(jobInfo.cpulimitProcess.pid);
+        } catch (error) {
+          // Ignore errors from already terminated processes
+        }
+      }
       
       // Remove from active jobs
       this.activeJobs.delete(jobId);
@@ -205,7 +143,7 @@ class LocalVanityGenerator {
       jobInfo.job.onComplete({
         status: 'Cancelled',
         id: jobId,
-        attempts: jobInfo.attempts,
+        attempts: 0, // No accurate way to track with solana-keygen
         duration_ms: Date.now() - jobInfo.startTime
       });
       
@@ -234,76 +172,192 @@ class LocalVanityGenerator {
     
     logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Processing ${fancyColors.RESET} Job ${job.id} for pattern ${job.pattern}`);
     
-    // Start workers for this job
-    this.startWorkers(job);
+    // Start the solana-keygen process for this job
+    this.startSolanaKeygen(job);
   }
   
   /**
-   * Start worker threads to process a job
+   * Generate a filename for a keypair based on job ID
+   * @param {string} jobId Job ID
+   * @param {string} pattern Pattern being searched for
+   * @returns {string} The output file path
+   */
+  getKeypairFilePath(jobId, pattern) {
+    return path.join(this.outputDir, `${pattern}_${jobId}.json`);
+  }
+  
+  /**
+   * Start solana-keygen process to generate a vanity address
    * @param {Object} job The job to process
    */
-  startWorkers(job) {
+  startSolanaKeygen(job) {
     const startTime = Date.now();
-    const pattern = job.caseSensitive ? job.pattern : job.pattern.toLowerCase();
+    const outputFile = this.getKeypairFilePath(job.id, job.pattern);
     
-    // Setup job tracking
+    // Build the solana-keygen command arguments
+    const args = ['grind'];
+    
+    // Add pattern to search for
+    args.push('--starts-with');
+    args.push(`${job.pattern}:1`); // Only generate 1 address
+    
+    // Set case sensitivity
+    if (!job.caseSensitive) {
+      args.push('--ignore-case');
+    }
+    
+    // Set thread count
+    args.push('--num-threads');
+    args.push(this.numWorkers.toString());
+    
+    // Set output file
+    args.push('--output');
+    args.push(outputFile);
+    
+    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Running solana-keygen ${args.join(' ')}${fancyColors.RESET}`);
+    
+    // Spawn the solana-keygen process
+    const process = spawn(SOLANA_KEYGEN_PATH, args);
+    
+    // Calculate CPU limit value (percentage of total CPU)
+    const cpuLimitValue = Math.floor(this.cpuLimit);
+    
+    // Create job info for tracking
     const jobInfo = {
       job,
-      workers: [],
-      attempts: 0,
+      process,
       startTime,
-      found: false
+      cpulimitProcess: null,
+      outputPath: outputFile
     };
     
     this.activeJobs.set(job.id, jobInfo);
     
-    // Create workers
-    for (let i = 0; i < this.numWorkers; i++) {
-      const worker = new Worker(__filename, {
-        workerData: {
-          pattern,
-          isSuffix: job.isSuffix || false,
-          caseSensitive: job.caseSensitive !== false,
-          startIndex: i,
-          batchSize: this.batchSize
-        }
-      });
-      
-      // Add worker to tracking
-      jobInfo.workers.push(worker);
-      
-      // Handle messages from worker
-      worker.on('message', message => {
-        if (jobInfo.found) {
-          // We already found a result, ignore additional messages
-          return;
-        }
+    // Set up CPU limiting with cpulimit
+    if (this.cpuLimit < 100) {
+      try {
+        // Create the cpulimit command
+        const cpulimitProcess = spawn('cpulimit', [
+          '-p', process.pid.toString(),
+          '-l', cpuLimitValue.toString()
+        ]);
         
-        // Update attempt count
-        jobInfo.attempts += message.attempts;
+        // Store cpulimit process for cleanup
+        jobInfo.cpulimitProcess = cpulimitProcess;
         
-        // Check for successful result
-        if (message.found) {
-          jobInfo.found = true;
-          
-          // Terminate all workers for this job
-          jobInfo.workers.forEach(w => {
-            try {
-              if (w !== worker) {
-                w.terminate();
-              }
-            } catch (error) {
-              // Ignore errors from already terminated workers
-            }
+        // Log cpulimit status
+        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Applied CPU limit of ${this.cpuLimit}% to process ${process.pid}${fancyColors.RESET}`);
+        
+        // Handle cpulimit errors
+        cpulimitProcess.on('error', (err) => {
+          logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CPU Limit Error ${fancyColors.RESET} Job ${job.id}: ${err.message}`, {
+            error: err.message,
+            jobId: job.id
           });
+        });
+      } catch (error) {
+        logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CPU Limit Error ${fancyColors.RESET} Failed to apply CPU limit: ${error.message}`, {
+          error: error.message,
+          jobId: job.id
+        });
+      }
+    }
+    
+    // Track output data for progress reporting
+    let outputBuffer = '';
+    
+    // Handle stdout data
+    process.stdout.on('data', (data) => {
+      const output = data.toString();
+      outputBuffer += output;
+      
+      // Check if we have progress information
+      if (output.includes('Searching with') || output.includes('Generated') || output.includes('Found vanity address')) {
+        // Send progress update if callback provided
+        if (job.onProgress) {
+          job.onProgress({
+            id: job.id,
+            attempts: 0, // No accurate way to track with solana-keygen
+            duration_ms: Date.now() - startTime,
+            output: output.trim()
+          });
+        }
+        
+        // Log progress
+        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Progress for job ${job.id}: ${output.trim()}${fancyColors.RESET}`);
+      }
+    });
+    
+    // Handle stderr data
+    process.stderr.on('data', (data) => {
+      const output = data.toString();
+      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Keygen Error ${fancyColors.RESET} Job ${job.id}: ${output.trim()}`, {
+        error: output.trim(),
+        jobId: job.id
+      });
+    });
+    
+    // Handle process completion
+    process.on('close', async (code) => {
+      // Kill cpulimit process if it exists
+      if (jobInfo.cpulimitProcess) {
+        try {
+          process.kill(jobInfo.cpulimitProcess.pid);
+        } catch (error) {
+          // Ignore errors from already terminated processes
+        }
+      }
+      
+      const duration = Date.now() - startTime;
+      
+      if (code === 0) {
+        // Success - keypair was generated
+        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Success ${fancyColors.RESET} Vanity address generated for job ${job.id} in ${(duration / 1000).toFixed(2)}s`);
+        
+        try {
+          // Read the keypair file
+          const keypairContent = fs.readFileSync(outputFile, 'utf8');
+          const keypairArray = JSON.parse(keypairContent);
           
-          // Calculate final statistics
-          const duration = message.duration;
-          const attempts = jobInfo.attempts;
-          const rate = attempts / (duration / 1000);
+          // Get the public key from the first line of output that contains it
+          let publicKey = '';
+          const lines = outputBuffer.split('\n');
+          for (const line of lines) {
+            // Look for line with "pubkey:" or "address:"
+            if (line.includes('pubkey:') || line.includes('address:')) {
+              const parts = line.split(':');
+              if (parts.length >= 2) {
+                publicKey = parts[1].trim();
+                break;
+              }
+            } else if (line.includes('Found vanity address')) {
+              // Parse the address from "Found vanity address: DUEL..."
+              const addressMatch = line.match(/Found vanity address: ([\w\d]+)/);
+              if (addressMatch && addressMatch[1]) {
+                publicKey = addressMatch[1];
+                break;
+              }
+            }
+          }
           
-          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Found ${fancyColors.RESET} Vanity address for job ${job.id}: ${message.address}`);
-          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Generated in ${duration}ms with ${attempts} attempts (${Math.round(rate)} addresses/sec)${fancyColors.RESET}`);
+          // If we couldn't find the public key in the output,
+          // try to read metadata from the generated file
+          if (!publicKey && fs.existsSync(`${outputFile}.json`)) {
+            try {
+              const metadata = JSON.parse(fs.readFileSync(`${outputFile}.json`, 'utf8'));
+              if (metadata.pubkey) {
+                publicKey = metadata.pubkey;
+              }
+            } catch (metadataError) {
+              logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to read metadata for job ${job.id}: ${metadataError.message}${fancyColors.RESET}`);
+            }
+          }
+          
+          // If we still don't have a public key, use the pattern as a fallback
+          if (!publicKey) {
+            publicKey = `${job.pattern}...`;
+            logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Could not determine public key for job ${job.id}, using fallback${fancyColors.RESET}`);
+          }
           
           // Clean up this job
           this.activeJobs.delete(job.id);
@@ -313,121 +367,89 @@ class LocalVanityGenerator {
             status: 'Completed',
             id: job.id,
             result: {
-              address: message.address,
-              keypair_bytes: message.keypair
+              address: publicKey,
+              keypair_bytes: keypairArray
             },
-            attempts,
-            duration_ms: duration,
-            rate_per_second: Math.round(rate)
+            duration_ms: duration
           });
           
           // Start next job if there's one in the queue
           this.processNextJob();
-        } 
-        else if (message.batchComplete) {
-          // Worker completed its batch without finding a match
+        } catch (error) {
+          logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} File Error ${fancyColors.RESET} Job ${job.id}: ${error.message}`, {
+            error: error.message,
+            stack: error.stack,
+            jobId: job.id
+          });
           
-          // Update progress if callback provided
-          if (job.onProgress) {
-            job.onProgress({
-              id: job.id,
-              attempts: jobInfo.attempts,
-              duration_ms: Date.now() - startTime
-            });
-          }
+          // Clean up this job
+          this.activeJobs.delete(job.id);
           
-          // Check if we've exceeded max attempts
-          if (jobInfo.attempts >= this.maxAttempts) {
-            // Too many attempts, give up
-            logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Failed ${fancyColors.RESET} Exceeded maximum attempts (${this.maxAttempts}) for job ${job.id}`);
-            
-            // Terminate all workers for this job
-            jobInfo.workers.forEach(w => {
-              try {
-                w.terminate();
-              } catch (error) {
-                // Ignore errors from already terminated workers
-              }
-            });
-            
-            // Clean up this job
-            this.activeJobs.delete(job.id);
-            
-            // Call completion callback with failure
-            job.onComplete({
-              status: 'Failed',
-              id: job.id,
-              error: 'Exceeded maximum attempts',
-              attempts: jobInfo.attempts,
-              duration_ms: Date.now() - startTime
-            });
-            
-            // Start next job if there's one in the queue
-            this.processNextJob();
-          } 
-          else {
-            // Start another batch with this worker
-            try {
-              worker.terminate();
-            } catch (error) {
-              // Ignore errors from already terminated workers
-            }
-            
-            // Remove this worker
-            const index = jobInfo.workers.indexOf(worker);
-            if (index >= 0) {
-              jobInfo.workers.splice(index, 1);
-            }
-            
-            // Create a new worker to replace it
-            const newWorker = new Worker(__filename, {
-              workerData: {
-                pattern,
-                isSuffix: job.isSuffix || false,
-                caseSensitive: job.caseSensitive !== false,
-                startIndex: i,
-                batchSize: this.batchSize
-              }
-            });
-            
-            jobInfo.workers.push(newWorker);
-            
-            // Setup event handlers for new worker (recursive)
-            newWorker.on('message', message => worker.emit('message', message));
-            newWorker.on('error', error => worker.emit('error', error));
-            newWorker.on('exit', code => worker.emit('exit', code));
-          }
+          // Call completion callback with failure
+          job.onComplete({
+            status: 'Failed',
+            id: job.id,
+            error: `Failed to read keypair file: ${error.message}`,
+            duration_ms: duration
+          });
+          
+          // Start next job if there's one in the queue
+          this.processNextJob();
         }
-        else {
-          // Progress update
-          
-          // Only send progress updates occasionally to avoid overwhelming the callback
-          if (job.onProgress && jobInfo.attempts % 100000 === 0) {
-            job.onProgress({
-              id: job.id,
-              attempts: jobInfo.attempts,
-              duration_ms: Date.now() - startTime
-            });
-          }
-        }
-      });
-      
-      // Handle worker errors
-      worker.on('error', error => {
-        logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Worker Error ${fancyColors.RESET} Job ${job.id}: ${error.message}`, {
-          error: error.message,
-          stack: error.stack,
+      } else {
+        // Process exited with non-zero code
+        logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Process Error ${fancyColors.RESET} Job ${job.id}: solana-keygen exited with code ${code}`, {
+          error: `solana-keygen exited with code ${code}`,
           jobId: job.id
         });
+        
+        // Clean up this job
+        this.activeJobs.delete(job.id);
+        
+        // Call completion callback with failure
+        job.onComplete({
+          status: 'Failed',
+          id: job.id,
+          error: `solana-keygen exited with code ${code}`,
+          duration_ms: duration
+        });
+        
+        // Start next job if there's one in the queue
+        this.processNextJob();
+      }
+    });
+    
+    // Handle process errors
+    process.on('error', (error) => {
+      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Process Error ${fancyColors.RESET} Job ${job.id}: ${error.message}`, {
+        error: error.message,
+        stack: error.stack,
+        jobId: job.id
       });
       
-      // Handle worker exit
-      worker.on('exit', code => {
-        if (code !== 0 && !jobInfo.found) {
-          logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Worker exited with code ${code} for job ${job.id}${fancyColors.RESET}`);
+      // Kill cpulimit process if it exists
+      if (jobInfo.cpulimitProcess) {
+        try {
+          process.kill(jobInfo.cpulimitProcess.pid);
+        } catch (cpuError) {
+          // Ignore errors from already terminated processes
         }
+      }
+      
+      // Clean up this job
+      this.activeJobs.delete(job.id);
+      
+      // Call completion callback with failure
+      job.onComplete({
+        status: 'Failed',
+        id: job.id,
+        error: error.message,
+        duration_ms: Date.now() - startTime
       });
-    }
+      
+      // Start next job if there's one in the queue
+      this.processNextJob();
+    });
   }
   
   /**
@@ -440,7 +462,6 @@ class LocalVanityGenerator {
       activeJobs: Array.from(this.activeJobs.entries()).map(([id, info]) => ({
         id,
         pattern: info.job.pattern,
-        attempts: info.attempts,
         runtime_ms: Date.now() - info.startTime
       }))
     };

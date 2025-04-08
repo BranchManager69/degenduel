@@ -127,13 +127,12 @@ router.get('/status', async (req, res) => {
         return res.json({
             status: 'success',
             data: {
-                tokens: stats.data.tokens,
-                updates: {
-                    lastUpdate: stats.data.updates.lastUpdate,
-                    broadcasts: stats.data.broadcasts.total
-                },
-                healthy: !marketDataService.stats.circuitBreaker.isOpen,
-                circuitBreaker: marketDataService.stats.circuitBreaker
+                tokens: stats.tokens,
+                updates: stats.updates,
+                broadcasts: stats.broadcasts,
+                performance: stats.performance,
+                healthy: !marketDataService.stats?.circuitBreaker?.isOpen,
+                circuitBreaker: marketDataService.stats?.circuitBreaker || {}
             }
         });
     } catch (error) {

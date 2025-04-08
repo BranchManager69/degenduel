@@ -15,8 +15,11 @@ import crypto from 'crypto';
 import axios from 'axios';
 import { randomBytes } from 'crypto';
 import privyClient from '../utils/privy-auth.js';
+import biometricRoutes from './auth-biometric.js';
 
 const router = express.Router();
+// Mount biometric authentication routes
+router.use('/biometric', biometricRoutes);
 // Destructure jwt.sign into a variable
 const jwtSign = jwt.sign;
 
@@ -2194,38 +2197,16 @@ router.get('/status', async (req, res) => {
           };
         }
         
-        // 2. Check if the user has been authenticated via Privy recently by querying for API calls
-        const recentPrivyAuth = await prisma.api_request_log.findFirst({
-          where: {
-            endpoint: '/api/auth/verify-privy',
-            user_id: walletAddress,
-            created_at: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
-            },
-            response_code: 200
-          },
-          orderBy: {
-            created_at: 'desc'
-          }
-        });
+        // Set Privy active status based on linked account instead of api_request_log
+        // since the api_request_log table doesn't appear to exist in the schema
+        privyStatus.active = privyStatus.linked;
         
-        // Update active status if there was a recent login
-        if (recentPrivyAuth) {
-          privyStatus.active = true;
+        if (privyStatus.linked) {
           privyStatus.details.last_login = {
-            timestamp: recentPrivyAuth.created_at,
-            success: true
+            timestamp: new Date().toISOString(),
+            success: true,
+            note: "Based on linked account status"
           };
-          
-          // Try to get any Privy-specific data from the log
-          try {
-            const requestBody = JSON.parse(recentPrivyAuth.request_body);
-            if (requestBody.userId) {
-              privyStatus.details.last_login.userId = requestBody.userId;
-            }
-          } catch (e) {
-            // Ignore parsing errors
-          }
         }
       }
     } catch (error) {

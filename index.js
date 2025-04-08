@@ -48,7 +48,7 @@ import { fancyColors } from './utils/colors.js';
 // Service-related routes
 import faucetManagementRoutes from "./routes/admin/faucet-management.js";
 import serviceMetricsRoutes from "./routes/admin/service-metrics.js";
-import tokenSyncRoutes from "./routes/admin/token-sync.js";
+// tokenSyncRoutes has been permanently removed
 import walletManagementRoutes from "./routes/admin/wallet-management.js";
 import WebSocketInitializer from './utils/websocket-suite/websocket-initializer.js';
 // Import WebSocket test & status routes
@@ -67,8 +67,13 @@ import ipBanManagementRoutes from './routes/admin/ip-ban-management.js';
 import ipTrackingRoutes from './routes/admin/ip-tracking.js';
 // Import Role Management routes
 import roleManagementRoutes from './routes/admin/role-management.js';
+// Import Vanity Wallet routes
+import vanityWalletsRoutes from './routes/admin/vanity-wallets.js';
+import vanityCallbackRoutes from './routes/admin/vanity-callback.js';
 // Import Public Ban Check route
 import bannedIpRoutes from './routes/banned-ip.js';
+// Import Platform route
+import platformRoutes from './routes/platform.js';
 // Import (some) Admin Routes
 import contestManagementRoutes from "./routes/admin/contest-management.js";
 import contestSchedulerRoutes from "./routes/admin/contest-scheduler.js";
@@ -81,7 +86,8 @@ import maintenanceRoutes from "./routes/admin/maintenance.js";
 import countdownRoutes from "./routes/admin/countdown.js";
 import authRoutes from "./routes/auth.js";
 import contestRoutes from "./routes/contests.js";
-import ddServRoutes from "./routes/dd-serv/tokens.js";
+// dd-serv routes have been permanently removed
+import v3TokensRoutes from "./routes/v3/tokens.js";
 import prismaActivityRoutes from "./routes/prisma/activity.js";
 import prismaAdminRoutes from "./routes/prisma/admin.js";
 import prismaBalanceRoutes from "./routes/prisma/balance.js";
@@ -238,12 +244,14 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/status", statusRoutes);
 app.use("/api/banned-ip", bannedIpRoutes);
+app.use("/platform", platformRoutes);
 
 // Admin Routes
 app.use("/api/admin", prismaAdminRoutes);
 app.use("/api/admin/maintenance", maintenanceRoutes);
 app.use("/api/admin/countdown", countdownRoutes);
-app.use("/api/admin/token-sync", tokenSyncRoutes);
+// Disabled token-sync routes as tokenSyncService is no longer needed
+// app.use("/api/admin/token-sync", tokenSyncRoutes);
 app.use("/api/admin/wallets", walletManagementRoutes);
 app.use("/api/admin/contests", contestManagementRoutes);
 app.use("/api/admin/contest-scheduler", contestSchedulerRoutes);
@@ -262,6 +270,8 @@ app.use("/api/admin/circuit-breaker", circuitBreakerRoutes);
 app.use("/api/admin/ip-ban", ipBanManagementRoutes);
 app.use("/api/admin/ip-tracking", ipTrackingRoutes);
 app.use("/api/admin/role", roleManagementRoutes);
+app.use("/api/admin/vanity-wallets", vanityWalletsRoutes);
+app.use("/api/admin/vanity-callback", vanityCallbackRoutes);
 
 // Protected routes (with maintenance check)
 // earliest protected routes
@@ -270,7 +280,11 @@ app.use("/api/stats", maintenanceCheck, prismaStatsRoutes);
 app.use("/api/leaderboard", maintenanceCheck, leaderboardRoutes);
 app.use("/api/activity", maintenanceCheck, prismaActivityRoutes);
 // DD-Serv-enabled protected routes (inaccessible when in maintenance mode)
-app.use("/api/dd-serv", maintenanceCheck, ddServRoutes);
+// dd-serv routes have been permanently removed
+
+// V3 API routes (using market database)
+app.use("/api/v3/tokens", maintenanceCheck, v3TokensRoutes);
+
 // more protected routes (inaccessible when in maintenance mode)
 app.use("/api/users", maintenanceCheck, userRoutes);
 app.use("/api/devices", maintenanceCheck, deviceRoutes);
@@ -355,22 +369,7 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Direct market data route // TODO: (not tested)
-app.get("/api/marketData/latest", maintenanceCheck, async (req, res) => {
-  try {
-    const response = await fetch(
-      `http://localhost:${port}/api/v2/tokens/marketData/latest` // (not tested)
-    );
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    logApi.error("Failed to forward market data request:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch market data",
-    });
-  }
-});
+// Direct market data route has been removed - use v3/tokens API endpoints instead
 
 // Error handling setup
 app.use(errorHandler);

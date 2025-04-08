@@ -113,15 +113,14 @@ The DegenDuel platform follows a service-oriented architecture with specialized 
 The system is built around a robust service framework with:
 
 **Service Layers:**
-1. **Infrastructure Layer**: Core services like SolanaService, WalletGenerationService
-2. **Data Layer**: TokenSyncService, MarketDataService
+1. **Infrastructure Layer**: Core services like SolanaEngine, WalletGenerationService
+2. **Data Layer**: MarketDataService with premium API integration
 3. **Contest Layer**: ContestEvaluationService, AchievementService
 4. **Wallet Layer**: ContestWalletService, AdminWalletService
 
 **Key Services:**
-- **SolanaService**: Blockchain connectivity
-- **TokenSyncService**: Token data synchronization
-- **MarketDataService**: Real-time market data
+- **SolanaEngine**: Enhanced blockchain connectivity with premium APIs
+- **MarketDataService**: Real-time market data and token management
 - **AchievementService**: User achievement tracking and rewards
 - **ContestEvaluationService**: Contest lifecycle management
 - **LevelingService**: User progression system

@@ -626,8 +626,7 @@ class ServiceManager {
                     return true;
                 } else {
                     // Check for service disabled via service profile
-                    if ((serviceName === SERVICE_NAMES.TOKEN_SYNC && !config.services.token_sync) ||
-                        (serviceName === SERVICE_NAMES.MARKET_DATA && !config.services.market_data) ||
+                    if ((serviceName === SERVICE_NAMES.MARKET_DATA && !config.services.market_data) ||
                         (serviceName === SERVICE_NAMES.CONTEST_EVALUATION && !config.services.contest_evaluation) ||
                         (serviceName === SERVICE_NAMES.TOKEN_WHITELIST && !config.services.token_whitelist) ||
                         (serviceName === SERVICE_NAMES.LIQUIDITY && !config.services.liquidity) ||

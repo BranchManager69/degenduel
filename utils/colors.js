@@ -245,6 +245,10 @@ export const serviceSpecificColors = {
     success: '\x1b[38;5;46m',                       // Standard green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;208m',             // Bold orange for highlights
+    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
+    price: '\x1b[38;5;226m',                        // Yellow for prices
+    count: '\x1b[38;5;46m',                         // Green for counts
   },
   solanaEngine: {
     tag: '\x1b[1m\x1b[38;5;75m',                    // Blue (75)
@@ -345,6 +349,14 @@ export const wsColors = {
   boxBg: '\x1b[48;5;236m',                          // Dark gray background
   highlightFg: '\x1b[1m\x1b[38;5;16m',              // Bold black text
   highlightBg: '\x1b[48;5;93m',                     // Indigo background
+  
+  // Connection box specific colors
+  connectBoxBg: '\x1b[48;5;236m',                   // Dark gray background for connection box
+  connectBoxFg: '\x1b[38;5;93m',                    // Indigo text for connection box
+  
+  // Disconnection box specific colors
+  disconnectBoxBg: '\x1b[48;5;236m',                // Dark gray background for disconnection box
+  disconnectBoxFg: '\x1b[38;5;209m',                // Salmon text for disconnection box
   
   // Special combinations
   notification: '\x1b[1m\x1b[38;5;93m\x1b[48;5;209m', // Bold Indigo on Salmon

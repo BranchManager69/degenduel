@@ -15,6 +15,7 @@ Each contest in DegenDuel requires a dedicated Solana wallet to manage funds for
 - **Batch Processing**: Processes wallets in batches to avoid rate limiting
 - **Adaptive Throttling**: Implements exponential backoff for RPC call failures
 - **Cycle Management**: Orchestrates reclaim operations with unique cycle IDs
+- **Polling-Based Vanity Wallet Integration**: Uses database-driven approach for GPU server integration
 
 ## Technical Implementation
 
@@ -32,6 +33,7 @@ Each contest in DegenDuel requires a dedicated Solana wallet to manage funds for
 - **SolanaEngine**: For enhanced Solana connectivity with multi-endpoint support
 - **Prisma**: For database operations
 - **AdminLogger**: For administrative action tracking
+- **VanityApiClient**: For accessing vanity wallets via polling-based approach
 
 > **Migration Note**: The Contest Wallet Service was previously using SolanaServiceManager, but has been migrated to use SolanaEngine directly. This provides enhanced reliability with multi-endpoint support, automatic failover, and explicit endpoint selection for critical transactions.
 
@@ -279,6 +281,40 @@ The service inherits from BaseService and includes circuit breaker protection:
 - **Contest Scheduler Service**: Coordinates wallet creation for scheduled contests
 - **Admin Contest Controller**: Interface for administrative wallet operations
 - **SolanaEngine**: Provides enhanced Solana connection management
+
+## Vanity Wallet Integration
+
+The service integrates with the VanityApiClient which implements a polling-based architecture for GPU-accelerated vanity wallet generation:
+
+### Polling-Based Architecture
+
+1. **Database-Driven Job Management**:
+   - All vanity wallet requests are stored in the database with status "pending"
+   - The GPU server pulls jobs from the database rather than being directly called
+   - Results are submitted back to dedicated endpoints when ready
+
+2. **Key API Endpoints**:
+   - `GET /api/admin/vanity-wallets/jobs/pending`: GPU server polls this endpoint to get pending jobs
+   - `POST /api/admin/vanity-wallets/jobs/result`: GPU server submits results to this endpoint
+
+3. **Integration with Contest Wallet Service**:
+   - `getUnassociatedVanityWallet()` method retrieves available vanity wallets from the database
+   - Prioritizes wallets in order: "DUEL" pattern, "DEGEN" pattern, any available vanity wallet
+   - Assigns the wallet to the contest and marks it as used in the database
+
+4. **Security Features**:
+   - IP validation ensuring only authorized GPU servers can access endpoints
+   - Support for IP patterns like "192.222.51.*" for dynamic IP environments
+
+5. **Fallback Mechanism**:
+   - Generates a standard random Solana wallet if no vanity wallets are available
+   - Logs whether a vanity wallet or standard wallet was used
+
+### Sample Flow
+
+```
+[Request] → [Database Storage] → [GPU Server Polling] → [Job Processing] → [Result Submission] → [Wallet Assignment]
+```
 
 ## Related Services
 

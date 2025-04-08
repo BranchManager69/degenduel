@@ -1477,7 +1477,7 @@ class ContestEvaluationService extends BaseService {
         if (contestsToStart.length > 0) {
             logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Found ${fancyColors.BOLD}${contestsToStart.length}${fancyColors.RESET}${fancyColors.BG_NEON} pending contests${fancyColors.RESET}`);
         } else {
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA} No pending contests to ${fancyColors.GREEN}start ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}No pending contests to ${fancyColors.BOLD}start${fancyColors.RESET}`);
         }
         
         // Process each contest that should start
@@ -1511,7 +1511,7 @@ class ContestEvaluationService extends BaseService {
             logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Found ${fancyColors.BOLD}${contestsToEnd.length}${fancyColors.RESET}${fancyColors.BG_NEON} active contests due to end ${fancyColors.RESET}`);
         } else {
             // No active contests due to end
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA} No active contests to ${fancyColors.DARK_RED}end    ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}No active contests to ${fancyColors.BOLD}end${fancyColors.RESET}`);
         }
         
         for (const contest of contestsToEnd) {

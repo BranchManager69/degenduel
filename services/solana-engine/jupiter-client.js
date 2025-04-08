@@ -1,12 +1,11 @@
 // services/new-market-data/jupiter-client.js
 
 import axios from 'axios';
-import WebSocket from 'ws';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { jupiterConfig } from '../../config/external-api/jupiter-config.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
-import connectionManager from './connection-manager.js';
+import { cacheTTLs } from './connection-manager.js';
 
 // Formatting helpers for consistent logging
 const formatLog = {
@@ -17,25 +16,30 @@ const formatLog = {
   error: (text) => `${serviceSpecificColors.jupiterClient.error}${text}${fancyColors.RESET}`,
   info: (text) => `${serviceSpecificColors.jupiterClient.info}${text}${fancyColors.RESET}`,
   highlight: (text) => `${serviceSpecificColors.jupiterClient.highlight}${text}${fancyColors.RESET}`,
-  token: (symbol) => `${serviceSpecificColors.jupiterClient.token}${symbol}${fancyColors.RESET}`,
-  price: (price) => `${serviceSpecificColors.jupiterClient.price}${price}${fancyColors.RESET}`,
-  count: (num) => `${serviceSpecificColors.jupiterClient.count}${num}${fancyColors.RESET}`,
+  token: (symbol) => `${serviceSpecificColors.jupiterClient.token}${symbol || ''}${fancyColors.RESET}`,
+  price: (price) => `${serviceSpecificColors.jupiterClient.price}${price || 0}${fancyColors.RESET}`,
+  count: (num) => `${serviceSpecificColors.jupiterClient.count}${Number(num) || 0}${fancyColors.RESET}`,
 };
 
 /**
  * Jupiter Client for fetching market data and swap quotes
+ * 
+ * Updated in April 2025 to use Jupiter's new API Gateway:
+ * - For paid access with API key: https://api.jup.ag/
+ * - For free access (no API key): https://lite-api.jup.ag/
+ * 
+ * Note: As of May 1, 2025, api.jup.ag will return 401 errors without an API key
  */
 class JupiterClient {
   constructor() {
     this.config = jupiterConfig;
-    this.wsClient = null;
-    this.wsConnected = false;
-    this.reconnectAttempts = 0;
-    this.subscriptions = new Map();
+    this.subscriptions = new Map(); // Keep this to track which tokens we're interested in
     this.tokenList = null;
     this.tokenMap = null;
     this.initialized = false;
     this.priceUpdateCallbacks = [];
+    this.pollingInterval = null;
+    this.pollingFrequency = 30000; // Poll every 30 seconds by default
   }
 
   /**
@@ -59,10 +63,8 @@ class JupiterClient {
       // Initialize token list and map
       await this.initializeTokenList();
       
-      // Initialize WebSocket if enabled
-      if (this.config.websocket.enabled) {
-        this.initializeWebSocket();
-      }
+      // Note: WebSocket initialization removed as the endpoint is unconfirmed
+      // In the future, we'll use Helius to monitor token liquidity pools directly
       
       this.initialized = true;
       logApi.info(`${formatLog.tag()} ${formatLog.success('Jupiter client initialized successfully')}`);
@@ -83,7 +85,7 @@ class JupiterClient {
       
       if (cachedTokenList) {
         this.tokenList = JSON.parse(cachedTokenList);
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Using cached token list with')} ${formatLog.count(this.tokenList.length)} tokens`);
+        logApi.info(`${formatLog.tag()} ${formatLog.success('Using cached token list with')} ${formatLog.count(this.tokenList?.length || 0)} tokens`);
       } else {
         // Fetch token list from Jupiter API
         logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} token list from Jupiter API`);
@@ -94,14 +96,14 @@ class JupiterClient {
         
         this.tokenList = response.data;
         
-        // Cache the token list
+        // Cache the token list with TTL from global cacheTTLs
         await redisManager.set(
           this.redisKeys.tokenList, 
           JSON.stringify(this.tokenList), 
-          connectionManager.cacheTTLs?.tokenMetadataTTL || 60 * 60 * 24 // Use config or fallback to 24 hours
+          cacheTTLs.tokenMetadataTTL || 60 * 60 * 24 // Use cacheTTLs or fallback
         );
         
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Fetched token list with')} ${formatLog.count(this.tokenList.length)} tokens`);
+        logApi.info(`${formatLog.tag()} ${formatLog.success('Fetched token list with')} ${formatLog.count(this.tokenList?.length || 0)} tokens`);
       }
       
       // Create a map of mint address to token info for quick lookups
@@ -118,106 +120,42 @@ class JupiterClient {
   }
 
   /**
-   * Initialize WebSocket connection to Jupiter price API
+   * Start polling for price updates for subscribed tokens
+   * @private
    */
-  initializeWebSocket() {
-    try {
-      if (!this.config.websocket.priceUrl) {
-        logApi.warn(`${formatLog.tag()} ${formatLog.warning('WebSocket URL not configured for Jupiter')}`);
-        return;
-      }
-
-      logApi.info(`${formatLog.tag()} ${formatLog.header('CONNECTING')} to Jupiter Price WebSocket`);
-      
-      this.wsClient = new WebSocket(this.config.websocket.priceUrl);
-      
-      this.wsClient.on('open', () => {
-        this.wsConnected = true;
-        this.reconnectAttempts = 0;
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Connected to Jupiter Price WebSocket')}`);
-        
-        // Resubscribe to previously subscribed tokens
-        this.resubscribeToTokens();
-      });
-      
-      this.wsClient.on('message', (data) => {
-        try {
-          const message = JSON.parse(data);
-          this.handleWebSocketMessage(message);
-        } catch (error) {
-          logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to parse WebSocket message:')} ${error.message}`);
-        }
-      });
-      
-      this.wsClient.on('error', (error) => {
-        logApi.error(`${formatLog.tag()} ${formatLog.error('WebSocket error:')} ${error.message}`);
-      });
-      
-      this.wsClient.on('close', () => {
-        this.wsConnected = false;
-        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Disconnected from Jupiter Price WebSocket')}`);
-        
-        // Attempt to reconnect with exponential backoff
-        if (this.reconnectAttempts < this.config.websocket.maxReconnectAttempts) {
-          const reconnectDelay = this.config.websocket.reconnectInterval * Math.pow(2, this.reconnectAttempts);
-          this.reconnectAttempts++;
-          
-          logApi.info(`${formatLog.tag()} ${formatLog.info(`Reconnecting in ${reconnectDelay / 1000}s (attempt ${this.reconnectAttempts}/${this.config.websocket.maxReconnectAttempts})`)}`);
-          
-          setTimeout(() => {
-            this.initializeWebSocket();
-          }, reconnectDelay);
-        } else {
-          logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to reconnect to Jupiter Price WebSocket after maximum attempts')}`);
-        }
-      });
-    } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize Jupiter WebSocket:')} ${error.message}`);
-    }
-  }
-
-  /**
-   * Resubscribe to previously subscribed tokens after reconnecting
-   */
-  resubscribeToTokens() {
-    if (!this.wsConnected || this.subscriptions.size === 0) {
-      return;
+  _startPolling() {
+    if (this.pollingInterval) {
+      return; // Already polling
     }
     
-    try {
-      const subscriptionMessage = {
-        type: 'subscribe',
-        tokens: Array.from(this.subscriptions.keys()),
-      };
-      
-      this.wsClient.send(JSON.stringify(subscriptionMessage));
-      
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Resubscribed to')} ${formatLog.count(this.subscriptions.size)} tokens`);
-    } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to resubscribe to tokens:')} ${error.message}`);
+    if (this.subscriptions.size === 0) {
+      return; // No tokens to poll for
     }
+    
+    logApi.info(`${formatLog.tag()} ${formatLog.header('STARTING')} price polling for ${formatLog.count(this.subscriptions.size)} tokens`);
+    
+    this.pollingInterval = setInterval(async () => {
+      try {
+        const tokens = Array.from(this.subscriptions.keys());
+        const priceData = await this.getPrices(tokens);
+        
+        // Notify callbacks with the price data
+        this.notifyPriceUpdateCallbacks(priceData);
+      } catch (error) {
+        logApi.error(`${formatLog.tag()} ${formatLog.error('Price polling failed:')} ${error.message}`);
+      }
+    }, this.pollingFrequency);
   }
 
   /**
-   * Handle incoming WebSocket messages
-   * @param {Object} message - The message received from WebSocket
+   * Stop polling for price updates
+   * @private
    */
-  handleWebSocketMessage(message) {
-    try {
-      // Handle price update messages
-      if (message.type === 'price') {
-        // Update Redis cache with the latest prices
-        this.updateTokenPrices(message.data);
-        
-        // Notify all registered callbacks
-        this.notifyPriceUpdateCallbacks(message.data);
-      } else if (message.type === 'error') {
-        logApi.error(`${formatLog.tag()} ${formatLog.error('WebSocket error message:')} ${message.error}`);
-      } else {
-        logApi.debug(`${formatLog.tag()} ${formatLog.info('Received WebSocket message:')} ${JSON.stringify(message)}`);
-      }
-    } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to handle WebSocket message:')} ${error.message}`);
+  _stopPolling() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+      logApi.info(`${formatLog.tag()} ${formatLog.header('STOPPED')} price polling`);
     }
   }
 
@@ -232,7 +170,7 @@ class JupiterClient {
         await redisManager.set(
           `${this.redisKeys.tokenPrices}${mintAddress}`,
           JSON.stringify(priceInfo),
-          connectionManager.cacheTTLs?.tokenPriceTTL || 60 * 60 // Use config or fallback to 1 hour
+          cacheTTLs.tokenPriceTTL || 60 * 60 // Use cacheTTLs or fallback
         );
       }
       
@@ -281,15 +219,11 @@ class JupiterClient {
 
   /**
    * Subscribe to price updates for specified tokens
+   * This now adds tokens to the subscription list and starts polling
    * @param {string[]} mintAddresses - Array of token mint addresses to subscribe to
    * @returns {boolean} - Success status
    */
   async subscribeToPrices(mintAddresses) {
-    if (!this.wsConnected) {
-      logApi.warn(`${formatLog.tag()} ${formatLog.warning('Cannot subscribe to prices: WebSocket not connected')}`);
-      return false;
-    }
-    
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('SUBSCRIBING')} to prices for ${formatLog.count(mintAddresses.length)} tokens`);
       
@@ -301,19 +235,19 @@ class JupiterClient {
         return true;
       }
       
-      // Create subscription message
-      const subscriptionMessage = {
-        type: 'subscribe',
-        tokens: newTokens,
-      };
-      
-      // Send subscription request
-      this.wsClient.send(JSON.stringify(subscriptionMessage));
-      
       // Update subscriptions map
       for (const address of newTokens) {
         this.subscriptions.set(address, true);
       }
+      
+      // If we have subscriptions and aren't already polling, start polling
+      if (this.subscriptions.size > 0 && !this.pollingInterval) {
+        this._startPolling();
+      }
+      
+      // Immediately fetch prices for the newly subscribed tokens
+      const initialPrices = await this.getPrices(newTokens);
+      this.notifyPriceUpdateCallbacks(initialPrices);
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Subscribed to prices for')} ${formatLog.count(newTokens.length)} new tokens`);
       return true;
@@ -325,15 +259,11 @@ class JupiterClient {
 
   /**
    * Unsubscribe from price updates for specified tokens
+   * This now removes tokens from the subscription list and may stop polling
    * @param {string[]} mintAddresses - Array of token mint addresses to unsubscribe from
    * @returns {boolean} - Success status
    */
   async unsubscribeFromPrices(mintAddresses) {
-    if (!this.wsConnected) {
-      logApi.warn(`${formatLog.tag()} ${formatLog.warning('Cannot unsubscribe from prices: WebSocket not connected')}`);
-      return false;
-    }
-    
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('UNSUBSCRIBING')} from prices for ${formatLog.count(mintAddresses.length)} tokens`);
       
@@ -345,18 +275,14 @@ class JupiterClient {
         return true;
       }
       
-      // Create unsubscription message
-      const unsubscriptionMessage = {
-        type: 'unsubscribe',
-        tokens: subscribedTokens,
-      };
-      
-      // Send unsubscription request
-      this.wsClient.send(JSON.stringify(unsubscriptionMessage));
-      
       // Update subscriptions map
       for (const address of subscribedTokens) {
         this.subscriptions.delete(address);
+      }
+      
+      // If no more subscriptions, stop polling
+      if (this.subscriptions.size === 0) {
+        this._stopPolling();
       }
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Unsubscribed from prices for')} ${formatLog.count(subscribedTokens.length)} tokens`);
@@ -374,7 +300,7 @@ class JupiterClient {
    */
   async getPrices(mintAddresses) {
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} prices for ${formatLog.count(mintAddresses.length)} tokens`);
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} prices for ${formatLog.count(mintAddresses?.length || 0)} tokens`);
       
       // Check if we have data in Redis first
       const cachedPrices = {};
@@ -392,12 +318,12 @@ class JupiterClient {
       
       // If we have all tokens in cache, return them
       if (missingTokens.length === 0) {
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Using cached prices for all')} ${formatLog.count(mintAddresses.length)} tokens`);
+        logApi.info(`${formatLog.tag()} ${formatLog.success('Using cached prices for all')} ${formatLog.count(mintAddresses?.length || 0)} tokens`);
         return cachedPrices;
       }
       
       // Fetch missing tokens from Jupiter API
-      logApi.info(`${formatLog.tag()} ${formatLog.info('Fetching prices for')} ${formatLog.count(missingTokens.length)} tokens from Jupiter API`);
+      logApi.info(`${formatLog.tag()} ${formatLog.info('Fetching prices for')} ${formatLog.count(missingTokens?.length || 0)} tokens from Jupiter API`);
       
       const queryString = missingTokens.join(',');
       const response = await axios.get(`${this.config.endpoints.price.getPrices}?ids=${queryString}`, {
@@ -410,12 +336,12 @@ class JupiterClient {
       
       const fetchedPrices = response.data.data;
       
-      // Cache the fetched prices
+      // Cache the fetched prices using TTL from global cacheTTLs
       for (const [mintAddress, priceInfo] of Object.entries(fetchedPrices)) {
         await redisManager.set(
           `${this.redisKeys.tokenPrices}${mintAddress}`, 
           JSON.stringify(priceInfo), 
-          connectionManager.cacheTTLs?.tokenPriceTTL || 60 * 60 // Use config or fallback to 1 hour
+          cacheTTLs.tokenPriceTTL || 60 * 60 // Use cacheTTLs or fallback
         );
       }
       
@@ -425,7 +351,7 @@ class JupiterClient {
       // Combine cached and fetched prices
       const allPrices = { ...cachedPrices, ...fetchedPrices };
       
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched prices for')} ${formatLog.count(Object.keys(allPrices).length)} tokens`);
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched prices for')} ${formatLog.count(Object.keys(allPrices)?.length || 0)} tokens`);
       
       return allPrices;
     } catch (error) {

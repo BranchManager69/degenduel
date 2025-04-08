@@ -171,9 +171,10 @@ The Jupiter Client can be configured through the config system:
 // In jupiter-config.js
 export const jupiterConfig = {
   apiKey: JUPITER_API_KEY,
-  baseUrl: 'https://quote-api.jup.ag',
-  v6BaseUrl: 'https://quote-api.jup.ag/v6',
-  priceApiUrl: 'https://price.jup.ag/v6',
+  baseUrl: 'https://api.jup.ag', // or https://lite-api.jup.ag for free tier
+  swapApiUrl: 'https://api.jup.ag/swap/v1',
+  priceApiUrl: 'https://api.jup.ag/price/v2',
+  tokenApiUrl: 'https://api.jup.ag/tokens/v1',
   // Additional configuration...
 };
 ```

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DegenDuel WebSocket Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+      background-color: #f5f5f5;
+    }
+    h1, h2, h3 {
+      color: #2a4b8d;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+    }
+    .panel {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .log-area {
+      height: 400px;
+      overflow-y: auto;
+      background: #f8f8f8;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .log-entry {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .log-entry.send {
+      background-color: #e6f7ff;
+    }
+    .log-entry.receive {
+      background-color: #f6ffed;
+    }
+    .log-entry.error {
+      background-color: #fff2f0;
+    }
+    .log-entry.system {
+      background-color: #f9f0ff;
+    }
+    button {
+      background: #2a4b8d;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #3a5fa0;
+    }
+    input, select {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      margin: 5px;
+    }
+    .control-group {
+      margin-bottom: 15px;
+    }
+    .status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .status.connected {
+      color: green;
+    }
+    .status.disconnected {
+      color: red;
+    }
+    .form-group {
+      margin-bottom: 10px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .json-viewer {
+      overflow-y: auto;
+      max-height: 400px;
+      background: #1e1e1e;
+      color: #dcdcdc;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .info-box {
+      background-color: #e6f7ff;
+      border-left: 4px solid #1890ff;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>DegenDuel WebSocket Demo</h1>
+  
+  <div class="info-box">
+    <p><strong>Note:</strong> This demo allows you to interact with the DegenDuel WebSocket API. You can connect, subscribe to topics, send requests, and view real-time data.</p>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <h2>Connection</h2>
+      <div class="status disconnected" id="status">Disconnected</div>
+      
+      <div class="form-group">
+        <label for="websocket-url">WebSocket URL:</label>
+        <input type="text" id="websocket-url" value="/api/v69/ws" style="width: 300px;">
+      </div>
+      
+      <div class="form-group">
+        <label for="auth-token">Auth Token (optional):</label>
+        <input type="text" id="auth-token" placeholder="JWT token for authenticated requests" style="width: 300px;">
+      </div>
+      
+      <button id="connect-btn">Connect</button>
+      <button id="disconnect-btn" disabled>Disconnect</button>
+      
+      <h2>Topics</h2>
+      <div class="control-group">
+        <select id="topic-select" multiple style="width: 300px; height: 100px;">
+          <option value="market-data">market-data</option>
+          <option value="portfolio">portfolio</option>
+          <option value="system">system</option>
+          <option value="contest">contest</option>
+          <option value="user">user</option>
+          <option value="admin">admin</option>
+          <option value="wallet">wallet</option>
+          <option value="wallet-balance">wallet-balance</option>
+          <option value="skyduel">skyduel</option>
+        </select>
+        <button id="subscribe-btn" disabled>Subscribe</button>
+        <button id="unsubscribe-btn" disabled>Unsubscribe</button>
+      </div>
+      
+      <h2>Requests</h2>
+      <div class="control-group">
+        <select id="request-topic">
+          <option value="market-data">market-data</option>
+          <option value="portfolio">portfolio</option>
+          <option value="system">system</option>
+          <option value="user">user</option>
+        </select>
+        <select id="request-action">
+          <option value="getToken">getToken</option>
+          <option value="getAllTokens">getAllTokens</option>
+          <option value="getStatus">getStatus</option>
+          <option value="getProfile">getProfile</option>
+          <option value="getStats">getStats</option>
+          <option value="ping">ping</option>
+        </select>
+        <div class="form-group">
+          <label for="request-params">Parameters (JSON):</label>
+          <input type="text" id="request-params" placeholder='{"symbol": "btc"}' style="width: 300px;">
+        </div>
+        <button id="send-request-btn" disabled>Send Request</button>
+      </div>
+      
+      <h2>System Commands</h2>
+      <button id="ping-btn" disabled>Ping</button>
+      <button id="clear-log-btn">Clear Log</button>
+    </div>
+    
+    <div class="panel">
+      <h2>Log</h2>
+      <div class="log-area" id="log"></div>
+    </div>
+  </div>
+  
+  <div class="container" style="margin-top: 20px;">
+    <div class="panel">
+      <h2>Last Received Data</h2>
+      <pre class="json-viewer" id="data-viewer">No data received yet</pre>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+    const dataViewerEl = document.getElementById('data-viewer');
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const subscribeBtn = document.getElementById('subscribe-btn');
+    const unsubscribeBtn = document.getElementById('unsubscribe-btn');
+    const sendRequestBtn = document.getElementById('send-request-btn');
+    const pingBtn = document.getElementById('ping-btn');
+    const clearLogBtn = document.getElementById('clear-log-btn');
+    const websocketUrlInput = document.getElementById('websocket-url');
+    const authTokenInput = document.getElementById('auth-token');
+    const topicSelect = document.getElementById('topic-select');
+    const requestTopicSelect = document.getElementById('request-topic');
+    const requestActionSelect = document.getElementById('request-action');
+    const requestParamsInput = document.getElementById('request-params');
+    
+    // WebSocket connection
+    let socket = null;
+    
+    // Update action options based on selected topic
+    requestTopicSelect.addEventListener('change', updateActionOptions);
+    
+    function updateActionOptions() {
+      const topic = requestTopicSelect.value;
+      requestActionSelect.innerHTML = '';
+      
+      let actions = [];
+      
+      switch(topic) {
+        case 'market-data':
+          actions = ['getToken', 'getAllTokens'];
+          break;
+        case 'portfolio':
+          actions = ['getProfile', 'getHoldings', 'getPerformance'];
+          break;
+        case 'system':
+          actions = ['getStatus', 'ping', 'getMetrics'];
+          break;
+        case 'user':
+          actions = ['getProfile', 'getStats', 'getAuthStatus'];
+          break;
+        case 'contest':
+          actions = ['getActiveContests', 'getContestDetails'];
+          break;
+        default:
+          actions = ['getStatus'];
+      }
+      
+      actions.forEach(action => {
+        const option = document.createElement('option');
+        option.value = action;
+        option.textContent = action;
+        requestActionSelect.appendChild(option);
+      });
+      
+      // Update params placeholder based on action
+      updateParamsPlaceholder();
+    }
+    
+    requestActionSelect.addEventListener('change', updateParamsPlaceholder);
+    
+    function updateParamsPlaceholder() {
+      const topic = requestTopicSelect.value;
+      const action = requestActionSelect.value;
+      
+      let placeholder = '{}';
+      
+      if (topic === 'market-data' && action === 'getToken') {
+        placeholder = '{"symbol": "btc"}';
+      } else if (action === 'getContestDetails') {
+        placeholder = '{"contestId": "123"}';
+      } else if (action === 'ping') {
+        placeholder = '{"clientTime": "' + new Date().toISOString() + '"}';
+      }
+      
+      requestParamsInput.placeholder = placeholder;
+    }
+    
+    // Initialize
+    updateActionOptions();
+    
+    // Event listeners
+    connectBtn.addEventListener('click', connect);
+    disconnectBtn.addEventListener('click', disconnect);
+    subscribeBtn.addEventListener('click', subscribe);
+    unsubscribeBtn.addEventListener('click', unsubscribe);
+    sendRequestBtn.addEventListener('click', sendRequest);
+    pingBtn.addEventListener('click', sendPing);
+    clearLogBtn.addEventListener('click', clearLog);
+    
+    // Functions
+    function connect() {
+      if (socket) {
+        log('Already connected', 'error');
+        return;
+      }
+      
+      const url = websocketUrlInput.value;
+      const fullUrl = url.startsWith('/') ? 
+        (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
+        window.location.host + url : 
+        url;
+      
+      log(`Connecting to ${fullUrl}...`, 'system');
+      
+      try {
+        socket = new WebSocket(fullUrl);
+        
+        socket.onopen = () => {
+          log('Connection established', 'system');
+          statusEl.textContent = 'Connected';
+          statusEl.className = 'status connected';
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = false;
+          subscribeBtn.disabled = false;
+          unsubscribeBtn.disabled = false;
+          sendRequestBtn.disabled = false;
+          pingBtn.disabled = false;
+        };
+        
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          log(`Received: ${JSON.stringify(data, null, 2)}`, 'receive');
+          
+          // Update data viewer
+          dataViewerEl.textContent = JSON.stringify(data, null, 2);
+          
+          // Handle specific message types
+          if (data.type === 'ERROR') {
+            log(`Error (${data.code}): ${data.message}`, 'error');
+          }
+        };
+        
+        socket.onclose = (event) => {
+          log(`Connection closed: ${event.code} ${event.reason}`, 'system');
+          statusEl.textContent = 'Disconnected';
+          statusEl.className = 'status disconnected';
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+          subscribeBtn.disabled = true;
+          unsubscribeBtn.disabled = true;
+          sendRequestBtn.disabled = true;
+          pingBtn.disabled = true;
+          socket = null;
+        };
+        
+        socket.onerror = (error) => {
+          log(`WebSocket error: ${error}`, 'error');
+        };
+      } catch (error) {
+        log(`Failed to connect: ${error}`, 'error');
+      }
+    }
+    
+    function disconnect() {
+      if (!socket) {
+        log('Not connected', 'error');
+        return;
+      }
+      
+      socket.close(1000, 'User initiated disconnect');
+    }
+    
+    function subscribe() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        log('Not connected', 'error');
+        return;
+      }
+      
+      const selectedOptions = Array.from(topicSelect.selectedOptions).map(option => option.value);
+      
+      if (selectedOptions.length === 0) {
+        log('No topics selected', 'error');
+        return;
+      }
+      
+      const message = {
+        type: 'SUBSCRIBE',
+        topics: selectedOptions
+      };
+      
+      // Add auth token if provided
+      const authToken = authTokenInput.value.trim();
+      if (authToken) {
+        message.authToken = authToken;
+      }
+      
+      sendMessage(message);
+    }
+    
+    function unsubscribe() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        log('Not connected', 'error');
+        return;
+      }
+      
+      const selectedOptions = Array.from(topicSelect.selectedOptions).map(option => option.value);
+      
+      if (selectedOptions.length === 0) {
+        log('No topics selected', 'error');
+        return;
+      }
+      
+      const message = {
+        type: 'UNSUBSCRIBE',
+        topics: selectedOptions
+      };
+      
+      sendMessage(message);
+    }
+    
+    function sendRequest() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        log('Not connected', 'error');
+        return;
+      }
+      
+      const topic = requestTopicSelect.value;
+      const action = requestActionSelect.value;
+      let params = {};
+      
+      // Parse parameters as JSON
+      try {
+        const paramsStr = requestParamsInput.value.trim();
+        if (paramsStr) {
+          params = JSON.parse(paramsStr);
+        }
+      } catch (error) {
+        log(`Invalid JSON parameters: ${error}`, 'error');
+        return;
+      }
+      
+      const requestId = 'req-' + Date.now();
+      
+      const message = {
+        type: 'REQUEST',
+        topic,
+        action,
+        requestId,
+        ...params
+      };
+      
+      sendMessage(message);
+    }
+    
+    function sendPing() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        log('Not connected', 'error');
+        return;
+      }
+      
+      const message = {
+        type: 'REQUEST',
+        topic: 'system',
+        action: 'ping',
+        clientTime: new Date().toISOString(),
+        requestId: 'ping-' + Date.now()
+      };
+      
+      sendMessage(message);
+    }
+    
+    function sendMessage(message) {
+      const messageString = JSON.stringify(message);
+      socket.send(messageString);
+      log(`Sent: ${JSON.stringify(message, null, 2)}`, 'send');
+    }
+    
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      
+      // Add timestamp
+      const now = new Date();
+      const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+      
+      entry.textContent = `[${timestamp}] ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    
+    function clearLog() {
+      logEl.innerHTML = '';
+    }
+  </script>
+</body>
+</html>

@@ -21,7 +21,7 @@ import prisma from '../../config/prisma.js';
 import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
 
 // Import SolanaEngine (new direct integration)
-import { solanaEngine } from '../solana-engine/index.js';
+import { solanaEngine } from '../../services/solana-engine/index.js';
 
 // Contest Wallet formatting helpers
 const formatLog = {
@@ -207,20 +207,20 @@ class ContestWalletService extends BaseService {
             }
             
             // Verify SolanaEngine is available
-            if (!solanaEngine.isInitialized()) {
+            if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                 logApi.warn(`${formatLog.tag()} ${formatLog.header('WAITING FOR SOLANA')} ${formatLog.warning('SolanaEngine not yet initialized, will wait...')}`);
                 
                 // Add some tolerance for initialization order
                 for (let i = 0; i < 5; i++) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
-                    if (solanaEngine.isInitialized()) {
+                    if (typeof solanaEngine.isInitialized === 'function' ? solanaEngine.isInitialized() : solanaEngine.isInitialized) {
                         logApi.info(`${formatLog.tag()} ${formatLog.success('SolanaEngine now available.')}`);
                         break;
                     }
                 }
                 
                 // Final check
-                if (!solanaEngine.isInitialized()) {
+                if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                     throw new Error('SolanaEngine is not available after waiting. Contest Wallet Service requires SolanaEngine.');
                 }
             }
@@ -283,31 +283,70 @@ class ContestWalletService extends BaseService {
 
     // Get unassociated vanity wallet
     /**
-     * Get unassociated vanity wallet
+     * Get unassociated vanity wallet from the database
      * 
      * @returns {Promise<Object>} - The results of the operation
      */
     async getUnassociatedVanityWallet() {
         try {
-            logApi.info(`${formatLog.tag()} ${formatLog.header('Searching')} for vanity wallets...`);
+            const VanityApiClient = (await import('../../services/vanity-wallet/vanity-api-client.js')).default;
+            logApi.info(`${formatLog.tag()} ${formatLog.header('Searching')} for vanity wallets in database...`);
             
-            // Check DUEL folder first (higher priority)
-            logApi.info(`${formatLog.tag()} ${formatLog.info('Checking _DUEL folder first')}`);
-            const duelWallet = await this.getFirstUnassociatedWalletFromFolder('_DUEL');
+            // Check for DUEL vanity wallet first (higher priority)
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Checking for DUEL pattern first')}`);
+            const duelWallet = await VanityApiClient.getAvailableVanityWallet('DUEL');
             if (duelWallet) {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('Found')} DUEL wallet: ${duelWallet.publicKey}`);
-                return duelWallet;
+                logApi.info(`${formatLog.tag()} ${formatLog.header('Found')} DUEL wallet: ${duelWallet.wallet_address}`);
+                
+                // Parse the private key from JSON string
+                const privateKey = JSON.parse(duelWallet.private_key);
+                
+                return {
+                    publicKey: duelWallet.wallet_address,
+                    privateKey: JSON.stringify(privateKey),
+                    isVanity: true,
+                    vanityType: 'DUEL',
+                    dbId: duelWallet.id
+                };
             }
             
-            // Then try DEGEN folder
-            logApi.info(`${formatLog.tag()} ${formatLog.info('Checking _DEGEN folder next')}`);
-            const degenWallet = await this.getFirstUnassociatedWalletFromFolder('_DEGEN');
+            // Then check for DEGEN vanity wallet
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Checking for DEGEN pattern next')}`);
+            const degenWallet = await VanityApiClient.getAvailableVanityWallet('DEGEN');
             if (degenWallet) {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('Found')} DEGEN wallet: ${degenWallet.publicKey}`);
-                return degenWallet;
+                logApi.info(`${formatLog.tag()} ${formatLog.header('Found')} DEGEN wallet: ${degenWallet.wallet_address}`);
+                
+                // Parse the private key from JSON string
+                const privateKey = JSON.parse(degenWallet.private_key);
+                
+                return {
+                    publicKey: degenWallet.wallet_address,
+                    privateKey: JSON.stringify(privateKey),
+                    isVanity: true,
+                    vanityType: 'DEGEN',
+                    dbId: degenWallet.id
+                };
             }
             
-            logApi.info(`${formatLog.tag()} ${formatLog.header('Not Found')} No vanity wallets in either folder`);
+            // If still no wallet found, try any available vanity wallet
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Checking for any available vanity wallet')}`);
+            const anyWallet = await VanityApiClient.getAvailableVanityWallet();
+            if (anyWallet) {
+                logApi.info(`${formatLog.tag()} ${formatLog.header('Found')} vanity wallet with pattern ${anyWallet.pattern}: ${anyWallet.wallet_address}`);
+                
+                // Parse the private key from JSON string
+                const privateKey = JSON.parse(anyWallet.private_key);
+                
+                return {
+                    publicKey: anyWallet.wallet_address,
+                    privateKey: JSON.stringify(privateKey),
+                    isVanity: true,
+                    vanityType: anyWallet.pattern,
+                    dbId: anyWallet.id
+                };
+            }
+            
+            logApi.info(`${formatLog.tag()} ${formatLog.header('Not Found')} No available vanity wallets in database`);
             return null;
         } catch (error) {
             logApi.warn(`${formatLog.tag()} ${formatLog.header('Error')} Finding vanity wallet: ${formatLog.error(error.message)}`, {
@@ -447,6 +486,13 @@ class ContestWalletService extends BaseService {
                             vanity_type: vanityWallet.vanityType
                         }
                     });
+                    
+                    // Mark the vanity wallet as used in our database
+                    if (vanityWallet.dbId) {
+                        const VanityApiClient = (await import('../../services/vanity-wallet/vanity-api-client.js')).default;
+                        await VanityApiClient.assignVanityWalletToContest(vanityWallet.dbId, contestId);
+                        logApi.info(`${formatLog.tag()} ${formatLog.header('Success')} Marked vanity wallet as used in database`);
+                    }
                     
                     logApi.info(`${formatLog.tag()} ${formatLog.header('Success')} Created DB record for vanity wallet`);
                     logApi.info(`${formatLog.tag()} ${formatLog.success(`Created contest wallet with ${vanityWallet.vanityType} vanity address`)}`, {

@@ -143,20 +143,20 @@ class AdminWalletService extends BaseService {
             }
             
             // Verify SolanaEngine is available
-            if (!solanaEngine.isInitialized()) {
+            if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                 logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WAITING FOR SOLANA ENGINE ${fancyColors.RESET} SolanaEngine not yet initialized, will wait...`);
                 
                 // Add some tolerance for initialization order
                 for (let i = 0; i < 5; i++) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
-                    if (solanaEngine.isInitialized()) {
+                    if (typeof solanaEngine.isInitialized === 'function' ? solanaEngine.isInitialized() : solanaEngine.isInitialized) {
                         logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}SolanaEngine now available.${fancyColors.RESET}`);
                         break;
                     }
                 }
                 
                 // Final check
-                if (!solanaEngine.isInitialized()) {
+                if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                     throw new Error('SolanaEngine is not available after waiting. Admin Wallet Service requires SolanaEngine.');
                 }
             }
@@ -236,8 +236,14 @@ class AdminWalletService extends BaseService {
             };
             
             // Get connection status from SolanaEngine for reporting
-            const connectionStatus = solanaEngine.getConnectionStatus();
-            logApi.info(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Using SolanaEngine with ${connectionStatus.healthyEndpoints}/${connectionStatus.totalEndpoints} RPC endpoints available${fancyColors.RESET}`);
+            let solanaStatus = { available: false };
+            if (typeof solanaEngine.isInitialized === 'function' ? solanaEngine.isInitialized() : solanaEngine.isInitialized) {
+                solanaStatus = {
+                    available: true,
+                    connectionStatus: solanaEngine.getConnectionStatus()
+                };
+            }
+            logApi.info(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Using SolanaEngine with ${solanaStatus.connectionStatus.healthyEndpoints}/${solanaStatus.connectionStatus.totalEndpoints} RPC endpoints available${fancyColors.RESET}`);
 
             // Ensure stats are JSON-serializable for ServiceManager
             const serializableStats = JSON.parse(JSON.stringify({
@@ -981,7 +987,7 @@ class AdminWalletService extends BaseService {
         
         try {
             // Check if SolanaEngine is available
-            if (!solanaEngine.isInitialized()) {
+            if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                 const errorMsg = 'SolanaEngine not available, skipping admin wallet operations';
                 logApi.warn(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}${errorMsg}${fancyColors.RESET}`);
                 return {
@@ -1024,9 +1030,8 @@ class AdminWalletService extends BaseService {
     }
     
     /**
-     * Get detailed service status for monitoring
-     * 
-     * @returns {Promise<Object>} - The status of the service
+     * Get the service status
+     * @returns {Object} - The status of the service
      */
     getServiceStatus() {
         const baseStatus = super.getServiceStatus();
@@ -1034,7 +1039,7 @@ class AdminWalletService extends BaseService {
         // Get SolanaEngine connection status
         let solanaStatus = { available: false };
         try {
-            if (solanaEngine.isInitialized()) {
+            if (typeof solanaEngine.isInitialized === 'function' ? solanaEngine.isInitialized() : solanaEngine.isInitialized) {
                 solanaStatus = {
                     available: true,
                     connectionStatus: solanaEngine.getConnectionStatus()

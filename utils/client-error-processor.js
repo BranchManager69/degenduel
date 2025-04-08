@@ -214,28 +214,80 @@ export const processClientError = async (logEntry, metadata) => {
         }
       }
 
-      const newError = await prisma.client_errors.create({
-        data: {
-          ...errorData,
-          user_id: userId,
-          metadata: {
-            ...errorData.metadata,
-            occurrences: [{
-              timestamp: new Date(),
-              ip: errorData.ip_address,
-              sessionId: errorData.session_id
-            }]
+      try {
+        const newError = await prisma.client_errors.create({
+          data: {
+            ...errorData,
+            user_id: userId,
+            metadata: {
+              ...errorData.metadata,
+              occurrences: [{
+                timestamp: new Date(),
+                ip: errorData.ip_address,
+                sessionId: errorData.session_id
+              }]
+            }
+          }
+        });
+        
+        logApi.info(`Created new client error record (ID: ${newError.id})`, {
+          error_id: errorData.error_id,
+          client_error_saved: true,
+          message: newError.message
+        });
+        
+        return newError;
+      } catch (createError) {
+        // Handle unique constraint error by falling back to update
+        if (createError.message.includes('Unique constraint failed')) {
+          // Try to get the existing record and update it
+          const existingError = await prisma.client_errors.findUnique({
+            where: { error_id: errorData.error_id }
+          });
+          
+          if (existingError) {
+            // Update using the earlier logic
+            const updatedError = await prisma.client_errors.update({
+              where: { id: existingError.id },
+              data: {
+                occurrences: { increment: 1 },
+                last_occurred_at: new Date(),
+                // If we have a wallet address and the existing record doesn't, update it
+                wallet_address: !existingError.wallet_address && errorData.wallet_address 
+                  ? errorData.wallet_address 
+                  : undefined,
+                // Keep the latest stack trace which might have more details
+                stack_trace: errorData.stack_trace || existingError.stack_trace,
+                // Merge tags without duplicates
+                tags: [...new Set([...existingError.tags, ...errorData.tags])],
+                // Add new occurrence to metadata
+                metadata: {
+                  ...existingError.metadata,
+                  occurrences: [
+                    ...(existingError.metadata.occurrences || []),
+                    {
+                      timestamp: new Date(),
+                      ip: errorData.ip_address,
+                      sessionId: errorData.session_id
+                    }
+                  ].slice(-20) // Keep the last 20 occurrences
+                }
+              }
+            });
+            
+            logApi.debug(`Race condition handled: Updated existing client error record (ID: ${updatedError.id}, occurrences: ${updatedError.occurrences})`, {
+              error_id: errorData.error_id,
+              client_error_saved: true,
+              race_condition_handled: true
+            });
+            
+            return updatedError;
           }
         }
-      });
-      
-      logApi.info(`Created new client error record (ID: ${newError.id})`, {
-        error_id: errorData.error_id,
-        client_error_saved: true,
-        message: newError.message
-      });
-      
-      return newError;
+        
+        // If we reach here, it's some other error or we couldn't find the record to update
+        throw createError;
+      }
     }
   } catch (err) {
     logApi.error('Failed to process client error', {

@@ -33,6 +33,7 @@ Each contest in DegenDuel requires a dedicated Solana wallet to manage funds for
 - **SolanaEngine**: For enhanced Solana connectivity with multi-endpoint support
 - **Prisma**: For database operations
 - **AdminLogger**: For administrative action tracking
+- **VanityApiClient**: For accessing vanity wallets via polling-based approach
 
 > **Note**: The Contest Wallet Service has been migrated from SolanaServiceManager to use SolanaEngine directly. This provides enhanced reliability with multi-endpoint support, automatic failover, and explicit endpoint selection for critical transactions.
 
@@ -61,6 +62,46 @@ async reclaimUnusedFunds(options = {})
 ```
 
 Reclaims funds from contest wallets based on contest status and balance thresholds. Each reclaim cycle is uniquely identified with a cycle ID based on the timestamp.
+
+## Vanity Wallet Integration
+
+The service uses a polling-based approach for vanity wallet generation:
+
+1. **Database-Driven Architecture**: All vanity wallet requests and generation results are managed through the database
+2. **No Direct API Calls**: The system doesn't make direct calls to the GPU server
+3. **Integration with `VanityApiClient`**: Uses the client to find available vanity wallets in the database
+4. **Vanity Wallet Priority**: Prioritizes "DUEL" pattern, then "DEGEN", then any available vanity wallet
+5. **Fallback Mechanism**: Generates random Solana wallets when no vanity wallets are available
+
+Key implementation details:
+
+```javascript
+// Get an available vanity wallet from the database
+const vanityWallet = await this.getUnassociatedVanityWallet();
+
+// If a vanity wallet is found, use it for the contest
+if (vanityWallet) {
+    logApi.info(`Using vanity wallet for contest ${contestId}`);
+    
+    // Create contest wallet record
+    contestWallet = await prisma.contest_wallets.create({
+        data: {
+            contest_id: contestId,
+            wallet_address: vanityWallet.publicKey,
+            private_key: this.encryptPrivateKey(vanityWallet.privateKey),
+            balance: 0,
+            is_vanity: true,
+            vanity_type: vanityWallet.vanityType
+        }
+    });
+    
+    // Mark the vanity wallet as used in the database
+    if (vanityWallet.dbId) {
+        const VanityApiClient = (await import('../../services/vanity-wallet/vanity-api-client.js')).default;
+        await VanityApiClient.assignVanityWalletToContest(vanityWallet.dbId, contestId);
+    }
+}
+```
 
 ## SolanaEngine Integration
 

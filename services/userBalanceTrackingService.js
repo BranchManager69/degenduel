@@ -114,20 +114,20 @@ class UserBalanceTrackingService extends BaseService {
             }
             
             // Verify SolanaEngine is available
-            if (!solanaEngine.isInitialized()) {
+            if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                 logApi.warn(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WAITING FOR SOLANA ${fancyColors.RESET} SolanaEngine not yet initialized, will wait...`);
                 
                 // Add some tolerance for initialization order
                 for (let i = 0; i < 5; i++) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
-                    if (solanaEngine.isInitialized()) {
+                    if (typeof solanaEngine.isInitialized === 'function' ? solanaEngine.isInitialized() : solanaEngine.isInitialized) {
                         logApi.info(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.GREEN}SolanaEngine now available.${fancyColors.RESET}`);
                         break;
                     }
                 }
                 
                 // Final check
-                if (!solanaEngine.isInitialized()) {
+                if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                     throw new Error('SolanaEngine is not available after waiting. Balance tracking requires SolanaEngine.');
                 }
             }
@@ -156,9 +156,20 @@ class UserBalanceTrackingService extends BaseService {
             this.calculateCheckInterval(activeUsers);
             
             // Get SolanaEngine connection status
-            const connectionStatus = solanaEngine.getConnectionStatus();
-            const healthyEndpoints = connectionStatus.healthyEndpoints || 0;
-            const totalEndpoints = connectionStatus.totalEndpoints || 0;
+            let solanaStatus = { available: false };
+            try {
+                if (typeof solanaEngine.isInitialized === 'function' ? solanaEngine.isInitialized() : solanaEngine.isInitialized) {
+                    solanaStatus = {
+                        available: true,
+                        connectionStatus: solanaEngine.getConnectionStatus()
+                    };
+                }
+            } catch (error) {
+                solanaStatus.error = error.message;
+            }
+            
+            const healthyEndpoints = solanaStatus.connectionStatus?.healthyEndpoints || 0;
+            const totalEndpoints = solanaStatus.connectionStatus?.totalEndpoints || 0;
             
             logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.ORANGE}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.ORANGE}users${fancyColors.RESET}`);
             logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Checking each user every ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} ${fancyColors.ORANGE}minutes${fancyColors.RESET}`);
@@ -729,7 +740,7 @@ class UserBalanceTrackingService extends BaseService {
         // Get SolanaEngine connection status
         let solanaStatus = { available: false };
         try {
-            if (solanaEngine.isInitialized()) {
+            if (typeof solanaEngine.isInitialized === 'function' ? solanaEngine.isInitialized() : solanaEngine.isInitialized) {
                 solanaStatus = {
                     available: true,
                     connectionStatus: solanaEngine.getConnectionStatus()

@@ -27,6 +27,10 @@ jest.mock('../../config/prisma.js', () => ({
     transaction: {
       create: jest.fn().mockResolvedValue({ id: 1 }),
     },
+    vanity_wallet_pool: {
+      findFirst: jest.fn().mockResolvedValue(null),
+      update: jest.fn().mockImplementation(data => ({ ...data.data, id: 1 })),
+    },
     $transaction: jest.fn(cb => cb()),
   }
 }));
@@ -106,6 +110,14 @@ jest.mock('crypto', () => ({
   }),
 }));
 
+// Mock the VanityApiClient
+jest.mock('../../services/vanity-wallet/vanity-api-client.js', () => ({
+  default: {
+    getAvailableVanityWallet: jest.fn().mockResolvedValue(null),
+    assignVanityWalletToContest: jest.fn().mockResolvedValue({ id: 1, is_used: true }),
+  }
+}));
+
 describe('ContestWalletService', () => {
   // Import mocked dependencies from the mocks
   let prisma = jest.mocked(jest.requireMock('../../config/prisma.js').default);
@@ -129,8 +141,9 @@ describe('ContestWalletService', () => {
       const contestId = 1;
       const adminContext = { wallet_address: 'admin-wallet-address' };
       
-      // Mock a vanity wallet not being available
-      prisma.contest_wallet.findFirst.mockResolvedValueOnce(null);
+      // Mock the VanityApiClient to return null (no vanity wallet available)
+      const VanityApiClient = jest.requireMock('../../services/vanity-wallet/vanity-api-client.js').default;
+      VanityApiClient.getAvailableVanityWallet.mockResolvedValue(null);
       
       // Execute
       const result = await contestWalletService.createContestWallet(contestId, adminContext);
@@ -140,27 +153,30 @@ describe('ContestWalletService', () => {
       expect(prisma.contest_wallet.create).toHaveBeenCalled();
     });
     
-    it('should use a vanity wallet if available', async () => {
+    it('should use a vanity wallet from database if available', async () => {
       // Setup
       const contestId = 1;
       const adminContext = { wallet_address: 'admin-wallet-address' };
       
-      // Mock a vanity wallet being available
+      // Mock the VanityApiClient to return a vanity wallet
+      const VanityApiClient = jest.requireMock('../../services/vanity-wallet/vanity-api-client.js').default;
       const mockVanityWallet = {
         id: 100,
         wallet_address: 'DUEL123456789abcdefghijklmnopqrstuvwx',
-        encrypted_private_key: 'encrypted-key',
-        contest_id: null
+        private_key: JSON.stringify([1, 2, 3, 4]), // Mock private key in JSON format
+        pattern: 'DUEL',
+        is_used: false,
+        status: 'completed'
       };
-      prisma.contest_wallet.findFirst.mockResolvedValueOnce(mockVanityWallet);
+      VanityApiClient.getAvailableVanityWallet.mockResolvedValue(mockVanityWallet);
       
       // Execute
       const result = await contestWalletService.createContestWallet(contestId, adminContext);
       
       // Assert
       expect(result).toBeDefined();
-      expect(prisma.contest_wallet.update).toHaveBeenCalled();
-      expect(result.wallet_address).toEqual(mockVanityWallet.wallet_address);
+      expect(prisma.contest_wallet.create).toHaveBeenCalled();
+      expect(VanityApiClient.assignVanityWalletToContest).toHaveBeenCalledWith(mockVanityWallet.id, contestId);
     });
   });
   

@@ -1,9 +1,23 @@
 // /routes/admin/circuit-breaker.js
 
+/**
+ * @fileoverview Admin routes for managing circuit breakers
+ * @module routes/admin/circuit-breaker
+ * @requires express
+ * @requires utils/logger-suite/logger
+ * @requires utils/service-suite/service-manager
+ * @requires middleware/auth
+ * @requires services/marketDataService
+ */
+
 import express from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import { requireAdmin } from '../../middleware/auth.js';
+import marketDataService from '../../services/marketDataService.js';
+import adminLogger from '../../utils/admin-logger.js';
+import { fancyColors } from '../../utils/colors.js';
+
 
 const router = express.Router();
 
@@ -211,6 +225,45 @@ router.put('/config/:service', requireAdmin, async (req, res) => {
         });
     } catch (error) {
         logApi.error('Failed to update circuit breaker config:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/circuit-breaker/reset/marketdata:
+ *   post:
+ *     tags: [Admin]
+ *     summary: Reset circuit breaker for the MarketDataService
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Circuit breaker reset successfully
+ */
+router.post('/reset/marketdata', requireAdmin, async (req, res) => {
+    try {
+        const result = marketDataService.resetCircuitBreaker();
+        
+        if (result) {
+            // Log the admin action with the correct method
+            await adminLogger.logAction(req.user.wallet_address, 'CIRCUIT_BREAKER_RESET', 'MarketDataService');
+            
+            return res.json({
+                success: true,
+                message: 'MarketDataService circuit breaker has been reset successfully'
+            });
+        } else {
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to reset circuit breaker'
+            });
+        }
+    } catch (error) {
+        logApi.error('Failed to reset MarketDataService circuit breaker:', error);
         res.status(500).json({
             success: false,
             error: error.message

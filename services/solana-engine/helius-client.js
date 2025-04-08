@@ -6,7 +6,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { heliusConfig } from '../../config/external-api/helius-config.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
-import connectionManager from './connection-manager.js';
+import { cacheTTLs } from './connection-manager.js';
 
 // Formatting helpers for consistent logging
 const formatLog = {
@@ -22,6 +22,9 @@ const formatLog = {
   count: (num) => `${serviceSpecificColors.heliusClient.count}${num}${fancyColors.RESET}`,
 };
 
+// Default cache TTL (24 hours) - only used if cacheTTLs import fails
+const DEFAULT_TOKEN_METADATA_TTL = 60 * 60 * 24;
+
 /**
  * Helius Client for fetching token metadata and managing WebSocket connections
  */
@@ -31,10 +34,19 @@ class HeliusClient {
     this.wsClient = null;
     this.wsConnected = false;
     this.reconnectAttempts = 0;
+    this.totalReconnections = 0; // Track total reconnections since service start
     this.pendingRequests = new Map();
     this.requestTimeouts = new Map();
     this.initialized = false;
     this.requestId = 1;
+    this.lastConnectionTime = null; // Track when the last connection was established
+    
+    // Set up Redis keys for token metadata
+    this.redisKeys = {
+      tokenMetadata: 'helius:token:metadata:', // Prefix for token metadata
+      tokenList: 'helius:token:list',          // List of all tokens
+      lastUpdate: 'helius:last:update',        // Timestamp of last update
+    };
   }
 
   /**
@@ -48,13 +60,6 @@ class HeliusClient {
 
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('INITIALIZING')} Helius client`);
-      
-      // Set up Redis keys for token metadata
-      this.redisKeys = {
-        tokenMetadata: 'helius:token:metadata:', // Prefix for token metadata
-        tokenList: 'helius:token:list',          // List of all tokens
-        lastUpdate: 'helius:last:update',        // Timestamp of last update
-      };
       
       // Initialize WebSocket if enabled
       if (this.config.websocket.enabled) {
@@ -80,14 +85,15 @@ class HeliusClient {
         return;
       }
 
-      logApi.info(`${formatLog.tag()} ${formatLog.header('CONNECTING')} to Helius WebSocket`);
+      logApi.info(`${formatLog.tag()} ${formatLog.header('CONNECTING')} to Helius WebSocket (reconnection #${this.totalReconnections})`);
       
       this.wsClient = new WebSocket(this.config.websocket.url);
       
       this.wsClient.on('open', () => {
         this.wsConnected = true;
         this.reconnectAttempts = 0;
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Connected to Helius WebSocket')}`);
+        this.lastConnectionTime = new Date();
+        logApi.info(`${formatLog.tag()} ${formatLog.success('Connected to Helius WebSocket')} (total reconnections: ${this.totalReconnections}, last connected: ${this.lastConnectionTime.toISOString()})`);
       });
       
       this.wsClient.on('message', (data) => {
@@ -111,14 +117,15 @@ class HeliusClient {
         if (this.reconnectAttempts < this.config.websocket.maxReconnectAttempts) {
           const reconnectDelay = this.config.websocket.reconnectInterval * Math.pow(2, this.reconnectAttempts);
           this.reconnectAttempts++;
+          this.totalReconnections++; // Increment total reconnections counter
           
-          logApi.info(`${formatLog.tag()} ${formatLog.info(`Reconnecting in ${reconnectDelay / 1000}s (attempt ${this.reconnectAttempts}/${this.config.websocket.maxReconnectAttempts})`)}`);
+          logApi.info(`${formatLog.tag()} ${formatLog.info(`Reconnecting in ${reconnectDelay / 1000}s (attempt ${this.reconnectAttempts}/${this.config.websocket.maxReconnectAttempts}, total reconnections: ${this.totalReconnections})`)}`);
           
           setTimeout(() => {
             this.initializeWebSocket();
           }, reconnectDelay);
         } else {
-          logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to reconnect to Helius WebSocket after maximum attempts')}`);
+          logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to reconnect to Helius WebSocket after maximum attempts')} (total reconnections attempted: ${this.totalReconnections})`);
         }
       });
     } catch (error) {
@@ -225,41 +232,109 @@ class HeliusClient {
       // Fetch missing tokens from Helius
       logApi.info(`${formatLog.tag()} ${formatLog.info('Fetching metadata for')} ${formatLog.count(missingTokens.length)} tokens from Helius API`);
       
-      const response = await axios.post(this.config.rpcUrl, {
-        jsonrpc: '2.0',
-        id: 'helius-client',
-        method: 'getTokenMetadata',
-        params: [missingTokens],
-      });
+      let fetchedTokens = [];
       
-      if (!response.data || !response.data.result) {
-        throw new Error('Invalid response from Helius API');
+      // Try multiple methods to get metadata with fallbacks
+      try {
+        // First try getTokenMetadata method
+        fetchedTokens = await this.fetchFromHeliusRPC('getTokenMetadata', [missingTokens]);
+      } catch (primaryError) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Primary metadata method failed, trying fallback:')} ${primaryError.message}`);
+        
+        try {
+          // Fallback to getAsset method for each token individually
+          const fetchPromises = missingTokens.map(async (mintAddress) => {
+            try {
+              const assetData = await this.fetchFromHeliusRPC('getAsset', [mintAddress]);
+              return this.mapAssetToTokenMetadata(assetData);
+            } catch (assetError) {
+              logApi.debug(`${formatLog.tag()} ${formatLog.warning(`Fallback failed for token ${mintAddress}:`)} ${assetError.message}`);
+              // Return a minimal object with just the mint address
+              return { mint: mintAddress };
+            }
+          });
+          
+          fetchedTokens = await Promise.all(fetchPromises);
+        } catch (fallbackError) {
+          logApi.error(`${formatLog.tag()} ${formatLog.error('All metadata methods failed:')} ${fallbackError.message}`);
+          // Return empty array as last resort
+          fetchedTokens = missingTokens.map(mint => ({ mint }));
+        }
       }
       
-      const fetchedTokens = response.data.result;
+      // Get TTL from global cacheTTLs object (with fallback)
+      const tokenMetadataTTL = cacheTTLs.tokenMetadataTTL || DEFAULT_TOKEN_METADATA_TTL;
       
       // Cache the fetched tokens
       for (const token of fetchedTokens) {
-        await redisManager.set(
-          `${this.redisKeys.tokenMetadata}${token.mint}`, 
-          JSON.stringify(token), 
-          connectionManager.cacheTTLs?.tokenMetadataTTL || 60 * 60 * 24 // Use config or fallback to 24 hours
-        );
+        if (token && token.mint) {
+          await redisManager.set(
+            `${this.redisKeys.tokenMetadata}${token.mint}`, 
+            JSON.stringify(token), 
+            tokenMetadataTTL
+          );
+        }
       }
       
-      // Update the last update timestamp
-      await redisManager.set(this.redisKeys.lastUpdate, Date.now().toString());
-      
       // Combine cached and fetched tokens
-      const allTokens = [...cachedTokens, ...fetchedTokens];
-      
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched metadata for')} ${formatLog.count(allTokens.length)} tokens`);
-      
-      return allTokens;
+      return [...cachedTokens, ...fetchedTokens];
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch token metadata:')} ${error.message}`);
+      return mintAddresses.map(mint => ({ mint }));
+    }
+  }
+  
+  /**
+   * Fetch data from Helius RPC with proper error handling
+   * @param {string} method - RPC method name
+   * @param {Array} params - Method parameters
+   * @returns {Promise<any>} - Response data
+   */
+  async fetchFromHeliusRPC(method, params) {
+    try {
+      const response = await axios.post(this.config.rpcUrl, {
+        jsonrpc: '2.0',
+        id: 'helius-client',
+        method,
+        params,
+      }, {
+        timeout: 15000 // 15 second timeout
+      });
+      
+      if (!response.data || response.data.error) {
+        throw new Error(response.data?.error?.message || 'Invalid response from Helius API');
+      }
+      
+      return response.data.result;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error?.message || error.message;
+      logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to fetch from Helius RPC (${method}):`)} ${errorMessage}`);
       throw error;
     }
+  }
+  
+  /**
+   * Convert getAsset response to token metadata format
+   * @param {Object} assetData - Response from getAsset
+   * @returns {Object} - Converted token metadata
+   */
+  mapAssetToTokenMetadata(assetData) {
+    if (!assetData) return null;
+    
+    return {
+      mint: assetData.id,
+      name: assetData.content?.metadata?.name || '',
+      symbol: assetData.content?.metadata?.symbol || '',
+      decimals: assetData.content?.metadata?.decimals || 0,
+      logoURI: assetData.content?.files?.[0]?.uri || null,
+      uri: assetData.content?.json_uri || null,
+      metadata: {
+        name: assetData.content?.metadata?.name || '',
+        symbol: assetData.content?.metadata?.symbol || '',
+        description: assetData.content?.metadata?.description || '',
+        image: assetData.content?.files?.[0]?.uri || null,
+      }
+    };
   }
 
   /**
@@ -348,6 +423,23 @@ class HeliusClient {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to delete webhook:')} ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Get WebSocket connection stats
+   * @returns {Object} - Connection statistics
+   */
+  getConnectionStats() {
+    return {
+      connected: this.wsConnected,
+      totalReconnections: this.totalReconnections,
+      currentReconnectAttempt: this.reconnectAttempts,
+      maxReconnectAttempts: this.config.websocket.maxReconnectAttempts,
+      lastConnectionTime: this.lastConnectionTime ? this.lastConnectionTime.toISOString() : null,
+      connectionDuration: this.lastConnectionTime && this.wsConnected ? 
+        Math.floor((Date.now() - this.lastConnectionTime.getTime()) / 1000) : 0,
+      apiKey: !!this.config.apiKey
+    };
   }
 }
 
