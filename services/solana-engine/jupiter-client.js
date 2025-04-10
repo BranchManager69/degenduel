@@ -1,11 +1,10 @@
-// services/new-market-data/jupiter-client.js
+// services/solana-engine/jupiter-client.js
 
 import axios from 'axios';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { jupiterConfig } from '../../config/external-api/jupiter-config.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
-import { cacheTTLs } from './connection-manager.js';
 
 // Formatting helpers for consistent logging
 const formatLog = {
@@ -22,108 +21,106 @@ const formatLog = {
 };
 
 /**
- * Jupiter Client for fetching market data and swap quotes
- * 
- * Updated in April 2025 to use Jupiter's new API Gateway:
- * - For paid access with API key: https://api.jup.ag/
- * - For free access (no API key): https://lite-api.jup.ag/
- * 
- * Note: As of May 1, 2025, api.jup.ag will return 401 errors without an API key
+ * Base class for Jupiter API modules
  */
-class JupiterClient {
-  constructor() {
-    this.config = jupiterConfig;
-    this.subscriptions = new Map(); // Keep this to track which tokens we're interested in
-    this.tokenList = null;
-    this.tokenMap = null;
-    this.initialized = false;
-    this.priceUpdateCallbacks = [];
-    this.pollingInterval = null;
-    this.pollingFrequency = 30000; // Poll every 30 seconds by default
+class JupiterBase {
+  constructor(config, redisKeyPrefix) {
+    this.config = config;
+    this.redisKeyPrefix = redisKeyPrefix || 'jupiter:';
   }
 
   /**
-   * Initialize the Jupiter client
+   * Make a request to Jupiter API
+   * @param {string} method - HTTP method
+   * @param {string} endpoint - API endpoint
+   * @param {Object} data - Request data (for POST)
+   * @param {Object} params - Query parameters (for GET)
+   * @returns {Promise<any>} - Response data
    */
-  async initialize() {
-    if (!this.config.apiKey) {
-      logApi.warn(`${formatLog.tag()} ${formatLog.warning('Jupiter API key not configured. Market data features will be limited.')}`);
-    }
-
+  async makeRequest(method, endpoint, data = null, params = null) {
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('INITIALIZING')} Jupiter client`);
-      
-      // Set up Redis keys for market data
-      this.redisKeys = {
-        tokenPrices: 'jupiter:token:prices:', // Prefix for token prices
-        tokenList: 'jupiter:token:list',      // List of all tokens
-        lastUpdate: 'jupiter:last:update',    // Timestamp of last update
+      const options = {
+        method,
+        url: endpoint,
+        headers: this.config.getHeaders(),
+        timeout: 15000 // 15 second timeout
       };
-      
-      // Initialize token list and map
-      await this.initializeTokenList();
-      
-      // Note: WebSocket initialization removed as the endpoint is unconfirmed
-      // In the future, we'll use Helius to monitor token liquidity pools directly
-      
-      this.initialized = true;
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Jupiter client initialized successfully')}`);
-      return true;
-    } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize Jupiter client:')} ${error.message}`);
-      return false;
-    }
-  }
 
-  /**
-   * Initialize token list and token map
-   */
-  async initializeTokenList() {
-    try {
-      // Check if we have the token list in Redis
-      const cachedTokenList = await redisManager.get(this.redisKeys.tokenList);
+      if (data) options.data = data;
+      if (params) options.params = params;
+
+      const response = await axios(options);
       
-      if (cachedTokenList) {
-        this.tokenList = JSON.parse(cachedTokenList);
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Using cached token list with')} ${formatLog.count(this.tokenList?.length || 0)} tokens`);
-      } else {
-        // Fetch token list from Jupiter API
-        logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} token list from Jupiter API`);
-        
-        const response = await axios.get(this.config.endpoints.tokens.getTokens, {
-          headers: this.config.getHeaders(),
-        });
-        
-        this.tokenList = response.data;
-        
-        // Cache the token list with TTL from global cacheTTLs
-        await redisManager.set(
-          this.redisKeys.tokenList, 
-          JSON.stringify(this.tokenList), 
-          cacheTTLs.tokenMetadataTTL || 60 * 60 * 24 // Use cacheTTLs or fallback
-        );
-        
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Fetched token list with')} ${formatLog.count(this.tokenList?.length || 0)} tokens`);
+      if (!response.data) {
+        throw new Error('Invalid response from Jupiter API');
       }
       
-      // Create a map of mint address to token info for quick lookups
-      this.tokenMap = this.tokenList.reduce((map, token) => {
-        map[token.address] = token;
-        return map;
-      }, {});
-      
-      return this.tokenList;
+      return response.data;
     } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize token list:')} ${error.message}`);
+      const errorMessage = error.response?.data?.message || error.message;
+      logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to fetch from Jupiter API (${endpoint}):`)} ${errorMessage}`);
+      throw error;
+    }
+  }
+}
+
+/**
+ * Token List service module
+ */
+class TokenListService extends JupiterBase {
+  constructor(config) {
+    super(config, 'jupiter:token:');
+  }
+
+  /**
+   * Fetch token list
+   */
+  async fetchTokenList() {
+    try {
+      // Fetch token list from Jupiter API
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} token list from Jupiter API`);
+      
+      const response = await this.makeRequest('GET', this.config.endpoints.tokens.getTokens);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Fetched token list with')} ${formatLog.count(response?.length || 0)} tokens`);
+      return response;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch token list:')} ${error.message}`);
       throw error;
     }
   }
 
   /**
-   * Start polling for price updates for subscribed tokens
-   * @private
+   * Create a map of mint address to token info for quick lookups
+   * @param {Array} tokenList - List of tokens
+   * @returns {Object} - Map of mint address to token info
    */
-  _startPolling() {
+  createTokenMap(tokenList) {
+    return tokenList.reduce((map, token) => {
+      map[token.address] = token;
+      return map;
+    }, {});
+  }
+}
+
+/**
+ * Price service module
+ */
+class PriceService extends JupiterBase {
+  constructor(config) {
+    super(config, 'jupiter:token:prices:');
+    
+    // Polling configuration
+    this.pollingInterval = null;
+    this.pollingFrequency = 30000; // Poll every 30 seconds by default
+    this.priceUpdateCallbacks = [];
+    this.subscriptions = new Map();
+  }
+
+  /**
+   * Start polling for price updates for subscribed tokens
+   */
+  startPolling() {
     if (this.pollingInterval) {
       return; // Already polling
     }
@@ -149,9 +146,8 @@ class JupiterClient {
 
   /**
    * Stop polling for price updates
-   * @private
    */
-  _stopPolling() {
+  stopPolling() {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
@@ -160,30 +156,8 @@ class JupiterClient {
   }
 
   /**
-   * Update token prices in Redis
-   * @param {Object} priceData - Price data from Jupiter WebSocket
-   */
-  async updateTokenPrices(priceData) {
-    try {
-      for (const [mintAddress, priceInfo] of Object.entries(priceData)) {
-        // Store price data in Redis
-        await redisManager.set(
-          `${this.redisKeys.tokenPrices}${mintAddress}`,
-          JSON.stringify(priceInfo),
-          cacheTTLs.tokenPriceTTL || 60 * 60 // Use cacheTTLs or fallback
-        );
-      }
-      
-      // Update the last update timestamp
-      await redisManager.set(this.redisKeys.lastUpdate, Date.now().toString());
-    } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to update token prices in Redis:')} ${error.message}`);
-    }
-  }
-
-  /**
    * Notify all registered callbacks about price updates
-   * @param {Object} priceData - Price data from Jupiter WebSocket
+   * @param {Object} priceData - Price data from Jupiter API
    */
   notifyPriceUpdateCallbacks(priceData) {
     if (this.priceUpdateCallbacks.length === 0) {
@@ -202,6 +176,7 @@ class JupiterClient {
   /**
    * Register a callback function for price updates
    * @param {Function} callback - Function to call when prices are updated
+   * @returns {Function} - Function to unregister the callback
    */
   onPriceUpdate(callback) {
     if (typeof callback !== 'function') {
@@ -219,7 +194,7 @@ class JupiterClient {
 
   /**
    * Subscribe to price updates for specified tokens
-   * This now adds tokens to the subscription list and starts polling
+   * This adds tokens to the subscription list and starts polling
    * @param {string[]} mintAddresses - Array of token mint addresses to subscribe to
    * @returns {boolean} - Success status
    */
@@ -242,7 +217,7 @@ class JupiterClient {
       
       // If we have subscriptions and aren't already polling, start polling
       if (this.subscriptions.size > 0 && !this.pollingInterval) {
-        this._startPolling();
+        this.startPolling();
       }
       
       // Immediately fetch prices for the newly subscribed tokens
@@ -259,7 +234,7 @@ class JupiterClient {
 
   /**
    * Unsubscribe from price updates for specified tokens
-   * This now removes tokens from the subscription list and may stop polling
+   * This removes tokens from the subscription list and may stop polling
    * @param {string[]} mintAddresses - Array of token mint addresses to unsubscribe from
    * @returns {boolean} - Success status
    */
@@ -282,7 +257,7 @@ class JupiterClient {
       
       // If no more subscriptions, stop polling
       if (this.subscriptions.size === 0) {
-        this._stopPolling();
+        this.stopPolling();
       }
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Unsubscribed from prices for')} ${formatLog.count(subscribedTokens.length)} tokens`);
@@ -300,61 +275,84 @@ class JupiterClient {
    */
   async getPrices(mintAddresses) {
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} prices for ${formatLog.count(mintAddresses?.length || 0)} tokens`);
+      // Check if we have a valid array of mint addresses
+      if (!Array.isArray(mintAddresses) || mintAddresses.length === 0) {
+        return {};
+      }
       
-      // Check if we have data in Redis first
-      const cachedPrices = {};
-      const missingTokens = [];
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} prices for ${formatLog.count(mintAddresses.length)} tokens`);
       
-      // Check which tokens we already have in cache
-      for (const mintAddress of mintAddresses) {
-        const cachedData = await redisManager.get(`${this.redisKeys.tokenPrices}${mintAddress}`);
-        if (cachedData) {
-          cachedPrices[mintAddress] = JSON.parse(cachedData);
-        } else {
-          missingTokens.push(mintAddress);
+      // Batch tokens into smaller chunks to avoid 414 URI Too Long errors
+      // Reduce the batch size to avoid 414 errors we're seeing in the logs
+      const MAX_TOKENS_PER_REQUEST = 50; // Reduced from 100 to 50
+      const allFetchedPrices = {};
+      let fetchErrorCount = 0;
+      
+      // Split into batches and process them
+      for (let i = 0; i < mintAddresses.length; i += MAX_TOKENS_PER_REQUEST) {
+        const batch = mintAddresses.slice(i, i + MAX_TOKENS_PER_REQUEST);
+        const queryString = batch.join(',');
+        
+        // Log progress for large batches
+        if (mintAddresses.length > MAX_TOKENS_PER_REQUEST) {
+          const batchNum = Math.floor(i/MAX_TOKENS_PER_REQUEST) + 1;
+          const totalBatches = Math.ceil(mintAddresses.length/MAX_TOKENS_PER_REQUEST);
+          const progress = Math.round((batchNum / totalBatches) * 100);
+          
+          // Only log every 10% for very large batches to reduce log spam
+          if (totalBatches > 10 && batchNum % Math.ceil(totalBatches/10) === 0) {
+            logApi.info(`${formatLog.tag()} Progress: ${progress}% (${i+batch.length}/${mintAddresses.length})`);
+          } 
+          // Log every batch for smaller sets
+          else if (totalBatches <= 10) {
+            logApi.info(`${formatLog.tag()} Processing batch ${batchNum}/${totalBatches} (${batch.length} tokens)`);
+          }
+        }
+        
+        try {
+          const response = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, { ids: queryString });
+          
+          if (!response || !response.data) {
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning('Invalid response for batch')} ${Math.floor(i/MAX_TOKENS_PER_REQUEST) + 1}`);
+            continue; // Skip this batch and continue with next one
+          }
+          
+          // Merge this batch's results with the overall results
+          Object.assign(allFetchedPrices, response.data);
+          
+          // Add a small delay between batches to avoid rate limiting (if needed)
+          if (i + MAX_TOKENS_PER_REQUEST < mintAddresses.length) {
+            await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+          }
+        } catch (batchError) {
+          fetchErrorCount++;
+          
+          // Only log detailed error for the first few errors to avoid log spam
+          if (fetchErrorCount <= 3) {
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error fetching batch ${Math.floor(i/MAX_TOKENS_PER_REQUEST) + 1}:`)} ${batchError.message}`);
+          } 
+          // Just log a count for subsequent errors
+          else if (fetchErrorCount === 4) {
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning('Additional batch errors occurring, suppressing detailed logs')}`);
+          }
+          
+          // Continue with next batch despite error
         }
       }
       
-      // If we have all tokens in cache, return them
-      if (missingTokens.length === 0) {
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Using cached prices for all')} ${formatLog.count(mintAddresses?.length || 0)} tokens`);
-        return cachedPrices;
+      // Final summary with error count if any
+      const fetchedCount = Object.keys(allFetchedPrices).length;
+      const successMsg = `${formatLog.success('Successfully fetched prices for')} ${formatLog.count(fetchedCount)} tokens (${fetchedCount}/${mintAddresses.length}, ${Math.round(fetchedCount/mintAddresses.length*100)}%)`;
+      
+      if (fetchErrorCount > 0) {
+        logApi.info(`${formatLog.tag()} ${successMsg} - ${formatLog.warning(`${fetchErrorCount} batch errors occurred`)}`);
+      } else {
+        logApi.info(`${formatLog.tag()} ${successMsg}`);
       }
       
-      // Fetch missing tokens from Jupiter API
-      logApi.info(`${formatLog.tag()} ${formatLog.info('Fetching prices for')} ${formatLog.count(missingTokens?.length || 0)} tokens from Jupiter API`);
-      
-      const queryString = missingTokens.join(',');
-      const response = await axios.get(`${this.config.endpoints.price.getPrices}?ids=${queryString}`, {
-        headers: this.config.getHeaders(),
-      });
-      
-      if (!response.data || !response.data.data) {
-        throw new Error('Invalid response from Jupiter API');
-      }
-      
-      const fetchedPrices = response.data.data;
-      
-      // Cache the fetched prices using TTL from global cacheTTLs
-      for (const [mintAddress, priceInfo] of Object.entries(fetchedPrices)) {
-        await redisManager.set(
-          `${this.redisKeys.tokenPrices}${mintAddress}`, 
-          JSON.stringify(priceInfo), 
-          cacheTTLs.tokenPriceTTL || 60 * 60 // Use cacheTTLs or fallback
-        );
-      }
-      
-      // Update the last update timestamp
-      await redisManager.set(this.redisKeys.lastUpdate, Date.now().toString());
-      
-      // Combine cached and fetched prices
-      const allPrices = { ...cachedPrices, ...fetchedPrices };
-      
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched prices for')} ${formatLog.count(Object.keys(allPrices)?.length || 0)} tokens`);
-      
-      return allPrices;
+      return allFetchedPrices;
     } catch (error) {
+      // Use a single detailed error log instead of multiple similar ones
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch prices:')} ${error.message}`);
       throw error;
     }
@@ -370,16 +368,13 @@ class JupiterClient {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} price history for token ${formatLog.token(mintAddress)} over ${interval}`);
       
-      const response = await axios.get(this.config.endpoints.price.getPriceHistory(mintAddress), {
-        headers: this.config.getHeaders(),
-        params: { interval },
-      });
+      const response = await this.makeRequest('GET', this.config.endpoints.price.getPriceHistory(mintAddress), null, { interval });
       
-      if (!response.data || !response.data.data || !response.data.data[mintAddress]) {
+      if (!response.data || !response.data[mintAddress]) {
         throw new Error('Invalid response from Jupiter API');
       }
       
-      const priceHistory = response.data.data[mintAddress];
+      const priceHistory = response.data[mintAddress];
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched price history for')} ${formatLog.token(mintAddress)}`);
       
@@ -388,6 +383,15 @@ class JupiterClient {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch price history:')} ${error.message}`);
       throw error;
     }
+  }
+}
+
+/**
+ * Swap service module
+ */
+class SwapService extends JupiterBase {
+  constructor(config) {
+    super(config, 'jupiter:swap:');
   }
 
   /**
@@ -399,22 +403,118 @@ class JupiterClient {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} swap quote from ${formatLog.token(params.inputMint)} to ${formatLog.token(params.outputMint)}`);
       
-      const response = await axios.get(this.config.endpoints.quote.getQuote, {
-        headers: this.config.getHeaders(),
-        params,
-      });
+      const response = await this.makeRequest('GET', this.config.endpoints.quote.getQuote, null, params);
       
-      if (!response.data) {
-        throw new Error('Invalid response from Jupiter API');
-      }
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched swap quote')} with best price: ${formatLog.price(response.outAmount)}`);
       
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched swap quote')} with best price: ${formatLog.price(response.data.outAmount)}`);
-      
-      return response.data;
+      return response;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch swap quote:')} ${error.message}`);
       throw error;
     }
+  }
+}
+
+/**
+ * Jupiter Client for fetching market data and swap quotes
+ * 
+ * Updated in April 2025 to use Jupiter's new API Gateway:
+ * - For paid access with API key: https://api.jup.ag/
+ * - For free access (no API key): https://lite-api.jup.ag/
+ * 
+ * Note: As of May 1, 2025, api.jup.ag will return 401 errors without an API key
+ */
+class JupiterClient {
+  constructor() {
+    this.config = jupiterConfig;
+    this.initialized = false;
+    
+    // Create service modules
+    this.tokens = new TokenListService(this.config);
+    this.prices = new PriceService(this.config);
+    this.swaps = new SwapService(this.config);
+    
+    this.tokenList = null;
+    this.tokenMap = null;
+  }
+
+  /**
+   * Initialize the Jupiter client
+   */
+  async initialize() {
+    if (!this.config.apiKey) {
+      logApi.warn(`${formatLog.tag()} ${formatLog.warning('Jupiter API key not configured. Market data features will be limited.')}`);
+    }
+
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('INITIALIZING')} Jupiter client`);
+      
+      // Initialize token list and map
+      this.tokenList = await this.tokens.fetchTokenList();
+      this.tokenMap = this.tokens.createTokenMap(this.tokenList);
+      
+      this.initialized = true;
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Jupiter client initialized successfully')}`);
+      return true;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize Jupiter client:')} ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Register a callback function for price updates - proxy to price service
+   * @param {Function} callback - Function to call when prices are updated
+   * @returns {Function} - Function to unregister the callback
+   */
+  onPriceUpdate(callback) {
+    return this.prices.onPriceUpdate(callback);
+  }
+
+  /**
+   * Subscribe to price updates for specified tokens - proxy to price service
+   * @param {string[]} mintAddresses - Array of token mint addresses to subscribe to
+   * @returns {boolean} - Success status
+   */
+  async subscribeToPrices(mintAddresses) {
+    return this.prices.subscribeToPrices(mintAddresses);
+  }
+
+  /**
+   * Unsubscribe from price updates for specified tokens - proxy to price service
+   * @param {string[]} mintAddresses - Array of token mint addresses to unsubscribe from
+   * @returns {boolean} - Success status
+   */
+  async unsubscribeFromPrices(mintAddresses) {
+    return this.prices.unsubscribeFromPrices(mintAddresses);
+  }
+
+  /**
+   * Get current prices for specified tokens - proxy to price service
+   * @param {string[]} mintAddresses - Array of token mint addresses
+   * @returns {Promise<Object>} - Map of token addresses to price data
+   */
+  async getPrices(mintAddresses) {
+    return this.prices.getPrices(mintAddresses);
+  }
+
+  /**
+   * Get price history for a token - proxy to price service
+   * @param {string} mintAddress - Token mint address
+   * @param {string} interval - Time interval (e.g., '1d', '7d', '30d')
+   * @returns {Promise<Object>} - Price history data
+   */
+  async getPriceHistory(mintAddress, interval = '7d') {
+    return this.prices.getPriceHistory(mintAddress, interval);
+  }
+
+  /**
+   * Get a swap quote between two tokens - proxy to swap service
+   * @param {Object} params - Quote parameters (inputMint, outputMint, amount, etc.)
+   * @returns {Promise<Object>} - Swap quote details
+   */
+  async getSwapQuote(params) {
+    return this.swaps.getSwapQuote(params);
   }
 
   /**

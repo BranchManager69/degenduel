@@ -741,6 +741,10 @@ ${bgColor}${fgColor}└${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyCol
       
       // Log the fancy connection format to console - always show this for readability
       console.log(connectionLog);
+      
+      // Remove the duplicate connectionLog from the log object to avoid cluttering logtail
+      delete fullLogObject.connectionLog;
+      delete consoleLogObject.connectionLog;
     } catch (error) {
       logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling connection:${fancyColors.RESET}`, error);
       ws.terminate();
@@ -1861,11 +1865,14 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
       // Log the enhanced disconnect format to console
       console.log(disconnectLog);
       
-      // Also log through the regular logging system
+      // Also log through the regular logging system, but without the formatted disconnectLog
+      // to avoid duplicate formatting in logtail/console
       logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}CONN#${connectionId} CLOSE - ${clientIdentifier} (${humanDuration})${userInfo}${topicsSummary}${fancyColors.RESET}`, 
         {
           ...(config.debug_modes.websocket ? fullLogObject : consoleLogObject),
-          disconnectLog
+          // Remove disconnectLog from metadata to avoid duplication
+          closeCode: ws.closeCode,
+          closeReason: ws.closeReason
         }
       );
       
