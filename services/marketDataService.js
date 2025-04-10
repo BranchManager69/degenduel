@@ -23,6 +23,7 @@ import { config } from '../config/config.js';
 import solanaEngine from './solana-engine/index.js';
 import { heliusClient } from './solana-engine/helius-client.js';
 import { jupiterClient } from './solana-engine/jupiter-client.js';
+import tokenHistoryFunctions from './token-history-functions.js';
 
 // Service configuration
 const BROADCAST_INTERVAL = 60; // Broadcast every 60 seconds
@@ -150,38 +151,38 @@ class MarketDataService extends BaseService {
         try {
             // Check if service is enabled via service profile
             if (!config.services.market_data) {
-                logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Market Data Service is disabled in the '${config.services.active_profile}' service profile`);
+                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Market Data Service is disabled in the '${config.services.active_profile}' service profile`);
                 return false; // Skip initialization
             }
             
             // Check market database connection
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Connecting to market database...`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Connecting to market database...`);
             try {
                 const tokenCount = await marketDb.tokens.count();
                 this.marketStats.tokens.total = tokenCount;
                 this.lastTokenCount = tokenCount;
                 
                 if (tokenCount === 0) {
-                    logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Connected to market database, but no tokens found${fancyColors.RESET}`);
+                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Connected to market database, but no tokens found${fancyColors.RESET}`);
                 } else {
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Connected to market database, found ${tokenCount} tokens`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Connected to market database, found ${tokenCount} tokens`);
                 }
                 
                 // Initialize SolanaEngine if it's not already initialized
                 if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Initializing SolanaEngine...`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Initializing SolanaEngine...`);
                     await solanaEngine.initialize();
                 }
                 
                 // Initialize the Helius client if it's not already initialized
                 if (!heliusClient.initialized) {
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Initializing Helius client...`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Initializing Helius client...`);
                     await heliusClient.initialize();
                 }
                 
                 // Initialize the Jupiter client if it's not already initialized
                 if (!jupiterClient.initialized) {
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Initializing Jupiter client...`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Initializing Jupiter client...`);
                     await jupiterClient.initialize();
                 }
                 
@@ -192,15 +193,15 @@ class MarketDataService extends BaseService {
                 await this.registerTokenSyncTasks();
                 
                 // Start update interval to update token data in the database (every minute)
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Starting database update interval (every ${UPDATE_INTERVAL} seconds)...`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Starting database update interval (every ${UPDATE_INTERVAL} seconds)...`);
                 this.startUpdateInterval();
                 
                 // Start broadcast interval
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Starting broadcast interval...`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Starting broadcast interval...`);
                 this.startBroadcastInterval();
                 
             } catch (dbError) {
-                logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Failed to connect to market database: ${dbError.message}${fancyColors.RESET}`);
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Failed to connect to market database: ${dbError.message}${fancyColors.RESET}`);
                 throw new Error(`Failed to connect to market database: ${dbError.message}`);
             }
 
@@ -223,12 +224,12 @@ class MarketDataService extends BaseService {
                 }
             };
 
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Market Data Service ready`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Market Data Service ready`);
 
             this.isInitialized = true;
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
             await this.handleError(error);
             throw error;
         }
@@ -247,7 +248,7 @@ class MarketDataService extends BaseService {
         try {
             // Skip check if sync is already in progress
             if (this.syncInProgress) {
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Sync already in progress, skipping full sync check${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Sync already in progress, skipping full sync check${fancyColors.RESET}`);
                 return false;
             }
             
@@ -273,7 +274,7 @@ class MarketDataService extends BaseService {
             else {
                 // If we have less than 25% of the tokens, always need a sync
                 if (dbTokenCount < (jupiterTokenCount * 0.25)) {
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} MAJOR SYNC NEEDED ${fancyColors.RESET} Database has less than 25% of available tokens`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} MAJOR SYNC NEEDED ${fancyColors.RESET} Database has less than 25% of available tokens`);
                     return true;
                 }
             }
@@ -284,21 +285,21 @@ class MarketDataService extends BaseService {
             const coveragePercent = Math.round((dbTokenCount / jupiterTokenCount) * 100);
             
             if (tokenDifference > 0) {
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NEW TOKENS DETECTED ${fancyColors.RESET} Found ${tokenDifference} new tokens since last check (${dbTokenCount}/${jupiterTokenCount}, ${coveragePercent}%)`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NEW TOKENS DETECTED ${fancyColors.RESET} Found ${tokenDifference} new tokens since last check (${dbTokenCount}/${jupiterTokenCount}, ${coveragePercent}%)`);
                 
                 // If there are new tokens but below threshold, still log them but don't trigger full sync
                 if (!syncNeeded) {
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} New token count (${tokenDifference}) is below threshold (${NEW_TOKEN_THRESHOLD}), using regular update cycle instead of full sync`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} New token count (${tokenDifference}) is below threshold (${NEW_TOKEN_THRESHOLD}), using regular update cycle instead of full sync`);
                 } else {
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SYNC TRIGGERED ${fancyColors.RESET} New token count (${tokenDifference}) exceeds threshold (${NEW_TOKEN_THRESHOLD})`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SYNC TRIGGERED ${fancyColors.RESET} New token count (${tokenDifference}) exceeds threshold (${NEW_TOKEN_THRESHOLD})`);
                 }
             } else {
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Token coverage: ${coveragePercent}% (${dbTokenCount}/${jupiterTokenCount}) - All tokens tracked`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Token coverage: ${coveragePercent}% (${dbTokenCount}/${jupiterTokenCount}) - All tokens tracked`);
             }
             
             return syncNeeded;
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking token sync status:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking token sync status:${fancyColors.RESET}`, error);
             return false; // Default to no sync needed if there's an error
         }
     }
@@ -312,7 +313,7 @@ class MarketDataService extends BaseService {
         
         try {
             if (!jupiterTokens || jupiterTokens.length === 0) {
-                logApi.debug(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}No tokens provided for new token check${fancyColors.RESET}`);
+                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}No tokens provided for new token check${fancyColors.RESET}`);
                 return false;
             }
             
@@ -320,19 +321,19 @@ class MarketDataService extends BaseService {
             const dbTokenCount = await marketDb.tokens.count();
             
             // Log current token counts for monitoring
-            logApi.debug(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Token counts - DB: ${dbTokenCount}, Jupiter: ${jupiterTokens.length}`);
+            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Token counts - DB: ${dbTokenCount}, Jupiter: ${jupiterTokens.length}`);
             
             // Quick check - if we already have more tokens than Jupiter is reporting, skip check
             if (dbTokenCount >= jupiterTokens.length) {
-                logApi.debug(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} DB token count (${dbTokenCount}) ≥ Jupiter count (${jupiterTokens.length}), skipping new token check`);
+                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} DB token count (${dbTokenCount}) ≥ Jupiter count (${jupiterTokens.length}), skipping new token check`);
                 return false;
             }
             
             // Log that we need to do a more thorough check
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Token count discrepancy detected - DB: ${dbTokenCount}, Jupiter: ${jupiterTokens.length}${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Token count discrepancy detected - DB: ${dbTokenCount}, Jupiter: ${jupiterTokens.length}${fancyColors.RESET}`);
             
             // Get existing token addresses for comparison (only if we potentially have new tokens)
-            logApi.debug(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Fetching existing token addresses from database`);
+            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Fetching existing token addresses from database`);
             const existingTokens = await marketDb.tokens.findMany({
                 select: {
                     address: true
@@ -341,7 +342,7 @@ class MarketDataService extends BaseService {
             
             // Create a map of existing tokens by address for faster lookup
             const existingAddressMap = new Set(existingTokens.map(token => token.address));
-            logApi.debug(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Created address map with ${existingAddressMap.size} tokens`);
+            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Created address map with ${existingAddressMap.size} tokens`);
             
             // Determine which tokens need to be added
             const tokensToAdd = jupiterTokens.filter(token => 
@@ -350,11 +351,11 @@ class MarketDataService extends BaseService {
             );
             
             if (tokensToAdd.length === 0) {
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}No new token addresses to add despite count discrepancy${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}No new token addresses to add despite count discrepancy${fancyColors.RESET}`);
                 return false;
             }
             
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NEW TOKENS ${fancyColors.RESET} Found ${tokensToAdd.length} new tokens during regular update`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NEW TOKENS ${fancyColors.RESET} Found ${tokensToAdd.length} new tokens during regular update`);
             
             // Log new tokens more prominently as requested
             if (tokensToAdd.length > 0) {
@@ -362,11 +363,11 @@ class MarketDataService extends BaseService {
                 const DISPLAY_CHUNK_SIZE = 5;
                 for (let i = 0; i < tokensToAdd.length; i += DISPLAY_CHUNK_SIZE) {
                     const chunkTokens = tokensToAdd.slice(i, i + DISPLAY_CHUNK_SIZE);
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}NEW TOKEN BATCH ${Math.floor(i/DISPLAY_CHUNK_SIZE) + 1}:${fancyColors.RESET} ${chunkTokens.join(', ')}`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}NEW TOKEN BATCH ${Math.floor(i/DISPLAY_CHUNK_SIZE) + 1}:${fancyColors.RESET} ${chunkTokens.join(', ')}`);
                 }
                 
                 // Also provide a distinct log of just the count for easy monitoring
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN COUNT ${fancyColors.RESET} Adding ${tokensToAdd.length} new tokens to database`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN COUNT ${fancyColors.RESET} Adding ${tokensToAdd.length} new tokens to database`);
             }
             
             // Process the new tokens in a single batch for speed
@@ -418,7 +419,7 @@ class MarketDataService extends BaseService {
                             });
                         }
                     } catch (priceError) {
-                        logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating token_prices for ${newToken.address}:${fancyColors.RESET}`, priceError);
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating token_prices for ${newToken.address}:${fancyColors.RESET}`, priceError);
                     }
                     
                     // Record in price history too
@@ -433,7 +434,7 @@ class MarketDataService extends BaseService {
                     if (error.message.includes('duplicate key') || error.message.includes('unique constraint')) {
                         skippedCount++;
                     } else {
-                        logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error adding token ${tokenAddress}:${fancyColors.RESET}`, error);
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error adding token ${tokenAddress}:${fancyColors.RESET}`, error);
                         errorCount++;
                     }
                 }
@@ -441,14 +442,14 @@ class MarketDataService extends BaseService {
             
             // Update stats
             const elapsedMs = Date.now() - startTime;
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN ADD ${fancyColors.RESET} Added ${addedCount} new tokens in ${elapsedMs}ms (${skippedCount} skipped, ${errorCount} errors)`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN ADD ${fancyColors.RESET} Added ${addedCount} new tokens in ${elapsedMs}ms (${skippedCount} skipped, ${errorCount} errors)`);
             
             // Update token count stats 
             this.marketStats.tokens.total = await marketDb.tokens.count();
             
             return addedCount > 0;
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking for new tokens:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking for new tokens:${fancyColors.RESET}`, error);
             return false;
         }
     }
@@ -462,7 +463,7 @@ class MarketDataService extends BaseService {
         const startTime = Date.now();
         
         try {
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} FULL SYNC ${fancyColors.RESET} Starting token sync (BACKGROUND PROCESS)`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} FULL SYNC ${fancyColors.RESET} Starting token sync (BACKGROUND PROCESS)`);
             
             // Flag to track that sync is in progress
             this.syncInProgress = true;
@@ -481,17 +482,17 @@ class MarketDataService extends BaseService {
             const jupiterTokens = jupiterClient.tokenList;
             
             if (!jupiterTokens || jupiterTokens.length === 0) {
-                logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}No tokens returned from Jupiter API${fancyColors.RESET}`);
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}No tokens returned from Jupiter API${fancyColors.RESET}`);
                 this.syncInProgress = false;
                 return false;
             }
             
             // Log token count
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Received ${jupiterTokens.length.toLocaleString()} tokens from Jupiter`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Received ${jupiterTokens.length.toLocaleString()} tokens from Jupiter`);
             
             // Get database token count for comparison
             const dbTokenCountBefore = await marketDb.tokens.count();
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Current database has ${dbTokenCountBefore.toLocaleString()} tokens`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Current database has ${dbTokenCountBefore.toLocaleString()} tokens`);
             
             // Use an efficient bulk operation instead of one-by-one processing
             // First, get all existing tokens
@@ -508,11 +509,11 @@ class MarketDataService extends BaseService {
                 token && token.length > 20
             );
             
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NEW TOKENS ${fancyColors.RESET} Found ${tokensToAdd.length.toLocaleString()} new tokens to add`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NEW TOKENS ${fancyColors.RESET} Found ${tokensToAdd.length.toLocaleString()} new tokens to add`);
             
             // If no new tokens, we're done
             if (tokensToAdd.length === 0) {
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}Database is already up-to-date${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}Database is already up-to-date${fancyColors.RESET}`);
                 this.syncInProgress = false;
                 this.lastSyncCompleteTime = new Date();
                 return true;
@@ -531,7 +532,7 @@ class MarketDataService extends BaseService {
             const batchesToProcess = Math.min(TOTAL_BATCHES, MAX_BATCHES_PER_RUN);
             
             if (TOTAL_BATCHES > MAX_BATCHES_PER_RUN) {
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Processing ${batchesToProcess} batches out of ${TOTAL_BATCHES} total (limiting to prevent server overload)${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Processing ${batchesToProcess} batches out of ${TOTAL_BATCHES} total (limiting to prevent server overload)${fancyColors.RESET}`);
             }
             
             let addedCount = 0;
@@ -544,7 +545,7 @@ class MarketDataService extends BaseService {
                 const batchEnd = Math.min((batchIndex + 1) * BATCH_SIZE, tokensToAdd.length);
                 const batchTokens = tokensToAdd.slice(batchStart, batchEnd);
                 
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Processing batch ${batchIndex + 1}/${batchesToProcess} (${batchTokens.length} tokens)`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processing batch ${batchIndex + 1}/${batchesToProcess} (${batchTokens.length} tokens)`);
                 
                 // Prepare batch data for bulk insert
                 const tokenInsertData = batchTokens.map(address => ({
@@ -622,10 +623,10 @@ class MarketDataService extends BaseService {
                         const remainingTokens = Math.min(tokensToAdd.length, batchesToProcess * BATCH_SIZE) - processedTokens;
                         const estimatedRemaining = remainingTokens / Math.max(1, tokensPerSecond);
                         
-                        logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Progress: ${percentComplete}% - Added ${addedCount} tokens (${tokensPerSecond.toFixed(1)}/sec, ~${Math.floor(estimatedRemaining)}s remaining)${fancyColors.RESET}`);
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Progress: ${percentComplete}% - Added ${addedCount} tokens (${tokensPerSecond.toFixed(1)}/sec, ~${Math.floor(estimatedRemaining)}s remaining)${fancyColors.RESET}`);
                     }
                 } catch (error) {
-                    logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in batch ${batchIndex + 1}:${fancyColors.RESET}`, error);
+                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in batch ${batchIndex + 1}:${fancyColors.RESET}`, error);
                     errorCount++;
                 }
                 
@@ -664,15 +665,15 @@ class MarketDataService extends BaseService {
             const remainingBatches = TOTAL_BATCHES - batchesToProcess;
             
             if (remainingBatches > 0) {
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SYNC PARTIAL ${fancyColors.RESET} Processed ${batchesToProcess} of ${TOTAL_BATCHES} batches. ${remainingBatches} batches (${remainingBatches * BATCH_SIZE} tokens) remaining for next run.`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SYNC PARTIAL ${fancyColors.RESET} Processed ${batchesToProcess} of ${TOTAL_BATCHES} batches. ${remainingBatches} batches (${remainingBatches * BATCH_SIZE} tokens) remaining for next run.`);
             }
             
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SYNC COMPLETE ${fancyColors.RESET} Added ${addedCount} tokens (${tokensPerSecond}/sec) in ${elapsedSeconds}s. Database now has ${dbTokenCountAfter.toLocaleString()} tokens (+${actualDifference})`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SYNC COMPLETE ${fancyColors.RESET} Added ${addedCount} tokens (${tokensPerSecond}/sec) in ${elapsedSeconds}s. Database now has ${dbTokenCountAfter.toLocaleString()} tokens (+${actualDifference})`);
             
             return true;
         } catch (error) {
             const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SYNC FAILED ${fancyColors.RESET} Error during token sync (${elapsedSeconds}s): ${error.message}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SYNC FAILED ${fancyColors.RESET} Error during token sync (${elapsedSeconds}s): ${error.message}`, error);
             
             this.syncInProgress = false;
             this.lastSyncError = {
@@ -739,7 +740,7 @@ class MarketDataService extends BaseService {
             const coolingPeriodMs = 5 * 60 * 1000; // 5 minutes
             
             if (now - lastFailure > coolingPeriodMs) {
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} AUTO-RECOVERY ${fancyColors.RESET} Circuit breaker cooling period elapsed, auto-resetting`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} AUTO-RECOVERY ${fancyColors.RESET} Circuit breaker cooling period elapsed, auto-resetting`);
                 
                 // Reset circuit breaker
                 this.stats.circuitBreaker.isOpen = false;
@@ -766,7 +767,7 @@ class MarketDataService extends BaseService {
             } catch (dbError) {
                 this._lastDbCheck = now;
                 this._dbConnected = false;
-                logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Database connectivity check failed: ${dbError.message}${fancyColors.RESET}`);
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Database connectivity check failed: ${dbError.message}${fancyColors.RESET}`);
                 throw ServiceError.database(`Database connectivity check failed: ${dbError.message}`);
             }
         } else if (this._dbConnected === false) {
@@ -797,7 +798,7 @@ class MarketDataService extends BaseService {
             // Server is busy if memory is high or we have many tasks
             return isMemoryHigh || hasManyTasks;
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking server load: ${error.message}${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking server load: ${error.message}${fancyColors.RESET}`);
             return false; // Default to not busy if check fails
         }
     }
@@ -820,15 +821,15 @@ class MarketDataService extends BaseService {
                     
                     if (jupiterTokens.length > 0) {
                         const coverage = ((dbTokenCount / jupiterTokens.length) * 100).toFixed(1);
-                        logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Token status: ${dbTokenCount.toLocaleString()} tokens in DB (${coverage}% of ${jupiterTokens.length.toLocaleString()} from Jupiter)`);
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Token status: ${dbTokenCount.toLocaleString()} tokens in DB (${coverage}% of ${jupiterTokens.length.toLocaleString()} from Jupiter)`);
                         
                         // Just log that tokens can be synced via admin panel
                         if (dbTokenCount < jupiterTokens.length) {
-                            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Token sync available via admin panel - ${(jupiterTokens.length - dbTokenCount).toLocaleString()} tokens can be added${fancyColors.RESET}`);
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Token sync available via admin panel - ${(jupiterTokens.length - dbTokenCount).toLocaleString()} tokens can be added${fancyColors.RESET}`);
                         }
                     }
                 } catch (error) {
-                    logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Error checking token counts: ${error.message}${fancyColors.RESET}`);
+                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Error checking token counts: ${error.message}${fancyColors.RESET}`);
                 }
                 
                 // Set up a simple interval for periodic token status checks (no auto-sync)
@@ -850,17 +851,17 @@ class MarketDataService extends BaseService {
                             const missingTokens = jupiterTokens.length - dbTokenCount;
                             
                             // Just log status without auto-syncing
-                            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Hourly status: ${missingTokens.toLocaleString()} tokens need syncing (${coverage}% coverage - ${dbTokenCount.toLocaleString()}/${jupiterTokens.length.toLocaleString()})${fancyColors.RESET}`);
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Hourly status: ${missingTokens.toLocaleString()} tokens need syncing (${coverage}% coverage - ${dbTokenCount.toLocaleString()}/${jupiterTokens.length.toLocaleString()})${fancyColors.RESET}`);
                         }
                     } catch (error) {
-                        logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in token status check:${fancyColors.RESET}`, error);
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in token status check:${fancyColors.RESET}`, error);
                     }
                 }, FULL_UPDATE_INTERVAL * 1000);
                 
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Set up token status reporting (every ${FULL_UPDATE_INTERVAL / 60} hours)`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Set up token status reporting (every ${FULL_UPDATE_INTERVAL / 60} hours)`);
             }
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error registering token sync tasks: ${error.message}${fancyColors.RESET}`);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error registering token sync tasks: ${error.message}${fancyColors.RESET}`);
         }
     }
 
@@ -869,21 +870,21 @@ class MarketDataService extends BaseService {
      */
     startBackgroundSync() {
         if (this.syncInProgress || this.syncScheduled) {
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Sync already in progress or scheduled, skipping${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Sync already in progress or scheduled, skipping${fancyColors.RESET}`);
             return;
         }
         
         this.syncScheduled = true;
-        logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} STARTING BACKGROUND SYNC ${fancyColors.RESET} Running token sync now that server is initialized`);
+        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} STARTING BACKGROUND SYNC ${fancyColors.RESET} Running token sync now that server is initialized`);
         
         this.syncAllTokenAddresses()
             .then(success => {
                 this.syncScheduled = false;
                 this.syncBackoffCount = 0; // Reset backoff on successful sync
                 if (success) {
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SYNC COMPLETED ${fancyColors.RESET} Background token sync completed successfully`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SYNC COMPLETED ${fancyColors.RESET} Background token sync completed successfully`);
                 } else {
-                    logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SYNC INCOMPLETE ${fancyColors.RESET} Background token sync did not complete successfully`);
+                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SYNC INCOMPLETE ${fancyColors.RESET} Background token sync did not complete successfully`);
                 }
                 
                 // Update service stats
@@ -909,12 +910,12 @@ class MarketDataService extends BaseService {
                 this.syncScheduled = false;
                 this.syncBackoffCount++; // Increment backoff count on failure
                 
-                logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SYNC ERROR ${fancyColors.RESET} Background token sync failed: ${err.message}`);
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SYNC ERROR ${fancyColors.RESET} Background token sync failed: ${err.message}`);
                 
                 // Calculate exponential backoff for retries
                 const backoffMinutes = Math.min(Math.pow(2, this.syncBackoffCount), 60); // Max 60 minute backoff
                 
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Will retry sync in ${backoffMinutes} minutes (attempt ${this.syncBackoffCount})${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Will retry sync in ${backoffMinutes} minutes (attempt ${this.syncBackoffCount})${fancyColors.RESET}`);
                 
                 // Update error status
                 this.lastSyncError = {
@@ -985,7 +986,7 @@ class MarketDataService extends BaseService {
                 this.marketStats.performance.lastQueryTimeMs = Date.now() - startTime;
             } catch (dbError) {
                 // Log database error but don't throw - just skip updating stats
-                logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Database error during stats update: ${dbError.message}${fancyColors.RESET}`);
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Database error during stats update: ${dbError.message}${fancyColors.RESET}`);
                 
                 // If we can't reach the database, add a pause before next attempt
                 // This prevents rapid-fire failures during a database outage
@@ -1017,7 +1018,7 @@ class MarketDataService extends BaseService {
                     }
                 );
             } catch (updateError) {
-                logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to update service heartbeat: ${updateError.message}${fancyColors.RESET}`);
+                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to update service heartbeat: ${updateError.message}${fancyColors.RESET}`);
             }
 
             return {
@@ -1027,7 +1028,7 @@ class MarketDataService extends BaseService {
         } catch (error) {
             // For database connectivity errors, don't increment circuit breaker too aggressively
             if (error.code === 'DATABASE_ERROR') {
-                logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Database connectivity issue detected, pausing before retry${fancyColors.RESET}`);
+                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Database connectivity issue detected, pausing before retry${fancyColors.RESET}`);
                 
                 // Add a delay to prevent rapid failures
                 await new Promise(resolve => setTimeout(resolve, 10000));
@@ -1090,7 +1091,7 @@ class MarketDataService extends BaseService {
 
             return this.formatTokenData(token);
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token:${fancyColors.RESET}`, error);
             throw error;
         }
     }
@@ -1115,7 +1116,7 @@ class MarketDataService extends BaseService {
 
             return this.formatTokenData(token);
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token by address:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token by address:${fancyColors.RESET}`, error);
             throw error;
         }
     }
@@ -1128,7 +1129,7 @@ class MarketDataService extends BaseService {
         try {
             return await marketDb.tokens.count();
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token count:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token count:${fancyColors.RESET}`, error);
             return 0;
         }
     }
@@ -1146,14 +1147,14 @@ class MarketDataService extends BaseService {
         // TODO: Implement when ready to replace Jupiter price polling
         // This will give us more direct and reliable price updates
         
-        logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Helius token monitoring not yet implemented${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Helius token monitoring not yet implemented${fancyColors.RESET}`);
         return false;
     }
     
     // Handle price updates (updated to work with both sources)
     async handlePriceUpdate(priceData) {
         try {
-            logApi.debug(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Processing manual price updates for ${Object.keys(priceData).length} tokens`);
+            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processing manual price updates for ${Object.keys(priceData).length} tokens`);
             
             // Update token prices in the market database
             for (const [mintAddress, priceInfo] of Object.entries(priceData)) {
@@ -1188,11 +1189,11 @@ class MarketDataService extends BaseService {
                         }
                     }
                 } catch (updateError) {
-                    logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating token price for ${mintAddress}:${fancyColors.RESET}`, updateError);
+                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating token price for ${mintAddress}:${fancyColors.RESET}`, updateError);
                 }
             }
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling price update:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling price update:${fancyColors.RESET}`, error);
         }
     }
     
@@ -1207,11 +1208,12 @@ class MarketDataService extends BaseService {
         try {
             // Make sure token ID and price are valid
             if (!tokenId || !price) {
-                logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Invalid token ID or price for price history:${fancyColors.RESET} ${tokenId}, ${price}`);
+                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Invalid token ID or price for price history:${fancyColors.RESET} ${tokenId}, ${price}`);
                 return false;
             }
             
             // Create a new price history entry
+            // Use a connection from the pool only briefly
             await marketDb.token_price_history.create({
                 data: {
                     token_id: tokenId,
@@ -1221,11 +1223,44 @@ class MarketDataService extends BaseService {
                 }
             });
             
-            logApi.debug(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Recorded price history for token ID ${tokenId}: ${price} (source: ${source})`);
+            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Recorded price history for token ID ${tokenId}: ${price} (source: ${source})`);
             return true;
         } catch (error) {
             // Log the error and continue - we don't want a price history failure to block token updates
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error recording price history for token ID ${tokenId}:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error recording price history for token ID ${tokenId}:${fancyColors.RESET}`, error);
+            return false;
+        }
+    }
+    
+    /**
+     * Batch record price history for multiple tokens
+     * More efficient than individual calls to recordPriceHistory
+     * @param {Array} priceHistoryRecords - Array of {tokenId, price, source} objects
+     * @returns {Promise<boolean>} - Whether the operation was successful
+     */
+    async recordPriceHistoryBatch(priceHistoryRecords) {
+        try {
+            if (!priceHistoryRecords || !Array.isArray(priceHistoryRecords) || priceHistoryRecords.length === 0) {
+                return false;
+            }
+            
+            // Prepare data for bulk insert
+            const dataToInsert = priceHistoryRecords.map(record => ({
+                token_id: record.tokenId,
+                price: record.price,
+                source: record.source || 'system',
+                timestamp: new Date()
+            }));
+            
+            // Use createMany to insert all records in a single database operation
+            await marketDb.token_price_history.createMany({
+                data: dataToInsert
+            });
+            
+            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Recorded ${dataToInsert.length} price history records in batch`);
+            return true;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error batch recording price history:${fancyColors.RESET}`, error);
             return false;
         }
     }
@@ -1238,7 +1273,7 @@ class MarketDataService extends BaseService {
             // Check service health
             await this.checkServiceHealth();
             
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} UPDATING ${fancyColors.RESET} Starting token data update`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} UPDATING ${fancyColors.RESET} Starting token data update`);
             
             // Get a list of tokens from Jupiter's API
             const tokenList = await jupiterClient.tokenList;
@@ -1250,7 +1285,7 @@ class MarketDataService extends BaseService {
             // Check for new tokens is disabled by configuration
             // CHECK_NEW_TOKENS_EVERY_UPDATE = false
             
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Processing ${tokenList.length} tokens from Jupiter API`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processing ${tokenList.length} tokens from Jupiter API`);
             
             // Get current tokens from the market database for comparison
             const existingTokens = await marketDb.tokens.findMany({
@@ -1320,8 +1355,303 @@ class MarketDataService extends BaseService {
             // Take only the top tokens after sorting
             const tokenSubset = sortedTokens.slice(0, MAX_TOKENS_TO_PROCESS);
             
+            // Track entrances, exits, and rank changes from the top token list
+            if (!this.previousTokenRanks) {
+                // First run - initialize the tracking with position information
+                this.previousTokenRanks = new Map();
+                
+                // Initialize with current addresses and their positions
+                tokenSubset.forEach((token, index) => {
+                    const address = typeof token === 'string' ? 
+                        token.replace(/^["']+|["']+$/g, '').replace(/\\"/g, '') : 
+                        token.address;
+                    
+                    // Store the token's position and symbol for comparison
+                    const symbol = typeof token === 'string' ? 
+                        address.substring(0, 8) : 
+                        token.symbol || address.substring(0, 8);
+                        
+                    this.previousTokenRanks.set(address, {
+                        position: index + 1, // 1-based position
+                        symbol: symbol
+                    });
+                });
+                
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Initialized token rank tracking with ${this.previousTokenRanks.size} tokens${fancyColors.RESET}`);
+            } else {
+                // Build the current token ranking map
+                const currentTokenRanks = new Map();
+                tokenSubset.forEach((token, index) => {
+                    const address = typeof token === 'string' ? 
+                        token.replace(/^["']+|["']+$/g, '').replace(/\\"/g, '') : 
+                        token.address;
+                    
+                    const symbol = typeof token === 'string' ? 
+                        address.substring(0, 8) : 
+                        token.symbol || address.substring(0, 8);
+                        
+                    currentTokenRanks.set(address, {
+                        position: index + 1, // 1-based position
+                        symbol: symbol
+                    });
+                });
+                
+                // Create sets for easier entrance/exit detection
+                const currentTopAddresses = new Set(currentTokenRanks.keys());
+                const previousTopAddresses = new Set(this.previousTokenRanks.keys());
+                
+                // Find new tokens that weren't in the previous list (entrances)
+                const entrances = [];
+                currentTopAddresses.forEach(address => {
+                    if (!previousTopAddresses.has(address)) {
+                        // Find the token in the current list for additional info
+                        const token = tokenSubset.find(t => 
+                            (typeof t === 'string' ? 
+                                t.replace(/^["']+|["']+$/g, '').replace(/\\"/g, '') : 
+                                t.address) === address
+                        );
+                        
+                        const symbol = typeof token === 'string' ? 
+                            address.substring(0, 8) : 
+                            token.symbol || address.substring(0, 8);
+                            
+                        entrances.push({ address, symbol });
+                    }
+                });
+                
+                // Find tokens that were in the previous list but aren't anymore (exits)
+                const exits = [];
+                previousTopAddresses.forEach(address => {
+                    if (!currentTopAddresses.has(address)) {
+                        // Get previous information for this token
+                        const tokenInfo = this.previousTokenRanks.get(address);
+                        const prevRank = tokenInfo?.position || 0;
+                        const symbol = tokenInfo?.symbol || address.substring(0, 8);
+                        
+                        exits.push({ 
+                            address, 
+                            symbol,
+                            prevRank
+                        });
+                    }
+                });
+                
+                // Log entrances and exits
+                if (entrances.length > 0) {
+                    const entranceSymbols = entrances.map(e => e.symbol).slice(0, 5);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} NEW ARRIVALS ${fancyColors.RESET} ${entrances.length} tokens entered top ${MAX_TOKENS_TO_PROCESS}: ${entranceSymbols.join(', ')}${entrances.length > 5 ? '...' : ''}`);
+                    
+                    // Log each entrance individually with more details if we have few of them
+                    if (entrances.length <= 5) {
+                        entrances.forEach(entrance => {
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}NEW LIST ENTRY:${fancyColors.RESET} ${entrance.symbol} (${entrance.address.substring(0, 8)}...)`);
+                        });
+                    }
+                }
+                
+                if (exits.length > 0) {
+                    const exitSymbols = exits.map(e => e.symbol).slice(0, 5);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DROPPED OUT ${fancyColors.RESET} ${exits.length} tokens exited top ${MAX_TOKENS_TO_PROCESS}: ${exitSymbols.join(', ')}${exits.length > 5 ? '...' : ''}`);
+                    
+                    // Log each exit individually with more details if we have few of them
+                    if (exits.length <= 5) {
+                        exits.forEach(exit => {
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}DROPPED FROM LIST:${fancyColors.RESET} ${exit.symbol} (${exit.address.substring(0, 8)}...)`);
+                        });
+                    }
+                }
+                
+                // Calculate position changes for tokens that stayed in the list
+                const rankChanges = [];
+                
+                // Record the current token ranks for historical tracking
+                this.recordTokenRanks(tokenSubset, currentTokenRanks);
+                
+                currentTopAddresses.forEach(address => {
+                    if (previousTopAddresses.has(address)) {
+                        // Get previous and current positions
+                        const prevInfo = this.previousTokenRanks.get(address);
+                        const currInfo = currentTokenRanks.get(address);
+                        
+                        if (prevInfo && currInfo) {
+                            // -------------------------------------------------------------------------
+                            // TOKEN HOTNESS GRADING METHODOLOGY
+                            // -------------------------------------------------------------------------
+                            // This comprehensive approach combines several factors to identify truly
+                            // significant token movements, with special emphasis on the top 50 ranks.
+                            // The system uses both rank changes and volume data for a complete picture.
+                            // -------------------------------------------------------------------------
+                            
+                            // 1. Basic rank change (raw positions moved)
+                            const change = prevInfo.position - currInfo.position; // Positive = improved
+                            
+                            // 2. Calculate percentage change relative to previous position
+                            // (Moving from 50→25 is 50% improvement, from 900→800 is only 11%)
+                            const percentChange = Math.abs(change / prevInfo.position) * 100;
+                            
+                            // 3. Logarithmic rank importance 
+                            // This makes movements in top ranks dramatically more important
+                            // We use log10(max_rank/current_rank + 1) which creates a curve where:
+                            // - Rank 1 is ~3x more important than rank 50
+                            // - Rank 1 is ~6x more important than rank 1000
+                            const logRankWeight = Math.log10(MAX_TOKENS_TO_PROCESS / currInfo.position + 1) * 3;
+                            
+                            // 4. Calculate weighted significance score 
+                            const weightedScore = percentChange * logRankWeight;
+                            
+                            // 5. Volume component - if available
+                            // Get volume data for this token from current and previous data
+                            // Current volume comes from the collected data
+                            let volumeGrowth = null;
+                            let volumeGrowthCategory = 'unknown'; // 'rising', 'falling', 'stable', 'unknown'
+                            
+                            // Calculate volume growth if we have the data
+                            if (this._batchVolumeChanges) {
+                                // Find current volume data
+                                const volumeData = this._batchVolumeChanges.find(v => v.address === address);
+                                if (volumeData && volumeData.volume) {
+                                    // We have current volume, compare with previous if available
+                                    const currentVolume = parseFloat(volumeData.volume);
+                                    
+                                    // Store with the entry for future comparison
+                                    currInfo.volume = currentVolume;
+                                    
+                                    // Check if we had previous volume data
+                                    if (prevInfo.volume) {
+                                        // Calculate volume growth percentage
+                                        volumeGrowth = ((currentVolume / prevInfo.volume) - 1) * 100;
+                                        
+                                        // Categorize volume change with some tolerance for minor fluctuations
+                                        if (volumeGrowth > 10) {
+                                            volumeGrowthCategory = 'rising';
+                                        } else if (volumeGrowth < -10) {
+                                            volumeGrowthCategory = 'falling';
+                                        } else {
+                                            volumeGrowthCategory = 'stable';
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // 6. Calculate final hotness score
+                            // Base: Weighted rank change
+                            // Bonus: Volume growth (if applicable)
+                            let hotnessScore = weightedScore;
+                            
+                            // Add volume growth bonus if available
+                            if (volumeGrowth !== null && volumeGrowth > 0) {
+                                // Volume growth can boost the score
+                                // We apply a modest multiplier for normal cases
+                                // And a stronger multiplier for dramatic volume growth
+                                const volumeBoost = volumeGrowth > 100 ? 1.5 : // >100% growth = 1.5x boost
+                                                  volumeGrowth > 50 ? 1.3 :   // >50% growth = 1.3x boost
+                                                  volumeGrowth > 20 ? 1.2 :   // >20% growth = 1.2x boost
+                                                  1.1;                        // All other positive growth
+                                
+                                hotnessScore *= volumeBoost;
+                            }
+                            
+                            // 7. Determine if this change is significant enough to track
+                            // Multiple factors make a significant change:
+                            // - Raw movement (10+ positions)
+                            // - Weighted score (15+ for normal tokens)
+                            // - Any movement in top 50 ranks (even small changes matter)
+                            // - Volume growth combined with positive rank change
+                            const isRawSignificant = Math.abs(change) >= 10;
+                            const isWeightedSignificant = weightedScore >= 15;
+                            const isTopRank = currInfo.position <= 50; // Special emphasis on top 50
+                            const isVolumeIncreasing = volumeGrowthCategory === 'rising';
+                            
+                            // For top ranks, we apply lower thresholds
+                            const isSignificantForTopRank = isTopRank && (Math.abs(change) >= 3 || weightedScore >= 5);
+                            
+                            // Track if token is "hot" (positive rank change + volume growth)
+                            const isHot = change > 0 && isVolumeIncreasing;
+                            
+                            // Determine if this token movement should be tracked
+                            if (isRawSignificant || isWeightedSignificant || isSignificantForTopRank || isHot) {
+                                rankChanges.push({
+                                    address,
+                                    symbol: currInfo.symbol,
+                                    prevRank: prevInfo.position,
+                                    currentRank: currInfo.position,
+                                    change,
+                                    percentChange: percentChange.toFixed(1),
+                                    weightedScore: weightedScore.toFixed(1),
+                                    volumeGrowth: volumeGrowth !== null ? volumeGrowth.toFixed(1) : null,
+                                    volumeGrowthCategory,
+                                    hotnessScore: hotnessScore.toFixed(1),
+                                    isTopRank,
+                                    isHot
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                // Sort by hotness score (most significant first)
+                rankChanges.sort((a, b) => parseFloat(b.hotnessScore) - parseFloat(a.hotnessScore));
+                
+                // Extract hot tokens (those with positive rank change + volume growth)
+                const hotTokens = rankChanges.filter(item => item.isHot).slice(0, 5);
+                
+                // For remaining tokens, split into risers and droppers by raw change
+                const otherTokens = rankChanges.filter(item => !item.isHot);
+                const risers = otherTokens.filter(item => item.change > 0)
+                    .sort((a, b) => parseFloat(b.hotnessScore) - parseFloat(a.hotnessScore))
+                    .slice(0, 5);
+                const droppers = otherTokens.filter(item => item.change < 0)
+                    .sort((a, b) => parseFloat(a.hotnessScore) - parseFloat(b.hotnessScore))
+                    .slice(0, 5);
+                
+                // Log HOT tokens (highest priority - both rising in rank and volume)
+                if (hotTokens.length > 0) {
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} HOT TOKENS ${fancyColors.RESET} Rising in both rank and volume:`);
+                    
+                    hotTokens.forEach(token => {
+                        // Format nicely with hotness score info
+                        const volInfo = token.volumeGrowth ? ` | Vol +${token.volumeGrowth}%` : '';
+                        const scoreInfo = ` | Score: ${token.hotnessScore}`;
+                        const rankInfo = token.isTopRank ? ` [TOP ${token.currentRank}]` : '';
+                        
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.MAGENTA}HOT TOKEN:${fancyColors.RESET} ${token.symbol}${rankInfo} | Rank ${token.prevRank} → ${token.currentRank} (+${token.change})${volInfo}${scoreInfo}`);
+                    });
+                }
+                
+                // Log top risers (tokens rising in rank but not marked as HOT)
+                if (risers.length > 0) {
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Top rank climbers:${fancyColors.RESET}`);
+                    
+                    risers.forEach(riser => {
+                        // Add top rank flag if in top 50
+                        const rankInfo = riser.isTopRank ? ` [TOP ${riser.currentRank}]` : '';
+                        // Include hotness score for context
+                        const scoreInfo = ` | Score: ${riser.hotnessScore}`;
+                        
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}RANK UP ${riser.change} spots:${fancyColors.RESET} ${riser.symbol}${rankInfo} moved ${riser.prevRank} → ${riser.currentRank}${scoreInfo}`);
+                    });
+                }
+                
+                // Log top droppers (tokens falling in rank)
+                if (droppers.length > 0) {
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Largest rank drops:${fancyColors.RESET}`);
+                    
+                    droppers.forEach(dropper => {
+                        // Add top rank flag if in top 50
+                        const rankInfo = dropper.isTopRank ? ` [TOP ${dropper.currentRank}]` : '';
+                        // Include hotness score for context
+                        const scoreInfo = ` | Score: ${dropper.hotnessScore}`;
+                        
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}RANK DOWN ${Math.abs(dropper.change)} spots:${fancyColors.RESET} ${dropper.symbol}${rankInfo} moved ${dropper.prevRank} → ${dropper.currentRank}${scoreInfo}`);
+                    });
+                }
+                
+                // Update previous list for next comparison
+                this.previousTokenRanks = currentTokenRanks;
+            }
+            
             // Log sorting results
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Sorted ${tokenList.length} tokens by volume/relevance, processing top ${tokenSubset.length}`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Sorted ${tokenList.length} tokens by volume/relevance, processing top ${tokenSubset.length}`);
             
             // Use Jupiter's max supported batch size
             // Jupiter API has a limit of 100 tokens per request
@@ -1333,13 +1663,13 @@ class MarketDataService extends BaseService {
                 const batchEnd = Math.min(batchStart + batchSize, tokenSubset.length);
                 const batchTokens = tokenSubset.slice(batchStart, batchEnd);
                 
-                logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Processing batch ${batchIndex + 1}/${totalBatches} (${batchTokens.length} tokens)`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processing batch ${batchIndex + 1}/${totalBatches} (${batchTokens.length} tokens)`);
                 
                 // Add a small delay between batches to avoid hitting rate limits
                 if (batchIndex > 0 && batchIndex % 5 === 0) {
                     // Every 5 batches = ~500 tokens, add a small pause
                     const pauseTime = 300; // 300ms pause
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Rate limit protection: Pausing for ${pauseTime}ms${fancyColors.RESET}`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Rate limit protection: Pausing for ${pauseTime}ms${fancyColors.RESET}`);
                     await new Promise(resolve => setTimeout(resolve, pauseTime));
                 }
                 
@@ -1359,7 +1689,7 @@ class MarketDataService extends BaseService {
                 try {
                     tokenMetadata = await heliusClient.getTokensMetadata(tokenAddresses);
                 } catch (error) {
-                    logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error fetching token metadata from Helius:${fancyColors.RESET}`, error);
+                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error fetching token metadata from Helius:${fancyColors.RESET}`, error);
                 }
                 
                 // Create a map of metadata by mint address
@@ -1373,10 +1703,18 @@ class MarketDataService extends BaseService {
                 try {
                     tokenPrices = await jupiterClient.getPrices(tokenAddresses);
                 } catch (error) {
-                    logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error fetching token prices from Jupiter:${fancyColors.RESET}`, error);
+                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error fetching token prices from Jupiter:${fancyColors.RESET}`, error);
                 }
                 
-                // Process each token in the batch
+                // OPTIMIZED DB OPERATIONS: Prepare batch arrays to reduce database connections
+                const tokenUpdates = []; // Existing tokens to update
+                const tokenCreates = []; // New tokens to create
+                const priceUpdates = []; // Price records to update or create
+                const historyRecords = []; // Price history records to create
+                const websiteUpdates = []; // Website updates for each token 
+                const socialUpdates = []; // Social media updates for each token
+                
+                // First pass: Prepare all data without DB operations
                 for (const token of batchTokens) {
                     try {
                         processedCount++;
@@ -1394,7 +1732,7 @@ class MarketDataService extends BaseService {
                         
                         // Skip tokens with missing or invalid addresses
                         if (!cleanedAddress) {
-                            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Skipping token - invalid address format${fancyColors.RESET}`, {
+                            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Skipping token - invalid address format${fancyColors.RESET}`, {
                                 original_token: processedToken
                             });
                             continue;
@@ -1421,6 +1759,8 @@ class MarketDataService extends BaseService {
                             decimals: processedToken.decimals || metadata.decimals || 9,
                             is_active: true,
                             image_url: validateStringLength(metadata.logoURI || metadata.uri || processedToken.logoURI || null, 255),
+                            // Include tags from Jupiter API (important for token categorization)
+                            tags: processedToken.tags || null,
                             updated_at: new Date()
                         };
                         
@@ -1435,129 +1775,574 @@ class MarketDataService extends BaseService {
                             updated_at: new Date()
                         };
                         
-                        // Check if the token already exists in the database
+                        // Add process information to the appropriate batch arrays
                         if (existingTokenMap[cleanedAddress]) {
+                            // Existing token - update token and price data
                             const tokenId = existingTokenMap[cleanedAddress].id;
                             
-                            // Update existing token's static data
-                            await marketDb.tokens.update({
-                                where: { id: tokenId },
+                            // Add to token updates array
+                            tokenUpdates.push({
+                                id: tokenId,
                                 data: tokenData
                             });
                             
-                            // Update or create price record if we have price data
+                            // Add to price updates array if we have price data
                             if (priceInfo.price) {
-                                await marketDb.token_prices.upsert({
-                                    where: { token_id: tokenId },
-                                    update: priceData,
-                                    create: {
-                                        token_id: tokenId,
-                                        ...priceData
-                                    }
+                                priceUpdates.push({
+                                    tokenId,
+                                    priceData
                                 });
                                 
-                                // Record price history
-                                await this.recordPriceHistory(
-                                    tokenId,
-                                    priceInfo.price.toString(),
-                                    'jupiter_api'
-                                );
+                                // Add to history records array
+                                historyRecords.push({
+                                    token_id: tokenId,
+                                    price: priceInfo.price.toString(),
+                                    source: 'jupiter_api',
+                                    timestamp: new Date()
+                                });
+                            }
+                            
+                            // Process websites and socials
+                            if (metadata.extensions) {
+                                // Add websites
+                                if (metadata.extensions.website) {
+                                    websiteUpdates.push({
+                                        tokenId,
+                                        label: 'Website',
+                                        url: validateStringLength(metadata.extensions.website, 255)
+                                    });
+                                }
+                                
+                                // Add socials
+                                const socialMap = {
+                                    twitter: metadata.extensions.twitter,
+                                    discord: metadata.extensions.discord,
+                                    telegram: metadata.extensions.telegram
+                                };
+                                
+                                for (const [type, url] of Object.entries(socialMap)) {
+                                    if (url) {
+                                        socialUpdates.push({
+                                            tokenId,
+                                            type,
+                                            url: validateStringLength(url, 255)
+                                        });
+                                    }
+                                }
                             }
                             
                             updatedTokensCount++;
                         } else {
-                            // Check if address is present - it's required for the database
+                            // New token - check if address is present
                             if (!tokenData.address) {
-                                logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Skipping token creation - address missing${fancyColors.RESET}`, {
+                                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Skipping token creation - address missing${fancyColors.RESET}`, {
                                     token_data: tokenData,
                                     original_token: processedToken
                                 });
-                                continue; // Skip this token instead of throwing error
+                                continue;
                             }
                             
-                            // Create new token with static data only
-                            const newToken = await marketDb.tokens.create({
-                                data: {
+                            // Add to tokens create array with price and social media data
+                            tokenCreates.push({
+                                tokenData: {
                                     ...tokenData,
                                     created_at: new Date()
-                                }
+                                },
+                                priceData: priceInfo.price ? priceData : null,
+                                websiteData: metadata.extensions?.website ? {
+                                    label: 'Website',
+                                    url: validateStringLength(metadata.extensions.website, 255)
+                                } : null,
+                                socialData: metadata.extensions ? {
+                                    twitter: metadata.extensions.twitter,
+                                    discord: metadata.extensions.discord,
+                                    telegram: metadata.extensions.telegram
+                                } : null
                             });
-                            
-                            // Create price record if we have price data
-                            if (priceInfo.price) {
-                                await marketDb.token_prices.create({
-                                    data: {
-                                        token_id: newToken.id,
-                                        ...priceData
-                                    }
-                                });
-                                
-                                // Record initial price history
-                                await this.recordPriceHistory(
-                                    newToken.id,
-                                    priceInfo.price.toString(),
-                                    'jupiter_api_initial'
-                                );
-                            }
-                            
-                            // Store token id in existing token map for future lookups
-                            existingTokenMap[cleanedAddress] = { 
-                                id: newToken.id, 
-                                address: cleanedAddress, 
-                                symbol: processedToken.symbol || ''
-                            };
                             
                             newTokensCount++;
                         }
+                    } catch (tokenError) {
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token data:${fancyColors.RESET}`, tokenError);
+                    }
+                    
+                    // Log progress every 10 tokens processed (for data preparation)
+                    if (processedCount % 10 === 0) {
+                        const progressPercent = Math.round((processedCount / tokenSubset.length) * 100);
+                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Data preparation progress: ${progressPercent}% (${processedCount}/${tokenSubset.length})`);
+                    }
+                    
+                    // Track significant price changes for logging
+                    if (priceInfo.price && priceInfo.priceChange24h) {
+                        // Store all price changes for dynamic significance calculation
+                        const priceChange = parseFloat(priceInfo.priceChange24h);
                         
-                        // Process token websites and socials if available in metadata
-                        if (metadata.extensions && existingTokenMap[cleanedAddress]) {
-                            // Process websites
-                            if (metadata.extensions.website) {
-                                await this.updateTokenWebsite(existingTokenMap[cleanedAddress].id, {
-                                    label: 'Website',
-                                    url: metadata.extensions.website
-                                });
+                        // Only track valid price changes
+                        if (!isNaN(priceChange)) {
+                            // Add to batch collection for dynamic significance calculation
+                            if (!this._batchPriceChanges) {
+                                this._batchPriceChanges = [];
                             }
                             
-                            // Process socials
-                            const socialMap = {
-                                twitter: metadata.extensions.twitter,
-                                discord: metadata.extensions.discord,
-                                telegram: metadata.extensions.telegram
-                            };
+                            // Track both price and volume changes
+                            this._batchPriceChanges.push({
+                                symbol: processedToken.symbol || metadata.symbol || cleanedAddress.substring(0, 8),
+                                price: priceInfo.price,
+                                change: priceChange,
+                                volume: priceInfo.volume24h,
+                                address: cleanedAddress
+                            });
                             
-                            for (const [type, url] of Object.entries(socialMap)) {
-                                if (url) {
-                                    await this.updateTokenSocial(existingTokenMap[cleanedAddress].id, { type, url });
+                            // Also track volume changes separately if available
+                            if (priceInfo.volume24h) {
+                                // Create volume change tracking if not exists
+                                if (!this._batchVolumeChanges) {
+                                    this._batchVolumeChanges = [];
+                                }
+                                
+                                // Calculate volume change if previous data exists in the token map
+                                const tokenId = existingTokenMap[cleanedAddress]?.id;
+                                if (tokenId) {
+                                    this._batchVolumeChanges.push({
+                                        symbol: processedToken.symbol || metadata.symbol || cleanedAddress.substring(0, 8),
+                                        volume: priceInfo.volume24h,
+                                        price: priceInfo.price,
+                                        address: cleanedAddress
+                                    });
                                 }
                             }
                         }
-                    } catch (tokenError) {
-                        // Make sure processedToken is defined even in error cases
-                        const localProcessedToken = typeof processedToken !== 'undefined' ? processedToken : token || {};
-                        const localMetadata = typeof metadata !== 'undefined' ? metadata : {};
-                        const localPriceInfo = typeof priceInfo !== 'undefined' ? priceInfo : {};
-            
-                        // Add detailed debugging for address-related errors
-                        if (tokenError.message && tokenError.message.includes('address is missing')) {
-                            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token ${localProcessedToken?.symbol || 'unknown'}:${fancyColors.RESET}`, {
-                                error: tokenError.message,
-                                token_data: localProcessedToken,
-                                metadata: localMetadata,
-                                priceInfo: localPriceInfo
-                            });
-                        } else {
-                            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token ${localProcessedToken?.symbol || 'unknown'}:${fancyColors.RESET}`, tokenError);
-                        }
-                    }
-                    
-                    // Log progress every 10 tokens
-                    if (processedCount % 10 === 0) {
-                        const progressPercent = Math.round((processedCount / tokenSubset.length) * 100);
-                        logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Progress: ${progressPercent}% (${processedCount}/${tokenSubset.length})${fancyColors.RESET}`);
                     }
                 }
+
+                // Log prepared batch operations
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Prepared batch operations: ${tokenUpdates.length} updates, ${tokenCreates.length} new tokens, ${priceUpdates.length} price updates, ${historyRecords.length} history records${fancyColors.RESET}`);
+                
+                // Process the collected price changes to find statistically significant ones
+                if (this._batchPriceChanges && this._batchPriceChanges.length > 0) {
+                    try {
+                        // Calculate statistics for dynamic significance threshold
+                        const changes = this._batchPriceChanges.map(item => Math.abs(item.change)).filter(val => !isNaN(val));
+                        
+                        if (changes.length > 10) {  // Only calculate if we have enough data points
+                            // Calculate mean and standard deviation
+                            const sum = changes.reduce((a, b) => a + b, 0);
+                            const mean = sum / changes.length;
+                            
+                            // Standard deviation calculation
+                            const squareDiffs = changes.map(value => {
+                                const diff = value - mean;
+                                return diff * diff;
+                            });
+                            const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+                            const stdDev = Math.sqrt(avgSquareDiff);
+                            
+                            // Dynamic threshold: mean + 2 standard deviations (covers ~95% of normal distribution)
+                            const significanceThreshold = mean + (2 * stdDev);
+                            
+                            // Find and log significant changes based on this batch's statistics
+                            const significantChanges = this._batchPriceChanges
+                                .filter(item => Math.abs(item.change) > significanceThreshold)
+                                .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+                                .slice(0, 5);  // Top 5 most significant
+                                
+                            if (significantChanges.length > 0) {
+                                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Found ${significantChanges.length} statistically significant price changes (threshold: ${significanceThreshold.toFixed(2)}%)${fancyColors.RESET}`);
+                                
+                                // Log each significant change
+                                significantChanges.forEach(item => {
+                                    const color = item.change > 0 ? fancyColors.GREEN : fancyColors.RED;
+                                    const direction = item.change > 0 ? 'UP' : 'DOWN';
+                                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${color}PRICE ${direction} ${Math.abs(item.change).toFixed(2)}%:${fancyColors.RESET} ${item.symbol} at ${item.price}`);
+                                });
+                            }
+                        }
+                    } catch (statsError) {
+                        // Silently handle statistical calculation errors
+                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error calculating price significance: ${statsError.message}`);
+                    }
+                    
+                    // Reset for next batch
+                    this._batchPriceChanges = [];
+                }
+                
+                // Process volume statistics separately
+                if (this._batchVolumeChanges && this._batchVolumeChanges.length > 0) {
+                    try {
+                        // Filter out undefined or zero volumes
+                        const validVolumes = this._batchVolumeChanges
+                            .filter(item => item.volume && parseFloat(item.volume) > 0)
+                            .map(item => ({
+                                ...item,
+                                volumeValue: parseFloat(item.volume)
+                            }));
+                            
+                        if (validVolumes.length > 10) {  // Only calculate if we have enough data points
+                            // Sort by volume to find highest volume tokens
+                            const highVolumeTokens = [...validVolumes]
+                                .sort((a, b) => b.volumeValue - a.volumeValue)
+                                .slice(0, 3);  // Top 3 highest volume
+                            
+                            // Log highest volume tokens
+                            if (highVolumeTokens.length > 0) {
+                                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Top trading volume tokens:${fancyColors.RESET}`);
+                                
+                                highVolumeTokens.forEach((item, index) => {
+                                    const formattedVolume = item.volumeValue > 1000000 
+                                        ? `$${(item.volumeValue/1000000).toFixed(2)}M`
+                                        : item.volumeValue > 1000
+                                            ? `$${(item.volumeValue/1000).toFixed(2)}K` 
+                                            : `$${item.volumeValue.toFixed(2)}`;
+                                    
+                                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BLUE}VOLUME #${index+1}:${fancyColors.RESET} ${item.symbol} with ${fancyColors.BLUE}${formattedVolume}${fancyColors.RESET} at price ${item.price}`);
+                                });
+                            }
+                            
+                            // Calculate log-normalized volumes for better statistical analysis
+                            // (Volumes are often log-normally distributed with extreme outliers)
+                            const logVolumes = validVolumes.map(item => Math.log10(Math.max(1, item.volumeValue)));
+                            
+                            // Calculate mean and standard deviation of log volumes
+                            const sum = logVolumes.reduce((a, b) => a + b, 0);
+                            const mean = sum / logVolumes.length;
+                            
+                            const squareDiffs = logVolumes.map(value => {
+                                const diff = value - mean;
+                                return diff * diff;
+                            });
+                            const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+                            const stdDev = Math.sqrt(avgSquareDiff);
+                            
+                            // Identify unusually high volume (log scale): > mean + 2.5*stdDev
+                            // Using 2.5 instead of 2.0 to be more selective for volume spikes
+                            const significanceThreshold = mean + (2.5 * stdDev);
+                            
+                            // Find tokens with statistically significant high volume
+                            const spikeTokens = validVolumes
+                                .filter(item => Math.log10(Math.max(1, item.volumeValue)) > significanceThreshold)
+                                .sort((a, b) => b.volumeValue - a.volumeValue);
+                                
+                            // Log tokens with volume spikes (excluding those already in top 3)
+                            const highVolumeAddresses = new Set(highVolumeTokens.map(t => t.address));
+                            const uniqueSpikeTokens = spikeTokens.filter(t => !highVolumeAddresses.has(t.address));
+                            
+                            if (uniqueSpikeTokens.length > 0) {
+                                const logThreshold = Math.pow(10, significanceThreshold).toFixed(0);
+                                const formattedThreshold = parseInt(logThreshold) > 1000000 
+                                    ? `$${(parseInt(logThreshold)/1000000).toFixed(2)}M`
+                                    : parseInt(logThreshold) > 1000
+                                        ? `$${(parseInt(logThreshold)/1000).toFixed(2)}K` 
+                                        : `$${logThreshold}`;
+                                
+                                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Detected ${uniqueSpikeTokens.length} unusual volume spikes (threshold: ~${formattedThreshold})${fancyColors.RESET}`);
+                                
+                                uniqueSpikeTokens.slice(0, 3).forEach(item => {
+                                    const formattedVolume = item.volumeValue > 1000000 
+                                        ? `$${(item.volumeValue/1000000).toFixed(2)}M`
+                                        : item.volumeValue > 1000
+                                            ? `$${(item.volumeValue/1000).toFixed(2)}K` 
+                                            : `$${item.volumeValue.toFixed(2)}`;
+                                    
+                                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.MAGENTA}VOLUME SPIKE:${fancyColors.RESET} ${item.symbol} with ${fancyColors.MAGENTA}${formattedVolume}${fancyColors.RESET} at price ${item.price}`);
+                                });
+                            }
+                        }
+                    } catch (volumeStatsError) {
+                        // Silently handle statistical calculation errors
+                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error calculating volume statistics: ${volumeStatsError.message}`);
+                    }
+                    
+                    // Reset for next batch
+                    this._batchVolumeChanges = [];
+                }
+                
+                // Now process the batch DB operations sequentially to minimize DB connections
+                
+                // 1. Process token updates in a single transaction if there are any
+                if (tokenUpdates.length > 0) {
+                    await marketDb.$transaction(async (tx) => {
+                        for (const update of tokenUpdates) {
+                            await tx.tokens.update({
+                                where: { id: update.id },
+                                data: update.data
+                            });
+                        }
+                        
+                        // Get token symbols for logging context
+                        const updatedTokenSymbols = tokenUpdates.map(update => 
+                            existingTokenMap[update.data.address]?.symbol || update.data.symbol || update.data.address.substring(0, 8)
+                        ).slice(0, 5);
+                        
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Completed ${tokenUpdates.length} token updates (examples: ${updatedTokenSymbols.join(', ')}${tokenUpdates.length > 5 ? '...' : ''})`);
+                    });
+                }
+                
+                // 2. Process token creations in batches of 50 to limit connection time
+                const TOKEN_CREATE_BATCH_SIZE = 50;
+                for (let i = 0; i < tokenCreates.length; i += TOKEN_CREATE_BATCH_SIZE) {
+                    const createBatch = tokenCreates.slice(i, i + TOKEN_CREATE_BATCH_SIZE);
+                    
+                    // Use transaction to group related operations
+                    await marketDb.$transaction(async (tx) => {
+                        for (const create of createBatch) {
+                            try {
+                                // Create the token
+                                const newToken = await tx.tokens.create({
+                                    data: create.tokenData
+                                });
+                                
+                                // Store token id in existing token map for future lookups
+                                existingTokenMap[create.tokenData.address] = { 
+                                    id: newToken.id, 
+                                    address: create.tokenData.address, 
+                                    symbol: create.tokenData.symbol || ''
+                                };
+                                
+                                // Create price record if we have price data
+                                if (create.priceData) {
+                                    await tx.token_prices.create({
+                                        data: {
+                                            token_id: newToken.id,
+                                            ...create.priceData
+                                        }
+                                    });
+                                    
+                                    // Add price history record
+                                    await tx.token_price_history.create({
+                                        data: {
+                                            token_id: newToken.id,
+                                            price: create.priceData.price,
+                                            source: 'jupiter_api_initial',
+                                            timestamp: new Date()
+                                        }
+                                    });
+                                }
+                                
+                                // Create website if we have website data
+                                if (create.websiteData) {
+                                    await tx.token_websites.create({
+                                        data: {
+                                            token_id: newToken.id,
+                                            label: create.websiteData.label,
+                                            url: create.websiteData.url
+                                        }
+                                    });
+                                }
+                                
+                                // Create socials if we have social data
+                                if (create.socialData) {
+                                    for (const [type, url] of Object.entries(create.socialData)) {
+                                        if (url) {
+                                            await tx.token_socials.create({
+                                                data: {
+                                                    token_id: newToken.id,
+                                                    type,
+                                                    url: validateStringLength(url, 255)
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+                            } catch (createError) {
+                                // Skip duplicates without failing the whole batch
+                                if (createError.message.includes('duplicate key') || createError.message.includes('unique constraint')) {
+                                    logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Skipping duplicate token: ${create.tokenData.address}`);
+                                } else {
+                                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error creating token:${fancyColors.RESET}`, createError);
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Log newly created tokens for better visibility
+                    if (createBatch.length > 0) {
+                        const newTokenSymbols = createBatch
+                            .slice(0, 5)
+                            .map(create => create.tokenData.symbol || create.tokenData.address.substring(0, 8));
+                        
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} NEW TOKENS ${fancyColors.RESET} Created ${createBatch.length} tokens: ${newTokenSymbols.join(', ')}${createBatch.length > 5 ? '...' : ''}`);
+                    }
+                }
+                
+                // 3. Process price updates in batches
+                const PRICE_UPDATE_BATCH_SIZE = 100;
+                for (let i = 0; i < priceUpdates.length; i += PRICE_UPDATE_BATCH_SIZE) {
+                    const priceBatch = priceUpdates.slice(i, i + PRICE_UPDATE_BATCH_SIZE);
+                    
+                    await marketDb.$transaction(async (tx) => {
+                        for (const priceUpdate of priceBatch) {
+                            await tx.token_prices.upsert({
+                                where: { token_id: priceUpdate.tokenId },
+                                update: priceUpdate.priceData,
+                                create: {
+                                    token_id: priceUpdate.tokenId,
+                                    ...priceUpdate.priceData
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Find and log most significant price changes
+                    if (priceBatch.length > 0) {
+                        try {
+                            // Sort updates by absolute price change to find biggest movers
+                            const significantMoves = priceBatch
+                                .filter(update => update.priceData.change_24h)
+                                .map(update => ({
+                                    tokenId: update.tokenId,
+                                    change: parseFloat(update.priceData.change_24h),
+                                    price: update.priceData.price,
+                                    symbol: existingTokenMap[Object.keys(existingTokenMap).find(
+                                        key => existingTokenMap[key].id === update.tokenId
+                                    )]?.symbol || `ID:${update.tokenId}`
+                                }))
+                                .filter(move => !isNaN(move.change)) // Filter out NaN values
+                                .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+                                .slice(0, 3); // Top 3 movers
+                                
+                            if (significantMoves.length > 0) {
+                                // Log significant price changes
+                                significantMoves.forEach(move => {
+                                    const color = move.change > 0 ? fancyColors.GREEN : fancyColors.RED;
+                                    const direction = move.change > 0 ? 'UP' : 'DOWN';
+                                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${color}PRICE ${direction} ${Math.abs(move.change).toFixed(2)}%:${fancyColors.RESET} ${move.symbol} at ${move.price}`);
+                                });
+                            }
+                        } catch (error) {
+                            // Silently handle any errors in price change logging
+                        }
+                        
+                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Completed batch of ${priceBatch.length} price updates`);
+                    }
+                }
+                
+                // 4. Process historical token data for all metrics
+                if (historyRecords.length > 0) {
+                    const HISTORY_BATCH_SIZE = 200;
+                    for (let i = 0; i < historyRecords.length; i += HISTORY_BATCH_SIZE) {
+                        const historyBatch = historyRecords.slice(i, i + HISTORY_BATCH_SIZE);
+                        
+                        await marketDb.token_price_history.createMany({
+                            data: historyBatch
+                        });
+                    }
+                    logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Created ${historyRecords.length} price history records`);
+                }
+                
+                // 4b. Record comprehensive token history (volume, liquidity, market cap, rank)
+                // Gather tokens with full data for comprehensive history
+                const tokensForHistory = [];
+                for (const tokenUpdate of tokenUpdates) {
+                    // Find the matching price data
+                    const priceUpdate = priceUpdates.find(p => p.tokenId === tokenUpdate.id);
+                    if (priceUpdate) {
+                        // Create a token object with all needed metrics
+                        tokensForHistory.push({
+                            id: tokenUpdate.id,
+                            address: tokenUpdate.data.address,
+                            symbol: tokenUpdate.data.symbol,
+                            price: priceUpdate.priceData.price,
+                            priceChange24h: priceUpdate.priceData.change_24h,
+                            market_cap: priceUpdate.priceData.market_cap,
+                            volume_24h: priceUpdate.priceData.volume_24h,
+                            liquidity: priceUpdate.priceData.liquidity,
+                            fdv: priceUpdate.priceData.fdv
+                        });
+                    }
+                }
+                
+                // Process in batches of 100 for optimization
+                const COMPREHENSIVE_BATCH_SIZE = 100;
+                for (let i = 0; i < tokensForHistory.length; i += COMPREHENSIVE_BATCH_SIZE) {
+                    const historyBatch = tokensForHistory.slice(i, i + COMPREHENSIVE_BATCH_SIZE);
+                    
+                    // Use our comprehensive history function to save all metrics at once
+                    await tokenHistoryFunctions.recordComprehensiveTokenHistory(historyBatch, 'jupiter_api');
+                }
+                
+                // 5. Process website updates
+                const WEBSITE_BATCH_SIZE = 100;
+                for (let i = 0; i < websiteUpdates.length; i += WEBSITE_BATCH_SIZE) {
+                    const websiteBatch = websiteUpdates.slice(i, i + WEBSITE_BATCH_SIZE);
+                    
+                    await marketDb.$transaction(async (tx) => {
+                        for (const website of websiteBatch) {
+                            try {
+                                // Check if website already exists for this token with this label
+                                const existingWebsite = await tx.token_websites.findFirst({
+                                    where: {
+                                        token_id: website.tokenId,
+                                        label: website.label
+                                    }
+                                });
+                                
+                                if (existingWebsite) {
+                                    // Update existing website
+                                    await tx.token_websites.update({
+                                        where: { id: existingWebsite.id },
+                                        data: { url: website.url }
+                                    });
+                                } else {
+                                    // Create new website
+                                    await tx.token_websites.create({
+                                        data: {
+                                            token_id: website.tokenId,
+                                            label: website.label,
+                                            url: website.url
+                                        }
+                                    });
+                                }
+                            } catch (error) {
+                                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error processing website update: ${error.message}`);
+                            }
+                        }
+                    });
+                    
+                    logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processed batch of ${websiteBatch.length} website updates`);
+                }
+                
+                // 6. Process social media updates
+                const SOCIAL_BATCH_SIZE = 100;
+                for (let i = 0; i < socialUpdates.length; i += SOCIAL_BATCH_SIZE) {
+                    const socialBatch = socialUpdates.slice(i, i + SOCIAL_BATCH_SIZE);
+                    
+                    await marketDb.$transaction(async (tx) => {
+                        for (const social of socialBatch) {
+                            try {
+                                // Check if social already exists for this token with this type
+                                const existingSocial = await tx.token_socials.findFirst({
+                                    where: {
+                                        token_id: social.tokenId,
+                                        type: social.type
+                                    }
+                                });
+                                
+                                if (existingSocial) {
+                                    // Update existing social
+                                    await tx.token_socials.update({
+                                        where: { id: existingSocial.id },
+                                        data: { url: social.url }
+                                    });
+                                } else {
+                                    // Create new social
+                                    await tx.token_socials.create({
+                                        data: {
+                                            token_id: social.tokenId,
+                                            type: social.type,
+                                            url: social.url
+                                        }
+                                    });
+                                }
+                            } catch (error) {
+                                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error processing social update: ${error.message}`);
+                            }
+                        }
+                    });
+                    
+                    logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processed batch of ${socialBatch.length} social updates`);
+                }
+                
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}Completed all database operations for batch ${batchIndex + 1}/${totalBatches}${fancyColors.RESET}`);
             }
             
             // Update stats
@@ -1570,17 +2355,32 @@ class MarketDataService extends BaseService {
             // Instead, we'll rely on regular polling of the REST API and future Helius integration
             // Here we could initialize Helius monitoring for specific token addresses in the future
             
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} UPDATE COMPLETE ${fancyColors.RESET} Processed ${processedCount}/${tokenList.length} tokens (${newTokensCount} new, ${updatedTokensCount} updated) in ${Math.round((Date.now() - startTime) / 1000)}s`);
+            // Summarize the update with additional stats
+            const timeElapsed = Math.round((Date.now() - startTime) / 1000);
+            const tokensPerSecond = Math.round(processedCount / timeElapsed);
+            
+            // Summary details for admins to understand the update impact
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} UPDATE COMPLETE ${fancyColors.RESET} Processed ${processedCount}/${tokenList.length} tokens (${newTokensCount} new, ${updatedTokensCount} updated) in ${timeElapsed}s (${tokensPerSecond} tokens/sec)`);
+            
+            // Log a more detailed summary to provide insight into token coverage
+            const tokenCoverage = ((processedCount / tokenList.length) * 100).toFixed(1);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Update Summary:${fancyColors.RESET} Coverage: ${tokenCoverage}%, New tokens: ${newTokensCount}, Updated tokens: ${updatedTokensCount}`);
             
             return true;
         } catch (error) {
             this.marketStats.updates.failed++;
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} UPDATE FAILED ${fancyColors.RESET} Error updating token data: ${error.message}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} UPDATE FAILED ${fancyColors.RESET} Error updating token data: ${error.message}`, error);
             return false;
         }
     }
     
     // Helper method to update token website with length validation
+    /**
+     * Helper method to update token website with length validation
+     * @param {number} tokenId - The token ID
+     * @param {object} website - Website object with URL and label
+     * @returns {Promise<void>}
+     */
     async updateTokenWebsite(tokenId, website) {
         try {
             // Validate and truncate URL to prevent database errors
@@ -1615,11 +2415,11 @@ class MarketDataService extends BaseService {
                 });
             }
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating token website:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating token website:${fancyColors.RESET}`, error);
         }
     }
     
-    // Helper method to update token social with length validation
+    /** Helper method to update token social with length validation */
     async updateTokenSocial(tokenId, social) {
         try {
             // Validate and truncate URL to prevent database errors
@@ -1654,11 +2454,11 @@ class MarketDataService extends BaseService {
                 });
             }
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating token social:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating token social:${fancyColors.RESET}`, error);
         }
     }
 
-    // Start the interval to update token data in the database
+    /** Start the interval to update token data in the database */
     startUpdateInterval() {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
@@ -1666,7 +2466,7 @@ class MarketDataService extends BaseService {
         
         // Run an immediate update
         this.updateTokenData().catch(error => {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in initial token data update:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in initial token data update:${fancyColors.RESET}`, error);
         });
         
         // Set up regular updates
@@ -1674,14 +2474,64 @@ class MarketDataService extends BaseService {
             try {
                 await this.updateTokenData();
             } catch (error) {
-                logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in update interval:${fancyColors.RESET}`, error);
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in update interval:${fancyColors.RESET}`, error);
             }
         }, this.config.update.intervalMs);
         
-        logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} SETUP ${fancyColors.RESET} Started token data update interval (${this.config.update.intervalMs / 1000}s) processing ${MAX_TOKENS_TO_PROCESS} tokens with Jupiter API (10 req/sec limit)`);
+        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} SETUP ${fancyColors.RESET} Started token data update interval (${this.config.update.intervalMs / 1000}s) processing ${MAX_TOKENS_TO_PROCESS} tokens with Jupiter API (10 req/sec limit)`);
     }
 
-    // Start broadcast interval
+    /** Records token ranks for historical tracking */
+    async recordTokenRanks(tokens, tokenRanks) {
+        try {
+            if (!tokens || !tokenRanks) return;
+            
+            // Create rank history records for each token
+            const rankRecords = [];
+            const snapshotId = `rank_snapshot_${new Date().toISOString()}`;
+            
+            // For each token, look up its database ID and add a rank record
+            for (const [address, rankInfo] of tokenRanks.entries()) {
+                try {
+                    // Find token ID from database
+                    const token = await marketDb.tokens.findFirst({
+                        where: { address },
+                        select: { id: true }
+                    });
+                    
+                    if (token && token.id) {
+                        rankRecords.push({
+                            tokenId: token.id,
+                            rank: rankInfo.position,
+                            source: 'jupiter_api',
+                            snapshotId
+                        });
+                    }
+                } catch (err) {
+                    // Skip this token and continue with others
+                    logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error looking up token for rank recording: ${err.message}`);
+                }
+            }
+            
+            // Log result and record rank history in batches
+            if (rankRecords.length > 0) {
+                const BATCH_SIZE = 100;
+                for (let i = 0; i < rankRecords.length; i += BATCH_SIZE) {
+                    const batch = rankRecords.slice(i, i + BATCH_SIZE);
+                    await tokenHistoryFunctions.recordRankHistoryBatch(batch);
+                }
+                
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Recorded rank history for ${rankRecords.length} tokens`);
+            }
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error recording token ranks:${fancyColors.RESET}`, error);
+        }
+    }
+
+    /**
+     * Start broadcast interval for token data updates
+     * @returns {void}
+     */
     startBroadcastInterval() {
         if (this.broadcastInterval) {
             clearInterval(this.broadcastInterval);
@@ -1728,19 +2578,22 @@ class MarketDataService extends BaseService {
                         `${formattedCount} tokens (⬆️ ${topGainers.join(', ')})` : 
                         `${formattedCount} tokens`;
                     
-                    logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} BCAST ${fancyColors.RESET} ${broadcastSummary} in ${broadcastTime}ms`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_PURPLE}${fancyColors.WHITE} BCAST ${fancyColors.RESET} ${broadcastSummary} in ${broadcastTime}ms`);
                 } else {
-                    logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}No tokens found for broadcast${fancyColors.RESET}`);
+                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}No tokens found for broadcast${fancyColors.RESET}`);
                 }
             } catch (error) {
-                logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} Broadcast error: ${error.message}`, error);
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} Broadcast error: ${error.message}`, error);
             }
         }, this.config.broadcast.intervalMs);
         
-        logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} SETUP ${fancyColors.RESET} Started market data broadcast interval (${this.config.broadcast.intervalMs / 1000}s)`);
+        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} SETUP ${fancyColors.RESET} Started market data broadcast interval (${this.config.broadcast.intervalMs / 1000}s)`);
     }
 
-    // Stop the service
+    /**
+     * Stop the service and clean up resources
+     * @returns {Promise<void>}
+     */
     async stop() {
         try {
             await super.stop();
@@ -1776,9 +2629,9 @@ class MarketDataService extends BaseService {
                 }
             );
             
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} Service stopped`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Service stopped`);
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error stopping service:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error stopping service:${fancyColors.RESET}`, error);
             throw error;
         }
     }
@@ -1822,7 +2675,7 @@ class MarketDataService extends BaseService {
     resetCircuitBreaker() {
         try {
             if (!this.stats || !this.stats.circuitBreaker) {
-                logApi.warn(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}No circuit breaker state found to reset${fancyColors.RESET}`);
+                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}No circuit breaker state found to reset${fancyColors.RESET}`);
                 return false;
             }
             
@@ -1832,19 +2685,18 @@ class MarketDataService extends BaseService {
             this.stats.circuitBreaker.lastReset = new Date().toISOString();
             this.stats.history.consecutiveFailures = 0;
             
-            logApi.info(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} CIRCUIT BREAKER RESET ${fancyColors.RESET} Circuit breaker manually reset and is now closed`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} CIRCUIT BREAKER RESET ${fancyColors.RESET} Circuit breaker manually reset and is now closed`);
             
             // REMOVED the immediate updateTokenData call that was causing flooding
             // Let the normal interval handle updates instead
             
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.PURPLE}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error resetting circuit breaker:${fancyColors.RESET}`, error);
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error resetting circuit breaker:${fancyColors.RESET}`, error);
             return false;
         }
     }
 }
 
-// Export the marketDataService singleton
-const marketDataService = new MarketDataService();
-export default marketDataService;
+// Create and export the marketDataService singleton
+export default new MarketDataService();

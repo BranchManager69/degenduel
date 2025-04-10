@@ -353,6 +353,13 @@ const config = {
   },
 
   // Solana timeout settings:
+  // Service testing configuration
+  service_test: {
+    contest_wallet_self_test: process.env.CONTEST_WALLET_SELF_TEST === 'true',
+    contest_wallet_test_amount: parseFloat(process.env.CONTEST_WALLET_TEST_AMOUNT || '0.006'),
+    // Add other service test configurations here as needed
+  },
+
   solana_timeouts: {
     // ^^^ = uses RPC calls
 

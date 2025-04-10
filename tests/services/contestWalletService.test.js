@@ -8,7 +8,7 @@
  */
 
 import { jest } from '@jest/globals';
-import contestWalletService from '../../services/contestWalletService.js';
+import contestWalletService from '../../services/contest-wallet/index.js';
 
 // Mock dependencies inline for simplicity
 jest.mock('../../config/prisma.js', () => ({

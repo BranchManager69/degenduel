@@ -22,14 +22,16 @@ import prisma from '../../config/prisma.js';
 // ** Service Manager **
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, SERVICE_LAYERS, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
-// Solana
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount, createTransferInstruction } from '@solana/spl-token';
-import bs58 from 'bs58';
-import crypto from 'crypto';
-import { transferSOL, transferToken } from '../../utils/solana-suite/web3-v2/solana-transaction-fixed.js';
+// ** Solana **
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { solanaEngine } from '../../services/solana-engine/index.js';
 import { fancyColors } from '../../utils/colors.js';
+
+// ** Import wallet modules **
+import walletCrypto from './modules/wallet-crypto.js';
+import walletTransactions from './modules/wallet-transactions.js';
+import batchOperations from './modules/batch-operations.js';
+import walletBalance from './modules/wallet-balance.js';
 
 const ADMIN_WALLET_CONFIG = {
     name: SERVICE_NAMES.ADMIN_WALLET,
@@ -270,110 +272,15 @@ class AdminWalletService extends BaseService {
         }
     }
 
-    async checkWalletStates() {
-        try {
-            // Get active wallets
-            const wallets = await prisma.managed_wallets.findMany({
-                where: { status: 'active' }
-            });
-
-            const results = {
-                checked: 0,
-                healthy: 0,
-                issues: []
-            };
-
-            // Check each wallet's state using SolanaEngine
-            for (const wallet of wallets) {
-                try {
-                    // Use SolanaEngine for balance checks
-                    const balance = await solanaEngine.executeConnectionMethod(
-                        'getBalance',
-                        new PublicKey(wallet.wallet_address),
-                        { endpointId: this.config.wallet.preferredEndpoints.balanceChecks }
-                    );
-                    
-                    results.checked++;
-
-                    if (balance < this.config.wallet.operations.minSOLBalance * LAMPORTS_PER_SOL) {
-                        results.issues.push({
-                            wallet: wallet.wallet_address,
-                            type: 'low_balance',
-                            balance: balance / LAMPORTS_PER_SOL
-                        });
-                    } else {
-                        results.healthy++;
-                    }
-                } catch (error) {
-                    results.issues.push({
-                        wallet: wallet.wallet_address,
-                        type: 'check_failed',
-                        error: error.message
-                    });
-                }
-            }
-
-            return results;
-        } catch (error) {
-            throw ServiceError.operation('Failed to check wallet states', {
-                error: error.message
-            });
-        }
-    }
-
+    // Proxy methods to our modular implementations
+    
     // Wallet encryption/decryption
     encryptWallet(privateKey) {
-        try {
-            const iv = crypto.randomBytes(this.config.wallet.encryption.ivLength);
-            const cipher = crypto.createCipheriv(
-                this.config.wallet.encryption.algorithm,
-                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
-                iv
-            );
-
-            const encrypted = Buffer.concat([
-                cipher.update(privateKey),
-                cipher.final()
-            ]);
-
-            const tag = cipher.getAuthTag();
-
-            return JSON.stringify({
-                encrypted: encrypted.toString('hex'),
-                iv: iv.toString('hex'),
-                tag: tag.toString('hex')
-            });
-        } catch (error) {
-            throw ServiceError.operation('Failed to encrypt wallet', {
-                error: error.message,
-                type: 'ENCRYPTION_ERROR'
-            });
-        }
+        return walletCrypto.encryptWallet(privateKey, this.config, process.env.WALLET_ENCRYPTION_KEY);
     }
 
     decryptWallet(encryptedData) {
-        try {
-            const { encrypted, iv, tag } = JSON.parse(encryptedData);
-            const decipher = crypto.createDecipheriv(
-                this.config.wallet.encryption.algorithm,
-                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
-                Buffer.from(iv, 'hex')
-            );
-            
-            decipher.setAuthTag(Buffer.from(tag, 'hex'));
-            
-            const decrypted = Buffer.concat([
-                decipher.update(Buffer.from(encrypted, 'hex')),
-                decipher.final()
-            ]);
-            
-            return decrypted.toString();
-        } catch (error) {
-            throw ServiceError.operation('Failed to decrypt wallet', {
-                error: error.message,
-                type: 'DECRYPTION_ERROR'
-            });
-        }
+        return walletCrypto.decryptWallet(encryptedData, process.env.WALLET_ENCRYPTION_KEY);
     }
 
     // Transfer operations
@@ -398,8 +305,16 @@ class AdminWalletService extends BaseService {
             
             this.transferTimeouts.add(timeout);
 
-            // Perform transfer
-            const result = await this._transferSOL(fromWalletEncrypted, toAddress, amount, description);
+            // Perform transfer using our modular implementation
+            const result = await walletTransactions.transferSOL(
+                fromWalletEncrypted, 
+                toAddress, 
+                amount, 
+                description, 
+                solanaEngine, 
+                this.config,
+                process.env.WALLET_ENCRYPTION_KEY
+            );
             
             // Update stats
             this.walletStats.transfers.total++;
@@ -457,8 +372,17 @@ class AdminWalletService extends BaseService {
             
             this.transferTimeouts.add(timeout);
 
-            // Perform transfer
-            const result = await this._transferToken(fromWalletEncrypted, toAddress, mint, amount, description);
+            // Perform transfer using our modular implementation
+            const result = await walletTransactions.transferToken(
+                fromWalletEncrypted, 
+                toAddress, 
+                mint, 
+                amount, 
+                description, 
+                solanaEngine, 
+                this.config,
+                process.env.WALLET_ENCRYPTION_KEY
+            );
             
             // Update stats
             this.walletStats.transfers.total++;
@@ -496,313 +420,41 @@ class AdminWalletService extends BaseService {
         }
     }
 
-    async _transferSOL(fromWalletEncrypted, toAddress, amount, description = '') {
-        try {
-            const decryptedPrivateKey = this.decryptWallet(fromWalletEncrypted);
-            const privateKeyBytes = bs58.decode(decryptedPrivateKey);
-            const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
-            
-            // Create transaction
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(toAddress),
-                    lamports: amount * LAMPORTS_PER_SOL
-                })
-            );
-
-            // Use SolanaEngine for transaction sending
-            // Specify the preferred endpoint for critical transfers if configured
-            const signature = await solanaEngine.sendTransaction(
-                transaction, 
-                [fromKeypair], 
-                {
-                    endpointId: this.config.wallet.preferredEndpoints.transfers,
-                    commitment: 'confirmed',
-                    skipPreflight: false
-                }
-            );
-
-            // Log the transaction
-            await prisma.transactions.create({
-                data: {
-                    wallet_address: fromKeypair.publicKey.toString(),
-                    type: 'ADMIN_TRANSFER',
-                    amount,
-                    description,
-                    status: 'completed',
-                    blockchain_signature: signature,
-                    completed_at: new Date(),
-                    created_at: new Date()
-                }
-            });
-
-            return { signature };
-        } catch (error) {
-            throw ServiceError.operation('SOL transfer failed', {
-                error: error.message,
-                from: fromWalletEncrypted,
-                to: toAddress,
-                amount
-            });
-        }
-    }
-
-    async _transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '') {
-        try {
-            const decryptedPrivateKey = this.decryptWallet(fromWalletEncrypted);
-            const privateKeyBytes = bs58.decode(decryptedPrivateKey);
-            const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
-
-            const mintPublicKey = new PublicKey(mint);
-            const toPublicKey = new PublicKey(toAddress);
-
-            // Get token accounts
-            const fromTokenAccount = await solanaEngine.executeConnectionMethod(
-                'getTokenAccountsByOwner',
-                fromKeypair.publicKey,
-                {
-                    mint: mintPublicKey
-                },
-                {
-                    encoding: 'jsonParsed'
-                }
-            );
-
-            const fromTokenAccountAddress = fromTokenAccount.value[0]?.pubkey;
-            if (!fromTokenAccountAddress) {
-                throw new Error(`Source token account not found for mint ${mint}`);
-            }
-
-            // Check if destination token account exists
-            let toTokenAccount;
-            try {
-                toTokenAccount = await solanaEngine.executeConnectionMethod(
-                    'getTokenAccountsByOwner',
-                    toPublicKey,
-                    {
-                        mint: mintPublicKey
-                    },
-                    {
-                        encoding: 'jsonParsed'
-                    }
-                );
-            } catch (error) {
-                // If we can't find it, we'll need to create it
-                toTokenAccount = { value: [] };
-            }
-
-            // Prepare transaction
-            const transaction = new Transaction();
-
-            // If destination doesn't have a token account, create it
-            let toTokenAccountAddress;
-            if (toTokenAccount.value.length === 0) {
-                // Get associated token address
-                const associatedTokenAddress = await getAssociatedTokenAddress(
-                    mintPublicKey,
-                    toPublicKey
-                );
-                
-                // Create token account instruction would go here
-                // For now, we'll throw an error since we need the token account to exist
-                throw new Error(`Destination doesn't have a token account for mint ${mint}`);
-            } else {
-                toTokenAccountAddress = toTokenAccount.value[0].pubkey;
-            }
-
-            // Add transfer instruction
-            transaction.add(
-                createTransferInstruction(
-                    fromTokenAccountAddress,
-                    toTokenAccountAddress,
-                    fromKeypair.publicKey,
-                    amount
-                )
-            );
-
-            // Use SolanaEngine for transaction sending
-            // Specify the preferred endpoint for critical transfers if configured
-            const signature = await solanaEngine.sendTransaction(
-                transaction, 
-                [fromKeypair], 
-                {
-                    endpointId: this.config.wallet.preferredEndpoints.transfers,
-                    commitment: 'confirmed',
-                    skipPreflight: false
-                }
-            );
-
-            // Log the transaction
-            await prisma.transactions.create({
-                data: {
-                    wallet_address: fromKeypair.publicKey.toString(),
-                    type: 'ADMIN_TOKEN_TRANSFER',
-                    amount,
-                    token_mint: mint,
-                    description,
-                    status: 'completed',
-                    blockchain_signature: signature,
-                    completed_at: new Date(),
-                    created_at: new Date()
-                }
-            });
-
-            return { signature };
-        } catch (error) {
-            throw ServiceError.operation('Token transfer failed', {
-                error: error.message,
-                from: fromWalletEncrypted,
-                to: toAddress,
-                mint,
-                amount
-            });
-        }
-    }
-
     // Batch operations
     async massTransferSOL(fromWalletEncrypted, transfers) {
-        const startTime = Date.now();
-        
-        try {
-            if (transfers.length > this.config.wallet.operations.maxBatchSize) {
-                throw ServiceError.validation('Batch size exceeds maximum allowed');
-            }
-
-            const results = {
-                total: transfers.length,
-                successful: 0,
-                failed: 0,
-                transfers: []
-            };
-
-            // Process transfers in parallel with limit
-            const chunks = [];
-            for (let i = 0; i < transfers.length; i += this.config.wallet.operations.maxParallelTransfers) {
-                const chunk = transfers.slice(i, i + this.config.wallet.operations.maxParallelTransfers);
-                chunks.push(chunk);
-            }
-
-            for (const chunk of chunks) {
-                const chunkResults = await Promise.allSettled(
-                    chunk.map(transfer => 
-                        this.transferSOL(
-                            fromWalletEncrypted,
-                            transfer.toAddress,
-                            transfer.amount,
-                            transfer.description
-                        )
-                    )
-                );
-
-                chunkResults.forEach((result, index) => {
-                    if (result.status === 'fulfilled') {
-                        results.successful++;
-                        results.transfers.push({
-                            ...chunk[index],
-                            status: 'success',
-                            signature: result.value.signature
-                        });
-                    } else {
-                        results.failed++;
-                        results.transfers.push({
-                            ...chunk[index],
-                            status: 'failed',
-                            error: result.reason.message
-                        });
-                    }
-                });
-            }
-
-            // Update batch stats
-            this.walletStats.batches.total++;
-            this.walletStats.batches.successful += results.successful;
-            this.walletStats.batches.failed += results.failed;
-            this.walletStats.batches.items_processed += transfers.length;
-            this.walletStats.performance.average_batch_time_ms = 
-                (this.walletStats.performance.average_batch_time_ms * this.walletStats.batches.total + 
-                (Date.now() - startTime)) / (this.walletStats.batches.total + 1);
-
-            return results;
-        } catch (error) {
-            throw ServiceError.operation('Mass SOL transfer failed', {
-                error: error.message,
-                transfer_count: transfers.length
-            });
-        }
+        return batchOperations.massTransferSOL(
+            fromWalletEncrypted,
+            transfers, 
+            solanaEngine, 
+            this.config, 
+            this.walletStats,
+            process.env.WALLET_ENCRYPTION_KEY
+        );
     }
 
     async massTransferTokens(fromWalletEncrypted, mint, transfers) {
-        const startTime = Date.now();
-        
-        try {
-            if (transfers.length > this.config.wallet.operations.maxBatchSize) {
-                throw ServiceError.validation('Batch size exceeds maximum allowed');
-            }
+        return batchOperations.massTransferTokens(
+            fromWalletEncrypted, 
+            mint, 
+            transfers, 
+            solanaEngine, 
+            this.config, 
+            this.walletStats,
+            process.env.WALLET_ENCRYPTION_KEY
+        );
+    }
 
-            const results = {
-                total: transfers.length,
-                successful: 0,
-                failed: 0,
-                transfers: []
-            };
-
-            // Process transfers in parallel with limit
-            const chunks = [];
-            for (let i = 0; i < transfers.length; i += this.config.wallet.operations.maxParallelTransfers) {
-                const chunk = transfers.slice(i, i + this.config.wallet.operations.maxParallelTransfers);
-                chunks.push(chunk);
-            }
-
-            for (const chunk of chunks) {
-                const chunkResults = await Promise.allSettled(
-                    chunk.map(transfer => 
-                        this.transferToken(
-                            fromWalletEncrypted,
-                            transfer.toAddress,
-                            mint,
-                            transfer.amount,
-                            transfer.description
-                        )
-                    )
-                );
-
-                chunkResults.forEach((result, index) => {
-                    if (result.status === 'fulfilled') {
-                        results.successful++;
-                        results.transfers.push({
-                            ...chunk[index],
-                            status: 'success',
-                            signature: result.value.signature
-                        });
-                    } else {
-                        results.failed++;
-                        results.transfers.push({
-                            ...chunk[index],
-                            status: 'failed',
-                            error: result.reason.message
-                        });
-                    }
-                });
-            }
-
-            // Update batch stats
-            this.walletStats.batches.total++;
-            this.walletStats.batches.successful += results.successful;
-            this.walletStats.batches.failed += results.failed;
-            this.walletStats.batches.items_processed += transfers.length;
-            this.walletStats.performance.average_batch_time_ms = 
-                (this.walletStats.performance.average_batch_time_ms * this.walletStats.batches.total + 
-                (Date.now() - startTime)) / (this.walletStats.batches.total + 1);
-
-            return results;
-        } catch (error) {
-            throw ServiceError.operation('Mass token transfer failed', {
-                error: error.message,
-                mint,
-                transfer_count: transfers.length
-            });
-        }
+    // Balance operations
+    async updateWalletBalance(wallet) {
+        return walletBalance.updateWalletBalance(wallet, solanaEngine, this.config, this.walletStats);
+    }
+    
+    async updateAllWalletBalances() {
+        return walletBalance.updateAllWalletBalances(solanaEngine, this.config, this.walletStats);
+    }
+    
+    async checkWalletStates() {
+        return walletBalance.checkWalletStates(solanaEngine, this.config);
     }
 
     async stop() {
@@ -831,152 +483,6 @@ class AdminWalletService extends BaseService {
             logApi.info('Admin Wallet Service stopped successfully');
         } catch (error) {
             logApi.error('Error stopping Admin Wallet Service:', error);
-            throw error;
-        }
-    }
-    
-    // Fetch and update Solana balance for a managed wallet
-    async updateWalletBalance(wallet) {
-        try {
-            const startTime = Date.now();
-            
-            // Skip if no wallet address
-            if (!wallet.public_key) {
-                return {
-                    success: false,
-                    error: 'No wallet address provided'
-                };
-            }
-            
-            // Get current Solana balance via SolanaEngine
-            const publicKey = new PublicKey(wallet.public_key);
-            const lamports = await solanaEngine.executeConnectionMethod(
-                'getBalance',
-                publicKey,
-                { endpointId: this.config.wallet.preferredEndpoints.balanceChecks }
-            );
-            
-            const solBalance = lamports / LAMPORTS_PER_SOL;
-            
-            // Update wallet metadata with balance info in database
-            const currentMetadata = wallet.metadata || {};
-            const updatedMetadata = {
-                ...currentMetadata,
-                balance: {
-                    sol: solBalance,
-                    last_updated: new Date().toISOString()
-                }
-            };
-            
-            await prisma.managed_wallets.update({
-                where: { id: wallet.id },
-                data: {
-                    metadata: updatedMetadata,
-                    updated_at: new Date()
-                }
-            });
-            
-            // Update stats
-            this.walletStats.balance_updates.total++;
-            this.walletStats.balance_updates.successful++;
-            this.walletStats.balance_updates.last_update = new Date().toISOString();
-            this.walletStats.wallets.updated++;
-            
-            // Update performance metrics
-            const duration = Date.now() - startTime;
-            this.walletStats.performance.average_balance_update_time_ms = 
-                (this.walletStats.performance.average_balance_update_time_ms * 
-                    (this.walletStats.balance_updates.total - 1) + duration) / 
-                this.walletStats.balance_updates.total;
-            
-            // Get previous balance for comparison
-            const previousBalance = currentMetadata?.balance?.sol || 0;
-            
-            return {
-                success: true,
-                wallet_id: wallet.id,
-                public_key: wallet.public_key,
-                label: wallet.label,
-                previous_balance: previousBalance,
-                current_balance: solBalance,
-                difference: solBalance - previousBalance
-            };
-        } catch (error) {
-            // Update error stats
-            this.walletStats.balance_updates.failed++;
-            
-            logApi.error('Failed to update admin wallet balance', {
-                wallet_id: wallet.id,
-                public_key: wallet.public_key,
-                error: error.message,
-                stack: error.stack
-            });
-            
-            return {
-                success: false,
-                wallet_id: wallet.id,
-                public_key: wallet.public_key,
-                error: error.message
-            };
-        }
-    }
-    
-    // Bulk update all managed wallets' balances
-    async updateAllWalletBalances() {
-        const startTime = Date.now();
-        try {
-            // Get all managed wallets
-            const managedWallets = await prisma.managed_wallets.findMany({
-                where: {
-                    status: 'active'
-                }
-            });
-            
-            const results = {
-                total: managedWallets.length,
-                updated: 0,
-                failed: 0,
-                updates: []
-            };
-            
-            // Update each wallet's balance
-            for (const wallet of managedWallets) {
-                try {
-                    // Update balance
-                    const updateResult = await this.updateWalletBalance(wallet);
-                    
-                    if (updateResult.success) {
-                        results.updated++;
-                        
-                        // Only add significant balance changes to the results
-                        if (Math.abs(updateResult.difference) > 0.001) {
-                            results.updates.push(updateResult);
-                        }
-                    } else {
-                        results.failed++;
-                    }
-                } catch (error) {
-                    results.failed++;
-                    logApi.error('Error updating individual admin wallet balance', {
-                        wallet_id: wallet.id,
-                        public_key: wallet.public_key,
-                        error: error.message
-                    });
-                }
-            }
-            
-            // Update overall performance stats
-            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
-            
-            return {
-                duration: Date.now() - startTime,
-                ...results
-            };
-        } catch (error) {
-            logApi.error('Failed to update admin wallet balances', {
-                error: error.message,
-                stack: error.stack
-            });
             throw error;
         }
     }

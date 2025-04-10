@@ -15,7 +15,7 @@ if (!HELIUS_API_KEY) {
 
 // Base URLs for different Helius API endpoints
 const HELIUS_BASE_URL = 'https://api.helius.xyz';
-const HELIUS_RPC_URL = process.env.SOLANA_RPC_ENDPOINT || `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+const HELIUS_RPC_URL = process.env.SOLANA_MAINNET_HTTP || process.env.SOLANA_RPC_ENDPOINT || `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 const HELIUS_WEBHOOK_URL = `${HELIUS_BASE_URL}/v0/webhooks`;
 
 // Specific API endpoints

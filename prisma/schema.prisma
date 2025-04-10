@@ -249,6 +249,8 @@ model tokens {
   telegram_url              String?                     @db.VarChar(255)
   discord_url               String?                     @db.VarChar(255)
   website_url               String?                     @db.VarChar(255)
+  coingeckoId               String?                     // Coingecko ID for this token 
+  tags                      Json?                       // Tags from Jupiter stored as JSON
   ai_decisions              ai_decisions[]
   contest_portfolio_trades  contest_portfolio_trades[]
   contest_portfolios        contest_portfolios[]
@@ -260,6 +262,11 @@ model tokens {
   token_socials             token_socials[]
   token_websites            token_websites[]
   price_history             token_price_history[]
+  rank_history              token_rank_history[]
+  volume_history            token_volume_history[]
+  liquidity_history         token_liquidity_history[]
+  market_cap_history        token_market_cap_history[]
+  pools                     token_pools[]               // DEX pools relation
 
   @@index([symbol], map: "idx_tokens_symbol")
   @@map("tokens")
@@ -1349,4 +1356,102 @@ model rpc_benchmark_results {
   @@index([method])
   @@index([timestamp])
   @@map("rpc_benchmark_results")
+}
+
+// Token pool information for DEXes
+model token_rank_history {
+  id          Int       @id @default(autoincrement())
+  token_id    Int       // Foreign key to tokens table
+  rank        Int       // Position in ranking (1-1000+)
+  timestamp   DateTime  @default(now()) @db.Timestamptz(6)
+  source      String?   @db.VarChar(50) // Source of ranking data (e.g. 'jupiter', 'manual')
+  snapshot_id String?   @db.VarChar(100) // Optional batch ID for grouping ranks from same update
+  
+  // Relations
+  tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
+
+  @@index([token_id])
+  @@index([timestamp(sort: Desc)])
+  @@index([token_id, timestamp(sort: Desc)])
+  @@index([rank]) // Index for querying tokens by rank
+  @@map("token_rank_history")
+}
+
+// Volume history table for tracking token volume over time
+model token_volume_history {
+  id          Int       @id @default(autoincrement())
+  token_id    Int       // Foreign key to tokens table
+  volume      Decimal   @db.Decimal(20, 0) // Volume in smallest token units
+  volume_usd  Decimal?  @db.Decimal(20, 2) // Volume in USD (if available)
+  change_24h  Decimal?  @db.Decimal(5, 2)  // 24h volume change percentage
+  timestamp   DateTime  @default(now()) @db.Timestamptz(6)
+  source      String?   @db.VarChar(50)    // Source of volume data (e.g. 'jupiter', 'coingecko')
+  snapshot_id String?   @db.VarChar(100)   // Optional batch ID for grouping from same update
+  
+  // Relations
+  tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
+
+  @@index([token_id])
+  @@index([timestamp(sort: Desc)])
+  @@index([token_id, timestamp(sort: Desc)])
+  @@index([volume_usd(sort: Desc)]) // For quickly finding high volume tokens
+  @@map("token_volume_history")
+}
+
+// Liquidity history table for tracking token liquidity over time
+model token_liquidity_history {
+  id          Int       @id @default(autoincrement())
+  token_id    Int       // Foreign key to tokens table
+  liquidity   Decimal   @db.Decimal(20, 0) // Liquidity in smallest token units
+  change_24h  Decimal?  @db.Decimal(5, 2)  // 24h liquidity change percentage
+  timestamp   DateTime  @default(now()) @db.Timestamptz(6)
+  source      String?   @db.VarChar(50)    // Source of liquidity data
+  snapshot_id String?   @db.VarChar(100)   // Optional batch ID for grouping from same update
+  
+  // Relations
+  tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
+
+  @@index([token_id])
+  @@index([timestamp(sort: Desc)])
+  @@index([token_id, timestamp(sort: Desc)])
+  @@index([liquidity(sort: Desc)]) // For quickly finding high liquidity tokens
+  @@map("token_liquidity_history")
+}
+
+// Market cap history table for tracking token market cap over time
+model token_market_cap_history {
+  id          Int       @id @default(autoincrement())
+  token_id    Int       // Foreign key to tokens table
+  market_cap  Decimal   @db.Decimal(20, 0) // Market cap in smallest units
+  fdv         Decimal?  @db.Decimal(20, 0) // Fully diluted valuation if available
+  change_24h  Decimal?  @db.Decimal(5, 2)  // 24h market cap change percentage
+  timestamp   DateTime  @default(now()) @db.Timestamptz(6)
+  source      String?   @db.VarChar(50)    // Source of market cap data
+  snapshot_id String?   @db.VarChar(100)   // Optional batch ID for grouping from same update
+  
+  // Relations
+  tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
+
+  @@index([token_id])
+  @@index([timestamp(sort: Desc)])
+  @@index([token_id, timestamp(sort: Desc)])
+  @@index([market_cap(sort: Desc)]) // For quickly finding high market cap tokens
+  @@map("token_market_cap_history")
+}
+
+model token_pools {
+  address       String   @db.Text
+  tokenAddress  String   @db.Text
+  token         tokens   @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
+  dex           String   @db.Text // RAYDIUM_AMM_V4, PUMP_SWAP, etc.
+  programId     String   @db.Text // The program address
+  dataSize      Int      // Size of the account data
+  tokenOffset   Int      // Offset where token address is found
+  createdAt     DateTime @default(now())
+  lastUpdated   DateTime @updatedAt
+
+  @@id([address, tokenAddress])
+  @@index([dex])
+  @@index([tokenAddress])
+  @@map("token_pools")
 }

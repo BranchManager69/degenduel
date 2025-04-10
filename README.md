@@ -1626,6 +1626,7 @@ API endpoints are documented with Swagger at `/api-docs`.
 - **Solana Token Metadata Guide**: `/docs_critical/token_metadata/solana_token_metadata_guide.md`
 - **Service Architecture**: `/docs_important/Core Services/BASE_SERVICE_ARCHITECTURE.md`
 - **Admin API Overview**: `/docs_important/ADMIN_API_OVERVIEW.md`
+- **Token Pool Tools**: [/scripts/token-pools.md](/scripts/token-pools.md) - Tools for discovering and monitoring token pools
 
 ---
 

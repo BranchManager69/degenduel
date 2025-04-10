@@ -1,4 +1,4 @@
-// services/new-market-data/helius-client.js
+// services/solana-engine/helius-client.js
 
 import axios from 'axios';
 import WebSocket from 'ws';
@@ -6,7 +6,6 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { heliusConfig } from '../../config/external-api/helius-config.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
-import { cacheTTLs } from './connection-manager.js';
 
 // Formatting helpers for consistent logging
 const formatLog = {
@@ -22,63 +21,68 @@ const formatLog = {
   count: (num) => `${serviceSpecificColors.heliusClient.count}${num}${fancyColors.RESET}`,
 };
 
-// Default cache TTL (24 hours) - only used if cacheTTLs import fails
+// Default token metadata cache TTL (24 hours)
 const DEFAULT_TOKEN_METADATA_TTL = 60 * 60 * 24;
 
 /**
- * Helius Client for fetching token metadata and managing WebSocket connections
+ * Base class for Helius API modules
  */
-class HeliusClient {
-  constructor() {
-    this.config = heliusConfig;
-    this.wsClient = null;
-    this.wsConnected = false;
-    this.reconnectAttempts = 0;
-    this.totalReconnections = 0; // Track total reconnections since service start
-    this.pendingRequests = new Map();
-    this.requestTimeouts = new Map();
-    this.initialized = false;
-    this.requestId = 1;
-    this.lastConnectionTime = null; // Track when the last connection was established
-    
-    // Set up Redis keys for token metadata
-    this.redisKeys = {
-      tokenMetadata: 'helius:token:metadata:', // Prefix for token metadata
-      tokenList: 'helius:token:list',          // List of all tokens
-      lastUpdate: 'helius:last:update',        // Timestamp of last update
-    };
+class HeliusBase {
+  constructor(config, redisKeyPrefix) {
+    this.config = config;
+    this.redisKeyPrefix = redisKeyPrefix || 'helius:';
   }
 
   /**
-   * Initialize the Helius client
+   * Fetch data from Helius RPC with proper error handling
+   * @param {string} method - RPC method name
+   * @param {Array} params - Method parameters
+   * @returns {Promise<any>} - Response data
    */
-  async initialize() {
-    if (!this.config.apiKey) {
-      logApi.warn(`${formatLog.tag()} ${formatLog.warning('Helius API key not configured. Token metadata features will be limited.')}`);
-      return false;
-    }
-
+  async fetchFromHeliusRPC(method, params) {
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('INITIALIZING')} Helius client`);
+      const response = await axios.post(this.config.rpcUrl, {
+        jsonrpc: '2.0',
+        id: 'helius-client',
+        method,
+        params,
+      }, {
+        timeout: 15000 // 15 second timeout
+      });
       
-      // Initialize WebSocket if enabled
-      if (this.config.websocket.enabled) {
-        this.initializeWebSocket();
+      if (!response.data || response.data.error) {
+        throw new Error(response.data?.error?.message || 'Invalid response from Helius API');
       }
       
-      this.initialized = true;
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Helius client initialized successfully')}`);
-      return true;
+      return response.data.result;
     } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize Helius client:')} ${error.message}`);
-      return false;
+      const errorMessage = error.response?.data?.error?.message || error.message;
+      logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to fetch from Helius RPC (${method}):`)} ${errorMessage}`);
+      throw error;
     }
+  }
+}
+
+/**
+ * WebSocket connection management module
+ */
+class HeliusWebSocketManager extends HeliusBase {
+  constructor(config) {
+    super(config);
+    this.wsClient = null;
+    this.wsConnected = false;
+    this.reconnectAttempts = 0;
+    this.totalReconnections = 0;
+    this.pendingRequests = new Map();
+    this.requestTimeouts = new Map();
+    this.requestId = 1;
+    this.lastConnectionTime = null;
   }
 
   /**
    * Initialize WebSocket connection to Helius
    */
-  initializeWebSocket() {
+  initialize() {
     try {
       if (!this.config.websocket.url) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('WebSocket URL not configured for Helius')}`);
@@ -122,7 +126,7 @@ class HeliusClient {
           logApi.info(`${formatLog.tag()} ${formatLog.info(`Reconnecting in ${reconnectDelay / 1000}s (attempt ${this.reconnectAttempts}/${this.config.websocket.maxReconnectAttempts}, total reconnections: ${this.totalReconnections})`)}`);
           
           setTimeout(() => {
-            this.initializeWebSocket();
+            this.initialize();
           }, reconnectDelay);
         } else {
           logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to reconnect to Helius WebSocket after maximum attempts')} (total reconnections attempted: ${this.totalReconnections})`);
@@ -201,6 +205,39 @@ class HeliusClient {
   }
 
   /**
+   * Get WebSocket connection stats
+   * @returns {Object} - Connection statistics
+   */
+  getConnectionStats() {
+    return {
+      connected: this.wsConnected,
+      totalReconnections: this.totalReconnections,
+      currentReconnectAttempt: this.reconnectAttempts,
+      maxReconnectAttempts: this.config.websocket.maxReconnectAttempts,
+      lastConnectionTime: this.lastConnectionTime ? this.lastConnectionTime.toISOString() : null,
+      connectionDuration: this.lastConnectionTime && this.wsConnected ? 
+        Math.floor((Date.now() - this.lastConnectionTime.getTime()) / 1000) : 0,
+      apiKey: !!this.config.apiKey
+    };
+  }
+}
+
+/**
+ * Token services module - handles token metadata and operations
+ */
+class TokenService extends HeliusBase {
+  constructor(config) {
+    super(config, 'helius:token:');
+    
+    // Set up Redis keys for token metadata
+    this.redisKeys = {
+      tokenMetadata: 'helius:token:metadata:',  // Prefix for token metadata
+      tokenList: 'helius:token:list',           // List of all tokens
+      lastUpdate: 'helius:token:last:update',   // Timestamp of last update
+    };
+  }
+
+  /**
    * Get token metadata for a list of mint addresses
    * @param {string[]} mintAddresses - Array of token mint addresses
    * @returns {Promise<Object[]>} - Array of token metadata objects
@@ -209,110 +246,75 @@ class HeliusClient {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} metadata for ${formatLog.count(mintAddresses.length)} tokens`);
       
-      // Check if we have data in Redis first
-      const cachedTokens = [];
-      const missingTokens = [];
-      
-      // Check which tokens we already have in cache
-      for (const mintAddress of mintAddresses) {
-        const cachedData = await redisManager.get(`${this.redisKeys.tokenMetadata}${mintAddress}`);
-        if (cachedData) {
-          cachedTokens.push(JSON.parse(cachedData));
-        } else {
-          missingTokens.push(mintAddress);
-        }
-      }
-      
-      // If we have all tokens in cache, return them
-      if (missingTokens.length === 0) {
-        logApi.info(`${formatLog.tag()} ${formatLog.success('Using cached metadata for all')} ${formatLog.count(mintAddresses.length)} tokens`);
-        return cachedTokens;
-      }
-      
-      // Fetch missing tokens from Helius
-      logApi.info(`${formatLog.tag()} ${formatLog.info('Fetching metadata for')} ${formatLog.count(missingTokens.length)} tokens from Helius API`);
-      
+      // Fetch tokens directly from Helius - no caching
       let fetchedTokens = [];
       
-      // Try multiple methods to get metadata with fallbacks
       try {
-        // First try getTokenMetadata method
-        fetchedTokens = await this.fetchFromHeliusRPC('getTokenMetadata', [missingTokens]);
-      } catch (primaryError) {
-        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Primary metadata method failed, trying fallback:')} ${primaryError.message}`);
+        // Use getAssetBatch for bulk processing - this is the proper method per Helius docs
+        // https://github.com/helius-labs/helius-sdk
+        // Process in batches of 100 to avoid request size limitations
+        const BATCH_SIZE = 100;
+        const batches = [];
         
-        try {
-          // Fallback to getAsset method for each token individually
-          const fetchPromises = missingTokens.map(async (mintAddress) => {
+        // Split into batches
+        for (let i = 0; i < mintAddresses.length; i += BATCH_SIZE) {
+          batches.push(mintAddresses.slice(i, i + BATCH_SIZE));
+        }
+        
+        // Process each batch
+        const batchResults = [];
+        for (let i = 0; i < batches.length; i++) {
+          const batch = batches[i];
+          try {
+            logApi.info(`${formatLog.tag()} Processing batch ${i+1}/${batches.length} (${batch.length} tokens)`);
+            // Use getAssetBatch if available, otherwise fall back to individual getAsset calls
             try {
-              const assetData = await this.fetchFromHeliusRPC('getAsset', [mintAddress]);
-              return this.mapAssetToTokenMetadata(assetData);
-            } catch (assetError) {
-              logApi.debug(`${formatLog.tag()} ${formatLog.warning(`Fallback failed for token ${mintAddress}:`)} ${assetError.message}`);
-              // Return a minimal object with just the mint address
-              return { mint: mintAddress };
+              const batchData = await this.fetchFromHeliusRPC('getAssetBatch', [batch]);
+              batchResults.push(...batchData.map(asset => this.mapAssetToTokenMetadata(asset)));
+            } catch (batchError) {
+              logApi.warn(`${formatLog.tag()} ${formatLog.warning('getAssetBatch method failed, trying individual getAsset calls:')} ${batchError.message}`);
+              
+              // Fall back to individual getAsset calls
+              const individualResults = await Promise.all(batch.map(async (mintAddress) => {
+                try {
+                  const assetData = await this.fetchFromHeliusRPC('getAsset', [mintAddress]);
+                  return this.mapAssetToTokenMetadata(assetData);
+                } catch (assetError) {
+                  logApi.debug(`${formatLog.tag()} ${formatLog.warning(`getAsset failed for token ${mintAddress}:`)} ${assetError.message}`);
+                  return { mint: mintAddress };
+                }
+              }));
+              
+              batchResults.push(...individualResults);
             }
-          });
+          } catch (error) {
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error processing batch ${i+1}/${batches.length}:`)} ${error.message}`);
+            // Add minimal objects for failed batch
+            batchResults.push(...batch.map(mint => ({ mint })));
+          }
           
-          fetchedTokens = await Promise.all(fetchPromises);
-        } catch (fallbackError) {
-          logApi.error(`${formatLog.tag()} ${formatLog.error('All metadata methods failed:')} ${fallbackError.message}`);
-          // Return empty array as last resort
-          fetchedTokens = missingTokens.map(mint => ({ mint }));
+          // Add a small delay between batches to avoid rate limiting
+          if (i < batches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         }
+        
+        fetchedTokens = batchResults;
+      } catch (error) {
+        logApi.error(`${formatLog.tag()} ${formatLog.error('All metadata methods failed:')} ${error.message}`);
+        // Return minimal objects as last resort
+        fetchedTokens = mintAddresses.map(mint => ({ mint }));
       }
       
-      // Get TTL from global cacheTTLs object (with fallback)
-      const tokenMetadataTTL = cacheTTLs.tokenMetadataTTL || DEFAULT_TOKEN_METADATA_TTL;
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched metadata for')} ${formatLog.count(fetchedTokens.length)} tokens`);
       
-      // Cache the fetched tokens
-      for (const token of fetchedTokens) {
-        if (token && token.mint) {
-          await redisManager.set(
-            `${this.redisKeys.tokenMetadata}${token.mint}`, 
-            JSON.stringify(token), 
-            tokenMetadataTTL
-          );
-        }
-      }
-      
-      // Combine cached and fetched tokens
-      return [...cachedTokens, ...fetchedTokens];
+      return fetchedTokens;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch token metadata:')} ${error.message}`);
       return mintAddresses.map(mint => ({ mint }));
     }
   }
-  
-  /**
-   * Fetch data from Helius RPC with proper error handling
-   * @param {string} method - RPC method name
-   * @param {Array} params - Method parameters
-   * @returns {Promise<any>} - Response data
-   */
-  async fetchFromHeliusRPC(method, params) {
-    try {
-      const response = await axios.post(this.config.rpcUrl, {
-        jsonrpc: '2.0',
-        id: 'helius-client',
-        method,
-        params,
-      }, {
-        timeout: 15000 // 15 second timeout
-      });
-      
-      if (!response.data || response.data.error) {
-        throw new Error(response.data?.error?.message || 'Invalid response from Helius API');
-      }
-      
-      return response.data.result;
-    } catch (error) {
-      const errorMessage = error.response?.data?.error?.message || error.message;
-      logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to fetch from Helius RPC (${method}):`)} ${errorMessage}`);
-      throw error;
-    }
-  }
-  
+
   /**
    * Convert getAsset response to token metadata format
    * @param {Object} assetData - Response from getAsset
@@ -338,6 +340,97 @@ class HeliusClient {
   }
 
   /**
+   * Get token accounts for a specific mint or owner
+   * @param {Object} params - Parameters for the request
+   * @param {string} [params.mint] - Mint address to get token accounts for
+   * @param {string} [params.owner] - Owner address to get token accounts for
+   * @returns {Promise<Object>} - Token account information
+   */
+  async getTokenAccounts(params) {
+    try {
+      if (!params.mint && !params.owner) {
+        throw new Error('Either mint or owner parameter is required');
+      }
+
+      const searchParam = params.mint ? { mint: params.mint } : { owner: params.owner };
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} token accounts for ${params.mint ? 'mint' : 'owner'}: ${formatLog.address(params.mint || params.owner)}`);
+      
+      const result = await this.fetchFromHeliusRPC('getTokenAccounts', [searchParam]);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched')} ${formatLog.count(result.tokens?.length || 0)} token accounts`);
+      
+      return result;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch token accounts:')} ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get assets (tokens/NFTs) by owner address
+   * @param {Object} params - Parameters for the request
+   * @param {string} params.ownerAddress - Owner address to get assets for
+   * @param {number} [params.page] - Page number for pagination
+   * @param {number} [params.limit] - Number of items per page
+   * @returns {Promise<Object>} - List of assets
+   */
+  async getAssetsByOwner(params) {
+    try {
+      if (!params.ownerAddress) {
+        throw new Error('ownerAddress parameter is required');
+      }
+
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} assets for owner: ${formatLog.address(params.ownerAddress)}`);
+      
+      const result = await this.fetchFromHeliusRPC('getAssetsByOwner', [params]);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched')} ${formatLog.count(result.items?.length || 0)} assets for owner`);
+      
+      return result;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch assets by owner:')} ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get assets by a group key and value
+   * @param {Object} params - Parameters for the request
+   * @param {string} params.groupKey - Group key to search by
+   * @param {string} params.groupValue - Group value to search for
+   * @param {number} [params.page] - Page number for pagination
+   * @param {number} [params.limit] - Number of items per page
+   * @returns {Promise<Object>} - List of assets
+   */
+  async getAssetsByGroup(params) {
+    try {
+      if (!params.groupKey || !params.groupValue) {
+        throw new Error('groupKey and groupValue parameters are required');
+      }
+
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} assets for group ${params.groupKey}=${params.groupValue}`);
+      
+      const result = await this.fetchFromHeliusRPC('getAssetsByGroup', [params]);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched')} ${formatLog.count(result.items?.length || 0)} assets for group`);
+      
+      return result;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch assets by group:')} ${error.message}`);
+      throw error;
+    }
+  }
+}
+
+/**
+ * DAS (Digital Asset Standard) API module
+ */
+class DasService extends HeliusBase {
+  constructor(config) {
+    super(config, 'helius:das:');
+  }
+
+  /**
    * Search for assets using Digital Asset Standard (DAS) API
    * @param {Object} params - Search parameters
    * @returns {Promise<Object>} - Search results
@@ -346,24 +439,44 @@ class HeliusClient {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('SEARCHING')} for assets with params: ${JSON.stringify(params)}`);
       
-      const response = await axios.post(this.config.rpcUrl, {
-        jsonrpc: '2.0',
-        id: 'helius-client',
-        method: 'searchAssets',
-        params: [params],
-      });
-      
-      if (!response.data || !response.data.result) {
-        throw new Error('Invalid response from Helius API');
-      }
+      const response = await this.fetchFromHeliusRPC('searchAssets', [params]);
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully searched for assets')}`);
       
-      return response.data.result;
+      return response;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to search assets:')} ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Get a single asset by its ID
+   * @param {string} assetId - The asset ID (mint address)
+   * @returns {Promise<Object>} - Asset details
+   */
+  async getAsset(assetId) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} asset ${formatLog.address(assetId)}`);
+      
+      const response = await this.fetchFromHeliusRPC('getAsset', [assetId]);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched asset')}`);
+      
+      return response;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch asset:')} ${error.message}`);
+      throw error;
+    }
+  }
+}
+
+/**
+ * Webhook management module
+ */
+class WebhookService extends HeliusBase {
+  constructor(config) {
+    super(config);
   }
 
   /**
@@ -424,22 +537,99 @@ class HeliusClient {
       throw error;
     }
   }
+}
+
+/**
+ * Main Helius Client that integrates all the modules
+ */
+class HeliusClient {
+  constructor() {
+    this.config = heliusConfig;
+    this.initialized = false;
+    
+    // Initialize services
+    this.websocket = new HeliusWebSocketManager(this.config);
+    this.tokens = new TokenService(this.config);
+    this.das = new DasService(this.config);
+    this.webhooks = new WebhookService(this.config);
+  }
 
   /**
-   * Get WebSocket connection stats
+   * Initialize the Helius client
+   */
+  async initialize() {
+    if (!this.config.apiKey) {
+      logApi.warn(`${formatLog.tag()} ${formatLog.warning('Helius API key not configured. Token metadata features will be limited.')}`);
+      return false;
+    }
+
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('INITIALIZING')} Helius client`);
+      
+      // Initialize WebSocket if enabled
+      if (this.config.websocket.enabled) {
+        this.websocket.initialize();
+      }
+      
+      this.initialized = true;
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Helius client initialized successfully')}`);
+      return true;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize Helius client:')} ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Get token metadata for a list of mint addresses - Proxy method to token service
+   * @param {string[]} mintAddresses - Array of token mint addresses
+   * @returns {Promise<Object[]>} - Array of token metadata objects
+   */
+  async getTokensMetadata(mintAddresses) {
+    return this.tokens.getTokensMetadata(mintAddresses);
+  }
+  
+  /**
+   * Search for assets using Digital Asset Standard (DAS) API - Proxy method to DAS service
+   * @param {Object} params - Search parameters
+   * @returns {Promise<Object>} - Search results
+   */
+  async searchAssets(params) {
+    return this.das.searchAssets(params);
+  }
+
+  /**
+   * Create a webhook for real-time notifications - Proxy method to webhook service
+   * @param {Object} webhookConfig - Webhook configuration
+   * @returns {Promise<Object>} - Created webhook details
+   */
+  async createWebhook(webhookConfig) {
+    return this.webhooks.createWebhook(webhookConfig);
+  }
+
+  /**
+   * Get all webhooks for the current API key - Proxy method to webhook service
+   * @returns {Promise<Object[]>} - Array of webhook objects
+   */
+  async getWebhooks() {
+    return this.webhooks.getWebhooks();
+  }
+
+  /**
+   * Delete a webhook by ID - Proxy method to webhook service
+   * @param {string} webhookId - The ID of the webhook to delete
+   * @returns {Promise<Object>} - Result of the delete operation
+   */
+  async deleteWebhook(webhookId) {
+    return this.webhooks.deleteWebhook(webhookId);
+  }
+
+  /**
+   * Get WebSocket connection stats - Proxy method to websocket service
    * @returns {Object} - Connection statistics
    */
   getConnectionStats() {
-    return {
-      connected: this.wsConnected,
-      totalReconnections: this.totalReconnections,
-      currentReconnectAttempt: this.reconnectAttempts,
-      maxReconnectAttempts: this.config.websocket.maxReconnectAttempts,
-      lastConnectionTime: this.lastConnectionTime ? this.lastConnectionTime.toISOString() : null,
-      connectionDuration: this.lastConnectionTime && this.wsConnected ? 
-        Math.floor((Date.now() - this.lastConnectionTime.getTime()) / 1000) : 0,
-      apiKey: !!this.config.apiKey
-    };
+    return this.websocket.getConnectionStats();
   }
 }
 

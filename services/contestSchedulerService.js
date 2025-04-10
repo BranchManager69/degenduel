@@ -349,6 +349,51 @@ class ContestSchedulerService extends BaseService {
                     });
                 }
                 
+                // Try to generate an image for the contest after wallet is created
+                try {
+                    // Import the contest image service
+                    const contestImageService = (await import('../services/contestImageService.js')).default;
+                    
+                    // First set a placeholder image while we generate the real one
+                    // Get a random placeholder from our collection
+                    const fs = await import('fs/promises');
+                    const path = await import('path');
+                    
+                    try {
+                        // Get all placeholder files
+                        const placeholdersDir = path.join(process.cwd(), 'public', 'images', 'contests', 'placeholders');
+                        const files = await fs.readdir(placeholdersDir);
+                        const pngFiles = files.filter(file => file.endsWith('.png'));
+                        
+                        if (pngFiles.length > 0) {
+                            // Pick a random placeholder
+                            const randomFile = pngFiles[Math.floor(Math.random() * pngFiles.length)];
+                            const placeholderUrl = `/images/contests/placeholders/${randomFile}`;
+                            
+                            // Set the placeholder image URL in the database
+                            await prisma.contests.update({
+                                where: { id: contest.id },
+                                data: { image_url: placeholderUrl }
+                            });
+                            
+                            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Set temporary placeholder image for contest: ${placeholderUrl}`);
+                        }
+                    } catch (placeholderError) {
+                        logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Failed to set placeholder image: ${placeholderError.message}`);
+                    }
+                    
+                    // Now start the real image generation in a non-blocking way
+                    contestImageService.getOrGenerateContestImage(contest)
+                        .then(imageUrl => {
+                            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Generated image for contest ${contest.id}: ${imageUrl}${fancyColors.RESET}`);
+                        })
+                        .catch(imageError => {
+                            logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to generate contest image: ${imageError.message}${fancyColors.RESET}`);
+                        });
+                } catch (imageServiceError) {
+                    logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}Error initializing image service: ${imageServiceError.message}${fancyColors.RESET}`);
+                }
+                
                 return { contest, wallet: contestWallet };
             });
             

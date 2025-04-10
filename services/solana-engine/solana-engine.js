@@ -26,8 +26,6 @@ import { ServiceError } from '../../utils/service-suite/service-error.js';
 import { PrismaClient } from '@prisma/client';
 import connectionManager from './connection-manager.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
-import { EventEmitter } from 'events';
-import { cacheTTLs } from './connection-manager.js';
 
 // Config
 import config from '../../config/config.js';
@@ -77,15 +75,6 @@ class SolanaEngineService extends BaseService {
       criticalLevel: 'high'
     });
     
-    // Redis keys for caching data
-    this.redisKeys = {
-      tokenData: 'solana:token:data:', // Prefix for token data
-      tokenList: 'solana:token:list',  // List of all known tokens
-      lastSync: 'solana:last:sync',    // Timestamp of last sync
-      walletTokens: 'solana:wallet:tokens:', // Prefix for wallet token data
-      transactions: 'solana:transactions:', // Prefix for transaction data
-    };
-    
     // WebSocket topics for real-time data distribution
     this.wsTopics = {
       tokenData: config.websocket.topics.MARKET_DATA,
@@ -96,6 +85,13 @@ class SolanaEngineService extends BaseService {
     
     // Reference to the WebSocket server
     this.wsServer = null;
+    
+    // Track transaction stats
+    this.transactionStats = {
+      sent: 0,
+      confirmed: 0,
+      failed: 0
+    };
     
     // Track initialization status separately from property
     this._initialized = false;
@@ -108,8 +104,11 @@ class SolanaEngineService extends BaseService {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('INITIALIZING')} SolanaEngine Service`);
       
+      // Store the connection manager instance
+      this.connectionManager = connectionManager;
+      
       // Initialize ConnectionManager first (provides RPC access to other clients)
-      const connectionManagerInitialized = await connectionManager.initialize();
+      const connectionManagerInitialized = await this.connectionManager.initialize();
       if (!connectionManagerInitialized) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('ConnectionManager initialization failed')}`);
       }
@@ -133,14 +132,6 @@ class SolanaEngineService extends BaseService {
       
       // Get reference to the WebSocket server
       this.wsServer = config.websocket.unifiedWebSocket;
-      
-      // Track transaction stats
-      this.transactionStats = {
-        sent: 0,
-        confirmed: 0,
-        failed: 0,
-        byEndpoint: {}
-      };
       
       // Mark as initialized using BaseService
       const result = await super.initialize();
@@ -187,7 +178,7 @@ class SolanaEngineService extends BaseService {
    * @returns {Object} - Connection status information
    */
   getConnectionStatus() {
-    if (!connectionManager) {
+    if (!this.connectionManager) {
       return {
         status: "unavailable",
         message: "Connection manager not initialized"
@@ -195,7 +186,7 @@ class SolanaEngineService extends BaseService {
     }
     
     try {
-      const status = connectionManager.getStatus();
+      const status = this.connectionManager.getStatus();
       return status;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Error getting connection status:')} ${error.message}`);
@@ -212,31 +203,12 @@ class SolanaEngineService extends BaseService {
   // -----------------------------------------------------------------------------------
   
   /**
-   * Get a Solana connection (compatible with SolanaServiceManager)
-   * @returns {Connection} Solana web3.js Connection object
+   * Get a connection from the connection manager.
+   * This simplified version just returns the single connection.
+   * @returns {Connection} The Solana connection
    */
-  getConnection(options = {}) {
-    // Get connection from manager with auto rotation
-    const connInfo = connectionManager.getConnection(options);
-    
-    if (!connInfo || !connInfo.connection) {
-      throw new ServiceError('solana_not_initialized', 'Solana connection not available');
-    }
-    
-    return connInfo.connection;
-  }
-  
-  /**
-   * Get a connection explicitly specifying which endpoint to use
-   * @param {string} endpointId - ID of the specific endpoint to use
-   * @param {boolean} fallbackToRotation - Whether to fall back to rotation if endpoint is unhealthy
-   * @returns {Connection} Solana web3.js Connection object
-   */
-  getSpecificConnection(endpointId, fallbackToRotation = true) {
-    return this.getConnection({
-      endpointId,
-      fallbackToRotation
-    });
+  getConnection() {
+    return this.connectionManager.getConnection();
   }
   
   /**
@@ -246,14 +218,8 @@ class SolanaEngineService extends BaseService {
    * @returns {Promise<any>} - Result of the method call
    */
   async executeConnectionMethod(methodName, ...args) {
-    // Extract options if passed as last parameter
-    const options = typeof args[args.length - 1] === 'object' && 
-                  !Array.isArray(args[args.length - 1]) && 
-                  !(args[args.length - 1] instanceof PublicKey) ? 
-                  args.pop() : {};
-    
     try {
-      return await connectionManager.executeMethod(methodName, args, options);
+      return await this.connectionManager.executeMethod(methodName, args);
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to execute method ${methodName}: ${error.message}`)}`);
       throw error;
@@ -261,138 +227,149 @@ class SolanaEngineService extends BaseService {
   }
   
   /**
-   * Execute a custom RPC function with auto-rotation
-   * @param {Function} rpcCall - Function that takes a connection and performs an RPC operation
-   * @param {string} methodName - Name of the operation for logging
-   * @param {Object} options - Options for execution
+   * Execute an RPC call with automatic retries
+   * @param {Function} rpcCall - Function that takes a connection and returns a promise
    * @returns {Promise<any>} - Result of the RPC call
    */
-  async executeRpcRequest(rpcCall, methodName = 'custom', options = {}) {
-    try {
-      return await connectionManager.executeRpc(rpcCall, {
-        ...options,
-        methodName
-      });
-    } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to execute RPC request ${methodName}: ${error.message}`)}`);
-      throw error;
-    }
+  async executeRpc(rpcCall) {
+    return this.connectionManager.executeRpc(rpcCall);
   }
   
   /**
-   * Execute an RPC call with a specific endpoint
-   * @param {string} endpointId - ID of the endpoint to use
-   * @param {Function} rpcCall - Function that takes a connection and performs an RPC operation
-   * @param {Object} options - Additional options
-   * @returns {Promise<any>} - Result of the RPC call
-   */
-  async executeWithEndpoint(endpointId, rpcCall, options = {}) {
-    return this.executeRpcRequest(rpcCall, options.methodName || 'custom-specific', {
-      ...options,
-      endpointId,
-      fallbackToRotation: options.fallbackToRotation !== false
-    });
-  }
-  
-  /**
-   * Send a transaction to the Solana blockchain
+   * Send a transaction to the Solana network
    * @param {Transaction|VersionedTransaction} transaction - The transaction to send
-   * @param {Array} signers - Optional additional signers
-   * @param {Object} options - Send options
-   * @returns {Promise<string>} Transaction signature
+   * @param {Array<Signer>} signers - The signers of the transaction
+   * @param {Object} options - Options for sending the transaction
+   * @returns {Promise<Object>} The result of the transaction
    */
   async sendTransaction(transaction, signers = [], options = {}) {
     try {
-      // Track transaction stats
+      // Track transaction in stats
       this.transactionStats.sent++;
       
-      // Get preferred endpoint for transactions (if specified)
-      const connInfo = options.endpointId ? 
-        connectionManager.getConnection({ 
-          endpointId: options.endpointId,
-          fallbackToRotation: options.fallbackToRotation !== false
-        }) : 
-        connectionManager.getConnection({ 
-          // Prefer endpoints with better performance for transactions
-          preferLowLatency: true
-        });
+      // Get the connection
+      const connection = this.getConnection();
       
-      // Increment endpoint-specific stats
-      if (!this.transactionStats.byEndpoint[connInfo.id]) {
-        this.transactionStats.byEndpoint[connInfo.id] = {
-          sent: 0,
-          confirmed: 0,
-          failed: 0
-        };
-      }
-      this.transactionStats.byEndpoint[connInfo.id].sent++;
+      // Get the latest blockhash
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       
-      // Log transaction attempt
-      logApi.info(`${formatLog.tag()} ${formatLog.header('SENDING TX')} via endpoint ${connInfo.id}`);
-      
-      // Different handling based on transaction type
-      let signature;
-      
-      if (transaction instanceof VersionedTransaction) {
-        // For versioned transactions, we don't need to add signatures
-        signature = await connInfo.connection.sendTransaction(transaction, options);
-      } else {
-        // For legacy transactions, we need to add signatures if provided
-        if (signers && signers.length > 0) {
-          transaction.sign(...signers);
-        }
-        
-        // Send with specified options
-        signature = await connInfo.connection.sendTransaction(transaction, options);
+      // Set the blockhash for the transaction if it's a legacy transaction
+      if (!transaction.version) {
+        transaction.recentBlockhash = blockhash;
+        transaction.lastValidBlockHeight = lastValidBlockHeight;
       }
       
-      // Log success
-      logApi.info(`${formatLog.tag()} ${formatLog.success(`Transaction sent successfully: ${signature}`)}`);
-      
-      // If confirmation is requested, wait for confirmation
-      if (options.skipConfirmation !== true) {
-        const confirmOptions = {
-          commitment: options.commitment || 'confirmed',
-          maxRetries: options.maxRetries
-        };
-        
-        try {
-          // Wait for confirmation
-          await connInfo.connection.confirmTransaction(signature, confirmOptions.commitment);
+      // Sign the transaction with all signers
+      if (signers.length > 0) {
+        // For versioned transactions
+        if (transaction.version !== undefined) {
+          transaction = await transaction.sign(signers);
+        } else {
+          // For legacy transactions
+          transaction = await sendAndConfirmTransaction(connection, transaction, signers, {
+            skipPreflight: options.skipPreflight || false,
+            preflightCommitment: options.preflightCommitment || 'confirmed',
+            maxRetries: options.maxRetries || 3,
+          });
           
           // Update stats
           this.transactionStats.confirmed++;
-          this.transactionStats.byEndpoint[connInfo.id].confirmed++;
           
-          logApi.info(`${formatLog.tag()} ${formatLog.success(`Transaction confirmed: ${signature}`)}`);
-        } catch (confirmError) {
-          // Update stats
-          this.transactionStats.failed++;
-          this.transactionStats.byEndpoint[connInfo.id].failed++;
-          
-          logApi.error(`${formatLog.tag()} ${formatLog.error(`Transaction confirmation failed: ${confirmError.message}`)}`);
-          
-          // Rethrow with clear message
-          throw new Error(`Transaction sent but confirmation failed: ${confirmError.message}`);
+          // Return early for legacy transactions
+          return {
+            signature: transaction,
+            confirmationStatus: 'confirmed',
+            blockhash,
+            lastValidBlockHeight
+          };
         }
       }
       
-      return signature;
+      // Send the raw transaction
+      const txid = await connection.sendTransaction(transaction, {
+        skipPreflight: options.skipPreflight || false,
+        preflightCommitment: options.preflightCommitment || 'confirmed',
+        maxRetries: options.maxRetries || 3,
+      });
+      
+      // Log the transaction
+      logApi.info(`${formatLog.tag()} ${formatLog.info('Transaction sent')} Signature: ${txid}`);
+      
+      // If confirmation is requested, wait for confirmation
+      if (options.waitForConfirmation !== false) {
+        const confirmationStatus = await this.confirmTransaction(txid, blockhash, lastValidBlockHeight, options);
+        
+        return {
+          signature: txid,
+          confirmationStatus,
+          blockhash,
+          lastValidBlockHeight
+        };
+      }
+      
+      return {
+        signature: txid,
+        confirmationStatus: 'sent',
+        blockhash,
+        lastValidBlockHeight
+      };
     } catch (error) {
       // Update stats
       this.transactionStats.failed++;
       
-      logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to send transaction: ${error.message}`)}`);
+      // Log the error
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction failed:')} ${error.message}`);
+      
+      // Throw the error
       throw error;
     }
   }
   
   /**
-   * Get the status of all RPC connections
-   * @returns {Object} Status of all connections
+   * Confirm a transaction
+   * @param {string} signature - The transaction signature
+   * @param {string} blockhash - The blockhash of the transaction
+   * @param {number} lastValidBlockHeight - The last valid block height
+   * @param {Object} options - Options for confirming the transaction
+   * @returns {Promise<string>} The confirmation status
    */
-  getConnectionStatus() {
-    return connectionManager.getStatus();
+  async confirmTransaction(signature, blockhash, lastValidBlockHeight, options = {}) {
+    try {
+      // Get the connection
+      const connection = this.getConnection();
+      
+      // Create the confirmation strategy
+      const confirmationStrategy = {
+        blockhash,
+        lastValidBlockHeight,
+        signature
+      };
+      
+      // Wait for confirmation
+      const confirmation = await connection.confirmTransaction(
+        confirmationStrategy,
+        options.commitment || 'confirmed'
+      );
+      
+      // Check if the confirmation was successful
+      if (confirmation?.value?.err) {
+        this.transactionStats.failed++;
+        logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction confirmed with error:')} ${JSON.stringify(confirmation.value.err)}`);
+        throw new Error(`Transaction confirmed with error: ${JSON.stringify(confirmation.value.err)}`);
+      }
+      
+      // Update stats
+      this.transactionStats.confirmed++;
+      
+      // Log the confirmation
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Transaction confirmed')} Signature: ${signature}`);
+      
+      return 'confirmed';
+    } catch (error) {
+      this.transactionStats.failed++;
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction confirmation failed:')} ${error.message}`);
+      throw error;
+    }
   }
   
   /**
@@ -412,7 +389,7 @@ class SolanaEngineService extends BaseService {
       // Include connection status if requested
       let result = { config };
       if (includeStatus) {
-        result.status = connectionManager.getStatus();
+        result.status = this.connectionManager.getStatus();
       }
       
       await prisma.$disconnect();
@@ -464,61 +441,6 @@ class SolanaEngineService extends BaseService {
   }
   
   /**
-   * Clear the cache for specific tokens or all tokens
-   * @param {string[]} [mintAddresses=[]] - The token mint addresses to clear cache for (empty = all)
-   * @returns {Promise<Object>} Result of the cache clearing operation
-   */
-  async clearCache(mintAddresses = []) {
-    try {
-      const result = {
-        clearedTokenCount: 0,
-        clearedPriceCount: 0
-      };
-      
-      if (mintAddresses.length === 0) {
-        // Clear all token cache
-        const metadataKeys = await redisManager.keys(`${this.redisKeys.tokenData}*`);
-        for (const key of metadataKeys) {
-          await redisManager.del(key);
-          result.clearedTokenCount++;
-        }
-        
-        // Clear all price cache
-        const priceKeys = await redisManager.keys(`helius:token:*`);
-        const jupiterKeys = await redisManager.keys(`jupiter:token:*`);
-        
-        for (const key of [...priceKeys, ...jupiterKeys]) {
-          await redisManager.del(key);
-          result.clearedPriceCount++;
-        }
-        
-        logApi.info(`${formatLog.tag()} ${formatLog.success(`Cleared all token caches (${result.clearedTokenCount} metadata, ${result.clearedPriceCount} prices)`)}`);
-      } else {
-        // Clear specific token caches
-        for (const mintAddress of mintAddresses) {
-          // Clear from SolanaEngine cache
-          await redisManager.del(`${this.redisKeys.tokenData}${mintAddress}`);
-          result.clearedTokenCount++;
-          
-          // Clear from Helius cache
-          await redisManager.del(`helius:token:metadata:${mintAddress}`);
-          
-          // Clear from Jupiter cache
-          await redisManager.del(`jupiter:token:prices:${mintAddress}`);
-          result.clearedPriceCount++;
-        }
-        
-        logApi.info(`${formatLog.tag()} ${formatLog.success(`Cleared cache for ${mintAddresses.length} tokens`)}`);
-      }
-      
-      return result;
-    } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to clear cache: ${error.message}`)}`);
-      throw error;
-    }
-  }
-
-  /**
    * Start the SolanaEngine Service
    */
   async start() {
@@ -529,8 +451,8 @@ class SolanaEngineService extends BaseService {
       
       logApi.info(`${formatLog.tag()} ${formatLog.header('STARTING')} SolanaEngine Service`);
       
-      // Load tokens from Redis if available
-      await this.loadCachedTokens();
+      // Load tokens from database
+      await this.loadWatchedTokens();
       
       // Set as running
       this.isStarted = true;
@@ -667,6 +589,34 @@ class SolanaEngineService extends BaseService {
   }
 
   /**
+   * Load watched tokens and subscribe to price updates
+   */
+  async loadWatchedTokens() {
+    try {
+      // Get list of tokens to watch from the database
+      const prisma = new PrismaClient();
+      const watchedTokens = await prisma.tokens.findMany({
+        where: { is_active: true },
+        select: { address: true }
+      });
+      
+      const tokenAddresses = watchedTokens.map(token => token.address);
+      
+      if (tokenAddresses.length > 0) {
+        // Subscribe to price updates for these tokens
+        await this.subscribeToTokenPrices(tokenAddresses);
+        logApi.info(`${formatLog.tag()} ${formatLog.success('Loaded')} ${formatLog.count(tokenAddresses.length)} tokens from database`);
+      } else {
+        logApi.info(`${formatLog.tag()} ${formatLog.info('No watched tokens found in database')}`);
+      }
+      
+      await prisma.$disconnect();
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to load watched tokens:')} ${error.message}`);
+    }
+  }
+
+  /**
    * Handle price updates from Jupiter
    * @param {Object} priceData - Price data from Jupiter
    */
@@ -674,23 +624,6 @@ class SolanaEngineService extends BaseService {
     try {
       const tokenCount = Object.keys(priceData).length;
       logApi.debug(`${formatLog.tag()} ${formatLog.info('Received price updates for')} ${formatLog.count(tokenCount)} tokens`);
-      
-      // Update Redis cache with the latest combined data
-      for (const [mintAddress, priceInfo] of Object.entries(priceData)) {
-        const existingData = await redisManager.get(`${this.redisKeys.tokenData}${mintAddress}`);
-        let tokenData = existingData ? JSON.parse(existingData) : { address: mintAddress };
-        
-        // Update price data
-        tokenData.price = priceInfo;
-        tokenData.lastUpdated = Date.now();
-        
-        // Save to Redis
-        await redisManager.set(
-          `${this.redisKeys.tokenData}${mintAddress}`, 
-          JSON.stringify(tokenData), 
-          60 * 60 // 1 hour
-        );
-      }
       
       // Broadcast to WebSocket clients if connected
       if (this.wsServer) {
@@ -714,27 +647,8 @@ class SolanaEngineService extends BaseService {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} metadata for ${formatLog.count(mintAddresses.length)} tokens`);
       
-      // Get token metadata from Helius
+      // Get token metadata from Helius - no caching
       const tokenMetadata = await heliusClient.getTokensMetadata(mintAddresses);
-      
-      // For each token, update our combined data store
-      for (const metadata of tokenMetadata) {
-        const mintAddress = metadata.mint;
-        
-        const existingData = await redisManager.get(`${this.redisKeys.tokenData}${mintAddress}`);
-        let tokenData = existingData ? JSON.parse(existingData) : { address: mintAddress };
-        
-        // Update metadata
-        tokenData.metadata = metadata;
-        tokenData.lastUpdated = Date.now();
-        
-        // Save to Redis
-        await redisManager.set(
-          `${this.redisKeys.tokenData}${mintAddress}`, 
-          JSON.stringify(tokenData), 
-          cacheTTLs.tokenMetadataTTL // Use the global TTL setting
-        );
-      }
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched metadata for')} ${formatLog.count(tokenMetadata.length)} tokens`);
       
@@ -754,25 +668,8 @@ class SolanaEngineService extends BaseService {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} prices for ${formatLog.count(mintAddresses.length)} tokens`);
       
-      // Get token prices from Jupiter
+      // Get token prices from Jupiter - no caching
       const tokenPrices = await jupiterClient.getPrices(mintAddresses);
-      
-      // For each token, update our combined data store
-      for (const [mintAddress, priceInfo] of Object.entries(tokenPrices)) {
-        const existingData = await redisManager.get(`${this.redisKeys.tokenData}${mintAddress}`);
-        let tokenData = existingData ? JSON.parse(existingData) : { address: mintAddress };
-        
-        // Update price data
-        tokenData.price = priceInfo;
-        tokenData.lastUpdated = Date.now();
-        
-        // Save to Redis
-        await redisManager.set(
-          `${this.redisKeys.tokenData}${mintAddress}`, 
-          JSON.stringify(tokenData), 
-          cacheTTLs.tokenPriceTTL // Use the global TTL setting
-        );
-      }
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched prices for')} ${formatLog.count(Object.keys(tokenPrices).length)} tokens`);
       
@@ -792,37 +689,31 @@ class SolanaEngineService extends BaseService {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('GETTING')} data for ${formatLog.count(mintAddresses.length)} tokens`);
       
-      const result = [];
-      const missingTokens = [];
+      // Fetch metadata for tokens
+      const metadata = await this.fetchTokenMetadata(mintAddresses);
       
-      // Check which tokens we already have in cache
-      for (const mintAddress of mintAddresses) {
-        const cachedData = await redisManager.get(`${this.redisKeys.tokenData}${mintAddress}`);
-        
-        if (cachedData) {
-          const tokenData = JSON.parse(cachedData);
-          result.push(tokenData);
-        } else {
-          missingTokens.push(mintAddress);
-          result.push({ address: mintAddress, pending: true });
+      // Create lookup map
+      const metadataMap = metadata.reduce((map, token) => {
+        if (token.mint) {
+          map[token.mint] = token;
         }
-      }
+        return map;
+      }, {});
       
-      // If we have missing tokens, fetch their data asynchronously
-      if (missingTokens.length > 0) {
-        logApi.info(`${formatLog.tag()} ${formatLog.info('Fetching data for')} ${formatLog.count(missingTokens.length)} missing tokens`);
-        
-        // Start async fetches - don't await these since we want to return quickly
-        this.fetchTokenMetadata(missingTokens).catch(error => {
-          logApi.error(`${formatLog.tag()} ${formatLog.error('Async metadata fetch failed:')} ${error.message}`);
-        });
-        
-        this.fetchTokenPrices(missingTokens).catch(error => {
-          logApi.error(`${formatLog.tag()} ${formatLog.error('Async price fetch failed:')} ${error.message}`);
-        });
-      }
+      // Fetch prices for tokens
+      const prices = await this.fetchTokenPrices(mintAddresses);
       
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Returning data for')} ${formatLog.count(result.length)} tokens (${formatLog.count(missingTokens.length)} being fetched asynchronously)`);
+      // Combine metadata and prices
+      const result = mintAddresses.map(address => {
+        return {
+          address,
+          metadata: metadataMap[address] || null,
+          price: prices[address] || null,
+          lastUpdated: Date.now()
+        };
+      });
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Fetched data for')} ${formatLog.count(result.length)} tokens`);
       
       return result;
     } catch (error) {

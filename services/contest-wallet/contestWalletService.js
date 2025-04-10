@@ -105,7 +105,7 @@ const CONTEST_WALLET_CONFIG = {
         contestStatuses: ['completed', 'cancelled'] // Only reclaim from contests with these statuses (i.e., not 'active' nor 'pending')
     },
     wallet: {
-        encryption_algorithm: 'aes-256-gcm',
+        encryption_algorithm: 'aes-256-gcm', // Explicitly defining the algorithm here to avoid config dependency
         min_balance_sol: config.service_thresholds.contest_wallet_min_balance_for_reclaim // minimum balance to consider reclaiming
     },
     circuitBreaker: {
@@ -140,8 +140,28 @@ class ContestWalletService extends BaseService {
         
         logApi.info(`${formatLog.tag()} ${formatLog.header('Initializing')} Contest Wallet Service`);
         
-        // We'll verify SolanaEngine availability during initialization
-        // to allow for proper service startup ordering
+        // Debug: Check format objects to ensure they're properly defined
+        if (!formatLog.batch || typeof formatLog.batch !== 'function') {
+            logApi.error(`${fancyColors.RED}[constructor]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} FORMAT ERROR ${fancyColors.RESET} formatLog.batch is not properly defined: ${typeof formatLog.batch}`);
+        } else {
+            // Test batch formatting
+            const testBatch = formatLog.batch("TEST BATCH MESSAGE");
+            logApi.info(`${formatLog.tag()} Test batch formatting: ${testBatch}`);
+        }
+        
+        // Helper method for consistent batch formatting
+        this.formatBatchInfo = (operation, cycleId, walletIndex, batchSize, totalWallets) => {
+            const currentBatch = Math.floor(walletIndex/batchSize) + 1;
+            const totalBatches = Math.ceil(totalWallets/batchSize);
+            return {
+                label: `${operation} ${cycleId} Batch ${currentBatch}/${totalBatches}`,
+                currentBatch,
+                totalBatches,
+                walletStart: walletIndex + 1,
+                walletEnd: Math.min(walletIndex + batchSize, totalWallets),
+                totalWallets
+            };
+        };
         
         // Set treasury wallet address from config
         this.treasuryWalletAddress = CONTEST_WALLET_CONFIG.treasury.walletAddress;
@@ -233,6 +253,16 @@ class ContestWalletService extends BaseService {
             logApi.info(`${formatLog.tag()} ${formatLog.success('Contest Wallet Service initialized successfully')}`);
             logApi.info(`${formatLog.tag()} ${formatLog.info(`Using SolanaEngine with ${healthyEndpoints}/${totalEndpoints} healthy RPC endpoints`)}`);
             
+            // Run the startup self-test and wait for it to complete before continuing
+            if (process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
+                (config.service_test && config.service_test.contest_wallet_self_test)) {
+                logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Running wallet self-test as part of initialization`);
+                await this.scheduleSelfTest();
+                logApi.info(`${formatLog.tag()} ${formatLog.success('Self-test completed, service is ready')}`);
+            } else {
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping self-test (not enabled)')}`);
+            }
+            
             return true;
         } catch (error) {
             logApi.error(`${formatLog.tag()} ${formatLog.error('Contest Wallet Service initialization error:')}`, {
@@ -253,8 +283,15 @@ class ContestWalletService extends BaseService {
     encryptPrivateKey(privateKey) {
         try {
             const iv = crypto.randomBytes(16);
+            
+            // Use the local config value for encryption algorithm, which is hardcoded in CONTEST_WALLET_CONFIG
+            // This prevents reliance on global config which doesn't have this property
+            const algorithm = 'aes-256-gcm'; // Hardcoded to match key-recovery.js
+            
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Using encryption algorithm: ${algorithm} for encryption${fancyColors.RESET}`);
+            
             const cipher = crypto.createCipheriv(
-                this.config.wallet.encryption_algorithm,
+                algorithm,
                 Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
                 iv
             );
@@ -1165,8 +1202,15 @@ class ContestWalletService extends BaseService {
             }
             
             const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
+            
+            // Use the local config value for encryption algorithm, which is hardcoded in CONTEST_WALLET_CONFIG
+            // This prevents reliance on global config which doesn't have this property
+            const algorithm = 'aes-256-gcm'; // Hardcoded to match key-recovery.js
+            
+            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Using encryption algorithm: ${algorithm}${fancyColors.RESET}`);
+            
             const decipher = crypto.createDecipheriv(
-                this.config.wallet.encryption_algorithm,
+                algorithm,
                 Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
                 Buffer.from(iv, 'hex')
             );
@@ -1658,7 +1702,11 @@ class ContestWalletService extends BaseService {
                 const delayBetweenBatches = Math.min(20000, consecutiveRateLimitHits === 0 ? 
                     baseDelayBetweenBatches : Math.pow(2, consecutiveRateLimitHits) * baseDelayBetweenBatches);
                 
-                logApi.info(`${formatLog.tag()} ${formatLog.batch(`${cycleId} Batch ${Math.floor(walletIndex/BATCH_SIZE)+1}/${Math.ceil(eligibleWallets.length/BATCH_SIZE)}`)} ${walletBatch.length} wallets - Delay: ${delayBetweenBatches}ms`);
+                // Get formatted batch information
+                const batchInfo = this.formatBatchInfo('Reclaim', cycleId, walletIndex, BATCH_SIZE, eligibleWallets.length);
+                
+                // Log with consistent batch formatting
+                logApi.info(`${formatLog.tag()} ${formatLog.batch(`Reclaim ${cycleId} Batch ${Math.floor(walletIndex/BATCH_SIZE)+1}/${Math.ceil(eligibleWallets.length/BATCH_SIZE)}`)} ${walletBatch.length} wallets - Delay: ${delayBetweenBatches}ms`);
                 
                 // Always wait between batches, even for the first one
                 await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
@@ -1871,6 +1919,9 @@ class ContestWalletService extends BaseService {
                             RPC_RATE_LIMIT_RETRY_DELAY * Math.pow(RPC_RATE_LIMIT_RETRY_BACKOFF_FACTOR, consecutiveRateLimitHits - 1)
                         );
                         
+                        // Get formatted batch information for consistent logging
+                        const batchInfo = this.formatBatchInfo('Reclaim', cycleId, walletIndex, BATCH_SIZE, eligibleWallets.length);
+                        
                         logApi.warn(`${fancyColors.RED}[solana-rpc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} RATE LIMIT ${fancyColors.RESET} ${fancyColors.BOLD_RED}ReclaimFunds${fancyColors.RESET} ${fancyColors.RED}Hit #${consecutiveRateLimitHits}${fancyColors.RESET} ${fancyColors.LIGHT_RED}Retry in ${backoffDelay}ms${fancyColors.RESET} ${fancyColors.DARK_RED}(via contestWalletSvc)${fancyColors.RESET}`, {
                             service: 'SOLANA',
                             error_type: 'RATE_LIMIT',
@@ -1893,13 +1944,27 @@ class ContestWalletService extends BaseService {
                     } else {
                         // For non-rate limit errors, log and move on
                         results.failedTransfers += walletBatch.length;
-                        logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Failed to fetch balance batch:`, {
+                        
+                        // Get formatted batch information
+                        const batchInfo = this.formatBatchInfo('Reclaim', cycleId, walletIndex, BATCH_SIZE, eligibleWallets.length);
+                        
+                        // Enhanced error logging with consistent batch formatting
+                        logApi.error(`${formatLog.tag()} ${formatLog.error(`BATCH ERROR: Failed to fetch Reclaim ${cycleId} Batch ${Math.floor(walletIndex/BATCH_SIZE)+1}/${Math.ceil(eligibleWallets.length/BATCH_SIZE)}:`)}`, {
                             error: error.message,
-                            batch_size: walletBatch.length
+                            error_name: error.name || 'Unknown',
+                            stack: error.stack,
+                            batch_size: walletBatch.length,
+                            batch_number: Math.floor(walletIndex/BATCH_SIZE)+1,
+                            total_batches: Math.ceil(eligibleWallets.length/BATCH_SIZE),
+                            wallet_start: walletIndex + 1,
+                            wallet_end: Math.min(walletIndex + BATCH_SIZE, eligibleWallets.length),
+                            total_wallets: eligibleWallets.length,
+                            error_details: error.toString()
                         });
                         
-                        // Standard delay for general errors
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        // Wait a bit before continuing to the next batch after an error
+                        const errorDelay = 3000; // 3 seconds delay after errors
+                        await new Promise(resolve => setTimeout(resolve, errorDelay));
                         
                         // Move to next batch
                         walletIndex += BATCH_SIZE;
@@ -1938,6 +2003,54 @@ class ContestWalletService extends BaseService {
         } catch (error) {
             logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to reclaim unused funds:`)}`, error);
             throw error;
+        }
+    }
+    /**
+     * Schedule a self-test to run after service startup
+     * 
+     * @param {number} [delayMs=5000] - Delay in milliseconds before running the test
+     * @returns {void}
+     */
+    /**
+     * Run startup certification of the wallet functionality
+     * 
+     * @param {number} [delayMs=5000] - Initial delay in milliseconds before running the test
+     * @returns {Promise<void>}
+     */
+    async scheduleSelfTest(delayMs = 5000) {
+        try {
+            // Import the TreasuryCertifier
+            const TreasuryCertifier = (await import('./treasury-certifier.js')).default;
+            
+            // Check if certification is enabled in environment or config
+            const runCertification = process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
+                                    (config.service_test && config.service_test.contest_wallet_self_test);
+            
+            if (!runCertification) {
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping Treasury Certification (not enabled)')}`);
+                return;
+            }
+            
+            // Initialize the certifier with required dependencies
+            const treasuryCertifier = new TreasuryCertifier({
+                solanaEngine,
+                prisma,
+                logApi,
+                formatLog,
+                fancyColors,
+                decryptPrivateKey: this.decryptPrivateKey.bind(this),
+                config
+            });
+            
+            // Run the certification process
+            await treasuryCertifier.runCertification(delayMs);
+            
+        } catch (error) {
+            // Log but don't fail initialization if certification setup fails
+            logApi.error(`${formatLog.tag()} ${formatLog.error('Treasury Certification error:')}`, {
+                error: error.message,
+                stack: error.stack
+            });
         }
     }
 }

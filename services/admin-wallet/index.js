@@ -11,6 +11,19 @@
  */
 
 import adminWalletService from './admin-wallet-service.js';
+import walletCrypto from './modules/wallet-crypto.js';
+import walletTransactions from './modules/wallet-transactions.js';
+import batchOperations from './modules/batch-operations.js';
+import walletBalance from './modules/wallet-balance.js';
 
-export { adminWalletService };
+// Export the main service as default
 export default adminWalletService;
+
+// Export individual modules for direct use when needed
+export {
+  adminWalletService,
+  walletCrypto,
+  walletTransactions,
+  batchOperations,
+  walletBalance
+};
