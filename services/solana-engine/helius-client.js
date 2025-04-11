@@ -307,8 +307,8 @@ class HeliusWebSocketManager extends HeliusBase {
   emitTokenTransferEvent(transferInfo) {
     // This will be called by the WebSocket handler when a token transfer is detected
     // Extend HeliusClient to handle this event (see methods at bottom of class)
-    if (this.tokenTransferHandlers && this.tokenTransferHandlers.length > 0) {
-      this.tokenTransferHandlers.forEach(handler => {
+    if (this.heliusClient && this.heliusClient.tokenTransferHandlers && this.heliusClient.tokenTransferHandlers.length > 0) {
+      this.heliusClient.tokenTransferHandlers.forEach(handler => {
         try {
           handler(transferInfo);
         } catch (error) {
@@ -397,7 +397,7 @@ class TokenService extends HeliusBase {
    */
   async getTokensMetadata(mintAddresses) {
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} metadata for ${formatLog.count(mintAddresses.length)} tokens`);
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} metadata for ${mintAddresses.length} tokens`);
       
       // Fetch tokens directly from Helius - no caching
       let fetchedTokens = [];
@@ -419,7 +419,7 @@ class TokenService extends HeliusBase {
         for (let i = 0; i < batches.length; i++) {
           const batch = batches[i];
           try {
-            logApi.info(`${formatLog.tag()} Processing batch ${i+1}/${batches.length} (${batch.length} tokens)`);
+            logApi.info(`${formatLog.tag()} ${formatLog.info(`Processing batch ${i+1}/${batches.length} (${batch.length} tokens)`)}`);
             // Use getAssetBatch if available, otherwise fall back to individual getAsset calls
             try {
               const batchData = await this.fetchFromHeliusRPC('getAssetBatch', [batch]);

@@ -8,6 +8,9 @@ import { SERVICE_EVENTS } from '../utils/service-suite/service-events.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { fancyColors } from '../utils/colors.js';
 
+// Create a service-specific logger that writes to the database
+const logger = logApi.forService(SERVICE_NAMES.DISCORD_NOTIFICATION);
+
 /**
  * Discord notification service for sending automated notifications to Discord
  */
@@ -54,15 +57,24 @@ class DiscordNotificationService extends BaseService {
       });
       
       if (serviceConfig) {
-        logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}Loading service configuration`);
+        logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}Loading service configuration`, {
+          eventType: 'service_init',
+          details: { configFound: true }
+        });
       } else {
-        logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}No configuration found, using defaults`);
+        logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}No configuration found, using defaults`, {
+          eventType: 'service_init',
+          details: { configFound: false, usingDefaults: true }
+        });
       }
       
       this.initialized = true;
       return true;
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Initialization error:`, error);
+      logger.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Initialization error:`, {
+        eventType: 'service_init_error',
+        error
+      });
       return false;
     }
   }
@@ -109,18 +121,59 @@ class DiscordNotificationService extends BaseService {
       // For the Discord service, we just need to check if our webhook configs are valid
       // No continuous operation needed - we just respond to events
       
+      const startTime = Date.now();
+      
       // Check if any webhooks are configured
       const hasWebhooks = Object.values(this.webhooks).some(webhook => webhook !== undefined);
       
+      // Count configured webhooks
+      const webhookCount = Object.values(this.webhooks).filter(webhook => webhook !== undefined).length;
+      
       if (!hasWebhooks) {
-        logApi.warn(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}No webhooks configured`);
+        logger.warn(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}No webhooks configured`, {
+          eventType: 'service_health_check',
+          details: {
+            hasWebhooks: false,
+            webhookCount: 0
+          }
+        });
       } else {
-        logApi.debug(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Webhook check successful`);
+        logger.debug(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Webhook check successful`, {
+          eventType: 'service_health_check',
+          details: {
+            hasWebhooks: true,
+            webhookCount,
+            webhookChannels: Object.keys(this.webhooks).filter(key => this.webhooks[key] !== undefined)
+          },
+          // Flag to persist debug logs to database
+          persistToDb: true
+        });
       }
+      
+      const endTime = Date.now();
+      
+      // Log performance metrics
+      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Service operation completed`, {
+        eventType: 'service_heartbeat',
+        durationMs: endTime - startTime,
+        details: {
+          operation: 'webhook_health_check',
+          webhookCount,
+          circuitBreakerStatus: this.stats.circuitBreaker.isOpen ? 'open' : 'closed'
+        }
+      });
       
       return true;
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Perform operation error: ${error.message}`);
+      logger.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Perform operation error:`, {
+        eventType: 'service_operation_error',
+        error,
+        details: {
+          errorMessage: error.message,
+          errorName: error.name,
+          errorStack: error.stack
+        }
+      });
       throw error; // Important: re-throw to trigger circuit breaker
     }
   }
@@ -133,6 +186,18 @@ class DiscordNotificationService extends BaseService {
     if (!this.webhooks.contests) return;
     
     try {
+      // Log the incoming contest data
+      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.blue}Received contest creation event`, {
+        eventType: 'contest_created',
+        relatedEntity: contestData.contest_code,
+        details: {
+          contestId: contestData.id,
+          contestName: contestData.name,
+          startTime: contestData.start_time,
+          prizePool: contestData.prize_pool
+        }
+      });
+      
       const embed = this.webhooks.contests.createInfoEmbed(
         '🎮 New Contest Created',
         `A new contest **${contestData.name}** has been created!`
@@ -147,10 +212,33 @@ class DiscordNotificationService extends BaseService {
         { name: 'Status', value: contestData.status, inline: true },
       ];
       
+      const startTime = Date.now();
       await this.webhooks.contests.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent contest creation notification`);
+      const endTime = Date.now();
+      
+      // Log successful notification with performance metrics
+      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent contest creation notification`, {
+        eventType: 'webhook_sent',
+        relatedEntity: contestData.contest_code,
+        durationMs: endTime - startTime,
+        details: {
+          contestId: contestData.id,
+          webhookType: 'contests',
+          notificationType: 'contest_creation'
+        }
+      });
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send contest notification:`, error);
+      // Log the error with appropriate context
+      logger.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send contest notification:`, {
+        eventType: 'webhook_error',
+        relatedEntity: contestData.contest_code,
+        error,
+        details: {
+          contestId: contestData.id,
+          webhookType: 'contests',
+          errorMessage: error.message
+        }
+      });
     }
   }
 
@@ -172,9 +260,9 @@ class DiscordNotificationService extends BaseService {
       }
       
       await this.webhooks.alerts.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent system alert notification`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent system alert notification${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send system alert:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send system alert:${fancyColors.RESET}`, error);
     }
   }
 
@@ -215,9 +303,9 @@ class DiscordNotificationService extends BaseService {
       }
       
       await this.webhooks.system.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent service status notification`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent service status notification${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send service status notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send service status notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -265,10 +353,10 @@ class DiscordNotificationService extends BaseService {
         ];
         
         await this.webhooks.contests.sendEmbed(embed);
-        logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent contest join notification`);
+        logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent contest join notification${fancyColors.RESET}`);
       }
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send contest activity notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send contest activity notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -339,9 +427,9 @@ class DiscordNotificationService extends BaseService {
       await this.webhooks.contests.sendEmbed(embed);
       
       // Log success
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent contest completion notification for contest #${completionData.contest_id}`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent contest completion notification for contest #${completionData.contest_id}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send contest completion notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send contest completion notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -372,9 +460,9 @@ class DiscordNotificationService extends BaseService {
       }
       
       await this.webhooks.transactions.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent large transaction notification`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent large transaction notification${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send transaction notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send transaction notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -409,9 +497,9 @@ class DiscordNotificationService extends BaseService {
       
       // Send the notification
       await this.webhooks.contests.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent achievement notification for user ${achievementData.user_name}`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent achievement notification for user ${achievementData.user_name}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send achievement notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send achievement notification:${fancyColors.RESET}`, error);
     }
   }
   
@@ -462,9 +550,9 @@ class DiscordNotificationService extends BaseService {
       
       // Send the notification
       await this.webhooks.contests.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent level up notification for user ${levelData.user_name}`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent level up notification for user ${levelData.user_name}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send level up notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send level up notification:${fancyColors.RESET}`, error);
     }
   }
   
@@ -500,9 +588,9 @@ class DiscordNotificationService extends BaseService {
       
       // Send the notification
       await this.webhooks.contests.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent milestone notification for user ${milestoneData.user_name}`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent milestone notification for user ${milestoneData.user_name}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send milestone notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send milestone notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -571,9 +659,9 @@ class DiscordNotificationService extends BaseService {
       
       // Send the notification
       await webhook.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent token purchase notification for ${tokenData.token_symbol || tokenData.token_address}`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent token purchase notification for ${tokenData.token_symbol || tokenData.token_address}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send token purchase notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send token purchase notification:${fancyColors.RESET}`, error);
     }
   }
   
@@ -642,9 +730,9 @@ class DiscordNotificationService extends BaseService {
       
       // Send the notification
       await webhook.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent token sale notification for ${tokenData.token_symbol || tokenData.token_address}`);
+      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent token sale notification for ${tokenData.token_symbol || tokenData.token_address}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send token sale notification:`, error);
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send token sale notification:${fancyColors.RESET}`, error);
     }
   }
 

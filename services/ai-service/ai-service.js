@@ -35,8 +35,8 @@ import {
   ensureSystemPrompt
 } from './utils/prompt-builder.js';
 
-// Import token function handling
-import { TOKEN_FUNCTIONS, handleFunctionCall } from './utils/token-function-handler.js';
+// Import terminal function handling
+import { TERMINAL_FUNCTIONS, handleFunctionCall } from './utils/terminal-function-handler.js';
 
 /**
  * AIService class - implements both periodic analysis and on-demand AI functionality
@@ -465,11 +465,33 @@ class AIService extends BaseService {
       let systemPrompt = loadout.systemPrompt;
       
       // Add function usage guidance to system prompt
-      systemPrompt += `\n\nYou have access to real-time token data through these functions:
-- getTokenPrice: Get current price, market cap, volume and other details
-- getTokenPriceHistory: Get historical price data for charting trends
-- getTokenPools: Get liquidity pool information
-Use these when users ask about tokens, prices, or market information.`;
+      systemPrompt += `\n\nYou have access to real-time data through these functions:
+
+MARKET DATA FUNCTIONS (available to all users):
+- getTokenPrice: Get current price, market cap, volume and details about any token
+- getTokenPriceHistory: Get historical price data for charting token trends
+- getTokenPools: Get liquidity pool information for tokens
+- getTokenMetricsHistory: Get comprehensive historical metrics (price, rank, volume, liquidity, market_cap)
+
+CONTEST FUNCTIONS (available to all users):
+- getActiveContests: Get information about current and upcoming contests
+
+USER DATA FUNCTIONS (available to all users):
+- getUserProfile: Get detailed profile information about a specific user
+- getTopUsers: Get leaderboard of top users by different metrics (contests_won, earnings, experience, referrals)
+- getUserContestHistory: Get a user's contest participation history
+
+PLATFORM ACTIVITY FUNCTIONS (available to all users):
+- getPlatformActivity: Get recent platform-wide activity (contests, trades, achievements, transactions)
+
+ADMIN-ONLY FUNCTIONS (only available to admins and superadmins):
+- getServiceStatus: Get status of platform services
+- getSystemSettings: Get current platform system settings
+- getWebSocketStats: Get WebSocket connection statistics
+- getIPBanStatus: Get information about banned IPs
+- getDiscordWebhookEvents: Get recent Discord notification events
+
+Call these functions when applicable to provide real-time, accurate data. If a user asks for admin-level information but doesn't have admin privileges, politely inform them that the requested information requires admin access.`;
       
       // Track conversation if user is authenticated
       let conversationId = options.conversationId;
@@ -525,41 +547,73 @@ Use these when users ask about tokens, prices, or market information.`;
         input: messagesWithSystem,
         temperature: loadout.temperature,
         max_tokens: loadout.maxTokens,
-        functions: TOKEN_FUNCTIONS, // Include our token functions
+        tools: TERMINAL_FUNCTIONS.map(fn => ({
+          type: "function",
+          name: fn.name,
+          description: fn.description,
+          parameters: fn.parameters
+        })), // Use tools format for the newer responses API
+        tool_choice: "required", // Force the model to call a function
         stream: false,
         user: options.userId || 'anonymous'
       });
       
       // Process function calls if present
-      if (response.output.some(item => item.type === 'function_call')) {
-        const functionCall = response.output.find(item => item.type === 'function_call');
+      // Look for function calls in the response
+      const toolCall = response.output.find(item => 
+        item.type === 'function_call'
+      );
+      
+      if (toolCall) {
+        const functionInfo = {
+          name: toolCall.name,
+          arguments: toolCall.arguments
+        };
+        const toolCallId = toolCall.call_id;
         
         logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Token function call detected:`, {
-          function: functionCall.function.name,
-          arguments: functionCall.function.arguments
+          function: functionInfo.name,
+          arguments: functionInfo.arguments
         });
         
-        // Handle the function call
-        const functionResponse = await handleFunctionCall(functionCall);
+        // Handle the function call with user context for permissions
+        const functionOptions = {
+          userId: options.userId,
+          walletAddress: options.walletAddress,
+          userRole: options.userRole || 'user'
+        };
         
-        // Call the model again with the function response
+        // Call our function handler with the OpenAI function call
+        const functionResponse = await handleFunctionCall({
+          function: {
+            name: functionInfo.name,
+            arguments: functionInfo.arguments
+          }
+        }, functionOptions);
+        
+        // Add the function call to the input array exactly as it came from the model
+        const inputWithFunctionCall = [
+          ...messagesWithSystem,
+          toolCall // Append the entire original function call output object from the model
+        ];
+
+        // Then add the function output following the exact format from the documentation
+        inputWithFunctionCall.push({
+          type: "function_call_output",
+          call_id: toolCallId,
+          output: JSON.stringify(functionResponse)
+        });
+        
+        // Call the model again with the function results
         const secondResponse = await this.openai.responses.create({
           model: loadout.model,
-          input: [
-            ...messagesWithSystem,
-            {
-              role: "assistant",
-              function_call: {
-                name: functionCall.function.name,
-                arguments: functionCall.function.arguments
-              }
-            },
-            {
-              role: "function",
-              name: functionCall.function.name,
-              content: JSON.stringify(functionResponse)
-            }
-          ],
+          input: inputWithFunctionCall,
+          tools: TERMINAL_FUNCTIONS.map(fn => ({
+            type: "function",
+            name: fn.name,
+            description: fn.description,
+            parameters: fn.parameters
+          })),
           temperature: loadout.temperature,
           max_tokens: loadout.maxTokens,
           stream: false,
@@ -781,7 +835,13 @@ Use these when users ask about tokens, prices, or market information.`;
         temperature: loadout.temperature,
         max_tokens: loadout.maxTokens,
         stream: true,
-        functions: options.functions || [], // support function calling
+        tools: options.functions ? options.functions.map(fn => ({
+          type: "function",
+          name: fn.name,
+          description: fn.description,
+          parameters: fn.parameters
+        })) : [], // support function calling with proper tools format
+        tool_choice: options.functions?.length > 0 ? "required" : "auto", // Force function calling if functions are provided
       }, { responseType: 'stream' });
       
       // Track for performance metrics
@@ -808,11 +868,17 @@ Use these when users ask about tokens, prices, or market information.`;
             fullResponse += payload.choices[0].delta.content;
           }
           
-          // Handle function call if present...
-          if (payload.choices[0]?.message?.function_call) {
-            // You can wire in your function_call logic here
-            const functionCall = payload.choices[0].message.function_call;
-            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { functionCall });
+          // Handle function calls if present in streaming format
+          if (payload.choices?.[0]?.delta?.tool_calls) {
+            // Tool call detected in streaming
+            const toolCalls = payload.choices[0].delta.tool_calls;
+            for (const toolCall of toolCalls) {
+              if (toolCall.type === 'function') {
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { 
+                  function: toolCall.function
+                });
+              }
+            }
           }
         }
       });

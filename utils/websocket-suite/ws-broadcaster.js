@@ -17,7 +17,7 @@ import { fancyColors } from '../colors.js';
  */
 class WSBroadcaster {
   constructor() {
-    this.logger = logApi.forService('WS_BROADCASTER');
+    // Use logApi directly with proper formatting instead of creating a logger instance
   }
 
   /**
@@ -34,7 +34,7 @@ class WSBroadcaster {
     const unifiedWS = config.websocket.unifiedWebSocket;
     
     if (!unifiedWS) {
-      this.logger.warn(`Failed to broadcast - Unified WebSocket not initialized`);
+      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Failed to broadcast - Unified WebSocket not initialized`);
       return 0;
     }
     
@@ -71,7 +71,7 @@ class WSBroadcaster {
       }
       
       // Log the broadcast
-      this.logger.info(`${fancyColors.MAGENTA_BRIGHT}Sent ${category}/${action} to ${sentCount} ${role} clients${fancyColors.RESET}`, {
+      logApi.info(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Sent ${category}/${action} to ${sentCount} ${role} clients`, {
         role,
         category,
         action,
@@ -86,7 +86,7 @@ class WSBroadcaster {
       
       return sentCount;
     } catch (error) {
-      this.logger.error(`Error broadcasting to ${role}:`, error);
+      logApi.error(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Error broadcasting to ${role}:`, error);
       return 0;
     }
   }
@@ -105,7 +105,7 @@ class WSBroadcaster {
     const unifiedWS = config.websocket.unifiedWebSocket;
     
     if (!unifiedWS) {
-      this.logger.warn(`Failed to broadcast - Unified WebSocket not initialized`);
+      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Failed to broadcast - Unified WebSocket not initialized`);
       return 0;
     }
     
@@ -136,7 +136,7 @@ class WSBroadcaster {
       }
       
       // Log the broadcast
-      this.logger.info(`${fancyColors.MAGENTA_BRIGHT}Sent ${category}/${action} to ${sentCount} clients on topic ${topic}${fancyColors.RESET}`, {
+      logApi.info(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Sent ${category}/${action} to ${sentCount} clients on topic ${topic}`, {
         topic,
         category,
         action,
@@ -145,7 +145,7 @@ class WSBroadcaster {
       
       return sentCount;
     } catch (error) {
-      this.logger.error(`Error broadcasting to topic ${topic}:`, error);
+      logApi.error(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Error broadcasting to topic ${topic}:`, error);
       return 0;
     }
   }
@@ -200,7 +200,7 @@ class WSBroadcaster {
         createdMessages.push(message);
       }
       
-      this.logger.info(`${fancyColors.MAGENTA_BRIGHT}Stored ${createdMessages.length} messages for ${targetRole} users${fancyColors.RESET}`, {
+      logApi.info(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Stored ${createdMessages.length} messages for ${targetRole} users`, {
         category,
         action,
         targetRole,
@@ -209,7 +209,7 @@ class WSBroadcaster {
       
       return createdMessages;
     } catch (error) {
-      this.logger.error(`Error storing messages:`, error);
+      logApi.error(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Error storing messages:`, error);
       return [];
     }
   }
@@ -228,7 +228,7 @@ class WSBroadcaster {
     const unifiedWS = config.websocket.unifiedWebSocket;
     
     if (!unifiedWS) {
-      this.logger.warn(`Failed to broadcast - Unified WebSocket not initialized`);
+      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Failed to broadcast - Unified WebSocket not initialized`);
       return 0;
     }
     
@@ -288,7 +288,7 @@ class WSBroadcaster {
         }
       }
       
-      this.logger.info(`${fancyColors.MAGENTA_BRIGHT}Sent ${category}/${action} to ${sentCount} connections for ${walletAddresses.length} users${fancyColors.RESET}`, {
+      logApi.info(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Sent ${category}/${action} to ${sentCount} connections for ${walletAddresses.length} users`, {
         category,
         action,
         userCount: walletAddresses.length,
@@ -298,7 +298,7 @@ class WSBroadcaster {
       
       return sentCount;
     } catch (error) {
-      this.logger.error(`Error broadcasting to users:`, error);
+      logApi.error(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Error broadcasting to users:`, error);
       return 0;
     }
   }

@@ -23,7 +23,11 @@ const TOKEN_REFRESH_CONFIG = {
   displayName: 'Token Refresh Scheduler',
   description: 'Advanced service for optimally scheduling token price updates',
   intervalMs: 0, // No automatic interval - managed internally
-  dependencies: [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.SOLANA_ENGINE],
+  dependencies: [
+    SERVICE_NAMES.MARKET_DATA, 
+    SERVICE_NAMES.SOLANA_ENGINE,
+    SERVICE_NAMES.CONTEST_WALLET  // Add dependency on contest wallet service to ensure it completes certification first
+  ],
   emoji: '🔄',
   // Add circuit breaker configuration to fix errors
   circuitBreaker: {
@@ -181,20 +185,70 @@ export const updateTokenRefreshSettings = async (tokenId, settings) => {
  */
 export const getSchedulerMetrics = async () => {
   try {
+    // Check if scheduler is initialized
     if (!tokenRefreshScheduler.isInitialized) {
       return { error: 'Scheduler not initialized' };
+    }
+    
+    // Check if the metrics collector is initialized
+    if (!tokenRefreshScheduler.metricsCollector) {
+      logApi.warn(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Metrics collector not initialized, attempting re-initialization`);
+      
+      // Try to reinitialize core components
+      try {
+        // Re-initialize components if needed
+        if (!tokenRefreshScheduler.metricsCollector) {
+          const MetricsCollector = (await import('./token-refresh-scheduler/metrics-collector.js')).default;
+          tokenRefreshScheduler.metricsCollector = new MetricsCollector(tokenRefreshScheduler.config);
+        }
+        
+        if (!tokenRefreshScheduler.priorityQueue) {
+          const PriorityQueue = (await import('./token-refresh-scheduler/priority-queue.js')).default;
+          tokenRefreshScheduler.priorityQueue = new PriorityQueue(tokenRefreshScheduler.config);
+        }
+        
+        if (!tokenRefreshScheduler.rankAnalyzer) {
+          const TokenRankAnalyzer = (await import('./token-refresh-scheduler/rank-analyzer.js')).default;
+          tokenRefreshScheduler.rankAnalyzer = new TokenRankAnalyzer(tokenRefreshScheduler.config);
+        }
+        
+        if (!tokenRefreshScheduler.batchOptimizer) {
+          const BatchOptimizer = (await import('./token-refresh-scheduler/batch-optimizer.js')).default;
+          tokenRefreshScheduler.batchOptimizer = new BatchOptimizer(tokenRefreshScheduler.config);
+        }
+        
+        // Reload active tokens
+        await tokenRefreshScheduler.loadActiveTokens();
+      } catch (reinitError) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Failed to re-initialize scheduler components:`, reinitError);
+        return { 
+          error: 'Scheduler components not initialized',
+          details: reinitError.message
+        };
+      }
+    }
+    
+    // Check if components are successfully initialized
+    if (!tokenRefreshScheduler.metricsCollector || !tokenRefreshScheduler.priorityQueue) {
+      return { 
+        error: 'Scheduler components still not initialized after recovery attempt',
+        metricsCollector: !!tokenRefreshScheduler.metricsCollector,
+        priorityQueue: !!tokenRefreshScheduler.priorityQueue,
+        rankAnalyzer: !!tokenRefreshScheduler.rankAnalyzer,
+        batchOptimizer: !!tokenRefreshScheduler.batchOptimizer
+      };
     }
     
     // Get metrics from the scheduler
     const metrics = tokenRefreshScheduler.metricsCollector.getMetrics();
     
-    // Add scheduler state
+    // Add scheduler state with null-checks
     metrics.scheduler = {
       isRunning: tokenRefreshScheduler.isRunning,
-      activeTokens: tokenRefreshScheduler.activeTokens.size,
-      failedTokens: tokenRefreshScheduler.failedTokens.size,
-      rateLimitAdjustment: tokenRefreshScheduler.rateLimitAdjustmentFactor,
-      queueSize: tokenRefreshScheduler.priorityQueue.size()
+      activeTokens: tokenRefreshScheduler.activeTokens?.size || 0,
+      failedTokens: tokenRefreshScheduler.failedTokens?.size || 0,
+      rateLimitAdjustment: tokenRefreshScheduler.rateLimitAdjustmentFactor || 1.0,
+      queueSize: tokenRefreshScheduler.priorityQueue?.size() || 0
     };
     
     return metrics;
@@ -210,6 +264,23 @@ export const getSchedulerMetrics = async () => {
  */
 export const getRefreshRecommendations = async () => {
   try {
+    // Check if the rank analyzer is initialized
+    if (!tokenRefreshScheduler.rankAnalyzer) {
+      logApi.warn(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Rank analyzer not initialized, attempting re-initialization`);
+      
+      // Try to reinitialize rank analyzer component
+      try {
+        const TokenRankAnalyzer = (await import('./token-refresh-scheduler/rank-analyzer.js')).default;
+        tokenRefreshScheduler.rankAnalyzer = new TokenRankAnalyzer(tokenRefreshScheduler.config);
+      } catch (reinitError) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Failed to re-initialize rank analyzer:`, reinitError);
+        return { 
+          error: 'Rank analyzer not initialized',
+          details: reinitError.message
+        };
+      }
+    }
+    
     // Get active tokens
     const tokens = await prisma.tokens.findMany({
       where: { is_active: true },
@@ -228,6 +299,11 @@ export const getRefreshRecommendations = async () => {
         }
       }
     });
+    
+    // Check again that rank analyzer is available
+    if (!tokenRefreshScheduler.rankAnalyzer) {
+      return { error: 'Rank analyzer still not initialized after recovery attempt' };
+    }
     
     // Get recommendations from rank analyzer
     const recommendations = tokenRefreshScheduler.rankAnalyzer.getRefreshRecommendations(tokens);
@@ -269,18 +345,53 @@ class TokenRefreshService extends BaseService {
    */
   async performOperation() {
     try {
+      // First, check if the scheduler exists and has basic properties
+      if (!tokenRefreshScheduler) {
+        throw new Error(`Scheduler not available: tokenRefreshScheduler is null or undefined`);
+      }
+      
+      // Check if the scheduler appears to be properly defined
+      if (typeof tokenRefreshScheduler.initialize !== 'function' || 
+          typeof tokenRefreshScheduler.start !== 'function') {
+        throw new Error(`Scheduler appears corrupted: essential functions missing`);
+      }
+      
+      // If scheduler is not initialized, try initializing it
+      if (!tokenRefreshScheduler.isInitialized) {
+        logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Scheduler not initialized, attempting to initialize...${fancyColors.RESET}`);
+        try {
+          // Try re-initializing
+          await tokenRefreshScheduler.initialize();
+        } catch (initError) {
+          throw new Error(`Scheduler initialization failed: ${initError.message}`);
+        }
+      }
+      
       // Get scheduler metrics to verify health
       const metrics = await getSchedulerMetrics();
       
       if (metrics.error) {
-        throw new Error(`Scheduler health check failed: ${metrics.error}`);
+        // Instead of immediately throwing, try to recover
+        logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Scheduler health check issue: ${metrics.error}. Attempting recovery...${fancyColors.RESET}`);
+        
+        // Try initializing from scratch
+        const initResult = await initializeTokenRefresh();
+        if (!initResult) {
+          throw new Error(`Scheduler health check failed: ${metrics.error} (recovery failed)`);
+        }
+        
+        // Re-check metrics after recovery
+        const recoveryMetrics = await getSchedulerMetrics();
+        if (recoveryMetrics.error) {
+          throw new Error(`Scheduler health check still failing after recovery: ${recoveryMetrics.error}`);
+        }
       }
       
       // Verify that token scheduler is operating correctly
       if (!metrics.scheduler || metrics.scheduler.isRunning === false) {
         logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Restarting token refresh scheduler`);
         // Try to restart the scheduler if it's not running
-        await initializeTokenRefresh();
+        await tokenRefreshScheduler.start();
       } else {
         // Execute a token refresh cycle to verify system is working
         // Find highest priority tokens to refresh as a test
@@ -311,9 +422,18 @@ class TokenRefreshService extends BaseService {
             interval: 30
           }));
           
-          // Process the batch through the scheduler
-          if (tokenRefreshScheduler.isRunning) {
-            await tokenRefreshScheduler.processBatch(batch);
+          // Check if processBatch exists
+          if (typeof tokenRefreshScheduler.processBatch !== 'function') {
+            logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Scheduler processBatch method not available, skipping test refresh`);
+          } else if (tokenRefreshScheduler.isRunning) {
+            // Process the batch through the scheduler
+            try {
+              await tokenRefreshScheduler.processBatch(batch);
+              logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Test refresh completed successfully`);
+            } catch (batchError) {
+              logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Test refresh failed, but service is still operational:`, batchError);
+              // Don't throw here - the service can still operate even if test refresh fails
+            }
           }
         }
       }
@@ -334,21 +454,69 @@ class TokenRefreshService extends BaseService {
   async onPerformOperation() {
     try {
       // Skip operation if service is not properly initialized
-      if (!this.isOperational || !this._initialized) {
-        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Service not operational or initialized, skipping operation`);
+      if (!this.isOperational) {
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Service not operational, skipping operation`);
         return true;
       }
       
-      // Check that token refresh scheduler is available
-      if (!tokenRefreshScheduler || !tokenRefreshScheduler.isInitialized) {
-        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Token refresh scheduler not available, skipping operation`);
-        return false;
+      // Check if this instance is initialized
+      if (!this.isInitialized) {
+        logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Service not initialized, attempting initialization...`);
+        try {
+          const initResult = await this.initialize();
+          if (!initResult) {
+            logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Initialization failed during circuit breaker recovery`);
+            return false;
+          }
+        } catch (initError) {
+          logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Initialization error during circuit breaker recovery:`, initError);
+          return false;
+        }
       }
       
-      // Call the actual operation implementation
-      return await this.performOperation();
+      // Check that token refresh scheduler is available
+      if (!tokenRefreshScheduler) {
+        logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Token refresh scheduler not available, attempting import...`);
+        
+        try {
+          // Try to re-import scheduler
+          const schedulerModule = await import('./token-refresh-scheduler.js');
+          const refreshedScheduler = schedulerModule.default;
+          
+          // Check if import succeeded
+          if (!refreshedScheduler) {
+            logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Failed to import token refresh scheduler`);
+            return false;
+          }
+          
+          // Initialize the refreshed scheduler
+          await refreshedScheduler.initialize();
+        } catch (importError) {
+          logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Failed to import or initialize scheduler:`, importError);
+          return false;
+        }
+      }
+      
+      // Now check if scheduler is initialized
+      if (!tokenRefreshScheduler.isInitialized) {
+        logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Token refresh scheduler not initialized, attempting initialization...`);
+        try {
+          await tokenRefreshScheduler.initialize();
+        } catch (initError) {
+          logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Scheduler initialization error:`, initError);
+          return false;
+        }
+      }
+      
+      // Call the actual operation implementation with proper error handling
+      try {
+        return await this.performOperation();
+      } catch (opError) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.RED}Perform operation error:${fancyColors.RESET} ${opError.message}`);
+        throw opError; // Important: re-throw to trigger circuit breaker
+      }
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.RED}Perform operation error:${fancyColors.RESET} ${error.message}`);
+      logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.RED}OnPerformOperation error:${fancyColors.RESET} ${error.message}`);
       throw error; // Important: re-throw to trigger circuit breaker
     }
   }

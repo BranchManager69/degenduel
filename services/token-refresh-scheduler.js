@@ -517,6 +517,54 @@ class TokenRefreshScheduler extends BaseService {
     try {
       if (!this.isRunning) return;
       
+      // Check if the scheduler is initialized properly
+      if (!this.isInitialized) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Scheduler not fully initialized, attempting re-initialization...`);
+        try {
+          // Attempt to initialize from scratch
+          const initResult = await this.initialize();
+          if (!initResult) {
+            throw new Error("Scheduler re-initialization failed");
+          }
+        } catch (initError) {
+          logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Re-initialization error:`, initError);
+          this.consecutiveFailures++;
+          const backoffMs = Math.min(1000 * Math.pow(2, this.consecutiveFailures), 30000);
+          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Backing off for ${backoffMs}ms after initialization failure`);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          return; // Exit cycle after initialization failure
+        }
+      }
+      
+      // Ensure all components are initialized
+      if (!this.priorityQueue || !this.rankAnalyzer || !this.batchOptimizer || !this.metricsCollector) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Components not initialized. Trying to re-initialize...`);
+        try {
+          // Re-initialize component objects
+          this.priorityQueue = new PriorityQueue(this.config);
+          this.rankAnalyzer = new TokenRankAnalyzer(this.config);
+          this.batchOptimizer = new BatchOptimizer(this.config);
+          this.metricsCollector = new MetricsCollector(this.config);
+          
+          // Load active tokens
+          await this.loadActiveTokens();
+          
+          // Validate that components are now initialized
+          if (!this.priorityQueue || !this.rankAnalyzer || !this.batchOptimizer || !this.metricsCollector) {
+            throw new Error("Scheduler components still null after re-initialization attempt");
+          }
+          
+          logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.GREEN}Successfully re-initialized scheduler components${fancyColors.RESET}`);
+        } catch (componentError) {
+          logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Component re-initialization error:`, componentError);
+          this.consecutiveFailures++;
+          const backoffMs = Math.min(1000 * Math.pow(2, this.consecutiveFailures), 30000);
+          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Backing off for ${backoffMs}ms after component initialization failure`);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          return; // Exit cycle after component initialization failure
+        }
+      }
+      
       // Check for rate limit window reset
       this.checkRateLimitWindow();
       
@@ -530,9 +578,22 @@ class TokenRefreshScheduler extends BaseService {
         return;
       }
       
+      // Double-check priorityQueue is initialized before using getDueItems
+      if (!this.priorityQueue) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Priority queue still not initialized. Cannot continue cycle.`);
+        return;
+      }
+      
       // Get due tokens from priority queue
-      const currentTime = Date.now();
-      const dueTokens = this.priorityQueue.getDueItems(currentTime, availableApiCalls * this.config.maxTokensPerBatch);
+      let dueTokens = [];
+      try {
+        const currentTime = Date.now();
+        dueTokens = this.priorityQueue.getDueItems(currentTime, availableApiCalls * this.config.maxTokensPerBatch);
+      } catch (queueError) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error getting due items from priority queue:`, queueError);
+        this.consecutiveFailures++;
+        return; // Exit the cycle
+      }
       
       if (dueTokens.length === 0) {
         if (this.debugMode) {
@@ -541,11 +602,24 @@ class TokenRefreshScheduler extends BaseService {
         return;
       }
       
+      // Double-check batchOptimizer is initialized
+      if (!this.batchOptimizer) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Batch optimizer not initialized. Cannot create batches.`);
+        return;
+      }
+      
       // Organize tokens into optimized batches
-      const batches = this.batchOptimizer.createBatches(dueTokens, {
-        maxTokensPerBatch: this.config.maxTokensPerBatch,
-        maxBatches: availableApiCalls
-      });
+      let batches = [];
+      try {
+        batches = this.batchOptimizer.createBatches(dueTokens, {
+          maxTokensPerBatch: this.config.maxTokensPerBatch,
+          maxBatches: availableApiCalls
+        });
+      } catch (batchError) {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error creating batches:`, batchError);
+        this.consecutiveFailures++;
+        return; // Exit the cycle
+      }
       
       if (batches.length === 0) {
         return;
@@ -584,6 +658,12 @@ class TokenRefreshScheduler extends BaseService {
             await new Promise(resolve => setTimeout(resolve, minDelayMs));
           }
         }
+      }
+      
+      // If we got here, reset consecutive failures as the cycle completed successfully
+      if (this.consecutiveFailures > 0) {
+        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.GREEN}Scheduler cycle completed successfully after previous failures. Resetting failure counter.${fancyColors.RESET}`);
+        this.consecutiveFailures = 0;
       }
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error in scheduler cycle:`, error);

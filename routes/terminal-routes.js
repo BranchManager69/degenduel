@@ -199,8 +199,8 @@ router.get('/token-info/:symbol', async (req, res) => {
       });
     }
     
-    // Import handler directly from the token function handler
-    const { handleFunctionCall } = await import('../services/ai-service/utils/token-function-handler.js');
+    // Import handler directly from the terminal function handler
+    const { handleFunctionCall } = await import('../services/ai-service/utils/terminal-function-handler.js');
     
     // Create a structured function call object
     const functionCall = {

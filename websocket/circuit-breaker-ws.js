@@ -9,6 +9,7 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { isHealthy, getCircuitBreakerStatus } from '../utils/service-suite/circuit-breaker-config.js';
+import { fancyColors } from '../utils/colors.js';
 
 const HEARTBEAT_INTERVAL = 5000; // 5 seconds
 const CLIENT_TIMEOUT = 7000;     // 7 seconds
@@ -102,13 +103,13 @@ class CircuitBreakerWebSocketServer extends BaseWebSocketServer {
 
         // Log significant state changes
         if (circuitBreakerStatus.status === 'open') {
-            logApi.warn(`Circuit breaker opened for ${serviceName}`, {
+            logApi.warn(`${fancyColors.RED}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} Circuit breaker opened for ${serviceName}`, {
                 failures: service.stats.circuitBreaker.failures,
                 lastFailure: service.stats.circuitBreaker.lastFailure,
                 recoveryAttempts: service.stats.circuitBreaker.recoveryAttempts
             });
         } else if (circuitBreakerStatus.status === 'closed' && state.previousStatus === 'open') {
-            logApi.info(`Circuit breaker closed for ${serviceName}`, {
+            logApi.info(`${fancyColors.GREEN}[SERVICE CIRCUIT BREAKER]${fancyColors.RESET} Circuit breaker closed for ${serviceName}`, {
                 recoveryAttempts: service.stats.circuitBreaker.recoveryAttempts,
                 lastReset: service.stats.circuitBreaker.lastReset
             });

@@ -381,7 +381,7 @@ class PriceService extends JupiterBase {
         const batchNum = batchIndex + 1;  // Batch numbers start from 1
         
         // Always log which batch we're processing for better traceability
-        logApi.info(`${formatLog.tag()} Processing batch ${batchNum}/${totalBatches} (${batch.length} tokens)`);
+        logApi.info(`${formatLog.tag()} ${formatLog.info(`Processing batch ${batchNum}/${totalBatches} (${batch.length} tokens)`)}`);
         
         // For large batches, also log progress percentage
         if (totalBatches > 10 && batchNum % Math.ceil(totalBatches/10) === 0) {
