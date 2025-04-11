@@ -274,6 +274,7 @@ model tokens {
   market_cap_history        token_market_cap_history[]
   pools                     token_pools[]               // DEX pools relation
   monitored_tokens          monitored_tokens?           // Monitoring relation for Discord alerts
+  pool_price_changes        pool_price_changes[]        // Real-time price changes from pool monitoring
 
   @@index([symbol], map: "idx_tokens_symbol")
   @@map("tokens")
@@ -1122,6 +1123,56 @@ model ai_admin_action_analyses {
   @@map("ai_admin_action_analyses")
 }
 
+model ai_log_analyses {
+  id                     Int       @id @default(autoincrement())
+  summary                String    @db.Text
+  analyzed_at            DateTime  @default(now()) @db.Timestamptz(6)
+  log_file               String    @db.VarChar(255)
+  lines_analyzed         Int
+  created_by             String?   @db.VarChar(44)
+
+  @@index([analyzed_at])
+  @@map("ai_log_analyses")
+}
+
+model ai_service_log_analyses {
+  id                     Int       @id @default(autoincrement())
+  service                String    @db.VarChar(50)
+  summary                String    @db.Text
+  analyzed_at            DateTime  @default(now()) @db.Timestamptz(6)
+  log_count              Int
+  time_window_hours      Int
+  created_by             String?   @db.VarChar(44)
+
+  @@index([analyzed_at])
+  @@index([service])
+  @@map("ai_service_log_analyses")
+}
+
+// Service logs for tracking service-specific events and states
+model service_logs {
+  id                 Int       @id @default(autoincrement())
+  service            String    @db.VarChar(50) // Service identifier (e.g., 'solana_engine', 'token_refresh')
+  level              String    @db.VarChar(20) // Log level (info, warn, error, debug)
+  message            String    @db.Text // The log message
+  details            Json?     @default("{}") // Additional structured details
+  metadata           Json?     @default("{}") // Extra context data
+  instance_id        String?   @db.VarChar(100) // For multi-instance services
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  related_entity     String?   @db.VarChar(100) // Related entity (token address, contest ID, etc.)
+  event_type         String?   @db.VarChar(50) // Type of event (restart, health check, etc.)
+  duration_ms        Int?      // For performance tracking
+  environment        String?   @db.VarChar(20) // Production, staging, etc.
+  
+  @@index([service, level])
+  @@index([created_at])
+  @@index([service, created_at])
+  @@index([level, created_at])
+  @@index([related_entity])
+  @@index([event_type])
+  @@map("service_logs")
+}
+
 model websocket_connections {
   id                 Int       @id @default(autoincrement())
   connection_id      String    // Unique session identifier for the WebSocket connection
@@ -1480,6 +1531,7 @@ model monitored_tokens {
 
 model token_config {
   id                          Int      @id @default(autoincrement())
+  address                     String?  @db.VarChar(44)
   symbol                      String   @db.VarChar(10)
   total_supply                BigInt
   initial_circulating         BigInt
@@ -1527,4 +1579,23 @@ model terminal_commands {
   command_response String   @db.Text
 
   @@map("terminal_commands")
+}
+
+model pool_price_changes {
+  id              Int      @id @default(autoincrement())
+  tokenAddress    String   @db.VarChar(44)
+  poolAddress     String   @db.Text
+  price           Decimal  @db.Decimal(20, 8)
+  previousPrice   Decimal  @db.Decimal(20, 8)
+  changePercent   Decimal  @db.Decimal(10, 2)
+  liquidity       Decimal  @db.Decimal(20, 0) @default(0)
+  timestamp       DateTime @default(now()) @db.Timestamptz(6)
+  token           tokens   @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
+
+  @@index([tokenAddress])
+  @@index([poolAddress])
+  @@index([timestamp(sort: Desc)])
+  @@index([tokenAddress, timestamp(sort: Desc)])
+  @@index([changePercent(sort: Desc)])
+  @@map("pool_price_changes")
 }

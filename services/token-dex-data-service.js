@@ -80,7 +80,7 @@ class TokenDEXDataService extends BaseService {
   async initialize() {
     try {
       // Check if service is enabled via service profile
-      if (!config.services.token_dex_data) {
+      if (!config.services.token_dex_data_service) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('SERVICE DISABLED')} Token DEX Data Service is disabled in the '${config.services.active_profile}' service profile`);
         return false;
       }
@@ -122,6 +122,53 @@ class TokenDEXDataService extends BaseService {
 
     this.nextScheduledRefresh = new Date(Date.now() + this.config.refreshIntervalMs);
     logApi.info(`${formatLog.tag()} ${formatLog.info('Next pool refresh scheduled at')} ${this.nextScheduledRefresh.toISOString()}`);
+  }
+  
+  /**
+   * Perform operation method required by the circuit breaker system
+   * This is the main method that the circuit breaker will call to check if the service is working
+   */
+  async performOperation() {
+    try {
+      // Just check if DEX screener client is initialized - no need to actually make API calls
+      // This prevents rate limiting issues while still verifying basic service health
+      if (!dexscreenerClient.initialized) {
+        await dexscreenerClient.initialize();
+      }
+      
+      // Check that we have a database connection
+      const tokenCount = await prisma.tokens.count({
+        where: { is_active: true }
+      });
+      
+      // Log success
+      logApi.debug(`${formatLog.tag()} ${formatLog.success('Health check successful:')} DexScreener client initialized, database has ${formatLog.count(tokenCount)} active tokens`);
+      
+      return true;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Perform operation error:')} ${error.message}`);
+      throw error; // Important: re-throw to trigger circuit breaker
+    }
+  }
+  
+  /**
+   * OnPerformOperation method required by the circuit breaker system
+   * This wraps the performOperation method with additional checks
+   */
+  async onPerformOperation() {
+    try {
+      // Skip operation if service is not properly initialized or started
+      if (!this.isOperational || !this._initialized) {
+        logApi.debug(`${formatLog.tag()} Service not operational or initialized, skipping operation`);
+        return true;
+      }
+      
+      // Call the actual operation implementation
+      return await this.performOperation();
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Perform operation error:')} ${error.message}`);
+      throw error; // Important: re-throw to trigger circuit breaker
+    }
   }
 
   /**

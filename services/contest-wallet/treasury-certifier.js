@@ -128,6 +128,9 @@ class TreasuryCertifier {
         this.fancyColors = fancyColors;
         this.decryptPrivateKey = decryptPrivateKey;
         this.config = config;
+        
+        // Track current certification state for cleanup
+        this._currentCertification = null;
     }
     
     /**
@@ -370,12 +373,27 @@ class TreasuryCertifier {
                         this.logApi.info(`\n${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK} ✅ FUNDS RECEIVED! ${balanceSol.toFixed(6)} SOL FROM ${txInfo.sender.substring(0, 8)}... ${this.fancyColors.RESET}\n`);
                         senderAddress = txInfo.sender;
                         receivedAmount = txInfo.amount;
+                        
+                        // Update certification tracking
+                        if (this._currentCertification) {
+                            this._currentCertification.wallets.sourceWallet = publicKey;
+                            this._currentCertification.wallets.originalSender = senderAddress;
+                            this._currentCertification.wallets.balance = balanceSol;
+                        }
+                        
                         break;
                     } else {
                         // We have the balance but couldn't identify the sender
                         this.logApi.info(`\n${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK} ✅ FUNDS RECEIVED! ${balanceSol.toFixed(6)} SOL (SENDER UNKNOWN) ${this.fancyColors.RESET}\n`);
                         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.warning(`Couldn't identify the sender, but received sufficient balance.`)}`);
                         receivedAmount = balanceSol;
+                        
+                        // Update certification tracking
+                        if (this._currentCertification) {
+                            this._currentCertification.wallets.sourceWallet = publicKey;
+                            this._currentCertification.wallets.balance = balanceSol;
+                        }
+                        
                         break;
                     }
                 }
@@ -429,12 +447,25 @@ class TreasuryCertifier {
         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFIER')} Starting treasury certification process`);
         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Initial delay: ${delayMs/1000}s, Test amount: ${testAmount} SOL`)}`);
         
+        // Reset current certification tracking
+        this._currentCertification = {
+            inProgress: true,
+            startTime: Date.now(),
+            testAmount,
+            wallets: {}
+        };
+        
         // Wait for initial delay
         await new Promise(resolve => setTimeout(resolve, delayMs));
         
         // Generate source wallet for test
         const sourceKeypair = Keypair.generate();
         const sourcePublicKey = sourceKeypair.publicKey.toString();
+        
+        // Store keypair in certification state for recovery
+        if (this._currentCertification) {
+            this._currentCertification.sourceKeypair = sourceKeypair;
+        }
         
         // Check if source wallet already has funds
         let sourceBalance = await this.solanaEngine.executeConnectionMethod('getBalance', sourceKeypair.publicKey);
@@ -799,6 +830,13 @@ class TreasuryCertifier {
             // All steps completed successfully
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Completed in ${duration}ms`);
             
+            // Mark certification as complete
+            if (this._currentCertification) {
+                this._currentCertification.inProgress = false;
+                this._currentCertification.completed = true;
+                this._currentCertification.completedAt = Date.now();
+            }
+            
             return {
                 success: true,
                 certificationId,
@@ -814,6 +852,15 @@ class TreasuryCertifier {
                 stack: error.stack,
                 steps
             });
+            
+            // Mark certification as failed but keep wallet info for recovery
+            if (this._currentCertification) {
+                this._currentCertification.inProgress = false;
+                this._currentCertification.failed = true;
+                this._currentCertification.error = error.message;
+                this._currentCertification.failedAt = Date.now();
+                // Keep wallet information for recovery attempts
+            }
             
             // If certification fails but we identified an original sender, try to return whatever funds remain
             if (originalSender && wallets.source && wallets.source.keypair) {
@@ -1017,6 +1064,55 @@ class TreasuryCertifier {
         } catch (error) {
             this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Transfer failed: ${error.message}`)}`);
             throw error;
+        }
+    }
+    
+    /**
+     * Clean up any in-progress certification resources
+     * This method is called during service shutdown to ensure any funds
+     * are returned to the original sender if possible
+     * 
+     * @returns {Promise<void>}
+     */
+    async cleanup() {
+        try {
+            // Check if we have wallet information for recovery
+            if (this._currentCertification && this._currentCertification.wallets) {
+                const { sourceWallet, originalSender, balance } = this._currentCertification.wallets;
+                
+                // Check if we have an original sender to return funds to
+                if (sourceWallet && originalSender && balance > 0.001) {
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CLEANUP')} Found in-progress certification with funds to return`);
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Will attempt to return ${balance} SOL from ${sourceWallet.substring(0, 8)}... to ${originalSender.substring(0, 8)}...`)}`);
+                    
+                    // Get current balance to make sure funds are still there
+                    try {
+                        const currentBalance = await this.solanaEngine.executeConnectionMethod(
+                            'getBalance',
+                            new PublicKey(sourceWallet)
+                        ) / LAMPORTS_PER_SOL;
+                        
+                        if (currentBalance > 0.001) {
+                            // Find the source keypair in our certification state
+                            const sourceKeypair = this._currentCertification.sourceKeypair;
+                            
+                            if (sourceKeypair) {
+                                // Try to return funds to the original sender
+                                await this.returnFundsToSender(sourceKeypair, originalSender, currentBalance);
+                                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('Successfully returned funds during cleanup')}`);
+                            } else {
+                                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning('Source keypair not found for cleanup')}`);
+                            }
+                        } else {
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('No funds to return during cleanup')}`);
+                        }
+                    } catch (balanceError) {
+                        this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to get balance during cleanup: ${balanceError.message}`)}`);
+                    }
+                }
+            }
+        } catch (error) {
+            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Cleanup error: ${error.message}`)}`);
         }
     }
 }

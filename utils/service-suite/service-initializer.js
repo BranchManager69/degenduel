@@ -145,12 +145,12 @@ class ServiceInitializer {
         
         // Register market data service only if enabled in config
         if (config.services.market_data) {
-            serviceManager.register(marketDataService, [SERVICE_NAMES.SOLANA_ENGINE_SERVICE]);
+            serviceManager.register(marketDataService, [SERVICE_NAMES.SOLANA_ENGINE]);
             
             // Register advanced token refresh scheduler if enabled in config
-            if (config.services.token_refresh_scheduler) {
+            if (config.services.token_refresh_scheduler_service) {
                 // Register the service directly (it's already a proper BaseService)
-                serviceManager.register(tokenRefreshIntegration, [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.SOLANA_ENGINE_SERVICE]);
+                serviceManager.register(tokenRefreshIntegration, [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.SOLANA_ENGINE]);
                 logApi.info(`${fancyColors.GREEN}Registered advanced token refresh scheduler${fancyColors.RESET}`);
             } else {
                 logApi.info(`${fancyColors.YELLOW}Skipping registration of token_refresh_scheduler - disabled in config${fancyColors.RESET}`);
@@ -294,7 +294,7 @@ class ServiceInitializer {
                 [SERVICE_NAMES.SOLANA_ENGINE]: 'solana_engine_service',
                 [SERVICE_NAMES.VANITY_WALLET]: 'vanity_wallet_service',
                 [SERVICE_NAMES.TOKEN_DEX_DATA]: 'token_dex_data_service',
-                [SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER]: 'token_refresh_scheduler',
+                [SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER]: 'token_refresh_scheduler_service',
                 // Add other services as they get profile support
             };
             

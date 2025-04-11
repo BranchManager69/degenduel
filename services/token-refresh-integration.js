@@ -265,10 +265,9 @@ class TokenRefreshService extends BaseService {
   }
   
   /**
-   * Perform the service's main operation - required by BaseService
-   * This is called automatically by BaseService during normal operation and circuit breaker recovery
+   * Perform the service's main operation 
    */
-  async onPerformOperation() {
+  async performOperation() {
     try {
       // Get scheduler metrics to verify health
       const metrics = await getSchedulerMetrics();
@@ -324,6 +323,33 @@ class TokenRefreshService extends BaseService {
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.RED}Operation error:${fancyColors.RESET}`, error);
       throw error;
+    }
+  }
+  
+  /**
+   * Perform operation required by the circuit breaker system
+   * This wraps the performOperation method with additional checks
+   * This is called automatically by BaseService during normal operation and circuit breaker recovery
+   */
+  async onPerformOperation() {
+    try {
+      // Skip operation if service is not properly initialized
+      if (!this.isOperational || !this._initialized) {
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Service not operational or initialized, skipping operation`);
+        return true;
+      }
+      
+      // Check that token refresh scheduler is available
+      if (!tokenRefreshScheduler || !tokenRefreshScheduler.isInitialized) {
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Token refresh scheduler not available, skipping operation`);
+        return false;
+      }
+      
+      // Call the actual operation implementation
+      return await this.performOperation();
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.RED}Perform operation error:${fancyColors.RESET} ${error.message}`);
+      throw error; // Important: re-throw to trigger circuit breaker
     }
   }
   

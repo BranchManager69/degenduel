@@ -2066,6 +2066,9 @@ class ContestWalletService extends BaseService {
                 config
             });
             
+            // Store certifier instance for cleanup during service shutdown
+            this.treasuryCertifier = treasuryCertifier;
+            
             // Run the certification process
             await treasuryCertifier.runCertification(delayMs);
             
@@ -2076,6 +2079,28 @@ class ContestWalletService extends BaseService {
                 stack: error.stack
             });
         }
+    }
+    
+    /**
+     * Override stop method to ensure any in-progress certification is cleaned up
+     * @returns {Promise<boolean>}
+     */
+    async stop() {
+        // Clean up certification resources if there was an active treasury certifier
+        if (this.treasuryCertifier) {
+            try {
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up Treasury Certification resources...')}`);
+                // Handle in-progress certification cleanups
+                if (typeof this.treasuryCertifier.cleanup === 'function') {
+                    await this.treasuryCertifier.cleanup();
+                }
+            } catch (error) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error cleaning up Treasury Certification: ${error.message}`)}`);
+            }
+        }
+        
+        // Continue with normal service shutdown
+        return super.stop();
     }
 }
 

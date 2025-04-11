@@ -74,13 +74,13 @@ async function fetchTerminalData() {
     token: tokenConfig ? {
       symbol: tokenConfig.symbol,
       address: tokenConfig.address,
-      totalSupply: tokenConfig.total_supply,
-      initialCirculating: tokenConfig.initial_circulating,
+      totalSupply: Number(tokenConfig.total_supply).toString(),
+      initialCirculating: Number(tokenConfig.initial_circulating).toString(),
       communityAllocation: `${tokenConfig.community_allocation_percent}%`,
       teamAllocation: `${tokenConfig.team_allocation_percent}%`,
       treasuryAllocation: `${tokenConfig.treasury_allocation_percent}%`,
       initialPrice: `${tokenConfig.initial_price.toFixed(8)}`,
-      marketCap: `${(tokenConfig.initial_circulating * Number(tokenConfig.initial_price)).toLocaleString()}`,
+      marketCap: `${(Number(tokenConfig.initial_circulating) * Number(tokenConfig.initial_price)).toLocaleString()}`,
       networkType: "Solana",
       tokenType: "SPL",
       decimals: 9

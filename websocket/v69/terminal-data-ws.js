@@ -74,8 +74,8 @@ async function fetchTerminalData() {
     token: tokenConfig ? {
       symbol: tokenConfig.symbol,
       address: tokenConfig.address,
-      totalSupply: String(tokenConfig.total_supply),
-      initialCirculating: Number(tokenConfig.initial_circulating),
+      totalSupply: Number(tokenConfig.total_supply).toString(),
+      initialCirculating: Number(tokenConfig.initial_circulating).toString(),
       communityAllocation: `${tokenConfig.community_allocation_percent}%`,
       teamAllocation: `${tokenConfig.team_allocation_percent}%`,
       treasuryAllocation: `${tokenConfig.treasury_allocation_percent}%`,

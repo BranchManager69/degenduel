@@ -511,6 +511,32 @@ class TokenMonitorService extends BaseService {
       return false;
     }
   }
+
+  /**
+   * Perform operation required by the circuit breaker system
+   * This wraps the performOperation method with additional checks
+   */
+  async onPerformOperation() {
+    try {
+      // Skip operation if service is not properly initialized or started
+      if (!this.isOperational || !this._initialized) {
+        logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Service not operational or initialized, skipping operation`);
+        return true;
+      }
+      
+      // Check that Helius and Jupiter clients are available
+      if (!heliusClient || !jupiterClient) {
+        logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Helius or Jupiter client not available, skipping operation`);
+        return false;
+      }
+      
+      // Call the actual operation implementation
+      return await this.performOperation();
+    } catch (error) {
+      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Perform operation error:${fancyColors.RESET} ${error.message}`);
+      throw error; // Important: re-throw to trigger circuit breaker
+    }
+  }
 }
 
 // Export singleton instance

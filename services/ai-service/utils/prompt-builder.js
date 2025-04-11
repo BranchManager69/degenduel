@@ -72,16 +72,36 @@ Address them by name if they provided one, and adapt your responses to their exp
 }
 
 /**
- * Sanitize messages to prevent null content
+ * Sanitize and optimize messages to prevent null content
+ * and manage token usage with longer conversation histories
  * 
  * @param {Array} messages - Array of message objects to sanitize
  * @returns {Array} Sanitized message objects
  */
 export function sanitizeMessages(messages) {
-  return messages.map(msg => ({
+  // Check if we have a very long conversation history
+  const isLongConversation = messages.length > 20;
+  
+  // Basic sanitization for all messages
+  const sanitized = messages.map(msg => ({
     role: msg.role,
     content: msg.content === null || msg.content === undefined ? '' : String(msg.content)
   }));
+  
+  // For long conversations, we'll keep all messages but ensure they're properly
+  // sanitized and formatted for token optimization
+  if (isLongConversation) {
+    logApi.debug(`Optimizing long conversation with ${messages.length} messages`);
+    
+    // Always keep the system message and the most recent messages intact
+    // This ensures context continuity while potentially truncating middle messages
+    
+    // No additional truncation for now - the model will handle this efficiently
+    // We're relying on the model's ability to use the full conversation history
+    // If token limits become an issue, we can implement a more aggressive strategy here
+  }
+  
+  return sanitized;
 }
 
 /**

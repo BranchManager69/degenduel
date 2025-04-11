@@ -19,6 +19,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors, wsColors } from '../../utils/colors.js';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/prisma.js';
+import { getTokenAddress } from '../../utils/token-config-util.js';
 
 // Config
 import config from '../../config/config.js';
@@ -30,6 +31,9 @@ logApi.info('WS_DEBUG_MODE (uni-ws):', WS_DEBUG_MODE);
 // Import services as needed
 import marketDataService from '../../services/marketDataService.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
+import tokenBalanceModule from './token-balance-module.js';
+import solanaBalanceModule from './solana-balance-module.js';
+// Initialize both balance modules when unified WebSocket is created
 
 // Import terminal data fetch function
 async function fetchTerminalData() {
@@ -82,8 +86,8 @@ async function fetchTerminalData() {
     token: tokenConfig ? {
       symbol: tokenConfig.symbol,
       address: tokenConfig.address,
-      totalSupply: String(tokenConfig.total_supply),
-      initialCirculating: Number(tokenConfig.initial_circulating),
+      totalSupply: Number(tokenConfig.total_supply).toString(),
+      initialCirculating: Number(tokenConfig.initial_circulating).toString(),
       communityAllocation: `${tokenConfig.community_allocation_percent}%`,
       teamAllocation: `${tokenConfig.team_allocation_percent}%`,
       treasuryAllocation: `${tokenConfig.treasury_allocation_percent}%`,
@@ -111,7 +115,10 @@ const MESSAGE_TYPES = config.websocket.messageTypes;
 const TOPICS = {
   ...config.websocket.topics,
   // Add client logs topic
-  LOGS: 'logs'
+  LOGS: 'logs',
+  // Add balance topics
+  TOKEN_BALANCE: 'token_balance',
+  SOLANA_BALANCE: 'solana_balance'
 };
 
 /**
@@ -133,6 +140,9 @@ class UnifiedWebSocketServer {
       uniqueClients: 0,
       lastActivity: new Date()
     };
+    
+    // Command handlers registry for custom commands
+    this.commandHandlers = new Map();
     
     // Service event listeners
     this.eventHandlers = new Map();
@@ -1365,6 +1375,14 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + aut
           await this.handleSystemRequest(ws, message);
           break;
           
+        case TOPICS.TOKEN_BALANCE:
+          await this.handleTokenBalanceRequest(ws, message);
+          break;
+          
+        case TOPICS.SOLANA_BALANCE:
+          await this.handleSolanaBalanceRequest(ws, message);
+          break;
+          
         // Add cases for other topics as needed
         
         default:
@@ -2136,6 +2154,86 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
   }
   
   /**
+   * Subscribe a client to a specific topic
+   * @param {WebSocket} ws - The WebSocket client
+   * @param {string} topic - The topic to subscribe to
+   */
+  subscribeClientToTopic(ws, topic) {
+    // Update client subscriptions
+    if (!this.clientSubscriptions.has(ws)) {
+      this.clientSubscriptions.set(ws, new Set());
+    }
+    
+    const clientSubs = this.clientSubscriptions.get(ws);
+    clientSubs.add(topic);
+    
+    // Add client to topic subscribers
+    if (!this.topicSubscribers.has(topic)) {
+      this.topicSubscribers.set(topic, new Set());
+    }
+    this.topicSubscribers.get(topic).add(ws);
+    
+    // Update metrics
+    this.metrics.subscriptions = [...this.clientSubscriptions.values()]
+      .reduce((total, subs) => total + subs.size, 0);
+    
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.notification}Client subscribed to topic: ${topic}${fancyColors.RESET}`, {
+      environment: config.getEnvironment(),
+      service: 'uni-ws',
+      topic: topic,
+      userId: ws.clientInfo?.userId || null,
+      connectionId: ws.clientInfo?.connectionId || 'unknown',
+      _icon: "🔔",
+      _color: "#4CAF50"
+    });
+  }
+  
+  /**
+   * Unsubscribe a client from a specific topic
+   * @param {WebSocket} ws - The WebSocket client
+   * @param {string} topic - The topic to unsubscribe from
+   */
+  unsubscribeClientFromTopic(ws, topic) {
+    // Remove topic from client subscriptions
+    if (this.clientSubscriptions.has(ws)) {
+      const clientSubs = this.clientSubscriptions.get(ws);
+      clientSubs.delete(topic);
+    }
+    
+    // Remove client from topic subscribers
+    const topicSubs = this.topicSubscribers.get(topic);
+    if (topicSubs) {
+      topicSubs.delete(ws);
+      if (topicSubs.size === 0) {
+        this.topicSubscribers.delete(topic);
+      }
+    }
+    
+    // Update metrics
+    this.metrics.subscriptions = [...this.clientSubscriptions.values()]
+      .reduce((total, subs) => total + subs.size, 0);
+    
+    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${wsColors.disconnect}Client unsubscribed from topic: ${topic}${fancyColors.RESET}`, {
+      environment: config.getEnvironment(),
+      service: 'uni-ws',
+      topic: topic,
+      userId: ws.clientInfo?.userId || null,
+      connectionId: ws.clientInfo?.connectionId || 'unknown',
+      _icon: "🔕",
+      _color: "#FFA500"
+    });
+  }
+  
+  /**
+   * Publish a message to all subscribers of a specific topic
+   * @param {string} topic - The topic to publish to
+   * @param {Object} data - The data to publish
+   */
+  publishToTopic(topic, data) {
+    this.broadcastToTopic(topic, data);
+  }
+  
+  /**
    * Send a message to all clients of a specific user
    * @param {string} userId - The user ID
    * @param {Object} data - The data to send
@@ -2406,6 +2504,22 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
             this.authenticatedClients.clear();
             this.eventHandlers.clear();
             
+            // Clean up token balance module
+            try {
+              tokenBalanceModule.cleanup();
+              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Token balance module cleanup successful${fancyColors.RESET}`);
+            } catch (error) {
+              logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Token balance module cleanup failed:${fancyColors.RESET} ${error.message}`);
+            }
+            
+            // Clean up Solana balance module
+            try {
+              solanaBalanceModule.cleanup();
+              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Solana balance module cleanup successful${fancyColors.RESET}`);
+            } catch (error) {
+              logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Solana balance module cleanup failed:${fancyColors.RESET} ${error.message}`);
+            }
+            
             logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket cleanup complete${fancyColors.RESET}`);
             resolve();
           });
@@ -2483,6 +2597,240 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
   }
   
   /**
+   * Handle Solana balance requests
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Object} message - Parsed message
+   */
+  async handleSolanaBalanceRequest(ws, message) {
+    // Ensure the client is authenticated
+    if (!ws.clientInfo?.isAuthenticated) {
+      return this.sendError(ws, 'Authentication required for Solana balance operations', 4003);
+    }
+    
+    switch (message.action) {
+      case 'getBalance':
+        try {
+          // The wallet address can be specified or default to the authenticated user's wallet
+          const walletAddress = message.walletAddress || ws.clientInfo.userId;
+          
+          // Only allow access to own wallet balance (security measure)
+          if (walletAddress !== ws.clientInfo.userId) {
+            return this.sendError(ws, 'You can only access your own wallet balance', 4003);
+          }
+          
+          // Delegate to Solana balance module
+          await solanaBalanceModule.handleRefreshSolanaBalance(ws, message, ws.clientInfo);
+          
+        } catch (error) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error fetching Solana balance:${fancyColors.RESET}`, error);
+          this.sendError(ws, 'Error fetching Solana balance', 5004);
+        }
+        break;
+        
+      case 'subscribe':
+        try {
+          // Subscribe to balance updates
+          const walletAddress = message.walletAddress || ws.clientInfo.userId;
+          
+          // Only allow subscribing to own wallet balance (security measure)
+          if (walletAddress !== ws.clientInfo.userId) {
+            return this.sendError(ws, 'You can only subscribe to your own wallet balance', 4003);
+          }
+          
+          // Delegate to Solana balance module
+          await solanaBalanceModule.handleSubscribeSolanaBalance(ws, message, ws.clientInfo);
+          
+        } catch (error) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error subscribing to Solana balance:${fancyColors.RESET}`, error);
+          this.sendError(ws, 'Error subscribing to Solana balance', 5004);
+        }
+        break;
+        
+      case 'unsubscribe':
+        try {
+          // Unsubscribe from balance updates
+          const walletAddress = message.walletAddress || ws.clientInfo.userId;
+          
+          // Delegate to Solana balance module
+          solanaBalanceModule.handleUnsubscribeSolanaBalance(ws, message, ws.clientInfo);
+          
+        } catch (error) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error unsubscribing from Solana balance:${fancyColors.RESET}`, error);
+          this.sendError(ws, 'Error unsubscribing from Solana balance', 5004);
+        }
+        break;
+        
+      default:
+        this.sendError(ws, `Action not implemented for Solana balance requests: ${message.action}`, 5001);
+    }
+  }
+
+  /**
+   * Handle token balance requests
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Object} message - Parsed message
+   */
+  async handleTokenBalanceRequest(ws, message) {
+    // Ensure the client is authenticated
+    if (!ws.clientInfo?.isAuthenticated) {
+      return this.sendError(ws, 'Authentication required for token balance operations', 4003);
+    }
+    
+    switch (message.action) {
+      case 'getBalance':
+        try {
+          // The wallet address can be specified or default to the authenticated user's wallet
+          const walletAddress = message.walletAddress || ws.clientInfo.userId;
+          
+          // Only allow access to own wallet balance (security measure)
+          if (walletAddress !== ws.clientInfo.userId) {
+            return this.sendError(ws, 'You can only access your own wallet balance', 4003);
+          }
+          
+          // Get token balance
+          const tokenAddress = await getTokenAddress();
+          if (!tokenAddress) {
+            return this.sendError(ws, 'Token address not configured', 5003);
+          }
+          
+          const balance = await tokenBalanceModule.fetchTokenBalance(walletAddress, tokenAddress);
+          tokenBalanceModule.updateWalletBalance(walletAddress, balance);
+          
+          // Send confirmation
+          this.sendToClient(ws, {
+            type: 'BALANCE_REFRESHED',
+            resource: 'token_balance',
+            walletAddress,
+            timestamp: new Date().toISOString()
+          });
+          
+        } catch (error) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error fetching token balance:${fancyColors.RESET}`, error);
+          this.sendError(ws, 'Error fetching token balance', 5004);
+        }
+        break;
+        
+      case 'subscribe':
+        try {
+          // Subscribe to balance updates
+          const walletAddress = message.walletAddress || ws.clientInfo.userId;
+          
+          // Only allow subscribing to own wallet balance (security measure)
+          if (walletAddress !== ws.clientInfo.userId) {
+            return this.sendError(ws, 'You can only subscribe to your own wallet balance', 4003);
+          }
+          
+          // Set up subscription in token balance module
+          if (!tokenBalanceModule.walletSubscriptions.has(walletAddress)) {
+            tokenBalanceModule.walletSubscriptions.set(walletAddress, new Set());
+          }
+          
+          // Add this client to subscribers
+          tokenBalanceModule.walletSubscriptions.get(walletAddress).add(ws);
+          
+          // Subscribe to the topic in the unified WebSocket
+          const topic = `${tokenBalanceModule.TOPIC}:${walletAddress}`;
+          this.subscribeClientToTopic(ws, topic);
+          
+          // Fetch initial balance if we don't have it yet
+          if (!tokenBalanceModule.walletBalances.has(walletAddress)) {
+            try {
+              const tokenAddress = await getTokenAddress();
+              if (tokenAddress) {
+                const balance = await tokenBalanceModule.fetchTokenBalance(walletAddress, tokenAddress);
+                tokenBalanceModule.updateWalletBalance(walletAddress, balance);
+              }
+            } catch (error) {
+              logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error fetching initial token balance:${fancyColors.RESET}`, error);
+              this.sendError(ws, 'Error fetching initial token balance', 'BALANCE_FETCH_ERROR');
+            }
+          } else {
+            // Send current balance immediately
+            const balanceData = tokenBalanceModule.walletBalances.get(walletAddress);
+            this.sendToClient(ws, {
+              type: 'TOKEN_BALANCE_UPDATE',
+              walletAddress,
+              balance: balanceData.balance,
+              lastUpdated: balanceData.lastUpdated,
+              timestamp: new Date().toISOString()
+            });
+          }
+          
+          // Confirm subscription
+          this.sendToClient(ws, {
+            type: 'SUBSCRIBED',
+            resource: 'token_balance',
+            walletAddress,
+            timestamp: new Date().toISOString()
+          });
+          
+        } catch (error) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error subscribing to token balance:${fancyColors.RESET}`, error);
+          this.sendError(ws, 'Error subscribing to token balance', 5004);
+        }
+        break;
+        
+      case 'unsubscribe':
+        try {
+          // Unsubscribe from balance updates
+          const walletAddress = message.walletAddress || ws.clientInfo.userId;
+          
+          if (!tokenBalanceModule.walletSubscriptions.has(walletAddress)) {
+            return;
+          }
+          
+          // Remove this client from subscribers
+          const subscribers = tokenBalanceModule.walletSubscriptions.get(walletAddress);
+          subscribers.delete(ws);
+          
+          // Unsubscribe from the topic in the unified WebSocket
+          const topic = `${tokenBalanceModule.TOPIC}:${walletAddress}`;
+          this.unsubscribeClientFromTopic(ws, topic);
+          
+          // If no subscribers left, remove the wallet entry
+          if (subscribers.size === 0) {
+            tokenBalanceModule.walletSubscriptions.delete(walletAddress);
+            
+            // Optionally remove cached balance
+            tokenBalanceModule.walletBalances.delete(walletAddress);
+          }
+          
+          // Confirm unsubscription
+          this.sendToClient(ws, {
+            type: 'UNSUBSCRIBED',
+            resource: 'token_balance',
+            walletAddress,
+            timestamp: new Date().toISOString()
+          });
+          
+        } catch (error) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error unsubscribing from token balance:${fancyColors.RESET}`, error);
+          this.sendError(ws, 'Error unsubscribing from token balance', 5004);
+        }
+        break;
+        
+      case 'getTokenAddress':
+        try {
+          // Get the token address - this is public information
+          const tokenAddress = await getTokenAddress();
+          this.sendToClient(ws, {
+            type: 'TOKEN_ADDRESS',
+            address: tokenAddress,
+            timestamp: new Date().toISOString()
+          });
+          
+        } catch (error) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error getting token address:${fancyColors.RESET}`, error);
+          this.sendError(ws, 'Error getting token address', 5004);
+        }
+        break;
+        
+      default:
+        this.sendError(ws, `Action not implemented for token balance requests: ${message.action}`, 5001);
+    }
+  }
+
+  /**
    * Update WebSocket connection in database upon disconnection
    * @param {string} connectionId - Unique connection identifier
    * @param {Object} disconnectData - Disconnect data
@@ -2535,6 +2883,33 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
 export function createUnifiedWebSocket(httpServer) {
   if (!config.websocket.unifiedWebSocket) {
     const ws = new UnifiedWebSocketServer(httpServer);
+    
+    // Initialize token balance module with the unified WebSocket
+    tokenBalanceModule.initialize(ws)
+      .then(success => {
+        if (success) {
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN BALANCE MODULE ${fancyColors.RESET} Successfully initialized token balance module`);
+        } else {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN BALANCE MODULE ${fancyColors.RESET} Failed to initialize token balance module`);
+        }
+      })
+      .catch(error => {
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN BALANCE MODULE ${fancyColors.RESET} Error initializing token balance module: ${error.message}`);
+      });
+      
+    // Initialize Solana balance module with the unified WebSocket
+    solanaBalanceModule.initialize(ws)
+      .then(success => {
+        if (success) {
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SOLANA BALANCE MODULE ${fancyColors.RESET} Successfully initialized Solana balance module`);
+        } else {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA BALANCE MODULE ${fancyColors.RESET} Failed to initialize Solana balance module`);
+        }
+      })
+      .catch(error => {
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA BALANCE MODULE ${fancyColors.RESET} Error initializing Solana balance module: ${error.message}`);
+      });
+    
     // Store in config instead of using global
     config.websocket.unifiedWebSocket = ws;
   }

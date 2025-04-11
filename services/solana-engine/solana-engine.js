@@ -21,8 +21,9 @@ import { serviceColors, fancyColors } from '../../utils/colors.js';
 import { heliusClient } from './helius-client.js';
 import { jupiterClient } from './jupiter-client.js';
 import { dexscreenerClient } from './dexscreener-client.js';
+import { heliusPoolTracker } from './helius-pool-tracker.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
-import { Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { ServiceError } from '../../utils/service-suite/service-error.js';
 import { PrismaClient } from '@prisma/client';
 import connectionManager from './connection-manager.js';
@@ -1028,6 +1029,129 @@ class SolanaEngineService extends BaseService {
     }
   }
 
+  /**
+   * Get token price using either pool data or Jupiter API
+   * This method combines both real-time pool data and Jupiter API data,
+   * providing the most accurate and up-to-date pricing available.
+   * 
+   * @param {string} mintAddress - The token mint address
+   * @param {Object} [options] - Options for price fetching
+   * @param {string} [options.source='auto'] - Where to get the price from: 'pools', 'jupiter', or 'auto' (try pools first)
+   * @param {boolean} [options.fallback=true] - Whether to fall back to alternative source if primary fails
+   * @param {boolean} [options.details=false] - Whether to return detailed price info or just the price
+   * @returns {Promise<number|Object>} - Token price or detailed price info
+   */
+  async getTokenPrice(mintAddress, options = {}) {
+    const { source = 'auto', fallback = true, details = false } = options;
+    
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} price for ${formatLog.token(mintAddress)} (source: ${source})`);
+      
+      let price = null;
+      let priceDetails = null;
+      let source1Success = false;
+      
+      // Try pool data first if source is 'auto' or 'pools'
+      if (source === 'auto' || source === 'pools') {
+        try {
+          if (details) {
+            priceDetails = await heliusPoolTracker.getTokenPriceWithConfidence(mintAddress);
+            
+            if (priceDetails) {
+              price = priceDetails.price;
+              source1Success = true;
+              
+              logApi.info(`${formatLog.tag()} ${formatLog.success('Got price from pool data:')} ${price} for ${formatLog.token(mintAddress)}`);
+            }
+          } else {
+            price = await heliusPoolTracker.getTokenPrice(mintAddress);
+            
+            if (price !== null) {
+              source1Success = true;
+              
+              logApi.info(`${formatLog.tag()} ${formatLog.success('Got price from pool data:')} ${price} for ${formatLog.token(mintAddress)}`);
+            }
+          }
+        } catch (poolError) {
+          logApi.warn(`${formatLog.tag()} ${formatLog.warning('Failed to get price from pool data:')} ${poolError.message}`);
+        }
+      }
+      
+      // Try Jupiter if needed (source is 'jupiter' or if pool data failed and fallback is true)
+      if ((source === 'jupiter' || (source === 'auto' && !source1Success && fallback))) {
+        try {
+          const jupiterPriceData = await jupiterClient.getTokenPrice(mintAddress);
+          
+          if (jupiterPriceData) {
+            price = jupiterPriceData.price || jupiterPriceData;
+            
+            if (details) {
+              priceDetails = {
+                price,
+                source: 'jupiter',
+                confidence: 0.8, // Jupiter is generally reliable
+                lastUpdated: Date.now()
+              };
+            }
+            
+            logApi.info(`${formatLog.tag()} ${formatLog.success('Got price from Jupiter:')} ${price} for ${formatLog.token(mintAddress)}`);
+          }
+        } catch (jupiterError) {
+          if (!source1Success) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to get price from any source for')} ${formatLog.token(mintAddress)}`);
+            throw jupiterError;
+          }
+        }
+      }
+      
+      // Return the result
+      if (details) {
+        return priceDetails || { price, source: source1Success ? 'pools' : 'jupiter', lastUpdated: Date.now() };
+      } else {
+        return price;
+      }
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to get token price:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get token price from pools only
+   * This is a direct method to get prices calculated from pool data,
+   * without using any external API calls.
+   * 
+   * @param {string} mintAddress - The token mint address
+   * @param {boolean} [details=false] - Whether to return detailed price info or just the price
+   * @returns {Promise<number|Object>} - Token price or detailed price info
+   */
+  async getTokenPriceFromPools(mintAddress, details = false) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} price from pools for ${formatLog.token(mintAddress)}`);
+      
+      if (details) {
+        const priceDetails = await heliusPoolTracker.getTokenPriceWithConfidence(mintAddress);
+        
+        if (!priceDetails) {
+          throw new Error(`No pool data available for token ${mintAddress}`);
+        }
+        
+        return priceDetails;
+      } else {
+        const price = await heliusPoolTracker.getTokenPrice(mintAddress);
+        
+        if (price === null) {
+          throw new Error(`No pool data available for token ${mintAddress}`);
+        }
+        
+        return price;
+      }
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to get token price from pools:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
   /**
    * Get price history for a token
    * @param {string} mintAddress - Token mint address

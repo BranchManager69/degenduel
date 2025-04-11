@@ -26,6 +26,7 @@ import AI_SERVICE_CONFIG from './models/loadout-config.js';
 // Import analyzers
 import { analyzeRecentClientErrors } from './analyzers/error-analyzer.js';
 import { analyzeRecentAdminActions } from './analyzers/admin-analyzer.js';
+import { analyzeErrorLogs, analyzeGeneralLogs, analyzeServiceLogs } from './analyzers/log-analyzer.js';
 
 // Import prompt utilities
 import { 
@@ -58,6 +59,13 @@ class AIService extends BaseService {
         actionsAnalyzed: 0
       }
     };
+    
+    // Track log analysis runs to respect configured intervals
+    this.lastLogAnalysisRun = {
+      general: null,
+      error: null,
+      services: {}
+    };
   }
   
   /**
@@ -84,6 +92,27 @@ class AIService extends BaseService {
         apiKey: config.api_keys.openai
       });
       
+      // Automatically clean up old service logs (older than 30 days)
+      try {
+        const cleanupResult = await logApi.serviceLog.cleanup(30);
+        logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Cleaned up ${cleanupResult.deletedCount} old service logs${fancyColors.RESET}`);
+        
+        // Write cleanup event to service logs
+        await logApi.serviceLog.write(
+          this.name,
+          'info',
+          `Startup maintenance: cleaned up ${cleanupResult.deletedCount} old service logs older than 30 days`,
+          { deletedCount: cleanupResult.deletedCount, olderThan: cleanupResult.olderThan },
+          {},
+          'log_cleanup',
+          0,
+          null
+        );
+      } catch (cleanupError) {
+        // Don't fail initialization if cleanup fails
+        logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to clean up old service logs:${fancyColors.RESET}`, cleanupError);
+      }
+      
       logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}AI Service initialized with periodic analysis enabled${fancyColors.RESET}`);
       return true;
     } catch (error) {
@@ -102,7 +131,12 @@ class AIService extends BaseService {
     try {
       let results = {
         clientErrors: null,
-        adminActions: null
+        adminActions: null,
+        logs: {
+          general: null,
+          error: null,
+          service: {}
+        }
       };
       
       // Run client error analysis
@@ -113,6 +147,69 @@ class AIService extends BaseService {
       // Run admin actions analysis
       if (this.config.analysis.adminActions.enabled) {
         results.adminActions = await analyzeRecentAdminActions(this);
+      }
+      
+      // Run log analysis if enabled
+      if (this.config.analysis.logs?.enabled) {
+        // 1. General log analysis
+        if (this.config.analysis.logs.generalLogs?.enabled) {
+          // Only run general log analysis on the scheduled interval
+          const shouldRunGeneralLogs = !this.lastLogAnalysisRun?.general || 
+            (Date.now() - this.lastLogAnalysisRun.general) > 
+            (this.config.analysis.logs.generalLogs.runIntervalMinutes * 60 * 1000);
+            
+          if (shouldRunGeneralLogs) {
+            results.logs.general = await analyzeGeneralLogs(
+              this,
+              '/home/websites/degenduel/logs', 
+              this.config.analysis.logs.generalLogs.maxLines
+            );
+            this.lastLogAnalysisRun = this.lastLogAnalysisRun || {};
+            this.lastLogAnalysisRun.general = Date.now();
+          }
+        }
+        
+        // 2. Error log analysis
+        if (this.config.analysis.logs.errorLogs?.enabled) {
+          // Only run error log analysis on the scheduled interval
+          const shouldRunErrorLogs = !this.lastLogAnalysisRun?.error || 
+            (Date.now() - this.lastLogAnalysisRun.error) > 
+            (this.config.analysis.logs.errorLogs.runIntervalMinutes * 60 * 1000);
+            
+          if (shouldRunErrorLogs) {
+            results.logs.error = await analyzeErrorLogs(
+              this,
+              this.config.analysis.logs.errorLogs.maxErrors
+            );
+            this.lastLogAnalysisRun = this.lastLogAnalysisRun || {};
+            this.lastLogAnalysisRun.error = Date.now();
+          }
+        }
+        
+        // 3. Service log analysis
+        if (this.config.analysis.logs.serviceLogs?.enabled && 
+            this.config.analysis.logs.serviceLogs.services?.length > 0) {
+          // Initialize service tracking if needed
+          this.lastLogAnalysisRun = this.lastLogAnalysisRun || {};
+          this.lastLogAnalysisRun.services = this.lastLogAnalysisRun.services || {};
+          
+          // Process each configured service
+          for (const serviceKey of this.config.analysis.logs.serviceLogs.services) {
+            // Only run service log analysis on the scheduled interval
+            const shouldRunServiceLogs = !this.lastLogAnalysisRun.services[serviceKey] || 
+              (Date.now() - this.lastLogAnalysisRun.services[serviceKey]) > 
+              (this.config.analysis.logs.serviceLogs.runIntervalMinutes * 60 * 1000);
+              
+            if (shouldRunServiceLogs) {
+              results.logs.service[serviceKey] = await analyzeServiceLogs(
+                this,
+                serviceKey,
+                this.config.analysis.logs.serviceLogs.maxLines
+              );
+              this.lastLogAnalysisRun.services[serviceKey] = Date.now();
+            }
+          }
+        }
       }
       
       // Update performance stats
@@ -196,7 +293,7 @@ class AIService extends BaseService {
       // Validate and sanitize messages to prevent null content
       const sanitizedMessages = sanitizeMessages(messages);
       
-      // Add system prompt to messages
+      // Add system prompt to messages - ensure the security template is applied
       const messagesWithSystem = ensureSystemPrompt(sanitizedMessages, systemPrompt);
       
       // Log request (with sensitive data removed)
@@ -399,7 +496,7 @@ class AIService extends BaseService {
       // Validate and sanitize messages to prevent null content
       const sanitizedMessages = sanitizeMessages(messages);
       
-      // Add system prompt to messages
+      // Add system prompt to messages - ensure the security template is applied
       const messagesWithSystem = ensureSystemPrompt(sanitizedMessages, systemPrompt);
       
       // Log request (with sensitive data removed)

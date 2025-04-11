@@ -33,6 +33,9 @@ import { IPinfoWrapper } from 'node-ipinfo';
 // Config
 import { config } from '../../config/config.js';
 
+// Import PrismaClient for service_logs database logging
+import prisma from '../../config/prisma.js';
+
 // Load environment variables
 dotenv.config();
 
@@ -1309,25 +1312,199 @@ console.log(`  ${fancyColors.LIGHT_CYAN}- api-YYYY-MM-DD.log (all logs)${fancyCo
 console.log(`  ${fancyColors.LIGHT_CYAN}- error-YYYY-MM-DD.log (error logs only)${fancyColors.RESET}`);
 console.log(`  ${fancyColors.LIGHT_CYAN}- debug-YYYY-MM-DD.log (debug logs only)${fancyColors.RESET}`);
 
+/**
+ * Write a log to the service_logs table in the database
+ * @param {string} service - Service identifier
+ * @param {string} level - Log level (info, warn, error, debug)
+ * @param {string} message - Log message
+ * @param {Object} details - Additional structured details
+ * @param {Object} metadata - Extra context data
+ * @param {string} eventType - Type of event
+ * @param {number} durationMs - Duration in milliseconds (for performance tracking)
+ * @param {string} relatedEntity - Related entity (token address, contest ID, etc.)
+ * @returns {Promise<void>}
+ */
+const writeToServiceLogs = async (service, level, message, details = {}, metadata = {}, eventType = null, durationMs = null, relatedEntity = null) => {
+  try {
+    await prisma.service_logs.create({
+      data: {
+        service,
+        level,
+        message,
+        details: details || {},
+        metadata: metadata || {},
+        event_type: eventType,
+        duration_ms: durationMs,
+        related_entity: relatedEntity,
+        environment,
+        instance_id: process.env.INSTANCE_ID || null
+      }
+    });
+  } catch (error) {
+    // Don't use logApi here to avoid potential recursion
+    console.error(`Failed to write to service_logs table: ${error.message}`);
+    
+    // If this is a first-time initialization error, like table doesn't exist yet,
+    // we don't want to spam the logs with errors
+    if (error.code === 'P2021') { // "Table not found" Prisma error
+      console.error('The service_logs table does not exist yet. This is normal during initial setup.');
+    }
+  }
+};
+
 // Helper method to log with service context
 logApi.forService = (serviceName) => ({
-  error: (msg, meta = {}) =>
-    logApi.error(msg, { ...meta, service: serviceName }),
-  warn: (msg, meta = {}) => logApi.warn(msg, { ...meta, service: serviceName }),
-  info: (msg, meta = {}) => logApi.info(msg, { ...meta, service: serviceName }),
-  debug: (msg, meta = {}) =>
-    logApi.debug(msg, { ...meta, service: serviceName }),
-  http: (msg, meta = {}) => logApi.http(msg, { ...meta, service: serviceName }),
+  error: async (msg, meta = {}) => {
+    // First log using the normal Winston logger
+    logApi.error(msg, { ...meta, service: serviceName });
+    
+    // Then write to the database for AI analysis
+    const { 
+      eventType, 
+      durationMs, 
+      relatedEntity, 
+      ...restMeta 
+    } = meta;
+    
+    // Extract important fields from metadata to make them queryable
+    await writeToServiceLogs(
+      serviceName,
+      'error',
+      msg,
+      restMeta.details || restMeta, // If details is provided, use it, otherwise use the whole metadata
+      restMeta,
+      eventType || meta.event_type,
+      durationMs || meta.duration_ms,
+      relatedEntity || meta.related_entity
+    );
+  },
+  
+  warn: async (msg, meta = {}) => {
+    // First log using the normal Winston logger
+    logApi.warn(msg, { ...meta, service: serviceName });
+    
+    // Then write to the database for AI analysis
+    const { 
+      eventType, 
+      durationMs, 
+      relatedEntity, 
+      ...restMeta 
+    } = meta;
+    
+    await writeToServiceLogs(
+      serviceName,
+      'warn',
+      msg,
+      restMeta.details || restMeta,
+      restMeta,
+      eventType || meta.event_type,
+      durationMs || meta.duration_ms,
+      relatedEntity || meta.related_entity
+    );
+  },
+  
+  info: async (msg, meta = {}) => {
+    // First log using the normal Winston logger
+    logApi.info(msg, { ...meta, service: serviceName });
+    
+    // Then write to the database for AI analysis
+    const { 
+      eventType, 
+      durationMs, 
+      relatedEntity, 
+      ...restMeta 
+    } = meta;
+    
+    await writeToServiceLogs(
+      serviceName,
+      'info',
+      msg,
+      restMeta.details || restMeta,
+      restMeta,
+      eventType || meta.event_type,
+      durationMs || meta.duration_ms,
+      relatedEntity || meta.related_entity
+    );
+  },
+  
+  debug: async (msg, meta = {}) => {
+    // First log using the normal Winston logger
+    logApi.debug(msg, { ...meta, service: serviceName });
+    
+    // For debug level, we'll be more selective about what goes to the database
+    // to avoid filling it with too much noise
+    if (meta.persistToDb === true || meta.important === true) {
+      const { 
+        eventType, 
+        durationMs, 
+        relatedEntity, 
+        ...restMeta 
+      } = meta;
+      
+      await writeToServiceLogs(
+        serviceName,
+        'debug',
+        msg,
+        restMeta.details || restMeta,
+        restMeta,
+        eventType || meta.event_type,
+        durationMs || meta.duration_ms,
+        relatedEntity || meta.related_entity
+      );
+    }
+  },
+  
+  http: async (msg, meta = {}) => {
+    // First log using the normal Winston logger
+    logApi.http(msg, { ...meta, service: serviceName });
+    
+    // For HTTP logs, we'll be selective about database persistence
+    if (meta.persistToDb === true || meta.statusCode >= 400) { // Only persist errors or explicitly flagged logs
+      const { 
+        eventType, 
+        durationMs, 
+        relatedEntity, 
+        ...restMeta 
+      } = meta;
+      
+      await writeToServiceLogs(
+        serviceName,
+        'http',
+        msg,
+        restMeta.details || restMeta,
+        restMeta,
+        eventType || meta.event_type || 'http_request',
+        durationMs || meta.duration_ms,
+        relatedEntity || meta.related_entity
+      );
+    }
+  },
+  
   analytics: {
-    trackSession: (user, headers) => {
+    trackSession: async (user, headers) => {
+      // Log to Winston
       logApi.info(ANALYTICS_PATTERNS.USER_SESSION, {
         user,
         headers,
         timestamp: new Date().toISOString(),
         service: serviceName,
       });
+      
+      // Log to database
+      await writeToServiceLogs(
+        serviceName,
+        'info',
+        ANALYTICS_PATTERNS.USER_SESSION,
+        { user },
+        { headers },
+        'user_session',
+        null,
+        user?.wallet_address
+      );
     },
-    trackInteraction: (user, action, details, headers) => {
+    
+    trackInteraction: async (user, action, details, headers) => {
+      // Log to Winston
       logApi.info(ANALYTICS_PATTERNS.USER_INTERACTION, {
         user,
         action,
@@ -1336,11 +1513,39 @@ logApi.forService = (serviceName) => ({
         timestamp: new Date().toISOString(),
         service: serviceName,
       });
+      
+      // Log to database
+      await writeToServiceLogs(
+        serviceName,
+        'info',
+        ANALYTICS_PATTERNS.USER_INTERACTION,
+        { action, details },
+        { user, headers },
+        'user_interaction',
+        null,
+        user?.wallet_address
+      );
     },
-    trackPerformance: (metrics) => {
+    
+    trackPerformance: async (metrics) => {
+      // Log to Winston
       logApi.info('API Performance Stats', metrics);
+      
+      // Log to database
+      await writeToServiceLogs(
+        serviceName,
+        'info',
+        'API Performance Stats',
+        metrics,
+        {},
+        'performance_stats',
+        metrics.avg_response_time,
+        null
+      );
     },
-    trackFeature: (feature, user, details) => {
+    
+    trackFeature: async (feature, user, details) => {
+      // Log to Winston
       logApi.info(ANALYTICS_PATTERNS.FEATURE_USAGE, {
         feature,
         user,
@@ -1348,21 +1553,56 @@ logApi.forService = (serviceName) => ({
         timestamp: new Date().toISOString(),
         service: serviceName,
       });
+      
+      // Log to database
+      await writeToServiceLogs(
+        serviceName,
+        'info',
+        ANALYTICS_PATTERNS.FEATURE_USAGE,
+        { feature, details },
+        { user },
+        'feature_usage',
+        null,
+        user?.wallet_address
+      );
     },
   },
 });
 
 // Add analytics helper to logApi
 logApi.analytics = {
-  trackSession: (user, headers) => {
+  trackSession: async (user, headers) => {
+    // First, log to Winston
     logApi.info(ANALYTICS_PATTERNS.USER_SESSION, {
       user,
       headers,
       timestamp: new Date().toISOString(),
       environment, // Always include environment
     });
+    
+    // Then log to database
+    await writeToServiceLogs(
+      'ANALYTICS', // Use a standard service name for global analytics
+      'info',
+      ANALYTICS_PATTERNS.USER_SESSION,
+      { user },
+      { headers },
+      'user_session',
+      null,
+      user?.wallet_address
+    );
   },
-  trackInteraction: (user, action, details, headers) => {
+  
+  trackInteraction: async (user, action, details, headers) => {
+    // Enhanced device info by parsing user agent
+    const deviceInfo = headers && headers["user-agent"] ? {
+      browser: parseBrowser(headers["user-agent"]),
+      os: parseOS(headers["user-agent"]),
+      device: getDeviceType(headers),
+      ip: headers["x-real-ip"] || headers["x-forwarded-for"] || headers["ip"]
+    } : null;
+    
+    // First, log to Winston
     logApi.info(ANALYTICS_PATTERNS.USER_INTERACTION, {
       user,
       action,
@@ -1370,19 +1610,41 @@ logApi.analytics = {
       headers,
       timestamp: new Date().toISOString(),
       environment, // Always include environment
-      // Enhanced device info by parsing user agent
-      deviceInfo: headers && headers["user-agent"] ? {
-        browser: parseBrowser(headers["user-agent"]),
-        os: parseOS(headers["user-agent"]),
-        device: getDeviceType(headers),
-        ip: headers["x-real-ip"] || headers["x-forwarded-for"] || headers["ip"]
-      } : null
+      deviceInfo
     });
+    
+    // Then log to database
+    await writeToServiceLogs(
+      'ANALYTICS',
+      'info',
+      ANALYTICS_PATTERNS.USER_INTERACTION,
+      { action, details },
+      { user, headers, deviceInfo },
+      'user_interaction',
+      null,
+      user?.wallet_address
+    );
   },
-  trackPerformance: (metrics) => {
+  
+  trackPerformance: async (metrics) => {
+    // First, log to Winston
     logApi.info('API Performance Stats', { ...metrics, environment });
+    
+    // Then log to database
+    await writeToServiceLogs(
+      'ANALYTICS',
+      'info',
+      'API Performance Stats',
+      metrics,
+      { environment },
+      'performance_stats',
+      metrics.avg_response_time,
+      null
+    );
   },
-  trackFeature: (feature, user, details) => {
+  
+  trackFeature: async (feature, user, details) => {
+    // First, log to Winston
     logApi.info(ANALYTICS_PATTERNS.FEATURE_USAGE, {
       feature,
       user,
@@ -1390,11 +1652,65 @@ logApi.analytics = {
       timestamp: new Date().toISOString(),
       environment, // Always include environment
     });
+    
+    // Then log to database
+    await writeToServiceLogs(
+      'ANALYTICS',
+      'info',
+      ANALYTICS_PATTERNS.FEATURE_USAGE,
+      { feature, details },
+      { user, environment },
+      'feature_usage',
+      null,
+      user?.wallet_address
+    );
   },
 };
 
 // Add the IP info lookup functionality
 logApi.getIpInfo = getIpInfo;
+
+// Expose service logs API directly
+logApi.serviceLog = {
+  // Direct access to write service logs
+  write: writeToServiceLogs,
+  
+  // Service log cleanup helper - can be used in maintenance jobs
+  async cleanup(olderThanDays = 30, serviceFilter = null) {
+    try {
+      const date = new Date();
+      date.setDate(date.getDate() - olderThanDays);
+      
+      const whereClause = {
+        created_at: {
+          lt: date
+        }
+      };
+      
+      // If service filter is provided, add it to the where clause
+      if (serviceFilter) {
+        whereClause.service = serviceFilter;
+      }
+      
+      const deleteCount = await prisma.service_logs.deleteMany({
+        where: whereClause
+      });
+      
+      return {
+        success: true,
+        deletedCount: deleteCount.count,
+        olderThan: date.toISOString(),
+        service: serviceFilter || 'all'
+      };
+    } catch (error) {
+      console.error(`Failed to clean up service logs: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+};
 
 // Patch console.log and console.error to capture and reformat specific types of messages
 const originalConsoleLog = console.log;
