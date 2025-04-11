@@ -253,22 +253,20 @@ async function handleGetTokenPools({ tokenSymbol }) {
   // Get pools data using schema relations
   const pools = await prisma.token_pools.findMany({
     where: {
-      token_id: token.id
+      tokenAddress: token.address
     },
     take: 5, // Limit to top 5 pools
     orderBy: { 
       liquidity: 'desc' 
     },
     select: {
-      dex_name: true,
-      pool_address: true,
-      pair_address: true,
-      base_token_symbol: true,
-      quote_token_symbol: true,
+      dex: true,
+      address: true,
+      tokenAddress: true,
+      programId: true,
       liquidity: true,
-      volume_24h: true,
-      price: true,
-      updated_at: true
+      createdAt: true,
+      lastUpdated: true
     }
   });
   
@@ -278,12 +276,11 @@ async function handleGetTokenPools({ tokenSymbol }) {
     address: token.address,
     poolCount: pools.length,
     pools: pools.map(pool => ({
-      dex: pool.dex_name,
-      pair: `${pool.base_token_symbol}/${pool.quote_token_symbol}`,
+      dex: pool.dex,
+      address: pool.address,
       liquidity: formatNumber(pool.liquidity),
-      volume24h: formatNumber(pool.volume_24h),
-      price: pool.price.toString(),
-      updated: pool.updated_at.toISOString()
+      program: pool.programId,
+      updated: pool.lastUpdated ? pool.lastUpdated.toISOString() : null
     }))
   };
 }
