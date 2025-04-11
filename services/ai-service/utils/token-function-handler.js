@@ -256,15 +256,12 @@ async function handleGetTokenPools({ tokenSymbol }) {
       tokenAddress: token.address
     },
     take: 5, // Limit to top 5 pools
-    orderBy: { 
-      liquidity: 'desc' 
-    },
     select: {
       dex: true,
       address: true,
       tokenAddress: true,
       programId: true,
-      liquidity: true,
+      dataSize: true,
       createdAt: true,
       lastUpdated: true
     }
@@ -278,7 +275,7 @@ async function handleGetTokenPools({ tokenSymbol }) {
     pools: pools.map(pool => ({
       dex: pool.dex,
       address: pool.address,
-      liquidity: formatNumber(pool.liquidity),
+      size: pool.dataSize,
       program: pool.programId,
       updated: pool.lastUpdated ? pool.lastUpdated.toISOString() : null
     }))
