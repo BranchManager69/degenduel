@@ -30,7 +30,6 @@ logApi.info('WS_DEBUG_MODE (uni-ws):', WS_DEBUG_MODE);
 // Import services as needed
 import marketDataService from '../../services/marketDataService.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
-import prisma from '../../config/prisma.js';
 
 // Import terminal data fetch function
 async function fetchTerminalData() {
