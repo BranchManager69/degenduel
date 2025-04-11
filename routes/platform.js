@@ -38,4 +38,13 @@ router.get("/", async (req, res) => {
   }
 });
 
+/**
+ * @route GET /api/platform/websocket-guide
+ * @description Redirect to WebSocket API Guide
+ * @access Public
+ */
+router.get("/websocket-guide", async (req, res) => {
+  return res.redirect('/api/websocket-guide');
+});
+
 export default router;

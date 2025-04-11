@@ -330,6 +330,23 @@ export class BaseService {
                 logApi.info(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.initialized}${this.name}${fancyColors.RESET}${fancyColors.DARK_YELLOW} circuit breaker reset ${fancyColors.GREEN}successful${fancyColors.RESET}${fancyColors.DARK_YELLOW}!${fancyColors.RESET}`, {
                     newFailureCount: this.stats.circuitBreaker.failures
                 });
+                
+                // Send service recovery notification via Discord
+                try {
+                    // Import error alerter dynamically to avoid circular dependencies
+                    import('../../utils/error-alerter.js').then(module => {
+                        const errorAlerter = module.default;
+                        errorAlerter.sendServiceStatusAlert(
+                            this.name, 
+                            'recovered', 
+                            `Service has recovered after ${this.stats.circuitBreaker.recoveryAttempts} recovery attempts.`
+                        );
+                    }).catch(alertError => {
+                        logApi.error(`Failed to send service recovery alert: ${alertError.message}`);
+                    });
+                } catch (alertError) {
+                    logApi.error(`Failed to alert service recovery: ${alertError.message}`);
+                }
             } else {
                 // Restore previous state if recovery failed
                 this.stats.circuitBreaker.isOpen = tempOpen;
@@ -497,6 +514,36 @@ export class BaseService {
         if (this.stats.circuitBreaker.failures >= this.config.circuitBreaker.failureThreshold) {
             logApi.warn(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET} \n\t\t\t  ${fancyColors.RAINBOW_BLUE}${fancyColors.BG_RED}  >> ${fancyColors.BOLD} ${this.config.description}: ${fancyColors.RESET}${fancyColors.BG_RED}${fancyColors.DARK_RED}${fancyColors.BOLD}  ${this.stats.circuitBreaker.failures}${fancyColors.RESET}${fancyColors.BG_RED}${fancyColors.DARK_RED} consecutive failures ${fancyColors.RESET}`);
             this.stats.circuitBreaker.isOpen = true;
+            
+            // Send service status alert via Discord
+            try {
+                // Import error alerter dynamically to avoid circular dependencies
+                import('../../utils/error-alerter.js').then(module => {
+                    const errorAlerter = module.default;
+                    errorAlerter.sendServiceStatusAlert(
+                        this.name, 
+                        'down', 
+                        `Service has experienced ${this.stats.circuitBreaker.failures} consecutive failures. Last error: ${error.message}`
+                    );
+                }).catch(alertError => {
+                    logApi.error(`Failed to send service status alert: ${alertError.message}`);
+                });
+                
+                // Also send critical error alert with more details about the error
+                import('../../utils/error-alerter.js').then(module => {
+                    const errorAlerter = module.default;
+                    errorAlerter.sendCriticalErrorAlert(error, this.name, {
+                        description: this.config.description,
+                        failures: this.stats.circuitBreaker.failures,
+                        lastSuccess: this.stats.circuitBreaker.lastSuccess,
+                        status: 'Circuit Open'
+                    });
+                }).catch(alertError => {
+                    logApi.error(`Failed to send critical error alert: ${alertError.message}`);
+                });
+            } catch (alertError) {
+                logApi.error(`Failed to alert service failure: ${alertError.message}`);
+            }
             // Schedule recovery attempt
             await this.attemptCircuitRecovery();
         }
@@ -646,7 +693,19 @@ export class BaseService {
             }
 
             // Perform the operation
-            await this.onPerformOperation();
+            // Support both patterns: onPerformOperation and direct performOperation override
+            // If the service has its own performOperation method (old pattern), it's already being called
+            // If the service has onPerformOperation (new pattern), call that
+            if (typeof this.onPerformOperation === 'function') {
+                await this.onPerformOperation();
+            } else if (this.constructor.prototype.performOperation !== BaseService.prototype.performOperation) {
+                // Service overrides performOperation directly - the call is already handled
+                // This is just a safeguard to prevent errors when onPerformOperation is not defined
+                logApi.debug(`${this.name || 'Service'} uses direct performOperation override pattern`);
+            } else {
+                // Neither method is implemented, log a warning
+                logApi.warn(`${this.name || 'Service'} doesn't implement operation method`);
+            }
             await this.recordSuccess();
         } catch (error) {
             await this.handleError(error);

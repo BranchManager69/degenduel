@@ -12,6 +12,7 @@ Welcome to the DegenDuel services documentation. This directory contains compreh
 | [SolanaEngine](./solana_engine_service/) | Premium Solana integration using Helius and Jupiter APIs (replacing Token Sync and Market Data services) |
 | [Token Sync Service](./token_sync_service/) | Token discovery, metadata, and synchronization (being replaced by SolanaEngine) |
 | [Market Data Service](./market_data_service/) | Token price data collection and distribution (being replaced by SolanaEngine) |
+| [Token Refresh Scheduler](./token_refresh_scheduler/) | Advanced token price refresh scheduling system with priority-based updates |
 
 ### Contest-Related Services
 

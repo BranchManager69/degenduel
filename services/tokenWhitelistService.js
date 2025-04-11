@@ -500,6 +500,21 @@ class TokenWhitelistService extends BaseService {
         }
     }
 
+    /**
+     * Implements the onPerformOperation method required by BaseService
+     * @returns {Promise<boolean>}
+     */
+    async onPerformOperation() {
+        try {
+            // Call the original implementation
+            await this.performOperation();
+            return true; // Signal success to BaseService
+        } catch (error) {
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Operation error:${fancyColors.RESET} ${error.message}`);
+            throw error; // Re-throw to let BaseService handle the error
+        }
+    }
+
     // Perform operation
     async performOperation() {
         const startTime = Date.now();

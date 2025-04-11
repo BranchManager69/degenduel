@@ -28,6 +28,9 @@ import config from '../../config/config.js';
 // Import the unified WebSocket server
 import { createUnifiedWebSocket } from './uni-ws.js';
 
+// Import Terminal Data WebSocket
+import TerminalDataWebSocket from './terminal-data-ws.js';
+
 
 // Initialize all v69 WebSocket servers
 /**
@@ -67,6 +70,9 @@ export async function initializeWebSockets(server) {
     if (typeof unifiedWs.initialize === 'function') {
       await unifiedWs.initialize();
     }
+    
+    // REMOVED: Dedicated Terminal Data WebSocket
+    // Terminal data is now handled through the unified WebSocket with the 'terminal' topic
     
     // Store in config object rather than global registry
     // The WebSocket is already stored in config by createUnifiedWebSocket

@@ -251,6 +251,12 @@ model tokens {
   website_url               String?                     @db.VarChar(255)
   coingeckoId               String?                     // Coingecko ID for this token 
   tags                      Json?                       // Tags from Jupiter stored as JSON
+  refresh_interval_seconds  Int                         @default(30) // Default refresh every 30 seconds
+  priority_score            Int                         @default(0) // Higher score = higher priority for refreshing
+  last_refresh_attempt      DateTime?                   // When refresh was last attempted
+  last_refresh_success      DateTime?                   // When refresh last succeeded
+  last_price_change         DateTime?                   // When price last changed
+  refresh_metadata          Json?                       @default("{}")  // Additional metadata for refresh scheduler
   ai_decisions              ai_decisions[]
   contest_portfolio_trades  contest_portfolio_trades[]
   contest_portfolios        contest_portfolios[]
@@ -267,6 +273,7 @@ model tokens {
   liquidity_history         token_liquidity_history[]
   market_cap_history        token_market_cap_history[]
   pools                     token_pools[]               // DEX pools relation
+  monitored_tokens          monitored_tokens?           // Monitoring relation for Discord alerts
 
   @@index([symbol], map: "idx_tokens_symbol")
   @@map("tokens")
@@ -1454,4 +1461,70 @@ model token_pools {
   @@index([dex])
   @@index([tokenAddress])
   @@map("token_pools")
+}
+
+model monitored_tokens {
+  token_address         String    @id @db.VarChar(44)
+  token_name            String?
+  token_symbol          String?
+  decimals              Int       @default(9)
+  monitor_buys          Boolean   @default(true)
+  monitor_sells         Boolean   @default(true)
+  min_transaction_value Decimal   @default(0) @db.Decimal(20, 8)
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  token                 tokens    @relation(fields: [token_address], references: [address], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("monitored_tokens")
+}
+
+model token_config {
+  id                          Int      @id @default(autoincrement())
+  symbol                      String   @db.VarChar(10)
+  total_supply                BigInt
+  initial_circulating         BigInt
+  community_allocation_percent Int
+  team_allocation_percent     Int
+  treasury_allocation_percent Int
+  initial_price               Decimal  @db.Decimal(20, 10)
+  launch_method               String   @db.VarChar(50)
+
+  @@map("token_config")
+}
+
+model roadmap_phases {
+  id             Int            @id @default(autoincrement())
+  quarter_number Int
+  year           Int
+  title          String         @db.VarChar(100)
+  tasks          roadmap_tasks[]
+
+  @@map("roadmap_phases")
+}
+
+model roadmap_tasks {
+  id          Int           @id @default(autoincrement())
+  phase_id    Int
+  description String        @db.Text
+  phase       roadmap_phases @relation(fields: [phase_id], references: [id])
+
+  @@map("roadmap_tasks")
+}
+
+model platform_stats {
+  id               Int      @id @default(autoincrement())
+  user_count       Int      @default(0)
+  upcoming_contests Int      @default(0)
+  total_prize_pool Decimal  @default(0)
+  waitlist_count   Int      @default(0)
+
+  @@map("platform_stats")
+}
+
+model terminal_commands {
+  id               Int      @id @default(autoincrement())
+  command_name     String   @unique @db.VarChar(50)
+  command_response String   @db.Text
+
+  @@map("terminal_commands")
 }

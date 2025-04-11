@@ -59,17 +59,22 @@ async function generateConsoleQR(text, amount = null) {
             
             result.push('║                                                           ║');
             
-            // Add QR code with padding
+            // Add QR code with proper padding
             qrLines.forEach(line => {
-                // Some QR lines can be very long - we need to handle them properly
-                if (line.length >= 59) {
+                // Clean up the line to remove any control characters or emoji-like characters
+                // that might mess up terminal rendering
+                const cleanedLine = line.replace(/[^\x20-\x7E]/g, ' ');
+                
+                // Set fixed width for consistency
+                if (cleanedLine.length >= 57) {
                     // If line is too long, truncate it to fit
-                    result.push(`║${line.substring(0, 59)}║`);
+                    result.push(`║ ${cleanedLine.substring(0, 57)} ║`);
                 } else {
-                    // Center the QR code by padding both sides
-                    const leftPadding = Math.max(0, Math.floor((59 - line.length) / 2));
-                    const rightPadding = Math.max(0, 59 - line.length - leftPadding);
-                    result.push(`║${' '.repeat(leftPadding)}${line}${' '.repeat(rightPadding)}║`);
+                    // Center the QR code with proper padding
+                    const totalWidth = 57; // Allow for 1 space padding on each side
+                    const leftPadding = Math.max(0, Math.floor((totalWidth - cleanedLine.length) / 2));
+                    const rightPadding = Math.max(0, totalWidth - cleanedLine.length - leftPadding);
+                    result.push(`║ ${' '.repeat(leftPadding)}${cleanedLine}${' '.repeat(rightPadding)} ║`);
                 }
             });
             

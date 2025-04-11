@@ -30,6 +30,82 @@ logApi.info('WS_DEBUG_MODE (uni-ws):', WS_DEBUG_MODE);
 // Import services as needed
 import marketDataService from '../../services/marketDataService.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
+import prisma from '../../config/prisma.js';
+
+// Import terminal data fetch function
+async function fetchTerminalData() {
+  // Fetch all data in parallel
+  const [tokenConfig, roadmap, stats, commands] = await Promise.all([
+    prisma.token_config.findFirst(),
+    prisma.roadmap_phases.findMany({
+      include: { tasks: true },
+      orderBy: [
+        { year: 'asc' },
+        { quarter_number: 'asc' }
+      ]
+    }),
+    prisma.platform_stats.findFirst(),
+    prisma.terminal_commands.findMany()
+  ]);
+
+  // Format roadmap data
+  const formattedRoadmap = roadmap.map(phase => ({
+    quarter: `Q${phase.quarter_number}`,
+    year: phase.year.toString(),
+    title: phase.title,
+    details: phase.tasks.map(task => task.description)
+  }));
+
+  // Format commands into object
+  const commandsObj = {};
+  commands.forEach(cmd => {
+    commandsObj[cmd.command] = {
+      description: cmd.description,
+      usage: cmd.usage || null,
+      isAdmin: cmd.is_admin || false
+    };
+  });
+
+  return {
+    platformName: "DegenDuel",
+    platformDescription: "High-stakes crypto trading competitions",
+    platformStatus: "Ready for launch on scheduled date",
+
+    stats: {
+      currentUsers: stats?.user_count || 0,
+      upcomingContests: stats?.upcoming_contests || 0,
+      totalPrizePool: `${stats?.total_prize_pool ? String(stats.total_prize_pool) : '0'}`,
+      platformTraffic: "Increasing 35% week over week",
+      socialGrowth: "Twitter +3.2K followers this week",
+      waitlistUsers: stats?.waitlist_count || 0
+    },
+
+    token: tokenConfig ? {
+      symbol: tokenConfig.symbol,
+      address: tokenConfig.address,
+      totalSupply: String(tokenConfig.total_supply),
+      initialCirculating: Number(tokenConfig.initial_circulating),
+      communityAllocation: `${tokenConfig.community_allocation_percent}%`,
+      teamAllocation: `${tokenConfig.team_allocation_percent}%`,
+      treasuryAllocation: `${tokenConfig.treasury_allocation_percent}%`,
+      initialPrice: `${Number(tokenConfig.initial_price).toFixed(8)}`,
+      marketCap: `${(Number(tokenConfig.initial_circulating) * Number(tokenConfig.initial_price)).toLocaleString()}`,
+      networkType: "Solana",
+      tokenType: "SPL",
+      decimals: 9
+    } : null,
+
+    launch: tokenConfig ? {
+      method: tokenConfig.launch_method,
+      platforms: ["Jupiter", "Raydium"],
+      privateSaleStatus: "COMPLETED",
+      publicSaleStatus: "COUNTDOWN ACTIVE"
+    } : null,
+
+    roadmap: formattedRoadmap,
+    commands: commandsObj
+  };
+}
 
 // Use message types and topics from config
 const MESSAGE_TYPES = config.websocket.messageTypes;
@@ -126,6 +202,19 @@ class UnifiedWebSocketServer {
       (data) => this.broadcastToTopic(TOPICS.MARKET_DATA, {
         type: MESSAGE_TYPES.DATA,
         topic: TOPICS.MARKET_DATA,
+        data: data,
+        timestamp: new Date().toISOString()
+      })
+    );
+    
+    // Terminal Data handler
+    this.registerEventHandler(
+      'terminal:broadcast', 
+      (data) => this.broadcastToTopic(TOPICS.TERMINAL, {
+        type: MESSAGE_TYPES.DATA,
+        topic: TOPICS.TERMINAL,
+        subtype: 'terminal',
+        action: 'update',
         data: data,
         timestamp: new Date().toISOString()
       })
@@ -714,6 +803,35 @@ ${bgColor}${fgColor}└${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyCol
       }).catch(err => {
         logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error saving connection to database:${fancyColors.RESET}`, err);
       });
+      
+      // Auto-subscribe to the terminal topic for all connections
+      try {
+        // Subscribe to terminal topic
+        const terminalTopic = TOPICS.TERMINAL;
+        
+        // Handle subscription
+        if (!this.clientSubscriptions.has(ws)) {
+          this.clientSubscriptions.set(ws, new Set());
+        }
+        
+        const clientSubs = this.clientSubscriptions.get(ws);
+        
+        // Add topic to client's subscriptions
+        clientSubs.add(terminalTopic);
+        
+        // Add client to topic's subscribers
+        if (!this.topicSubscribers.has(terminalTopic)) {
+          this.topicSubscribers.set(terminalTopic, new Set());
+        }
+        this.topicSubscribers.get(terminalTopic).add(ws);
+        
+        // Send initial terminal data
+        this.sendInitialData(ws, terminalTopic);
+        
+        logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BLUE}Auto-subscribed client to terminal topic${fancyColors.RESET}`);
+      } catch (subscribeError) {
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error auto-subscribing to terminal:${fancyColors.RESET}`, subscribeError);
+      }
       
       // Create a detailed log object for Logtail with all details
       const fullLogObject = {
@@ -1637,6 +1755,25 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + aut
           });
           break;
           
+        case TOPICS.TERMINAL:
+          // Use cached terminal data if available, otherwise fetch it
+          let terminalData = this.terminalData;
+          if (!terminalData) {
+            terminalData = await fetchTerminalData();
+            this.terminalData = terminalData;
+          }
+          
+          this.send(ws, {
+            type: MESSAGE_TYPES.DATA,
+            topic: TOPICS.TERMINAL,
+            subtype: 'terminal',
+            action: 'update',
+            data: terminalData,
+            timestamp: new Date().toISOString(),
+            initialData: true
+          });
+          break;
+          
         // Add cases for other topics
           
         // For authenticated topics, send user-specific data
@@ -2088,6 +2225,21 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
   async initialize() {
     // Start any periodic tasks
     this.startPeriodicalTasks();
+    
+    // Fetch initial terminal data
+    try {
+      const terminalData = await fetchTerminalData();
+      
+      // Cache the terminal data for immediate response to new connections
+      this.terminalData = terminalData;
+      
+      // Broadcast terminal data to subscribers
+      serviceEvents.emit('terminal:broadcast', terminalData);
+      
+      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Terminal data initialized successfully${fancyColors.RESET}`);
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to initialize terminal data:${fancyColors.RESET} ${error.message}`);
+    }
     
     logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Unified WebSocket server fully initialized${fancyColors.RESET}`);
     return true;

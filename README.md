@@ -125,6 +125,8 @@ The system is built around a robust service framework with:
 - **ContestEvaluationService**: Contest lifecycle management
 - **LevelingService**: User progression system
 - **ReferralService**: Referral program management
+- **TokenMonitorService**: Monitors specific token transactions (buys/sells)
+- **DiscordNotificationService**: Sends real-time notifications to Discord
 
 **Service Pattern:**
 - All services extend `BaseService`
@@ -1433,6 +1435,7 @@ The DegenDuel database schema includes the following key models:
 - **tokens**: Cryptocurrency token metadata and market data
 - **token_prices**: Tracks token price information
 - **token_buckets**: Categorizes tokens into logical groups
+- **monitored_tokens**: Tracks tokens being monitored for buys/sells
 
 **Transaction System:**
 - **transactions**: Records all financial activities in the platform
@@ -1627,6 +1630,62 @@ API endpoints are documented with Swagger at `/api-docs`.
 - **Service Architecture**: `/docs_important/Core Services/BASE_SERVICE_ARCHITECTURE.md`
 - **Admin API Overview**: `/docs_important/ADMIN_API_OVERVIEW.md`
 - **Token Pool Tools**: [/scripts/token-pools.md](/scripts/token-pools.md) - Tools for discovering and monitoring token pools
+- **Token Monitoring**: [/tests/token-monitor-test.js](/tests/token-monitor-test.js) - Monitor specific token transactions and send notifications
+
+## 🔔 Token Monitoring and Discord Integration
+
+The platform includes a powerful token monitoring system that tracks purchases and sales of specified tokens in real-time:
+
+### Token Monitoring Features
+
+- **Real-time Transaction Monitoring**: Watch for token buys and sells as they happen using Helius WebSockets
+- **Customizable Thresholds**: Set minimum transaction values to filter out noise
+- **Token Selection**: Monitor any Solana token by adding it to the database
+- **Event System**: Standardized events for token purchases and sales
+- **Discord Integration**: Instant notifications in Discord channels
+
+### Using Token Monitoring
+
+To monitor specific tokens:
+
+1. **Add a token to the monitored_tokens table**
+   ```sql
+   INSERT INTO monitored_tokens (
+     token_address, token_name, token_symbol, decimals,
+     monitor_buys, monitor_sells, min_transaction_value
+   ) VALUES (
+     'TOKEN_ADDRESS_HERE',
+     'Token Name',
+     'SYMBOL',
+     9,
+     TRUE,
+     TRUE,
+     0
+   );
+   ```
+
+2. **Configure Discord webhook URL in environment variables**
+   ```
+   DISCORD_WEBHOOK_TOKENS=https://discord.com/api/webhooks/your_webhook_url
+   ```
+
+3. **Enable tokenMonitorService in config.js**
+   ```javascript
+   get token_monitor() {
+     return true;
+   }
+   ```
+
+4. **Start the token monitor service**
+   ```bash
+   # Run simulation test
+   node tests/token-monitor-simulate.js
+   
+   # Run actual monitoring
+   node tests/token-monitor-test.js
+   ```
+
+For complete documentation on the token monitoring system, see [Token Monitoring Documentation](/services/_docs/token_monitoring/README.md).
 
 ---
 

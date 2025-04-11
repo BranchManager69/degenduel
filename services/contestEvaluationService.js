@@ -938,6 +938,78 @@ class ContestEvaluationService extends BaseService {
                     status: 'completed',
                 }
             });
+            
+            // Emit contest completed event for Discord notifications
+            try {
+                // Dynamically import service events to avoid circular dependencies
+                const { default: serviceEvents, SERVICE_EVENTS } = await import('../utils/service-suite/service-events.js');
+                
+                // Get winner details from participants
+                const winners = resolvedParticipants.slice(0, 3).map((participant, index) => {
+                    const place = index + 1;
+                    const placeKey = `place_${place}`;
+                    const prizePercentage = payout_structure[placeKey] || 0;
+                    const prizeAmount = actualPrizePool.mul(prizePercentage);
+                    
+                    return {
+                        wallet_address: participant.wallet_address,
+                        place,
+                        prize_amount: prizeAmount.toString(),
+                        // Find user details if available
+                        user_id: participant.user_id
+                    };
+                });
+                
+                // Get user display names for winners
+                const winnerDetails = await Promise.all(winners.map(async (winner) => {
+                    try {
+                        // Get user details if available
+                        if (winner.user_id) {
+                            const user = await prisma.users.findUnique({
+                                where: { id: winner.user_id }
+                            });
+                            
+                            if (user) {
+                                return {
+                                    ...winner,
+                                    display_name: user.nickname || user.username || winner.wallet_address.substring(0, 6) + '...'
+                                };
+                            }
+                        }
+                        
+                        // Fallback to wallet address
+                        return {
+                            ...winner,
+                            display_name: winner.wallet_address.substring(0, 6) + '...' + winner.wallet_address.substring(winner.wallet_address.length - 4)
+                        };
+                    } catch (error) {
+                        logApi.warn(`Failed to get user details for winner: ${error.message}`);
+                        return {
+                            ...winner,
+                            display_name: winner.wallet_address.substring(0, 6) + '...'
+                        };
+                    }
+                }));
+                
+                // Emit the event
+                serviceEvents.emit(SERVICE_EVENTS.CONTEST_COMPLETED, {
+                    contest_id: contest.id,
+                    contest_name: contest.contest_name || `Contest #${contest.id}`,
+                    contest_code: contest.contest_code,
+                    prize_pool: actualPrizePool.toString(),
+                    platform_fee: platformFeeAmount.toString(),
+                    participant_count: participants.length,
+                    winners: winnerDetails,
+                    start_time: contest.start_time,
+                    end_time: contest.end_time
+                });
+            } catch (discordError) {
+                logApi.warn(`Failed to emit contest completion event: ${discordError.message}`, {
+                    error: discordError
+                });
+                // Non-critical error, continue execution
+            }
+            
             // Log contest completion
             await this.logContestCompletion(contest, prizeDistributionResults, platformFeeAmount);
             // Log contest status change

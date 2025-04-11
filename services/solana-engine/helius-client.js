@@ -158,10 +158,163 @@ class HeliusWebSocketManager extends HeliusBase {
       } else {
         resolve(message.result);
       }
+    } else if (message.method === 'accountNotification' || message.method === 'logsNotification') {
+      // Handle SPL token transfer notifications
+      this.handleTokenTransferNotification(message);
     } else {
-      // Handle subscription updates
-      // TODO: Implement subscription handling
+      // Handle other subscription updates
       logApi.debug(`${formatLog.tag()} ${formatLog.info('Received WebSocket message:')} ${JSON.stringify(message)}`);
+    }
+  }
+  
+  /**
+   * Handle token transfer notifications from WebSocket
+   * @param {Object} message - The subscription notification message
+   */
+  handleTokenTransferNotification(message) {
+    try {
+      if (!message.params || !message.params.result) {
+        return;
+      }
+      
+      const { signature, value } = message.params.result;
+      
+      // Process logs notification (transaction logs)
+      if (message.method === 'logsNotification') {
+        const logs = value.logs;
+        
+        if (!logs || !Array.isArray(logs)) {
+          return;
+        }
+        
+        // Check for SPL token transfer logs
+        const tokenTransferInfo = this.parseTokenTransferLogs(logs, signature);
+        
+        if (tokenTransferInfo) {
+          // Emit token transfer event
+          logApi.info(`${formatLog.tag()} ${formatLog.success('Detected token transfer:')} ${formatLog.token(tokenTransferInfo.tokenAddress)} - ${formatLog.count(tokenTransferInfo.amount)} ${tokenTransferInfo.type === 'buy' ? 'purchased' : 'sold'}`);
+          
+          // Emit events based on transfer type
+          this.emitTokenTransferEvent(tokenTransferInfo);
+        }
+      }
+      
+      // Process account notification (account data changes)
+      else if (message.method === 'accountNotification') {
+        // Handle account updates if needed
+        // This could be used to track token account balance changes
+      }
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Error handling token transfer notification:')} ${error.message}`);
+    }
+  }
+  
+  /**
+   * Parse transaction logs to detect token transfers
+   * @param {string[]} logs - Transaction logs
+   * @param {string} signature - Transaction signature
+   * @returns {Object|null} - Token transfer information or null if not a relevant transfer
+   */
+  parseTokenTransferLogs(logs, signature) {
+    try {
+      // Look for SPL token transfer logs
+      // Example: "Program log: Instruction: Transfer"
+      // Example: "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke"
+      
+      const hasTokenProgram = logs.some(log => 
+        log.includes('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+      );
+      
+      const hasTransferInstruction = logs.some(log => 
+        log.includes('Instruction: Transfer')
+      );
+      
+      // Check if this is a token transfer
+      if (!hasTokenProgram || !hasTransferInstruction) {
+        return null;
+      }
+      
+      // Try to extract token address, amount, from/to addresses
+      // This is a simplified parser and may need enhancement for complex transactions
+      let tokenAddress = null;
+      let fromAddress = null;
+      let toAddress = null;
+      let amount = 0;
+      
+      // Look for token mint account
+      for (const log of logs) {
+        // Extract mint account from logs if possible
+        if (log.includes('mint:')) {
+          const mintMatch = log.match(/mint: ([A-Za-z0-9]{32,44})/);
+          if (mintMatch && mintMatch[1]) {
+            tokenAddress = mintMatch[1];
+          }
+        }
+        
+        // Try to extract from/to accounts
+        if (log.includes('source:')) {
+          const sourceMatch = log.match(/source: ([A-Za-z0-9]{32,44})/);
+          if (sourceMatch && sourceMatch[1]) {
+            fromAddress = sourceMatch[1];
+          }
+        }
+        
+        if (log.includes('destination:')) {
+          const destMatch = log.match(/destination: ([A-Za-z0-9]{32,44})/);
+          if (destMatch && destMatch[1]) {
+            toAddress = destMatch[1];
+          }
+        }
+        
+        // Try to extract amount
+        if (log.includes('amount:')) {
+          const amountMatch = log.match(/amount: (\d+)/);
+          if (amountMatch && amountMatch[1]) {
+            amount = parseInt(amountMatch[1], 10);
+          }
+        }
+      }
+      
+      // If we couldn't extract basic info, return null
+      if (!tokenAddress || (!fromAddress && !toAddress)) {
+        return null;
+      }
+      
+      // Determine if this is a buy or sell (simplified for now)
+      // This is a rudimentary determination and will need refinement
+      // A more sophisticated approach would analyze the full transaction
+      const type = fromAddress && toAddress ? 'transfer' : (fromAddress ? 'sell' : 'buy');
+      
+      return {
+        tokenAddress,
+        fromAddress,
+        toAddress,
+        amount,
+        type,
+        signature,
+        timestamp: Date.now()
+      };
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Error parsing token transfer logs:')} ${error.message}`);
+      return null;
+    }
+  }
+  
+  /**
+   * Emit token transfer event
+   * @param {Object} transferInfo - Token transfer information
+   */
+  emitTokenTransferEvent(transferInfo) {
+    // This will be called by the WebSocket handler when a token transfer is detected
+    // Extend HeliusClient to handle this event (see methods at bottom of class)
+    if (this.tokenTransferHandlers && this.tokenTransferHandlers.length > 0) {
+      this.tokenTransferHandlers.forEach(handler => {
+        try {
+          handler(transferInfo);
+        } catch (error) {
+          logApi.error(`${formatLog.tag()} ${formatLog.error('Error in token transfer handler:')} ${error.message}`);
+        }
+      });
     }
   }
 
@@ -552,6 +705,11 @@ class HeliusClient {
     this.tokens = new TokenService(this.config);
     this.das = new DasService(this.config);
     this.webhooks = new WebhookService(this.config);
+    
+    // Token transfer monitoring
+    this.monitoredTokens = new Set();
+    this.tokenTransferHandlers = [];
+    this.tokenSubscriptions = new Map();
   }
 
   /**
@@ -630,6 +788,117 @@ class HeliusClient {
    */
   getConnectionStats() {
     return this.websocket.getConnectionStats();
+  }
+  
+  /**
+   * Subscribe to token transfers for a specific token
+   * @param {string} tokenAddress - The token address to monitor
+   * @returns {Promise<boolean>} - Success status
+   */
+  async subscribeToTokenTransfers(tokenAddress) {
+    try {
+      if (!this.websocket.wsConnected) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Cannot subscribe to token transfers - WebSocket not connected')}`);
+        return false;
+      }
+      
+      // Already subscribed to this token
+      if (this.monitoredTokens.has(tokenAddress)) {
+        return true;
+      }
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.header('SUBSCRIBING')} to transfers for token ${formatLog.address(tokenAddress)}`);
+      
+      // Create transaction subscription for token program (TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA)
+      const subscriptionId = await this.websocket.sendWebSocketRequest('logsSubscribe', [
+        {
+          mentions: [`spl-token:${tokenAddress}`],
+        },
+        {
+          commitment: 'confirmed',
+          encoding: 'jsonParsed'
+        }
+      ]);
+      
+      this.tokenSubscriptions.set(tokenAddress, subscriptionId);
+      this.monitoredTokens.add(tokenAddress);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully subscribed to token transfers:')} ${formatLog.address(tokenAddress)} (${subscriptionId})`);
+      
+      return true;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to subscribe to token transfers:')} ${error.message}`);
+      return false;
+    }
+  }
+  
+  /**
+   * Unsubscribe from token transfers for a specific token
+   * @param {string} tokenAddress - The token address to stop monitoring
+   * @returns {Promise<boolean>} - Success status
+   */
+  async unsubscribeFromTokenTransfers(tokenAddress) {
+    try {
+      if (!this.websocket.wsConnected) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Cannot unsubscribe from token transfers - WebSocket not connected')}`);
+        return false;
+      }
+      
+      // Not subscribed to this token
+      if (!this.monitoredTokens.has(tokenAddress)) {
+        return true;
+      }
+      
+      const subscriptionId = this.tokenSubscriptions.get(tokenAddress);
+      if (!subscriptionId) {
+        this.monitoredTokens.delete(tokenAddress);
+        return true;
+      }
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.header('UNSUBSCRIBING')} from transfers for token ${formatLog.address(tokenAddress)}`);
+      
+      // Unsubscribe from transaction logs
+      await this.websocket.sendWebSocketRequest('logsUnsubscribe', [subscriptionId]);
+      
+      this.tokenSubscriptions.delete(tokenAddress);
+      this.monitoredTokens.delete(tokenAddress);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully unsubscribed from token transfers:')} ${formatLog.address(tokenAddress)}`);
+      
+      return true;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to unsubscribe from token transfers:')} ${error.message}`);
+      return false;
+    }
+  }
+  
+  /**
+   * Add a handler for token transfer events
+   * @param {Function} handler - The handler function for token transfers
+   */
+  onTokenTransfer(handler) {
+    if (typeof handler === 'function') {
+      this.tokenTransferHandlers.push(handler);
+    }
+  }
+  
+  /**
+   * Remove a handler for token transfer events
+   * @param {Function} handler - The handler function to remove
+   */
+  removeTokenTransferHandler(handler) {
+    const index = this.tokenTransferHandlers.indexOf(handler);
+    if (index !== -1) {
+      this.tokenTransferHandlers.splice(index, 1);
+    }
+  }
+  
+  /**
+   * Get a list of all currently monitored tokens
+   * @returns {string[]} - Array of monitored token addresses
+   */
+  getMonitoredTokens() {
+    return Array.from(this.monitoredTokens);
   }
 }
 

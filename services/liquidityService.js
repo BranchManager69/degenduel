@@ -376,8 +376,12 @@ class LiquidityService extends BaseService {
         }
     }
 
-    // Perform operation
-    async performOperation() {
+    /**
+     * Implements the onPerformOperation method (new pattern)
+     * This gets called by the BaseService performOperation method
+     * @returns {Promise<boolean>}
+     */
+    async onPerformOperation() {
         const startTime = Date.now();
         
         try {
@@ -410,11 +414,7 @@ class LiquidityService extends BaseService {
                     }
                 );
                 
-                return {
-                    duration: Date.now() - startTime,
-                    status: 'degraded',
-                    message: 'No active liquidity wallet'
-                };
+                return true; // Return true to avoid circuit breaker
             }
             
             // Check balance
@@ -448,14 +448,19 @@ class LiquidityService extends BaseService {
                 }
             );
 
-            return {
-                duration: Date.now() - startTime,
-                balance: balance / 1000000000
-            };
+            return true; // Success
         } catch (error) {
             this.liquidityStats.operations.failed++;
+            logApi.error(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.RED}Operation error:${fancyColors.RESET} ${error.message}`);
             throw ServiceError.operation('Balance check failed', error);
         }
+    }
+    
+    // Keep the original performOperation for backward compatibility
+    // This won't actually get called by BaseService anymore since we've added onPerformOperation
+    // We're keeping it for backward compatibility with any code that might directly call this method
+    async performOperation() {
+        return this.onPerformOperation();
     }
 
     // Stop the service

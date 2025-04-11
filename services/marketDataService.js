@@ -22,7 +22,7 @@ import serviceEvents from '../utils/service-suite/service-events.js';
 import { config } from '../config/config.js';
 import solanaEngine from './solana-engine/index.js';
 import { heliusClient } from './solana-engine/helius-client.js';
-import { jupiterClient } from './solana-engine/jupiter-client.js';
+import { getJupiterClient, jupiterClient } from './solana-engine/jupiter-client.js';
 import tokenHistoryFunctions from './token-history-functions.js';
 
 // Service configuration
@@ -180,10 +180,12 @@ class MarketDataService extends BaseService {
                     await heliusClient.initialize();
                 }
                 
-                // Initialize the Jupiter client if it's not already initialized
+                // Use the singleton Jupiter client that should already be initialized by SolanaEngine
                 if (!jupiterClient.initialized) {
-                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Initializing Jupiter client...`);
-                    await jupiterClient.initialize();
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Jupiter client not initialized yet, using existing singleton...`);
+                    // Don't initialize here, just use the existing instance from SolanaEngine
+                } else {
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Using already initialized Jupiter client`);
                 }
                 
                 // Note: Direct WebSocket price updates removed as the Jupiter WebSocket endpoint is unconfirmed
@@ -1605,45 +1607,75 @@ class MarketDataService extends BaseService {
                     .slice(0, 5);
                 
                 // Log HOT tokens (highest priority - both rising in rank and volume)
-                if (hotTokens.length > 0) {
+                if (hotTokens && hotTokens.length > 0) {
                     logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} HOT TOKENS ${fancyColors.RESET} Rising in both rank and volume:`);
                     
-                    hotTokens.forEach(token => {
-                        // Format nicely with hotness score info
-                        const volInfo = token.volumeGrowth ? ` | Vol +${token.volumeGrowth}%` : '';
-                        const scoreInfo = ` | Score: ${token.hotnessScore}`;
-                        const rankInfo = token.isTopRank ? ` [TOP ${token.currentRank}]` : '';
-                        
-                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.MAGENTA}HOT TOKEN:${fancyColors.RESET} ${token.symbol}${rankInfo} | Rank ${token.prevRank} → ${token.currentRank} (+${token.change})${volInfo}${scoreInfo}`);
-                    });
+                    try {
+                        hotTokens.forEach(token => {
+                            if (!token) return; // Skip invalid tokens
+                            
+                            // Format nicely with hotness score info
+                            const volInfo = token.volumeGrowth ? ` | Vol +${token.volumeGrowth}%` : '';
+                            const scoreInfo = ` | Score: ${token.hotnessScore || 'N/A'}`;
+                            const rankInfo = token.isTopRank ? ` [TOP ${token.currentRank}]` : '';
+                            const symbol = token.symbol || 'UNKNOWN';
+                            const prevRank = token.prevRank || 0;
+                            const currentRank = token.currentRank || 0;
+                            const change = token.change || 0;
+                            
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.MAGENTA}HOT TOKEN:${fancyColors.RESET} ${symbol}${rankInfo} | Rank ${prevRank} → ${currentRank} (+${change})${volInfo}${scoreInfo}`);
+                        });
+                    } catch (error) {
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing hot tokens:${fancyColors.RESET}`, error);
+                    }
                 }
                 
                 // Log top risers (tokens rising in rank but not marked as HOT)
-                if (risers.length > 0) {
+                if (risers && risers.length > 0) {
                     logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Top rank climbers:${fancyColors.RESET}`);
                     
-                    risers.forEach(riser => {
-                        // Add top rank flag if in top 50
-                        const rankInfo = riser.isTopRank ? ` [TOP ${riser.currentRank}]` : '';
-                        // Include hotness score for context
-                        const scoreInfo = ` | Score: ${riser.hotnessScore}`;
-                        
-                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}RANK UP ${riser.change} spots:${fancyColors.RESET} ${riser.symbol}${rankInfo} moved ${riser.prevRank} → ${riser.currentRank}${scoreInfo}`);
-                    });
+                    try {
+                        risers.forEach(riser => {
+                            if (!riser) return; // Skip invalid risers
+                            
+                            // Add top rank flag if in top 50
+                            const rankInfo = riser.isTopRank ? ` [TOP ${riser.currentRank}]` : '';
+                            // Include hotness score for context
+                            const scoreInfo = ` | Score: ${riser.hotnessScore || 'N/A'}`;
+                            const symbol = riser.symbol || 'UNKNOWN';
+                            const prevRank = riser.prevRank || 0;
+                            const currentRank = riser.currentRank || 0;
+                            const change = riser.change || 0;
+                            
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}RANK UP ${change} spots:${fancyColors.RESET} ${symbol}${rankInfo} moved ${prevRank} → ${currentRank}${scoreInfo}`);
+                        });
+                    } catch (error) {
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing rank risers:${fancyColors.RESET}`, error);
+                    }
                 }
                 
                 // Log top droppers (tokens falling in rank)
-                if (droppers.length > 0) {
+                if (droppers && droppers.length > 0) {
                     logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Largest rank drops:${fancyColors.RESET}`);
                     
-                    droppers.forEach(dropper => {
-                        // Add top rank flag if in top 50
-                        const rankInfo = dropper.isTopRank ? ` [TOP ${dropper.currentRank}]` : '';
-                        // Include hotness score for context
-                        const scoreInfo = ` | Score: ${dropper.hotnessScore}`;
-                        
-                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}RANK DOWN ${Math.abs(dropper.change)} spots:${fancyColors.RESET} ${dropper.symbol}${rankInfo} moved ${dropper.prevRank} → ${dropper.currentRank}${scoreInfo}`);
-                    });
+                    try {
+                        droppers.forEach(dropper => {
+                            if (!dropper) return; // Skip invalid droppers
+                            
+                            // Add top rank flag if in top 50
+                            const rankInfo = dropper.isTopRank ? ` [TOP ${dropper.currentRank}]` : '';
+                            // Include hotness score for context
+                            const scoreInfo = ` | Score: ${dropper.hotnessScore || 'N/A'}`;
+                            const symbol = dropper.symbol || 'UNKNOWN';
+                            const prevRank = dropper.prevRank || 0;
+                            const currentRank = dropper.currentRank || 0;
+                            const change = dropper.change || 0;
+                            
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}RANK DOWN ${Math.abs(change)} spots:${fancyColors.RESET} ${symbol}${rankInfo} moved ${prevRank} → ${currentRank}${scoreInfo}`);
+                        });
+                    } catch (error) {
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing rank droppers:${fancyColors.RESET}`, error);
+                    }
                 }
                 
                 // Update previous list for next comparison
@@ -1862,6 +1894,47 @@ class MarketDataService extends BaseService {
                             
                             newTokensCount++;
                         }
+                        // Track significant price changes for logging while we have priceInfo in scope
+                        if (priceInfo && priceInfo.price && priceInfo.priceChange24h) {
+                            // Store all price changes for dynamic significance calculation
+                            const priceChange = parseFloat(priceInfo.priceChange24h);
+                            
+                            // Only track valid price changes
+                            if (!isNaN(priceChange)) {
+                                // Add to batch collection for dynamic significance calculation
+                                if (!this._batchPriceChanges) {
+                                    this._batchPriceChanges = [];
+                                }
+                                
+                                // Track both price and volume changes
+                                this._batchPriceChanges.push({
+                                    symbol: processedToken.symbol || metadata.symbol || cleanedAddress.substring(0, 8),
+                                    price: priceInfo.price,
+                                    change: priceChange,
+                                    volume: priceInfo.volume24h || 0,
+                                    address: cleanedAddress
+                                });
+                                
+                                // Also track volume changes separately if available
+                                if (priceInfo.volume24h) {
+                                    // Create volume change tracking if not exists
+                                    if (!this._batchVolumeChanges) {
+                                        this._batchVolumeChanges = [];
+                                    }
+                                    
+                                    // Calculate volume change if previous data exists in the token map
+                                    const tokenId = existingTokenMap[cleanedAddress]?.id;
+                                    if (tokenId) {
+                                        this._batchVolumeChanges.push({
+                                            symbol: processedToken.symbol || metadata.symbol || cleanedAddress.substring(0, 8),
+                                            volume: priceInfo.volume24h,
+                                            price: priceInfo.price,
+                                            address: cleanedAddress
+                                        });
+                                    }
+                                }
+                            }
+                        }
                     } catch (tokenError) {
                         logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token data:${fancyColors.RESET}`, tokenError);
                     }
@@ -1870,48 +1943,6 @@ class MarketDataService extends BaseService {
                     if (processedCount % 10 === 0) {
                         const progressPercent = Math.round((processedCount / tokenSubset.length) * 100);
                         logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Data preparation progress: ${progressPercent}% (${processedCount}/${tokenSubset.length})`);
-                    }
-                    
-                    // Track significant price changes for logging
-                    if (priceInfo.price && priceInfo.priceChange24h) {
-                        // Store all price changes for dynamic significance calculation
-                        const priceChange = parseFloat(priceInfo.priceChange24h);
-                        
-                        // Only track valid price changes
-                        if (!isNaN(priceChange)) {
-                            // Add to batch collection for dynamic significance calculation
-                            if (!this._batchPriceChanges) {
-                                this._batchPriceChanges = [];
-                            }
-                            
-                            // Track both price and volume changes
-                            this._batchPriceChanges.push({
-                                symbol: processedToken.symbol || metadata.symbol || cleanedAddress.substring(0, 8),
-                                price: priceInfo.price,
-                                change: priceChange,
-                                volume: priceInfo.volume24h,
-                                address: cleanedAddress
-                            });
-                            
-                            // Also track volume changes separately if available
-                            if (priceInfo.volume24h) {
-                                // Create volume change tracking if not exists
-                                if (!this._batchVolumeChanges) {
-                                    this._batchVolumeChanges = [];
-                                }
-                                
-                                // Calculate volume change if previous data exists in the token map
-                                const tokenId = existingTokenMap[cleanedAddress]?.id;
-                                if (tokenId) {
-                                    this._batchVolumeChanges.push({
-                                        symbol: processedToken.symbol || metadata.symbol || cleanedAddress.substring(0, 8),
-                                        volume: priceInfo.volume24h,
-                                        price: priceInfo.price,
-                                        address: cleanedAddress
-                                    });
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -2082,10 +2113,11 @@ class MarketDataService extends BaseService {
                 for (let i = 0; i < tokenCreates.length; i += TOKEN_CREATE_BATCH_SIZE) {
                     const createBatch = tokenCreates.slice(i, i + TOKEN_CREATE_BATCH_SIZE);
                     
-                    // Use transaction to group related operations
-                    await marketDb.$transaction(async (tx) => {
-                        for (const create of createBatch) {
-                            try {
+                    // Process each token in its own transaction
+                    for (const create of createBatch) {
+                        try {
+                            // Use individual transaction for each token to prevent transaction aborts from affecting other tokens
+                            await marketDb.$transaction(async (tx) => {
                                 // Create the token
                                 const newToken = await tx.tokens.create({
                                     data: create.tokenData
@@ -2112,7 +2144,7 @@ class MarketDataService extends BaseService {
                                         data: {
                                             token_id: newToken.id,
                                             price: create.priceData.price,
-                                            source: 'jupiter_api_initial',
+                                            source: 'jupiter_api',
                                             timestamp: new Date()
                                         }
                                     });
@@ -2143,16 +2175,16 @@ class MarketDataService extends BaseService {
                                         }
                                     }
                                 }
-                            } catch (createError) {
-                                // Skip duplicates without failing the whole batch
-                                if (createError.message.includes('duplicate key') || createError.message.includes('unique constraint')) {
-                                    logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Skipping duplicate token: ${create.tokenData.address}`);
-                                } else {
-                                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error creating token:${fancyColors.RESET}`, createError);
-                                }
+                            });
+                        } catch (createError) {
+                            // Skip duplicates without failing the whole batch
+                            if (createError.message.includes('duplicate key') || createError.message.includes('unique constraint')) {
+                                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Skipping duplicate token: ${create.tokenData.address}`);
+                            } else {
+                                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error creating token:${fancyColors.RESET}`, createError);
                             }
                         }
-                    });
+                    }
                     
                     // Log newly created tokens for better visibility
                     if (createBatch.length > 0) {
@@ -2694,6 +2726,29 @@ class MarketDataService extends BaseService {
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error resetting circuit breaker:${fancyColors.RESET}`, error);
             return false;
+        }
+    }
+
+    /**
+     * Implements the required onPerformOperation method from BaseService
+     * This method will be called by the performOperation method in the BaseService class
+     * @returns {Promise<boolean>}
+     */
+    async onPerformOperation() {
+        try {
+            // Check if service is operational
+            if (!this.isOperational) {
+                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Service not operational, skipping operation`);
+                return true;
+            }
+            
+            // Perform the core service operation - update token data
+            await this.updateTokenData();
+            
+            return true;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Operation error:${fancyColors.RESET} ${error.message}`);
+            throw error; // Re-throw to let BaseService handle the error
         }
     }
 }

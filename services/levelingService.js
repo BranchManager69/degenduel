@@ -170,6 +170,44 @@ class LevelingService extends BaseService {
                         xp_gained: amount,
                         total_xp: newXP
                     });
+                    
+                    // Emit level up event for Discord notifications
+                    try {
+                        // Import service events dynamically to avoid circular dependencies
+                        const { default: serviceEvents, SERVICE_EVENTS } = await import('../utils/service-suite/service-events.js');
+                        
+                        // Get user display name
+                        const userDetails = await tx.users.findUnique({
+                            where: { wallet_address },
+                            select: { nickname: true, username: true }
+                        });
+                        
+                        const displayName = userDetails?.nickname || userDetails?.username || wallet_address.substring(0, 6) + '...';
+                        
+                        // Get any unlocked perks for this level
+                        const perks = [];
+                        if (nextLevel.reduced_fees) perks.push(`Reduced trading fees (${nextLevel.reduced_fees}%)`);
+                        if (nextLevel.bonus_referral_points) perks.push(`Bonus referral points (${nextLevel.bonus_referral_points}%)`);
+                        if (nextLevel.daily_login_bonus) perks.push(`Daily login bonus (+${nextLevel.daily_login_bonus} XP)`);
+                        if (nextLevel.exclusive_contests) perks.push('Access to exclusive contests');
+                        if (nextLevel.custom_profile_badge) perks.push('Custom profile badge');
+                        
+                        // Emit the level up event
+                        serviceEvents.emit(SERVICE_EVENTS.USER_LEVEL_UP, {
+                            user_name: displayName,
+                            wallet_address,
+                            previous_level: user.user_level?.level_number || 0,
+                            new_level: nextLevel.level_number,
+                            total_xp: newXP,
+                            unlocked_perks: perks.length > 0 ? perks : undefined
+                        });
+                    } catch (discordError) {
+                        // Non-critical error, just log it
+                        logApi.warn('Failed to emit level up event for Discord:', {
+                            error: discordError.message,
+                            wallet_address
+                        });
+                    }
                 }
 
                 return {

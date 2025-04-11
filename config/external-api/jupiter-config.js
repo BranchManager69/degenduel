@@ -61,8 +61,14 @@ const getHeaders = () => ({
 
 // Rate limiting configuration
 const rateLimit = {
-  maxRequestsPerSecond: 50, // Default rate limit (adjust based on your plan)
-  delayBetweenRequests: 20, // ms between requests
+  maxRequestsPerSecond: 30, // We have a 100 req/sec plan but being conservative (30%)
+  delayBetweenRequests: 100, // ms between requests for single operations (increased from 20ms)
+  maxTokensPerRequest: 100, // Jupiter allows up to 100 tokens per request
+  batchingEnabled: true,
+  batchFailureBackoffMs: 2000, // ms to wait after a batch failure (increased from 1000ms)
+  initialBackoffMs: 2000, // ms for initial backoff (new parameter)
+  maxBackoffMs: 30000, // Maximum backoff time (30s) (new parameter)
+  backoffFactor: 2.0, // Exponential backoff multiplier (new parameter)
 };
 
 // Export the Jupiter configuration

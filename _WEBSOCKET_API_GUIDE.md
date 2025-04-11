@@ -1,793 +1,576 @@
-# DegenDuel WebSocket API Guide
+# DegenDuel WebSocket API Documentation
 
 ## Overview
 
-This document provides a comprehensive overview of the DegenDuel WebSocket API. The platform uses a unified WebSocket system where all data flows through a single connection with topic-based subscriptions.
+DegenDuel uses a unified WebSocket system for real-time updates. All WebSocket communication flows through a single connection point at `/api/v69/ws`, with topics used for message categorization.
 
-## Quick Start
+## Broadcasting Approaches
+
+DegenDuel implements two complementary approaches for broadcasting WebSocket messages:
+
+### 1. Service Events (Recommended for Service-to-WebSocket Communication)
+
+Service events provide a decoupled way for services to trigger WebSocket broadcasts:
 
 ```javascript
-// Connect to the WebSocket
-const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
+import serviceEvents from '../utils/service-suite/service-events.js';
 
-// Handle connection open
-socket.onopen = () => {
-  console.log('Connected to DegenDuel WebSocket');
-  
-  // Subscribe to market data
-  socket.send(JSON.stringify({
-    type: 'SUBSCRIBE',
-    topics: ['market-data']
-  }));
-};
-
-// Handle incoming messages
-socket.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  console.log('Received:', message);
-};
+// Broadcasting through the service events system
+serviceEvents.emit('topic:broadcast', {
+  type: 'DATA',
+  subtype: 'category',
+  action: 'action',
+  data: payload
+});
 ```
 
-## Connection Information
+**When to use Service Events:**
+- When broadcasting from a service
+- For simple topic-based broadcasting
+- When you want loose coupling between services and the WebSocket layer
+- For broadcasts that don't need persistence or targeted delivery
 
-- **Main WebSocket endpoint**: `/api/v69/ws`
-- **Authentication**: Required for private data (user, portfolio, wallet)
-- **Protocol**: WebSocket (WSS)
+### 2. WSBroadcaster (Recommended for Advanced Broadcasting Features)
 
-## Authentication Flow
-
-1. **Cookie-based authentication**: The server checks for a session cookie containing a JWT token
-2. **Token verification**: The token is decoded and verified
-3. **User lookup**: The user is looked up in the database
-4. **Device verification**: For secure operations, device authentication may be required
-
-Alternatively, you can authenticate by providing a token in your subscription message:
+The WebSocket Broadcaster provides advanced features for direct broadcasts:
 
 ```javascript
-socket.send(JSON.stringify({
+import broadcaster from '../utils/websocket-suite/ws-broadcaster.js';
+
+// Broadcasting with the dedicated WSBroadcaster utility
+await broadcaster.broadcastToTopic(
+  'topic',
+  'category',
+  'action',
+  payload
+);
+
+// Or for targeting specific user roles
+await broadcaster.broadcastToRole(
+  'ADMIN',
+  'category',
+  'action',
+  payload
+);
+
+// Or for targeting specific users by wallet address
+await broadcaster.broadcastToUsers(
+  ['wallet1', 'wallet2'],
+  'category',
+  'action',
+  payload,
+  { persist: true } // Store for offline delivery
+);
+```
+
+**When to use WSBroadcaster:**
+- When you need message persistence for offline users
+- For role-based or user-targeted broadcasting
+- When you need delivery tracking or read receipts
+- For high-priority messages that should be stored in the database
+
+## Connection
+
+```javascript
+const ws = new WebSocket(`wss://your-domain.com/api/v69/ws`);
+```
+
+## Message Structure
+
+All messages follow this general format:
+
+```typescript
+interface WebSocketMessage {
+  type: 'SUBSCRIBE' | 'UNSUBSCRIBE' | 'DATA' | 'ERROR' | 'SYSTEM' | 'ACKNOWLEDGMENT' | 'COMMAND' | 'REQUEST';
+  topic?: string;
+  subtype?: string;
+  action?: string;
+  data?: any;
+  requestId?: string;
+  timestamp: string;
+}
+```
+
+## Authentication
+
+Most topics require authentication. Authentication is handled automatically using your session cookie. If you're not authenticated, you'll receive an error message for restricted topics.
+
+## Subscribing to Topics
+
+To subscribe to topics:
+
+```javascript
+ws.send(JSON.stringify({
   type: 'SUBSCRIBE',
-  topics: ['portfolio', 'user'],
-  authToken: 'your-jwt-token'
+  topics: ['market-data', 'portfolio'],
+  timestamp: new Date().toISOString()
 }));
 ```
 
 ## Available Topics
 
-| Topic | Description | Auth Required |
-|-------|-------------|---------------|
-| `market-data` | Real-time market data including token prices and stats | No |
-| `portfolio` | User's portfolio updates and performance | Yes |
-| `system` | System status, announcements and heartbeats | No |
-| `contest` | Contest updates, entries and results | No (public), Yes (personal) |
-| `user` | User-specific notifications and data | Yes |
-| `admin` | Administrative information | Yes (admin role) |
-| `wallet` | Wallet updates and transaction information | Yes |
-| `wallet-balance` | Real-time balance updates | Yes |
-| `skyduel` | Game-specific information | No (public), Yes (personal) |
-| `logs` | Client-side logs (special topic) | No |
+### 1. market-data
 
-## Message Types
+Real-time market data for tokens.
 
-### Client → Server
+**When it fires:**
+- Initial connection
+- Token price changes
+- Volume updates
+- Rank changes
 
-1. **SUBSCRIBE**: Subscribe to one or more topics
-   ```json
-   {
-     "type": "SUBSCRIBE",
-     "topics": ["market-data", "system"]
-   }
-   ```
-
-2. **UNSUBSCRIBE**: Unsubscribe from topics
-   ```json
-   {
-     "type": "UNSUBSCRIBE",
-     "topics": ["portfolio"]
-   }
-   ```
-
-3. **REQUEST**: Request specific data
-   ```json
-   {
-     "type": "REQUEST",
-     "topic": "market-data",
-     "action": "getToken",
-     "symbol": "btc",
-     "requestId": "123"
-   }
-   ```
-
-4. **COMMAND**: Execute an action (requires authentication)
-   ```json
-   {
-     "type": "COMMAND",
-     "topic": "portfolio",
-     "action": "refreshBalance"
-   }
-   ```
-
-5. **LOGS**: Send client logs to server
-   ```json
-   {
-     "type": "LOGS",
-     "logs": [
-       { "level": "info", "message": "App initialized", "timestamp": "2025-04-07T15:30:00Z" }
-     ]
-   }
-   ```
-
-### Server → Client
-
-1. **DATA**: Data response or update
-   ```json
-   {
-     "type": "DATA",
-     "topic": "market-data",
-     "action": "getToken",
-     "requestId": "123",
-     "data": { /* token data */ },
-     "timestamp": "2025-04-07T15:30:00Z"
-   }
-   ```
-
-2. **ERROR**: Error message
-   ```json
-   {
-     "type": "ERROR",
-     "code": 4010,
-     "message": "Authentication required for restricted topics",
-     "timestamp": "2025-04-07T15:30:00Z"
-   }
-   ```
-
-3. **SYSTEM**: System messages and heartbeats
-   ```json
-   {
-     "type": "SYSTEM",
-     "action": "heartbeat",
-     "timestamp": "2025-04-07T15:30:00Z"
-   }
-   ```
-
-4. **ACKNOWLEDGMENT**: Confirms subscription/unsubscription
-   ```json
-   {
-     "type": "ACKNOWLEDGMENT",
-     "operation": "subscribe",
-     "topics": ["market-data", "system"],
-     "timestamp": "2025-04-07T15:30:00Z"
-   }
-   ```
-
-## Topic-Specific Data and Actions
-
-### `market-data` Topic
-
-**Actions**:
-- `getToken`: Get data for a specific token
-- `getAllTokens`: Get data for all available tokens
-
-**Data structure**:
-```json
+**Message format:**
+```typescript
 {
-  "symbol": "btc",
-  "name": "Bitcoin",
-  "price": 69420.12,
-  "change24h": 2.5,
-  "volume24h": 1234567890,
-  "marketCap": 1234567890000
-}
-```
-
-### `portfolio` Topic
-
-**Actions**:
-- `getProfile`: Get user's portfolio profile
-- `getHoldings`: Get user's token holdings
-- `getPerformance`: Get portfolio performance metrics
-
-**Data structure**:
-```json
-{
-  "totalValue": 12345.67,
-  "change24h": 3.1,
-  "holdings": [
-    {
-      "symbol": "btc",
-      "amount": 0.5,
-      "value": 34710.06
-    }
-  ]
-}
-```
-
-### `system` Topic
-
-**Actions**:
-- `getStatus`: Get system status information
-- `ping`: Heartbeat request
-- `getMetrics`: Get system metrics (admin only)
-
-**Data structure**:
-```json
-{
-  "status": "operational",
-  "version": "1.0.0",
-  "serverTime": "2025-04-07T15:30:00Z",
-  "uptime": 86400
-}
-```
-
-### `user` Topic
-
-**Actions**:
-- `getProfile`: Get user profile information
-- `getStats`: Get user statistics
-- `getAuthStatus`: Get authentication status
-
-**Data structure**:
-```json
-{
-  "nickname": "Branch",
-  "role": "superadmin",
-  "wallet_address": "BPuRhk...",
-  "created_at": "2025-01-01T00:00:00Z",
-  "last_login": "2025-04-07T15:00:00Z"
-}
-```
-
-## Authentication Methods
-
-DegenDuel supports multiple authentication methods that all work with the WebSocket API:
-
-### 1. Standard Session Cookie
-
-This is the default method where the JWT token is stored in a secure HTTP-only cookie named `session`. The WebSocket connection will automatically use this cookie for authentication.
-
-### 2. Manual Token Authentication
-
-Include an `authToken` in your subscription message for topics that require authentication:
-
-```json
-{
-  "type": "SUBSCRIBE",
-  "topics": ["portfolio", "user"],
-  "authToken": "your-jwt-token"
-}
-```
-
-### 3. Biometric Authentication (WebAuthn)
-
-DegenDuel supports Face ID, Touch ID, and other FIDO2 biometric authentication methods. The flow is:
-
-1. Register a biometric credential:
-   - `POST /api/auth/biometric/register-options`
-   - `POST /api/auth/biometric/register-verify`
-
-2. Authenticate using the biometric credential:
-   - `POST /api/auth/biometric/auth-options`
-   - `POST /api/auth/biometric/auth-verify`
-
-After successful biometric authentication, a JWT token is stored in the session cookie, which the WebSocket connection can use.
-
-### 4. Device Authentication
-
-Some operations require device authentication. Include the device ID in your WebSocket connection via HTTP headers:
-
-- `x-device-id`: Unique identifier for the client device
-
-## Error Codes
-
-| Code | Description |
-|------|-------------|
-| 4000 | Invalid message format |
-| 4001 | Missing message type |
-| 4003 | Subscription requires at least one topic |
-| 4010 | Authentication required for restricted topics |
-| 4011 | Invalid authentication token |
-| 4012 | Admin role required for admin topics |
-| 4040 | Resource not found |
-| 4050 | Connection state invalid |
-| 4401 | Token expired |
-| 5000 | Internal server error |
-
-## Security Considerations
-
-1. WebSocket connections use secure WebSockets (WSS) protocol
-2. JWT tokens have a 12-hour expiration period
-3. Authentication tokens should never be exposed in client-side code
-4. Biometric authentication provides an additional layer of security
-5. Device authentication adds further protection for sensitive operations
-
-## Reconnection Strategy
-
-Implementing a robust reconnection strategy is crucial for reliable WebSocket usage:
-
-```javascript
-const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000]; // milliseconds
-let reconnectAttempt = 0;
-
-function connectWebSocket() {
-  const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
-  
-  socket.onopen = () => {
-    console.log('Connected to DegenDuel WebSocket');
-    reconnectAttempt = 0;
-    // Subscribe to topics...
-  };
-  
-  socket.onclose = (event) => {
-    if (reconnectAttempt < RECONNECT_DELAYS.length) {
-      const delay = RECONNECT_DELAYS[reconnectAttempt];
-      console.log(`Reconnecting in ${delay}ms...`);
-      setTimeout(() => {
-        reconnectAttempt++;
-        connectWebSocket();
-      }, delay);
-    } else {
-      console.error('Max reconnection attempts reached');
-    }
-  };
-  
-  // Other event handlers...
-  
-  return socket;
-}
-
-const socket = connectWebSocket();
-```
-
-## React Integration
-
-Here's a simple React hook for using the DegenDuel WebSocket:
-
-```jsx
-import { useState, useEffect, useCallback, useRef } from 'react';
-
-export function useDegenDuelWebSocket(topics = [], options = {}) {
-  const [data, setData] = useState({});
-  const [status, setStatus] = useState('disconnected');
-  const socketRef = useRef(null);
-  const { autoConnect = true, authToken = null } = options;
-  
-  const connect = useCallback(() => {
-    if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || 
-                              socketRef.current.readyState === WebSocket.CONNECTING)) {
-      return;
-    }
-    
-    setStatus('connecting');
-    const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
-    
-    socket.onopen = () => {
-      setStatus('connected');
-      
-      // Subscribe to topics
-      if (topics.length > 0) {
-        const message = {
-          type: 'SUBSCRIBE',
-          topics
-        };
-        
-        if (authToken) {
-          message.authToken = authToken;
-        }
-        
-        socket.send(JSON.stringify(message));
+  type: 'DATA',
+  topic: 'market-data',
+  data: {
+    tokens: [
+      {
+        symbol: string;
+        name: string;
+        address: string;
+        price: number;
+        price_change_24h: number;
+        volume_24h: number;
+        market_cap: number;
+        rank: number;
+        last_updated: string;
       }
-    };
-    
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        
-        if (message.type === 'DATA') {
-          setData(prevData => ({
-            ...prevData,
-            [message.topic]: message.data
-          }));
-        } else if (message.type === 'ERROR') {
-          console.error('WebSocket error:', message);
-          if (message.code === 4401) { // Token expired
-            // Handle token expiration (e.g., redirect to login)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+    ]
+  },
+  timestamp: string;
+}
+```
+
+### 2. portfolio
+
+Updates to a user's portfolio.
+
+**When it fires:**
+- Initial connection after subscribing
+- User buys/sells tokens
+- Portfolio value changes
+- New tokens added to portfolio
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'portfolio',
+  data: {
+    total_value: number;
+    total_profit_loss: number;
+    profit_loss_percentage: number;
+    holdings: [
+      {
+        token_address: string;
+        symbol: string;
+        amount: number;
+        value_usd: number;
+        profit_loss: number;
+        profit_loss_percentage: number;
+        last_updated: string;
       }
-    };
-    
-    socket.onclose = () => {
-      setStatus('disconnected');
-    };
-    
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setStatus('error');
-    };
-    
-    socketRef.current = socket;
-  }, [topics, authToken]);
-  
-  const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-  }, []);
-  
-  const sendRequest = useCallback((topic, action, params = {}) => {
-    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket not connected');
-      return Promise.reject(new Error('WebSocket not connected'));
-    }
-    
-    const requestId = `req-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    
-    return new Promise((resolve, reject) => {
-      // Set up message handler
-      const handleMessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          
-          if (message.requestId === requestId) {
-            // Remove event listener
-            socketRef.current.removeEventListener('message', handleMessage);
-            
-            if (message.type === 'ERROR') {
-              reject(new Error(`${message.message} (code: ${message.code})`));
-            } else {
-              resolve(message);
-            }
-          }
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
-        }
-      };
-      
-      // Add event listener
-      socketRef.current.addEventListener('message', handleMessage);
-      
-      // Send request
-      const message = {
-        type: 'REQUEST',
-        topic,
-        action,
-        requestId,
-        ...params
-      };
-      
-      socketRef.current.send(JSON.stringify(message));
-      
-      // Set up timeout
-      setTimeout(() => {
-        if (socketRef.current) {
-          socketRef.current.removeEventListener('message', handleMessage);
-          reject(new Error('Request timeout'));
-        }
-      }, 10000); // 10 second timeout
-    });
-  }, []);
-  
-  // Connect on mount if autoConnect is true
-  useEffect(() => {
-    if (autoConnect) {
-      connect();
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect, autoConnect]);
-  
-  return {
-    status,
-    data,
-    connect,
-    disconnect,
-    sendRequest,
-    socket: socketRef.current
-  };
+    ]
+  },
+  timestamp: string;
 }
 ```
 
-Usage example:
+### 3. system
 
-```jsx
-function MarketDataComponent() {
-  const { data, status, sendRequest } = useDegenDuelWebSocket(['market-data']);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    if (status === 'connected' && loading) {
-      sendRequest('market-data', 'getAllTokens')
-        .then(() => setLoading(false))
-        .catch(error => {
-          console.error('Failed to load token data:', error);
-          setLoading(false);
-        });
-    }
-  }, [status, sendRequest, loading]);
-  
-  const marketData = data['market-data'] || [];
-  
-  return (
-    <div>
-      <h2>Token Prices</h2>
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Symbol</th>
-              <th>Price</th>
-              <th>Change (24h)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {marketData.map(token => (
-              <tr key={token.symbol}>
-                <td>{token.symbol}</td>
-                <td>${token.price.toFixed(2)}</td>
-                <td className={token.change24h >= 0 ? 'positive' : 'negative'}>
-                  {token.change24h.toFixed(2)}%
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
+System-wide notifications and status updates.
+
+**When it fires:**
+- Service status changes
+- Maintenance notifications
+- Feature toggles
+- System-wide announcements
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'system',
+  subtype: 'status' | 'announcement' | 'maintenance' | 'feature',
+  data: {
+    status?: 'operational' | 'degraded' | 'maintenance' | 'outage';
+    message?: string;
+    affected_services?: string[];
+    estimated_resolution?: string;
+    features?: Record<string, boolean>;
+  },
+  timestamp: string;
 }
 ```
 
-## Redux Integration
+### 4. contest
 
-For applications using Redux, here's a middleware for integrating the WebSocket:
+Updates about trading contests.
+
+**When it fires:**
+- Contest creation
+- Contest status changes (registration, active, ended)
+- Entry confirmation
+- Leaderboard updates
+- Results announcement
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'contest',
+  subtype: 'update' | 'leaderboard' | 'entry' | 'result',
+  data: {
+    contest_id: string;
+    status?: 'registration' | 'active' | 'ended';
+    name?: string;
+    start_time?: string;
+    end_time?: string;
+    prize_pool?: number;
+    entry_count?: number;
+    leaderboard?: {
+      rankings: [
+        {
+          rank: number;
+          user_id: string;
+          nickname: string;
+          profit_loss: number;
+          profit_loss_percentage: number;
+        }
+      ]
+    };
+    entry_status?: 'confirmed' | 'rejected';
+  },
+  timestamp: string;
+}
+```
+
+### 5. user
+
+User-specific notifications and data.
+
+**When it fires:**
+- Achievement unlocked
+- Level up
+- Personal notifications
+- Settings changes
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'user',
+  subtype: 'achievement' | 'level' | 'notification' | 'settings',
+  action?: 'update' | 'new' | 'delete',
+  data: {
+    user_id?: string;
+    achievement?: {
+      id: string;
+      name: string;
+      description: string;
+      reward: any;
+    };
+    level?: {
+      current: number;
+      previous: number;
+      xp: number;
+      xp_required: number;
+      rewards: any[];
+    };
+    notification?: {
+      id: string;
+      title: string;
+      message: string;
+      read: boolean;
+      category: string;
+    };
+    settings?: Record<string, any>;
+  },
+  timestamp: string;
+}
+```
+
+### 6. admin
+
+Admin-only notifications and commands.
+
+**When it fires:**
+- Admin actions are performed
+- System alerts needing admin attention
+- Error reports and summaries
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'admin',
+  subtype: 'alert' | 'error' | 'system',
+  action?: string,
+  data: {
+    severity?: 'info' | 'warning' | 'error' | 'critical';
+    message?: string;
+    source?: string;
+    details?: any;
+    error?: {
+      message: string;
+      stack?: string;
+      source?: string;
+    };
+  },
+  timestamp: string;
+}
+```
+
+### 7. wallet
+
+Wallet transaction updates.
+
+**When it fires:**
+- Transaction initiated
+- Transaction status changes
+- New transaction detected
+- Wallet settings changes
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'wallet',
+  subtype: 'transaction' | 'settings',
+  action?: 'initiated' | 'confirmed' | 'failed',
+  data: {
+    wallet_address?: string;
+    transaction?: {
+      id: string;
+      type: 'send' | 'receive' | 'swap' | 'stake' | 'unstake';
+      status: 'pending' | 'confirmed' | 'failed';
+      amount: number;
+      token: string;
+      timestamp: string;
+      signature?: string;
+      from?: string;
+      to?: string;
+    };
+    settings?: {
+      auto_approve?: boolean;
+      spending_limit?: number;
+    };
+  },
+  timestamp: string;
+}
+```
+
+### 8. wallet-balance
+
+Updates to wallet balances.
+
+**When it fires:**
+- Balance changes detected
+- Initial connection after subscribing
+- Regular balance sync
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'wallet-balance',
+  data: {
+    wallet_address: string;
+    sol_balance: number;
+    tokens: [
+      {
+        address: string;
+        symbol: string;
+        balance: number;
+        value_usd?: number;
+      }
+    ]
+  },
+  timestamp: string;
+}
+```
+
+### 9. skyduel
+
+Game state and events for SkyDuel.
+
+**When it fires:**
+- Game state changes
+- Player moves
+- Scoring events
+- Game results
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'skyduel',
+  subtype: 'state' | 'move' | 'score' | 'result',
+  data: {
+    game_id: string;
+    state?: 'waiting' | 'active' | 'ended';
+    players?: {
+      id: string;
+      nickname: string;
+      position: [number, number];
+      score: number;
+      status: 'alive' | 'eliminated';
+    }[];
+    move?: {
+      player_id: string;
+      direction: 'up' | 'down' | 'left' | 'right';
+      position: [number, number];
+    };
+    score_event?: {
+      player_id: string;
+      points: number;
+      reason: string;
+    };
+    result?: {
+      winner_id: string;
+      final_scores: Record<string, number>;
+      rewards: Record<string, any>;
+    };
+  },
+  timestamp: string;
+}
+```
+
+### 10. terminal
+
+Terminal data for command-line interface.
+
+**When it fires:**
+- Initial connection after subscribing
+- Terminal data updates from admin
+- New commands available
+
+**Message format:**
+```typescript
+{
+  type: 'DATA',
+  topic: 'terminal',
+  subtype: 'terminal',
+  action: 'update' | 'initial',
+  data: {
+    platformName: string;
+    platformDescription: string;
+    platformStatus: string;
+    stats: {
+      currentUsers: number;
+      upcomingContests: number;
+      totalPrizePool: string;
+      platformTraffic: string;
+      socialGrowth: string;
+      waitlistUsers: number;
+    };
+    token: {
+      symbol: string;
+      address: string;
+      totalSupply: string;
+      initialCirculating: string;
+      communityAllocation: string;
+      teamAllocation: string;
+      treasuryAllocation: string;
+      initialPrice: string;
+      marketCap: string;
+      networkType: string;
+      tokenType: string;
+      decimals: number;
+    };
+    launch: {
+      method: string;
+      platforms: string[];
+      privateSaleStatus: string;
+      publicSaleStatus: string;
+    };
+    roadmap: Array<{
+      quarter: string;
+      year: string;
+      title: string;
+      details: string[];
+    }>;
+    commands: Record<string, string>;
+  },
+  timestamp: string;
+}
+```
+
+## Sending Commands and Requests
+
+### Commands
+
+Commands change system state:
 
 ```javascript
-// websocketMiddleware.js
-export const websocketMiddleware = () => {
-  let socket = null;
-  let reconnectTimer = null;
-  let authToken = null;
-  
-  const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000];
-  let reconnectAttempt = 0;
-  
-  return store => next => action => {
-    switch (action.type) {
-      case 'WS_CONNECT':
-        if (socket !== null) {
-          socket.close();
-        }
-        
-        // Connect to WebSocket
-        socket = new WebSocket('wss://degenduel.me/api/v69/ws');
-        
-        // Save auth token if provided
-        if (action.authToken) {
-          authToken = action.authToken;
-        }
-        
-        socket.onopen = () => {
-          store.dispatch({ type: 'WS_CONNECTED' });
-          reconnectAttempt = 0;
-          
-          // Subscribe to initial topics if provided
-          if (action.topics && action.topics.length > 0) {
-            const message = {
-              type: 'SUBSCRIBE',
-              topics: action.topics
-            };
-            
-            if (authToken) {
-              message.authToken = authToken;
-            }
-            
-            socket.send(JSON.stringify(message));
-          }
-        };
-        
-        socket.onclose = (event) => {
-          store.dispatch({ type: 'WS_DISCONNECTED', payload: { code: event.code, reason: event.reason } });
-          
-          // Attempt reconnection
-          if (reconnectAttempt < RECONNECT_DELAYS.length) {
-            const delay = RECONNECT_DELAYS[reconnectAttempt];
-            reconnectTimer = setTimeout(() => {
-              reconnectAttempt++;
-              store.dispatch({ type: 'WS_CONNECT', topics: action.topics, authToken });
-            }, delay);
-          }
-        };
-        
-        socket.onmessage = (event) => {
-          const message = JSON.parse(event.data);
-          
-          // Dispatch appropriate actions based on message type
-          switch (message.type) {
-            case 'DATA':
-              store.dispatch({
-                type: `WS_DATA_${message.topic.toUpperCase().replace(/-/g, '_')}`,
-                payload: message.data,
-                requestId: message.requestId
-              });
-              break;
-              
-            case 'ERROR':
-              store.dispatch({
-                type: 'WS_ERROR',
-                payload: {
-                  code: message.code,
-                  message: message.message
-                },
-                requestId: message.requestId
-              });
-              break;
-              
-            case 'SYSTEM':
-              store.dispatch({
-                type: 'WS_SYSTEM',
-                payload: message
-              });
-              break;
-              
-            case 'ACKNOWLEDGMENT':
-              store.dispatch({
-                type: `WS_ACK_${message.operation.toUpperCase()}`,
-                payload: message
-              });
-              break;
-          }
-        };
-        
-        socket.onerror = (error) => {
-          store.dispatch({ type: 'WS_ERROR', payload: error });
-        };
-        
-        break;
-        
-      case 'WS_DISCONNECT':
-        if (socket !== null) {
-          socket.close();
-          socket = null;
-        }
-        
-        if (reconnectTimer) {
-          clearTimeout(reconnectTimer);
-          reconnectTimer = null;
-        }
-        
-        break;
-        
-      case 'WS_SUBSCRIBE':
-        if (socket !== null && socket.readyState === WebSocket.OPEN) {
-          const message = {
-            type: 'SUBSCRIBE',
-            topics: action.topics
-          };
-          
-          if (authToken) {
-            message.authToken = authToken;
-          }
-          
-          socket.send(JSON.stringify(message));
-        }
-        break;
-        
-      case 'WS_UNSUBSCRIBE':
-        if (socket !== null && socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({
-            type: 'UNSUBSCRIBE',
-            topics: action.topics
-          }));
-        }
-        break;
-        
-      case 'WS_REQUEST':
-        if (socket !== null && socket.readyState === WebSocket.OPEN) {
-          const { topic, action: wsAction, params = {}, requestId = `req-${Date.now()}` } = action;
-          
-          socket.send(JSON.stringify({
-            type: 'REQUEST',
-            topic,
-            action: wsAction,
-            requestId,
-            ...params
-          }));
-        }
-        break;
-    }
-    
-    return next(action);
-  };
-};
+ws.send(JSON.stringify({
+  type: 'COMMAND',
+  topic: 'wallet',
+  action: 'send',
+  data: {
+    to: 'wallet-address',
+    amount: 0.1,
+    token: 'SOL'
+  },
+  timestamp: new Date().toISOString()
+}));
 ```
 
-Example usage with Redux:
+### Requests
+
+Requests fetch data without changing state:
 
 ```javascript
-import { createStore, applyMiddleware } from 'redux';
-import { websocketMiddleware } from './websocketMiddleware';
-
-const initialState = {
-  websocket: {
-    status: 'disconnected',
-    marketData: [],
-    userProfile: null
-  }
-};
-
-function reducer(state = initialState, action) {
-  switch (action.type) {
-    case 'WS_CONNECTED':
-      return {
-        ...state,
-        websocket: {
-          ...state.websocket,
-          status: 'connected'
-        }
-      };
-      
-    case 'WS_DISCONNECTED':
-      return {
-        ...state,
-        websocket: {
-          ...state.websocket,
-          status: 'disconnected'
-        }
-      };
-      
-    case 'WS_DATA_MARKET_DATA':
-      return {
-        ...state,
-        websocket: {
-          ...state.websocket,
-          marketData: action.payload
-        }
-      };
-      
-    case 'WS_DATA_USER':
-      return {
-        ...state,
-        websocket: {
-          ...state.websocket,
-          userProfile: action.payload
-        }
-      };
-      
-    default:
-      return state;
-  }
-}
-
-const store = createStore(
-  reducer,
-  applyMiddleware(websocketMiddleware())
-);
-
-// Connect to WebSocket and subscribe to market data
-store.dispatch({
-  type: 'WS_CONNECT',
-  topics: ['market-data']
-});
+ws.send(JSON.stringify({
+  type: 'REQUEST',
+  topic: 'user',
+  action: 'getProfile',
+  requestId: 'req-123',  // Use to correlate responses
+  timestamp: new Date().toISOString()
+}));
 ```
 
-## Interactive Demo
+## Error Handling
 
-For an interactive demo of the DegenDuel WebSocket API, visit `/websocket-demo.html` in your browser.
+Error messages follow this format:
 
-## Summary
+```typescript
+{
+  type: 'ERROR',
+  code: number,  // e.g., 4001, 4010, 5000
+  message: string,
+  timestamp: string
+}
+```
 
-The DegenDuel WebSocket API provides a powerful and efficient way to get real-time data from the platform. By using the topic-based unified WebSocket approach, you can:
+Common error codes:
+- 4000-4099: General client errors
+- 4100-4199: Authentication errors
+- 4200-4299: Subscription errors
+- 4300-4399: Command errors
+- 5000-5099: Server errors
 
-1. Use a single connection for all your data needs
-2. Subscribe only to the topics you need
-3. Get real-time updates as data changes
-4. Reduce server load and network traffic
+## Heartbeats
 
-For any questions or issues with the WebSocket API, please contact the DegenDuel development team.
+The server sends periodic heartbeats to keep connections alive:
+
+```typescript
+{
+  type: 'SYSTEM',
+  action: 'heartbeat',
+  timestamp: string
+}
+```
+
+Clients should respond with a heartbeat response or risk disconnection.
+
+## Best Practices
+
+1. Always handle reconnection scenarios
+2. Subscribe to only the topics you need
+3. Implement exponential backoff for reconnection attempts
+4. Add error handling for all message types
+5. Correlate request/response using requestId
+6. Handle connection closure gracefully

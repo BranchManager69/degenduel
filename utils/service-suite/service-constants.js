@@ -23,6 +23,8 @@ export const SERVICE_NAMES = {
     // TOKEN_WHITELIST is deprecated - using token.is_active flag instead
     MARKET_DATA: 'market_data_service',
     TOKEN_WHITELIST: 'token_whitelist_service', // Kept for backwards compatibility
+    TOKEN_REFRESH_SCHEDULER: 'token_refresh_scheduler_service', // Advanced token refresh scheduler
+    TOKEN_DEX_DATA: 'token_dex_data_service', // DEX pool data service
 
     // Contest Layer Services
     CONTEST_EVALUATION: 'contest_evaluation_service',
@@ -47,8 +49,10 @@ export const SERVICE_NAMES = {
     SOLANA_ENGINE: 'solana_engine_service', // Solana Engine service
     SYSTEM_SETTINGS: 'system_settings_service', // New System Settings service
     AI_SERVICE: 'ai_service', // AI Analysis and Processing Service
-    /* TESTING BELOW THIS POINT */
-    NOTIFICATION: 'notification_service', // New Notification service
+    
+    // Notification Services
+    DISCORD_NOTIFICATION: 'discord_notification_service', // Discord integration service
+    NOTIFICATION: 'notification_service', // General notification service
 };
 
 export const SERVICE_LAYERS = {
@@ -67,7 +71,21 @@ export const SERVICE_METADATA = {
         description: 'Market price data aggregation',
         updateFrequency: '1m',
         criticalLevel: 'critical',
-        dependencies: []
+        dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
+    },
+    [SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER]: {
+        layer: SERVICE_LAYERS.DATA,
+        description: 'Advanced token refresh scheduling system',
+        updateFrequency: '5s',
+        criticalLevel: 'high',
+        dependencies: [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.SOLANA_ENGINE]
+    },
+    [SERVICE_NAMES.TOKEN_DEX_DATA]: {
+        layer: SERVICE_LAYERS.DATA,
+        description: 'Token DEX pool data management',
+        updateFrequency: '15m',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         layer: SERVICE_LAYERS.DATA,
@@ -200,14 +218,21 @@ export const SERVICE_METADATA = {
         description: 'System settings management',
     },
 
-    /* TESTING BELOW THIS POINT */
-
-    // New Notification service metadata
+    // Notification services metadata
     [SERVICE_NAMES.NOTIFICATION]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'User notification service',
-        updateFrequency: '1m', // TODO: Add update frequency
-        criticalLevel: 'medium', // TODO: Add critical level
+        updateFrequency: '1m',
+        criticalLevel: 'medium',
+        dependencies: []
+    },
+    
+    // Discord notification service metadata
+    [SERVICE_NAMES.DISCORD_NOTIFICATION]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'Discord webhook integration service',
+        updateFrequency: 'event-based',
+        criticalLevel: 'low',
         dependencies: []
     },
 

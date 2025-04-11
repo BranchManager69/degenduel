@@ -12,12 +12,13 @@
  */
 
 import { heliusClient } from './helius-client.js';
-import { jupiterClient } from './jupiter-client.js';
+import { jupiterClient, getJupiterClient } from './jupiter-client.js';
 import { solanaEngine } from './solana-engine.js';
 
 export {
   heliusClient,
   jupiterClient,
+  getJupiterClient,
   solanaEngine
 };
 

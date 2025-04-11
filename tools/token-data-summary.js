@@ -17,6 +17,9 @@ import chalk from 'chalk';
 import boxen from 'boxen';
 import gradient from 'gradient-string';
 
+// Clear the console at startup
+console.clear();
+
 // Parse command line arguments
 const args = process.argv.slice(2);
 const options = {
@@ -27,7 +30,7 @@ const options = {
   exportCsv: false,     // Whether to export data to CSV
   metric: 'all',        // Which metric to analyze (price, volume, liquidity, market_cap, all)
   token: null,          // Specific token symbol to focus on
-  address: null         // Specific token address to focus on
+  address: null,        // Specific token address to focus on
 };
 
 // Parse options
@@ -662,22 +665,36 @@ async function summarizeTokenData() {
     }
   ));
   
-  // Get top 10 tokens by rank
+  // Get top 10 tokens based on sort option
+  let orderByField;
+  switch(options.sort) {
+    case 'price':
+      orderByField = [{ token_prices: { price: 'desc' } }];
+      break;
+    case 'volume':
+      orderByField = [{ token_prices: { volume_24h: 'desc' } }];
+      break;
+    case 'market_cap':
+    default:
+      orderByField = [
+        { token_prices: { market_cap: 'desc' } }, 
+        { token_prices: { volume_24h: 'desc' } }, 
+        { token_prices: { price: 'desc' } }
+      ];
+  }
+
+  // Get tokens based on query parameters with NO filtering
   const topTokens = await prisma.tokens.findMany({
-    take: 10,
+    take: options.limit,
     include: {
       token_prices: true
     },
-    orderBy: [
-      { token_prices: { market_cap: 'desc' } },
-      { token_prices: { volume_24h: 'desc' } },
-      { token_prices: { price: 'desc' } }
-    ]
+    orderBy: orderByField
   });
   
   let tokensContent = '';
   if (topTokens.length > 0) {
-    tokensContent = chalk.white('Symbol'.padEnd(10) + 'Price'.padEnd(12) + 'Volume 24h'.padEnd(15) + 'Market Cap'.padEnd(15) + 'Liquidity') + '\n';
+    tokensContent = chalk.white('Symbol'.padEnd(10) + 'Price'.padEnd(15) + 'Volume 24h'.padEnd(15) + 'Market Cap'.padEnd(15) + 'Liquidity') + '\n';
     tokensContent += chalk.gray('-'.repeat(65)) + '\n';
     
     topTokens.forEach(token => {
@@ -686,8 +703,8 @@ async function summarizeTokenData() {
       const marketCap = token.token_prices?.market_cap || 'N/A';
       const liquidity = token.token_prices?.liquidity || 'N/A';
       tokensContent += 
-        chalk.yellow(token.symbol?.padEnd(10) || 'N/A'.padEnd(10)) + 
-        chalk.green(String(price).padEnd(12)) +
+        chalk.yellow((token.symbol || '').padEnd(10)) + 
+        chalk.green(String(price).padEnd(15)) +
         chalk.cyan(String(volume).padEnd(15)) +
         chalk.magenta(String(marketCap).padEnd(15)) +
         chalk.blue(String(liquidity)) + '\n';
@@ -696,8 +713,24 @@ async function summarizeTokenData() {
     tokensContent = chalk.gray('No tokens found');
   }
   
+  // Determine which data fields are available in results
+  const hasPrice = topTokens.some(t => t.token_prices?.price !== null && t.token_prices?.price !== undefined);
+  const hasVolume = topTokens.some(t => t.token_prices?.volume_24h !== null && t.token_prices?.volume_24h !== undefined);
+  const hasMarketCap = topTokens.some(t => t.token_prices?.market_cap !== null && t.token_prices?.market_cap !== undefined);
+  const hasLiquidity = topTokens.some(t => t.token_prices?.liquidity !== null && t.token_prices?.liquidity !== undefined);
+  
+  // Create a note about available data
+  const dataNote = chalk.gray(
+    `Note: Available data: ${[
+      hasPrice ? 'Price ✓' : 'Price ✗',
+      hasVolume ? 'Volume ✓' : 'Volume ✗',
+      hasMarketCap ? 'Market Cap ✓' : 'Market Cap ✗',
+      hasLiquidity ? 'Liquidity ✓' : 'Liquidity ✗'
+    ].join(', ')}`
+  );
+  
   console.log(boxen(
-    chalk.bold.yellow(`\n🏆 TOP ${options.limit} TOKENS\n`) + tokensContent,
+    chalk.bold.yellow(`\n🏆 TOP ${options.limit} TOKENS\n`) + tokensContent + '\n' + dataNote,
     { 
       padding: 1, 
       margin: 1, 
@@ -944,188 +977,257 @@ async function generateTokenTimeline() {
       LIMIT ${Math.min(5, options.limit / 2)}
     `;
 
-  // Execute the timelineQuery if in new-only mode
-  let allTrackedTokens = [];
-  
-  if (options.newOnly) {
-    allTrackedTokens = await prisma.$queryRaw(timelineQuery);
-  } else {
-    // Combine lists, removing duplicates
-    allTrackedTokens = [...topTrackedTokens];
-    for (const newToken of newestTrackedTokens) {
-      if (!allTrackedTokens.some(t => t.id === newToken.id)) {
-        allTrackedTokens.push(newToken);
-      }
-    }
-  }
-  
-  console.log(boxen(
-    chalk.bold.blue(`\n📈 TOKEN TRACKING TIMELINE (${options.newOnly ? 'NEW TOKENS ONLY' : 'TOP & NEW TOKENS'})\n`),
-    { 
-      padding: 1, 
-      margin: 1, 
-      borderStyle: 'round',
-      borderColor: 'blue',
-    }
-  ));
-  
-  if (allTrackedTokens.length === 0) {
-    console.log(chalk.gray('No token history data found'));
-    return;
-  }
-  
-  // Find the global time range for all tokens
-  const globalFirstDate = new Date(Math.min(...allTrackedTokens.map(t => t.first_tracked)));
-  const globalLastDate = new Date(Math.max(...allTrackedTokens.map(t => t.last_tracked)));
-  const totalDays = Math.ceil((globalLastDate - globalFirstDate) / (1000 * 60 * 60 * 24));
-  
-  // Display the time range
-  console.log(chalk.cyan(`Tracking period: ${globalFirstDate.toLocaleString()} to ${globalLastDate.toLocaleString()} (${totalDays} days)\n`));
-  
-  // Track by day of month for visual simplicity if the range is small
-  if (totalDays <= 31) {
-    // For each token, create a horizontal bar representing the tracking period
+    // Execute the timelineQuery if in new-only mode
+    let allTrackedTokens = [];
     
-    // Sort tokens by first_tracked date to show in chronological order
-    const chronologicalTokens = [...allTrackedTokens].sort((a, b) => 
-      new Date(a.first_tracked) - new Date(b.first_tracked)
-    );
-    
-    // Tokens from newestTrackedTokens should be highlighted
-    const newestTokenIds = new Set(newestTrackedTokens.map(t => t.id));
-    
-    console.log(chalk.bold('Token tracking by date/time (includes hours for recent tokens):'));
-    console.log(chalk.gray('─'.repeat(90)));
-    
-    // For each token, create a horizontal bar representing the tracking period
-    for (const token of chronologicalTokens) {
-      // Calculate position on the timeline
-      const startDay = Math.floor((token.first_tracked - globalFirstDate) / (1000 * 60 * 60 * 24));
-      const trackingDays = Math.ceil((token.last_tracked - token.first_tracked) / (1000 * 60 * 60 * 24));
-      
-      // Generate the timeline visualization
-      let timeline = '';
-      for (let i = 0; i < totalDays; i++) {
-        if (i < startDay) {
-          timeline += chalk.gray('·'); // Period before tracking
-        } else if (i < startDay + trackingDays) {
-          // Newer tokens are highlighted with a different color
-          if (newestTokenIds.has(token.id)) {
-            timeline += chalk.blue('█'); // Different color for newer tokens
-          } else {
-            timeline += chalk.green('█'); // Period with tracking
-          }
-        } else {
-          timeline += chalk.gray('·'); // Period after tracking
+    if (options.newOnly) {
+      allTrackedTokens = await prisma.$queryRaw(timelineQuery);
+    } else {
+      // Combine lists, removing duplicates
+      allTrackedTokens = [...topTrackedTokens];
+      for (const newToken of newestTrackedTokens) {
+        if (!allTrackedTokens.some(t => t.id === newToken.id)) {
+          allTrackedTokens.push(newToken);
         }
       }
+    }
+    
+    console.log(boxen(
+      chalk.bold.blue(`\n📈 TOKEN TRACKING TIMELINE (${options.newOnly ? 'NEW TOKENS ONLY' : 'TOP & NEW TOKENS'})\n`),
+      { 
+        padding: 1, 
+        margin: 1, 
+        borderStyle: 'round',
+        borderColor: 'blue',
+      }
+    ));
+    
+    if (allTrackedTokens.length === 0) {
+      console.log(chalk.gray('No token history data found'));
+      return;
+    }
+    
+    // Find the global time range for all tokens
+    const globalFirstDate = new Date(Math.min(...allTrackedTokens.map(t => t.first_tracked)));
+    const globalLastDate = new Date(Math.max(...allTrackedTokens.map(t => t.last_tracked)));
+    const totalDays = Math.ceil((globalLastDate - globalFirstDate) / (1000 * 60 * 60 * 24));
+    
+    // Display the time range
+    console.log(chalk.cyan(`Tracking period: ${globalFirstDate.toLocaleString()} to ${globalLastDate.toLocaleString()} (${totalDays} days)\n`));
+    
+    // Track by day of month for visual simplicity if the range is small
+    if (totalDays <= 31) {
+      // For each token, create a horizontal bar representing the tracking period
       
-      // Display the token symbol, address and timeline
-      const symbol = token.symbol || token.address.substring(0, 8);
-      const firstTrackedDate = new Date(token.first_tracked);
+      // Sort tokens by first_tracked date to show in chronological order
+      const chronologicalTokens = [...allTrackedTokens].sort((a, b) => 
+        new Date(a.first_tracked) - new Date(b.first_tracked)
+      );
       
-      // For tokens added within the last 24 hours, show hours and minutes
-      const now = new Date();
-      const isVeryRecent = (now - firstTrackedDate) < 24 * 60 * 60 * 1000;
+      // Tokens from newestTrackedTokens should be highlighted
+      const newestTokenIds = new Set(newestTrackedTokens.map(t => t.id));
       
-      let dateStr;
-      if (isVeryRecent) {
-        // Format with hours and minutes for very recent tokens
-        const hours = firstTrackedDate.getHours().toString().padStart(2, '0');
-        const mins = firstTrackedDate.getMinutes().toString().padStart(2, '0');
-        dateStr = `${firstTrackedDate.getMonth()+1}/${firstTrackedDate.getDate()} ${hours}:${mins}`;
-      } else {
-        // Just date for older tokens
-        dateStr = `${firstTrackedDate.getMonth()+1}/${firstTrackedDate.getDate()}`;
+      console.log(chalk.bold('Token tracking by date/time (includes hours for recent tokens):'));
+      console.log(chalk.gray('─'.repeat(90)));
+      
+      // For each token, create a horizontal bar representing the tracking period
+      for (const token of chronologicalTokens) {
+        // Calculate position on the timeline
+        const startDay = Math.floor((token.first_tracked - globalFirstDate) / (1000 * 60 * 60 * 24));
+        const trackingDays = Math.ceil((token.last_tracked - token.first_tracked) / (1000 * 60 * 60 * 24));
+        
+        // Generate the timeline visualization
+        let timeline = '';
+        for (let i = 0; i < totalDays; i++) {
+          if (i < startDay) {
+            timeline += chalk.gray('·'); // Period before tracking
+          } else if (i < startDay + trackingDays) {
+            // Newer tokens are highlighted with a different color
+            if (newestTokenIds.has(token.id)) {
+              timeline += chalk.blue('█'); // Different color for newer tokens
+            } else {
+              timeline += chalk.green('█'); // Period with tracking
+            }
+          } else {
+            timeline += chalk.gray('·'); // Period after tracking
+          }
+        }
+        
+        // Display the token symbol, address and timeline
+        const symbol = token.symbol || token.address.substring(0, 8);
+        const firstTrackedDate = new Date(token.first_tracked);
+        
+        // For tokens added within the last 24 hours, show hours and minutes
+        const now = new Date();
+        const isVeryRecent = (now - firstTrackedDate) < 24 * 60 * 60 * 1000;
+        
+        let dateStr;
+        if (isVeryRecent) {
+          // Format with hours and minutes for very recent tokens
+          const hours = firstTrackedDate.getHours().toString().padStart(2, '0');
+          const mins = firstTrackedDate.getMinutes().toString().padStart(2, '0');
+          dateStr = `${firstTrackedDate.getMonth()+1}/${firstTrackedDate.getDate()} ${hours}:${mins}`;
+        } else {
+          // Just date for older tokens
+          dateStr = `${firstTrackedDate.getMonth()+1}/${firstTrackedDate.getDate()}`;
+        }
+        
+        // Show if it's a newly tracked token
+        const isNew = newestTokenIds.has(token.id);
+        const tagColor = isNew ? chalk.bgCyan.black(' NEW ') : '';
+        const ageHours = Math.round((now - firstTrackedDate) / (60 * 60 * 1000) * 10) / 10;
+        const ageTag = isNew ? chalk.cyan(`[${ageHours}h]`) : '';
+        
+        console.log(
+          chalk.yellow(symbol.padEnd(10)) + 
+          chalk.white(`${dateStr.padEnd(isVeryRecent ? 12 : 5)}`) +
+          chalk.gray(`(${token.entry_count.toString().padEnd(5)} entries) `) + 
+          timeline +
+          (isNew ? ` ${tagColor} ${ageTag}` : '')
+        );
       }
       
-      // Show if it's a newly tracked token
-      const isNew = newestTokenIds.has(token.id);
-      const tagColor = isNew ? chalk.bgCyan.black(' NEW ') : '';
-      const ageHours = Math.round((now - firstTrackedDate) / (60 * 60 * 1000) * 10) / 10;
-      const ageTag = isNew ? chalk.cyan(`[${ageHours}h]`) : '';
+      // Add a date scale at the bottom
+      let dateScale = '';
+      const numMarkers = Math.min(totalDays, 10);
+      const markerSpacing = Math.max(1, Math.floor(totalDays / numMarkers));
       
+      for (let i = 0; i < totalDays; i += markerSpacing) {
+        const date = new Date(globalFirstDate);
+        date.setDate(globalFirstDate.getDate() + i);
+        const dateMarker = `${date.getMonth()+1}/${date.getDate()}`;
+        const padding = Math.max(0, markerSpacing - dateMarker.length);
+        dateScale += chalk.cyan(dateMarker) + ' '.repeat(padding);
+      }
+      
+      console.log('\n' + ' '.repeat(25) + dateScale);
+      console.log('\n' + chalk.gray('Legend: ') + 
+        chalk.gray('·') + ' No data   ' + 
+        chalk.green('█') + ' Historical data   ' + 
+        chalk.blue('█') + ' Recently added token');
+    } else {
+      // For longer periods, display a month-by-month heatmap
+      
+      // Group entries by token and month
+      const tokenMonthlyData = await prisma.$queryRaw`
+        SELECT 
+          t.id, 
+          t.symbol,
+          TO_CHAR(tph.timestamp, 'YYYY-MM') as month,
+          COUNT(*) as entry_count,
+          MIN(tph.timestamp) as first_entry
+        FROM token_price_history tph
+        JOIN tokens t ON tph.token_id = t.id
+        WHERE t.id IN (${allTrackedTokens.map(t => t.id).join(',')})
+        GROUP BY t.id, t.symbol, TO_CHAR(tph.timestamp, 'YYYY-MM')
+        ORDER BY t.id, TO_CHAR(tph.timestamp, 'YYYY-MM')
+      `;
+      
+      // Get list of all months in the range
+      const months = [];
+      const startDate = new Date(globalFirstDate);
+      const endDate = new Date(globalLastDate);
+      for (let d = new Date(startDate); d <= endDate; d.setMonth(d.getMonth() + 1)) {
+        months.push(d.toISOString().substring(0, 7)); // YYYY-MM format
+      }
+      
+      // Print header with months
       console.log(
-        chalk.yellow(symbol.padEnd(10)) + 
-        chalk.white(`${dateStr.padEnd(isVeryRecent ? 12 : 5)}`) +
-        chalk.gray(`(${token.entry_count.toString().padEnd(5)} entries) `) + 
-        timeline +
-        (isNew ? ` ${tagColor} ${ageTag}` : '')
+        chalk.white('Token'.padEnd(10)) + 
+        chalk.white('Entries'.padEnd(10)) + 
+        months.map(m => chalk.cyan(m.substring(5))).join(' ') // Only show MM part
       );
-    }
-    
-    // Add a date scale at the bottom
-    let dateScale = '';
-    const numMarkers = Math.min(totalDays, 10);
-    const markerSpacing = Math.max(1, Math.floor(totalDays / numMarkers));
-    
-    for (let i = 0; i < totalDays; i += markerSpacing) {
-      const date = new Date(globalFirstDate);
-      date.setDate(globalFirstDate.getDate() + i);
-      const dateMarker = `${date.getMonth()+1}/${date.getDate()}`;
-      const padding = Math.max(0, markerSpacing - dateMarker.length);
-      dateScale += chalk.cyan(dateMarker) + ' '.repeat(padding);
-    }
-    
-    console.log('\n' + ' '.repeat(25) + dateScale);
-    console.log('\n' + chalk.gray('Legend: ') + 
-      chalk.gray('·') + ' No data   ' + 
-      chalk.green('█') + ' Historical data   ' + 
-      chalk.blue('█') + ' Recently added token');
-  } else {
-    // For longer periods, display a month-by-month heatmap
-    
-    // Group entries by token and month
-    const tokenMonthlyData = await prisma.$queryRaw`
-      SELECT 
-        t.id, 
-        t.symbol,
-        TO_CHAR(tph.timestamp, 'YYYY-MM') as month,
-        COUNT(*) as entry_count,
-        MIN(tph.timestamp) as first_entry
-      FROM token_price_history tph
-      JOIN tokens t ON tph.token_id = t.id
-      WHERE t.id IN (${allTrackedTokens.map(t => t.id).join(',')})
-      GROUP BY t.id, t.symbol, TO_CHAR(tph.timestamp, 'YYYY-MM')
-      ORDER BY t.id, TO_CHAR(tph.timestamp, 'YYYY-MM')
-    `;
-    
-    // Get list of all months in the range
-    const months = [];
-    const startDate = new Date(globalFirstDate);
-    const endDate = new Date(globalLastDate);
-    for (let d = new Date(startDate); d <= endDate; d.setMonth(d.getMonth() + 1)) {
-      months.push(d.toISOString().substring(0, 7)); // YYYY-MM format
-    }
-    
-    // Print header with months
-    console.log(
-      chalk.white('Token'.padEnd(10)) + 
-      chalk.white('Entries'.padEnd(10)) + 
-      months.map(m => chalk.cyan(m.substring(5))).join(' ') // Only show MM part
-    );
-    console.log(chalk.gray('-'.repeat(10 + 10 + months.length * 3)));
-    
-    // For each token, display its monthly data
-    let currentTokenId = -1;
-    let currentSymbol = '';
-    let currentEntryCount = 0;
-    let monthData = {};
-    
-    // Initialize array to store rows
-    const rows = [];
-    
-    // Get the set of newest token IDs
-    const newestTokenIds = new Set(newestTrackedTokens.map(t => t.id));
-    
-    console.log(chalk.bold('Token history by month:'));
-    console.log(chalk.gray('─'.repeat(80)));
-
-    // Process token monthly data
-    for (const record of tokenMonthlyData) {
-      // If we've moved to a new token, output the previous one
-      if (currentTokenId !== -1 && currentTokenId !== record.id) {
-        // Generate the row for the current token
+      console.log(chalk.gray('-'.repeat(10 + 10 + months.length * 3)));
+      
+      // For each token, display its monthly data
+      let currentTokenId = -1;
+      let currentSymbol = '';
+      let currentEntryCount = 0;
+      let monthData = {};
+      
+      // Initialize array to store rows
+      const rows = [];
+      
+      // Get the set of newest token IDs
+      const newestTokenIds = new Set(newestTrackedTokens.map(t => t.id));
+      
+      console.log(chalk.bold('Token history by month:'));
+      console.log(chalk.gray('─'.repeat(80)));
+  
+      // Process token monthly data
+      for (const record of tokenMonthlyData) {
+        // If we've moved to a new token, output the previous one
+        if (currentTokenId !== -1 && currentTokenId !== record.id) {
+          // Generate the row for the current token
+          const isNew = newestTokenIds.has(currentTokenId);
+          const firstEntry = new Date(currentFirstEntry);
+          const now = new Date();
+          const isVeryRecent = (now - firstEntry) < 24 * 60 * 60 * 1000;
+          
+          let firstEntryStr;
+          if (isVeryRecent) {
+            // Format with hours and minutes for very recent tokens
+            const hours = firstEntry.getHours().toString().padStart(2, '0');
+            const mins = firstEntry.getMinutes().toString().padStart(2, '0');
+            firstEntryStr = `${firstEntry.getMonth()+1}/${firstEntry.getDate()} ${hours}:${mins}`;
+          } else {
+            // Just date for older tokens
+            firstEntryStr = `${firstEntry.getMonth()+1}/${firstEntry.getDate()}`;
+          }
+          
+          let row = chalk.yellow((currentSymbol || 'Unknown').padEnd(10)) + 
+                    chalk.white(firstEntryStr.padEnd(isVeryRecent ? 12 : 12)) +
+                    chalk.white(currentEntryCount.toString().padEnd(8));
+          
+          // Add month-by-month cells
+          for (const month of months) {
+            const count = monthData[month] || 0;
+            if (count === 0) {
+              row += chalk.gray('·  ');
+            } else if (count < 100) {
+              // Color differently for new tokens
+              if (isNew) {
+                row += chalk.blue('▪  ');
+              } else {
+                row += chalk.green('▪  ');
+              }
+            } else if (count < 500) {
+              if (isNew) {
+                row += chalk.blue('▫  ');
+              } else {
+                row += chalk.green('▫  ');
+              }
+            } else {
+              if (isNew) {
+                row += chalk.blue('█  ');
+              } else {
+                row += chalk.green('█  ');
+              }
+            }
+          }
+          
+          // Add NEW tag and age indicator if applicable
+          if (isNew) {
+            const ageHours = Math.round((now - firstEntry) / (60 * 60 * 1000) * 10) / 10;
+            row += ` ${chalk.bgCyan.black(' NEW ')} ${chalk.cyan(`[${ageHours}h]`)}`;
+          }
+          
+          rows.push(row);
+          
+          // Reset for next token
+          monthData = {};
+        }
+        
+        // Store the current token's data
+        currentTokenId = record.id;
+        currentSymbol = record.symbol || allTrackedTokens.find(t => t.id === record.id)?.address.substring(0, 8) || 'Unknown';
+        currentEntryCount = allTrackedTokens.find(t => t.id === record.id)?.entry_count || 0;
+        currentFirstEntry = record.first_entry || allTrackedTokens.find(t => t.id === record.id)?.first_tracked;
+        monthData[record.month] = record.entry_count;
+      }
+      
+      // Output the last token
+      if (currentTokenId !== -1) {
         const isNew = newestTokenIds.has(currentTokenId);
         const firstEntry = new Date(currentFirstEntry);
         const now = new Date();
@@ -1146,7 +1248,6 @@ async function generateTokenTimeline() {
                   chalk.white(firstEntryStr.padEnd(isVeryRecent ? 12 : 12)) +
                   chalk.white(currentEntryCount.toString().padEnd(8));
         
-        // Add month-by-month cells
         for (const month of months) {
           const count = monthData[month] || 0;
           if (count === 0) {
@@ -1180,97 +1281,30 @@ async function generateTokenTimeline() {
         }
         
         rows.push(row);
-        
-        // Reset for next token
-        monthData = {};
       }
       
-      // Store the current token's data
-      currentTokenId = record.id;
-      currentSymbol = record.symbol || allTrackedTokens.find(t => t.id === record.id)?.address.substring(0, 8) || 'Unknown';
-      currentEntryCount = allTrackedTokens.find(t => t.id === record.id)?.entry_count || 0;
-      currentFirstEntry = record.first_entry || allTrackedTokens.find(t => t.id === record.id)?.first_tracked;
-      monthData[record.month] = record.entry_count;
+      // Print the header before we display the rows
+      console.log(
+        chalk.white('Token'.padEnd(10)) + 
+        chalk.white('Date/Time'.padEnd(12)) + 
+        chalk.white('Entries'.padEnd(8)) + 
+        months.map(m => chalk.cyan(m.substring(5))).join(' ') // Only show MM part
+      );
+      console.log(chalk.gray('-'.repeat(10 + 12 + 8 + months.length * 3)));
+      
+      // Display the rows
+      for (const row of rows) {
+        console.log(row);
+      }
+      
+      // Add a legend
+      console.log('\n' + chalk.gray('Legend: ') + 
+        chalk.gray('·') + ' No data   ' + 
+        chalk.green('▪') + ' <100 entries   ' + 
+        chalk.green('▫') + ' <500 entries   ' + 
+        chalk.green('█') + ' 500+ entries   ' +
+        chalk.blue('█') + ' Recently added token');
     }
-    
-    // Output the last token
-    if (currentTokenId !== -1) {
-      const isNew = newestTokenIds.has(currentTokenId);
-      const firstEntry = new Date(currentFirstEntry);
-      const now = new Date();
-      const isVeryRecent = (now - firstEntry) < 24 * 60 * 60 * 1000;
-      
-      let firstEntryStr;
-      if (isVeryRecent) {
-        // Format with hours and minutes for very recent tokens
-        const hours = firstEntry.getHours().toString().padStart(2, '0');
-        const mins = firstEntry.getMinutes().toString().padStart(2, '0');
-        firstEntryStr = `${firstEntry.getMonth()+1}/${firstEntry.getDate()} ${hours}:${mins}`;
-      } else {
-        // Just date for older tokens
-        firstEntryStr = `${firstEntry.getMonth()+1}/${firstEntry.getDate()}`;
-      }
-      
-      let row = chalk.yellow((currentSymbol || 'Unknown').padEnd(10)) + 
-                chalk.white(firstEntryStr.padEnd(isVeryRecent ? 12 : 12)) +
-                chalk.white(currentEntryCount.toString().padEnd(8));
-      
-      for (const month of months) {
-        const count = monthData[month] || 0;
-        if (count === 0) {
-          row += chalk.gray('·  ');
-        } else if (count < 100) {
-          // Color differently for new tokens
-          if (isNew) {
-            row += chalk.blue('▪  ');
-          } else {
-            row += chalk.green('▪  ');
-          }
-        } else if (count < 500) {
-          if (isNew) {
-            row += chalk.blue('▫  ');
-          } else {
-            row += chalk.green('▫  ');
-          }
-        } else {
-          if (isNew) {
-            row += chalk.blue('█  ');
-          } else {
-            row += chalk.green('█  ');
-          }
-        }
-      }
-      
-      // Add NEW tag and age indicator if applicable
-      if (isNew) {
-        const ageHours = Math.round((now - firstEntry) / (60 * 60 * 1000) * 10) / 10;
-        row += ` ${chalk.bgCyan.black(' NEW ')} ${chalk.cyan(`[${ageHours}h]`)}`;
-      }
-      
-      rows.push(row);
-    }
-    
-    // Print the header before we display the rows
-    console.log(
-      chalk.white('Token'.padEnd(10)) + 
-      chalk.white('Date/Time'.padEnd(12)) + 
-      chalk.white('Entries'.padEnd(8)) + 
-      months.map(m => chalk.cyan(m.substring(5))).join(' ') // Only show MM part
-    );
-    console.log(chalk.gray('-'.repeat(10 + 12 + 8 + months.length * 3)));
-    
-    // Display the rows
-    for (const row of rows) {
-      console.log(row);
-    }
-    
-    // Add a legend
-    console.log('\n' + chalk.gray('Legend: ') + 
-      chalk.gray('·') + ' No data   ' + 
-      chalk.green('▪') + ' <100 entries   ' + 
-      chalk.green('▫') + ' <500 entries   ' + 
-      chalk.green('█') + ' 500+ entries   ' +
-      chalk.blue('█') + ' Recently added token');
   }
 }
 

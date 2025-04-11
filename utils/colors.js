@@ -222,6 +222,17 @@ export const serviceSpecificColors = {
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
   },
+  tokenDEXData: {
+    tag: '\x1b[1m\x1b[38;5;147m',                   // Light Purple (147)
+    header: '\x1b[1m\x1b[38;5;147m\x1b[48;5;236m',  // Light Purple on dark gray
+    info: '\x1b[38;5;147m',                         // Regular light purple
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;147m',             // Bold light purple for highlights
+    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
+    count: '\x1b[38;5;46m',                         // Green for counts
+  },
   contestWallet: {
     tag: '\x1b[1m\x1b[38;5;51m',                    // Cyan (51)
     header: '\x1b[1m\x1b[38;5;51m\x1b[48;5;236m',   // Cyan on dark gray
@@ -251,6 +262,17 @@ export const serviceSpecificColors = {
     highlight: '\x1b[1m\x1b[38;5;208m',             // Bold orange for highlights
     token: '\x1b[38;5;51m',                         // Cyan for token identifiers
     price: '\x1b[38;5;226m',                        // Yellow for prices
+    count: '\x1b[38;5;46m',                         // Green for counts
+  },
+  dexscreenerClient: {
+    tag: '\x1b[1m\x1b[38;5;141m',                   // Lavender (141)
+    header: '\x1b[1m\x1b[38;5;141m\x1b[48;5;236m',  // Lavender on dark gray
+    info: '\x1b[38;5;141m',                         // Regular lavender
+    success: '\x1b[38;5;46m',                       // Standard green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;141m',             // Bold lavender for highlights
+    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
     count: '\x1b[38;5;46m',                         // Green for counts
   },
   solanaEngine: {

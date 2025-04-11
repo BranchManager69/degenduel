@@ -633,6 +633,8 @@ const config = {
       ai_service: true,
       solana_service: true,
       solana_engine_service: true, // New SolanaEngine service
+      token_refresh_scheduler: true, // Advanced token refresh scheduler
+      token_dex_data_service: true, // DEX pool data service
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
@@ -657,6 +659,8 @@ const config = {
       ai_service: true, // Keep AI service enabled in development for testing
       solana_service: true, // Keep Solana service enabled in development for connection management
       solana_engine_service: true, // Keep SolanaEngine service enabled in development for testing
+      token_refresh_scheduler: false, // Disable advanced token refresh scheduler in development
+      token_dex_data_service: false, // Disable DEX pool data service in development
       // Additional services would be disabled here too
       // etc.
     }
@@ -700,6 +704,10 @@ const config = {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.token_sync;
+    },
+    
+    get token_monitor() {
+      return true; // Always enable token monitoring service for testing
     },
     
     get market_data() {
@@ -802,6 +810,18 @@ const config = {
                      config.service_profiles.development;
       return profile.vanity_wallet_service;
     },
+    
+    get token_refresh_scheduler_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.token_refresh_scheduler;
+    },
+    
+    get token_dex_data_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.token_dex_data_service;
+    },
   },
   debug_mode: 
     process.env.DD_API_DEBUG_MODE || 'false',
@@ -832,7 +852,8 @@ const config = {
       ADMIN: 'admin',
       WALLET: 'wallet',
       WALLET_BALANCE: 'wallet-balance', // Add wallet balance topic
-      SKYDUEL: 'skyduel'
+      SKYDUEL: 'skyduel',
+      TERMINAL: 'terminal' // Terminal data topic
     },
     
     // Message types for the unified WebSocket

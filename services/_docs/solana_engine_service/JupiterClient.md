@@ -4,14 +4,16 @@
 
 The Jupiter Client in the SolanaEngine service is responsible for all market-related data and operations. It integrates with Jupiter's advanced API for price data, swap quotes, and trading operations.
 
+**IMPORTANT NOTE**: As of April 2025, automatic price polling is disabled by default to avoid conflicts with the TokenRefreshScheduler. The TokenRefreshScheduler is now the primary mechanism for token price updates.
+
 ## Features
 
 ### Price Data
 
-- Real-time price streaming via WebSocket
 - Historical price data retrieval
 - Price subscription management
 - Automated price caching
+- Optional automatic polling (disabled by default)
 
 ### Trading Operations
 
@@ -29,21 +31,23 @@ The Jupiter Client in the SolanaEngine service is responsible for all market-rel
 
 ## Implementation Details
 
-### WebSocket Connection
+### Price Polling and Rate Limiting
 
-The client establishes and maintains a persistent WebSocket connection to Jupiter's API for real-time price updates:
+The client implements a polling mechanism to fetch price updates, but this is disabled by default to avoid conflicts with the TokenRefreshScheduler:
 
 ```javascript
-initializeWebSocket() {
-  this.wsClient = new WebSocket(this.config.websocket.priceUrl);
-  
-  this.wsClient.on('open', () => {
-    this.wsConnected = true;
-    this.reconnectAttempts = 0;
-    this.resubscribeToTokens();
-  });
-  
-  // Additional event handlers...
+class PriceService extends JupiterBase {
+  constructor(config) {
+    // Polling configuration
+    this.pollingInterval = null;
+    this.pollingFrequency = 30000; // 30 seconds (if enabled)
+    this.automaticPollingEnabled = false; // Disabled by default
+    
+    // Lock to prevent concurrent API calls
+    this.isFetchingPrices = false;
+    this.lastFetchTime = 0;
+    this.minimumFetchGap = 15000; // 15 second minimum between fetches
+  }
 }
 ```
 
@@ -56,18 +60,17 @@ async subscribeToPrices(mintAddresses) {
   // Filter new tokens
   const newTokens = mintAddresses.filter(address => !this.subscriptions.has(address));
   
-  // Create subscription message
-  const subscriptionMessage = {
-    type: 'subscribe',
-    tokens: newTokens,
-  };
-  
-  // Send subscription request
-  this.wsClient.send(JSON.stringify(subscriptionMessage));
-  
   // Update subscriptions map
   for (const address of newTokens) {
     this.subscriptions.set(address, true);
+  }
+  
+  // Note: Automatic polling is disabled by default
+  // The TokenRefreshScheduler will handle price updates
+  
+  // If automatic polling is enabled and not already started, start it
+  if (this.automaticPollingEnabled && this.subscriptions.size > 0 && !this.pollingInterval) {
+    this.startPolling();
   }
 }
 ```
@@ -115,6 +118,38 @@ notifyPriceUpdateCallbacks(priceData) {
 }
 ```
 
+## Concurrent Request Handling
+
+The client implements a locking mechanism to prevent concurrent API calls and rate limit issues:
+
+```javascript
+async getPrices(mintAddresses) {
+  // Check if a price fetch is already in progress
+  if (this.isFetchingPrices) {
+    logApi.info('Delaying price fetch as a previous batch is still processing');
+    
+    // Wait with timeout for the current operation to complete
+    const maxWaitMs = 5000;
+    const startWait = Date.now();
+    while (this.isFetchingPrices && (Date.now() - startWait < maxWaitMs)) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  // Set the lock before starting the fetch
+  this.isFetchingPrices = true;
+  this.lastFetchTime = Date.now();
+  
+  try {
+    // API call logic here...
+    return priceData;
+  } finally {
+    // Always release the lock when done
+    this.isFetchingPrices = false;
+  }
+}
+```
+
 ## API Reference
 
 ### Initialization
@@ -122,6 +157,16 @@ notifyPriceUpdateCallbacks(priceData) {
 ```javascript
 // Initialize the Jupiter client
 const jupiterInitialized = await jupiterClient.initialize();
+```
+
+### Controlling Automatic Polling
+
+```javascript
+// Enable automatic polling (use with caution)
+jupiterClient.setAutomaticPolling(true);
+
+// Disable automatic polling (default)
+jupiterClient.setAutomaticPolling(false);
 ```
 
 ### Price Operations
@@ -133,7 +178,7 @@ const prices = await jupiterClient.getPrices(['tokenMint1', 'tokenMint2']);
 // Get price history for a token
 const priceHistory = await jupiterClient.getPriceHistory('tokenMint', '7d');
 
-// Subscribe to price updates
+// Subscribe to price updates (note: doesn't start polling by default)
 await jupiterClient.subscribeToPrices(['tokenMint1', 'tokenMint2']);
 
 // Unsubscribe from price updates

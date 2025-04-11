@@ -414,6 +414,29 @@ class ContestSchedulerService extends BaseService {
                 created_at: new Date(),
                 creation_time_ms: Date.now() - startTime
             });
+
+            // Send Discord notification for contest creation
+            try {
+                const serviceEvents = (await import('../utils/service-suite/service-events.js')).default;
+                const { SERVICE_EVENTS } = await import('../utils/service-suite/service-events.js');
+                
+                // Emit contest created event for Discord notification
+                serviceEvents.emit(SERVICE_EVENTS.CONTEST_CREATED, {
+                    id: result.contest.id,
+                    name: result.contest.name,
+                    contest_code: result.contest.contest_code,
+                    start_time: result.contest.start_time,
+                    end_time: result.contest.end_time,
+                    prize_pool: result.contest.prize_pool,
+                    entry_fee: result.contest.entry_fee,
+                    status: result.contest.status,
+                    wallet_address: result.wallet?.wallet_address || 'Unknown'
+                });
+                
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} 📢 Discord notification sent for new contest`);
+            } catch (discordError) {
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to send Discord notification: ${discordError.message}${fancyColors.RESET}`);
+            }
             
             // Keep only the last 10 created contests
             if (this.schedulerStats.lastCreatedContests.length > 10) {

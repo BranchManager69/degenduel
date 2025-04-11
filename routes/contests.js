@@ -1636,6 +1636,55 @@ router.post('/:id/join', requireAuth, async (req, res) => {
         duration: Date.now() - startTime,
         cacheCleared: true
       });
+      
+      // Send Discord notification for contest join (if more than 5 participants)
+      try {
+        // Only send notifications for contests that have at least 5 participants
+        const updatedContest = await prisma.contests.findUnique({
+          where: { id: contestId },
+          select: { 
+            name: true, 
+            contest_code: true,
+            participant_count: true,
+            max_participants: true,
+            entry_fee: true,
+            start_time: true,
+            prize_pool: true
+          }
+        });
+        
+        if (updatedContest && updatedContest.participant_count >= 5) {
+          // Import service events dynamically
+          const { default: serviceEvents, SERVICE_EVENTS } = await import('../utils/service-suite/service-events.js');
+          
+          // Get user nickname if available
+          const user = await prisma.users.findUnique({
+            where: { wallet_address },
+            select: { nickname: true, username: true }
+          });
+          
+          const displayName = user?.nickname || user?.username || wallet_address.substring(0, 6) + '...' + wallet_address.substring(wallet_address.length - 4);
+          
+          // Emit contest activity event for Discord notification
+          serviceEvents.emit(SERVICE_EVENTS.CONTEST_ACTIVITY, {
+            type: 'user_joined',
+            contestId,
+            contestName: updatedContest.name,
+            contestCode: updatedContest.contest_code,
+            userAddress: wallet_address,
+            userDisplayName: displayName,
+            currentParticipants: updatedContest.participant_count,
+            maxParticipants: updatedContest.max_participants || 'unlimited',
+            entryFee: updatedContest.entry_fee.toString(),
+            prizePool: updatedContest.prize_pool.toString(),
+            startTime: updatedContest.start_time.toISOString()
+          });
+          
+          logApi.info(`📢 Discord notification sent for user joining contest ${updatedContest.contest_code}`);
+        }
+      } catch (discordError) {
+        logApi.warn(`Failed to send Discord notification for contest join: ${discordError.message}`);
+      }
 
       // Return the participation and transaction
       return {

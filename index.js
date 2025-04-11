@@ -112,6 +112,10 @@ import deviceRoutes from "./routes/devices.js";
 import aiRoutes from "./routes/ai.js";
 // Client logging routes
 import logsRoutes from "./routes/logs.js";
+// Terminal data routes
+import terminalRoutes from "./routes/terminal-routes.js";
+// WebSocket API Guide routes
+import websocketApiGuideRoutes from "./routes/websocket-api-guide.js";
 // Path module for static file serving
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -303,6 +307,10 @@ app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
 app.use("/api/ai", maintenanceCheck, aiRoutes);
 // Client logging routes (no maintenance check to collect errors during maintenance)
 app.use("/api/logs", logsRoutes);
+// Terminal data routes
+app.use("/api/terminal", terminalRoutes);
+// WebSocket API Guide routes
+app.use("/api/websocket-guide", websocketApiGuideRoutes);
 // Test routes (no maintenance check needed)
 app.use("/api/test", testRoutes);
 

@@ -7,8 +7,8 @@
  * Significantly more efficient than a pure JavaScript implementation.
  */
 
-import { spawn } from 'child_process';
-import { cpus } from 'os';
+import { spawn, exec } from 'child_process';
+import { cpus, loadavg, totalmem, freemem } from 'os';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
@@ -21,8 +21,8 @@ const __dirname = path.dirname(__filename);
 
 // Configuration
 const NUM_CPUS = cpus().length;
-const DEFAULT_WORKERS = Math.max(1, NUM_CPUS - 1); // Leave one CPU for the main thread
-const DEFAULT_CPU_LIMIT = 75; // Default CPU usage limit (75%)
+const DEFAULT_WORKERS = 5; // Use 5 threads as requested
+const DEFAULT_CPU_LIMIT = 50; // Lower CPU usage limit to 50%
 const SOLANA_KEYGEN_PATH = '/home/branchmanager/.local/share/solana/install/active_release/bin/solana-keygen';
 
 /**
@@ -51,7 +51,129 @@ class LocalVanityGenerator {
       fs.mkdirSync(this.outputDir, { recursive: true });
     }
     
-    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initialized ${fancyColors.RESET} with solana-keygen grind, ${this.numWorkers} threads, ${this.cpuLimit}% CPU limit`);
+    // Check for and kill any orphaned solana-keygen processes
+    this.cleanupOrphanedProcesses();
+    
+    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initialized ${fancyColors.RESET} with solana-keygen grind, ${this.numWorkers} threads (reduced), ${this.cpuLimit}% CPU limit (lowered)`);
+  }
+  
+  /**
+   * Monitor resource usage for a running job
+   * @param {string} jobId The ID of the job to monitor
+   * @param {number} processPid The PID of the solana-keygen process
+   * @returns {number} The interval ID for cleanup
+   */
+  monitorResourceUsage(jobId, processPid) {
+    const interval = setInterval(() => {
+      try {
+        // Get process stats if it's still running
+        if (this.activeJobs.has(jobId)) {
+          // Get system stats
+          const load = loadavg();
+          const systemMemory = totalmem();
+          const freeMemoryVal = freemem();
+          const memoryUsedPercent = Math.round((systemMemory - freeMemoryVal) / systemMemory * 100);
+          const loadColor = load[0] > 1.5 ? fancyColors.RED : (load[0] > 1.0 ? fancyColors.YELLOW : fancyColors.GREEN);
+          const memColor = memoryUsedPercent > 80 ? fancyColors.RED : (memoryUsedPercent > 70 ? fancyColors.YELLOW : fancyColors.GREEN);
+          
+          // Log detailed resource information with color-coded status
+          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.CYAN}RESOURCE MONITOR${fancyColors.RESET} Job ${jobId} (PID: ${processPid}) - Load: ${loadColor}${load[0].toFixed(2)}${fancyColors.RESET} | Memory: ${memColor}${Math.round((systemMemory-freeMemoryVal)/1024/1024)}MB (${memoryUsedPercent}%)${fancyColors.RESET}`);
+        } else {
+          // Job no longer active, clear interval
+          clearInterval(interval);
+        }
+      } catch (error) {
+        logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Resource monitoring error:${fancyColors.RESET} ${error.message}`);
+        clearInterval(interval);
+      }
+    }, 30000); // Log every 30 seconds
+    
+    return interval;
+  }
+  
+  /**
+   * Clean up any orphaned solana-keygen processes from previous runs
+   */
+  cleanupOrphanedProcesses() {
+    try {
+      // Use ps command to find solana-keygen processes
+      exec('ps aux | grep solana-keygen | grep -v grep', (error, stdout, stderr) => {
+        if (stdout) {
+          const processes = stdout.trim().split('\n');
+          logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ORPHANED PROCESSES ${fancyColors.RESET} Found ${processes.length} orphaned solana-keygen processes`);
+          
+          // Kill each orphaned process
+          processes.forEach(process => {
+            try {
+              const parts = process.trim().split(/\s+/);
+              const pid = parts[1];
+              
+              logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Killing orphaned process${fancyColors.RESET} PID: ${pid}`);
+              
+              // Kill the process
+              exec(`kill -9 ${pid}`, (killError) => {
+                if (killError) {
+                  logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Failed to kill process ${pid}:${fancyColors.RESET} ${killError.message}`);
+                } else {
+                  logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Killed orphaned process${fancyColors.RESET} PID: ${pid}`);
+                }
+              });
+            } catch (parseError) {
+              logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error parsing process info:${fancyColors.RESET} ${parseError.message}`);
+            }
+          });
+        }
+      });
+      
+      // Also check for cpulimit processes that might be orphaned
+      exec('ps aux | grep cpulimit | grep -v grep', (error, stdout, stderr) => {
+        if (stdout) {
+          const processes = stdout.trim().split('\n');
+          logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ORPHANED CPULIMIT ${fancyColors.RESET} Found ${processes.length} orphaned cpulimit processes`);
+          
+          // Kill each orphaned cpulimit process
+          processes.forEach(process => {
+            try {
+              const parts = process.trim().split(/\s+/);
+              const pid = parts[1];
+              
+              logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Killing orphaned cpulimit${fancyColors.RESET} PID: ${pid}`);
+              
+              // Kill the process
+              exec(`kill -9 ${pid}`, (killError) => {
+                if (killError) {
+                  logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Failed to kill cpulimit process ${pid}:${fancyColors.RESET} ${killError.message}`);
+                } else {
+                  logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Killed orphaned cpulimit${fancyColors.RESET} PID: ${pid}`);
+                }
+              });
+            } catch (parseError) {
+              logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error parsing process info:${fancyColors.RESET} ${parseError.message}`);
+            }
+          });
+        }
+      });
+      
+      // Check for orphaned files in the output directory
+      const files = fs.readdirSync(this.outputDir).filter(f => f !== '.' && f !== '..');
+      if (files.length > 0) {
+        logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ORPHANED FILES ${fancyColors.RESET} Found ${files.length} files in temp directory`);
+        
+        // Log and remove each orphaned file
+        files.forEach(file => {
+          try {
+            const filePath = path.join(this.outputDir, file);
+            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Removing orphaned file:${fancyColors.RESET} ${file}`);
+            fs.unlinkSync(filePath);
+            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Removed orphaned file${fancyColors.RESET}`);
+          } catch (fileError) {
+            logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error removing orphaned file:${fancyColors.RESET} ${fileError.message}`);
+          }
+        });
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error during orphaned process cleanup:${fancyColors.RESET} ${error.message}`);
+    }
   }
   
   /**
@@ -194,6 +316,9 @@ class LocalVanityGenerator {
     const startTime = Date.now();
     const outputFile = this.getKeypairFilePath(job.id, job.pattern);
     
+    // Enhanced logging with more details and highlighted formatting
+    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} STARTING ${fancyColors.RESET} Keygen job ${job.id} - ${fancyColors.CYAN}pattern: ${fancyColors.YELLOW}${job.pattern}${fancyColors.RESET}, case-sensitive: ${job.caseSensitive ? 'yes' : 'no'}, suffix: ${job.isSuffix ? 'yes' : 'no'}, file: ${outputFile}`);
+    
     // Build the solana-keygen command arguments
     const args = ['grind'];
     
@@ -219,6 +344,12 @@ class LocalVanityGenerator {
     // Spawn the solana-keygen process
     const process = spawn(SOLANA_KEYGEN_PATH, args);
     
+    // Log PID for tracking
+    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Started solana-keygen process with PID ${process.pid} for job ${job.id}${fancyColors.RESET}`);
+    
+    // Start resource monitoring
+    const monitorInterval = this.monitorResourceUsage(job.id, process.pid);
+    
     // Calculate CPU limit value (percentage of total CPU)
     const cpuLimitValue = Math.floor(this.cpuLimit);
     
@@ -228,7 +359,8 @@ class LocalVanityGenerator {
       process,
       startTime,
       cpulimitProcess: null,
-      outputPath: outputFile
+      outputPath: outputFile,
+      monitorInterval // Store for cleanup
     };
     
     this.activeJobs.set(job.id, jobInfo);
@@ -284,37 +416,59 @@ class LocalVanityGenerator {
         }
         
         // Log progress
-        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Progress for job ${job.id}: ${output.trim()}${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Progress for job ${job.id} (PID: ${process.pid}): ${output.trim()}${fancyColors.RESET}`);
       }
     });
     
     // Handle stderr data
     process.stderr.on('data', (data) => {
       const output = data.toString();
-      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Keygen Error ${fancyColors.RESET} Job ${job.id}: ${output.trim()}`, {
+      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Keygen Error ${fancyColors.RESET} Job ${job.id} (PID: ${process.pid}): ${output.trim()}`, {
         error: output.trim(),
-        jobId: job.id
+        jobId: job.id,
+        processPid: process.pid
       });
     });
     
     // Handle process completion
     process.on('close', async (code) => {
+      // Track end time
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
+      // Clear resource monitoring
+      if (jobInfo.monitorInterval) {
+        clearInterval(jobInfo.monitorInterval);
+      }
+      
       // Kill cpulimit process if it exists
       if (jobInfo.cpulimitProcess) {
         try {
+          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Stopping CPU limit process for job ${job.id}${fancyColors.RESET}`);
           process.kill(jobInfo.cpulimitProcess.pid);
         } catch (error) {
           // Ignore errors from already terminated processes
+          logApi.debug(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}CPU limiter already stopped:${fancyColors.RESET} ${error.message}`);
         }
       }
       
-      const duration = Date.now() - startTime;
+      // Enhanced completion log with status icon
+      const icon = code === 0 ? '✅' : '❌';
+      logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${code === 0 ? fancyColors.GREEN : fancyColors.RED}${icon} Process ${process.pid} for job ${job.id} exited with code ${code} after ${(duration/1000).toFixed(2)}s${fancyColors.RESET}`);
       
       if (code === 0) {
-        // Success - keypair was generated
-        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Success ${fancyColors.RESET} Vanity address generated for job ${job.id} in ${(duration / 1000).toFixed(2)}s`);
+        // Success - keypair was generated 
+        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SUCCESS ${fancyColors.RESET} Vanity address ${fancyColors.YELLOW}${job.pattern}${fancyColors.RESET} generated for job ${job.id} in ${fancyColors.GREEN}${(duration / 1000).toFixed(2)}s${fancyColors.RESET}`);
         
         try {
+          // Check if file exists and log stats
+          if (fs.existsSync(outputFile)) {
+            const fileStats = fs.statSync(outputFile);
+            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Output file created:${fancyColors.RESET} ${outputFile} (size: ${fileStats.size} bytes)`);
+          } else {
+            logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Expected output file not found:${fancyColors.RESET} ${outputFile}`);
+          }
+          
           // Read the keypair file
           const keypairContent = fs.readFileSync(outputFile, 'utf8');
           const keypairArray = JSON.parse(keypairContent);

@@ -1,6 +1,6 @@
 // Debug script for Jupiter client
 
-import { jupiterClient } from './services/solana-engine/jupiter-client.js';
+import { getJupiterClient, jupiterClient } from './services/solana-engine/jupiter-client.js';
 
 async function main() {
   try {

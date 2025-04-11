@@ -24,9 +24,18 @@ SolanaEngine is a comprehensive integration layer for Solana blockchain operatio
 
 3. **Jupiter Client**:
    - Market price data
-   - Real-time price updates via WebSocket
+   - Token price updates (automatic polling disabled by default)
    - Swap quotes and trading functionality
    - Token liquidity information
+   
+   > **IMPORTANT**: As of April 2025, Jupiter Client's automatic polling is disabled by default. The Token Refresh Scheduler is now the primary mechanism for token price updates. See [Rate Limiting Documentation](./RATE_LIMITING.md) for details.
+
+4. **DexScreener Client**:
+   - Token profiles and boost information
+   - Trading pair details and pool data 
+   - Order information for tokens
+   - Search functionality for pairs
+   - Provides complementary market data from a different source
 
 ### Data Flow
 
@@ -88,6 +97,10 @@ Applications can subscribe to real-time updates for:
 - Automatic retry with exponential backoff
 - Fallback mechanisms for critical operations
 - Detailed error logging and reporting
+- Lock mechanism to prevent concurrent API calls
+- Rate limiting with adaptive backoff
+
+For details on the rate limiting improvements, see the [Rate Limiting Documentation](./RATE_LIMITING.md).
 
 ## Usage Examples
 
@@ -102,7 +115,12 @@ const tokenData = await solanaEngine.getTokenData(['tokenMintAddress1', 'tokenMi
 
 ```javascript
 // Subscribe to price updates for specific tokens
+// Note: As of April 2025, this does NOT automatically start polling
+// The Token Refresh Scheduler will handle price updates
 await solanaEngine.subscribeToTokenPrices(['tokenMintAddress1', 'tokenMintAddress2']);
+
+// To explicitly enable automatic polling (not recommended)
+solanaEngine.jupiterClient.setAutomaticPolling(true);
 ```
 
 ### Wallet Monitoring

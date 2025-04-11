@@ -24,8 +24,12 @@ import liquidityService from '../../services/liquidityService.js';
 // tokenSyncService has been permanently removed
 // tokenWhitelistService has been permanently disabled (using token.is_active flag instead)
 import marketDataService from '../../services/marketDataService.js';
+import tokenRefreshIntegration from '../../services/token-refresh-integration.js';
+import tokenDEXDataService from '../../services/token-dex-data-service.js';
 // Legacy solana service - imported but not used as primary
 import solanaService from '../../services/solanaService.js';
+// Discord notification service
+import discordNotificationService from '../../services/discordNotificationService.js';
 
 // Contest Layer
 import contestEvaluationService from '../../services/contestEvaluationService.js';
@@ -117,6 +121,10 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of liquidity_service - disabled in config${fancyColors.RESET}`);
         }
         
+        // Register Discord notification service (always enabled)
+        serviceManager.register(discordNotificationService);
+        logApi.info(`${fancyColors.CYAN}Registered Discord notification service${fancyColors.RESET}`);
+        
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ INFRASTRUCTURE LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
         }
@@ -137,7 +145,24 @@ class ServiceInitializer {
         
         // Register market data service only if enabled in config
         if (config.services.market_data) {
-            serviceManager.register(marketDataService);
+            serviceManager.register(marketDataService, [SERVICE_NAMES.SOLANA_ENGINE_SERVICE]);
+            
+            // Register advanced token refresh scheduler if enabled in config
+            if (config.services.token_refresh_scheduler) {
+                // Register the service directly (it's already a proper BaseService)
+                serviceManager.register(tokenRefreshIntegration, [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.SOLANA_ENGINE_SERVICE]);
+                logApi.info(`${fancyColors.GREEN}Registered advanced token refresh scheduler${fancyColors.RESET}`);
+            } else {
+                logApi.info(`${fancyColors.YELLOW}Skipping registration of token_refresh_scheduler - disabled in config${fancyColors.RESET}`);
+            }
+            
+            // Register token DEX data service if enabled in config
+            if (config.services.token_dex_data_service) {
+                serviceManager.register(tokenDEXDataService);
+                logApi.info(`${fancyColors.GREEN}Registered token DEX data service${fancyColors.RESET}`);
+            } else {
+                logApi.info(`${fancyColors.YELLOW}Skipping registration of token_dex_data_service - disabled in config${fancyColors.RESET}`);
+            }
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of market_data_service - disabled in config${fancyColors.RESET}`);
         }
@@ -268,6 +293,8 @@ class ServiceInitializer {
                 [SERVICE_NAMES.ADMIN_WALLET]: 'admin_wallet_service',
                 [SERVICE_NAMES.SOLANA_ENGINE]: 'solana_engine_service',
                 [SERVICE_NAMES.VANITY_WALLET]: 'vanity_wallet_service',
+                [SERVICE_NAMES.TOKEN_DEX_DATA]: 'token_dex_data_service',
+                [SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER]: 'token_refresh_scheduler',
                 // Add other services as they get profile support
             };
             

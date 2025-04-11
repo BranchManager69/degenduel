@@ -487,6 +487,30 @@ class AdminWalletService extends BaseService {
         }
     }
     
+    /**
+     * Implements the onPerformOperation method required by BaseService
+     * This gets called regularly by the BaseService to perform the service's main operation
+     * and is used for circuit breaker recovery
+     * @returns {Promise<boolean>} Success status
+     */
+    async onPerformOperation() {
+        try {
+            // Skip operation if service is not properly initialized or started
+            if (!this.isOperational) {
+                logApi.debug(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} Service not operational, skipping operation`);
+                return true;
+            }
+            
+            // Call the original performOperation implementation
+            await this.performOperation();
+            
+            return true;
+        } catch (error) {
+            logApi.error(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} ${fancyColors.RED}Perform operation error:${fancyColors.RESET} ${error.message}`);
+            throw error; // Important: re-throw to trigger circuit breaker
+        }
+    }
+
     // Main operation implementation - periodic health checks and balance updates
     async performOperation() {
         const startTime = Date.now();

@@ -13,6 +13,7 @@ import prisma from '../../config/prisma.js';
 import config from '../../config/config.js';
 import VanityApiClient from './vanity-api-client.js';
 import { BaseService } from '../../utils/service-suite/base-service.js';
+import { exec } from 'child_process';
 
 class VanityWalletService extends BaseService {
   constructor() {
@@ -99,13 +100,222 @@ class VanityWalletService extends BaseService {
    * Called when the service starts
    */
   async onServiceStart() {
+    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting ${fancyColors.RESET} Vanity Wallet Service`);
+    
+    // Find and clean up any orphaned processes that might be using resources
+    await this.cleanupOrphanedProcesses();
+    
+    // Reset stuck jobs in database
+    await this.resetStuckJobs();
+    
+    // Set up status report interval (every 1 minute)
+    this.statusReportInterval = setInterval(() => this.logJobStatus(), 60 * 1000);
+    
     logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Started ${fancyColors.RESET} Vanity Wallet Service`);
     
     // Run an initial check
     await this.checkAndGenerateAddresses();
     
+    // Log initial job status
+    await this.logJobStatus();
+    
     // BaseService will handle the interval automatically via performOperation
     return true;
+  }
+  
+  /**
+   * Log detailed status of all jobs
+   */
+  async logJobStatus() {
+    try {
+      // Get counts of addresses by status
+      const statusCounts = await prisma.$queryRaw`
+        SELECT pattern, status, COUNT(*) as count
+        FROM vanity_wallet_pool
+        WHERE status IN ('pending', 'processing', 'completed')
+        GROUP BY pattern, status
+        ORDER BY pattern, status
+      `;
+      
+      // Get counts of completed and used addresses
+      const completedUsedCounts = await prisma.$queryRaw`
+        SELECT pattern, is_used, COUNT(*) as count
+        FROM vanity_wallet_pool
+        WHERE status = 'completed'
+        GROUP BY pattern, is_used
+        ORDER BY pattern, is_used
+      `;
+      
+      // Get information about currently processing jobs
+      const processingJobs = await prisma.vanity_wallet_pool.findMany({
+        where: { status: 'processing' },
+        orderBy: { updated_at: 'asc' },
+        select: {
+          id: true,
+          pattern: true,
+          created_at: true,
+          updated_at: true,
+          status: true
+        }
+      });
+      
+      // Calculate how long each job has been processing
+      const processingDetails = processingJobs.map(job => {
+        const processingTime = Date.now() - new Date(job.updated_at).getTime();
+        const processingMinutes = Math.floor(processingTime / 60000);
+        return {
+          id: job.id,
+          pattern: job.pattern,
+          processingTime: processingMinutes
+        };
+      });
+      
+      // Format and log the results
+      logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} JOB STATUS ${fancyColors.RESET} Vanity wallet generation status`);
+      
+      // Log status counts by pattern
+      if (statusCounts.length > 0) {
+        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Pattern Counts:${fancyColors.RESET}`);
+        for (const row of statusCounts) {
+          const statusColor = 
+            row.status === 'completed' ? fancyColors.GREEN : 
+            row.status === 'processing' ? fancyColors.YELLOW : 
+            fancyColors.BLUE;
+          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET}   ${row.pattern}: ${statusColor}${row.status}${fancyColors.RESET} = ${row.count}`);
+        }
+      } else {
+        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}No jobs found in database${fancyColors.RESET}`);
+      }
+      
+      // Log details of currently processing jobs
+      if (processingDetails.length > 0) {
+        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Currently Processing Jobs (${processingDetails.length}):${fancyColors.RESET}`);
+        for (const job of processingDetails) {
+          // Color code based on processing time
+          const timeColor = 
+            job.processingTime > 30 ? fancyColors.RED :
+            job.processingTime > 15 ? fancyColors.YELLOW :
+            fancyColors.GREEN;
+          
+          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET}   Job #${job.id} (${job.pattern}): Processing for ${timeColor}${job.processingTime} minutes${fancyColors.RESET}`);
+        }
+      } else {
+        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}No jobs currently processing${fancyColors.RESET}`);
+      }
+      
+      // Get summary of available and used addresses
+      if (completedUsedCounts.length > 0) {
+        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Available/Used Addresses:${fancyColors.RESET}`);
+        for (const row of completedUsedCounts) {
+          const usedColor = row.is_used ? fancyColors.YELLOW : fancyColors.GREEN;
+          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET}   ${row.pattern}: ${usedColor}${row.is_used ? 'Used' : 'Available'}${fancyColors.RESET} = ${row.count}`);
+        }
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error getting job status: ${error.message}${fancyColors.RESET}`);
+    }
+  }
+  
+  /**
+   * Clean up any orphaned solana-keygen processes
+   */
+  async cleanupOrphanedProcesses() {
+    try {
+      // Use ps command to find solana-keygen processes
+      return new Promise((resolve) => {
+        exec('ps aux | grep solana-keygen | grep -v grep', (error, stdout, stderr) => {
+          if (stdout) {
+            const processes = stdout.trim().split('\n');
+            logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ORPHANED PROCESSES ${fancyColors.RESET} Found ${processes.length} orphaned solana-keygen processes`);
+            
+            let killedCount = 0;
+            let pendingKills = processes.length;
+            
+            // Kill each orphaned process
+            processes.forEach(process => {
+              try {
+                const parts = process.trim().split(/\s+/);
+                const pid = parts[1];
+                
+                logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Killing orphaned process${fancyColors.RESET} PID: ${pid}`);
+                
+                // Kill the process
+                exec(`kill -9 ${pid}`, (killError) => {
+                  pendingKills--;
+                  
+                  if (killError) {
+                    logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to kill process ${pid}:${fancyColors.RESET} ${killError.message}`);
+                  } else {
+                    killedCount++;
+                    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Killed orphaned process${fancyColors.RESET} PID: ${pid}`);
+                  }
+                  
+                  if (pendingKills === 0) {
+                    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Cleanup complete:${fancyColors.RESET} Killed ${killedCount} orphaned processes`);
+                    resolve(killedCount);
+                  }
+                });
+              } catch (parseError) {
+                pendingKills--;
+                logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error parsing process info:${fancyColors.RESET} ${parseError.message}`);
+                
+                if (pendingKills === 0) {
+                  resolve(killedCount);
+                }
+              }
+            });
+          } else {
+            // No orphaned processes found
+            resolve(0);
+          }
+        });
+      });
+    } catch (error) {
+      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error during orphaned process cleanup:${fancyColors.RESET} ${error.message}`);
+      return 0;
+    }
+  }
+  
+  /**
+   * Reset any jobs stuck in 'processing' state
+   */
+  async resetStuckJobs() {
+    try {
+      // Find jobs that have been in 'processing' state for too long
+      const stuckJobs = await prisma.vanity_wallet_pool.findMany({
+        where: {
+          status: 'processing',
+          updated_at: {
+            // Stuck jobs are those in processing state for more than 30 minutes
+            lt: new Date(Date.now() - 30 * 60 * 1000)
+          }
+        }
+      });
+      
+      if (stuckJobs.length > 0) {
+        logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} STUCK JOBS ${fancyColors.RESET} Found ${stuckJobs.length} stuck jobs in 'processing' state for >30 minutes`);
+        
+        // Reset stuck jobs to 'pending' state
+        for (const job of stuckJobs) {
+          logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Resetting stuck job ${job.id}${fancyColors.RESET} (pattern: ${job.pattern}, stuck since ${job.updated_at})`);
+          
+          await prisma.vanity_wallet_pool.update({
+            where: { id: job.id },
+            data: {
+              status: 'pending',
+              updated_at: new Date()
+            }
+          });
+        }
+        
+        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Reset ${stuckJobs.length} stuck jobs to 'pending' state${fancyColors.RESET}`);
+      }
+      
+      return stuckJobs.length;
+    } catch (error) {
+      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error resetting stuck jobs:${fancyColors.RESET} ${error.message}`);
+      return 0;
+    }
   }
   
   /**
@@ -114,8 +324,14 @@ class VanityWalletService extends BaseService {
   async onServiceStop() {
     logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Stopping ${fancyColors.RESET} Vanity Wallet Service`);
     
+    // Clean up the status report interval
+    if (this.statusReportInterval) {
+      clearInterval(this.statusReportInterval);
+      this.statusReportInterval = null;
+    }
+    
     // Clean up any resources if needed
-    // BaseService will handle clearing the interval
+    // BaseService will handle clearing the main service interval
     return true;
   }
   

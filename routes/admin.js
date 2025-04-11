@@ -18,6 +18,8 @@ import serviceMetricsRoutes from './admin/service-metrics.js';
 import vanityWalletsRoutes from './admin/vanity-wallets.js';
 import vanityCallbackRoutes from './admin/vanity-callback.js';
 import tokenSyncRoutes from './admin/token-sync.js';
+import tokenRefreshRoutes from './admin/token-refresh.js';
+import discordWebhooksRoutes from './admin/discord-webhooks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,11 +53,17 @@ router.use('/admin/metrics', serviceMetricsRoutes);
 // Mount the Token Sync routes
 router.use('/admin/token-sync', tokenSyncRoutes);
 
+// Mount the Token Refresh routes
+router.use('/admin/token-refresh', tokenRefreshRoutes);
+
 // Mount the Vanity Wallets routes
 router.use('/admin/vanity-wallets', vanityWalletsRoutes);
 
 // Mount the Vanity Callback routes
 router.use('/admin/vanity-callback', vanityCallbackRoutes);
+
+// Mount the Discord Webhooks routes
+router.use('/admin/discord-webhooks', discordWebhooksRoutes);
 
 /**
  * Check a WebSocket endpoint's availability

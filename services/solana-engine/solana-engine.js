@@ -20,6 +20,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceColors, fancyColors } from '../../utils/colors.js';
 import { heliusClient } from './helius-client.js';
 import { jupiterClient } from './jupiter-client.js';
+import { dexscreenerClient } from './dexscreener-client.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import { Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { ServiceError } from '../../utils/service-suite/service-error.js';
@@ -119,10 +120,20 @@ class SolanaEngineService extends BaseService {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('Helius client initialization failed')}`);
       }
       
-      // Initialize Jupiter client
-      const jupiterInitialized = await jupiterClient.initialize();
-      if (!jupiterInitialized) {
-        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Jupiter client initialization failed')}`);
+      // Initialize Jupiter client - use singleton instance
+      if (!jupiterClient.initialized) {
+        const jupiterInitialized = await jupiterClient.initialize();
+        if (!jupiterInitialized) {
+          logApi.warn(`${formatLog.tag()} ${formatLog.warning('Jupiter client initialization failed')}`);
+        }
+      } else {
+        logApi.info(`${formatLog.tag()} ${formatLog.info('Jupiter client already initialized')}`);
+      }
+      
+      // Initialize DexScreener client
+      const dexscreenerInitialized = await dexscreenerClient.initialize();
+      if (!dexscreenerInitialized) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('DexScreener client initialization failed')}`);
       }
       
       // Set up Jupiter price update callback
@@ -527,7 +538,8 @@ class SolanaEngineService extends BaseService {
         return true;
       }
       
-      logApi.info(`${formatLog.tag()} ${formatLog.header('SUBSCRIBING')} to prices for ${formatLog.count(newTokens.length)} tokens`);
+      logApi.info(`${formatLog.tag()} ${formatLog.header('SUBSCRIBING')} to prices for ${formatLog.count(newTokens.length)} tokens (via Jupiter client)`);
+      // This delegates to jupiterClient.subscribeToPrices()
       
       // Subscribe to price updates via Jupiter
       const success = await jupiterClient.subscribeToPrices(newTokens);
@@ -679,20 +691,310 @@ class SolanaEngineService extends BaseService {
       throw error;
     }
   }
+  
+  /**
+   * Fetch token pools from DexScreener
+   * @param {string[]} mintAddresses - Array of token mint addresses
+   * @returns {Object} - Map of token addresses to pool data
+   */
+  async fetchTokenPools(mintAddresses) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} pools for ${formatLog.count(mintAddresses.length)} tokens from DexScreener`);
+      
+      // Get token pools from DexScreener
+      const tokenPools = await dexscreenerClient.getMultipleTokenPools('solana', mintAddresses);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched pools for')} ${formatLog.count(Object.keys(tokenPools).length)} tokens`);
+      
+      return tokenPools;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch token pools:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Fetch token profiles from DexScreener
+   * @returns {Object} - Latest token profiles
+   */
+  async fetchTokenProfiles() {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} token profiles from DexScreener`);
+      
+      // Get latest token profiles from DexScreener
+      const tokenProfiles = await dexscreenerClient.getLatestTokenProfiles();
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched token profiles')}`);
+      
+      return tokenProfiles;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch token profiles:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Fetch pools for a specific pair search query
+   * @param {string} query - Search query (e.g., "SOL/USDC")
+   * @returns {Object} - Pair search results focused on Solana
+   */
+  async fetchPairsByQuery(query) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('SEARCHING')} for pairs matching "${query}"`);
+      
+      // Search for pairs with the query
+      const searchResults = await dexscreenerClient.searchPairs(query);
+      
+      // Filter results to focus on Solana pairs if there are any
+      const allPairs = searchResults?.pairs || [];
+      const solanaPairs = allPairs.filter(pair => pair.chainId === 'solana');
+      
+      // If we have Solana pairs, prioritize those, otherwise return all results
+      const resultPairs = solanaPairs.length > 0 ? solanaPairs : allPairs;
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Found')} ${formatLog.count(resultPairs.length)} pairs matching "${query}" (${solanaPairs.length} on Solana)`);
+      
+      return {
+        pairs: resultPairs,
+        solanaOnly: solanaPairs.length > 0 && solanaPairs.length === resultPairs.length,
+        totalResults: allPairs.length,
+        solanaPairsCount: solanaPairs.length
+      };
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to search for pairs:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Fetch all pools for a token from DexScreener
+   * @param {string} tokenAddress - Token address
+   * @returns {Object} - All pools for the token on Solana
+   */
+  async fetchAllPoolsForToken(tokenAddress) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} all pools for token ${formatLog.token(tokenAddress)}`);
+      
+      // Always use 'solana' chain ID
+      const chainId = 'solana';
+      
+      const pools = await dexscreenerClient.getTokenPools(chainId, tokenAddress);
+      
+      // Count active pools
+      const activePools = pools?.pairs?.filter(pair => !pair.liquidity?.isInactive) || [];
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Found')} ${formatLog.count(activePools.length)} active pools for token ${formatLog.token(tokenAddress)}`);
+      
+      return {
+        pools: pools?.pairs || [],
+        activePools: activePools,
+        activePoolsCount: activePools.length,
+        totalPoolsCount: pools?.pairs?.length || 0
+      };
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch pools for token:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get all pools for a token on Solana
+   * @param {string} tokenAddress - Token address on Solana
+   * @returns {Object} - Pool data from DexScreener
+   */
+  async getSolanaPoolsForToken(tokenAddress) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} Solana pools for token ${formatLog.token(tokenAddress)}`);
+      
+      // This is the correct, direct method to get pools for a specific Solana token
+      // DexScreener API: GET /token-pairs/v1/{chainId}/{tokenAddress} (300 req/min)
+      const pools = await dexscreenerClient.getTokenPools('solana', tokenAddress);
+      
+      if (!pools || !pools.pairs) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('No pools found for token')}`);
+        return { 
+          pairs: [],
+          count: 0,
+          activePairs: [],
+          activeCount: 0
+        };
+      }
+      
+      // Get active pairs (not inactive)
+      const activePairs = pools.pairs.filter(pair => !pair.liquidity?.isInactive);
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Found')} ${formatLog.count(pools.pairs.length)} pools for token ${formatLog.token(tokenAddress)} (${activePairs.length} active)`);
+      
+      return {
+        pairs: pools.pairs,
+        count: pools.pairs.length,
+        activePairs: activePairs,
+        activeCount: activePairs.length,
+        tokenAddress
+      };
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch Solana pools for token:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get pools for multiple tokens on Solana
+   * @param {string[]} tokenAddresses - Array of token addresses on Solana
+   * @returns {Object} - Pool data by token address
+   */
+  async getMultipleTokenPools(tokenAddresses) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} pools for ${formatLog.count(tokenAddresses.length)} tokens on Solana`);
+      
+      // This leverages the client's built-in pooling for multiple tokens
+      // Properly handles rate limits internally (300 req/min)
+      const results = await dexscreenerClient.getMultipleTokenPools('solana', tokenAddresses);
+      
+      // Format and count the results
+      let totalPools = 0;
+      let totalActivePools = 0;
+      const formattedResults = {};
+      
+      // Process each token's results
+      for (const tokenAddress of tokenAddresses) {
+        const tokenResult = results[tokenAddress];
+        
+        if (tokenResult && !tokenResult.error) {
+          const pairs = tokenResult.pairs || [];
+          const activePairs = pairs.filter(pair => !pair.liquidity?.isInactive);
+          
+          formattedResults[tokenAddress] = {
+            pairs,
+            count: pairs.length,
+            activePairs,
+            activeCount: activePairs.length
+          };
+          
+          totalPools += pairs.length;
+          totalActivePools += activePairs.length;
+        } else {
+          formattedResults[tokenAddress] = {
+            pairs: [],
+            count: 0,
+            activePairs: [],
+            activeCount: 0,
+            error: tokenResult?.error || 'No data returned'
+          };
+        }
+      }
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Found')} ${formatLog.count(totalPools)} total pools (${totalActivePools} active) across ${tokenAddresses.length} tokens`);
+      
+      return {
+        results: formattedResults,
+        totalPools,
+        totalActivePools,
+        tokenCount: tokenAddresses.length
+      };
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch multiple token pools:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Search for pairs on DexScreener using a query - get only Solana results
+   * @param {string} query - Search query (e.g., token symbol, name, or address)
+   * @returns {Object} - Filtered Solana-only search results
+   */
+  async searchSolanaPairs(query) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('SEARCHING')} for Solana pairs matching "${query}"`);
+      
+      // DexScreener API: GET /latest/dex/search?q={query} (300 req/min)
+      const searchResults = await dexscreenerClient.searchPairs(query);
+      
+      if (!searchResults || !searchResults.pairs) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('No search results for query')}`);
+        return { 
+          pairs: [],
+          count: 0,
+          totalResults: 0 
+        };
+      }
+      
+      // Filter to only include Solana pairs
+      const solanaPairs = searchResults.pairs.filter(pair => pair.chainId === 'solana');
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Found')} ${formatLog.count(solanaPairs.length)} Solana pairs matching "${query}" out of ${searchResults.pairs.length} total results`);
+      
+      return {
+        pairs: solanaPairs,
+        count: solanaPairs.length,
+        totalResults: searchResults.pairs.length,
+        query
+      };
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to search Solana pairs:')} ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get detailed information about a specific pair on Solana
+   * @param {string} pairAddress - Pair address/ID on Solana
+   * @returns {Object} - Detailed pair information
+   */
+  async getSolanaPairDetails(pairAddress) {
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} details for Solana pair ${formatLog.token(pairAddress)}`);
+      
+      // DexScreener API: GET /latest/dex/pairs/{chainId}/{pairId} (300 req/min)
+      const pairDetails = await dexscreenerClient.getPairDetails('solana', pairAddress);
+      
+      if (!pairDetails || !pairDetails.pairs || pairDetails.pairs.length === 0) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('No details found for pair')}`);
+        return null;
+      }
+      
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched details for Solana pair')}`);
+      
+      return pairDetails.pairs[0];
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch Solana pair details:')} ${error.message}`);
+      throw error;
+    }
+  }
 
   /**
    * Get complete token data (metadata + price) for specified tokens
    * @param {string[]} mintAddresses - Array of token mint addresses
+   * @param {Object} options - Additional options
+   * @param {boolean} options.includeDexscreenerData - Whether to include DexScreener pool data
    * @returns {Promise<Object[]>} - Array of complete token data objects
    */
-  async getTokenData(mintAddresses) {
+  async getTokenData(mintAddresses, options = {}) {
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('GETTING')} data for ${formatLog.count(mintAddresses.length)} tokens`);
+      const includeDexscreenerData = options.includeDexscreenerData === true;
       
-      // Fetch metadata for tokens
-      const metadata = await this.fetchTokenMetadata(mintAddresses);
+      logApi.info(`${formatLog.tag()} ${formatLog.header('GETTING')} data for ${formatLog.count(mintAddresses.length)} tokens${includeDexscreenerData ? ' (including DexScreener data)' : ''}`);
       
-      // Create lookup map
+      // Set up all fetch operations - always get metadata and prices
+      const fetchOperations = [
+        this.fetchTokenMetadata(mintAddresses),
+        this.fetchTokenPrices(mintAddresses)
+      ];
+      
+      // Optionally add DexScreener pool data fetch
+      if (includeDexscreenerData) {
+        fetchOperations.push(this.fetchTokenPools(mintAddresses));
+      }
+      
+      // Execute all fetch operations in parallel
+      const fetchResults = await Promise.all(fetchOperations);
+      
+      // Extract results
+      const metadata = fetchResults[0];
+      const prices = fetchResults[1];
+      const pools = includeDexscreenerData ? fetchResults[2] : null;
+      
+      // Create lookup map for metadata
       const metadataMap = metadata.reduce((map, token) => {
         if (token.mint) {
           map[token.mint] = token;
@@ -700,17 +1002,21 @@ class SolanaEngineService extends BaseService {
         return map;
       }, {});
       
-      // Fetch prices for tokens
-      const prices = await this.fetchTokenPrices(mintAddresses);
-      
-      // Combine metadata and prices
+      // Combine all data
       const result = mintAddresses.map(address => {
-        return {
+        const tokenData = {
           address,
           metadata: metadataMap[address] || null,
           price: prices[address] || null,
           lastUpdated: Date.now()
         };
+        
+        // Add DexScreener data if available
+        if (includeDexscreenerData && pools && pools[address]) {
+          tokenData.dexscreener = pools[address];
+        }
+        
+        return tokenData;
       });
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Fetched data for')} ${formatLog.count(result.length)} tokens`);
@@ -764,6 +1070,50 @@ class SolanaEngineService extends BaseService {
   }
 
   /**
+   * Implements the onPerformOperation method required by BaseService
+   * This gets called regularly by the BaseService to perform the service's main operation
+   * and is used for circuit breaker recovery
+   * @returns {Promise<boolean>} Success status
+   */
+  async onPerformOperation() {
+    try {
+      // Skip operation if service is not properly initialized or started
+      if (!this.isOperational || !this._initialized) {
+        logApi.debug(`${formatLog.tag()} Service not operational or initialized, skipping operation`);
+        return true;
+      }
+      
+      // Core operation: verify that connections to external services are working
+      const connectionStatus = this.getConnectionStatus();
+      
+      // Check if any client is in error state
+      if (connectionStatus.status === 'error') {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Connection issue detected:')} ${connectionStatus.message}`);
+      }
+      
+      // Check Jupiter client (most critical for price updates)
+      const jupiterStatus = jupiterClient.isOperational();
+      if (!jupiterStatus) {
+        throw new Error('Jupiter client is not operational');
+      }
+      
+      // Check that we have at least some tokens subscribed
+      if (this.subscribedTokens.size === 0 && this.isStarted) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('No tokens subscribed for price updates')}`);
+        // Try to reload tokens from database
+        await this.loadWatchedTokens();
+      }
+      
+      logApi.debug(`${formatLog.tag()} ${formatLog.success('Health check successful:')} Monitoring ${formatLog.count(this.subscribedTokens.size)} tokens`);
+      
+      return true;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Perform operation error:')} ${error.message}`);
+      throw error; // Important: re-throw to trigger circuit breaker
+    }
+  }
+  
+  /**
    * Handle WebSocket request
    * @param {Object} request - WebSocket request object
    * @param {Object} client - WebSocket client
@@ -775,13 +1125,35 @@ class SolanaEngineService extends BaseService {
       
       switch (action) {
         case 'getTokenData':
-          return await this.getTokenData(params.mintAddresses);
+          return await this.getTokenData(params.mintAddresses, {
+            includeDexscreenerData: params.includeDexscreenerData
+          });
           
         case 'getTokenPriceHistory':
           return await this.getTokenPriceHistory(params.mintAddress, params.interval);
           
         case 'getSwapQuote':
           return await this.getSwapQuote(params);
+          
+        // DexScreener specific actions - Solana-focused
+        case 'getSolanaPoolsForToken':
+          return await this.getSolanaPoolsForToken(params.tokenAddress);
+          
+        case 'getMultipleTokenPools':
+          return await this.getMultipleTokenPools(params.tokenAddresses);
+          
+        case 'searchSolanaPairs':
+          return await this.searchSolanaPairs(params.query);
+          
+        case 'getSolanaPairDetails':
+          return await this.getSolanaPairDetails(params.pairAddress);
+          
+        case 'getTokenProfiles':
+          return await dexscreenerClient.getLatestTokenProfiles();
+          
+        case 'getOrdersByToken':
+          // Always use 'solana' chain
+          return await dexscreenerClient.getOrdersByToken('solana', params.tokenAddress);
           
         default:
           throw new Error(`Unknown action: ${action}`);
