@@ -900,8 +900,8 @@ class TreasuryCertifier {
                             
                             // Also log the detail
                             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovery: Successfully returned ${(solBalance - 0.001).toFixed(6)} SOL to original sender`)}`);
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovery transaction confirmed: ${returnResult.txid}`)}`);
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`View transaction: ${returnResult.solscanLink}`)}`);
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovery transaction confirmed: ${typeof returnResult.txid === 'object' ? JSON.stringify(returnResult.txid) : returnResult.txid}`)}`);
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`View transaction: ${typeof returnResult.solscanLink === 'object' ? 'https://solscan.io/tx/' + (returnResult.txid.toString() || '') : returnResult.solscanLink}`)}`);
                         }
                     }
                 } catch (returnError) {

@@ -253,12 +253,19 @@ class ContestWalletService extends BaseService {
             logApi.info(`${formatLog.tag()} ${formatLog.success('Contest Wallet Service initialized successfully')}`);
             logApi.info(`${formatLog.tag()} ${formatLog.info(`Using SolanaEngine with ${healthyEndpoints}/${totalEndpoints} healthy RPC endpoints`)}`);
             
-            // Run the startup self-test and wait for it to complete before continuing
+            // Run the startup self-test without blocking initialization
             if (process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
                 (config.service_test && config.service_test.contest_wallet_self_test)) {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Running wallet self-test as part of initialization`);
-                await this.scheduleSelfTest();
-                logApi.info(`${formatLog.tag()} ${formatLog.success('Self-test completed, service is ready')}`);
+                logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Running wallet self-test in background`);
+                
+                // Don't await this - run it in the background to avoid blocking service initialization
+                this.scheduleSelfTest().then(() => {
+                    logApi.info(`${formatLog.tag()} ${formatLog.success('Self-test completed in background')}`);
+                }).catch(err => {
+                    logApi.warn(`${formatLog.tag()} ${formatLog.warning('Self-test failed in background: ' + err.message)}`);
+                });
+                
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Service initialization continuing - self-test runs in background')}`);
             } else {
                 logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping self-test (not enabled)')}`);
             }

@@ -109,6 +109,64 @@ class DiscordNotificationService extends BaseService {
     // Listen for token transactions
     this.events.on(SERVICE_EVENTS.TOKEN_PURCHASE, this.onTokenPurchase.bind(this));
     this.events.on(SERVICE_EVENTS.TOKEN_SALE, this.onTokenSale.bind(this));
+    
+    // Listen for system startup/shutdown events
+    process.on('SIGTERM', () => this.sendServerShutdownNotification());
+    process.on('SIGINT', () => this.sendServerShutdownNotification());
+  }
+  
+  /**
+   * Send server startup notification
+   * This should be called during application initialization
+   */
+  async sendServerStartupNotification() {
+    if (!this.webhooks.system) return;
+    
+    try {
+      const embed = this.webhooks.system.createSuccessEmbed(
+        '🚀 Server Started',
+        'DegenDuel server has successfully started.'
+      );
+      
+      // Add fields with system information
+      embed.fields = [
+        { name: 'Environment', value: process.env.NODE_ENV || 'development', inline: true },
+        { name: 'Version', value: process.env.APP_VERSION || '1.0.0', inline: true },
+        { name: 'Time', value: new Date().toLocaleString(), inline: true },
+      ];
+      
+      await this.webhooks.system.sendEmbed(embed);
+      logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent server startup notification\x1b[0m`);
+    } catch (error) {
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send server startup notification:${fancyColors.RESET}`, error);
+    }
+  }
+  
+  /**
+   * Send server shutdown notification
+   * This is automatically called on SIGTERM and SIGINT signals
+   */
+  async sendServerShutdownNotification() {
+    if (!this.webhooks.system) return;
+    
+    try {
+      const embed = this.webhooks.system.createInfoEmbed(
+        '🔌 Server Shutting Down',
+        'DegenDuel server is shutting down.'
+      );
+      
+      // Add fields with system information
+      embed.fields = [
+        { name: 'Environment', value: process.env.NODE_ENV || 'development', inline: true },
+        { name: 'Uptime', value: this.formatUptime(process.uptime()), inline: true },
+        { name: 'Time', value: new Date().toLocaleString(), inline: true },
+      ];
+      
+      await this.webhooks.system.sendEmbed(embed);
+      logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent server shutdown notification\x1b[0m`);
+    } catch (error) {
+      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send server shutdown notification:${fancyColors.RESET}`, error);
+    }
   }
 
   /**
@@ -260,9 +318,9 @@ class DiscordNotificationService extends BaseService {
       }
       
       await this.webhooks.alerts.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent system alert notification${fancyColors.RESET}`);
+      logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent system alert notification\x1b[0m`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send system alert:${fancyColors.RESET}`, error);
+      logApi.error(`\x1b[96m[Discord]\x1b[0m \x1b[31mFailed to send system alert: ${error.message}\x1b[0m`);
     }
   }
 
@@ -303,9 +361,9 @@ class DiscordNotificationService extends BaseService {
       }
       
       await this.webhooks.system.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent service status notification${fancyColors.RESET}`);
+      logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent service status notification\x1b[0m`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send service status notification:${fancyColors.RESET}`, error);
+      logApi.error(`\x1b[96m[Discord]\x1b[0m \x1b[31mFailed to send service status notification: ${error.message}\x1b[0m`);
     }
   }
 

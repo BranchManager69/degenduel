@@ -710,6 +710,9 @@ class HeliusClient {
     this.monitoredTokens = new Set();
     this.tokenTransferHandlers = [];
     this.tokenSubscriptions = new Map();
+    
+    // Provide reference to this instance for handlers
+    this.websocket.heliusClient = this;
   }
 
   /**

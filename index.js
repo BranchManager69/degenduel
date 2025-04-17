@@ -650,6 +650,15 @@ async function initializeServer() {
                 logApi.info(`Sending ready signal to PM2`);
                 process.send('ready');
             }
+            
+            // Send Discord notification for server startup
+            try {
+                const discordNotificationService = (await import('./services/discordNotificationService.js')).default;
+                await discordNotificationService.sendServerStartupNotification();
+                logApi.info('✅ Sent server startup notification to Discord');
+            } catch (error) {
+                logApi.error(`Failed to send server startup notification to Discord: ${error.message}`);
+            }
         });
         
         return true;

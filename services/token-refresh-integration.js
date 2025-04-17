@@ -13,6 +13,7 @@ import tokenRefreshScheduler from './token-refresh-scheduler.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import serviceEvents from '../utils/service-suite/service-events.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
+import { config } from '../config/config.js';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -43,6 +44,14 @@ const TOKEN_REFRESH_CONFIG = {
 export const initializeTokenRefresh = async () => {
   try {
     logApi.info(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Initializing token refresh integration`);
+    
+    // Check if service is disabled in the current profile
+    if (!config.services.token_refresh_scheduler) {
+      logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Token Refresh Scheduler is disabled in the '${config.services.active_profile}' service profile`);
+      // Still mark as initialized but don't start the scheduler
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Token refresh integration ready`);
+      return true;
+    }
     
     // Initialize the scheduler
     await tokenRefreshScheduler.initialize();
@@ -345,6 +354,14 @@ class TokenRefreshService extends BaseService {
    */
   async performOperation() {
     try {
+      // Check if service is disabled in the current profile
+      // Use the imported config object
+      if (!config.services.token_refresh_scheduler) {
+        // Just log info and return success
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Token refresh scheduler is disabled in the current service profile, nothing to do${fancyColors.RESET}`);
+        return true;
+      }
+    
       // First, check if the scheduler exists and has basic properties
       if (!tokenRefreshScheduler) {
         throw new Error(`Scheduler not available: tokenRefreshScheduler is null or undefined`);
@@ -472,6 +489,13 @@ class TokenRefreshService extends BaseService {
           logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Initialization error during circuit breaker recovery:`, initError);
           return false;
         }
+      }
+      
+      // Check if service is disabled in the current profile
+      if (!config.services.token_refresh_scheduler) {
+        // Only log at debug level to avoid flooding logs
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Token refresh scheduler is disabled in the current service profile, skipping checks${fancyColors.RESET}`);
+        return true; // Return true to prevent circuit breaker from tripping
       }
       
       // Check that token refresh scheduler is available
