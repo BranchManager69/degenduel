@@ -1859,8 +1859,8 @@ class ContestWalletService extends BaseService {
                                 
                                 // Log success
                                 logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}Successfully transferred ${transferAmount.toFixed(6)} SOL to treasury${fancyColors.RESET}
-                     Signature: ${signature}
-                     Explorer: https://solscan.io/tx/${signature}`);
+                     Signature: ${typeof signature === 'object' ? JSON.stringify(signature) : signature}
+                     Explorer: https://solscan.io/tx/${typeof signature === 'object' ? signature.toString() : signature}`);
                                 
                                 results.successfulTransfers++;
                                 results.totalAmountReclaimed += transferAmount;

@@ -253,8 +253,8 @@ class TreasuryCertifier {
             const solscanLink = `https://solscan.io/tx/${txid}`;
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('FUNDS RETURNED!')}`);
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Sent ${returnAmount.toFixed(6)} SOL back to ${toAddress}`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction ID: ${txid}`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Solscan: ${solscanLink}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction ID: ${typeof txid === 'object' ? JSON.stringify(txid) : txid}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Solscan: ${typeof solscanLink === 'object' ? 'https://solscan.io/tx/' + (typeof txid === 'object' ? txid.toString() : txid) : solscanLink}`)}`);
             
             return { 
                 success: true, 
@@ -687,8 +687,8 @@ class TreasuryCertifier {
             
             steps.transfer1 = true;
             txStatus.source_to_test1 = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 1 successful: ${sig1.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${sig1}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 1 successful: ${typeof sig1 === 'object' ? JSON.stringify(sig1).substring(0, 8) : sig1.substring(0, 8)}...`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig1 === 'object' ? sig1.toString() : sig1}`)}`);
             
             // Update visual flow diagram
             this.displayTransactionFlowDiagram(wallets, txStatus);
@@ -707,8 +707,8 @@ class TreasuryCertifier {
             
             steps.transfer2 = true;
             txStatus.test1_to_test2 = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 2 successful: ${sig2.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${sig2}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 2 successful: ${typeof sig2 === 'object' ? JSON.stringify(sig2).substring(0, 8) : sig2.substring(0, 8)}...`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig2 === 'object' ? sig2.toString() : sig2}`)}`);
             
             // Update visual flow diagram
             this.displayTransactionFlowDiagram(wallets, txStatus);
@@ -727,8 +727,8 @@ class TreasuryCertifier {
             
             steps.transfer3 = true;
             txStatus.test2_to_test3 = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 3 successful: ${sig3.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${sig3}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 3 successful: ${typeof sig3 === 'object' ? JSON.stringify(sig3).substring(0, 8) : sig3.substring(0, 8)}...`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig3 === 'object' ? sig3.toString() : sig3}`)}`);
             
             // Update visual flow diagram
             this.displayTransactionFlowDiagram(wallets, txStatus);
@@ -764,8 +764,8 @@ class TreasuryCertifier {
             
             steps.returnFunds = true;
             txStatus.test3_to_source = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funds returned to source wallet: ${sig4.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${sig4}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funds returned to source wallet: ${typeof sig4 === 'object' ? JSON.stringify(sig4).substring(0, 8) : sig4.substring(0, 8)}...`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig4 === 'object' ? sig4.toString() : sig4}`)}`);
             
             // Update visual flow diagram
             this.displayTransactionFlowDiagram(wallets, txStatus);
@@ -814,8 +814,8 @@ class TreasuryCertifier {
                         
                         // Also log detail for logs
                         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Successfully returned ${returnAmount.toFixed(6)} SOL to original sender`)}`);
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction confirmed on blockchain: ${returnResult.txid}`)}`);
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`View transaction: ${returnResult.solscanLink}`)}`);
+                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction confirmed on blockchain: ${typeof returnResult.txid === 'object' ? JSON.stringify(returnResult.txid) : returnResult.txid}`)}`);
+                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`View transaction: ${typeof returnResult.solscanLink === 'object' ? 'https://solscan.io/tx/' + (typeof returnResult.txid === 'object' ? returnResult.txid.toString() : returnResult.txid) : returnResult.solscanLink}`)}`);
                     } else {
                         this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Could not return funds to original sender: ${returnResult.error}`)}`);
                     }
@@ -901,7 +901,7 @@ class TreasuryCertifier {
                             // Also log the detail
                             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovery: Successfully returned ${(solBalance - 0.001).toFixed(6)} SOL to original sender`)}`);
                             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovery transaction confirmed: ${typeof returnResult.txid === 'object' ? JSON.stringify(returnResult.txid) : returnResult.txid}`)}`);
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`View transaction: ${typeof returnResult.solscanLink === 'object' ? 'https://solscan.io/tx/' + (returnResult.txid.toString() || '') : returnResult.solscanLink}`)}`);
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`View transaction: ${typeof returnResult.solscanLink === 'object' ? 'https://solscan.io/tx/' + (typeof returnResult.txid === 'object' ? returnResult.txid.toString() : returnResult.txid) : returnResult.solscanLink}`)}`);
                         }
                     }
                 } catch (returnError) {
