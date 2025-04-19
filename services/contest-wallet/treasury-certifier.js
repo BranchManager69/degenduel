@@ -217,50 +217,70 @@ class TreasuryCertifier {
         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Preparing to send ${amount.toFixed(6)} SOL back to ${toAddress}`)}`);
         
         try {
-            // Keep a small amount for fees
-            const keepAmount = 0.001;
-            const returnAmount = Math.max(0, amount - keepAmount);
-            
-            if (returnAmount <= 0) {
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Amount too small to return after keeping fees.`)}`);
-                return { success: false, error: 'Amount too small' };
+            // Convert SOL to lamports
+            const lamportsTotal = Math.floor(amount * LAMPORTS_PER_SOL);
+            // Get connection for fee estimation
+            const connection = this.solanaEngine.getConnection();
+            // Fetch a recent blockhash
+            const { blockhash } = await connection.getLatestBlockhash();
+            // Build a dummy transaction for fee estimation
+            const dummyTx = new Transaction({ recentBlockhash: blockhash, feePayer: fromKeypair.publicKey })
+                .add(
+                    SystemProgram.transfer({
+                        fromPubkey: fromKeypair.publicKey,
+                        toPubkey: new PublicKey(toAddress),
+                        lamports: lamportsTotal,
+                    })
+                );
+            // Estimate fee in lamports
+            let feeLamports;
+            if (typeof connection.getFeeForMessage === 'function') {
+                const feeResponse = await connection.getFeeForMessage(dummyTx.compileMessage());
+                feeLamports = feeResponse.value !== undefined ? feeResponse.value : feeResponse;
+            } else {
+                const feeCalcRes = await connection.getFeeCalculatorForBlockhash(blockhash);
+                feeLamports = feeCalcRes.value?.feeCalculator?.lamportsPerSignature
+                    || feeCalcRes.feeCalculator?.lamportsPerSignature;
             }
-            
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Will return ${returnAmount.toFixed(6)} SOL (keeping ${keepAmount} SOL for fees)`)}`);
-            
-            // Create transfer transaction
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(toAddress),
-                    lamports: Math.floor(returnAmount * LAMPORTS_PER_SOL), // convert SOL to lamports
-                })
-            );
-            
+            // Ensure there's enough to cover the fee
+            if (lamportsTotal <= feeLamports) {
+                const feeSol = (feeLamports / LAMPORTS_PER_SOL).toFixed(6);
+                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Insufficient balance for return fee (${feeSol} SOL)`)}`);
+                return { success: false, error: 'Insufficient balance for fee' };
+            }
+            // Calculate sendable lamports after fee
+            const lamportsToSend = lamportsTotal - feeLamports;
+            const sendSol = lamportsToSend / LAMPORTS_PER_SOL;
+            const feeSol = (feeLamports / LAMPORTS_PER_SOL).toFixed(6);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Will return ${sendSol.toFixed(6)} SOL (fee ${feeSol} SOL)`)}`);
+            // Build actual return transaction
+            const transaction = new Transaction()
+                .add(
+                    SystemProgram.transfer({
+                        fromPubkey: fromKeypair.publicKey,
+                        toPubkey: new PublicKey(toAddress),
+                        lamports: lamportsToSend,
+                    })
+                );
             transaction.feePayer = fromKeypair.publicKey;
-            
             // Send and confirm transaction
             const txid = await this.solanaEngine.sendTransaction(
                 transaction,
                 [fromKeypair],
-                {
-                    skipPreflight: true,
-                    maxRetries: 5,
-                    commitment: 'confirmed'
-                }
+                { skipPreflight: true, maxRetries: 5, commitment: 'confirmed' }
             );
             
             const solscanLink = `https://solscan.io/tx/${txid}`;
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('FUNDS RETURNED!')}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Sent ${returnAmount.toFixed(6)} SOL back to ${toAddress}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Sent ${sendSol.toFixed(6)} SOL back to ${toAddress}`)}`);
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction ID: ${typeof txid === 'object' ? JSON.stringify(txid) : txid}`)}`);
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Solscan: ${typeof solscanLink === 'object' ? 'https://solscan.io/tx/' + (typeof txid === 'object' ? txid.toString() : txid) : solscanLink}`)}`);
             
-            return { 
-                success: true, 
-                txid, 
-                solscanLink, 
-                amount: returnAmount 
+            return {
+                success: true,
+                txid,
+                solscanLink,
+                amount: sendSol
             };
         } catch (error) {
             this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to return funds: ${error.message}`)}`);
@@ -688,7 +708,7 @@ class TreasuryCertifier {
             steps.transfer1 = true;
             txStatus.source_to_test1 = true;
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 1 successful: ${typeof sig1 === 'object' ? JSON.stringify(sig1).substring(0, 8) : sig1.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig1 === 'object' ? sig1.toString() : sig1}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig1 === 'object' ? sig1.signature : sig1}`)}`);
             
             // Update visual flow diagram
             this.displayTransactionFlowDiagram(wallets, txStatus);
@@ -708,7 +728,7 @@ class TreasuryCertifier {
             steps.transfer2 = true;
             txStatus.test1_to_test2 = true;
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 2 successful: ${typeof sig2 === 'object' ? JSON.stringify(sig2).substring(0, 8) : sig2.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig2 === 'object' ? sig2.toString() : sig2}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig2 === 'object' ? sig2.signature : sig2}`)}`);
             
             // Update visual flow diagram
             this.displayTransactionFlowDiagram(wallets, txStatus);
@@ -728,7 +748,7 @@ class TreasuryCertifier {
             steps.transfer3 = true;
             txStatus.test2_to_test3 = true;
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 3 successful: ${typeof sig3 === 'object' ? JSON.stringify(sig3).substring(0, 8) : sig3.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig3 === 'object' ? sig3.toString() : sig3}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig3 === 'object' ? sig3.signature : sig3}`)}`);
             
             // Update visual flow diagram
             this.displayTransactionFlowDiagram(wallets, txStatus);
@@ -765,7 +785,7 @@ class TreasuryCertifier {
             steps.returnFunds = true;
             txStatus.test3_to_source = true;
             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funds returned to source wallet: ${typeof sig4 === 'object' ? JSON.stringify(sig4).substring(0, 8) : sig4.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig4 === 'object' ? sig4.toString() : sig4}`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig4 === 'object' ? sig4.signature : sig4}`)}`);
             
             // Update visual flow diagram
             this.displayTransactionFlowDiagram(wallets, txStatus);
@@ -940,7 +960,7 @@ class TreasuryCertifier {
         
         // Create the diagram
         const diagram = [
-            `\n${this.fancyColors.BOLD_WHITE}TRANSACTION FLOW DIAGRAM${this.fancyColors.RESET}\n`,
+            `\n${this.fancyColors.BOLD}${this.fancyColors.WHITE}TRANSACTION FLOW DIAGRAM${this.fancyColors.RESET}\n`,
         ];
         
         // Add sender if known
@@ -1036,33 +1056,65 @@ class TreasuryCertifier {
      */
     async transferSol(fromKeypair, toAddress, amount) {
         try {
-            // Create a transaction to transfer SOL
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(toAddress),
-                    lamports: Math.round(amount * LAMPORTS_PER_SOL) // Convert SOL to lamports
-                })
-            );
-            
-            // Make sure the transaction has required properties
-            // This helps solanaEngine but doesn't bypass it
+            // Convert SOL to lamports
+            const lamportsToSend = Math.round(amount * LAMPORTS_PER_SOL);
+            // Get raw connection for fee estimation
+            const connection = this.solanaEngine.getConnection();
+            // Fetch a recent blockhash for fee estimation
+            const { blockhash } = await connection.getLatestBlockhash();
+            // Build a dummy transaction to estimate fee
+            const dummyTx = new Transaction({ recentBlockhash: blockhash, feePayer: fromKeypair.publicKey })
+                .add(
+                    SystemProgram.transfer({
+                        fromPubkey: fromKeypair.publicKey,
+                        toPubkey: new PublicKey(toAddress),
+                        lamports: lamportsToSend,
+                    })
+                );
+            // Estimate transaction fee
+            let feeLamports;
+            if (typeof connection.getFeeForMessage === 'function') {
+                const feeResponse = await connection.getFeeForMessage(dummyTx.compileMessage());
+                feeLamports = feeResponse.value !== undefined ? feeResponse.value : feeResponse;
+            } else {
+                const feeCalcResponse = await connection.getFeeCalculatorForBlockhash(blockhash);
+                feeLamports = feeCalcResponse.value?.feeCalculator?.lamportsPerSignature
+                    || feeCalcResponse.feeCalculator?.lamportsPerSignature;
+            }
+            // Make sure we leave enough to cover the fee
+            if (lamportsToSend <= feeLamports) {
+                throw new Error(
+                    `Requested ${lamportsToSend} lamports but estimated fee is ${feeLamports} lamports`
+                );
+            }
+            // Subtract fee from send amount
+            const sendLamports = lamportsToSend - feeLamports;
+            // Build real transaction
+            const transaction = new Transaction()
+                .add(
+                    SystemProgram.transfer({
+                        fromPubkey: fromKeypair.publicKey,
+                        toPubkey: new PublicKey(toAddress),
+                        lamports: sendLamports,
+                    })
+                );
             transaction.feePayer = fromKeypair.publicKey;
-            
+            // (Blockhash will be set by solanaEngine internally)
             // Send the transaction using SolanaEngine
             const signature = await this.solanaEngine.sendTransaction(
-                transaction, 
-                [fromKeypair], 
+                transaction,
+                [fromKeypair],
                 {
                     commitment: 'confirmed',
                     skipPreflight: true,
-                    maxRetries: 5
+                    maxRetries: 5,
                 }
             );
-            
             return signature;
         } catch (error) {
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Transfer failed: ${error.message}`)}`);
+            this.logApi.error(
+                `${this.formatLog.tag()} ${this.formatLog.error(`Transfer failed: ${error.message}`)}`
+            );
             throw error;
         }
     }
