@@ -850,6 +850,33 @@ class DiscordNotificationService extends BaseService {
       return amount.toString();
     }
   }
+  
+  /**
+   * Format uptime in seconds to a human-readable string
+   * @param {number} uptimeSeconds - Uptime in seconds
+   * @returns {string} Formatted uptime string (e.g., "2d 5h 30m 10s")
+   */
+  formatUptime(uptimeSeconds) {
+    if (!uptimeSeconds || isNaN(uptimeSeconds)) return 'Unknown';
+    
+    try {
+      const days = Math.floor(uptimeSeconds / 86400);
+      const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+      const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+      const seconds = Math.floor(uptimeSeconds % 60);
+      
+      const parts = [];
+      if (days > 0) parts.push(`${days}d`);
+      if (hours > 0) parts.push(`${hours}h`);
+      if (minutes > 0) parts.push(`${minutes}m`);
+      if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+      
+      return parts.join(' ');
+    } catch (error) {
+      logApi.error(`Error formatting uptime: ${error.message}`);
+      return `${Math.floor(uptimeSeconds)}s`;
+    }
+  }
 }
 
 /**
