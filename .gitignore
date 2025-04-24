@@ -13,6 +13,10 @@ ecosystem.local.cjs
 public/images/
 public/images/**
 
+# Design files
+design/
+design/**
+
 # Keys
 keys/
 keys/**
@@ -20,6 +24,9 @@ keys/**
 # Home scrapes
 home/
 home/**
+
+# Stray stuff
+.STRAY/
 
 # Purgatory
 purgatory/
