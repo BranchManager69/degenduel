@@ -16,6 +16,7 @@ import qrcode from 'qrcode-terminal';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import readline from 'readline';
 
 /**
  * Generate a QR code for display in the console
@@ -407,7 +408,7 @@ class TreasuryCertifier {
             `${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE}  Send ${minAmount} SOL to this address:                                         ${this.fancyColors.RESET}`,
             `${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE}  ${publicKey}  ${this.fancyColors.RESET}`,
             `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-            `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}  Press Ctrl+C to cancel and skip certification                               ${this.fancyColors.RESET}`,
+            `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}  Press 's' key to skip certification and continue startup                     ${this.fancyColors.RESET}`,
             `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}\n`
         ];
         
@@ -427,11 +428,48 @@ class TreasuryCertifier {
         let addressReminderInterval;
         
         try {
+            // Set up key press handling for skipping certification
+            const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout
+            });
+            
+            // Configure stdin for keypress events
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
+            
+            // Flag to track if certification was skipped
+            let certificationSkipped = false;
+            
+            // Handle keypress events
+            const keypressHandler = (key) => {
+                // Check for 's' key to skip certification
+                if (key === 's' || key === 'S') {
+                    certificationSkipped = true;
+                    this.logApi.info(`\n${this.fancyColors.BG_CYAN}${this.fancyColors.BLACK} CERTIFICATION SKIPPED - Continuing with startup ${this.fancyColors.RESET}\n`);
+                    
+                    // Clean up event listeners
+                    process.stdin.removeListener('data', keypressHandler);
+                    process.stdin.setRawMode(false);
+                    process.stdin.pause();
+                    rl.close();
+                }
+                
+                // Forward Ctrl+C to normal handling (process exit)
+                if (key === '\u0003') {
+                    process.exit();
+                }
+            };
+            
+            // Listen for keypresses
+            process.stdin.on('data', keypressHandler);
+
             // Set up an interval to repeat the address banner every 20 seconds
             // This ensures the address stays visible even with other services logging
             addressReminderInterval = setInterval(() => {
                 this.logApi.info(`\n${this.fancyColors.BG_RED}${this.fancyColors.WHITE} REMINDER: Treasury certification waiting for funds ${this.fancyColors.RESET}`);
-                this.logApi.info(`${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE} Send ${minAmount} SOL to: ${publicKey} ${this.fancyColors.RESET}\n`);
+                this.logApi.info(`${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE} Send ${minAmount} SOL to: ${publicKey} ${this.fancyColors.RESET}`);
+                this.logApi.info(`${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE} Press 's' key to skip certification and continue ${this.fancyColors.RESET}\n`);
                 
                 // Always show the address box with every reminder
                 if (qrCode.length > 0) {
@@ -441,7 +479,7 @@ class TreasuryCertifier {
                 }
             }, 20000);
             
-            while (waitAttempts < maxWaitAttempts) {
+            while (waitAttempts < maxWaitAttempts && !certificationSkipped) {
                 // Check balance
                 balance = await this.solanaEngine.executeConnectionMethod('getBalance', keypair.publicKey);
                 balanceSol = balance / LAMPORTS_PER_SOL;
@@ -494,9 +532,23 @@ class TreasuryCertifier {
                 addressReminderInterval = null;
             }
             
+            // Clean up key press handling
+            try {
+                process.stdin.removeListener('data', keypressHandler);
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+                rl.close();
+            } catch (cleanupError) {
+                this.logApi.debug(`${this.formatLog.tag()} Cleanup error (non-critical): ${cleanupError.message}`);
+            }
+            
+            if (certificationSkipped) {
+                return { success: false, skipped: true };
+            }
+            
             if (waitAttempts >= maxWaitAttempts) {
                 this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Timed out waiting for funds after 5 minutes.`)}`);
-                return { success: false };
+                return { success: false, timeout: true };
             }
             
             return { 
@@ -509,6 +561,17 @@ class TreasuryCertifier {
             if (addressReminderInterval) {
                 clearInterval(addressReminderInterval);
             }
+            
+            // Clean up key press handling
+            try {
+                process.stdin.removeListener('data', keypressHandler);
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+                rl.close();
+            } catch (cleanupError) {
+                // Ignore cleanup errors
+            }
+            
             this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Error waiting for funds: ${error.message}`)}`);
             return { success: false, error: error.message };
         }
@@ -615,13 +678,25 @@ class TreasuryCertifier {
             const fundingResult = await this.waitForFunds(sourceKeypair, testAmount);
             
             if (!fundingResult.success) {
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Timed out waiting for funds after 5 minutes.`)}`);
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Skipping certification and continuing service initialization.`)}`);
-                return {
-                    success: false,
-                    message: "Certification timed out - no funds received within 5 minutes",
-                    sourceWallet: sourcePublicKey
-                };
+                if (fundingResult.skipped) {
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Certification was manually skipped by user.`)}`);
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Continuing with service initialization.`)}`);
+                    return {
+                        success: false,
+                        skipped: true,
+                        message: "Certification manually skipped by user",
+                        sourceWallet: sourcePublicKey
+                    };
+                } else {
+                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Timed out waiting for funds after 5 minutes.`)}`);
+                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Skipping certification and continuing service initialization.`)}`);
+                    return {
+                        success: false,
+                        timeout: true,
+                        message: "Certification timed out - no funds received within 5 minutes",
+                        sourceWallet: sourcePublicKey
+                    };
+                }
             }
             
             // Track the sender for later return
@@ -1265,6 +1340,133 @@ class TreasuryCertifier {
         } catch (error) {
             this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to load saved keypairs: ${error.message}`)}`);
             return null;
+        }
+    }
+
+    /**
+     * Check for any stranded funds in certification wallets and attempt to recover them
+     * This should be called during startup to clean up any leftover funds from failed certifications
+     * 
+     * @param {string} recoveryAddress - Address to send recovered funds to
+     * @returns {Promise<{recoveredFunds: boolean, totalRecovered: number, details: Array}>}
+     */
+    async scanForStrandedFunds(recoveryAddress) {
+        if (!recoveryAddress) {
+            this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning('No recovery address provided for stranded fund recovery')}`);
+            return { recoveredFunds: false, totalRecovered: 0, details: [] };
+        }
+        
+        try {
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('SCANNING FOR STRANDED FUNDS')}`);
+            
+            // Read all files in the certification directory
+            const files = fs.readdirSync(this.certKeypairsDir);
+            
+            if (files.length === 0) {
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('No stored certification keypairs found')}`);
+                return { recoveredFunds: false, totalRecovered: 0, details: [] };
+            }
+            
+            // Group files by certification ID
+            const certifications = {};
+            
+            for (const file of files) {
+                const parts = file.split('_');
+                if (parts.length >= 2) {
+                    const certId = parts[0];
+                    const label = parts[1];
+                    
+                    if (!certifications[certId]) {
+                        certifications[certId] = [];
+                    }
+                    
+                    certifications[certId].push({
+                        label,
+                        file
+                    });
+                }
+            }
+            
+            // Process each certification for stranded funds
+            let totalRecovered = 0;
+            const recoveryDetails = [];
+            
+            for (const [certId, keypairs] of Object.entries(certifications)) {
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Checking certification ${certId} for stranded funds...`)}`);
+                
+                // Loop through each keypair in this certification
+                for (const keypairInfo of keypairs) {
+                    const filepath = path.join(this.certKeypairsDir, keypairInfo.file);
+                    const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+                    
+                    // Create keypair from secret key
+                    const secretKey = Uint8Array.from(data.secretKey);
+                    const keypair = Keypair.fromSecretKey(secretKey);
+                    
+                    // Get the balance of this wallet
+                    const balance = await this.solanaEngine.executeConnectionMethod('getBalance', keypair.publicKey);
+                    const solBalance = balance / LAMPORTS_PER_SOL;
+                    
+                    // Check if this wallet has enough SOL to be worth recovering (more than transaction fee)
+                    if (solBalance > 0.001) {
+                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Found stranded funds: ${solBalance.toFixed(6)} SOL in ${data.label} wallet (${data.publicKey.substring(0, 8)}...)`)}`);
+                        
+                        // Attempt to return the funds to the recovery address
+                        try {
+                            const returnResult = await this.returnFundsToSender(
+                                keypair,
+                                recoveryAddress,
+                                solBalance - 0.0005 // Keep a small cushion for fees
+                            );
+                            
+                            if (returnResult.success) {
+                                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Successfully recovered ${returnResult.amount.toFixed(6)} SOL from ${data.label} wallet`)}`);
+                                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction: ${returnResult.solscanLink}`)}`);
+                                
+                                totalRecovered += returnResult.amount;
+                                recoveryDetails.push({
+                                    certificationId: certId,
+                                    walletLabel: data.label,
+                                    walletAddress: data.publicKey,
+                                    recovered: returnResult.amount,
+                                    txid: returnResult.txid
+                                });
+                            } else {
+                                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to recover funds from ${data.label} wallet: ${returnResult.error}`)}`);
+                            }
+                        } catch (returnError) {
+                            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Error recovering funds from ${data.label} wallet: ${returnError.message}`)}`);
+                        }
+                    } else if (solBalance > 0) {
+                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Found small balance (${solBalance.toFixed(6)} SOL) in ${data.label} wallet - not worth recovering due to fees`)}`);
+                    }
+                }
+            }
+            
+            // Report summary
+            if (totalRecovered > 0) {
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('FUND RECOVERY COMPLETE')} Recovered total of ${totalRecovered.toFixed(6)} SOL from ${recoveryDetails.length} wallets`);
+                return { 
+                    recoveredFunds: true, 
+                    totalRecovered, 
+                    details: recoveryDetails 
+                };
+            } else {
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('FUND RECOVERY COMPLETE')} No funds recovered - no stranded balances found`);
+                return { 
+                    recoveredFunds: false, 
+                    totalRecovered: 0, 
+                    details: [] 
+                };
+            }
+        } catch (error) {
+            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Fund recovery scan failed: ${error.message}`)}`);
+            return { 
+                recoveredFunds: false, 
+                totalRecovered: 0, 
+                details: [], 
+                error: error.message 
+            };
         }
     }
 

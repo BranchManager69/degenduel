@@ -23,6 +23,9 @@ import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
 // Import SolanaEngine (new direct integration)
 import { solanaEngine } from '../../services/solana-engine/index.js';
 
+// Import TreasuryCertifier for certification and stranded funds recovery
+import TreasuryCertifier from './treasury-certifier.js';
+
 // Contest Wallet formatting helpers
 const formatLog = {
   // Service tag with consistent styling
@@ -140,6 +143,9 @@ class ContestWalletService extends BaseService {
         
         logApi.info(`${formatLog.tag()} ${formatLog.header('Initializing')} Contest Wallet Service`);
         
+        // Initialize TreasuryCertifier
+        this.treasuryCertifier = null;
+        
         // Debug: Check format objects to ensure they're properly defined
         if (!formatLog.batch || typeof formatLog.batch !== 'function') {
             logApi.error(`${fancyColors.RED}[constructor]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} FORMAT ERROR ${fancyColors.RESET} formatLog.batch is not properly defined: ${typeof formatLog.batch}`);
@@ -206,6 +212,63 @@ class ContestWalletService extends BaseService {
     }
     
     /**
+     * Initialize the TreasuryCertifier and perform stranded funds recovery
+     * This method initializes the TreasuryCertifier component and
+     * runs a scan for any stranded funds from previous certification runs
+     * 
+     * @returns {Promise<void>}
+     */
+    async initTreasuryCertifier() {
+        try {
+            logApi.info(`${formatLog.tag()} ${formatLog.header('TREASURY')} Initializing TreasuryCertifier`);
+            
+            // Initialize the TreasuryCertifier instance with required dependencies
+            this.treasuryCertifier = new TreasuryCertifier({
+                solanaEngine,
+                prisma,
+                logApi,
+                formatLog,
+                fancyColors,
+                decryptPrivateKey: this.decryptPrivateKey.bind(this),
+                config
+            });
+            
+            // Scan for and recover any stranded funds from previous certification runs
+            logApi.info(`${formatLog.tag()} ${formatLog.header('RECOVERY')} Scanning for stranded certification funds...`);
+            
+            const recoveryResults = await this.treasuryCertifier.scanForStrandedFunds(this.treasuryWalletAddress);
+            
+            if (recoveryResults.recoveredFunds) {
+                // Update service stats with recovered amounts
+                this.walletStats.reclaimed_funds.total_operations++;
+                this.walletStats.reclaimed_funds.successful_operations++;
+                this.walletStats.reclaimed_funds.total_amount += recoveryResults.totalRecovered || 0;
+                this.walletStats.reclaimed_funds.last_reclaim = new Date().toISOString();
+                
+                logApi.info(`${formatLog.tag()} ${formatLog.success(`Successfully recovered ${recoveryResults.totalRecovered} SOL to treasury`)}`);
+                
+                // Log detailed recovery information
+                if (recoveryResults.details && recoveryResults.details.length > 0) {
+                    recoveryResults.details.forEach(detail => {
+                        logApi.info(`${formatLog.tag()} ${formatLog.info(`Recovered ${formatLog.balance(detail.recovered)} from ${detail.walletAddress.slice(0, 8)}...`)}`);
+                    });
+                }
+            } else {
+                logApi.info(`${formatLog.tag()} ${formatLog.info('No stranded funds found to recover.')}`);
+            }
+            
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error('TreasuryCertifier initialization error:')}`, {
+                error: error.message,
+                stack: error.stack
+            });
+            // Don't throw the error - we want the service to continue even if recovery fails
+            this.walletStats.reclaimed_funds.failed_operations++;
+            this.walletStats.errors.last_error = `TreasuryCertifier error: ${error.message}`;
+        }
+    }
+
+    /**
      * Initialize the contest wallet service
      * Overrides the BaseService initialize method to add service profile check
      * and verify SolanaEngine availability
@@ -252,6 +315,12 @@ class ContestWalletService extends BaseService {
             
             logApi.info(`${formatLog.tag()} ${formatLog.success('Contest Wallet Service initialized successfully')}`);
             logApi.info(`${formatLog.tag()} ${formatLog.info(`Using SolanaEngine with ${healthyEndpoints}/${totalEndpoints} healthy RPC endpoints`)}`);
+            
+            // Initialize the TreasuryCertifier and scan for stranded funds
+            // Don't await this - run it in the background to avoid blocking service initialization
+            this.initTreasuryCertifier().catch(err => {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier initialization failed: ' + err.message)}`);
+            });
             
             // Run the startup self-test without blocking initialization
             if (process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
