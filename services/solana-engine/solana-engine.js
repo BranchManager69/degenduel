@@ -24,7 +24,6 @@ import { dexscreenerClient } from './dexscreener-client.js';
 import { heliusPoolTracker } from './helius-pool-tracker.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import { Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
-import { ServiceError } from '../../utils/service-suite/service-error.js';
 import { PrismaClient } from '@prisma/client';
 import connectionManager from './connection-manager.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';

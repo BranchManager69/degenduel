@@ -133,6 +133,15 @@ export async function analyzeRecentClientErrors(aiService) {
       // Import the broadcaster if available
       const wsBroadcaster = (await import('../../../utils/websocket-suite/ws-broadcaster.js')).default;
       
+      // Log WebSocket status before attempting broadcast
+      logApi.debug(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} WebSocket status check: ${JSON.stringify({
+        hasWebSocketConfig: !!config.websocket,
+        hasUnifiedWebSocket: !!config.websocket?.unifiedWebSocket,
+        serviceType: 'ai_service',
+        operation: 'broadcast_error_analysis',
+        timestamp: new Date().toISOString()
+      })}`, { analysisId: analysisResult.id });
+      
       // Prepare a notification payload with just the essential information
       const notificationData = {
         id: analysisResult.id,
@@ -144,11 +153,17 @@ export async function analyzeRecentClientErrors(aiService) {
         }, 0)
       };
       
-      // Broadcast to ADMIN and SUPER_ADMIN roles
-      await wsBroadcaster.broadcastToRole('ADMIN', 'ai_analysis', 'new_error_analysis', notificationData);
-      await wsBroadcaster.broadcastToRole('SUPER_ADMIN', 'ai_analysis', 'new_error_analysis', notificationData);
+      // Broadcast to ADMIN and SUPER_ADMIN roles - will throw error if broadcast fails
+      const adminCount = await wsBroadcaster.broadcastToRole('ADMIN', 'ai_analysis', 'new_error_analysis', notificationData);
+      const superAdminCount = await wsBroadcaster.broadcastToRole('SUPER_ADMIN', 'ai_analysis', 'new_error_analysis', notificationData);
       
-      logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Broadcasted new error analysis notification to admins`);
+      // Only log success if we actually sent messages
+      const totalRecipients = adminCount + superAdminCount;
+      if (totalRecipients > 0) {
+        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Broadcasted new error analysis to ${totalRecipients} admin recipients`);
+      } else {
+        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Error analysis complete, but no admin clients connected to receive broadcast`);
+      }
     } catch (broadcastError) {
       // Don't fail if broadcasting fails
       logApi.warn(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Failed to broadcast error analysis: ${broadcastError.message}`);

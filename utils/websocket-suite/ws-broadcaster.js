@@ -34,8 +34,18 @@ class WSBroadcaster {
     const unifiedWS = config.websocket.unifiedWebSocket;
     
     if (!unifiedWS) {
-      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Failed to broadcast - Unified WebSocket not initialized`);
-      return 0;
+      const errorMsg = `Failed to broadcast - Unified WebSocket not initialized`;
+      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} ${errorMsg}`);
+      // Add diagnostic info to help troubleshoot
+      logApi.debug(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} WebSocket config debug info: ${JSON.stringify({
+        configHasWebSocketSection: !!config.websocket,
+        configHasTopics: !!config.websocket?.topics,
+        serviceCategory: category,
+        serviceAction: action,
+        targetRole: role
+      })}`);
+      // Throw error so callers know broadcast failed
+      throw new Error(`WebSocket broadcast failed: ${errorMsg}`);
     }
     
     // Default priority is 'normal'
@@ -105,8 +115,18 @@ class WSBroadcaster {
     const unifiedWS = config.websocket.unifiedWebSocket;
     
     if (!unifiedWS) {
-      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Failed to broadcast - Unified WebSocket not initialized`);
-      return 0;
+      const errorMsg = `Failed to broadcast - Unified WebSocket not initialized`;
+      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} ${errorMsg}`);
+      // Add diagnostic info
+      logApi.debug(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} WebSocket config debug info: ${JSON.stringify({
+        configHasWebSocketSection: !!config.websocket,
+        configHasTopics: !!config.websocket?.topics,
+        topic: topic,
+        serviceCategory: category,
+        serviceAction: action
+      })}`);
+      // Throw error so callers know broadcast failed
+      throw new Error(`WebSocket broadcast failed: ${errorMsg}`);
     }
     
     // Create the message
@@ -228,8 +248,18 @@ class WSBroadcaster {
     const unifiedWS = config.websocket.unifiedWebSocket;
     
     if (!unifiedWS) {
-      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} Failed to broadcast - Unified WebSocket not initialized`);
-      return 0;
+      const errorMsg = `Failed to broadcast - Unified WebSocket not initialized`;
+      logApi.warn(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} ${errorMsg}`);
+      // Add diagnostic info
+      logApi.debug(`${fancyColors.MAGENTA}[WS_BROADCASTER]${fancyColors.RESET} WebSocket config debug info: ${JSON.stringify({
+        configHasWebSocketSection: !!config.websocket,
+        configHasTopics: !!config.websocket?.topics,
+        userCount: walletAddresses?.length || 0,
+        serviceCategory: category,
+        serviceAction: action
+      })}`);
+      // Throw error so callers know broadcast failed
+      throw new Error(`WebSocket broadcast failed: ${errorMsg}`);
     }
     
     // Create the message

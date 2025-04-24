@@ -146,6 +146,22 @@ class ContestWalletService extends BaseService {
         // Initialize TreasuryCertifier
         this.treasuryCertifier = null;
         
+        // Initialize WebSocket subscription tracking
+        this.websocketSubscriptions = {
+            // Track wallet accounts being monitored via WebSocket
+            subscribedAccounts: new Set(),
+            // Track when subscriptions were last attempted
+            subscriptionAttempts: new Map(),
+            // Track accounts with active subscriptions
+            activeSubscriptions: new Map(),
+            // Timestamp of last recovery attempt
+            lastRecoveryAttempt: null,
+            // Track connection to unified WebSocket
+            unifiedWsConnection: null,
+            // Subscription recovery interval
+            recoveryInterval: null
+        };
+        
         // Debug: Check format objects to ensure they're properly defined
         if (!formatLog.batch || typeof formatLog.batch !== 'function') {
             logApi.error(`${fancyColors.RED}[constructor]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} FORMAT ERROR ${fancyColors.RESET} formatLog.batch is not properly defined: ${typeof formatLog.batch}`);
@@ -341,6 +357,35 @@ class ContestWalletService extends BaseService {
             
             logApi.info(`${formatLog.tag()} ${formatLog.success('Contest Wallet Service initialized successfully')}`);
             logApi.info(`${formatLog.tag()} ${formatLog.info(`Using SolanaEngine with ${healthyEndpoints}/${totalEndpoints} healthy RPC endpoints`)}`);
+            
+            // Initialize WebSocket account monitoring for contest wallets
+        // This replaces the traditional poll-based approach with real-time WebSocket updates
+        // providing instant balance updates without RPC polling overhead
+        logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Setting up real-time wallet monitoring`);
+        this.initializeWebSocketMonitoring().then(() => {
+            logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket monitoring initialized successfully')}`);
+            
+            // Mark the balance checker as WebSocket-enabled in stats
+            this.walletStats.websocket_monitoring = {
+                enabled: true,
+                initialized_at: new Date().toISOString(),
+                status: 'active'
+            };
+        }).catch(err => {
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to initialize WebSocket monitoring: ${err.message}`)}`, { 
+                error: err.message, 
+                stack: err.stack 
+            });
+            
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to traditional polling for wallet balances')}`);
+            
+            // Mark the balance checker as using traditional polling in stats
+            this.walletStats.websocket_monitoring = {
+                enabled: false,
+                error: err.message,
+                status: 'fallback_to_polling'
+            };
+        });
             
             // Initialize the TreasuryCertifier first, then optionally run self-test
             // Still run in background to avoid blocking service initialization, but coordinate the sequence
@@ -824,6 +869,441 @@ class ContestWalletService extends BaseService {
      * 
      * @returns {Promise<Object>} - The results of the operation
      */
+    /**
+     * Initialize WebSocket account monitoring for all contest wallets
+     * This method sets up real-time monitoring of contest wallet balances
+     * using the unified WebSocket system's Solana PubSub feature.
+     */
+    async initializeWebSocketMonitoring() {
+        logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Initializing WebSocket monitoring for contest wallets`);
+        
+        try {
+            // Check if unified WebSocket server is available
+            if (!config.websocket || !config.websocket.unifiedWebSocket) {
+                throw new Error("Unified WebSocket server not available");
+            }
+            
+            // Get all active contest wallets from database
+            const contestWallets = await prisma.contest_wallets.findMany({
+                include: {
+                    contests: {
+                        select: {
+                            status: true,
+                            id: true,
+                            contest_code: true
+                        }
+                    }
+                }
+            });
+            
+            // Log wallet count that will be monitored
+            logApi.info(`${formatLog.tag()} ${formatLog.info(`Found ${contestWallets.length} contest wallets to monitor`)}`);
+            
+            // Create WebSocket client for internal service-to-service communication
+            await this.createServiceWebSocketClient();
+            
+            // Subscribe to all contest wallet accounts
+            const activeWallets = contestWallets.filter(wallet => 
+                wallet.contests?.status === 'active' || wallet.contests?.status === 'pending'
+            );
+            
+            // Subscribe to active wallets first (max 50 at a time to prevent rate limits)
+            if (activeWallets.length > 0) {
+                logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Subscribing to ${activeWallets.length} active contest wallets`);
+                
+                // Process in batches of 50
+                const batchSize = 50;
+                for (let i = 0; i < activeWallets.length; i += batchSize) {
+                    const batch = activeWallets.slice(i, i + batchSize);
+                    await this.subscribeToWalletBatch(batch);
+                    
+                    // Small delay between batches to prevent rate limits
+                    if (i + batchSize < activeWallets.length) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+            
+            // Schedule subscription for remaining wallets gradually to avoid rate limits
+            const remainingWallets = contestWallets.filter(wallet => 
+                !activeWallets.some(active => active.wallet_address === wallet.wallet_address)
+            );
+            
+            if (remainingWallets.length > 0) {
+                logApi.info(`${formatLog.tag()} ${formatLog.info(`Scheduling subscription for ${remainingWallets.length} non-active wallets`)}`);
+                
+                // Schedule subscription for remaining wallets over time (1 batch every 5 seconds)
+                const batchSize = 50;
+                for (let i = 0; i < remainingWallets.length; i += batchSize) {
+                    const batchIndex = i / batchSize;
+                    const batch = remainingWallets.slice(i, i + batchSize);
+                    
+                    setTimeout(() => {
+                        this.subscribeToWalletBatch(batch).catch(err => {
+                            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to subscribe to wallet batch: ${err.message}`)}`, {
+                                error: err.message,
+                                batchIndex
+                            });
+                        });
+                    }, batchIndex * 5000); // 5 seconds between batches
+                }
+            }
+            
+            // Set up periodic recovery for subscriptions
+            this.startSubscriptionRecovery();
+            
+            return true;
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to initialize WebSocket monitoring: ${error.message}`)}`, {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    }
+    
+    /**
+     * Create a WebSocket client for service-to-service communication
+     * This client connects to the unified WebSocket server 
+     * to subscribe to Solana account updates
+     */
+    async createServiceWebSocketClient() {
+        // If WebSocket is already connected, disconnect it first
+        if (this.websocketSubscriptions.unifiedWsConnection) {
+            try {
+                this.websocketSubscriptions.unifiedWsConnection.close();
+            } catch (err) {
+                // Ignore close errors
+            }
+        }
+        
+        return new Promise((resolve, reject) => {
+            try {
+                // Get WebSocket server URL from config
+                const wsProtocol = 'ws:'; // For internal comms, we use ws
+                const host = 'localhost';
+                const port = config.port || 3004;
+                const path = config.websocket.config.path || '/api/v69/ws';
+                
+                const wsUrl = `${wsProtocol}//${host}:${port}${path}`;
+                logApi.info(`${formatLog.tag()} ${formatLog.info(`Connecting to unified WebSocket at ${wsUrl}`)}`);
+                
+                // Create WebSocket connection
+                const ws = new WebSocket(wsUrl);
+                
+                // Set up event handlers
+                ws.onopen = () => {
+                    logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket connection established')}`);
+                    this.websocketSubscriptions.unifiedWsConnection = ws;
+                    resolve(ws);
+                };
+                
+                ws.onclose = (event) => {
+                    logApi.warn(`${formatLog.tag()} ${formatLog.warning(`WebSocket connection closed: ${event.code}`)}`);
+                    
+                    // Clear subscriptions since connection is closed
+                    this.websocketSubscriptions.activeSubscriptions.clear();
+                    
+                    // Reconnect after delay unless service is shutting down
+                    if (this.isOperational && !this.isShuttingDown) {
+                        setTimeout(() => {
+                            this.createServiceWebSocketClient().catch(err => {
+                                logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to reconnect WebSocket: ${err.message}`)}`, {
+                                    error: err.message
+                                });
+                            });
+                        }, 5000); // 5 second delay before reconnect
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    logApi.error(`${formatLog.tag()} ${formatLog.error(`WebSocket error: ${error.message}`)}`, {
+                        error: error.message
+                    });
+                    
+                    if (!this.websocketSubscriptions.unifiedWsConnection) {
+                        // If not yet connected, reject the promise
+                        reject(new Error(`WebSocket connection error: ${error.message}`));
+                    }
+                };
+                
+                ws.onmessage = (event) => {
+                    this.handleWebSocketMessage(event);
+                };
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    /**
+     * Handle incoming WebSocket messages from the unified WebSocket server
+     * @param {MessageEvent} event - WebSocket message event
+     */
+    async handleWebSocketMessage(event) {
+        try {
+            const message = JSON.parse(event.data);
+            
+            // Handle different message types
+            switch (message.type) {
+                case 'ACKNOWLEDGMENT':
+                    // Handle subscription acknowledgment
+                    if (message.topic === 'solana' && message.action === 'subscribe') {
+                        const accounts = message.data?.accepted?.accounts || [];
+                        for (const account of accounts) {
+                            this.websocketSubscriptions.activeSubscriptions.set(account, new Date());
+                            logApi.debug(`${formatLog.tag()} ${formatLog.success(`Account subscription confirmed: ${account}`)}`);
+                        }
+                    }
+                    break;
+                
+                case 'DATA':
+                    // Handle account update data
+                    if (message.topic === 'solana' && message.subtype === 'account-update') {
+                        await this.handleAccountUpdate(message.data);
+                    }
+                    break;
+                
+                case 'ERROR':
+                    // Handle subscription errors
+                    logApi.warn(`${formatLog.tag()} ${formatLog.warning(`WebSocket error: ${message.error}`)}`, { 
+                        topic: message.topic,
+                        account: message.data?.account
+                    });
+                    
+                    // If account-specific error, remove from active subscriptions
+                    if (message.data?.account) {
+                        this.websocketSubscriptions.activeSubscriptions.delete(message.data.account);
+                    }
+                    break;
+                
+                default:
+                    // Unknown message type, just log it
+                    logApi.debug(`${formatLog.tag()} ${formatLog.info(`Received unknown message type: ${message.type}`)}`, { message });
+            }
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Error handling WebSocket message: ${error.message}`)}`, {
+                error: error.message,
+                stack: error.stack
+            });
+        }
+    }
+    
+    /**
+     * Handle Solana account update from WebSocket
+     * @param {Object} data - The account update data
+     */
+    async handleAccountUpdate(data) {
+        try {
+            // Extract account address and update data
+            const { account, value } = data;
+            
+            if (!account || !value) {
+                return; // Invalid data
+            }
+            
+            // Find the contest wallet in database
+            const wallet = await prisma.contest_wallets.findFirst({
+                where: { wallet_address: account },
+                include: {
+                    contests: {
+                        select: {
+                            id: true,
+                            contest_code: true,
+                            status: true
+                        }
+                    }
+                }
+            });
+            
+            if (!wallet) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Received update for unknown wallet: ${account}`)}`);
+                return;
+            }
+            
+            // Extract lamports and calculate SOL balance
+            const lamports = value.lamports || 0;
+            const solBalance = lamports / LAMPORTS_PER_SOL;
+            
+            // Compare with current balance in database
+            const currentBalance = wallet.balance || 0;
+            
+            // If balance hasn't changed significantly (less than 0.0001 SOL), skip update
+            if (Math.abs(solBalance - currentBalance) < 0.0001) {
+                return;
+            }
+            
+            // Update wallet balance in database
+            await prisma.contest_wallets.update({
+                where: { id: wallet.id },
+                data: {
+                    balance: solBalance,
+                    last_sync: new Date(),
+                    updated_at: new Date()
+                }
+            });
+            
+            // Log the balance update with nice formatting
+            // Special formatting for notable changes
+            if (Math.abs(solBalance - currentBalance) >= 0.01) {
+                // Format contest ID and code with consistent spacing
+                const formattedContestId = wallet.contests?.id ? wallet.contests.id.toString().padStart(4) : "N/A ".padStart(4);
+                const formattedContestCode = (wallet.contests?.contest_code || "Unknown").padEnd(10);
+                
+                // Format difference with sign and color
+                const diffText = formatLog.balanceChange(solBalance - currentBalance);
+                
+                // Log the update with consistent formatting
+                logApi.info(`${formatLog.tag()} ${formatLog.highlight(`WS UPDATE`)} Contest ${formattedContestId} (${formattedContestCode}) Balance: ${formatLog.balance(solBalance)} ${diffText}`);
+                
+                // Update statistics
+                this.walletStats.balance_updates.total++;
+                this.walletStats.balance_updates.successful++;
+                this.walletStats.balance_updates.last_update = new Date().toISOString();
+                this.walletStats.wallets.updated++;
+            } else {
+                // For minor changes, use debug log level
+                logApi.debug(`${formatLog.tag()} ${formatLog.info(`Minor balance update for ${account}: ${solBalance} SOL (change: ${(solBalance - currentBalance).toFixed(6)} SOL)`)}`);
+            }
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Error handling account update: ${error.message}`)}`, {
+                error: error.message,
+                stack: error.stack,
+                account: data.account
+            });
+        }
+    }
+    
+    /**
+     * Subscribe to a batch of wallet accounts via WebSocket
+     * @param {Array} wallets - Array of wallet objects to subscribe to
+     */
+    async subscribeToWalletBatch(wallets) {
+        try {
+            // Skip if WebSocket is not connected
+            if (!this.websocketSubscriptions.unifiedWsConnection || 
+                this.websocketSubscriptions.unifiedWsConnection.readyState !== WebSocket.OPEN) {
+                throw new Error("WebSocket not connected");
+            }
+            
+            // Extract wallet addresses
+            const accounts = wallets.map(wallet => wallet.wallet_address);
+            
+            if (accounts.length === 0) {
+                return; // Nothing to subscribe to
+            }
+            
+            // Send subscription message to unified WebSocket
+            const subscribeMsg = {
+                type: 'solana:subscribe',
+                accounts,
+                commitment: 'confirmed'
+            };
+            
+            this.websocketSubscriptions.unifiedWsConnection.send(JSON.stringify(subscribeMsg));
+            
+            // Track subscription attempts
+            const now = new Date();
+            for (const account of accounts) {
+                this.websocketSubscriptions.subscriptionAttempts.set(account, now);
+                this.websocketSubscriptions.subscribedAccounts.add(account);
+            }
+            
+            logApi.info(`${formatLog.tag()} ${formatLog.info(`Subscribed to ${accounts.length} wallet accounts via WebSocket`)}`);
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to subscribe to wallet batch: ${error.message}`)}`, {
+                error: error.message,
+                stack: error.stack,
+                walletCount: wallets.length
+            });
+            throw error;
+        }
+    }
+    
+    /**
+     * Start periodic recovery of failed WebSocket subscriptions
+     */
+    startSubscriptionRecovery() {
+        // Run recovery process every 5 minutes
+        setInterval(() => {
+            this.recoverFailedSubscriptions().catch(err => {
+                logApi.error(`${formatLog.tag()} ${formatLog.error(`Subscription recovery error: ${err.message}`)}`, {
+                    error: err.message,
+                    stack: err.stack
+                });
+            });
+        }, 5 * 60 * 1000); // 5 minutes
+    }
+    
+    /**
+     * Recover failed WebSocket subscriptions
+     */
+    async recoverFailedSubscriptions() {
+        try {
+            // Skip if WebSocket is not connected
+            if (!this.websocketSubscriptions.unifiedWsConnection || 
+                this.websocketSubscriptions.unifiedWsConnection.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            // Find accounts that we attempted to subscribe to but aren't active
+            const failedAccounts = [];
+            
+            for (const account of this.websocketSubscriptions.subscribedAccounts) {
+                if (!this.websocketSubscriptions.activeSubscriptions.has(account)) {
+                    failedAccounts.push(account);
+                }
+            }
+            
+            if (failedAccounts.length === 0) {
+                return; // No failed subscriptions to recover
+            }
+            
+            logApi.info(`${formatLog.tag()} ${formatLog.header('RECOVERY')} Recovering ${failedAccounts.length} failed WebSocket subscriptions`);
+            
+            // Process in batches of 50
+            const batchSize = 50;
+            for (let i = 0; i < failedAccounts.length; i += batchSize) {
+                const batch = failedAccounts.slice(i, i + batchSize);
+                
+                // Create subscription batch with wallet objects
+                const walletBatch = await prisma.contest_wallets.findMany({
+                    where: {
+                        wallet_address: {
+                            in: batch
+                        }
+                    },
+                    include: {
+                        contests: {
+                            select: {
+                                id: true,
+                                contest_code: true,
+                                status: true
+                            }
+                        }
+                    }
+                });
+                
+                // Subscribe to this batch
+                await this.subscribeToWalletBatch(walletBatch);
+                
+                // Small delay between batches
+                if (i + batchSize < failedAccounts.length) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            
+            // Update last recovery timestamp
+            this.websocketSubscriptions.lastRecoveryAttempt = new Date();
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to recover subscriptions: ${error.message}`)}`, {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    }
+    
     async updateAllWalletBalances() {
         logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting ${fancyColors.RESET} Contest wallet balance refresh cycle`);
 

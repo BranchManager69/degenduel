@@ -410,7 +410,7 @@ const config = {
 
     // User balance tracking service check interval:
     user_balance_tracking_check_interval:
-      parseInt(process.env.USER_BALANCE_TRACKING_CHECK_INTERVAL || 5), // 5 minutes default (does not affect RPC calls; service uses a dynamic approach)
+      parseInt(process.env.USER_BALANCE_TRACKING_CHECK_INTERVAL || 2), // 2 minutes default (does not affect RPC calls; service uses a dynamic approach with larger 100-user batches)
 
     /* TOKEN SYNC SERVICE */
 
@@ -469,18 +469,22 @@ const config = {
 
     /* USER BALANCE TRACKING SERVICE */
 
+    // User balance tracking mode (polling or websocket):
+    user_balance_tracking_mode:
+      process.env.USER_BALANCE_TRACKING_MODE || 'polling', // 'polling' or 'websocket'
+    
     // User balance tracking minimum check interval:
     user_balance_tracking_min_check_interval:
-      process.env.USER_BALANCE_TRACKING_MIN_CHECK_INTERVAL || 1, // Hard minimum between balance checks (minutes)
+      process.env.USER_BALANCE_TRACKING_MIN_CHECK_INTERVAL || 0.5, // Hard minimum between balance checks (minutes)
     // User balance tracking maximum check interval:
     user_balance_tracking_max_check_interval:
-      process.env.USER_BALANCE_TRACKING_MAX_CHECK_INTERVAL || 60, // Hard maximum between checks (minutes)
+      process.env.USER_BALANCE_TRACKING_MAX_CHECK_INTERVAL || 30, // Hard maximum between checks (minutes)
     // User balance tracking dynamic target RPC calls per day:
     user_balance_tracking_dynamic_target_rpc_calls_per_day:
-      process.env.USER_BALANCE_TRACKING_DYNAMIC_TARGET_RPC_CALLS_PER_DAY || 50000, // Target RPC calls per day specifically for the user balance tracking service
+      process.env.USER_BALANCE_TRACKING_DYNAMIC_TARGET_RPC_CALLS_PER_DAY || 50000, // Target RPC calls per day specifically for the user balance tracking service for 100-user batches
     // User balance tracking batch size:
     user_balance_tracking_batch_size:
-      process.env.USER_BALANCE_TRACKING_BATCH_SIZE || 20, // max users to check in parallel
+      process.env.USER_BALANCE_TRACKING_BATCH_SIZE || 100, // max users to check in parallel
     
     /* CONTEST WALLET SERVICE */
 

@@ -265,7 +265,7 @@ class ServiceInitializer {
         // Ensure schema exists for user balance tracking
         if (config.services.user_balance_tracking) {
             await ensureSchemaExists();
-            serviceManager.register(userBalanceTrackingService, []);
+            serviceManager.register(userBalanceTrackingService, [SERVICE_NAMES.SOLANA_ENGINE]);
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of user_balance_tracking_service - disabled in config${fancyColors.RESET}`);
         }

@@ -1,9 +1,24 @@
+// routes/admin/websocket-status.js
+
+/**
+ * WebSocket Status Check Route
+ * 
+ * This route allows admins to check the status of a specific WebSocket endpoint.
+ * It supports checking both legacy and v69 WebSocket servers.
+ * 
+ * @module routes/admin/websocket-status
+ * @version 1.0.0
+ * @author BranchManager69
+ */
+
 import express from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import fetch from 'node-fetch';
 import serviceEvents from '../../utils/service-suite/service-events.js';
+
+// Config
 import config from '../../config/config.js';
 
 const router = express.Router();

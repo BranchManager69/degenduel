@@ -61,12 +61,18 @@ export async function initializeWebSockets(server) {
     // Initialize just the unified WebSocket server
     const wsServers = {};
     
+    // Add diagnostic logs before creating WebSocket
+    logApi.info(`🔍 WebSocket pre-initialization check: config.websocket=${!!config.websocket}`);
+    
     // Create and initialize the unified WebSocket
     const unifiedWs = await createUnifiedWebSocket(server);
     
     if (!unifiedWs) {
       throw new Error("Failed to create unified WebSocket server");
     }
+    
+    // Add post-creation diagnostic logs
+    logApi.info(`🔍 WebSocket created: ${!!unifiedWs}, stored in config: ${!!config.websocket?.unifiedWebSocket}`);
     
     // Initialize the WebSocket
     if (typeof unifiedWs.initialize === 'function') {

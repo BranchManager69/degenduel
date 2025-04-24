@@ -92,26 +92,20 @@ async function generateConsoleQR(text, amount = null) {
             
             // Add QR code with proper padding
             qrLines.forEach(line => {
-                // Clean up the line to remove any control characters, color codes, or emoji-like characters
+                // Clean up the line to remove any control characters
                 // that might mess up terminal rendering
-                const cleanedLine = line.replace(/\u001b\[\d+m|\u001b\[\d+;\d+m|\u001b\[0m|[^\x20-\x7E]/g, ' ');
-                
-                // Replace potential ANSI escape sequences with proper characters for QR
-                const displayLine = cleanedLine
-                    .replace(/\[47m \[30m/g, '██') // Replace color blocks with solid blocks
-                    .replace(/\[0m/g, '')         // Remove reset codes
-                    .replace(/\[37m/g, '');       // Remove color codes
+                const cleanedLine = line.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
                 
                 // Set fixed width for consistency
-                if (displayLine.length >= 57) {
+                if (cleanedLine.length >= 57) {
                     // If line is too long, truncate it to fit
-                    result.push(`║ ${displayLine.substring(0, 57)} ║`);
+                    result.push(`║ ${cleanedLine.substring(0, 57)} ║`);
                 } else {
                     // Center the QR code with proper padding
                     const totalWidth = 57; // Allow for 1 space padding on each side
-                    const leftPadding = Math.max(0, Math.floor((totalWidth - displayLine.length) / 2));
-                    const rightPadding = Math.max(0, totalWidth - displayLine.length - leftPadding);
-                    result.push(`║ ${' '.repeat(leftPadding)}${displayLine}${' '.repeat(rightPadding)} ║`);
+                    const leftPadding = Math.max(0, Math.floor((totalWidth - cleanedLine.length) / 2));
+                    const rightPadding = Math.max(0, totalWidth - cleanedLine.length - leftPadding);
+                    result.push(`║ ${' '.repeat(leftPadding)}${cleanedLine}${' '.repeat(rightPadding)} ║`);
                 }
             });
             
@@ -643,9 +637,9 @@ class TreasuryCertifier {
                         
                         // If we have enough funds, don't show "still need 0.0000" message
                         if (stillNeeded <= 0) {
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Current balance: ${currentBalanceSOL} SOL, which is sufficient!`)}`);
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Wallet ${this.persistentPool.publicKey.substring(0, 8)}... balance: ${currentBalanceSOL} SOL, which is sufficient!`)}`);
                         } else {
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Current balance: ${currentBalanceSOL} SOL, still need ${stillNeeded.toFixed(4)} SOL more`)}`);
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Wallet ${this.persistentPool.publicKey}: balance=${currentBalanceSOL} SOL, need ${stillNeeded.toFixed(4)} SOL more`)}`);
                         }
                         
                         // If we now have enough funds, return success and allow the certification to continue

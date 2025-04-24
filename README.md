@@ -204,6 +204,8 @@ The application implements the circuit breaker pattern to manage service health:
 - **Wallet Dashboard**: [ADMIN_WALLET_DASHBOARD.md](/ADMIN_WALLET_DASHBOARD.md)
 - **Vanity Wallet Generation**: [VANITY_WALLET_GENERATION.md](/VANITY_WALLET_GENERATION.md) - Process flow and architecture of the vanity wallet generation system
 - **Technical Reference**: [TECHNICAL_REFERENCE.md](/TECHNICAL_REFERENCE.md) - Comprehensive API, WebSocket, and integration documentation
+- **Wallet Balance Tracking**: [WALLET_BALANCE_TRACKING.md](/WALLET_BALANCE_TRACKING.md) - Detailed guide on user and contest wallet balance monitoring with polling and WebSocket modes
+- **Solana RPC Proxy**: [SOLANA_RPC_PROXY.md](/SOLANA_RPC_PROXY.md) - Secure proxy system for Solana RPC and WebSocket PubSub connections
 - **Frontend Repository**: [degenduel-fe](https://github.com/BranchManager69/degenduel-fe)
 - **Unified WebSocket**: [WEBSOCKET_UNIFIED_SYSTEM.md](/docs/services/WEBSOCKET_UNIFIED_SYSTEM.md)
 

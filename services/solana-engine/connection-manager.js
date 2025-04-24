@@ -3,22 +3,19 @@
 /**
  * Connection Manager for Solana RPC endpoints
  * 
- * Simple implementation using a single Helius endpoint
+ * Simple implementation using a single primary RPC endpoint
  */
 
 import { Connection } from '@solana/web3.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
+import { config } from '../../config/config.js';
 
 // Default commitment level
 const DEFAULT_COMMITMENT = 'confirmed';
 
 /**
  * Simple Connection Manager for Solana RPC access
- * Uses a single Helius endpoint
+ * Uses a single primary RPC endpoint
  */
 class ConnectionManager {
   constructor() {
@@ -41,11 +38,11 @@ class ConnectionManager {
     try {
       logApi.info('Initializing ConnectionManager');
       
-      // Get RPC endpoint from environment variables
-      const rpcEndpoint = process.env.SOLANA_MAINNET_HTTP || process.env.SOLANA_RPC_ENDPOINT;
+      // Get RPC endpoint from config
+      const rpcEndpoint = config.rpc_urls.mainnet_http || config.rpc_urls.primary;
       
       if (!rpcEndpoint) {
-        logApi.error('SOLANA_MAINNET_HTTP or SOLANA_RPC_ENDPOINT not found in environment variables');
+        logApi.error('No valid RPC endpoint found in config');
         return false;
       }
       
@@ -61,7 +58,7 @@ class ConnectionManager {
       this.endpoint = rpcEndpoint;
       this.initialized = true;
       
-      logApi.info('Helius connection established successfully');
+      logApi.info('RPC connection established successfully');
       return true;
     } catch (error) {
       logApi.error(`Failed to initialize ConnectionManager: ${error.message}`);
@@ -95,7 +92,7 @@ class ConnectionManager {
     
     return {
       status: 'connected',
-      endpoint: 'helius'
+      endpoint: 'primary'
     };
   }
 

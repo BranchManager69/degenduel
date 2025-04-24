@@ -329,14 +329,29 @@ export async function analyzeServiceLogs(aiService, serviceKey, limit = 500) {
     try {
       const wsBroadcaster = (await import('../../../utils/websocket-suite/ws-broadcaster.js')).default;
       
-      await wsBroadcaster.broadcastToRole('ADMIN', 'ai_analysis', 'new_service_log_analysis', {
+      // Log WebSocket status before attempting broadcast
+      logApi.debug(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} WebSocket status check: ${JSON.stringify({
+        hasWebSocketConfig: !!config.websocket,
+        hasUnifiedWebSocket: !!config.websocket?.unifiedWebSocket,
+        serviceType: 'ai_service',
+        operation: 'broadcast_analysis',
+        timestamp: new Date().toISOString()
+      })}`, { serviceKey, analysisId: analysisResult.id });
+      
+      // This will now throw an error if broadcast fails due to missing WebSocket
+      const sentCount = await wsBroadcaster.broadcastToRole('ADMIN', 'ai_analysis', 'new_service_log_analysis', {
         id: analysisResult.id,
         service: serviceKey,
         summary: result.content.substring(0, 200) + (result.content.length > 200 ? '...' : ''),
         analyzed_at: analysisResult.analyzed_at
       });
       
-      logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Broadcasted new ${serviceKey} log analysis to admins`);
+      // Only log success if we actually sent messages
+      if (sentCount > 0) {
+        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Broadcasted new ${serviceKey} log analysis to ${sentCount} admins`);
+      } else {
+        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Service log analysis complete, but no admin clients connected to receive broadcast`);
+      }
     } catch (broadcastError) {
       logApi.warn(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Failed to broadcast service log analysis: ${broadcastError.message}`);
     }

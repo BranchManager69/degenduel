@@ -118,6 +118,8 @@ import terminalRoutes from "./routes/terminal-routes.js";
 import websocketApiGuideRoutes from "./routes/websocket-api-guide.js";
 // Blinks routes (doesn't exist yet)
 import blinksRoutes from "./routes/blinks/index.js";
+// Solana RPC Proxy route
+import solanaRpcProxyRoutes from "./routes/solana-rpc-proxy.js";
 
 // Path module for static file serving
 import path from 'path';
@@ -310,6 +312,9 @@ app.use("/api/blinks", maintenanceCheck, blinksRoutes);
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
 // AI chat routes (inaccessible when in maintenance mode)
 app.use("/api/ai", maintenanceCheck, aiRoutes);
+// Solana RPC proxy route - available even during maintenance mode
+// (so apps can still interact with blockchain during site maintenance)
+app.use("/api/solana-rpc", solanaRpcProxyRoutes);
 // Client logging routes (no maintenance check to collect errors during maintenance)
 app.use("/api/logs", logsRoutes);
 // Terminal data routes

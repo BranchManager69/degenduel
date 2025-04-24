@@ -14,18 +14,23 @@ import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import { solanaEngine } from '../services/solana-engine/index.js';
+import { solanaEngine, heliusBalanceTracker } from '../services/solana-engine/index.js';
 import { PublicKey } from '@solana/web3.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { fancyColors } from '../utils/colors.js';
 
 // Config
 import { config } from '../config/config.js';
+
+// TEST OVERRIDE - Set to true to force WebSocket mode regardless of environment settings
+const FORCE_WEBSOCKET_MODE = true;
+
+const USER_BALANCE_TRACKING_MODE = FORCE_WEBSOCKET_MODE ? 'websocket' : config.service_thresholds.user_balance_tracking_mode; // 'polling' or 'websocket'
 const USER_BALANCE_TRACKING_DYNAMIC_TARGET_RPC_CALLS_PER_DAY = config.service_thresholds.user_balance_tracking_dynamic_target_rpc_calls_per_day; // dynamic target RPC calls per day (specific to user balance tracking service)
 const USER_BALANCE_TRACKING_CHECK_INTERVAL = config.service_intervals.user_balance_tracking_check_interval; // cycle interval (minutes)
 const USER_BALANCE_TRACKING_MIN_CHECK_INTERVAL = config.service_thresholds.user_balance_tracking_min_check_interval; // Hard minimum between balance checks (minutes)
 const USER_BALANCE_TRACKING_MAX_CHECK_INTERVAL = config.service_thresholds.user_balance_tracking_max_check_interval; // Hard maximum between checks (minutes)
-const USER_BALANCE_TRACKING_BATCH_SIZE = config.service_thresholds.user_balance_tracking_batch_size; // in users (hard maximum = 20; do not exceed)
+const USER_BALANCE_TRACKING_BATCH_SIZE = config.service_thresholds.user_balance_tracking_batch_size; // in users (hard maximum = 100; do not exceed)
 
 // User balance tracking service configuration
 const BALANCE_TRACKING_CONFIG = {
@@ -47,7 +52,7 @@ const BALANCE_TRACKING_CONFIG = {
         maxCheckIntervalMs: USER_BALANCE_TRACKING_MAX_CHECK_INTERVAL * 60 * 1000, // Hard maximum between checks
     },
     // Hard max users to check in parallel (do not exceed)
-    batchSize: USER_BALANCE_TRACKING_BATCH_SIZE || 20
+    batchSize: USER_BALANCE_TRACKING_BATCH_SIZE || 100
 };
 
 /**
@@ -64,9 +69,16 @@ class UserBalanceTrackingService extends BaseService {
     constructor() {
         super(BALANCE_TRACKING_CONFIG);
         
-        // Track user check schedule
+        // Current tracking mode (polling or websocket)
+        this.trackingMode = USER_BALANCE_TRACKING_MODE;
+        
+        // Track user check schedule (for polling mode)
         this.userSchedule = new Map();
         this.activeChecks = new Set();
+        
+        // Track subscribed wallets (for WebSocket mode)
+        this.subscribedWallets = new Set();
+        this.pendingSubscriptions = new Map(); // wallet -> {retries, lastAttempt}
         
         // Stats for tracking and monitoring
         this.trackingStats = {
@@ -80,6 +92,12 @@ class UserBalanceTrackingService extends BaseService {
                 successful: 0,
                 failed: 0,
                 lastCheck: null
+            },
+            subscriptions: {
+                total: 0,
+                active: 0,
+                pending: 0,
+                failed: 0
             },
             users: {
                 total: 0,
@@ -152,8 +170,25 @@ class UserBalanceTrackingService extends BaseService {
             
             this.trackingStats.users.total = activeUsers;
             
-            // Calculate check interval based on user count
-            this.calculateCheckInterval(activeUsers);
+            // Initialize the appropriate tracking mode
+            if (this.trackingMode === 'websocket') {
+                // Initialize HeliusBalanceTracker for WebSocket mode
+                if (!heliusBalanceTracker.initialized) {
+                    const initialized = await heliusBalanceTracker.initialize();
+                    if (!initialized) {
+                        logApi.warn(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WEBSOCKET FALLBACK ${fancyColors.RESET} Failed to initialize HeliusBalanceTracker, falling back to polling mode`);
+                        this.trackingMode = 'polling'; // Fallback to polling mode
+                    } else {
+                        logApi.info(`${fancyColors.BOLD}${fancyColors.CYAN}WebSocket Tracking Mode${fancyColors.RESET} ${fancyColors.CYAN}initialized for real-time balance updates${fancyColors.RESET}`);
+                    }
+                }
+            } else {
+                // Initialize polling mode
+                // Calculate check interval based on user count
+                this.calculateCheckInterval(activeUsers);
+                
+                logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Polling Tracking Mode${fancyColors.RESET} ${fancyColors.ORANGE}initialized with interval of ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} ${fancyColors.ORANGE}minutes${fancyColors.RESET}`);
+            }
             
             // Get SolanaEngine connection status
             let solanaStatus = { available: false };
@@ -171,8 +206,7 @@ class UserBalanceTrackingService extends BaseService {
             const healthyEndpoints = solanaStatus.connectionStatus?.healthyEndpoints || 0;
             const totalEndpoints = solanaStatus.connectionStatus?.totalEndpoints || 0;
             
-            logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.ORANGE}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.ORANGE}users${fancyColors.RESET}`);
-            logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Checking each user every ${fancyColors.BOLD_YELLOW}${Math.round(this.effectiveCheckIntervalMs / 1000 / 60)} ${fancyColors.ORANGE}minutes${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.ORANGE}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.ORANGE}users using ${fancyColors.BOLD_YELLOW}${this.trackingMode}${fancyColors.RESET} ${fancyColors.ORANGE}mode${fancyColors.RESET}`);
             logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Using SolanaEngine with ${fancyColors.BOLD_YELLOW}${healthyEndpoints}/${totalEndpoints}${fancyColors.RESET} ${fancyColors.ORANGE}healthy RPC endpoints${fancyColors.RESET}`);
             
             return true;
@@ -307,44 +341,12 @@ class UserBalanceTrackingService extends BaseService {
         const startTime = Date.now();
         
         try {
-            // Add log at the start of each operation cycle with timestamp
-            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Starting balance refresh cycle${fancyColors.RESET} | Users tracked: ${fancyColors.BOLD_YELLOW}${this.trackingStats.users.trackedUsers.size}${fancyColors.RESET} | Interval: ${Math.round(this.effectiveCheckIntervalMs/1000)}s`);
-            
-            // 1. Update user count and recalculate interval if needed
-            await this.updateUserCount();
-            
-            // 2. Schedule balance checks for any new users
-            const newUsersCount = await this.scheduleNewUsers();
-            if (newUsersCount > 0) {
-                logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE USERS ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Added ${fancyColors.BOLD_YELLOW}${newUsersCount}${fancyColors.RESET}${fancyColors.ORANGE} new users to balance tracking${fancyColors.RESET}`);
+            // Different operation based on tracking mode
+            if (this.trackingMode === 'websocket') {
+                return await this.performWebSocketOperation();
+            } else {
+                return await this.performPollingOperation();
             }
-            
-            // 3. Execute scheduled balance checks
-            const results = await this.executeScheduledChecks();
-            
-            // 4. Update stats
-            this.trackingStats.operations.successful++;
-            this.trackingStats.operations.total++;
-            this.trackingStats.performance.lastOperationTimeMs = Date.now() - startTime;
-            
-            // Calculate rolling average
-            const totalOps = this.trackingStats.operations.total;
-            this.trackingStats.performance.averageCheckTimeMs = 
-                (this.trackingStats.performance.averageCheckTimeMs * (totalOps - 1) + 
-                (Date.now() - startTime)) / totalOps;
-            
-            // 5. Record success
-            await this.recordSuccess();
-            
-            // Add log at the end of the cycle with timing information
-            const duration = Date.now() - startTime;
-            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Completed cycle in ${fancyColors.YELLOW}${duration}ms${fancyColors.RESET} | Next cycle: ${new Date(Date.now() + this.config.checkIntervalMs).toLocaleTimeString()}`);
-            
-            return {
-                duration: duration,
-                checksPerformed: results.checksPerformed,
-                checksScheduled: results.checksScheduled
-            };
         } catch (error) {
             this.trackingStats.operations.failed++;
             this.trackingStats.operations.total++;
@@ -354,6 +356,99 @@ class UserBalanceTrackingService extends BaseService {
             
             throw error;
         }
+    }
+    
+    /**
+     * Perform operation in polling mode
+     * 
+     * @returns {Promise<Object>} - Operation results
+     */
+    async performPollingOperation() {
+        const startTime = Date.now();
+        
+        // Add log at the start of each operation cycle with timestamp
+        logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Starting balance refresh cycle${fancyColors.RESET} | Users tracked: ${fancyColors.BOLD_YELLOW}${this.trackingStats.users.trackedUsers.size}${fancyColors.RESET} | Interval: ${Math.round(this.effectiveCheckIntervalMs/1000)}s`);
+        
+        // 1. Update user count and recalculate interval if needed
+        await this.updateUserCount();
+        
+        // 2. Schedule balance checks for any new users
+        const newUsersCount = await this.scheduleNewUsers();
+        if (newUsersCount > 0) {
+            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE USERS ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Added ${fancyColors.BOLD_YELLOW}${newUsersCount}${fancyColors.RESET}${fancyColors.ORANGE} new users to balance tracking${fancyColors.RESET}`);
+        }
+        
+        // 3. Execute scheduled balance checks
+        const results = await this.executeScheduledChecks();
+        
+        // 4. Update stats
+        this.trackingStats.operations.successful++;
+        this.trackingStats.operations.total++;
+        this.trackingStats.performance.lastOperationTimeMs = Date.now() - startTime;
+        
+        // Calculate rolling average
+        const totalOps = this.trackingStats.operations.total;
+        this.trackingStats.performance.averageCheckTimeMs = 
+            (this.trackingStats.performance.averageCheckTimeMs * (totalOps - 1) + 
+            (Date.now() - startTime)) / totalOps;
+        
+        // 5. Record success
+        await this.recordSuccess();
+        
+        // Add log at the end of the cycle with timing information
+        const duration = Date.now() - startTime;
+        logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Completed cycle in ${fancyColors.YELLOW}${duration}ms${fancyColors.RESET} | Next cycle: ${new Date(Date.now() + this.config.checkIntervalMs).toLocaleTimeString()}`);
+        
+        return {
+            duration: duration,
+            checksPerformed: results.checksPerformed,
+            checksScheduled: results.checksScheduled
+        };
+    }
+    
+    /**
+     * Perform operation in WebSocket mode
+     * 
+     * @returns {Promise<Object>} - Operation results
+     */
+    async performWebSocketOperation() {
+        const startTime = Date.now();
+        
+        // Add log at the start of each operation cycle with timestamp
+        logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Starting WebSocket maintenance cycle${fancyColors.RESET} | Wallets tracked: ${fancyColors.BOLD_YELLOW}${this.subscribedWallets.size}${fancyColors.RESET} | Pending: ${this.pendingSubscriptions.size}`);
+        
+        // 1. Update user count
+        await this.updateUserCount();
+        
+        // 2. Subscribe any new users to WebSocket updates
+        const newUsersCount = await this.subscribeNewUsers();
+        if (newUsersCount > 0) {
+            logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS USERS ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Added ${fancyColors.BOLD_YELLOW}${newUsersCount}${fancyColors.RESET}${fancyColors.CYAN} new users to balance tracking${fancyColors.RESET}`);
+        }
+        
+        // 3. Retry any pending subscriptions
+        const retriedCount = await this.retryPendingSubscriptions();
+        if (retriedCount > 0) {
+            logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS RETRY ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Retried ${fancyColors.BOLD_YELLOW}${retriedCount}${fancyColors.RESET}${fancyColors.CYAN} pending subscriptions${fancyColors.RESET}`);
+        }
+        
+        // 4. Update stats
+        this.trackingStats.operations.successful++;
+        this.trackingStats.operations.total++;
+        this.trackingStats.performance.lastOperationTimeMs = Date.now() - startTime;
+        
+        // 5. Record success
+        await this.recordSuccess();
+        
+        // Add log at the end of the cycle with timing information
+        const duration = Date.now() - startTime;
+        logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Completed maintenance in ${fancyColors.YELLOW}${duration}ms${fancyColors.RESET} | Next cycle: ${new Date(Date.now() + this.config.checkIntervalMs).toLocaleTimeString()}`);
+        
+        return {
+            duration: duration,
+            activeSubscriptions: this.subscribedWallets.size,
+            pendingSubscriptions: this.pendingSubscriptions.size
+        };
     }
     
     /**
@@ -492,7 +587,7 @@ class UserBalanceTrackingService extends BaseService {
         // Always log the batch status, even when no checks are due
         if (checksToExecute.length > 0) {
             // Clearer message explaining why not all wallets are being checked - emphasize the staggered schedule
-            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE BATCH ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Starting batch check of ${fancyColors.BOLD_YELLOW}${checksToExecute.length}/${this.userSchedule.size}${fancyColors.RESET}${fancyColors.ORANGE} wallets${fancyColors.RESET} (others on staggered schedule - 10m interval per wallet)`);
+            logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE BATCH ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}Starting batch check of ${fancyColors.BOLD_YELLOW}${checksToExecute.length}/${this.userSchedule.size}${fancyColors.RESET}${fancyColors.ORANGE} wallets${fancyColors.RESET} (larger batches of 100, staggered by configured interval)`);
         } else {
             // Add this log to show why no wallets are being checked
             logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE BATCH ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}No wallets due for checks${fancyColors.RESET} (${this.userSchedule.size} in schedule, next check time: ${new Date(Math.min(...Array.from(this.userSchedule.values()).map(s => s.nextCheck))).toLocaleTimeString()})`);
@@ -687,52 +782,105 @@ class UserBalanceTrackingService extends BaseService {
      */
     async forceBalanceCheck(walletAddress) {
         try {
-            // Only check if not already being checked
-            if (this.activeChecks.has(walletAddress)) {
+            // Different implementation based on tracking mode
+            if (this.trackingMode === 'websocket') {
+                // WebSocket mode - force a refresh
+                
+                // Check if wallet is already subscribed
+                if (this.subscribedWallets.has(walletAddress)) {
+                    // Refresh the balance
+                    const balance = await heliusBalanceTracker.refreshSolanaBalance(walletAddress);
+                    return {
+                        status: 'success',
+                        balance: balance,
+                        timestamp: new Date(),
+                        mode: 'websocket'
+                    };
+                } else {
+                    // Try to subscribe to the wallet first
+                    let nickname = 'Unknown';
+                    try {
+                        const user = await prisma.users.findUnique({
+                            where: { wallet_address: walletAddress },
+                            select: { nickname: true }
+                        });
+                        nickname = user?.nickname || 'Unknown';
+                    } catch (error) {
+                        // Ignore user lookup errors
+                    }
+                    
+                    await this.subscribeToWalletBalance(walletAddress, nickname);
+                    const balance = await heliusBalanceTracker.refreshSolanaBalance(walletAddress);
+                    
+                    return {
+                        status: 'success',
+                        balance: balance,
+                        timestamp: new Date(),
+                        mode: 'websocket'
+                    };
+                }
+            } else {
+                // Polling mode
+                
+                // Only check if not already being checked
+                if (this.activeChecks.has(walletAddress)) {
+                    return {
+                        status: 'already_checking',
+                        message: 'Balance check already in progress',
+                        mode: 'polling'
+                    };
+                }
+                
+                // Add to active checks
+                this.activeChecks.add(walletAddress);
+                
+                // Perform check
+                const result = await this.checkWalletBalance(walletAddress);
+                
+                // Update schedule
+                this.userSchedule.set(walletAddress, {
+                    nextCheck: Date.now() + this.effectiveCheckIntervalMs,
+                    lastCheck: Date.now(),
+                    failedAttempts: 0
+                });
+                
+                // Remove from active checks
+                this.activeChecks.delete(walletAddress);
+                
                 return {
-                    status: 'already_checking',
-                    message: 'Balance check already in progress'
+                    status: 'success',
+                    balance: result.balance,
+                    timestamp: result.timestamp,
+                    mode: 'polling'
                 };
             }
-            
-            // Add to active checks
-            this.activeChecks.add(walletAddress);
-            
-            // Perform check
-            const result = await this.checkWalletBalance(walletAddress);
-            
-            // Update schedule
-            this.userSchedule.set(walletAddress, {
-                nextCheck: Date.now() + this.effectiveCheckIntervalMs,
-                lastCheck: Date.now(),
-                failedAttempts: 0
-            });
-            
-            // Remove from active checks
-            this.activeChecks.delete(walletAddress);
-            
-            return {
-                status: 'success',
-                balance: result.balance,
-                timestamp: result.timestamp
-            };
         } catch (error) {
-            // Remove from active checks
-            this.activeChecks.delete(walletAddress);
-            
-            // Update schedule with backoff
-            const schedule = this.userSchedule.get(walletAddress) || {
-                failedAttempts: 0,
-                lastCheck: null
-            };
-            
-            schedule.failedAttempts++;
-            schedule.nextCheck = Date.now() + (30000 * Math.pow(2, schedule.failedAttempts - 1));
-            this.userSchedule.set(walletAddress, schedule);
+            if (this.trackingMode === 'websocket') {
+                // Add to pending subscriptions for next retry
+                this.pendingSubscriptions.set(walletAddress, {
+                    retries: 0,
+                    lastAttempt: Date.now(),
+                    nickname: 'Unknown'
+                });
+            } else {
+                // Remove from active checks
+                this.activeChecks.delete(walletAddress);
+                
+                // Update schedule with backoff
+                const schedule = this.userSchedule.get(walletAddress) || {
+                    failedAttempts: 0,
+                    lastCheck: null
+                };
+                
+                schedule.failedAttempts++;
+                schedule.nextCheck = Date.now() + (30000 * Math.pow(2, schedule.failedAttempts - 1));
+                this.userSchedule.set(walletAddress, schedule);
+            }
             
             return {
                 status: 'error',
-                message: error.message
+                message: error.message,
+                mode: this.trackingMode
             };
         }
     }
@@ -747,10 +895,319 @@ class UserBalanceTrackingService extends BaseService {
      */
     async stop() {
         await super.stop();
-        this.userSchedule.clear();
-        this.activeChecks.clear();
+        
+        // Clean up based on the active tracking mode
+        if (this.trackingMode === 'websocket') {
+            // Unsubscribe from all WebSocket subscriptions
+            if (this.subscribedWallets.size > 0) {
+                logApi.info(`${fancyColors.CYAN}[userBalanceTrackingService]${fancyColors.RESET} Unsubscribing from ${this.subscribedWallets.size} WebSocket wallets...`);
+                
+                // Using Promise.all with a timeout to prevent hanging during shutdown
+                const unsubPromises = Array.from(this.subscribedWallets).map(wallet => {
+                    return Promise.race([
+                        this.unsubscribeFromWalletBalance(wallet),
+                        new Promise(resolve => setTimeout(() => resolve(false), 5000)) // 5 second timeout
+                    ]);
+                });
+                
+                await Promise.all(unsubPromises);
+            }
+            
+            this.subscribedWallets.clear();
+            this.pendingSubscriptions.clear();
+        } else {
+            // Clean up polling mode resources
+            this.userSchedule.clear();
+            this.activeChecks.clear();
+        }
+        
         this.trackingStats.users.trackedUsers.clear();
         logApi.info('User Balance Tracking Service stopped');
+    }
+    
+    /**
+     * Subscribe new users to balance tracking via WebSocket
+     * 
+     * @returns {Promise<number>} - The number of new users subscribed
+     */
+    async subscribeNewUsers() {
+        if (this.trackingMode !== 'websocket') {
+            return 0; // Only used in WebSocket mode
+        }
+        
+        // Get all users that aren't in our tracking set yet
+        const allUsers = await prisma.users.findMany({
+            where: {
+                is_banned: false,
+                wallet_address: {
+                    notIn: Array.from(this.subscribedWallets)
+                }
+            },
+            select: {
+                id: true,
+                wallet_address: true,
+                nickname: true
+            }
+        });
+        
+        let subscribedCount = 0;
+        
+        // Process each new user
+        for (const user of allUsers) {
+            // Skip if already subscribed or pending
+            if (this.subscribedWallets.has(user.wallet_address) || 
+                this.pendingSubscriptions.has(user.wallet_address)) {
+                continue;
+            }
+            
+            // Attempt to subscribe
+            try {
+                const success = await this.subscribeToWalletBalance(user.wallet_address, user.nickname);
+                if (success) {
+                    subscribedCount++;
+                }
+            } catch (error) {
+                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE WS ERROR ${fancyColors.RESET} Failed to subscribe to wallet ${user.wallet_address}: ${error.message}`);
+                
+                // Add to pending subscriptions for retry
+                this.pendingSubscriptions.set(user.wallet_address, {
+                    retries: 0,
+                    lastAttempt: Date.now(),
+                    nickname: user.nickname
+                });
+            }
+        }
+        
+        return subscribedCount;
+    }
+    
+    /**
+     * Retry pending WebSocket subscriptions
+     * 
+     * @returns {Promise<number>} - The number of subscriptions retried
+     */
+    async retryPendingSubscriptions() {
+        if (this.trackingMode !== 'websocket' || this.pendingSubscriptions.size === 0) {
+            return 0;
+        }
+        
+        let retriedCount = 0;
+        const RETRY_LIMIT = 5;
+        const MAX_RETRY_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+        const now = Date.now();
+        
+        // Get list of wallets to retry
+        const walletsToRetry = Array.from(this.pendingSubscriptions.entries());
+        
+        for (const [walletAddress, pendingInfo] of walletsToRetry) {
+            // Skip if already subscribed (somehow got into both sets)
+            if (this.subscribedWallets.has(walletAddress)) {
+                this.pendingSubscriptions.delete(walletAddress);
+                continue;
+            }
+            
+            // If too many retries or too old, remove from pending
+            if (pendingInfo.retries >= RETRY_LIMIT || 
+                (now - pendingInfo.lastAttempt) > MAX_RETRY_AGE_MS) {
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE WS ABANDON ${fancyColors.RESET} Abandoning subscription for wallet ${walletAddress} after ${pendingInfo.retries} retries`);
+                this.pendingSubscriptions.delete(walletAddress);
+                this.trackingStats.subscriptions.failed++;
+                continue;
+            }
+            
+            // Attempt to subscribe
+            try {
+                logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS RETRY ${fancyColors.RESET} Retrying subscription for wallet ${walletAddress} (attempt ${pendingInfo.retries + 1})`);
+                
+                const success = await this.subscribeToWalletBalance(walletAddress, pendingInfo.nickname);
+                if (success) {
+                    this.pendingSubscriptions.delete(walletAddress);
+                    retriedCount++;
+                } else {
+                    // Update retry count
+                    pendingInfo.retries++;
+                    pendingInfo.lastAttempt = now;
+                    this.pendingSubscriptions.set(walletAddress, pendingInfo);
+                }
+            } catch (error) {
+                // Update retry count
+                pendingInfo.retries++;
+                pendingInfo.lastAttempt = now;
+                this.pendingSubscriptions.set(walletAddress, pendingInfo);
+                
+                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE WS ERROR ${fancyColors.RESET} Failed to retry subscription for wallet ${walletAddress}: ${error.message}`);
+            }
+        }
+        
+        return retriedCount;
+    }
+    
+    /**
+     * Subscribe to a wallet's balance changes via WebSocket
+     * @param {string} walletAddress - The wallet address to subscribe to
+     * @param {string} nickname - The user's nickname for logging
+     * @returns {Promise<boolean>} - True if subscription was successful
+     */
+    async subscribeToWalletBalance(walletAddress, nickname) {
+        if (this.trackingMode !== 'websocket') {
+            return false; // Only used in WebSocket mode
+        }
+        
+        try {
+            // Validate the wallet address
+            try {
+                new PublicKey(walletAddress);
+            } catch (error) {
+                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE WS ERROR ${fancyColors.RESET} Invalid wallet address: ${walletAddress}`);
+                return false;
+            }
+            
+            logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS SUB ${fancyColors.RESET} Subscribing to ${nickname || 'Unknown'} wallet: ${walletAddress}`);
+            
+            // Subscribe to SOL balance via HeliusBalanceTracker
+            const success = await heliusBalanceTracker.subscribeSolanaBalance(
+                walletAddress, 
+                this.handleBalanceUpdate.bind(this)
+            );
+            
+            if (success) {
+                // Add to subscribed wallets
+                this.subscribedWallets.add(walletAddress);
+                
+                // Add to tracked users for consistency with polling mode
+                this.trackingStats.users.trackedUsers.add(walletAddress);
+                
+                this.trackingStats.subscriptions.total++;
+                this.trackingStats.subscriptions.active = this.subscribedWallets.size;
+                
+                logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS SUB ${fancyColors.RESET} ${fancyColors.GREEN}✓ Subscribed${fancyColors.RESET} to ${nickname || 'Unknown'} wallet: ${walletAddress}`);
+                return true;
+            } else {
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE WS FAIL ${fancyColors.RESET} Failed to subscribe to wallet ${walletAddress}`);
+                return false;
+            }
+        } catch (error) {
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE WS ERROR ${fancyColors.RESET} Error subscribing to wallet ${walletAddress}: ${error.message}`);
+            throw error;
+        }
+    }
+    
+    /**
+     * Unsubscribe from a wallet's balance changes
+     * @param {string} walletAddress - The wallet address to unsubscribe from
+     * @returns {Promise<boolean>} - True if unsubscription was successful
+     */
+    async unsubscribeFromWalletBalance(walletAddress) {
+        if (this.trackingMode !== 'websocket') {
+            return true; // Only used in WebSocket mode
+        }
+        
+        try {
+            // Check if we're tracking this wallet
+            if (!this.subscribedWallets.has(walletAddress)) {
+                return true; // Already unsubscribed
+            }
+            
+            logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS UNSUB ${fancyColors.RESET} Unsubscribing from wallet: ${walletAddress}`);
+            
+            // Unsubscribe via HeliusBalanceTracker
+            const success = await heliusBalanceTracker.unsubscribeSolanaBalance(
+                walletAddress, 
+                this.handleBalanceUpdate.bind(this)
+            );
+            
+            if (success) {
+                // Remove from subscribed wallets
+                this.subscribedWallets.delete(walletAddress);
+                
+                // Remove from tracked users for consistency with polling mode
+                this.trackingStats.users.trackedUsers.delete(walletAddress);
+                
+                this.trackingStats.subscriptions.active = this.subscribedWallets.size;
+                
+                logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS UNSUB ${fancyColors.RESET} ${fancyColors.GREEN}✓ Unsubscribed${fancyColors.RESET} from wallet: ${walletAddress}`);
+                return true;
+            } else {
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE WS FAIL ${fancyColors.RESET} Failed to unsubscribe from wallet ${walletAddress}`);
+                return false;
+            }
+        } catch (error) {
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE WS ERROR ${fancyColors.RESET} Error unsubscribing from wallet ${walletAddress}: ${error.message}`);
+            return false;
+        }
+    }
+    
+    /**
+     * Handle balance update from HeliusBalanceTracker
+     * @param {Object} balanceData - Balance update data
+     * @returns {Promise<void>}
+     */
+    async handleBalanceUpdate(balanceData) {
+        if (this.trackingMode !== 'websocket') {
+            return; // Only used in WebSocket mode
+        }
+        
+        try {
+            const startTime = Date.now();
+            const { walletAddress, balance, oldBalance, source } = balanceData;
+            
+            // Skip if no balance change
+            if (balance === oldBalance) {
+                return;
+            }
+            
+            // Get user info for better logging
+            let nickname = 'Unknown';
+            try {
+                const user = await prisma.users.findUnique({
+                    where: { wallet_address: walletAddress },
+                    select: { nickname: true }
+                });
+                nickname = user?.nickname || 'Unknown';
+            } catch (userLookupError) {
+                // Ignore errors from the user lookup
+            }
+            
+            // Format the wallet address for display
+            const shortWallet = `${walletAddress.slice(0, 8)}...${walletAddress.slice(-4)}`;
+            
+            // Record balance history
+            await prisma.wallet_balance_history.create({
+                data: {
+                    wallet_address: walletAddress,
+                    balance_lamports: balance * 1_000_000_000, // Convert SOL to lamports for storage
+                    timestamp: new Date()
+                }
+            });
+            
+            // Update user record with latest balance
+            await prisma.users.update({
+                where: { wallet_address: walletAddress },
+                data: { 
+                    last_balance_check: new Date(),
+                    last_known_balance: balance * 1_000_000_000 // Convert SOL to lamports for storage
+                }
+            });
+            
+            // Update stats
+            this.trackingStats.balanceChecks.total++;
+            this.trackingStats.balanceChecks.successful++;
+            this.trackingStats.balanceChecks.lastCheck = new Date();
+            
+            // Calculate timing
+            const duration = Date.now() - startTime;
+            
+            // Log balance update
+            const solscanUrl = `https://solscan.io/account/${walletAddress}`;
+            logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.GREEN}💰 Updated${fancyColors.RESET} for ${fancyColors.BOLD}${fancyColors.YELLOW}${nickname}${fancyColors.RESET} (${fancyColors.CYAN}${shortWallet}${fancyColors.RESET}): ${fancyColors.BOLD}${fancyColors.YELLOW}${balance} SOL${fancyColors.RESET} ${fancyColors.CYAN}(${duration}ms via ${source})${fancyColors.RESET} | ${fancyColors.UNDERLINE}${fancyColors.GRAY}${solscanUrl}${fancyColors.RESET}`);
+        } catch (error) {
+            this.trackingStats.balanceChecks.failed++;
+            
+            logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE WS ERROR ${fancyColors.RESET} Error handling balance update: ${error.message}`, {
+                error: error.message,
+                balanceData
+            });
+        }
     }
 
     /**
@@ -773,14 +1230,38 @@ class UserBalanceTrackingService extends BaseService {
         } catch (error) {
             solanaStatus.error = error.message;
         }
+        
+        // Get HeliusBalanceTracker status if in WebSocket mode
+        let websocketStatus = { available: false };
+        if (this.trackingMode === 'websocket') {
+            try {
+                websocketStatus = {
+                    available: true,
+                    initialized: heliusBalanceTracker.initialized,
+                    activeSubscriptions: this.subscribedWallets.size,
+                    pendingSubscriptions: this.pendingSubscriptions.size
+                };
+            } catch (error) {
+                websocketStatus.error = error.message;
+            }
+        }
 
         return {
             ...baseStatus,
             metrics: {
                 ...this.stats,
+                trackingMode: this.trackingMode,
                 trackingStats: this.trackingStats,
                 serviceStartTime: this.stats.history.lastStarted,
-                solanaEngine: solanaStatus
+                solanaEngine: solanaStatus,
+                ...(this.trackingMode === 'websocket' ? { websocket: websocketStatus } : {}),
+                ...(this.trackingMode === 'polling' ? { 
+                    polling: {
+                        effectiveCheckIntervalMs: this.effectiveCheckIntervalMs,
+                        userScheduleSize: this.userSchedule.size,
+                        activeChecks: this.activeChecks.size
+                    }
+                } : {})
             }
         };
     }

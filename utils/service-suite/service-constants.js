@@ -156,10 +156,10 @@ export const SERVICE_METADATA = {
     },
     [SERVICE_NAMES.USER_BALANCE_TRACKING]: {
         layer: SERVICE_LAYERS.WALLET,
-        description: 'Track user Solana wallet balances',
-        updateFrequency: '1m',
+        description: 'Track user Solana wallet balances (polling or WebSocket)',
+        updateFrequency: 'varies',
         criticalLevel: 'low',
-        dependencies: []
+        dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
     },
     [SERVICE_NAMES.VANITY_WALLET]: {
         layer: SERVICE_LAYERS.WALLET,

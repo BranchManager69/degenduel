@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solana WebSocket PubSub Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      border-bottom: 2px solid #6e56cf;
+      padding-bottom: 10px;
+      color: #1a1523;
+    }
+    #status {
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-weight: bold;
+    }
+    .connected { background: #d2f4d3; color: #137333; }
+    .disconnected { background: #f7d9d9; color: #c5221f; }
+    .connecting { background: #fef7d6; color: #ea8600; }
+    
+    #log {
+      height: 300px;
+      overflow-y: auto;
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      margin: 20px 0;
+    }
+    
+    .log-entry {
+      border-bottom: 1px solid #eee;
+      padding: 5px 0;
+    }
+    
+    .log-success { color: #137333; }
+    .log-error { color: #c5221f; }
+    .log-info { color: #1a73e8; }
+    .log-data { color: #7b1fa2; }
+    
+    #wallet-input {
+      width: 100%;
+      padding: 8px;
+      font-family: monospace;
+      margin: 10px 0;
+    }
+    
+    button {
+      background: #6e56cf;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background: #5b46b0;
+    }
+    
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Solana WebSocket PubSub Test</h1>
+  
+  <div id="status" class="connecting">Connecting...</div>
+  
+  <div>
+    <p>Enter a Solana wallet address to monitor:</p>
+    <input type="text" id="wallet-input" placeholder="Enter Solana wallet address" value="5pUrF8rA7CrfpZ5KQTsoYMpnKtZJarwvxAu8UxzgUBLF">
+    <div class="controls">
+      <button id="subscribe-btn">Subscribe</button>
+      <button id="unsubscribe-btn" disabled>Unsubscribe</button>
+      <button id="clear-log">Clear Log</button>
+    </div>
+  </div>
+  
+  <div id="log"></div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const statusEl = document.getElementById('status');
+      const logEl = document.getElementById('log');
+      const walletInput = document.getElementById('wallet-input');
+      const subscribeBtn = document.getElementById('subscribe-btn');
+      const unsubscribeBtn = document.getElementById('unsubscribe-btn');
+      const clearLogBtn = document.getElementById('clear-log');
+      
+      let socket = null;
+      let currentSubscription = null;
+      
+      // Logging function
+      function log(message, type = 'info') {
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        
+        const timestamp = new Date().toLocaleTimeString();
+        
+        if (typeof message === 'object') {
+          entry.innerHTML = `<strong>[${timestamp}]</strong> ${JSON.stringify(message, null, 2)}`;
+        } else {
+          entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+        }
+        
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      
+      // Connect to WebSocket
+      function connect() {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/api/v69/ws`;
+        
+        log(`Connecting to ${wsUrl}...`);
+        statusEl.className = 'connecting';
+        statusEl.textContent = 'Connecting...';
+        
+        socket = new WebSocket(wsUrl);
+        
+        socket.onopen = function() {
+          log('WebSocket connection established', 'success');
+          statusEl.className = 'connected';
+          statusEl.textContent = 'Connected';
+          subscribeBtn.disabled = false;
+        };
+        
+        socket.onclose = function(event) {
+          log(`WebSocket connection closed. Code: ${event.code}`, 'error');
+          statusEl.className = 'disconnected';
+          statusEl.textContent = 'Disconnected';
+          subscribeBtn.disabled = true;
+          unsubscribeBtn.disabled = true;
+          
+          // Try to reconnect after a delay
+          setTimeout(connect, 5000);
+        };
+        
+        socket.onerror = function(error) {
+          log(`WebSocket error: ${error.message}`, 'error');
+          statusEl.className = 'disconnected';
+          statusEl.textContent = 'Connection Error';
+        };
+        
+        socket.onmessage = function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            
+            // Different styling based on message type
+            switch (data.type) {
+              case 'ACKNOWLEDGMENT':
+                log(`Received acknowledgment: ${data.action}`, 'success');
+                if (data.action === 'subscribe' && data.topics && data.topics.includes('solana')) {
+                  unsubscribeBtn.disabled = false;
+                }
+                break;
+                
+              case 'DATA':
+                // Special handling for account update data
+                if (data.topic === 'solana' && data.subtype === 'account-update') {
+                  const accountData = data.data;
+                  log(`Received account update for ${accountData.account}`, 'data');
+                  
+                  // Display account lamports (SOL balance)
+                  if (accountData.value && accountData.value.lamports !== undefined) {
+                    const solBalance = accountData.value.lamports / 1000000000; // LAMPORTS_PER_SOL
+                    log(`Balance: ${solBalance.toFixed(9)} SOL`, 'success');
+                  }
+                  
+                  // If there's detailed account data, display it
+                  if (accountData.value && accountData.value.data) {
+                    log(`Account data received (${typeof accountData.value.data})`, 'info');
+                  }
+                } else {
+                  log(`Received data: ${JSON.stringify(data)}`, 'data');
+                }
+                break;
+                
+              case 'ERROR':
+                log(`Error: ${data.error || data.message}`, 'error');
+                break;
+                
+              default:
+                log(`Received message: ${JSON.stringify(data)}`);
+            }
+          } catch (e) {
+            log(`Error parsing message: ${e.message}`, 'error');
+            log(`Raw message: ${event.data}`, 'error');
+          }
+        };
+      }
+      
+      // Subscribe to a Solana account
+      function subscribeToAccount() {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          log('WebSocket not connected', 'error');
+          return;
+        }
+        
+        const account = walletInput.value.trim();
+        if (!account) {
+          log('Please enter a valid Solana wallet address', 'error');
+          return;
+        }
+        
+        currentSubscription = account;
+        
+        // Send subscription message
+        const subscribeMsg = {
+          type: 'SUBSCRIBE',
+          topics: ['solana'],
+          accounts: [account],
+          commitment: 'confirmed'
+        };
+        
+        // For the Solana topic, we need extra data
+        // Using the format expected by the backend
+        socket.send(JSON.stringify({
+          type: 'solana:subscribe',
+          accounts: [account],
+          commitment: 'confirmed'
+        }));
+        
+        log(`Subscribing to Solana account: ${account}`);
+        subscribeBtn.disabled = true;
+      }
+      
+      // Unsubscribe from the current account
+      function unsubscribeFromAccount() {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          log('WebSocket not connected', 'error');
+          return;
+        }
+        
+        if (!currentSubscription) {
+          log('No active subscription', 'error');
+          return;
+        }
+        
+        // Send unsubscribe message
+        socket.send(JSON.stringify({
+          type: 'solana:unsubscribe',
+          accounts: [currentSubscription]
+        }));
+        
+        log(`Unsubscribing from Solana account: ${currentSubscription}`);
+        unsubscribeBtn.disabled = true;
+        subscribeBtn.disabled = false;
+        currentSubscription = null;
+      }
+      
+      // Set up event listeners
+      subscribeBtn.addEventListener('click', subscribeToAccount);
+      unsubscribeBtn.addEventListener('click', unsubscribeFromAccount);
+      clearLogBtn.addEventListener('click', function() {
+        logEl.innerHTML = '';
+      });
+      
+      // Start the connection
+      connect();
+    });
+  </script>
+</body>
+</html>

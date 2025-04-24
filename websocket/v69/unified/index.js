@@ -17,7 +17,27 @@ import config from '../../../config/config.js';
  * @returns {UnifiedWebSocketServer} The WebSocket server instance
  */
 export function createUnifiedWebSocket(server, options = {}) {
-  return new UnifiedWebSocketServer(server, options);
+  const logger = typeof console === 'object' ? console : { log: () => {} };
+  
+  // Add diagnostic logs
+  logger.log(`🔍 Creating UnifiedWebSocketServer with config: ${JSON.stringify({
+    hasConfig: !!config,
+    hasWebSocketConfig: !!config.websocket,
+    configuredPath: config.websocket?.config?.path || '/api/v69/ws'
+  })}`);
+  
+  // Create the server instance
+  const wsServer = new UnifiedWebSocketServer(server, options);
+  
+  // Store in config
+  if (config && config.websocket) {
+    config.websocket.unifiedWebSocket = wsServer;
+    logger.log(`✅ WebSocket server stored in config.websocket.unifiedWebSocket`);
+  } else {
+    logger.log(`❌ ERROR: Failed to store WebSocket server in config - config structure invalid`);
+  }
+  
+  return wsServer;
 }
 
 // Export the class

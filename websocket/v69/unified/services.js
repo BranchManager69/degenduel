@@ -6,6 +6,7 @@
  * This module provides service functions for the unified WebSocket system:
  * - Terminal data fetching
  * - Service event registration
+ * - Solana PubSub WebSocket proxying
  */
 
 import prisma from '../../../config/prisma.js';
@@ -14,6 +15,14 @@ import marketDataService from '../../../services/marketDataService.js';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors, wsColors } from '../../../utils/colors.js';
 import config from '../../../config/config.js';
+import WebSocket from 'ws';
+
+// Solana PubSub subscription limits by tier
+const SOLANA_SUBSCRIPTION_LIMITS = {
+  PUBLIC: 5,      // Public tier (anonymous users): 5 accounts max
+  USER: 10,       // User tier (authenticated users): 10 accounts max
+  ADMIN: 1000,    // Admin/superadmin tier: 1000 accounts max
+};
 
 /**
  * Fetch terminal data from the database
@@ -235,6 +244,9 @@ async function getSystemComponentStatus() {
  * @param {Object} server - The unified WebSocket server instance
  */
 export function registerServiceEvents(server) {
+  // Store reference in global config for other services to use
+  config.websocket.unifiedWebSocket = server;
+  
   // Market Data event handlers
   server.registerEventHandler(
     'market:broadcast', 
@@ -286,6 +298,420 @@ export function registerServiceEvents(server) {
     }
   );
   
+  // Set up Solana PubSub handler
+  setupSolanaPubSubHandler(server);
+  
   // Log successful registration
   logApi.info(`${wsColors.tag}[services]${fancyColors.RESET} ${fancyColors.GREEN}Service event handlers registered successfully${fancyColors.RESET}`);
+}
+
+/**
+ * Set up Solana PubSub subscription handling for account monitoring
+ * @param {Object} wsServer - The WebSocket server instance
+ */
+function setupSolanaPubSubHandler(wsServer) {
+  // Storage for active subscriptions
+  const solanaPubSub = {
+    // Store active Solana subscriptions by clientId
+    clientSubscriptions: new Map(),
+    // Track clients subscribed to each account
+    accountSubscribers: new Map(),
+    // Track actual WebSocket connections to Solana
+    solanaConnections: new Map(),
+    // Track subscription IDs by account
+    subscriptionIds: new Map()
+  };
+  
+  // Register the Solana PubSub topic handler
+  wsServer.registerEventHandler('solana:subscribe', async (data, clientId) => {
+    try {
+      const client = wsServer.clients.get(clientId);
+      
+      if (!client) {
+        logApi.warn(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Client ${clientId} not found for Solana subscription`);
+        return;
+      }
+      
+      // Get client authentication information
+      const clientInfo = wsServer.authenticatedClients.get(client) || { role: 'public' };
+      
+      // Get user role and normalize it to lowercase for consistent comparison
+      // In our system, roles from JWT tokens and database are lowercase: 'user', 'admin', 'superadmin'
+      const userRole = (clientInfo.role || 'public').toLowerCase();
+      
+      // Determine tier based on normalized role
+      // Admin tier includes both 'admin' and 'superadmin' roles
+      const tier = userRole === 'admin' || userRole === 'superadmin' ? 'admin' : 
+               userRole === 'user' ? 'user' : 'public';
+      
+      // Apply tier-based rate limits for subscriptions
+      let maxSubscriptions;
+      if (userRole === 'admin' || userRole === 'superadmin') {
+        maxSubscriptions = SOLANA_SUBSCRIPTION_LIMITS.ADMIN;
+      } else if (userRole === 'user') {
+        maxSubscriptions = SOLANA_SUBSCRIPTION_LIMITS.USER;
+      } else {
+        maxSubscriptions = SOLANA_SUBSCRIPTION_LIMITS.PUBLIC;
+      }
+      
+      // Extract subscription details 
+      const { accounts = [], commitment = 'confirmed' } = data;
+      
+      // Get existing client subscriptions
+      const clientKey = `${clientId}:solana`;
+      const clientSubs = solanaPubSub.clientSubscriptions.get(clientKey) || { accounts: new Set() };
+      
+      // Check if adding these would exceed the limit
+      if (clientSubs.accounts.size + accounts.length > maxSubscriptions) {
+        wsServer.send(client, {
+          type: 'ERROR',
+          topic: 'solana',
+          error: `Subscription limit exceeded. Max ${maxSubscriptions} accounts per client for ${tier} tier.`,
+          code: 429
+        });
+        return;
+      }
+      
+      // Process account subscriptions
+      const acceptedAccounts = [];
+      
+      for (const account of accounts) {
+        // Skip if invalid format
+        if (typeof account !== 'string' || account.length < 32) {
+          logApi.warn(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Invalid account format: ${account}`);
+          continue;
+        }
+        
+        // Add to client's subscriptions
+        clientSubs.accounts.add(account);
+        acceptedAccounts.push(account);
+        
+        // Track this client as subscribed to this account
+        if (!solanaPubSub.accountSubscribers.has(account)) {
+          solanaPubSub.accountSubscribers.set(account, new Set());
+        }
+        solanaPubSub.accountSubscribers.get(account).add(client);
+        
+        // Check if we need to create the actual RPC subscription
+        if (!solanaPubSub.solanaConnections.has(account)) {
+          try {
+            // Get the RPC URL from config
+            const rpcUrl = config.rpc_urls.mainnet_wss;
+            
+            if (!rpcUrl) {
+              throw new Error('No Solana WebSocket RPC URL configured');
+            }
+            
+            // Create WebSocket connection to Solana for this account
+            createSolanaSubscription(rpcUrl, account, wsServer, solanaPubSub, commitment);
+          } catch (subError) {
+            logApi.error(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Failed to create Solana subscription for ${account}: ${subError.message}`);
+          }
+        }
+      }
+      
+      // Store the updated client subscriptions
+      solanaPubSub.clientSubscriptions.set(clientKey, clientSubs);
+      
+      // Send acknowledgment
+      wsServer.send(client, {
+        type: 'ACKNOWLEDGMENT',
+        topic: 'solana',
+        action: 'subscribe',
+        data: {
+          accepted: {
+            accounts: acceptedAccounts,
+            commitment
+          }
+        }
+      });
+      
+      logApi.info(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Client ${clientId} (${tier}) subscribed to ${acceptedAccounts.length} Solana accounts`);
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Solana subscription error: ${error.message}`);
+    }
+  });
+  
+  // Handle unsubscribe requests
+  wsServer.registerEventHandler('solana:unsubscribe', async (data, clientId) => {
+    try {
+      const { accounts = [] } = data;
+      const client = wsServer.clients.get(clientId);
+      
+      if (!client) {
+        logApi.warn(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Client ${clientId} not found for Solana unsubscription`);
+        return;
+      }
+      
+      // Get existing client subscriptions
+      const clientKey = `${clientId}:solana`;
+      const clientSubs = solanaPubSub.clientSubscriptions.get(clientKey);
+      
+      if (!clientSubs) {
+        // No subscriptions to remove
+        wsServer.send(client, {
+          type: 'ACKNOWLEDGMENT',
+          topic: 'solana',
+          action: 'unsubscribe',
+          data: { unsubscribed: { accounts: [] } }
+        });
+        return;
+      }
+      
+      // Process account unsubscriptions
+      const unsubscribedAccounts = [];
+      
+      for (const account of accounts) {
+        // Remove from client's subscriptions
+        if (clientSubs.accounts.has(account)) {
+          clientSubs.accounts.delete(account);
+          unsubscribedAccounts.push(account);
+          
+          // Remove client from account subscribers
+          if (solanaPubSub.accountSubscribers.has(account)) {
+            const subscribers = solanaPubSub.accountSubscribers.get(account);
+            subscribers.delete(client);
+            
+            // If no more subscribers for this account, clean up the Solana connection
+            if (subscribers.size === 0) {
+              cleanupSolanaSubscription(account, solanaPubSub);
+              solanaPubSub.accountSubscribers.delete(account);
+            }
+          }
+        }
+      }
+      
+      // If client has no more subscriptions, remove from tracking
+      if (clientSubs.accounts.size === 0) {
+        solanaPubSub.clientSubscriptions.delete(clientKey);
+      } else {
+        solanaPubSub.clientSubscriptions.set(clientKey, clientSubs);
+      }
+      
+      // Send acknowledgment
+      wsServer.send(client, {
+        type: 'ACKNOWLEDGMENT',
+        topic: 'solana',
+        action: 'unsubscribe',
+        data: {
+          unsubscribed: {
+            accounts: unsubscribedAccounts
+          }
+        }
+      });
+      
+      logApi.info(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Client ${clientId} unsubscribed from ${unsubscribedAccounts.length} Solana accounts`);
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Solana unsubscription error: ${error.message}`);
+    }
+  });
+  
+  // Handle client disconnect - clean up subscriptions
+  wsServer.on('close', (client, reason, clientId) => {
+    try {
+      // Clean up all Solana subscriptions for this client
+      const clientKey = `${clientId}:solana`;
+      const clientSubs = solanaPubSub.clientSubscriptions.get(clientKey);
+      
+      if (!clientSubs) {
+        return; // No subscriptions to clean up
+      }
+      
+      // Clean up all account subscriptions
+      for (const account of clientSubs.accounts) {
+        if (solanaPubSub.accountSubscribers.has(account)) {
+          solanaPubSub.accountSubscribers.get(account).delete(client);
+          
+          // If no more subscribers for this account, clean up
+          if (solanaPubSub.accountSubscribers.get(account).size === 0) {
+            cleanupSolanaSubscription(account, solanaPubSub);
+            solanaPubSub.accountSubscribers.delete(account);
+          }
+        }
+      }
+      
+      // Remove client from tracking
+      solanaPubSub.clientSubscriptions.delete(clientKey);
+      
+      logApi.info(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Cleaned up Solana subscriptions for disconnected client ${clientId}`);
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Error cleaning up Solana subscriptions: ${error.message}`);
+    }
+  });
+  
+  // Log that handler is set up
+  logApi.info(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} ${fancyColors.GREEN}Solana PubSub handler initialized${fancyColors.RESET}`);
+}
+
+/**
+ * Create a WebSocket subscription to Solana for an account
+ * @param {string} rpcUrl - Solana WebSocket RPC URL
+ * @param {string} account - Account address to subscribe to
+ * @param {Object} wsServer - The WebSocket server for broadcasting updates
+ * @param {Object} solanaPubSub - Storage for subscription data
+ * @param {string} commitment - Solana commitment level
+ */
+function createSolanaSubscription(rpcUrl, account, wsServer, solanaPubSub, commitment = 'confirmed') {
+  try {
+    // Create WebSocket connection to Solana
+    const ws = new WebSocket(rpcUrl);
+    
+    // Store the WebSocket
+    solanaPubSub.solanaConnections.set(account, ws);
+    
+    // Set up event handlers
+    ws.on('open', () => {
+      logApi.info(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Solana WebSocket connected for account ${account}`);
+      
+      // Subscribe to account updates with the specified commitment
+      const subscribeMessage = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'accountSubscribe',
+        params: [
+          account,
+          {
+            encoding: 'jsonParsed',
+            commitment: commitment
+          }
+        ]
+      };
+      
+      ws.send(JSON.stringify(subscribeMessage));
+    });
+    
+    // Handle messages from Solana
+    ws.on('message', (data) => {
+      try {
+        const message = JSON.parse(data);
+        
+        // Initial subscription confirmation
+        if (message.id === 1 && message.result) {
+          logApi.debug(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Solana subscription confirmed for ${account}, id: ${message.result}`);
+          // Store subscription ID for unsubscribing later
+          solanaPubSub.subscriptionIds.set(account, message.result);
+          return;
+        }
+        
+        // Account update notification
+        if (message.method === 'accountNotification' && message.params && message.params.result) {
+          const accountData = message.params.result.value;
+          const subscribers = solanaPubSub.accountSubscribers.get(account);
+          
+          if (!subscribers || subscribers.size === 0) {
+            return; // No subscribers
+          }
+          
+          // Broadcast to all subscribers
+          for (const client of subscribers) {
+            if (client.readyState === WebSocket.OPEN) {
+              wsServer.send(client, {
+                type: 'DATA',
+                topic: 'solana',
+                subtype: 'account-update',
+                data: {
+                  account: account,
+                  value: accountData,
+                  timestamp: new Date().toISOString()
+                }
+              });
+            }
+          }
+          
+          logApi.debug(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Broadcast account update for ${account} to ${subscribers.size} clients`);
+        }
+      } catch (parseError) {
+        logApi.error(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Error parsing Solana message: ${parseError.message}`);
+      }
+    });
+    
+    // Handle WebSocket errors
+    ws.on('error', (error) => {
+      logApi.error(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Solana WebSocket error for ${account}: ${error.message}`);
+      
+      // Notify subscribers of the error
+      const subscribers = solanaPubSub.accountSubscribers.get(account);
+      if (subscribers && subscribers.size > 0) {
+        for (const client of subscribers) {
+          if (client.readyState === WebSocket.OPEN) {
+            wsServer.send(client, {
+              type: 'ERROR',
+              topic: 'solana',
+              subtype: 'subscription-error',
+              error: `Solana subscription error: ${error.message}`,
+              data: { account }
+            });
+          }
+        }
+      }
+      
+      // Clean up
+      cleanupSolanaSubscription(account, solanaPubSub);
+      
+      // Try to reconnect after a delay if there are still subscribers
+      setTimeout(() => {
+        if (solanaPubSub.accountSubscribers.has(account) && solanaPubSub.accountSubscribers.get(account).size > 0) {
+          logApi.info(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Attempting to reconnect Solana subscription for ${account}`);
+          createSolanaSubscription(rpcUrl, account, wsServer, solanaPubSub, commitment);
+        }
+      }, 5000);
+    });
+    
+    // Handle WebSocket close
+    ws.on('close', () => {
+      logApi.warn(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Solana WebSocket closed for ${account}`);
+      
+      // Clean up
+      cleanupSolanaSubscription(account, solanaPubSub);
+      
+      // Try to reconnect after a delay if there are still subscribers
+      setTimeout(() => {
+        if (solanaPubSub.accountSubscribers.has(account) && solanaPubSub.accountSubscribers.get(account).size > 0) {
+          logApi.info(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Attempting to reconnect Solana subscription for ${account}`);
+          createSolanaSubscription(rpcUrl, account, wsServer, solanaPubSub, commitment);
+        }
+      }, 5000);
+    });
+  } catch (error) {
+    logApi.error(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Failed to create Solana subscription: ${error.message}`);
+  }
+}
+
+/**
+ * Clean up a Solana subscription
+ * @param {string} account - The account address
+ * @param {Object} solanaPubSub - Storage for subscription data
+ */
+function cleanupSolanaSubscription(account, solanaPubSub) {
+  try {
+    const ws = solanaPubSub.solanaConnections.get(account);
+    
+    if (ws) {
+      // Try to unsubscribe gracefully if we have a subscription ID
+      const subscriptionId = solanaPubSub.subscriptionIds.get(account);
+      if (subscriptionId && ws.readyState === WebSocket.OPEN) {
+        const unsubscribeMessage = {
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'accountUnsubscribe',
+          params: [subscriptionId]
+        };
+        
+        ws.send(JSON.stringify(unsubscribeMessage));
+      }
+      
+      // Close the WebSocket
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+      
+      // Remove from tracking
+      solanaPubSub.solanaConnections.delete(account);
+      solanaPubSub.subscriptionIds.delete(account);
+      
+      logApi.info(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Cleaned up Solana subscription for ${account}`);
+    }
+  } catch (error) {
+    logApi.error(`${wsColors.tag}[solana-pubsub]${fancyColors.RESET} Error cleaning up Solana subscription: ${error.message}`);
+  }
 }
