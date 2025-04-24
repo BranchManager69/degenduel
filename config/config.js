@@ -866,9 +866,10 @@ const config = {
       USER: 'user',
       ADMIN: 'admin',
       WALLET: 'wallet',
-      WALLET_BALANCE: 'wallet-balance', // Add wallet balance topic
+      WALLET_BALANCE: 'wallet-balance', // Consolidated wallet balance topic (v69 standard)
       SKYDUEL: 'skyduel',
-      TERMINAL: 'terminal' // Terminal data topic
+      TERMINAL: 'terminal',
+      LOGS: 'logs',
     },
     
     // Message types for the unified WebSocket

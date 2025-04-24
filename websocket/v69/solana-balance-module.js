@@ -26,7 +26,7 @@ class SolanaBalanceModule {
     this.uniWs = null;
     
     // Topic for SOL balance updates
-    this.TOPIC = 'solana_balance';
+    this.TOPIC = 'wallet-balance';
     
     // Flag to indicate if we're initialized
     this.initialized = false;
@@ -165,7 +165,7 @@ class SolanaBalanceModule {
       // Confirm subscription
       this.uniWs.sendToClient(client, {
         type: 'SUBSCRIBED',
-        resource: 'solana_balance',
+        resource: 'wallet-balance',
         walletAddress,
         timestamp: new Date().toISOString()
       });
@@ -224,7 +224,7 @@ class SolanaBalanceModule {
       // Confirm unsubscription
       this.uniWs.sendToClient(client, {
         type: 'UNSUBSCRIBED',
-        resource: 'solana_balance',
+        resource: 'wallet-balance',
         walletAddress,
         timestamp: new Date().toISOString()
       });
@@ -259,7 +259,7 @@ class SolanaBalanceModule {
       
       this.uniWs.sendToClient(client, {
         type: 'BALANCE_REFRESHED',
-        resource: 'solana_balance',
+        resource: 'wallet-balance',
         walletAddress,
         timestamp: new Date().toISOString()
       });

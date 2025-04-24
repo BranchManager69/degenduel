@@ -112,14 +112,7 @@ async function fetchTerminalData() {
 
 // Use message types and topics from config
 const MESSAGE_TYPES = config.websocket.messageTypes;
-const TOPICS = {
-  ...config.websocket.topics,
-  // Add client logs topic
-  LOGS: 'logs',
-  // Add balance topics
-  TOKEN_BALANCE: 'token_balance',
-  SOLANA_BALANCE: 'solana_balance'
-};
+const TOPICS = config.websocket.topics;
 
 /**
  * Unified WebSocket Server
@@ -1375,12 +1368,24 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + aut
           await this.handleSystemRequest(ws, message);
           break;
           
-        case TOPICS.TOKEN_BALANCE:
-          await this.handleTokenBalanceRequest(ws, message);
-          break;
-          
-        case TOPICS.SOLANA_BALANCE:
-          await this.handleSolanaBalanceRequest(ws, message);
+        case TOPICS.WALLET_BALANCE:
+          // Determine if this is a token or SOL balance request based on the action and parameters
+          if (message.action === 'getTokenBalance' || 
+              (message.tokenAddress && message.action === 'getBalance')) {
+            await this.handleTokenBalanceRequest(ws, message);
+          } else if (message.action === 'getSolanaBalance' || 
+                    (message.action === 'getBalance' && !message.tokenAddress)) {
+            await this.handleSolanaBalanceRequest(ws, message);
+          } else if (message.action === 'getWalletBalance') {
+            // Combined wallet balance endpoint that fetches both SOL and tokens
+            // This is a future enhancement - for now we'll handle separately
+            await Promise.all([
+              this.handleSolanaBalanceRequest(ws, message),
+              this.handleTokenBalanceRequest(ws, message)
+            ]);
+          } else {
+            await this.handleTokenBalanceRequest(ws, message);
+          }
           break;
           
         // Add cases for other topics as needed
@@ -2699,7 +2704,7 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
           // Send confirmation
           this.sendToClient(ws, {
             type: 'BALANCE_REFRESHED',
-            resource: 'token_balance',
+            resource: 'wallet-balance',
             walletAddress,
             timestamp: new Date().toISOString()
           });
@@ -2759,7 +2764,7 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
           // Confirm subscription
           this.sendToClient(ws, {
             type: 'SUBSCRIBED',
-            resource: 'token_balance',
+            resource: 'wallet-balance',
             walletAddress,
             timestamp: new Date().toISOString()
           });
@@ -2798,7 +2803,7 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
           // Confirm unsubscription
           this.sendToClient(ws, {
             type: 'UNSUBSCRIBED',
-            resource: 'token_balance',
+            resource: 'wallet-balance',
             walletAddress,
             timestamp: new Date().toISOString()
           });

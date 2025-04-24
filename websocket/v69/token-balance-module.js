@@ -27,7 +27,7 @@ class TokenBalanceModule {
     this.uniWs = null;
     
     // Topic for token balance updates
-    this.TOPIC = 'token_balance';
+    this.TOPIC = 'wallet-balance';
     
     // Flag to indicate if we're initialized
     this.initialized = false;
@@ -174,7 +174,7 @@ class TokenBalanceModule {
       // Confirm subscription
       this.uniWs.sendToClient(client, {
         type: 'SUBSCRIBED',
-        resource: 'token_balance',
+        resource: 'wallet-balance',
         walletAddress,
         timestamp: new Date().toISOString()
       });
@@ -235,7 +235,7 @@ class TokenBalanceModule {
       // Confirm unsubscription
       this.uniWs.sendToClient(client, {
         type: 'UNSUBSCRIBED',
-        resource: 'token_balance',
+        resource: 'wallet-balance',
         walletAddress,
         timestamp: new Date().toISOString()
       });
@@ -297,7 +297,7 @@ class TokenBalanceModule {
       
       this.uniWs.sendToClient(client, {
         type: 'BALANCE_REFRESHED',
-        resource: 'token_balance',
+        resource: 'wallet-balance',
         walletAddress,
         timestamp: new Date().toISOString()
       });
