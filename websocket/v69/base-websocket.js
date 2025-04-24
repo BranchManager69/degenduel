@@ -1,6 +1,15 @@
 // websocket/v69/base-websocket.js
 
 /**
+ * @deprecated This base class and all its implementations are deprecated and will be removed in a future release.
+ * Please use the new Unified WebSocket System instead, which provides the same functionality
+ * with a more maintainable architecture.
+ * 
+ * Migration Guide:
+ * 1. Use the unified WebSocket structure in /websocket/v69/unified/
+ * 2. All WebSocket connections should use the unified endpoint: /api/v69/ws
+ * 3. See /websocket/v69/transition-examples/README.md for detailed migration steps
+ *
  * BaseWebSocketServer (v69)
  * 
  * Enhanced WebSocket base class with:

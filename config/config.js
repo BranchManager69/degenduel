@@ -57,9 +57,9 @@ if (!RPC_URL) {
 }
 
 // Default OpenAI settings
-const OPENAI_DEFAULT_MODEL = `gpt-4o`;
-const OPENAI_DEFAULT_MAX_TOKENS = 222;
-const OPENAI_DEFAULT_TEMPERATURE = 0.74;
+const OPENAI_DEFAULT_MODEL = `gpt-4.1-mini`;
+const OPENAI_DEFAULT_MAX_TOKENS = 400;
+const OPENAI_DEFAULT_TEMPERATURE = 0.5;
 
 // Default OpenAI system and assistant prompts
 const OPENAI_DEFAULT_ASSISTANT_PROMPT = `
@@ -80,33 +80,33 @@ const OPENAI_PROMPT_TEMPLATES = {
   default: {
     system: OPENAI_DEFAULT_SYSTEM_PROMPT || '',
     assistant: OPENAI_DEFAULT_ASSISTANT_PROMPT || '',
-    model: OPENAI_DEFAULT_MODEL || 'gpt-4o',
-    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 222,
-    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.75,
+    model: OPENAI_DEFAULT_MODEL || 'gpt-4.1-mini',
+    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 400,
+    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.5,
   },
   // Prelaunch prompt template
   prelaunch: {
     system: OPENAI_DEFAULT_SYSTEM_PROMPT || '',
     assistant: OPENAI_DEFAULT_ASSISTANT_PROMPT || '',
-    model: OPENAI_DEFAULT_MODEL || 'gpt-4o',
-    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 222,
-    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.75,
+    model: OPENAI_DEFAULT_MODEL || 'gpt-4.1-mini',
+    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 400,
+    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.6,
   },
   // Uncensored prompt template
   uncensored: {
     system: OPENAI_DEFAULT_SYSTEM_PROMPT || '',
     assistant: OPENAI_DEFAULT_ASSISTANT_PROMPT || '',
-    model: OPENAI_DEFAULT_MODEL || 'gpt-4o',
-    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 222,
-    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.75,
+    model: OPENAI_DEFAULT_MODEL || 'gpt-4.1',
+    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 400,
+    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.7,
   },
   // Trading prompt template
   trading: {
     system: OPENAI_DEFAULT_SYSTEM_PROMPT || '',
     assistant: OPENAI_DEFAULT_ASSISTANT_PROMPT || '',
-    model: OPENAI_DEFAULT_MODEL || 'gpt-4o',
-    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 222,
-    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.75,
+    model: OPENAI_DEFAULT_MODEL || 'gpt-4.1-mini',
+    max_tokens: OPENAI_DEFAULT_MAX_TOKENS || 400,
+    temperature: OPENAI_DEFAULT_TEMPERATURE || 0.6,
   },
 };
 
@@ -223,133 +223,133 @@ const config = {
       default: {
         system: OPENAI_PROMPT_TEMPLATES.default.system, // default
         assistant: OPENAI_PROMPT_TEMPLATES.default.assistant, // default
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       economy: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system, // prelaunch
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant, // prelaunch
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       standard: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system, // prelaunch
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant, // prelaunch
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       premium: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       longcontext: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       fast: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       reasoning: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       image: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       audio: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       video: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       multimodal: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       realtime: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       uncensored: {
         system: OPENAI_PROMPT_TEMPLATES.uncensored.system,
         assistant: OPENAI_PROMPT_TEMPLATES.uncensored.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       funny: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       creative: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
       coding: {
         system: OPENAI_PROMPT_TEMPLATES.prelaunch.system,
         assistant: OPENAI_PROMPT_TEMPLATES.prelaunch.assistant,
-        model: 'gpt-4o',
-        max_tokens: 200,
-        temperature: 0.7,
+        model: 'gpt-4.1-mini',
+        max_tokens: 400,
+        temperature: 0.5,
       },
     },
     openai_models: {
-      default: 'gpt-4o',
-      economy: 'gpt-4o',
-      standard: 'gpt-4o',
-      premium: 'gpt-4o',
-      longcontext: 'gpt-4o',
-      fast: 'gpt-4o',
-      reasoning: 'gpt-4o',
-      image: 'gpt-4o',
-      audio: 'gpt-4o',
-      video: 'gpt-4o',
-      multimodal: 'gpt-4o',
-      realtime: 'gpt-4o',
-      uncensored: 'gpt-4o',
-      funny: 'gpt-4o',
-      creative: 'gpt-4o',
-      coding: 'gpt-4o',
+      default: 'gpt-4.1-mini',
+      economy: 'gpt-4.1-mini',
+      standard: 'gpt-4.1-mini',
+      premium: 'gpt-4.1-mini',
+      longcontext: 'gpt-4.1-mini',
+      fast: 'gpt-4.1-mini',
+      reasoning: 'gpt-4.1-mini',
+      image: 'gpt-4.1-mini',
+      audio: 'gpt-4.1-mini',
+      video: 'gpt-4.1-mini',
+      multimodal: 'gpt-4.1-mini',
+      realtime: 'gpt-4.1-mini',
+      uncensored: 'gpt-4.1-mini',
+      funny: 'gpt-4.1-mini',
+      creative: 'gpt-4.1-mini',
+      coding: 'gpt-4.1-mini',
     },
   },
 
@@ -683,7 +683,7 @@ const config = {
       DEGEN: parseInt(process.env.VANITY_WALLET_TARGET_DEGEN || 3) // Keep original targets
     },
     // Check interval in minutes
-    checkIntervalMinutes: parseInt(process.env.VANITY_WALLET_CHECK_INTERVAL || 2 * 60), // Intent: Every 2 minutes
+    checkIntervalMinutes: parseInt(process.env.VANITY_WALLET_CHECK_INTERVAL || 1), // Intent: Every minute
     // Maximum concurrent generation jobs
     maxConcurrentJobs: parseInt(process.env.VANITY_WALLET_MAX_CONCURRENT_JOBS || 1), // Intent: 1 job at a time
   },

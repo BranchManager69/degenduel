@@ -11,6 +11,16 @@
  * - Market sentiment indicators
  * - Efficient multi-user data broadcasting
  * - Event-based subscriptions
+ * 
+ * @deprecated This implementation is deprecated and will be removed in a future release.
+ * Please use the new Unified WebSocket System instead, which provides the same functionality
+ * with a more maintainable architecture.
+ * 
+ * Migration Guide:
+ * 1. Use the unified endpoint instead: /api/v69/ws
+ * 2. Subscribe to the 'market-data' topic
+ * 3. See /websocket/v69/unified/ for the new implementation
+ * 4. See /websocket/v69/transition-examples/README.md for detailed migration steps
  */
 
 import { BaseWebSocketServer } from './base-websocket.js';

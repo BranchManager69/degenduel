@@ -5,10 +5,10 @@
  * into the main application server.
  */
 
-const http = require('http');
-const express = require('express');
-const { createUnifiedWebSocket } = require('./index');
-const logger = require('../../utils/logger-suite/logger');
+import http from 'http';
+import express from 'express';
+import { createUnifiedWebSocket } from './index';
+import logger from '../../../utils/logger-suite/logger';
 
 // Create a logger instance
 const log = logger.forService('WS_INTEGRATION');
@@ -86,11 +86,11 @@ function exampleUsage() {
 }
 
 // Export the integration function
-module.exports = {
+export {
   integrateUnifiedWebSocket
 };
 
 // If this file is run directly, execute the example
-if (require.main === module) {
+if (import.meta.main === module) {
   exampleUsage();
 }

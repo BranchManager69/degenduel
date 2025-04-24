@@ -1,3 +1,5 @@
+// websocket/v69/unified/UnifiedWebSocketServer.js
+
 /**
  * UnifiedWebSocketServer.js
  * 
@@ -24,27 +26,19 @@ import {
 
 import {
   registerServiceEvents,
-  fetchTerminalData,
-  setupServiceListeners
+  fetchTerminalData
 } from './services.js';
 
+
 import {
-  handleMarketDataRequest,
-  handlePortfolioRequest,
-  handleWalletRequest,
-  handleWalletBalanceRequest,
-  handleAdminRequest,
-  handleSystemRequest,
-  handleContestRequest,
-  handleUserRequest,
-  handleSkyduelRequest,
-  handleTerminalRequest
+  handleRequest,
 } from './requestHandlers.js';
 
+// ?
 import {
   handleConnection,
   handleMessage,
-  handleClose,
+  handleDisconnect as handleClose,
   handleError,
   authenticateClient,
   handleClientSubscribe,
@@ -101,13 +95,81 @@ export default class UnifiedWebSocketServer {
 
   setupServiceEvents() {
     // Set up service event listeners for broadcasting updates
-    setupServiceListeners(this.broadcast.bind(this));
+    registerServiceEvents(this);
     
     log.info('Service event listeners configured');
   }
 
   broadcast(topic, data, excludeClientId = null) {
     broadcastToSubscribers(topic, data, this.subscriptions, this.clients, excludeClientId);
+  }
+  
+  registerEventHandler(event, handler) {
+    // Store the event handler
+    if (!this.eventHandlers) {
+      this.eventHandlers = new Map();
+    }
+    this.eventHandlers.set(event, handler);
+    log.info(`Registered event handler for ${event}`);
+  }
+  
+  broadcastToTopic(topic, data) {
+    // This is used by registerServiceEvents
+    if (!this.subscriptions[topic]) {
+      return;
+    }
+    
+    // Convert to array to iterate safely
+    const subscribers = Array.from(this.subscriptions[topic]);
+    let sentCount = 0;
+    
+    for (const ws of subscribers) {
+      try {
+        // Only send to clients in OPEN state
+        if (ws.readyState === 1) { // WebSocket.OPEN
+          ws.send(formatMessage(data));
+          // Track message sent on the connection object for database
+          ws.messagesSent = (ws.messagesSent || 0) + 1;
+          sentCount++;
+        }
+      } catch (error) {
+        log.error(`Error sending to client: ${error.message}`);
+      }
+    }
+    
+    if (sentCount > 0) {
+      log.debug(`Broadcast to ${sentCount} clients on topic ${topic}`);
+    }
+  }
+  
+  send(ws, data) {
+    // Send data to a specific client
+    try {
+      if (ws.readyState === 1) { // WebSocket.OPEN
+        ws.send(formatMessage(data));
+        // Track message sent on the connection object for database tracking
+        ws.messagesSent = (ws.messagesSent || 0) + 1;
+      }
+    } catch (error) {
+      log.error(`Error sending to client: ${error.message}`);
+    }
+  }
+  
+  sendError(ws, message, code = 400) {
+    // Send an error to a specific client
+    try {
+      if (ws.readyState === 1) { // WebSocket.OPEN
+        ws.send(formatMessage({
+          type: config.websocket.messageTypes.ERROR,
+          error: message,
+          code
+        }));
+        // Track message sent on the connection object for database tracking
+        ws.messagesSent = (ws.messagesSent || 0) + 1;
+      }
+    } catch (error) {
+      log.error(`Error sending error to client: ${error.message}`);
+    }
   }
 
   handleUpgrade(req, socket, head) {
@@ -138,6 +200,9 @@ export default class UnifiedWebSocketServer {
     if (!client) return;
 
     // Route request to appropriate handler based on topic
+
+    // OLD WAY:
+    /*
     switch (topic) {
       case config.websocket.topics.MARKET_DATA:
         return handleMarketDataRequest(client, action, data);
@@ -176,6 +241,30 @@ export default class UnifiedWebSocketServer {
           error: `Unknown topic: ${topic}`,
           code: 404
         }));
+    }
+    */
+    // NEW WAY:
+    try {
+      handleRequest(client, action, data);
+    } catch (error) {
+      log.error(`Error handling request: ${error.message}`);
+      // Handle the error gracefully
+      if (error.code === 404) {
+        client.send(formatMessage({
+          type: config.websocket.messageTypes.ERROR,
+          topic,
+          error: `Unknown topic: ${topic}`,
+          code: 404
+        }));
+      } else {
+        // TODO: Add more specific error handling
+        client.send(formatMessage({
+          type: config.websocket.messageTypes.ERROR,
+          topic,
+          error: `Unknown error: ${error.message}`,
+          code: 500
+        }));
+      }
     }
   }
 

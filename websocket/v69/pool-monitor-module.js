@@ -1,6 +1,14 @@
 // websocket/v69/pool-monitor-module.js
 
 /**
+ * @deprecated This module is part of the legacy unified WebSocket implementation 
+ * that is deprecated and will be removed in a future release.
+ * Please use the new modular Unified WebSocket System instead.
+ * 
+ * Migration Guide:
+ * 1. Use the modular implementation in /websocket/v69/unified/
+ * 2. See /websocket/v69/transition-examples/README.md for detailed migration steps
+ *
  * Pool Monitor Module for Unified WebSocket
  * 
  * This module provides liquidity pool monitoring functionality for the unified WebSocket.

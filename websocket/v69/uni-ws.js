@@ -2,6 +2,15 @@
 // @ts-nocheck
 
 /**
+ * @deprecated This monolithic implementation is deprecated and will be removed in a future release.
+ * Please use the new Refactored Unified WebSocket System instead, which provides the same functionality
+ * with a more maintainable modular architecture.
+ * 
+ * Migration Guide:
+ * 1. Use the new modular implementation in `/websocket/v69/unified/`
+ * 2. The endpoint remains: /api/v69/ws
+ * 3. See /websocket/v69/transition-examples/README.md for detailed migration steps
+ * 
  * Unified WebSocket Server
  * 
  * This is a centralized WebSocket implementation that replaces multiple separate WebSocket servers.
@@ -1334,6 +1343,20 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + aut
   }
   
   /**
+   * Send a subscription acknowledgment to the client
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Array<string>} topics - The topics subscribed to
+   */
+  sendSubscriptionAcknowledgment(ws, topics) {
+    this.send(ws, {
+      type: MESSAGE_TYPES.ACKNOWLEDGMENT,
+      operation: 'subscribe',
+      topics: topics,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
    * Handle specific data request
    * @param {WebSocket} ws - WebSocket connection
    * @param {Object} message - Parsed message
@@ -1367,9 +1390,21 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + aut
         case TOPICS.SYSTEM:
           await this.handleSystemRequest(ws, message);
           break;
+
+        case TOPICS.WALLET:
+          // Handle wallet requests based on subtype
+          if (message.subtype === 'transaction') {
+            await this.handleWalletTransactionRequest(ws, message);
+          } else if (message.subtype === 'settings') {
+            await this.handleWalletSettingsRequest(ws, message);
+          } else {
+            // Default to transaction handling if no subtype
+            await this.handleWalletTransactionRequest(ws, message);
+          }
+          break;
           
         case TOPICS.WALLET_BALANCE:
-          // Determine if this is a token or SOL balance request based on the action and parameters
+          // Determine which handler to use based on action and parameters
           if (message.action === 'getTokenBalance' || 
               (message.tokenAddress && message.action === 'getBalance')) {
             await this.handleTokenBalanceRequest(ws, message);
@@ -1378,13 +1413,9 @@ ${wsColors.authBoxBg}${wsColors.authBoxFg}└${'─'.repeat(authFieldWidth + aut
             await this.handleSolanaBalanceRequest(ws, message);
           } else if (message.action === 'getWalletBalance') {
             // Combined wallet balance endpoint that fetches both SOL and tokens
-            // This is a future enhancement - for now we'll handle separately
-            await Promise.all([
-              this.handleSolanaBalanceRequest(ws, message),
-              this.handleTokenBalanceRequest(ws, message)
-            ]);
+            await this.handleWalletBalanceRequest(ws, message);
           } else {
-            await this.handleTokenBalanceRequest(ws, message);
+            await this.handleWalletBalanceRequest(ws, message);
           }
           break;
           
@@ -2832,6 +2863,249 @@ ${disconnectBgColor}${disconnectFgColor}└${'─'.repeat(disconnectFieldWidth +
         
       default:
         this.sendError(ws, `Action not implemented for token balance requests: ${message.action}`, 5001);
+    }
+  }
+
+  /**
+   * Handle wallet balance requests (combined SOL and token balances)
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Object} message - Parsed message
+   */
+  async handleWalletBalanceRequest(ws, message) {
+    // Ensure the client is authenticated
+    if (!ws.clientInfo?.isAuthenticated) {
+      return this.sendError(ws, 'Authentication required for wallet balance operations', 4003);
+    }
+    
+    try {
+      // Get wallet address from message or authenticated user
+      const walletAddress = message.walletAddress || ws.clientInfo.userId;
+      
+      // Only allow access to own wallet balance (security measure)
+      if (walletAddress !== ws.clientInfo.userId) {
+        return this.sendError(ws, 'You can only access your own wallet balance', 4003);
+      }
+      
+      // Fetch SOL balance from Helius balance tracker
+      const solBalance = heliusBalanceTracker.getSolanaBalance(walletAddress);
+      
+      // Fetch token address
+      const tokenAddress = await getTokenAddress();
+      
+      // Fetch token balances
+      let tokens = [];
+      if (tokenAddress) {
+        const tokenBalance = heliusBalanceTracker.getTokenBalance(walletAddress, tokenAddress);
+        
+        // Only add token to the list if we have balance info
+        if (tokenBalance && tokenBalance.balance !== undefined) {
+          // Get token metadata
+          const tokenData = await marketDataService.getToken('DEGEN'); // Assuming 'DEGEN' is our token symbol
+          
+          tokens.push({
+            address: tokenAddress,
+            symbol: tokenData?.symbol || 'DEGEN', 
+            balance: Number(tokenBalance.balance),
+            value_usd: tokenData?.price_usd ? Number(tokenBalance.balance) * Number(tokenData.price_usd) : null
+          });
+        }
+      }
+      
+      // Get other token balances from Helius balance tracker
+      const otherTokenBalances = heliusBalanceTracker.getAllTokenBalances(walletAddress);
+      if (otherTokenBalances && otherTokenBalances.length > 0) {
+        // Filter out our main token that's already in the list
+        const otherTokens = otherTokenBalances
+          .filter(token => token.address !== tokenAddress)
+          .map(token => ({
+            address: token.address,
+            symbol: token.symbol || 'Unknown',
+            balance: Number(token.balance),
+            value_usd: token.value_usd ? Number(token.value_usd) : null
+          }));
+        
+        tokens = [...tokens, ...otherTokens];
+      }
+      
+      // Send combined wallet balance data
+      this.send(ws, {
+        type: MESSAGE_TYPES.DATA,
+        topic: TOPICS.WALLET_BALANCE,
+        data: {
+          wallet_address: walletAddress,
+          sol_balance: Number(solBalance.balance),
+          tokens: tokens
+        },
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error fetching wallet balance:${fancyColors.RESET}`, error);
+      this.sendError(ws, 'Error fetching wallet balance', 5004);
+    }
+  }
+  
+  /**
+   * Handle wallet transaction requests and updates
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Object} message - Parsed message
+   */
+  async handleWalletTransactionRequest(ws, message) {
+    // Ensure the client is authenticated
+    if (!ws.clientInfo?.isAuthenticated) {
+      return this.sendError(ws, 'Authentication required for wallet transaction operations', 4003);
+    }
+    
+    try {
+      // Get wallet address from message or authenticated user
+      const walletAddress = message.walletAddress || ws.clientInfo.userId;
+      
+      // Only allow access to own wallet transactions (security measure)
+      if (walletAddress !== ws.clientInfo.userId) {
+        return this.sendError(ws, 'You can only access your own wallet transactions', 4003);
+      }
+      
+      switch (message.action) {
+        case 'getTransactions':
+          // Fetch recent transactions for the wallet
+          // This would typically come from a database or blockchain API
+          const transactions = []; // Replace with actual transaction fetching logic
+          
+          this.send(ws, {
+            type: MESSAGE_TYPES.DATA,
+            topic: TOPICS.WALLET,
+            subtype: 'transaction',
+            action: 'list',
+            data: {
+              wallet_address: walletAddress,
+              transactions: transactions
+            },
+            timestamp: new Date().toISOString()
+          });
+          break;
+          
+        case 'getTransaction':
+          // Fetch a specific transaction by ID
+          if (!message.transactionId) {
+            return this.sendError(ws, 'Transaction ID required', 4008);
+          }
+          
+          // Fetch transaction details
+          const transaction = {}; // Replace with actual transaction fetching logic
+          
+          this.send(ws, {
+            type: MESSAGE_TYPES.DATA,
+            topic: TOPICS.WALLET,
+            subtype: 'transaction',
+            action: 'detail',
+            data: {
+              wallet_address: walletAddress,
+              transaction: transaction
+            },
+            timestamp: new Date().toISOString()
+          });
+          break;
+          
+        case 'sendTransaction':
+          // Handle sending a transaction
+          // This would typically involve creating and signing a transaction
+          
+          this.send(ws, {
+            type: MESSAGE_TYPES.DATA,
+            topic: TOPICS.WALLET,
+            subtype: 'transaction',
+            action: 'pending',
+            data: {
+              wallet_address: walletAddress,
+              transaction: {
+                id: 'generated_tx_id',
+                type: message.transactionType || 'send',
+                status: 'pending',
+                amount: Number(message.amount),
+                token: message.token || 'SOL',
+                timestamp: new Date().toISOString(),
+                from: walletAddress,
+                to: message.recipient
+              }
+            },
+            timestamp: new Date().toISOString()
+          });
+          break;
+          
+        default:
+          this.sendError(ws, `Unknown action for wallet transactions: ${message.action}`, 4009);
+      }
+      
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling wallet transaction:${fancyColors.RESET}`, error);
+      this.sendError(ws, 'Error handling wallet transaction', 5004);
+    }
+  }
+  
+  /**
+   * Handle wallet settings requests and updates
+   * @param {WebSocket} ws - WebSocket connection
+   * @param {Object} message - Parsed message
+   */
+  async handleWalletSettingsRequest(ws, message) {
+    // Ensure the client is authenticated
+    if (!ws.clientInfo?.isAuthenticated) {
+      return this.sendError(ws, 'Authentication required for wallet settings operations', 4003);
+    }
+    
+    try {
+      // Get wallet address from message or authenticated user
+      const walletAddress = message.walletAddress || ws.clientInfo.userId;
+      
+      // Only allow access to own wallet settings (security measure)
+      if (walletAddress !== ws.clientInfo.userId) {
+        return this.sendError(ws, 'You can only access your own wallet settings', 4003);
+      }
+      
+      switch (message.action) {
+        case 'getSettings':
+          // Fetch wallet settings from database
+          const settings = {}; // Replace with actual settings fetching logic
+          
+          this.send(ws, {
+            type: MESSAGE_TYPES.DATA,
+            topic: TOPICS.WALLET,
+            subtype: 'settings',
+            data: {
+              wallet_address: walletAddress,
+              settings: settings
+            },
+            timestamp: new Date().toISOString()
+          });
+          break;
+          
+        case 'updateSettings':
+          // Update wallet settings in database
+          if (!message.settings) {
+            return this.sendError(ws, 'Settings object required', 4008);
+          }
+          
+          // Update settings logic would go here
+          
+          this.send(ws, {
+            type: MESSAGE_TYPES.DATA,
+            topic: TOPICS.WALLET,
+            subtype: 'settings',
+            data: {
+              wallet_address: walletAddress,
+              settings: message.settings
+            },
+            timestamp: new Date().toISOString()
+          });
+          break;
+          
+        default:
+          this.sendError(ws, `Unknown action for wallet settings: ${message.action}`, 4009);
+      }
+      
+    } catch (error) {
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling wallet settings:${fancyColors.RESET}`, error);
+      this.sendError(ws, 'Error handling wallet settings', 5004);
     }
   }
 

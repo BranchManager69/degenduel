@@ -1683,7 +1683,7 @@ class MarketDataService extends BaseService {
             }
             
             // Log sorting results
-            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Sorted ${tokenList.length} tokens by volume/relevance, processing top ${tokenSubset.length}`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Sorted ${tokenList.length} tokens by volume/relevance. Processing top ${tokenSubset.length} according to the DegenDuel algo...`);
             
             // Use Jupiter's max supported batch size
             // Jupiter API has a limit of 100 tokens per request

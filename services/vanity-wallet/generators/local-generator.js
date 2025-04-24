@@ -335,14 +335,40 @@ class LocalVanityGenerator {
     args.push('--num-threads');
     args.push(this.numWorkers.toString());
     
-    // Set output file
-    args.push('--output');
-    args.push(outputFile);
+    // Note: solana-keygen automatically creates a file named after the generated public key
+    // We'll need to find and read that file after generation completes
     
     logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Running solana-keygen ${args.join(' ')}${fancyColors.RESET}`);
     
-    // Spawn the solana-keygen process
-    const process = spawn(SOLANA_KEYGEN_PATH, args);
+    // Add a try/catch to properly log any error during process spawning
+    let process;
+    try {
+      // Spawn the solana-keygen process
+      process = spawn(SOLANA_KEYGEN_PATH, args);
+    } catch (spawnError) {
+      // Log any error that might occur during process creation
+      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SPAWN ERROR ${fancyColors.RESET} Failed to spawn solana-keygen process: ${spawnError.message}`, {
+        error: spawnError.message,
+        stack: spawnError.stack,
+        command: `${SOLANA_KEYGEN_PATH} ${args.join(' ')}`,
+        jobId: job.id
+      });
+      
+      // Fail the job immediately
+      job.onComplete({
+        status: 'Failed',
+        id: job.id,
+        error: `Failed to spawn solana-keygen process: ${spawnError.message}`,
+        duration_ms: Date.now() - startTime
+      });
+      
+      // Remove from active jobs
+      this.activeJobs.delete(job.id);
+      
+      // Start the next job
+      this.processNextJob();
+      return; // Exit this function early
+    }
     
     // Log PID for tracking
     logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Started solana-keygen process with PID ${process.pid} for job ${job.id}${fancyColors.RESET}`);
@@ -461,62 +487,57 @@ class LocalVanityGenerator {
         logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SUCCESS ${fancyColors.RESET} Vanity address ${fancyColors.YELLOW}${job.pattern}${fancyColors.RESET} generated for job ${job.id} in ${fancyColors.GREEN}${(duration / 1000).toFixed(2)}s${fancyColors.RESET}`);
         
         try {
-          // Check if file exists and log stats
-          if (fs.existsSync(outputFile)) {
-            const fileStats = fs.statSync(outputFile);
-            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Output file created:${fancyColors.RESET} ${outputFile} (size: ${fileStats.size} bytes)`);
-          } else {
-            logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Expected output file not found:${fancyColors.RESET} ${outputFile}`);
-          }
-          
-          // Read the keypair file
-          const keypairContent = fs.readFileSync(outputFile, 'utf8');
-          const keypairArray = JSON.parse(keypairContent);
-          
-          // Get the public key from the first line of output that contains it
+          // Extract the public key and file path from the output
           let publicKey = '';
+          let generatedFilePath = '';
+          
           const lines = outputBuffer.split('\n');
           for (const line of lines) {
-            // Look for line with "pubkey:" or "address:"
-            if (line.includes('pubkey:') || line.includes('address:')) {
-              const parts = line.split(':');
-              if (parts.length >= 2) {
-                publicKey = parts[1].trim();
-                break;
-              }
-            } else if (line.includes('Found vanity address')) {
-              // Parse the address from "Found vanity address: DUEL..."
-              const addressMatch = line.match(/Found vanity address: ([\w\d]+)/);
-              if (addressMatch && addressMatch[1]) {
-                publicKey = addressMatch[1];
+            // Look for the "Wrote keypair to" line which contains the file path
+            if (line.includes('Wrote keypair to')) {
+              const match = line.match(/Wrote keypair to ([\w\d]+\.json)/);
+              if (match && match[1]) {
+                generatedFilePath = match[1];
+                // The public key is in the filename (without the .json extension)
+                publicKey = match[1].replace('.json', '');
                 break;
               }
             }
           }
           
-          // If we couldn't find the public key in the output,
-          // try to read metadata from the generated file
-          if (!publicKey && fs.existsSync(`${outputFile}.json`)) {
-            try {
-              const metadata = JSON.parse(fs.readFileSync(`${outputFile}.json`, 'utf8'));
-              if (metadata.pubkey) {
-                publicKey = metadata.pubkey;
-              }
-            } catch (metadataError) {
-              logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to read metadata for job ${job.id}: ${metadataError.message}${fancyColors.RESET}`);
+          if (!generatedFilePath) {
+            throw new Error('Could not find generated keypair file path in output');
+          }
+          
+          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Found generated keypair at:${fancyColors.RESET} ${generatedFilePath} with public key ${publicKey}`);
+          
+          // Check if file exists and log stats
+          if (fs.existsSync(generatedFilePath)) {
+            const fileStats = fs.statSync(generatedFilePath);
+            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Output file verified:${fancyColors.RESET} ${generatedFilePath} (size: ${fileStats.size} bytes)`);
+            
+            // Read the keypair file
+            const keypairContent = fs.readFileSync(generatedFilePath, 'utf8');
+            const keypairArray = JSON.parse(keypairContent);
+            
+            // Move the file to our controlled output directory
+            const newFilePath = path.join(this.outputDir, `${job.pattern}_${job.id}.json`);
+            fs.renameSync(generatedFilePath, newFilePath);
+            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Moved keypair to:${fancyColors.RESET} ${newFilePath}`);
+            
+            // If we somehow still don't have a public key, use the pattern as a fallback
+            if (!publicKey) {
+              publicKey = `${job.pattern}...`;
+              logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Could not determine public key for job ${job.id}, using fallback${fancyColors.RESET}`);
             }
+          
+            // Clean up this job
+            this.activeJobs.delete(job.id);
+            
+            // Call completion callback
+          } else {
+            throw new Error(`Generated keypair file ${generatedFilePath} not found`);
           }
-          
-          // If we still don't have a public key, use the pattern as a fallback
-          if (!publicKey) {
-            publicKey = `${job.pattern}...`;
-            logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Could not determine public key for job ${job.id}, using fallback${fancyColors.RESET}`);
-          }
-          
-          // Clean up this job
-          this.activeJobs.delete(job.id);
-          
-          // Call completion callback
           job.onComplete({
             status: 'Completed',
             id: job.id,
@@ -573,12 +594,18 @@ class LocalVanityGenerator {
       }
     });
     
-    // Handle process errors
+    // Handle process errors - this catches both spawn errors and runtime errors
     process.on('error', (error) => {
+      // Log with maximum detail for debugging
       logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Process Error ${fancyColors.RESET} Job ${job.id}: ${error.message}`, {
         error: error.message,
+        error_code: error.code,
         stack: error.stack,
-        jobId: job.id
+        command: `${SOLANA_KEYGEN_PATH} ${args.join(' ')}`,
+        jobId: job.id,
+        jobPattern: job.pattern,
+        error_time: new Date().toISOString(),
+        process_id: process.pid
       });
       
       // Kill cpulimit process if it exists

@@ -116,6 +116,9 @@ import logsRoutes from "./routes/logs.js";
 import terminalRoutes from "./routes/terminal-routes.js";
 // WebSocket API Guide routes
 import websocketApiGuideRoutes from "./routes/websocket-api-guide.js";
+// Blinks routes (doesn't exist yet)
+import blinksRoutes from "./routes/blinks/index.js";
+
 // Path module for static file serving
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -301,6 +304,8 @@ app.use("/api/token-buckets", maintenanceCheck, tokenBucketRoutes);
 app.use("/api/portfolio", maintenanceCheck, portfolioTradesRouter);
 app.use("/api/portfolio-analytics", maintenanceCheck, portfolioAnalyticsRouter);
 app.use("/api/referrals", maintenanceCheck, referralRoutes);
+// Solana Blinks (Actions) API
+app.use("/api/blinks", maintenanceCheck, blinksRoutes);
 // Virtual Agent routes (inaccessible when in maintenance mode)
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
 // AI chat routes (inaccessible when in maintenance mode)

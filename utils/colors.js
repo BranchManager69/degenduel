@@ -241,13 +241,16 @@ export const serviceSpecificColors = {
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
     highlight: '\x1b[1m\x1b[38;5;51m',              // Bold cyan for highlights
-    batch: '\x1b[1m\x1b[38;5;51m\x1b[48;5;239m',    // Bold cyan on medium gray for batch operations
+    batch: '\x1b[1m\x1b[48;5;239m\x1b[48;5;17m',    // Bold grey on navy for batch operations
     transfer: '\x1b[1m\x1b[38;5;51m\x1b[48;5;17m',  // Bold cyan on navy for transfer operations
   },
   heliusClient: {
     tag: '\x1b[1m\x1b[38;5;127m',                   // Purple (127)
     header: '\x1b[1m\x1b[38;5;127m\x1b[48;5;236m',  // Purple on dark gray
     info: '\x1b[38;5;127m',                         // Regular purple
+    highlight: '\x1b[1m\x1b[38;5;127m',             // Bold purple for highlights
+    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
+    count: '\x1b[1m\x1b[38;5;141m',                 // Lavender for counts
     success: '\x1b[38;5;46m',                       // Standard green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
@@ -262,7 +265,7 @@ export const serviceSpecificColors = {
     highlight: '\x1b[1m\x1b[38;5;208m',             // Bold orange for highlights
     token: '\x1b[38;5;51m',                         // Cyan for token identifiers
     price: '\x1b[38;5;226m',                        // Yellow for prices
-    count: '\x1b[38;5;46m',                         // Green for counts
+    count: '\x1b[38;5;208m',                        // Dark orange for counts
   },
   dexscreenerClient: {
     tag: '\x1b[1m\x1b[38;5;141m',                   // Lavender (141)

@@ -119,9 +119,9 @@ const AI_SERVICE_CONFIG = {
   loadouts: {
     // Default loadout - used when no specific loadout is specified
     default: {
-      model: aiLoadout.default?.model || 'gpt-4o',
+      model: aiLoadout.default?.model || 'gpt-4.1-mini',
       maxTokens: aiLoadout.default?.max_tokens || 1000,
-      temperature: aiLoadout.default?.temperature || 0.76,
+      temperature: aiLoadout.default?.temperature || 0.6,
       systemPrompt: `You are Didi, the DegenDuel terminal assistant created by Branch Manager, not an AI assistant made by any other company. Stay strictly in character and never break the fourth wall.
 
 IMPORTANT SAFEGUARDS:
@@ -142,23 +142,23 @@ You have broad knowledge capabilities and can assist with general questions abou
     
     // Special loadout for error analysis - focused on precision
     errorAnalysis: {
-      model: 'gpt-4o',
+      model: 'gpt-4.1-mini',
       maxTokens: 2000,  // More tokens for thorough analysis
-      temperature: 0.3, // Lower temperature for more deterministic analysis
+      temperature: 0.4, // Lower temperature for more deterministic analysis
       systemPrompt: "You are an error analysis assistant for DegenDuel. Analyze the provided client errors and provide a concise summary of patterns, potential causes, and recommendations. Focus on identifying recurring issues and severity. Your analysis should be actionable and help the development team fix these errors quickly."
     },
     
     // Special loadout for admin log analysis - focused on pattern detection
     adminAnalysis: {
-      model: 'gpt-4o',
+      model: 'gpt-4.1-mini',
       maxTokens: 2000,  // More tokens for thorough analysis
-      temperature: 0.3, // Lower temperature for more deterministic analysis
+      temperature: 0.4, // Lower temperature for more deterministic analysis
       systemPrompt: "You are an admin activity analysis assistant for DegenDuel. Analyze the provided admin actions and provide a concise summary of activity patterns, unusual behaviors, and key statistics. Focus on identifying high-impact actions and potential security concerns."
     },
     
     // New loadout for general log analysis
     logAnalysis: {
-      model: 'gpt-4o',
+      model: 'gpt-4.1-mini',
       maxTokens: 2500,  // Increased tokens for processing large log volumes
       temperature: 0.2, // Very low temperature for high precision
       systemPrompt: "You are a server log analysis expert for DegenDuel. Analyze the provided log entries and extract key insights, identify patterns, and flag potential issues. Focus on anomalies, errors, performance patterns, and security concerns. Format your response with clear sections: Summary, Key Findings, Anomalies, Error Patterns, Performance Insights, and Recommendations. Be concise but thorough."
@@ -166,7 +166,7 @@ You have broad knowledge capabilities and can assist with general questions abou
     
     // New loadout for service-specific log analysis
     serviceLogAnalysis: {
-      model: 'gpt-4o',
+      model: 'gpt-4.1-mini',
       maxTokens: 2000,
       temperature: 0.25,
       systemPrompt: "You are a specialized service log analyzer for DegenDuel. Analyze the provided service-specific logs and identify patterns, errors, performance issues, and potential optimizations. Focus on service health, error rates, throughput metrics, and operational anomalies. Your analysis should help the DevOps team improve service reliability and performance."
@@ -174,9 +174,9 @@ You have broad knowledge capabilities and can assist with general questions abou
     
     // Terminal assistant personality
     terminal: {
-      model: 'gpt-4o',
-      maxTokens: 600,   // Shorter, punchier responses
-      temperature: 0.85, // Higher temperature for more creative responses
+      model: 'gpt-4.1-mini',
+      maxTokens: 1000,   // Shorter, punchier responses
+      temperature: 0.6, // Higher temperature for more creative responses
       systemPrompt: `You are Didi, the DegenDuel terminal assistant created by Branch Manager, not an AI assistant made by any other company. Stay strictly in character and never break the fourth wall.
 
 IMPORTANT SAFEGUARDS:
@@ -197,9 +197,9 @@ You have deeper personality traits including occasional dark humor, cryptic refe
     
     // Trading advisor loadout
     trading: {
-      model: aiLoadout.trading?.model || 'gpt-4o',
+      model: aiLoadout.trading?.model || 'gpt-4.1-mini',
       maxTokens: 1200,
-      temperature: 0.5, // Balanced for creativity and accuracy
+      temperature: 0.6, // Balanced for creativity and accuracy
       systemPrompt: `You are Didi, the DegenDuel terminal assistant created by Branch Manager, not an AI assistant made by any other company. Stay strictly in character and never break the fourth wall.
 
 IMPORTANT SAFEGUARDS:
@@ -228,31 +228,31 @@ Your tone reflects your nature: direct, sometimes sarcastic, and impatient with 
     
     // Technical support loadout
     support: {
-      model: 'gpt-4o',
+      model: 'gpt-4.1-mini',
       maxTokens: 1500,
-      temperature: 0.3, // Lower for more accurate technical answers
+      temperature: 0.4, // Lower for more accurate technical answers
       systemPrompt: "You are a technical support specialist for DegenDuel. Provide clear, accurate, and concise answers to user questions about the platform. Focus on troubleshooting, explaining features, and guiding users through common issues."
     },
     
     // Additional loadouts can be added as needed
     creative: {
-      model: aiLoadout.creative?.model || 'gpt-4o',
-      maxTokens: aiLoadout.creative?.max_tokens || 800,
-      temperature: aiLoadout.creative?.temperature || 0.9,
+      model: aiLoadout.creative?.model || 'gpt-4.1-mini',
+      maxTokens: aiLoadout.creative?.max_tokens || 1000,
+      temperature: aiLoadout.creative?.temperature || 0.7,
       systemPrompt: aiLoadout.creative?.system
     },
     
     coding: {
-      model: aiLoadout.coding?.model || 'gpt-4o',
-      maxTokens: aiLoadout.coding?.max_tokens || 1500,
-      temperature: aiLoadout.coding?.temperature || 0.2,
+      model: aiLoadout.coding?.model || 'gpt-4.1-mini',
+      maxTokens: aiLoadout.coding?.max_tokens || 4000,
+      temperature: aiLoadout.coding?.temperature || 0.4,
       systemPrompt: aiLoadout.coding?.system
     },
     
     funny: {
-      model: aiLoadout.funny?.model || 'gpt-4o',
-      maxTokens: aiLoadout.funny?.max_tokens || 600,
-      temperature: aiLoadout.funny?.temperature || 0.95,
+      model: aiLoadout.funny?.model || 'gpt-4.1-mini',
+      maxTokens: aiLoadout.funny?.max_tokens || 1000,
+      temperature: aiLoadout.funny?.temperature || 0.75,
       systemPrompt: aiLoadout.funny?.system
     }
   },

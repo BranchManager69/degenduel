@@ -2,20 +2,23 @@
 
 import express from 'express';
 import { logApi } from '../utils/logger-suite/logger.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 import { generateTokenAIResponse } from '../services/ai-service/ai-service.js';
 
 const router = express.Router();
 
-// Configure rate limiter for terminal AI requests (more generous than standard AI)
+// Configure rate limiter for terminal AI requests (more generous than standard AI); Give admins and superadmins unlimited requests
 const terminalAILimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
+  windowMs: 5 * 60 * 1000, // rate limit window = 5 minutes
   max: 100, // 100 requests per window
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Use user ID for authenticated users, IP for others
+    if (req.user?.role.toLowerCase() === 'admin' || req.user?.role.toLowerCase() === 'superadmin') {
+      return 'admin';
+    }
     return req.user?.id || req.ip;
   },
   handler: (req, res) => {
@@ -112,11 +115,11 @@ router.post('/ai-chat', requireAuth, terminalAILimiter, async (req, res) => {
         });
       }
       
+      // Convert null or undefined content to empty strings
       if (message.content === null || message.content === undefined) {
-        // Convert null or undefined content to empty string
         message.content = '';
       } else if (typeof message.content !== 'string') {
-        // Convert non-string content to string
+        // Convert non-string content to strings
         message.content = String(message.content);
       }
     }
@@ -127,7 +130,7 @@ router.post('/ai-chat', requireAuth, terminalAILimiter, async (req, res) => {
     const userRole = req.user?.role;
     const userNickname = req.user?.nickname || req.user?.username || 'user';
     
-    // Process AI response with token function calling
+    // Generate AI response with function calling, token info, user context, terminal context, etc.
     const result = await generateTokenAIResponse(messages, {
       conversationId,
       userId,
@@ -167,17 +170,17 @@ function getErrorType(status) {
 
 /**
  * @swagger
- * /api/terminal/token-info/{symbol}:
+ * /api/terminal/token-info/{address or symbol}:
  *   get:
  *     summary: Get token information directly (without AI)
  *     tags: [Terminal]
  *     parameters:
  *       - in: path
- *         name: symbol
+ *         name: address or symbol
  *         required: true
  *         schema:
  *           type: string
- *         description: Token symbol to look up
+ *         description: Token address or symbol to look up
  *     responses:
  *       200:
  *         description: Token information successfully retrieved
@@ -188,13 +191,13 @@ function getErrorType(status) {
  *       500:
  *         description: Server error
  */
-router.get('/token-info/:symbol', async (req, res) => {
+router.get('/token-info/:addressOrSymbol', async (req, res) => {
   try {
-    const { symbol } = req.params;
+    const { addressOrSymbol } = req.params;
     
-    if (!symbol) {
+    if (!addressOrSymbol) {
       return res.status(400).json({
-        error: 'Token symbol is required',
+        error: 'Token address or symbol is required',
         type: 'invalid_request'
       });
     }
@@ -206,7 +209,7 @@ router.get('/token-info/:symbol', async (req, res) => {
     const functionCall = {
       function: {
         name: 'getTokenPrice',
-        arguments: { tokenSymbol: symbol }
+        arguments: { tokenAddressOrSymbol: addressOrSymbol }
       }
     };
     

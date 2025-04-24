@@ -468,10 +468,10 @@ class AIService extends BaseService {
       systemPrompt += `\n\nYou have access to real-time data through these functions:
 
 MARKET DATA FUNCTIONS (available to all users):
-- getTokenPrice: Get current price, market cap, volume and details about any token
-- getTokenPriceHistory: Get historical price data for charting token trends
-- getTokenPools: Get liquidity pool information for tokens
-- getTokenMetricsHistory: Get comprehensive historical metrics (price, rank, volume, liquidity, market_cap)
+- getTokenPrice: Get current price, market cap, volume and details about any token (preferably using token address, but symbol is acceptable if address is not available)
+- getTokenPriceHistory: Get historical price data for charting token trends (preferably using token address, but symbol is acceptable if address is not available)
+- getTokenPools: Get liquidity pool information for tokens (preferably using token address, but symbol is acceptable if address is not available)
+- getTokenMetricsHistory: Get comprehensive historical metrics (price, rank, volume, liquidity, market_cap) (preferably using token address, but symbol is acceptable if address is not available)
 
 CONTEST FUNCTIONS (available to all users):
 - getActiveContests: Get information about current and upcoming contests

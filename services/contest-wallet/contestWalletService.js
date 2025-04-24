@@ -220,6 +220,12 @@ class ContestWalletService extends BaseService {
      */
     async initTreasuryCertifier() {
         try {
+            // Guard against double initialization
+            if (this.treasuryCertifier) {
+                logApi.info(`${formatLog.tag()} ${formatLog.header('TREASURY')} TreasuryCertifier already initialized, skipping`);
+                return this.treasuryCertifier;
+            }
+            
             logApi.info(`${formatLog.tag()} ${formatLog.header('TREASURY')} Initializing TreasuryCertifier`);
             
             // Initialize the TreasuryCertifier instance with required dependencies
@@ -232,6 +238,20 @@ class ContestWalletService extends BaseService {
                 decryptPrivateKey: this.decryptPrivateKey.bind(this),
                 config
             });
+            
+            // Initialize the persistent certification pool
+            logApi.info(`${formatLog.tag()} ${formatLog.header('PERSISTENT POOL')} Initializing persistent certification pool...`);
+            
+            try {
+                await this.treasuryCertifier.initPersistentCertificationPool({
+                    numTestWallets: config.service_test?.treasury_certifier_num_wallets || 3,
+                    initialTestAmount: config.service_test?.treasury_certifier_test_amount || 0.006
+                });
+                logApi.info(`${formatLog.tag()} ${formatLog.success('Persistent certification pool initialized successfully')}`);
+            } catch (poolError) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to initialize persistent pool: ${poolError.message}`)}`);
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Will fall back to traditional certification if needed')}`);
+            }
             
             // Scan for and recover any stranded funds from previous certification runs
             logApi.info(`${formatLog.tag()} ${formatLog.header('RECOVERY')} Scanning for stranded certification funds...`);
@@ -257,6 +277,9 @@ class ContestWalletService extends BaseService {
                 logApi.info(`${formatLog.tag()} ${formatLog.info('No stranded funds found to recover.')}`);
             }
             
+            // Return the TreasuryCertifier instance
+            return this.treasuryCertifier;
+            
         } catch (error) {
             logApi.error(`${formatLog.tag()} ${formatLog.error('TreasuryCertifier initialization error:')}`, {
                 error: error.message,
@@ -265,6 +288,9 @@ class ContestWalletService extends BaseService {
             // Don't throw the error - we want the service to continue even if recovery fails
             this.walletStats.reclaimed_funds.failed_operations++;
             this.walletStats.errors.last_error = `TreasuryCertifier error: ${error.message}`;
+            
+            // Return the certifier if it was created before the error, or null if it wasn't
+            return this.treasuryCertifier;
         }
     }
 
@@ -316,28 +342,27 @@ class ContestWalletService extends BaseService {
             logApi.info(`${formatLog.tag()} ${formatLog.success('Contest Wallet Service initialized successfully')}`);
             logApi.info(`${formatLog.tag()} ${formatLog.info(`Using SolanaEngine with ${healthyEndpoints}/${totalEndpoints} healthy RPC endpoints`)}`);
             
-            // Initialize the TreasuryCertifier and scan for stranded funds
-            // Don't await this - run it in the background to avoid blocking service initialization
-            this.initTreasuryCertifier().catch(err => {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier initialization failed: ' + err.message)}`);
+            // Initialize the TreasuryCertifier first, then optionally run self-test
+            // Still run in background to avoid blocking service initialization, but coordinate the sequence
+            this.initTreasuryCertifier().then(() => {
+                // Run the startup self-test only after TreasuryCertifier is initialized
+                if (process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
+                    (config.service_test && config.service_test.contest_wallet_self_test)) {
+                    logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Running wallet self-test in background`);
+                    
+                    return this.scheduleSelfTest();
+                }
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping self-test (not enabled)')}`);
+            }).then(() => {
+                if (this.treasuryCertifier) {
+                    logApi.info(`${formatLog.tag()} ${formatLog.success('Self-test completed in background')}`);
+                }
+            }).catch(err => {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Treasury initialization or self-test failed: ' + err.message)}`);
             });
             
-            // Run the startup self-test without blocking initialization
-            if (process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
-                (config.service_test && config.service_test.contest_wallet_self_test)) {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Running wallet self-test in background`);
-                
-                // Don't await this - run it in the background to avoid blocking service initialization
-                this.scheduleSelfTest().then(() => {
-                    logApi.info(`${formatLog.tag()} ${formatLog.success('Self-test completed in background')}`);
-                }).catch(err => {
-                    logApi.warn(`${formatLog.tag()} ${formatLog.warning('Self-test failed in background: ' + err.message)}`);
-                });
-                
-                logApi.info(`${formatLog.tag()} ${formatLog.info('Service initialization continuing - self-test runs in background')}`);
-            } else {
-                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping self-test (not enabled)')}`);
-            }
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Service initialization continuing - Treasury certification runs in background')}`);
+            
             
             return true;
         } catch (error) {
@@ -2119,9 +2144,6 @@ class ContestWalletService extends BaseService {
      */
     async scheduleSelfTest(delayMs = 5000) {
         try {
-            // Import the TreasuryCertifier
-            const TreasuryCertifier = (await import('./treasury-certifier.js')).default;
-            
             // Check if certification is enabled in environment or config
             const runCertification = process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
                                     (config.service_test && config.service_test.contest_wallet_self_test);
@@ -2131,22 +2153,37 @@ class ContestWalletService extends BaseService {
                 return;
             }
             
-            // Initialize the certifier with required dependencies
-            const treasuryCertifier = new TreasuryCertifier({
-                solanaEngine,
-                prisma,
-                logApi,
-                formatLog,
-                fancyColors,
-                decryptPrivateKey: this.decryptPrivateKey.bind(this),
-                config
-            });
+            // NEVER create a new TreasuryCertifier here - always use the one from initTreasuryCertifier
+            // If there's no treasuryCertifier yet, don't run the test
+            if (!this.treasuryCertifier) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier not initialized. Skipping self-test.')}`);
+                return;
+            }
             
-            // Store certifier instance for cleanup during service shutdown
-            this.treasuryCertifier = treasuryCertifier;
+            // The persistent pool should already be initialized in initTreasuryCertifier()
+            // If it's not initialized by now, there's a problem we shouldn't try to fix here
+            if (!this.treasuryCertifier.persistentPool) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Persistent certification pool not initialized. Skipping self-test.')}`);
+                return;
+            }
+            
+            // Test wallets should also be initialized with the pool - no need to reinitialize
+            if (this.treasuryCertifier.persistentPool && 
+                (!this.treasuryCertifier.persistentTestWallets || 
+                 Object.keys(this.treasuryCertifier.persistentTestWallets).length === 0)) {
+                
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Persistent pool exists but test wallets are missing. Skipping self-test.')}`);
+                return;
+            }
+            
+            // Check if a certification is already in progress (using _currentCertification from TreasuryCertifier)
+            if (this.treasuryCertifier._currentCertification && this.treasuryCertifier._currentCertification.inProgress) {
+                logApi.info(`${formatLog.tag()} ${formatLog.info(`Certification already in progress with ID: ${this.treasuryCertifier._currentCertification.id}, skipping second certification`)}`);
+                return;
+            }
             
             // Run the certification process
-            await treasuryCertifier.runCertification(delayMs);
+            await this.treasuryCertifier.runCertification(delayMs);
             
         } catch (error) {
             // Log but don't fail initialization if certification setup fails

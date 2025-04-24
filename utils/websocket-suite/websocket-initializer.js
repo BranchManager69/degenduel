@@ -4,7 +4,14 @@
  * WebSocket Initializer
  * 
  * This file initializes the unified WebSocket system.
- * All WebSocket functionality is consolidated into a single unified system.
+ * All WebSocket functionality is consolidated into a single unified v69 system.
+ * 
+ * IMPORTANT: This system now uses the fully refactored modular WebSocket architecture in:
+ * /websocket/v69/unified/
+ * 
+ * All standalone WebSocket implementations are being deprecated in favor of 
+ * the topic-based unified system. See /websocket/v69/transition-examples/README.md
+ * for migration details.
  */
 
 import { logApi } from '../logger-suite/logger.js';

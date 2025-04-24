@@ -293,7 +293,7 @@ async function analyzeTweets(tweets, options = {}) {
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1-mini',
         messages: [
           {
             role: 'system',

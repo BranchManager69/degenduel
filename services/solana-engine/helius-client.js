@@ -22,7 +22,7 @@ const formatLog = {
 };
 
 // Default token metadata cache TTL (24 hours)
-const DEFAULT_TOKEN_METADATA_TTL = 60 * 60 * 24;
+const DEFAULT_TOKEN_METADATA_TTL = 60 * 60 * 24; // unused; why?
 
 /**
  * Base class for Helius API modules

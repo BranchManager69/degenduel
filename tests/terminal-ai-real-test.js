@@ -93,7 +93,7 @@ Call these functions when applicable to provide real-time, accurate data. If a u
       console.log(`\n${fancyColors.GRAY}[Calling OpenAI API...]${fancyColors.RESET}`);
       
       const initialResponse = await aiService.openai.responses.create({
-        model: 'gpt-4o',
+        model: 'gpt-4.1-mini',
         input: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: scenario.userMessage }
@@ -105,7 +105,7 @@ Call these functions when applicable to provide real-time, accurate data. If a u
           parameters: fn.parameters
         })),
         tool_choice: "required", // Force the model to call a function
-        temperature: 0.7,
+        temperature: 0.6,
         stream: false,
         user: 'test-user'
       });
@@ -164,7 +164,7 @@ Call these functions when applicable to provide real-time, accurate data. If a u
 
         // Call the AI again with function results
         const secondResponse = await aiService.openai.responses.create({
-          model: 'gpt-4o',
+          model: 'gpt-4.1-mini',
           input: inputWithFunctionCall,
           tools: TERMINAL_FUNCTIONS.map(fn => ({
             type: "function",
@@ -172,7 +172,7 @@ Call these functions when applicable to provide real-time, accurate data. If a u
             description: fn.description,
             parameters: fn.parameters
           })),
-          temperature: 0.7,
+          temperature: 0.6,
           stream: false,
           user: 'test-user'
         });

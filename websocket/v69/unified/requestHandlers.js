@@ -1,4 +1,4 @@
-// websocket/v69/requestHandlers.js
+// websocket/v69/unified/requestHandlers.js
 
 /**
  * Unified WebSocket Request Handlers
@@ -6,17 +6,20 @@
  * This module contains all topic-based request handlers for the unified WebSocket system.
  */
 
-import prisma from '../../config/prisma.js';
-import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors, wsColors } from '../../utils/colors.js';
-import { getTokenAddress } from '../../utils/token-config-util.js';
-import marketDataService from '../../services/marketDataService.js';
+import prisma from '../../../config/prisma.js';
+import { logApi } from '../../../utils/logger-suite/logger.js';
+import { fancyColors, wsColors } from '../../../utils/colors.js';
+import { getTokenAddress } from '../../../utils/token-config-util.js';
 import { fetchTerminalData } from './services.js';
 import { MESSAGE_TYPES, TOPICS, normalizeTopic } from './utils.js';
-import { heliusBalanceTracker } from '../../services/solana-engine/helius-balance-tracker.js';
-import tokenBalanceModule from './modules/token-balance-module.js';
-import solanaBalanceModule from './modules/solana-balance-module.js';
-import config from '../../config/config.js';
+import { heliusBalanceTracker } from '../../../services/solana-engine/helius-balance-tracker.js';
+import marketDataService from '../../../services/marketDataService.js';
+// TO BE IMPLEMENTED:
+//import tokenBalanceModule from './modules/token-balance-module.js'; // DOES THIS EXIST?
+//import solanaBalanceModule from './modules/solana-balance-module.js'; // DOES THIS EXIST?
+
+// Config
+import config from '../../../config/config.js';
 
 /**
  * Main request handling function that routes to specific topic handlers
@@ -45,6 +48,10 @@ export async function handleRequest(ws, message, sendMessage, sendError) {
   // Process different request types based on topic and action
   try {
     switch (normalizedTopic) {
+      case TOPICS.ADMIN:
+        await handleAdminRequest(ws, normalizedMessage, sendMessage, sendError);
+        break;
+    
       case TOPICS.MARKET_DATA:
         await handleMarketDataRequest(ws, normalizedMessage, sendMessage, sendError);
         break;
@@ -99,6 +106,49 @@ export async function handleRequest(ws, message, sendMessage, sendError) {
   } catch (error) {
     logApi.error(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.RED}Error handling request:${fancyColors.RESET}`, error);
     sendError(ws, 'Error processing request', 5002);
+  }
+}
+
+/** 
+ * Handle admin requests
+ * @param {WebSocket} ws - WebSocket connection
+ * @param {Object} message - Parsed message
+ * @param {Function} sendMessage - Function to send messages
+ * @param {Function} sendError - Function to send errors
+ */
+async function handleAdminRequest(ws, message, sendMessage, sendError) {
+  switch (message.action) {
+    case 'getAdminStatus':
+
+      // Check if the client is authenticated and has the correct role
+      if (!ws.clientInfo.isAuthenticated || 
+          !ws.clientInfo.role || 
+          !['ADMIN', 'SUPERADMIN'].includes(ws.clientInfo.role.toLowerCase())) {
+        return sendError(ws, 'Admin/superadmin role required for ADMIN requests', 4012);
+      }
+      if (ws.clientInfo.role.toLowerCase() !== 'superadmin' && ws.clientInfo.role.toLowerCase() !== 'admin') {
+        return sendError(ws, 'Must have administrator access for ADMIN requests', 4012);
+      }
+
+      // Return admin status
+      sendMessage(ws, {
+        type: MESSAGE_TYPES.DATA,
+        topic: TOPICS.ADMIN,
+        action: 'getAdminStatus',
+        requestId: message.requestId,
+        data: {
+          status: 'operational',
+          version: '1.0.0',
+          serverTime: new Date().toISOString(),
+          uptime: Math.floor((Date.now() - global.startTime) / 1000),
+          connections: global.wsConnectionCount || 0
+        },
+        timestamp: new Date().toISOString()
+      });
+      break;
+
+    default:
+      sendError(ws, `Unknown action for admin: ${message.action}`, 4009);
   }
 }
 
@@ -225,8 +275,8 @@ async function handleSystemRequest(ws, message, sendMessage, sendError) {
       // Return WebSocket metrics (only if authenticated as admin)
       if (!ws.clientInfo.isAuthenticated || 
           !ws.clientInfo.role || 
-          !['ADMIN', 'SUPER_ADMIN'].includes(ws.clientInfo.role)) {
-        return sendError(ws, 'Admin role required for system metrics', 4012);
+          !['ADMIN', 'SUPERADMIN'].includes(ws.clientInfo.role.toLowerCase())) {
+        return sendError(ws, 'Admin/superadmin role required for SYSTEM metrics', 4012);
       }
       
       // Get metrics from the server instance via global object
@@ -496,7 +546,9 @@ async function handleSolanaBalanceRequest(ws, message, sendMessage, sendError) {
   message.server = { sendMessage, sendError }; // Pass server methods to the module
   
   try {
-    await solanaBalanceModule.handleOperation(ws, message, ws.clientInfo);
+    // TO BE IMPLEMENTED
+    //await solanaBalanceModule.handleOperation(ws, message, ws.clientInfo);
+    logApi.info(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.CYAN}Solana balance request received:${fancyColors.RESET}`, message);
   } catch (error) {
     logApi.error(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.RED}Error handling Solana balance request:${fancyColors.RESET}`, error);
     sendError(ws, 'Error handling Solana balance request', 5004);
@@ -519,7 +571,9 @@ async function handleTokenBalanceRequest(ws, message, sendMessage, sendError) {
   message.server = { sendMessage, sendError }; // Pass server methods to the module
   
   try {
-    await tokenBalanceModule.handleOperation(ws, message, ws.clientInfo);
+    // TO BE IMPLEMENTED
+    //await tokenBalanceModule.handleOperation(ws, message, ws.clientInfo);
+    logApi.info(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.CYAN}Token balance request received:${fancyColors.RESET}`, message);
   } catch (error) {
     logApi.error(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.RED}Error handling token balance request:${fancyColors.RESET}`, error);
     sendError(ws, 'Error handling token balance request', 5004);

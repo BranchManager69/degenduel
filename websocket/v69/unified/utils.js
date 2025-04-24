@@ -1,3 +1,5 @@
+// websocket/v69/unified/utils.js
+
 /**
  * Unified WebSocket Utilities
  * 
@@ -9,12 +11,18 @@
 
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
-import config from '../../../config/config.js';
 import logger from '../../../utils/logger-suite/logger.js';
 import { fancyColors, wsColors } from '../../../utils/colors.js';
 
+// Config
+import config from '../../../config/config.js';
+
+// Use message types and topics from config
+export const MESSAGE_TYPES = config.websocket.messageTypes;
+export const TOPICS = config.websocket.topics;
+
 // Create a logger instance for the utilities
-const log = logger.forService('WS_UTILS');
+const log = logger.forService('WS_UTILS'); // do i export this?
 
 /**
  * Validate JWT token

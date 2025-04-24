@@ -28,34 +28,34 @@ export async function seedAiServiceConfig() {
     // Default model loadouts
     const defaultModelLoadouts = {
       default: {
-        model: "gpt-4o",
-        maxTokens: 4096,
-        temperature: 0.7
+        model: "gpt-4.1-mini",
+        maxTokens: 4048,
+        temperature: 0.4
       },
       errorAnalysis: {
-        model: "gpt-4o",
-        maxTokens: 8192,
-        temperature: 0.1
+        model: "gpt-4.1-mini",
+        maxTokens: 4048,
+        temperature: 0.4
       },
       adminAnalysis: {
-        model: "gpt-4o",
-        maxTokens: 8192,
-        temperature: 0.2
+        model: "gpt-4.1-mini",
+        maxTokens: 4048,
+        temperature: 0.4
       },
       degenTerminal: {
-        model: "gpt-4o",
-        maxTokens: 4096,
-        temperature: 0.8
+        model: "gpt-4.1-mini",
+        maxTokens: 4048,
+        temperature: 0.4
       },
       trading: {
-        model: "gpt-4o",
-        maxTokens: 4096,
-        temperature: 0.5
+        model: "gpt-4.1-mini",
+        maxTokens: 4048,
+        temperature: 0.4
       },
       support: {
-        model: "gpt-4o-mini",
-        maxTokens: 2048,
-        temperature: 0.7
+        model: "gpt-4.1-mini",
+        maxTokens: 4048,
+        temperature: 0.4
       }
     };
     
@@ -71,12 +71,12 @@ export async function seedAiServiceConfig() {
       data: {
         id: nanoid(),
         // Core Configuration
-        check_interval_ms: 600000, // 10 minutes
+        check_interval_ms: 10 * (60 * 1000), // 10 minutes
         
         // Analysis Settings
         client_error_lookback_minutes: 10,
         min_errors_to_analyze: 1,
-        admin_action_lookback_minutes: 15,
+        admin_action_lookback_minutes: 10,
         min_actions_to_analyze: 1,
         
         // Model Configurations
@@ -87,7 +87,7 @@ export async function seedAiServiceConfig() {
         
         // Circuit Breaker
         failure_threshold: 3,
-        reset_timeout_ms: 30000,
+        reset_timeout_ms: 10 * (60 * 1000), // 10 minutes
         
         // Rate Limiting
         max_tokens_per_minute: 100000,

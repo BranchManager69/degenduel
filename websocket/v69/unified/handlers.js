@@ -1,4 +1,4 @@
-// websocket/v69/handlers.js
+// websocket/v69/unified/handlers.js
 
 /**
  * Unified WebSocket Handlers
@@ -14,13 +14,15 @@
  */
 
 import jwt from 'jsonwebtoken';
-import prisma from '../../config/prisma.js';
-import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors, wsColors } from '../../utils/colors.js';
+import prisma from '../../../config/prisma.js';
+import { logApi } from '../../../utils/logger-suite/logger.js';
+import { fancyColors, wsColors } from '../../../utils/colors.js';
 import { handleRequest } from './requestHandlers.js';
 import { MESSAGE_TYPES, TOPICS, formatAuthFlowVisual, parseClientInfo, getLocationInfo, normalizeTopic } from './utils.js';
 import { fetchTerminalData } from './services.js';
-import config from '../../config/config.js';
+
+// Config
+import config from '../../../config/config.js';
 
 /**
  * Handle new WebSocket connection
@@ -469,11 +471,17 @@ export function handleDisconnect(ws, server) {
       // If we have a user ID but no nickname, try to look it up
       if (!nickname) {
         try {
-          const user = await prisma.users.findUnique({
+          // Use a synchronous approach to avoid await in a non-async function
+          prisma.users.findUnique({
             where: { wallet_address: userId },
             select: { nickname: true }
+          })
+          .then(user => {
+            nickname = user?.nickname || null;
+          })
+          .catch(dbError => {
+            logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to fetch nickname for ${userId} during disconnect: ${dbError.message}${fancyColors.RESET}`);
           });
-          nickname = user?.nickname || null;
         } catch (dbError) {
           logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to fetch nickname for ${userId} during disconnect: ${dbError.message}${fancyColors.RESET}`);
         }
@@ -722,7 +730,7 @@ export async function handleSubscription(ws, message, req, server) {
   const normalizedTopics = message.topics.map(topic => normalizeTopic(topic));
   
   // Check authorization for restricted topics
-  const restrictedTopics = [TOPICS.ADMIN, TOPICS.PORTFOLIO, TOPICS.USER, TOPICS.WALLET];
+  const restrictedTopics = [TOPICS.ADMIN, TOPICS.PORTFOLIO, TOPICS.USER, TOPICS.WALLET, TOPICS.SKYDUEL];
   const hasRestrictedTopic = normalizedTopics.some(topic => restrictedTopics.includes(topic));
   
   // ===== DEBUG LOGGING: Topic restriction check =====
@@ -923,8 +931,8 @@ ${fancyColors.BG_GREEN}${fancyColors.BLACK}└${'─'.repeat(30)}┘${fancyColor
   if (message.topics.includes(TOPICS.ADMIN)) {
     // If we've gotten this far without clientInfo, we should have the temporary tracker
     // but we know it's not authenticated as an admin
-    if (!ws.clientInfo || !ws.clientInfo.role || !['ADMIN', 'SUPER_ADMIN'].includes(ws.clientInfo.role)) {
-      return server.sendError(ws, 'Admin role required for admin topics', 4012);
+    if (!ws.clientInfo || !ws.clientInfo.role || !['ADMIN', 'SUPERADMIN'].includes(ws.clientInfo.role.toLowerCase())) {
+      return server.sendError(ws, 'Admin/superadmin role required for ADMIN topics', 4012);
     }
   }
   
@@ -1331,6 +1339,148 @@ async function saveConnectionToDatabase(connectionId, connectionData) {
 }
 
 /**
+ * Authenticate client based on token
+ * @param {WebSocket} ws - WebSocket client
+ * @param {string} token - Authentication token
+ * @param {Object} server - WebSocket server instance
+ * @returns {Promise<Object|null>} Authentication data or null if failed
+ */
+export async function authenticateClient(ws, token, server) {
+  try {
+    if (!token) return null;
+    
+    // Verify token
+    const decoded = jwt.verify(token, config.jwt.secret);
+    if (!decoded || !decoded.wallet_address) return null;
+    
+    const authData = {
+      userId: decoded.wallet_address,
+      role: decoded.role
+    };
+    
+    // Get user's nickname from database
+    let userNickname = null;
+    try {
+      const user = await prisma.users.findUnique({
+        where: { wallet_address: authData.userId },
+        select: { nickname: true }
+      });
+      userNickname = user?.nickname || null;
+    } catch (dbError) {
+      logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to fetch nickname for ${authData.userId}: ${dbError.message}${fancyColors.RESET}`);
+    }
+    
+    // Update client info
+    if (ws.clientInfo) {
+      ws.clientInfo.isAuthenticated = true;
+      ws.clientInfo.userId = authData.userId;
+      ws.clientInfo.role = authData.role;
+      ws.clientInfo.nickname = userNickname;
+    }
+    
+    return {
+      ...authData,
+      nickname: userNickname
+    };
+  } catch (error) {
+    logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Authentication error:${fancyColors.RESET}`, error);
+    return null;
+  }
+}
+
+/**
+ * Handle client subscribe request
+ * @param {WebSocket} ws - WebSocket client
+ * @param {Object} message - Subscription message
+ * @param {Object} server - WebSocket server instance
+ */
+export async function handleClientSubscribe(ws, message, server) {
+  // Same as handleSubscription but adapted for server parameter
+  await handleSubscription(ws, message, null, server);
+}
+
+/**
+ * Handle client unsubscribe request
+ * @param {WebSocket} ws - WebSocket client
+ * @param {Object} message - Unsubscription message
+ * @param {Object} server - WebSocket server instance
+ */
+export function handleClientUnsubscribe(ws, message, server) {
+  // Same as handleUnsubscription but adapted for server parameter
+  handleUnsubscription(ws, message, server);
+}
+
+/**
+ * Handle client request
+ * @param {WebSocket} ws - WebSocket client
+ * @param {Object} message - Request message
+ * @param {Object} server - WebSocket server instance
+ */
+export async function handleClientRequest(ws, message, server) {
+  // Forward to handleRequest from requestHandlers.js
+  await handleRequest(ws, message, 
+    // Passing send functions as a callback to avoid circular dependencies
+    (client, data) => server.send(client, data),
+    (client, message, code) => server.sendError(client, message, code)
+  );
+}
+
+/**
+ * Handle client command
+ * @param {WebSocket} ws - WebSocket client
+ * @param {Object} message - Command message
+ * @param {Object} server - WebSocket server instance
+ */
+export async function handleClientCommand(ws, message, server) {
+  // Forward to command handler
+  await handleCommand(ws, message, server);
+}
+
+/**
+ * Broadcast message to topic subscribers
+ * @param {string} topic - Topic to broadcast to
+ * @param {Object} data - Data to broadcast
+ * @param {Object} subscriptions - Topic subscriptions map
+ * @param {Map} clients - Clients map
+ * @param {string|null} excludeClientId - Client ID to exclude from broadcast
+ */
+export function broadcastToSubscribers(topic, data, subscriptions, clients, excludeClientId = null) {
+  try {
+    if (!subscriptions[topic]) return;
+    
+    const formatted = formatMessage(data);
+    const subscribers = subscriptions[topic];
+    let sentCount = 0;
+    
+    for (const ws of subscribers) {
+      try {
+        // Skip if this is the client to exclude
+        if (excludeClientId && ws.clientInfo && ws.clientInfo.connectionId === excludeClientId) {
+          continue;
+        }
+        
+        // Only send to clients in OPEN state
+        if (ws.readyState === 1) { // WebSocket.OPEN
+          ws.send(formatted);
+          // Track message sent on the connection object for database
+          ws.messagesSent = (ws.messagesSent || 0) + 1;
+          sentCount++;
+        }
+      } catch (clientErr) {
+        logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error sending to client:${fancyColors.RESET}`, clientErr);
+      }
+    }
+    
+    // Debug level logging to avoid spamming logs with broadcasts
+    if (sentCount > 0) {
+      logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Broadcast ${topic} to ${sentCount} clients${fancyColors.RESET}`);
+    }
+  } catch (error) {
+    logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Broadcast error:${fancyColors.RESET}`, error);
+  }
+}
+
+/**
  * Update WebSocket connection in database upon disconnection
  * @param {string} connectionId - Unique connection identifier
  * @param {Object} disconnectData - Disconnect data
@@ -1373,3 +1523,4 @@ async function updateConnectionOnDisconnect(connectionId, disconnectData) {
     return null;
   }
 }
+

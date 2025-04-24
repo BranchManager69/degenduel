@@ -1,4 +1,4 @@
-// websocket/v69/services.js
+// websocket/v69/unified/services.js
 
 /**
  * Unified WebSocket Services
@@ -8,12 +8,12 @@
  * - Service event registration
  */
 
-import prisma from '../../config/prisma.js';
-import serviceEvents from '../../utils/service-suite/service-events.js';
-import marketDataService from '../../services/marketDataService.js';
-import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors, wsColors } from '../../utils/colors.js';
-import { TOPICS } from './utils.js';
+import prisma from '../../../config/prisma.js';
+import serviceEvents from '../../../utils/service-suite/service-events.js';
+import marketDataService from '../../../services/marketDataService.js';
+import { logApi } from '../../../utils/logger-suite/logger.js';
+import { fancyColors, wsColors } from '../../../utils/colors.js';
+import config from '../../../config/config.js';
 
 /**
  * Fetch terminal data from the database
@@ -238,9 +238,9 @@ export function registerServiceEvents(server) {
   // Market Data event handlers
   server.registerEventHandler(
     'market:broadcast', 
-    (data) => server.broadcastToTopic(TOPICS.MARKET_DATA, {
+    (data) => server.broadcastToTopic(config.websocket.topics.MARKET_DATA, {
       type: 'DATA',
-      topic: TOPICS.MARKET_DATA,
+      topic: config.websocket.topics.MARKET_DATA,
       data: data,
       timestamp: new Date().toISOString()
     })
@@ -249,9 +249,9 @@ export function registerServiceEvents(server) {
   // Terminal Data event handlers
   server.registerEventHandler(
     'terminal:broadcast', 
-    (data) => server.broadcastToTopic(TOPICS.TERMINAL, {
+    (data) => server.broadcastToTopic(config.websocket.topics.TERMINAL, {
       type: 'DATA',
-      topic: TOPICS.TERMINAL,
+      topic: config.websocket.topics.TERMINAL,
       subtype: 'terminal',
       action: 'update',
       data: data,
@@ -262,9 +262,9 @@ export function registerServiceEvents(server) {
   // System event handlers
   server.registerEventHandler(
     'system:status',
-    (data) => server.broadcastToTopic(TOPICS.SYSTEM, {
+    (data) => server.broadcastToTopic(config.websocket.topics.SYSTEM, {
       type: 'DATA',
-      topic: TOPICS.SYSTEM,
+      topic: config.websocket.topics.SYSTEM,
       action: 'status_update',
       data: data,
       timestamp: new Date().toISOString()
@@ -276,9 +276,9 @@ export function registerServiceEvents(server) {
     'wallet:balance_update',
     (data) => {
       if (data.walletAddress) {
-        server.broadcastToTopic(`${TOPICS.WALLET_BALANCE}:${data.walletAddress}`, {
+        server.broadcastToTopic(`${config.websocket.topics.WALLET_BALANCE}:${data.walletAddress}`, {
           type: 'DATA',
-          topic: TOPICS.WALLET_BALANCE,
+          topic: config.websocket.topics.WALLET_BALANCE,
           data: data,
           timestamp: new Date().toISOString()
         });

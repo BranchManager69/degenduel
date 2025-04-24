@@ -9,11 +9,11 @@
 # and do not persist beyond that or affect other parts of the application.
 
 # API Settings for Prisma Reconciliation Analysis
-export PRISMA_OPENAI_MODEL="gpt-4o"        # Model to use for Prisma schema reconciliation analysis
+export PRISMA_OPENAI_MODEL="gpt-4.1-mini"   # Model to use for Prisma schema reconciliation analysis
 export PRISMA_OPENAI_TEMPERATURE="0.5"      # Temperature (0.0-1.0, lower = more deterministic)
-                                           # Note: Temperature is not supported for o3-mini model
+                                            # Note: Temperature is not supported for o3-mini model
 export PRISMA_OPENAI_MAX_TOKENS="4000"      # Maximum tokens in the response
-                                           # Note: For o1 and o3 models, this will be used as max_completion_tokens
+                                            # Note: For o1 and o3 models, this will be used as max_completion_tokens
 
 # Prompt Settings for Prisma Schema Reconciliation
 export PRISMA_OPENAI_SYSTEM_PROMPT="You are a Prisma ORM and PostgreSQL schema expert who specializes in detecting and resolving discrepancies between Prisma schema definitions and actual database structures."

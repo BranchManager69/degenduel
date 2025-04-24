@@ -20,6 +20,9 @@ import {
   handleGetDiscordWebhookEvents
 } from './additional-functions.js';
 
+// Config
+import { config } from '../../../config/config.js';
+
 /**
  * Function definitions for the terminal responses API
  */
@@ -27,64 +30,60 @@ export const TERMINAL_FUNCTIONS = [
   // Token data functions - available to all users
   {
     name: "getTokenPrice",
-    description: "Get current price and detailed information about a token",
+    description: "Get current price and detailed information about a token (preferably using token address, but symbol is acceptable if address is not available)",
     parameters: {
       type: "object",
       properties: {
-        tokenSymbol: {
+        tokenAddressOrSymbol: {
           type: "string",
-          description: "The token symbol to look up (e.g., SOL, BONK, JUP)",
-        },
-        tokenAddress: {
-          type: "string",
-          description: "The Solana address of the token (optional if symbol is provided)",
+          description: "The token address or symbol to look up",
         }
       },
-      required: ["tokenSymbol"]
+      required: ["tokenAddressOrSymbol"]
     }
   },
   {
     name: "getTokenPriceHistory",
-    description: "Get price history for a token over a specified time period",
+    description: "Get price history for a token over a specified time period (preferably using token address, but symbol is acceptable if address is not available)",
     parameters: {
       type: "object",
       properties: {
-        tokenSymbol: {
+        tokenAddressOrSymbol: {
           type: "string",
-          description: "The token symbol to look up"
+          description: "The token address or symbol to look up"
         },
         timeframe: {
           type: "string",
-          enum: ["24h", "7d", "30d", "all"],
+          enum: ["24h", "7d", "30d", "all"], // TODO: Add more options
           description: "Time period for price history"
         }
       },
-      required: ["tokenSymbol", "timeframe"]
+      required: ["tokenAddressOrSymbol", "timeframe"]
     }
   },
   {
     name: "getTokenPools",
-    description: "Get liquidity pools information for a token",
+    description: "Get liquidity pools information for a token (preferably using token address, but symbol is acceptable if address is not available)",
     parameters: {
       type: "object",
       properties: {
-        tokenSymbol: {
+        tokenAddressOrSymbol: {
           type: "string",
-          description: "The token symbol to look up"
+          description: "The token address or symbol to look up"
         }
       },
-      required: ["tokenSymbol"]
+      required: ["tokenAddressOrSymbol"]
     }
   },
   {
     name: "getTokenMetricsHistory",
-    description: "Get comprehensive historical metrics for a token over time",
+    description: "Get comprehensive historical metrics for a token over time (preferably using token address, but symbol is acceptable if address is not available)",
     parameters: {
       type: "object",
       properties: {
-        tokenSymbol: { 
+        tokenAddressOrSymbol: { 
           type: "string",
-          description: "The token symbol to look up"
+          description: "The token address or symbol to look up"
         },
         metricType: { 
           type: "string", 
@@ -99,10 +98,10 @@ export const TERMINAL_FUNCTIONS = [
         limit: {
           type: "integer",
           description: "Maximum number of data points to return",
-          default: 50
+          default: 100
         }
       },
-      required: ["tokenSymbol", "metricType"]
+      required: ["tokenAddressOrSymbol", "metricType"]
     }
   },
   

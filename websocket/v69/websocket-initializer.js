@@ -26,10 +26,12 @@ import { fancyColors } from '../../utils/colors.js';
 import config from '../../config/config.js';
 
 // Import the unified WebSocket server
-import { createUnifiedWebSocket } from './uni-ws.js';
+import { createUnifiedWebSocket } from './unified/index.js';
 
-// Import Terminal Data WebSocket
-import TerminalDataWebSocket from './terminal-data-ws.js';
+// DEPRECATED: Legacy WebSocket servers 
+// These imports are kept temporarily for backward compatibility
+// but will be removed in a future release
+// import TerminalDataWebSocket from './terminal-data-ws.js';
 
 
 // Initialize all v69 WebSocket servers

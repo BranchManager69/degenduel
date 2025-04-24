@@ -1367,7 +1367,7 @@ model config_ai_service {
   min_actions_to_analyze   Int       @default(1)        // Minimum actions to trigger analysis
   
   // Model Configurations (as JSON for flexibility)
-  model_loadouts           Json      @default("{\"default\":{\"model\":\"gpt-4o\",\"maxTokens\":4096,\"temperature\":0.7},\"errorAnalysis\":{\"model\":\"gpt-4o\",\"maxTokens\":8192,\"temperature\":0.1},\"adminAnalysis\":{\"model\":\"gpt-4o\",\"maxTokens\":8192,\"temperature\":0.2}}")
+  model_loadouts           Json      @default("{\"default\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4},\"errorAnalysis\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4},\"adminAnalysis\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4}}")
   
   // System Prompts (as JSON)
   system_prompts           Json      @default("{}")     // System prompts for different tasks

@@ -13,14 +13,17 @@ import { Keypair, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from
 import bs58 from 'bs58';
 import https from 'https';
 import qrcode from 'qrcode-terminal';
+import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import readline from 'readline';
+import crypto from 'crypto';
 
 /**
  * Generate a QR code for display in the console
- * Uses the qrcode-terminal library to generate ASCII art QR codes
+ * Uses qrcode-terminal for TTY environments and qrcode for non-TTY environments
+ * Ensures a real, scannable QR code in all environments
  * 
  * @param {string} text - The text to encode in the QR code
  * @param {number} [amount=null] - Optional amount to add to Solana URL
@@ -33,16 +36,40 @@ async function generateConsoleQR(text, amount = null) {
             ? `solana:${text}?amount=${amount}&label=DegenDuel%20Treasury%20Certification`
             : `solana:${text}?label=DegenDuel%20Treasury%20Certification`;
         
-        // Use promise wrapper around qrcode-terminal callback-based API
-        return new Promise((resolve) => {
-            // Generate QR to string
+        return new Promise(async (resolve) => {
             let qrLines = [];
             
-            // Custom QR renderer that captures output instead of printing
-            const customLogger = (line) => qrLines.push(line);
-            
-            // Generate the QR code
-            qrcode.generate(solanaUrl, { small: true }, customLogger);
+            // Check if we're in a TTY or non-TTY environment
+            if (process.stdin.isTTY) {
+                // In TTY environment, use qrcode-terminal for nicer display
+                const customLogger = (line) => qrLines.push(line);
+                qrcode.generate(solanaUrl, { small: true }, customLogger);
+            } else {
+                // In non-TTY environment, use the qrcode library which always works
+                // Generate a real, scannable ASCII QR code
+                try {
+                    // Generate QR code with UTF-8 characters that will work in log files
+                    const asciiQR = await QRCode.toString(solanaUrl, {
+                        type: 'utf8',  // Valid option: utf8, terminal, or svg
+                        small: true
+                    });
+                    
+                    // Split into lines
+                    qrLines = asciiQR.split('\n');
+                    
+                    // Add label for clarity in logs
+                    qrLines.push("");
+                    qrLines.push("REAL SCANNABLE QR CODE - USE YOUR WALLET APP");
+                } catch (qrError) {
+                    console.error('Error generating QR code with qrcode library:', qrError);
+                    
+                    // If that fails, fallback to a simple representation
+                    qrLines = [
+                        "Unable to generate proper QR code.",
+                        "Please use the Solana URL below:"
+                    ];
+                }
+            }
             
             // Add header and wallet info
             const result = [
@@ -65,24 +92,32 @@ async function generateConsoleQR(text, amount = null) {
             
             // Add QR code with proper padding
             qrLines.forEach(line => {
-                // Clean up the line to remove any control characters or emoji-like characters
+                // Clean up the line to remove any control characters, color codes, or emoji-like characters
                 // that might mess up terminal rendering
-                const cleanedLine = line.replace(/[^\x20-\x7E]/g, ' ');
+                const cleanedLine = line.replace(/\u001b\[\d+m|\u001b\[\d+;\d+m|\u001b\[0m|[^\x20-\x7E]/g, ' ');
+                
+                // Replace potential ANSI escape sequences with proper characters for QR
+                const displayLine = cleanedLine
+                    .replace(/\[47m \[30m/g, '██') // Replace color blocks with solid blocks
+                    .replace(/\[0m/g, '')         // Remove reset codes
+                    .replace(/\[37m/g, '');       // Remove color codes
                 
                 // Set fixed width for consistency
-                if (cleanedLine.length >= 57) {
+                if (displayLine.length >= 57) {
                     // If line is too long, truncate it to fit
-                    result.push(`║ ${cleanedLine.substring(0, 57)} ║`);
+                    result.push(`║ ${displayLine.substring(0, 57)} ║`);
                 } else {
                     // Center the QR code with proper padding
                     const totalWidth = 57; // Allow for 1 space padding on each side
-                    const leftPadding = Math.max(0, Math.floor((totalWidth - cleanedLine.length) / 2));
-                    const rightPadding = Math.max(0, totalWidth - cleanedLine.length - leftPadding);
-                    result.push(`║ ${' '.repeat(leftPadding)}${cleanedLine}${' '.repeat(rightPadding)} ║`);
+                    const leftPadding = Math.max(0, Math.floor((totalWidth - displayLine.length) / 2));
+                    const rightPadding = Math.max(0, totalWidth - displayLine.length - leftPadding);
+                    result.push(`║ ${' '.repeat(leftPadding)}${displayLine}${' '.repeat(rightPadding)} ║`);
                 }
             });
             
             result.push('║                                                           ║');
+            // Add URL representation (always visible in case QR doesn't display properly)
+            result.push('║  URL: ' + solanaUrl.substring(0, 44) + (solanaUrl.length > 44 ? '...' : '') + ' '.repeat(Math.max(0, 49 - Math.min(solanaUrl.length, 47))) + '║');
             result.push('╚═══════════════════════════════════════════════════════════╝');
             
             resolve(result);
@@ -133,6 +168,16 @@ class TreasuryCertifier {
         this.decryptPrivateKey = decryptPrivateKey;
         this.config = config;
         
+        // Default certification test config
+        this.certificationConfig = {
+            numTestWallets: 3,
+            walletPrefix: 'test',
+            initialTestAmount: 0.006,
+            minPoolBalance: 0.002,
+            estimated_tx_fee: 0.000005, // Typical Solana fee
+            buffer: 0.0001 // Small safety buffer
+        };
+        
         // Set up path for storing certification keypairs
         // Get the root project directory path
         const currentFilePath = fileURLToPath(import.meta.url);
@@ -151,411 +196,859 @@ class TreasuryCertifier {
         
         // Track current certification state for cleanup
         this._currentCertification = null;
+        
+        // Persistent wallet collections
+        this.persistentPool = null;
+        this.persistentTestWallets = {};
     }
     
     /**
-     * Save keypair to disk for recovery
+     * Initialize or load the persistent certification pool
+     * This sets up a reusable set of wallets for certification testing
      * 
-     * @param {Keypair} keypair - The keypair to save
-     * @param {string} label - A label for the keypair (e.g., 'source', 'test1')
-     * @param {string} certificationId - The ID of the certification
-     * @returns {Promise<boolean>} - Whether the keypair was saved successfully
+     * @param {Object} [options] - Configuration options
+     * @param {number} [options.numTestWallets] - Number of test wallets to use in certifications
+     * @param {number} [options.initialFundingRequired] - Minimum SOL needed in the pool
+     * @returns {Promise<{pool: Object, testWallets: Array<Object>}>} - The initialized pool and test wallets
      */
-    async saveKeypairToDisk(keypair, label, certificationId) {
-        try {
-            if (!keypair) {
-                return false;
-            }
-            
-            // Get the keypair data in multiple formats for recovery
-            const secretKey = Array.from(keypair.secretKey);
-            const publicKey = keypair.publicKey.toString();
-            const keypairData = {
-                publicKey,
-                secretKey,
-                base58PrivateKey: bs58.encode(keypair.secretKey),
-                timestamp: new Date().toISOString(),
-                certificationId,
-                label
-            };
-            
-            // Create filename with certification ID, label, and timestamp
-            const timestamp = Date.now();
-            const filename = `${certificationId}_${label}_${timestamp}.json`;
-            const filepath = path.join(this.certKeypairsDir, filename);
-            
-            // Write keypair data to disk
-            fs.writeFileSync(filepath, JSON.stringify(keypairData, null, 2));
-            
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Saved ${label} keypair to ${filepath}`)}`);
-            return true;
-        } catch (error) {
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to save keypair to disk: ${error.message}`)}`);
-            return false;
-        }
-    }
-    
-    /**
-     * Identify the sender from a recent transaction
-     * 
-     * @param {string} walletAddress - The wallet address to check transactions for
-     * @returns {Promise<{found: boolean, sender: string|null, amount: number}>} - Transaction sender info
-     */
-    async identifySender(walletAddress) {
-        try {
-            // Get recent transactions (last 10)
-            const signatures = await this.solanaEngine.executeConnectionMethod(
-                'getSignaturesForAddress',
-                new PublicKey(walletAddress),
-                { limit: 10 }
-            );
-            
-            // If we have signatures, check the most recent one
-            if (signatures && signatures.length > 0) {
-                const recentSig = signatures[0].signature;
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Found recent transaction: ${recentSig.substring(0, 8)}...`)}`);
+    async initPersistentCertificationPool(options = {}) {
+        // Apply any custom config options
+        if (options.numTestWallets) this.certificationConfig.numTestWallets = options.numTestWallets;
+        if (options.initialTestAmount) this.certificationConfig.initialTestAmount = options.initialTestAmount;
+        
+        const initialFundingRequired = options.initialFundingRequired || this.certificationConfig.minPoolBalance;
+        const numTestWallets = this.certificationConfig.numTestWallets;
+        
+        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('PERSISTENT POOL')} Initializing persistent certification pool`);
+        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Using ${numTestWallets} test wallets for certification path`)}`);
+        
+        // Fixed path for the certification pool keypair
+        const poolPath = path.join(this.certKeypairsDir, 'persistent_pool.json');
+        let poolKeypair;
+        
+        // Check if the pool already exists
+        if (fs.existsSync(poolPath)) {
+            try {
+                // Load the existing pool keypair
+                const poolData = JSON.parse(fs.readFileSync(poolPath, 'utf8'));
+                const secretKey = Uint8Array.from(poolData.secretKey);
+                poolKeypair = Keypair.fromSecretKey(secretKey);
                 
-                const tx = await this.solanaEngine.executeConnectionMethod(
-                    'getParsedTransaction',
-                    recentSig,
-                    'confirmed'
-                );
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Loaded existing certification pool: ${poolKeypair.publicKey}`)}`);
                 
-                if (tx && tx.meta && tx.meta.preBalances && tx.meta.postBalances) {
-                    // Find our address index in the tx
-                    const myAccountIndex = tx.transaction.message.accountKeys.findIndex(
-                        key => key.pubkey.toString() === walletAddress
-                    );
-                    
-                    if (myAccountIndex !== -1) {
-                        const preBalance = tx.meta.preBalances[myAccountIndex];
-                        const postBalance = tx.meta.postBalances[myAccountIndex];
-                        const changeInBalance = (postBalance - preBalance) / LAMPORTS_PER_SOL;
-                        
-                        if (changeInBalance > 0) {
-                            // This is a deposit! Find the sender
-                            const senderIndex = tx.transaction.message.accountKeys.findIndex(
-                                (key, index) => 
-                                index !== myAccountIndex && 
-                                tx.meta.preBalances[index] > tx.meta.postBalances[index]
-                            );
-                            
-                            if (senderIndex !== -1) {
-                                const senderAddress = tx.transaction.message.accountKeys[senderIndex].pubkey.toString();
-                                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Identified sender: ${senderAddress.substring(0, 8)}...`)}`);
-                                return { 
-                                    found: true, 
-                                    sender: senderAddress, 
-                                    amount: changeInBalance 
-                                };
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return { found: false, sender: null, amount: 0 };
-        } catch (error) {
-            this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Error identifying sender: ${error.message}`)}`);
-            return { found: false, sender: null, amount: 0 };
-        }
-    }
-    
-    /**
-     * Return funds to the sender
-     * 
-     * @param {Keypair} fromKeypair - The keypair to send from
-     * @param {string} toAddress - The address to send to
-     * @param {number} amount - The amount of SOL to send
-     * @returns {Promise<{success: boolean, txid?: string, error?: string}>} - Result of the operation
-     */
-    async returnFundsToSender(fromKeypair, toAddress, amount) {
-        if (!toAddress) {
-            this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Can't return funds: sender address unknown.`)}`);
-            return { success: false, error: 'Sender address unknown' };
-        }
-        
-        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('RETURNING FUNDS TO SENDER')}`);
-        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Preparing to send ${amount.toFixed(6)} SOL back to ${toAddress}`)}`);
-        
-        try {
-            // Convert SOL to lamports
-            const lamportsTotal = Math.floor(amount * LAMPORTS_PER_SOL);
-            // Get connection for fee estimation
-            const connection = this.solanaEngine.getConnection();
-            // Fetch a recent blockhash
-            const { blockhash } = await connection.getLatestBlockhash();
-            // Build a dummy transaction for fee estimation
-            const dummyTx = new Transaction({ recentBlockhash: blockhash, feePayer: fromKeypair.publicKey })
-                .add(
-                    SystemProgram.transfer({
-                        fromPubkey: fromKeypair.publicKey,
-                        toPubkey: new PublicKey(toAddress),
-                        lamports: lamportsTotal,
-                    })
-                );
-            // Estimate fee in lamports
-            let feeLamports;
-            if (typeof connection.getFeeForMessage === 'function') {
-                const feeResponse = await connection.getFeeForMessage(dummyTx.compileMessage());
-                feeLamports = feeResponse.value !== undefined ? feeResponse.value : feeResponse;
-            } else {
-                const feeCalcRes = await connection.getFeeCalculatorForBlockhash(blockhash);
-                feeLamports = feeCalcRes.value?.feeCalculator?.lamportsPerSignature
-                    || feeCalcRes.feeCalculator?.lamportsPerSignature;
-            }
-            // Ensure there's enough to cover the fee
-            if (lamportsTotal <= feeLamports) {
-                const feeSol = (feeLamports / LAMPORTS_PER_SOL).toFixed(6);
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Insufficient balance for return fee (${feeSol} SOL)`)}`);
-                return { success: false, error: 'Insufficient balance for fee' };
-            }
-            // Calculate sendable lamports after fee
-            const lamportsToSend = lamportsTotal - feeLamports;
-            const sendSol = lamportsToSend / LAMPORTS_PER_SOL;
-            const feeSol = (feeLamports / LAMPORTS_PER_SOL).toFixed(6);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Will return ${sendSol.toFixed(6)} SOL (fee ${feeSol} SOL)`)}`);
-            // Build actual return transaction
-            const transaction = new Transaction()
-                .add(
-                    SystemProgram.transfer({
-                        fromPubkey: fromKeypair.publicKey,
-                        toPubkey: new PublicKey(toAddress),
-                        lamports: lamportsToSend,
-                    })
-                );
-            transaction.feePayer = fromKeypair.publicKey;
-            // Send and confirm transaction
-            const txid = await this.solanaEngine.sendTransaction(
-                transaction,
-                [fromKeypair],
-                { skipPreflight: true, maxRetries: 5, commitment: 'confirmed' }
-            );
-            
-            const solscanLink = `https://solscan.io/tx/${txid}`;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('FUNDS RETURNED!')}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Sent ${sendSol.toFixed(6)} SOL back to ${toAddress}`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction ID: ${typeof txid === 'object' ? JSON.stringify(txid) : txid}`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Solscan: ${typeof solscanLink === 'object' ? 'https://solscan.io/tx/' + (typeof txid === 'object' ? txid.toString() : txid) : solscanLink}`)}`);
-            
-            return {
-                success: true,
-                txid,
-                solscanLink,
-                amount: sendSol
-            };
-        } catch (error) {
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to return funds: ${error.message}`)}`);
-            return { success: false, error: error.message };
-        }
-    }
-    
-    /**
-     * Wait for funds to be sent to a wallet and identify the sender
-     * 
-     * @param {Keypair} keypair - The keypair to wait for funds for
-     * @param {number} minAmount - The minimum amount of SOL to wait for
-     * @returns {Promise<{success: boolean, sender?: string, amount?: number}>} - Result with sender info
-     */
-    async waitForFunds(keypair, minAmount) {
-        const publicKey = keypair.publicKey.toString();
-        
-        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('WAITING FOR FUNDS')}`);
-        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Please send at least ${minAmount} SOL to: ${publicKey}`)}`);
-        
-        // No need to manually create the address box here anymore
-        // The qrCode will be generated below with proper QR code
-        
-        let senderAddress = null;
-        let receivedAmount = 0;
-        
-        // Initial balance check
-        let balance = await this.solanaEngine.executeConnectionMethod('getBalance', keypair.publicKey);
-        let balanceSol = balance / LAMPORTS_PER_SOL;
-        
-        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Initial balance: ${balanceSol.toFixed(6)} SOL`)}`);
-        
-        if (balanceSol >= minAmount) {
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Sufficient balance already exists!`)}`);
-            
-            // Try to identify the sender from recent transaction history
-            const senderInfo = await this.identifySender(publicKey);
-            
-            if (senderInfo.found) {
-                return { 
-                    success: true, 
-                    amount: balanceSol,
-                    sender: senderInfo.sender
+                // Store the original funder if available
+                const originalFunder = poolData.originalFunder || null;
+                
+                // Set up our pool object
+                this.persistentPool = {
+                    keypair: poolKeypair,
+                    publicKey: poolKeypair.publicKey.toString(),
+                    secretKey: poolKeypair.secretKey,
+                    balance: 0, // Will be updated below
+                    originalFunder
+                };
+            } catch (error) {
+                this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to load persistent pool: ${error.message}`)}`);
+                // Create a new pool keypair
+                poolKeypair = Keypair.generate();
+                
+                // Set up our pool object
+                this.persistentPool = {
+                    keypair: poolKeypair,
+                    publicKey: poolKeypair.publicKey.toString(),
+                    secretKey: poolKeypair.secretKey,
+                    balance: 0, // Will be updated below
+                    originalFunder: null
                 };
             }
+        } else {
+            // Create a new pool keypair
+            poolKeypair = Keypair.generate();
             
-            return { success: true, amount: balanceSol };
+            // Set up our pool object
+            this.persistentPool = {
+                keypair: poolKeypair,
+                publicKey: poolKeypair.publicKey.toString(),
+                secretKey: poolKeypair.secretKey,
+                balance: 0, // Will be updated below
+                originalFunder: null
+            };
         }
         
-        // Wait for funds
-        const maxWaitAttempts = 300; // 5 minutes at 1 second intervals
-        let waitAttempts = 0;
+        // Load or create the test wallets
+        this.persistentTestWallets = {};
         
-        // Generate a proper QR code using qrcode-terminal library
-        let qrCode = await generateConsoleQR(publicKey, minAmount);
-        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('Generated QR code for easy scanning')}`);
+        for (let i = 1; i <= numTestWallets; i++) {
+            const label = `test${i}`;
+            const walletPath = path.join(this.certKeypairsDir, `persistent_${label}.json`);
+            let keypair;
+            
+            // Check if the wallet already exists
+            if (fs.existsSync(walletPath)) {
+                try {
+                    // Load the existing wallet keypair
+                    const walletData = JSON.parse(fs.readFileSync(walletPath, 'utf8'));
+                    const secretKey = Uint8Array.from(walletData.secretKey);
+                    keypair = Keypair.fromSecretKey(secretKey);
+                    
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Loaded existing ${label} wallet: ${keypair.publicKey.toString().substring(0, 8)}...`)}`);
+                } catch (error) {
+                    this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to load ${label} wallet: ${error.message}`)}`);
+                    // Generate a new one if loading fails
+                    keypair = Keypair.generate();
+                }
+            } else {
+                // Generate a new wallet
+                keypair = Keypair.generate();
+                
+                // Save the wallet
+                const keypairData = {
+                    publicKey: keypair.publicKey.toString(),
+                    secretKey: Array.from(keypair.secretKey),
+                    base58PrivateKey: bs58.encode(keypair.secretKey),
+                    timestamp: new Date().toISOString(),
+                    description: `Persistent ${label} certification wallet`,
+                    type: "test",
+                    label: label
+                };
+                
+                fs.writeFileSync(walletPath, JSON.stringify(keypairData, null, 2));
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Created new ${label} wallet: ${keypair.publicKey.toString().substring(0, 8)}...`)}`);
+            }
+            
+            // Check the wallet's balance
+            const balance = await this.solanaEngine.executeConnectionMethod('getBalance', keypair.publicKey);
+            
+            // Store the wallet
+            this.persistentTestWallets[label] = {
+                keypair,
+                publicKey: keypair.publicKey.toString(),
+                secretKey: keypair.secretKey,
+                balance: balance / LAMPORTS_PER_SOL
+            };
+        }
         
-        // Create an ultra-visible banner to make the wallet address stand out
-        const bannerLines = [
-            `\n${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-            `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}  ⚠️  TREASURY CERTIFICATION - WAITING FOR FUNDS - SERVICE STARTUP PAUSED   ⚠️  ${this.fancyColors.RESET}`,
-            `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-            `${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE}  Send ${minAmount} SOL to this address:                                         ${this.fancyColors.RESET}`,
-            `${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE}  ${publicKey}  ${this.fancyColors.RESET}`,
-            `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-            `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}  Press 's' key to skip certification and continue startup                     ${this.fancyColors.RESET}`,
-            `${this.fancyColors.BG_YELLOW}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}\n`
-        ];
+        // Save the pool keypair if it's new
+        if (!fs.existsSync(poolPath)) {
+            const poolData = {
+                publicKey: poolKeypair.publicKey.toString(),
+                secretKey: Array.from(poolKeypair.secretKey),
+                base58PrivateKey: bs58.encode(poolKeypair.secretKey),
+                timestamp: new Date().toISOString(),
+                description: "Persistent certification pool wallet",
+                type: "pool"
+            };
+            
+            fs.writeFileSync(poolPath, JSON.stringify(poolData, null, 2));
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Created new certification pool: ${poolKeypair.publicKey}`)}`);
+        }
         
-        // Display the initial banner
-        bannerLines.forEach(line => this.logApi.info(line));
+        // Check the pool's balance
+        const poolBalance = await this.solanaEngine.executeConnectionMethod('getBalance', poolKeypair.publicKey);
+        this.persistentPool.balance = poolBalance / LAMPORTS_PER_SOL;
         
-        // Display the QR code
-        this.logApi.info(`\n${this.fancyColors.CYAN}=== SCAN THIS QR CODE TO SEND SOL ===${this.fancyColors.RESET}`);
-        qrCode.forEach(line => {
-            this.logApi.info(line);
-        });
+        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Certification pool balance: ${this.formatLog.balance(this.persistentPool.balance)} SOL`)}`);
         
-        // Display solana link for wallets that support it
-        this.logApi.info(`${this.fancyColors.GREEN}solana:${publicKey}?amount=${minAmount}${this.fancyColors.RESET}\n`);
-        
-        // Create a reference to an interval that will redisplay the wallet address
-        let addressReminderInterval;
-        
-        try {
-            // Set up key press handling for skipping certification
+        // Check if the pool needs funding
+        const neededFunding = initialFundingRequired - this.persistentPool.balance;
+        if (neededFunding > 0) {
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('FUNDING NEEDED')} Certification pool needs ${this.formatLog.balance(neededFunding)} SOL`);
+            
+            // Wait for funds to be sent to the pool
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('WAITING FOR FUNDS')} `);
+            this.logApi.info(`Please send at least ${neededFunding} SOL to: ${this.persistentPool.publicKey}`);
+            this.logApi.info(`Initial balance: ${this.formatLog.balance(this.persistentPool.balance)} SOL`);
+            
+            // Generate QR code for easy scanning
+            const qrLines = await generateConsoleQR(this.persistentPool.publicKey, neededFunding);
+            this.logApi.info(`Generated QR code for easy scanning`);
+            qrLines.forEach(line => this.logApi.info(line));
+            
+            // Check for funds arrival
+            const checkInterval = 5000; // Check every 5 seconds
+            const maxWaitTime = process.stdin.isTTY ? 5 * 60 * 1000 : 2 * 60 * 1000; // Wait up to 5 min (interactive) or 2 min (non-interactive)
+            let timeoutDuration = process.stdin.isTTY ? "5 minutes" : "2 minutes";
+            const startTime = Date.now();
+            let fundingReceived = false;
+            
+            // Set up readline interface for keypress handling
             const rl = readline.createInterface({
                 input: process.stdin,
                 output: process.stdout
             });
             
-            // Configure stdin for keypress events
-            process.stdin.setRawMode(true);
-            process.stdin.resume();
+            // Set up keypress handler to allow skipping with 's' key
+            let skipCertification = false;
             
-            // Flag to track if certification was skipped
-            let certificationSkipped = false;
-            
-            // Handle keypress events
             const keypressHandler = (key) => {
-                // Check for 's' key to skip certification
-                if (key === 's' || key === 'S') {
-                    certificationSkipped = true;
-                    this.logApi.info(`\n${this.fancyColors.BG_CYAN}${this.fancyColors.BLACK} CERTIFICATION SKIPPED - Continuing with startup ${this.fancyColors.RESET}\n`);
+                if (key.toString().toLowerCase() === 's' || key.toString().toLowerCase() === 's\n') {
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.warning('Skipping certification as requested by user')}`);
+                    skipCertification = true;
                     
-                    // Clean up event listeners
+                    // Clean up the event listener
                     process.stdin.removeListener('data', keypressHandler);
-                    process.stdin.setRawMode(false);
+                    if (process.stdin.isTTY) {
+                        process.stdin.setRawMode(false);
+                    }
                     process.stdin.pause();
-                    rl.close();
-                }
-                
-                // Forward Ctrl+C to normal handling (process exit)
-                if (key === '\u0003') {
-                    process.exit();
                 }
             };
             
-            // Listen for keypresses
-            process.stdin.on('data', keypressHandler);
-
-            // Set up an interval to repeat the address banner every 20 seconds
-            // This ensures the address stays visible even with other services logging
-            addressReminderInterval = setInterval(() => {
-                this.logApi.info(`\n${this.fancyColors.BG_RED}${this.fancyColors.WHITE} REMINDER: Treasury certification waiting for funds ${this.fancyColors.RESET}`);
-                this.logApi.info(`${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE} Send ${minAmount} SOL to: ${publicKey} ${this.fancyColors.RESET}`);
-                this.logApi.info(`${this.fancyColors.BG_MAGENTA}${this.fancyColors.WHITE} Press 's' key to skip certification and continue ${this.fancyColors.RESET}\n`);
+            // Only set up keypress handler in interactive mode
+            if (process.stdin.isTTY) {
+                process.stdin.setRawMode(true);
+                process.stdin.resume();
+                process.stdin.setEncoding('utf8');
+                process.stdin.on('data', keypressHandler);
                 
-                // Always show the address box with every reminder
-                if (qrCode.length > 0) {
-                    qrCode.forEach(line => {
-                        this.logApi.info(line);
-                    });
-                }
-            }, 20000);
+                this.logApi.info(`\n`);
+                this.logApi.info(`  ⚠️  TREASURY CERTIFICATION - WAITING FOR FUNDS - SERVICE STARTUP PAUSED   ⚠️  `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`  Send ${neededFunding} SOL to this address:                                         `);
+                this.logApi.info(`  ${this.persistentPool.publicKey}  `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`  Press 's' key to skip certification and continue startup                     `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`\n`);
+            } else {
+                // In non-interactive mode, provide clear instructions in the logs
+                this.logApi.info(`\n`);
+                this.logApi.info(`  ⚠️  TREASURY CERTIFICATION - WAITING FOR FUNDS - SERVICE STARTUP PAUSED   ⚠️  `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`  Send ${neededFunding} SOL to this address:                                         `);
+                this.logApi.info(`  ${this.persistentPool.publicKey}  `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`\n`);
+            }
             
-            while (waitAttempts < maxWaitAttempts && !certificationSkipped) {
-                // Check balance
-                balance = await this.solanaEngine.executeConnectionMethod('getBalance', keypair.publicKey);
-                balanceSol = balance / LAMPORTS_PER_SOL;
+            // Set up an interval to remind about the address periodically
+            const addressReminderInterval = setInterval(() => {
+                this.logApi.info(`\n`);
+                this.logApi.info(` REMINDER: Treasury certification waiting for funds `);
+                this.logApi.info(` Send ${neededFunding} SOL to: ${this.persistentPool.publicKey} `);
+                if (process.stdin.isTTY) {
+                    this.logApi.info(` Press 's' key to skip certification and continue `);
+                }
+                this.logApi.info(`\n`);
+                // Display QR code again for convenience
+                qrLines.forEach(line => this.logApi.info(line));
+            }, 20000); // Remind every 20 seconds
+            
+            // Wait for funds to arrive or timeout
+            while (Date.now() - startTime < maxWaitTime && !fundingReceived && !skipCertification) {
+                // Wait for a bit
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
                 
-                if (balanceSol >= minAmount) {
-                    // Get transaction info to identify sender
-                    const txInfo = await this.identifySender(publicKey);
+                // Check balance
+                const currentBalance = await this.solanaEngine.executeConnectionMethod('getBalance', poolKeypair.publicKey);
+                const solBalance = currentBalance / LAMPORTS_PER_SOL;
+                
+                this.logApi.info(`${this.formatLog.tag()} Still waiting for funds... Current balance: ${this.formatLog.balance(solBalance)} SOL (need ${neededFunding} SOL)`);
+                
+                // Check if balance increased enough
+                if (solBalance >= initialFundingRequired) {
+                    fundingReceived = true;
+                    this.persistentPool.balance = solBalance;
                     
-                    if (txInfo.found) {
-                        this.logApi.info(`\n${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK} ✅ FUNDS RECEIVED! ${balanceSol.toFixed(6)} SOL FROM ${txInfo.sender.substring(0, 8)}... ${this.fancyColors.RESET}\n`);
-                        senderAddress = txInfo.sender;
-                        receivedAmount = txInfo.amount;
+                    // Try to identify the sender (may not always be possible)
+                    let senderAddress = null;
+                    try {
+                        // Get recent signatures for this address using executeConnectionMethod
+                        const signatures = await this.solanaEngine.executeConnectionMethod(
+                            'getSignaturesForAddress',
+                            poolKeypair.publicKey,
+                            { limit: 10 }
+                        );
                         
-                        // Update certification tracking
-                        if (this._currentCertification) {
-                            this._currentCertification.wallets.sourceWallet = publicKey;
-                            this._currentCertification.wallets.originalSender = senderAddress;
-                            this._currentCertification.wallets.balance = balanceSol;
+                        if (signatures && signatures.length > 0) {
+                            // Get the most recent transaction using executeConnectionMethod
+                            const mostRecentTx = await this.solanaEngine.executeConnectionMethod(
+                                'getTransaction',
+                                signatures[0].signature
+                            );
+                            
+                            if (mostRecentTx && mostRecentTx.transaction.message.accountKeys.length > 0) {
+                                // The first account is usually the sender
+                                senderAddress = mostRecentTx.transaction.message.accountKeys[0].toString();
+                                
+                                // Update the pool data with the funder
+                                if (senderAddress && senderAddress !== this.persistentPool.publicKey) {
+                                    this.persistentPool.originalFunder = senderAddress;
+                                    
+                                    // Update the saved pool data
+                                    try {
+                                        const poolData = JSON.parse(fs.readFileSync(poolPath, 'utf8'));
+                                        poolData.originalFunder = senderAddress;
+                                        fs.writeFileSync(poolPath, JSON.stringify(poolData, null, 2));
+                                    } catch (updateError) {
+                                        // Not critical, so just log the error
+                                        this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to update pool data with funder: ${updateError.message}`)}`);
+                                    }
+                                }
+                            }
                         }
-                        
-                        break;
-                    } else {
-                        // We have the balance but couldn't identify the sender
-                        this.logApi.info(`\n${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK} ✅ FUNDS RECEIVED! ${balanceSol.toFixed(6)} SOL (SENDER UNKNOWN) ${this.fancyColors.RESET}\n`);
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.warning(`Couldn't identify the sender, but received sufficient balance.`)}`);
-                        receivedAmount = balanceSol;
-                        
-                        // Update certification tracking
-                        if (this._currentCertification) {
-                            this._currentCertification.wallets.sourceWallet = publicKey;
-                            this._currentCertification.wallets.balance = balanceSol;
-                        }
-                        
-                        break;
+                    } catch (senderError) {
+                        // Not critical, so just log the error
+                        this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to identify sender: ${senderError.message}`)}`);
+                    }
+                    
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funding received! New balance: ${this.formatLog.balance(solBalance)} SOL`)}`);
+                    if (senderAddress && senderAddress !== this.persistentPool.publicKey) {
+                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funding received from ${senderAddress}`)}`);
                     }
                 }
-                
-                // Show progress message every 10 seconds
-                if (waitAttempts % 10 === 0) {
-                    this.logApi.info(`${this.formatLog.tag()} Still waiting for funds... Current balance: ${balanceSol.toFixed(6)} SOL (need ${minAmount} SOL)`);
-                }
-                
-                waitAttempts++;
-                await new Promise(resolve => setTimeout(resolve, 1000));
             }
             
-            // Clear the reminder interval once funds are received or timeout
-            if (addressReminderInterval) {
-                clearInterval(addressReminderInterval);
-                addressReminderInterval = null;
-            }
+            // Clean up the reminder interval
+            clearInterval(addressReminderInterval);
             
             // Clean up key press handling
             try {
                 process.stdin.removeListener('data', keypressHandler);
-                process.stdin.setRawMode(false);
+                if (process.stdin.isTTY) {
+                    process.stdin.setRawMode(false);
+                }
                 process.stdin.pause();
                 rl.close();
             } catch (cleanupError) {
-                this.logApi.debug(`${this.formatLog.tag()} Cleanup error (non-critical): ${cleanupError.message}`);
+                // Ignore cleanup errors
             }
             
-            if (certificationSkipped) {
+            // Handle timeout
+            if (!fundingReceived && !skipCertification) {
+                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Timed out waiting for funds after ${timeoutDuration}.`)}`);
+                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Proceeding with initialization, but certification will be skipped.`)}`);
+            }
+        }
+        
+        // Update pool balances one more time
+        for (const label in this.persistentTestWallets) {
+            const wallet = this.persistentTestWallets[label];
+            const balance = await this.solanaEngine.executeConnectionMethod('getBalance', wallet.keypair.publicKey);
+            wallet.balance = balance / LAMPORTS_PER_SOL;
+        }
+        
+        return {
+            pool: this.persistentPool,
+            testWallets: this.persistentTestWallets
+        };
+    }
+    
+    /**
+     * Run certification with persistent wallet pool
+     * This method uses the same set of wallets for all certification tests
+     * 
+     * @returns {Promise<Object>} - The certification result
+     */
+    async runPersistentCertification() {
+        try {
+            // Make sure we have an initialized pool and test wallets
+            if (!this.persistentPool) {
+                await this.initPersistentCertificationPool();
+            }
+            
+            // Double check that the persistent pool was initialized successfully
+            if (!this.persistentPool || !this.persistentPool.keypair) {
+                return {
+                    success: false,
+                    message: "Failed to initialize persistent pool properly. Pool object is incomplete."
+                };
+            }
+            
+            // Use the test amount from config
+            const testAmount = this.certificationConfig.initialTestAmount;
+            
+            // Generate a unique certification run ID
+            const certificationId = `PERSIST-${Date.now().toString(36).toUpperCase()}`;
+            
+            // Start tracking this certification run
+            this._currentCertification = {
+                id: certificationId,
+                inProgress: true,
+                startTime: Date.now(),
+                testAmount,
+                persistentRun: true,
+                wallets: {
+                    pool: this.persistentPool.publicKey,
+                    testWallets: Object.values(this.persistentTestWallets).map(w => w.publicKey)
+                }
+            };
+            
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('PERSISTENT CERTIFICATION')} Starting certification with persistent wallet pool`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Certification ID: ${certificationId}, Test amount: ${testAmount} SOL`)}`);
+            
+            // Get the ordered wallet sequence for transfers
+            const walletSequence = [];
+            for (let i = 1; i <= Object.keys(this.persistentTestWallets).length; i++) {
+                const wallet = this.persistentTestWallets[`test${i}`];
+                if (wallet && wallet.keypair) {
+                    walletSequence.push(wallet);
+                }
+            }
+            
+            // Make sure we have wallets to work with
+            if (walletSequence.length === 0) {
+                return {
+                    success: false,
+                    message: "No valid test wallets available for certification."
+                };
+            }
+            
+            // Check if we have enough in the pool
+            const poolBalance = await this.solanaEngine.executeConnectionMethod('getBalance', new PublicKey(this.persistentPool.publicKey));
+            this.persistentPool.balance = poolBalance / LAMPORTS_PER_SOL;
+            
+            // Calculate how much SOL we need in total
+            const requiredAmount = testAmount * walletSequence.length + (this.certificationConfig.estimated_tx_fee * walletSequence.length * 2) + this.certificationConfig.buffer;
+            
+            // Check if we need more funding
+            if (this.persistentPool.balance < requiredAmount) {
+                // Update certification status to failed
+                if (this._currentCertification && this._currentCertification.id === certificationId) {
+                    this._currentCertification.inProgress = false;
+                    this._currentCertification.success = false;
+                    this._currentCertification.error = `Insufficient funds in persistent pool. Has ${this.persistentPool.balance} SOL, needs ${requiredAmount} SOL.`;
+                    this._currentCertification.endTime = Date.now();
+                    this._currentCertification.duration = this._currentCertification.endTime - this._currentCertification.startTime;
+                }
+                
+                // Display prominent message with wallet address to fund
+                const neededFunding = requiredAmount - this.persistentPool.balance;
+                
+                this.logApi.info(`\n`);
+                this.logApi.info(`  ⚠️ ⚠️ ⚠️  PERSISTENT POOL NEEDS FUNDING  ⚠️ ⚠️ ⚠️  `);
+                this.logApi.info(`  Send ${neededFunding.toFixed(4)} SOL to this address:  `);
+                this.logApi.info(`  ${this.persistentPool.publicKey}  `);
+                this.logApi.info(`  Current balance: ${this.persistentPool.balance} SOL, Required: ${requiredAmount} SOL  `);
+                this.logApi.info(`  Waiting for funds to arrive...  `);
+                this.logApi.info(`\n`);
+                
+                // Wait for funds for up to 2 minutes
+                const maxWaitTimeMs = 120000; // 2 minutes
+                const startTime = Date.now();
+                const checkInterval = 10000; // Check every 10 seconds
+                
+                while (Date.now() - startTime < maxWaitTimeMs) {
+                    // Wait for the check interval
+                    await new Promise(resolve => setTimeout(resolve, checkInterval));
+                    
+                    // Check current balance
+                    try {
+                        const currentBalance = await this.solanaEngine.executeConnectionMethod('getBalance', new PublicKey(this.persistentPool.publicKey));
+                        const currentBalanceSOL = currentBalance / LAMPORTS_PER_SOL;
+                        this.persistentPool.balance = currentBalanceSOL;
+                        
+                        // Calculate how much more is needed (if any)
+                        const stillNeeded = requiredAmount - currentBalanceSOL;
+                        
+                        // If we have enough funds, don't show "still need 0.0000" message
+                        if (stillNeeded <= 0) {
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Current balance: ${currentBalanceSOL} SOL, which is sufficient!`)}`);
+                        } else {
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Current balance: ${currentBalanceSOL} SOL, still need ${stillNeeded.toFixed(4)} SOL more`)}`);
+                        }
+                        
+                        // If we now have enough funds, return success and allow the certification to continue
+                        if (stillNeeded <= 0) {
+                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('Sufficient funds received! Continuing with certification.')}`);
+                            return {
+                                success: true,
+                                message: 'Funds received, continuing with certification'
+                            };
+                        }
+                    } catch (error) {
+                        this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Error checking balance: ${error.message}`)}`);
+                    }
+                }
+                
+                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning('Timed out waiting for funds. Continuing with traditional certification.')}`);
+                
+                return {
+                    success: false,
+                    message: `Insufficient funds in persistent pool. Has ${this.persistentPool.balance} SOL, needs ${requiredAmount} SOL.`,
+                    poolAddress: this.persistentPool.publicKey,
+                    currentBalance: this.persistentPool.balance,
+                    requiredAmount: requiredAmount,
+                    neededFunding: neededFunding
+                };
+            }
+            
+            // Fund all test wallets from the pool with the test amount
+            for (const [index, testWallet] of walletSequence.entries()) {
+                const fundingSuccess = await this.fundWallet(
+                    this.persistentPool.keypair,
+                    testWallet.keypair.publicKey,
+                    testAmount
+                );
+                
+                if (!fundingSuccess) {
+                    return {
+                        success: false,
+                        message: `Failed to fund test wallet ${index + 1} during certification.`
+                    };
+                }
+                
+                // Update wallet balance
+                const updatedBalance = await this.solanaEngine.executeConnectionMethod('getBalance', testWallet.keypair.publicKey);
+                testWallet.balance = updatedBalance / LAMPORTS_PER_SOL;
+                
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funded test wallet ${index + 1}: ${testWallet.publicKey.substring(0, 8)}... with ${testAmount} SOL`)}`);
+            }
+            
+            // Perform the certification chain: pass funds through each wallet and back to the pool
+            let currentSource = walletSequence[0];
+            
+            // Go through the chain of wallets
+            for (let i = 1; i < walletSequence.length; i++) {
+                const destinationWallet = walletSequence[i];
+                
+                const transferSuccess = await this.fundWallet(
+                    currentSource.keypair,
+                    destinationWallet.keypair.publicKey,
+                    testAmount * 0.9 // Transfer slightly less to account for fees
+                );
+                
+                if (!transferSuccess) {
+                    return {
+                        success: false,
+                        message: `Failed to transfer funds from wallet ${i} to wallet ${i + 1} during certification.`
+                    };
+                }
+                
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transferred ${testAmount * 0.9} SOL from wallet ${i} to wallet ${i + 1}`)}`);
+                
+                // Update wallet balances
+                const sourceBalance = await this.solanaEngine.executeConnectionMethod('getBalance', currentSource.keypair.publicKey);
+                currentSource.balance = sourceBalance / LAMPORTS_PER_SOL;
+                
+                const destBalance = await this.solanaEngine.executeConnectionMethod('getBalance', destinationWallet.keypair.publicKey);
+                destinationWallet.balance = destBalance / LAMPORTS_PER_SOL;
+                
+                // Move to the next wallet
+                currentSource = destinationWallet;
+            }
+            
+            // Return funds from the last wallet back to the pool
+            const lastWallet = walletSequence[walletSequence.length - 1];
+            
+            // Get the current balance
+            const lastWalletBalance = await this.solanaEngine.executeConnectionMethod('getBalance', lastWallet.keypair.publicKey);
+            const returnAmount = (lastWalletBalance / LAMPORTS_PER_SOL) * 0.95; // Return most of the balance, leaving some for fees
+            
+            const returnSuccess = await this.fundWallet(
+                lastWallet.keypair,
+                new PublicKey(this.persistentPool.publicKey),
+                returnAmount
+            );
+            
+            if (!returnSuccess) {
+                return {
+                    success: false,
+                    message: `Failed to return funds from final wallet to pool during certification.`
+                };
+            }
+            
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Returned ${returnAmount} SOL from final wallet to pool`)}`);
+            
+            // Update all balances one final time
+            const finalPoolBalance = await this.solanaEngine.executeConnectionMethod('getBalance', new PublicKey(this.persistentPool.publicKey));
+            this.persistentPool.balance = finalPoolBalance / LAMPORTS_PER_SOL;
+            
+            for (const label in this.persistentTestWallets) {
+                const wallet = this.persistentTestWallets[label];
+                const balance = await this.solanaEngine.executeConnectionMethod('getBalance', wallet.keypair.publicKey);
+                wallet.balance = balance / LAMPORTS_PER_SOL;
+            }
+            
+            // Certification successful
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION COMPLETE')} All persistent certification tests passed!`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Final pool balance: ${this.persistentPool.balance} SOL`)}`);
+            
+            // Update certification status
+            if (this._currentCertification && this._currentCertification.id === certificationId) {
+                this._currentCertification.inProgress = false;
+                this._currentCertification.success = true;
+                this._currentCertification.endTime = Date.now();
+                this._currentCertification.duration = this._currentCertification.endTime - this._currentCertification.startTime;
+            }
+            
+            return {
+                success: true,
+                message: 'Persistent pool certification completed successfully',
+                pool: {
+                    address: this.persistentPool.publicKey,
+                    balance: this.persistentPool.balance
+                },
+                testWallets: Object.keys(this.persistentTestWallets).map(label => ({
+                    label,
+                    address: this.persistentTestWallets[label].publicKey,
+                    balance: this.persistentTestWallets[label].balance
+                }))
+            };
+            
+        } catch (error) {
+            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Persistent certification error: ${error.message}`)}`);
+            
+            // Update certification status
+            if (this._currentCertification && this._currentCertification.persistentRun) {
+                this._currentCertification.inProgress = false;
+                this._currentCertification.success = false;
+                this._currentCertification.error = error.message;
+                this._currentCertification.endTime = Date.now();
+                this._currentCertification.duration = this._currentCertification.endTime - this._currentCertification.startTime;
+            }
+            
+            return {
+                success: false,
+                message: `Persistent certification failed: ${error.message}`
+            };
+        }
+    }
+    
+    /**
+     * Fund a wallet with a specific amount of SOL
+     * 
+     * @param {Keypair} sourceKeypair - Source wallet keypair
+     * @param {PublicKey|string} destinationPublicKey - Destination wallet public key
+     * @param {number} amountSOL - Amount to send in SOL
+     * @returns {Promise<boolean>} - True if funding succeeded
+     */
+    async fundWallet(sourceKeypair, destinationPublicKey, amountSOL) {
+        try {
+            // Parse destination public key if it's a string
+            const destPubkey = typeof destinationPublicKey === 'string' 
+                ? new PublicKey(destinationPublicKey)
+                : destinationPublicKey;
+            
+            // Get current source wallet balance first
+            const sourceBalance = await this.solanaEngine.executeConnectionMethod('getBalance', sourceKeypair.publicKey);
+            const sourceBalanceSOL = sourceBalance / LAMPORTS_PER_SOL;
+            
+            // Minimum amount needed for rent exemption (approx 0.00089 SOL on Solana)
+            const MIN_RENT_EXEMPTION = 0.001; // A bit more than needed to be safe
+            
+            // Calculate safe transfer amount that won't violate rent exemption
+            // This ensures the source wallet retains enough SOL for rent exemption
+            const safeAmount = Math.max(0, sourceBalanceSOL - MIN_RENT_EXEMPTION - 0.0001); // Extra buffer for fees
+            
+            // If requested amount exceeds safe amount, adjust it
+            if (amountSOL > safeAmount) {
+                // Log warning if we need to adjust the amount
+                if (safeAmount <= 0) {
+                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Cannot transfer funds: Source wallet has only ${sourceBalanceSOL} SOL, which is below or too close to minimum balance requirement`)}`);
+                    return false;
+                }
+                
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Adjusting transfer amount from ${amountSOL} to ${safeAmount} SOL to maintain minimum balance`)}`);
+                amountSOL = safeAmount;
+            }
+            
+            // Create a simple transfer transaction
+            const transaction = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey: sourceKeypair.publicKey,
+                    toPubkey: destPubkey,
+                    lamports: Math.floor(amountSOL * LAMPORTS_PER_SOL)
+                })
+            );
+            
+            // Set recent blockhash using executeConnectionMethod
+            const blockhashResponse = await this.solanaEngine.executeConnectionMethod('getLatestBlockhash');
+            transaction.recentBlockhash = blockhashResponse.blockhash;
+            
+            // Sign transaction
+            transaction.sign(sourceKeypair);
+            
+            // Send transaction using executeConnectionMethod
+            const signature = await this.solanaEngine.executeConnectionMethod('sendRawTransaction', transaction.serialize());
+            
+            // Wait for confirmation using executeConnectionMethod
+            await this.solanaEngine.executeConnectionMethod('confirmTransaction', signature);
+            
+            return true;
+        } catch (error) {
+            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to fund wallet: ${error.message}`)}`);
+            return false;
+        }
+    }
+
+    /**
+     * Wait for funds to be sent to a specific wallet
+     * 
+     * @param {string} publicKey - The wallet address to wait for funds
+     * @param {number} amount - The amount to wait for in SOL
+     * @param {string} [message] - Optional message to display while waiting
+     * @returns {Promise<Object>} - Result of the wait, including success flag and amount received
+     */
+    async waitForFunds(publicKey, amount, message = '') {
+        try {
+            // Set up a readline interface for key press handling
+            const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout
+            });
+            
+            // Get initial balance
+            const initialBalance = await this.solanaEngine.executeConnectionMethod('getBalance', new PublicKey(publicKey));
+            const initialBalanceSOL = initialBalance / LAMPORTS_PER_SOL;
+            
+            // Display funding request with QR code
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('WAITING FOR FUNDS')} `);
+            this.logApi.info(`Please send at least ${amount} SOL to: ${publicKey}`);
+            this.logApi.info(`Initial balance: ${this.formatLog.balance(initialBalanceSOL)} SOL`);
+            
+            // Generate QR code for easy scanning
+            const qrLines = await generateConsoleQR(publicKey, amount);
+            this.logApi.info(`Generated QR code for easy scanning`);
+            qrLines.forEach(line => this.logApi.info(line));
+            
+            // Set up keypress handler to allow skipping with 's' key
+            let skipCertification = false;
+            
+            const keypressHandler = (key) => {
+                if (key.toString().toLowerCase() === 's' || key.toString().toLowerCase() === 's\n') {
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.warning('Skipping certification as requested by user')}`);
+                    skipCertification = true;
+                    
+                    // Clean up the event listener
+                    process.stdin.removeListener('data', keypressHandler);
+                    if (process.stdin.isTTY) {
+                        process.stdin.setRawMode(false);
+                    }
+                    process.stdin.pause();
+                }
+            };
+            
+            // Only set up keypress handler in interactive mode
+            if (process.stdin.isTTY) {
+                process.stdin.setRawMode(true);
+                process.stdin.resume();
+                process.stdin.setEncoding('utf8');
+                process.stdin.on('data', keypressHandler);
+                
+                this.logApi.info(`\n`);
+                this.logApi.info(`  ⚠️  TREASURY CERTIFICATION - WAITING FOR FUNDS - SERVICE STARTUP PAUSED   ⚠️  `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`  Send ${amount} SOL to this address:                                         `);
+                this.logApi.info(`  ${publicKey}  `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`  Press 's' key to skip certification and continue startup                     `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`\n`);
+            } else {
+                // In non-interactive mode, provide clear instructions in the logs
+                this.logApi.info(`\n`);
+                this.logApi.info(`  ⚠️  TREASURY CERTIFICATION - WAITING FOR FUNDS - SERVICE STARTUP PAUSED   ⚠️  `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`  Send ${amount} SOL to this address:                                         `);
+                this.logApi.info(`  ${publicKey}  `);
+                this.logApi.info(`                                                                                `);
+                this.logApi.info(`\n`);
+            }
+            
+            // Set up reminder interval
+            const addressReminderInterval = setInterval(() => {
+                this.logApi.info(`\n`);
+                this.logApi.info(` REMINDER: Treasury certification waiting for funds `);
+                this.logApi.info(` Send ${amount} SOL to: ${publicKey} `);
+                if (process.stdin.isTTY) {
+                    this.logApi.info(` Press 's' key to skip certification and continue `);
+                }
+                this.logApi.info(`\n`);
+                // Display QR code again for convenience
+                qrLines.forEach(line => this.logApi.info(line));
+            }, 20000); // Remind every 20 seconds
+            
+            // Start polling for balance changes
+            const checkInterval = 5000; // Check every 5 seconds
+            const maxWaitTime = process.stdin.isTTY ? 5 * 60 * 1000 : 2 * 60 * 1000; // Wait up to 5 min (interactive) or 2 min (non-interactive)
+            const startTime = Date.now();
+            
+            let receivedAmount = 0;
+            let senderAddress = null;
+            
+            // Run the check loop
+            while (Date.now() - startTime < maxWaitTime && !skipCertification) {
+                // Wait for the check interval
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                
+                // Check current balance
+                const currentBalance = await this.solanaEngine.executeConnectionMethod('getBalance', new PublicKey(publicKey));
+                const currentBalanceSOL = currentBalance / LAMPORTS_PER_SOL;
+                
+                // Check if we received funds
+                const balanceIncrease = currentBalanceSOL - initialBalanceSOL;
+                
+                this.logApi.info(`${this.formatLog.tag()} Still waiting for funds... Current balance: ${this.formatLog.balance(currentBalanceSOL)} SOL (need ${amount} SOL)`);
+                
+                if (balanceIncrease >= amount) {
+                    // We received sufficient funds
+                    receivedAmount = balanceIncrease;
+                    
+                    // Try to identify the sender
+                    try {
+                        // Use executeConnectionMethod instead of direct connection access
+                        // This ensures we're using the proper connection with retries and error handling
+                        const signatures = await this.solanaEngine.executeConnectionMethod(
+                            'getSignaturesForAddress',
+                            new PublicKey(publicKey),
+                            { limit: 5 }
+                        );
+                        
+                        if (signatures && signatures.length > 0) {
+                            const txInfo = await this.solanaEngine.executeConnectionMethod(
+                                'getTransaction',
+                                signatures[0].signature
+                            );
+                            if (txInfo && txInfo.transaction && txInfo.transaction.message.accountKeys.length > 0) {
+                                // The first account is usually the sender
+                                senderAddress = txInfo.transaction.message.accountKeys[0].toString();
+                                
+                                if (senderAddress === publicKey) {
+                                    // If it's the same address, try the second one
+                                    senderAddress = txInfo.transaction.message.accountKeys[1]?.toString() || null;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        // Not critical, so just log
+                        this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to identify sender: ${error.message}`)}`);
+                    }
+                    
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funding received! Detected ${receivedAmount} SOL sent to certification wallet.`)}`);
+                    if (senderAddress) {
+                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funding received from ${senderAddress}`)}`);
+                    }
+                    
+                    // Clean up and exit the loop
+                    clearInterval(addressReminderInterval);
+                    
+                    if (process.stdin.isTTY) {
+                        process.stdin.removeListener('data', keypressHandler);
+                        process.stdin.setRawMode(false);
+                        process.stdin.pause();
+                    }
+                    
+                    rl.close();
+                    return { 
+                        success: true, 
+                        amount: receivedAmount, 
+                        sender: senderAddress 
+                    };
+                }
+            }
+            
+            // If we reach here, we either timed out or the certification was skipped
+            clearInterval(addressReminderInterval);
+            
+            if (skipCertification) {
                 return { success: false, skipped: true };
             }
             
-            if (waitAttempts >= maxWaitAttempts) {
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Timed out waiting for funds after 5 minutes.`)}`);
-                return { success: false, timeout: true };
-            }
-            
-            return { 
-                success: true, 
-                amount: receivedAmount, 
-                sender: senderAddress 
-            };
+            // We timed out
+            const timeoutDuration = process.stdin.isTTY ? "5 minutes" : "2 minutes";
+            this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Timed out waiting for funds after ${timeoutDuration}.`)}`);
+            return { success: false, timeout: true };
         } catch (error) {
             // Make sure to clear the interval if there's an error
             if (addressReminderInterval) {
@@ -565,7 +1058,9 @@ class TreasuryCertifier {
             // Clean up key press handling
             try {
                 process.stdin.removeListener('data', keypressHandler);
-                process.stdin.setRawMode(false);
+                if (process.stdin.isTTY) {
+                    process.stdin.setRawMode(false);
+                }
                 process.stdin.pause();
                 rl.close();
             } catch (cleanupError) {
@@ -584,8 +1079,66 @@ class TreasuryCertifier {
      * @returns {Promise<Object>} - Result of the certification process
      */
     async runCertification(delayMs = 5000) {
+        // Check if we already have a certification in progress
+        if (this._currentCertification) {
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION IN PROGRESS')} Certification already running with ID: ${this._currentCertification.id}`);
+            // Return the current certification status
+            return { success: false, inProgress: true, message: "Certification already in progress" };
+        }
+        
+        // First, try to use the persistent pool if available
+        if (this.persistentPool) {
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('PERSISTENT CERTIFICATION')} Using persistent certification pool`);
+            
+            try {
+                // Run certification with persistent wallets
+                const result = await this.runPersistentCertification();
+                
+                if (result.success) {
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFICATION COMPLETE')} All operations validated using persistent pool.`);
+                } else {
+                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.header('PERSISTENT CERTIFICATION FAILED')} ${result.message}`);
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('Falling back to traditional certification...')}`);
+                    
+                    // Fall back to traditional certification below
+                }
+                
+                // If successful, return the result
+                if (result.success) {
+                    return result;
+                }
+                
+                // If failed, continue with traditional certification
+            } catch (poolError) {
+                this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Error using persistent pool: ${poolError.message}`)}`);
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('Falling back to traditional certification...')}`);
+                
+                // Fall back to traditional certification below
+            }
+        }
+        
+        // Traditional certification flow (if persistent pool isn't available or failed)
         // Get test amount from config
         const testAmount = this.config.service_test?.contest_wallet_test_amount || 0.006;
+        
+        // If we already have a certification in progress, don't start a new one
+        // EXCEPT when we're falling back from a failed persistent certification
+        // which we can detect by checking if the current certification has persistentRun=true
+        if (this._currentCertification && this._currentCertification.inProgress && 
+            !(this._currentCertification.persistentRun && !this._currentCertification.success)) {
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION IN PROGRESS')} Using existing certification with ID: ${this._currentCertification.id}`);
+            return { 
+                success: false, 
+                inProgress: true,
+                message: "Certification already in progress" 
+            };
+        }
+        
+        // If we're falling back from a failed persistent run, reset it
+        if (this._currentCertification && this._currentCertification.persistentRun && !this._currentCertification.success) {
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('Resetting failed persistent certification to try traditional method')}`);
+            this._currentCertification = null;
+        }
         
         // Generate a unique certification ID
         const certificationId = `CERT-${Date.now().toString(36).toUpperCase()}`;
@@ -595,7 +1148,7 @@ class TreasuryCertifier {
         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Certification ID: ${certificationId}, Initial delay: ${delayMs/1000}s, Test amount: ${testAmount} SOL`)}`);
         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Keypairs will be saved to ${this.certKeypairsDir}`)}`);
         
-        // Reset current certification tracking
+        // Set current certification tracking
         this._currentCertification = {
             id: certificationId,
             inProgress: true,
@@ -613,984 +1166,311 @@ class TreasuryCertifier {
         
         // Store keypair in certification state for recovery
         if (this._currentCertification) {
-            this._currentCertification.sourceKeypair = sourceKeypair;
+            this._currentCertification.wallets.source = sourcePublicKey;
+            
+            // Save the source wallet keypair to file
+            const sourceKeypairData = {
+                publicKey: sourcePublicKey,
+                secretKey: Array.from(sourceKeypair.secretKey),
+                base58PrivateKey: bs58.encode(sourceKeypair.secretKey),
+                timestamp: new Date().toISOString(),
+                certificationId,
+                description: "Certification source wallet",
+                type: "source"
+            };
+            
+            const sourceKeypairPath = path.join(this.certKeypairsDir, `certification_source_${certificationId}.json`);
+            fs.writeFileSync(sourceKeypairPath, JSON.stringify(sourceKeypairData, null, 2));
         }
         
-        // Check if source wallet already has funds
-        let sourceBalance = await this.solanaEngine.executeConnectionMethod('getBalance', sourceKeypair.publicKey);
-        let solBalance = sourceBalance / LAMPORTS_PER_SOL;
+        // Check for available contest wallet
+        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFIER')} Checking for available contest wallet...`);
         
-        // If source doesn't have funds, check for a contest wallet we can use
-        if (solBalance < testAmount) {
-            // Try to find an existing contest wallet we can borrow funds from
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFIER')} Checking for available contest wallet...`);
-            
-            const contestWallet = await this.prisma.contest_wallets.findFirst({
-                where: {
-                    balance: {
-                        gte: testAmount + 0.002 // Need extra for fees
-                    }
-                },
-                include: {
-                    contests: {
-                        select: {
-                            contest_code: true,
-                            status: true
-                        }
-                    }
-                },
-                orderBy: {
-                    balance: 'desc'
-                }
-            });
-            
-            if (contestWallet) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Found contest wallet with ${contestWallet.balance} SOL`)}`);
+        // Request funds to the source wallet
+        const fundingResult = await this.waitForFunds(sourcePublicKey, testAmount);
+        
+        if (!fundingResult.success) {
+            if (fundingResult.skipped) {
+                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning('Certification skipped by user')}`);
                 
-                try {
-                    // Load the contest wallet private key
-                    const privateKey = this.decryptPrivateKey(contestWallet.private_key);
-                    const contestKeypair = this.createKeypairFromPrivateKey(privateKey);
-                    
-                    if (contestKeypair) {
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Using contest wallet for certification: ${contestKeypair.publicKey}`)}`);
-                        
-                        // Run the test with contest wallet as source
-                        const result = await this.performCertification(testAmount, contestKeypair);
-                        
-                        if (result.success) {
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFICATION COMPLETE')} All operations validated.`);
-                        } else {
-                            this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFICATION FAILED')} Operations may have issues: ${result.error}`);
-                        }
-                        
-                        return result;
-                    }
-                } catch (contestError) {
-                    this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Error using contest wallet: ${contestError.message}`)}`);
-                    // Fall through to waiting for user to provide funds
+                // Update certification status
+                if (this._currentCertification && this._currentCertification.id === certificationId) {
+                    this._currentCertification.inProgress = false;
+                    this._currentCertification.skipped = true;
+                    this._currentCertification.endTime = Date.now();
                 }
-            }
-            
-            // If we're here, there's no existing wallet we can use
-            // We need to wait for funds to be sent to our test wallet
-            // Wait for funds and identify sender for return
-            const fundingResult = await this.waitForFunds(sourceKeypair, testAmount);
-            
-            if (!fundingResult.success) {
-                if (fundingResult.skipped) {
-                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Certification was manually skipped by user.`)}`);
-                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Continuing with service initialization.`)}`);
-                    return {
-                        success: false,
-                        skipped: true,
-                        message: "Certification manually skipped by user",
-                        sourceWallet: sourcePublicKey
-                    };
-                } else {
-                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Timed out waiting for funds after 5 minutes.`)}`);
-                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Skipping certification and continuing service initialization.`)}`);
-                    return {
-                        success: false,
-                        timeout: true,
-                        message: "Certification timed out - no funds received within 5 minutes",
-                        sourceWallet: sourcePublicKey
-                    };
+                
+                return { success: false, skipped: true };
+            } else if (fundingResult.timeout) {
+                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning('Certification timed out waiting for funds')}`);
+                
+                // Update certification status
+                if (this._currentCertification && this._currentCertification.id === certificationId) {
+                    this._currentCertification.inProgress = false;
+                    this._currentCertification.timeout = true;
+                    this._currentCertification.endTime = Date.now();
                 }
-            }
-            
-            // Track the sender for later return
-            const senderAddress = fundingResult.sender;
-            const receivedAmount = fundingResult.amount;
-            
-            // We have funds, run the test but pass the sender info
-            const result = await this.performCertification(testAmount, sourceKeypair, senderAddress, receivedAmount);
-            
-            if (result.success) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFICATION COMPLETE')} All operations validated.`);
+                
+                return { success: false, timeout: true };
             } else {
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFICATION FAILED')} Operations may have issues: ${result.error}`);
+                this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Error during funding: ${fundingResult.error || 'Unknown error'}`)}`);
+                
+                // Update certification status
+                if (this._currentCertification && this._currentCertification.id === certificationId) {
+                    this._currentCertification.inProgress = false;
+                    this._currentCertification.error = fundingResult.error || 'Unknown error during funding';
+                    this._currentCertification.endTime = Date.now();
+                }
+                
+                return { success: false, error: fundingResult.error || 'Unknown error' };
             }
-            
-            return result;
-        } else {
-            // We already have funds, run the test
-            const result = await this.performCertification(testAmount, sourceKeypair);
-            
-            if (result.success) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFICATION COMPLETE')} All operations validated.`);
-            } else {
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFICATION FAILED')} Operations may have issues: ${result.error}`);
-            }
-            
-            return result;
         }
-    }
-    
-    /**
-     * Perform the certification cycle - fund transfers and balance verification
-     * 
-     * @param {number} testAmount - Amount of SOL to use in certification
-     * @param {Keypair} sourceKeypair - Source wallet keypair with funds
-     * @param {string} [originalSender=null] - Address of the original sender (for return funds)
-     * @param {number} [originalAmount=0] - Original amount received (for return funds)
-     * @returns {Promise<Object>} - Result of the certification
-     */
-    async performCertification(testAmount, sourceKeypair, originalSender = null, originalAmount = 0) {
-        const startTime = Date.now();
-        // Use the certification ID from current certification, or generate a new one
-        const certificationId = this._currentCertification?.id || `CERT-${Date.now().toString(36).toUpperCase()}`;
         
-        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Starting treasury validation cycle`);
+        // If we reach here, we received funding and can continue with certification
+        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION')} Funding received, continuing certification...`);
         
-        // Store test wallets for cleanup
-        const wallets = {
-            source: null,
-            test1: null,
-            test2: null,
-            test3: null
-        };
+        // Generate intermediate wallets for testing
+        const intermediateKeypair = Keypair.generate();
+        const intermediatePublicKey = intermediateKeypair.publicKey.toString();
         
-        // Track transaction statuses for visual flow
-        const txStatus = {
-            source_to_test1: false,
-            test1_to_test2: false,
-            test2_to_test3: false,
-            test3_to_source: false,
-            source_to_sender: false
-        };
+        // Store keypair in certification state
+        if (this._currentCertification) {
+            this._currentCertification.wallets.intermediate = intermediatePublicKey;
+            
+            // Save the intermediate wallet keypair to file
+            const intermediateKeypairData = {
+                publicKey: intermediatePublicKey,
+                secretKey: Array.from(intermediateKeypair.secretKey),
+                base58PrivateKey: bs58.encode(intermediateKeypair.secretKey),
+                timestamp: new Date().toISOString(),
+                certificationId,
+                description: "Certification intermediate wallet",
+                type: "intermediate"
+            };
+            
+            const intermediateKeypairPath = path.join(this.certKeypairsDir, `certification_intermediate_${certificationId}.json`);
+            fs.writeFileSync(intermediateKeypairPath, JSON.stringify(intermediateKeypairData, null, 2));
+        }
         
-        // Track steps
-        const steps = {
-            createWallets: false,
-            loadSource: false,
-            transfer1: false,
-            transfer2: false,
-            transfer3: false,
-            verifyBalances: false,
-            returnFunds: false,
-            returnToOriginalSender: false
-        };
+        // Generate target wallet for testing
+        const targetKeypair = Keypair.generate();
+        const targetPublicKey = targetKeypair.publicKey.toString();
+        
+        // Store keypair in certification state
+        if (this._currentCertification) {
+            this._currentCertification.wallets.target = targetPublicKey;
+            
+            // Save the target wallet keypair to file
+            const targetKeypairData = {
+                publicKey: targetPublicKey,
+                secretKey: Array.from(targetKeypair.secretKey),
+                base58PrivateKey: bs58.encode(targetKeypair.secretKey),
+                timestamp: new Date().toISOString(),
+                certificationId,
+                description: "Certification target wallet",
+                type: "target"
+            };
+            
+            const targetKeypairPath = path.join(this.certKeypairsDir, `certification_target_${certificationId}.json`);
+            fs.writeFileSync(targetKeypairPath, JSON.stringify(targetKeypairData, null, 2));
+        }
         
         try {
-            // 1. Create test wallets
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Creating test wallets...`);
+            // Step 1: Transfer from source to intermediate wallet
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION')} Step 1: Transfer from source to intermediate wallet...`);
             
-            wallets.source = {
-                publicKey: sourceKeypair.publicKey.toString(),
-                keypair: sourceKeypair,
-                balance: 0
-            };
+            const transferAmount1 = testAmount * 0.9; // Transfer 90% to account for fees
+            const transfer1Success = await this.fundWallet(sourceKeypair, intermediatePublicKey, transferAmount1);
             
-            // Save source keypair to disk
-            await this.saveKeypairToDisk(sourceKeypair, 'source', certificationId);
-            
-            // Create test wallets
-            const test1Keypair = Keypair.generate();
-            wallets.test1 = {
-                publicKey: test1Keypair.publicKey.toString(),
-                keypair: test1Keypair,
-                balance: 0
-            };
-            // Save test1 keypair to disk
-            await this.saveKeypairToDisk(test1Keypair, 'test1', certificationId);
-            
-            const test2Keypair = Keypair.generate();
-            wallets.test2 = {
-                publicKey: test2Keypair.publicKey.toString(), 
-                keypair: test2Keypair,
-                balance: 0
-            };
-            // Save test2 keypair to disk
-            await this.saveKeypairToDisk(test2Keypair, 'test2', certificationId);
-            
-            const test3Keypair = Keypair.generate();
-            wallets.test3 = {
-                publicKey: test3Keypair.publicKey.toString(), 
-                keypair: test3Keypair,
-                balance: 0
-            };
-            // Save test3 keypair to disk
-            await this.saveKeypairToDisk(test3Keypair, 'test3', certificationId);
-            
-            steps.createWallets = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Created test wallets and saved keypairs to ${this.certKeypairsDir}`)}`);
-            this.logApi.info(`${this.formatLog.tag()} Source: ${wallets.source.publicKey.substring(0, 8)}...`);
-            this.logApi.info(`${this.formatLog.tag()} Test1: ${wallets.test1.publicKey.substring(0, 8)}...`);
-            this.logApi.info(`${this.formatLog.tag()} Test2: ${wallets.test2.publicKey.substring(0, 8)}...`);
-            this.logApi.info(`${this.formatLog.tag()} Test3: ${wallets.test3.publicKey.substring(0, 8)}...`);
-            
-            // Display initial transaction flow diagram
-            this.displayTransactionFlowDiagram(wallets, txStatus);
-            
-            // Check if we have identified an original sender
-            if (originalSender) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Original sender identified: ${originalSender.substring(0, 8)}...`)}`);
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Will return funds after certification`)}`);
+            if (!transfer1Success) {
+                throw new Error('Failed to transfer funds from source to intermediate wallet');
             }
             
-            // 2. Verify source wallet balance
-            const sourceBalance = await this.solanaEngine.executeConnectionMethod('getBalance', sourceKeypair.publicKey);
-            wallets.source.balance = sourceBalance / LAMPORTS_PER_SOL;
+            // Get intermediate wallet balance to verify
+            const intermediateBalance = await this.solanaEngine.executeConnectionMethod('getBalance', intermediateKeypair.publicKey);
+            const intermediateBalanceSOL = intermediateBalance / LAMPORTS_PER_SOL;
             
-            if (wallets.source.balance < testAmount) {
-                return {
-                    success: false,
-                    message: "Source wallet has insufficient funds",
-                    steps,
-                    sourceWallet: wallets.source.publicKey,
-                    requiredAmount: testAmount
-                };
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transferred ${transferAmount1} SOL to intermediate wallet. Balance: ${intermediateBalanceSOL} SOL`)}`);
+            
+            // Step 2: Transfer from intermediate to target wallet
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION')} Step 2: Transfer from intermediate to target wallet...`);
+            
+            const transferAmount2 = transferAmount1 * 0.9; // Transfer 90% to account for fees
+            const transfer2Success = await this.fundWallet(intermediateKeypair, targetPublicKey, transferAmount2);
+            
+            if (!transfer2Success) {
+                throw new Error('Failed to transfer funds from intermediate to target wallet');
             }
             
-            // Source wallet has funds, proceed with test
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Source wallet has sufficient funds: ${wallets.source.balance} SOL`)}`);
-            steps.loadSource = true;
+            // Get target wallet balance to verify
+            const targetBalance = await this.solanaEngine.executeConnectionMethod('getBalance', targetKeypair.publicKey);
+            const targetBalanceSOL = targetBalance / LAMPORTS_PER_SOL;
             
-            // 3. Transfer from source to test1
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Transferring ${testAmount} SOL from source to test1...`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transferred ${transferAmount2} SOL to target wallet. Balance: ${targetBalanceSOL} SOL`)}`);
             
-            const sig1 = await this.transferSol(
-                wallets.source.keypair,
-                wallets.test1.publicKey,
-                testAmount
-            );
-            
-            steps.transfer1 = true;
-            txStatus.source_to_test1 = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 1 successful: ${typeof sig1 === 'object' ? JSON.stringify(sig1).substring(0, 8) : sig1.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig1 === 'object' ? sig1.signature : sig1}`)}`);
-            
-            // Update visual flow diagram
-            this.displayTransactionFlowDiagram(wallets, txStatus);
-            
-            // Wait for balance update
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // 4. Transfer from test1 to test2
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Transferring ${testAmount - 0.001} SOL from test1 to test2...`);
-            
-            const sig2 = await this.transferSol(
-                wallets.test1.keypair,
-                wallets.test2.publicKey,
-                testAmount - 0.001 // Account for fees
-            );
-            
-            steps.transfer2 = true;
-            txStatus.test1_to_test2 = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 2 successful: ${typeof sig2 === 'object' ? JSON.stringify(sig2).substring(0, 8) : sig2.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig2 === 'object' ? sig2.signature : sig2}`)}`);
-            
-            // Update visual flow diagram
-            this.displayTransactionFlowDiagram(wallets, txStatus);
-            
-            // Wait for balance update
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // 5. Transfer from test2 to test3
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Transferring ${testAmount - 0.002} SOL from test2 to test3...`);
-            
-            const sig3 = await this.transferSol(
-                wallets.test2.keypair,
-                wallets.test3.publicKey,
-                testAmount - 0.002 // Account for fees
-            );
-            
-            steps.transfer3 = true;
-            txStatus.test2_to_test3 = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transfer 3 successful: ${typeof sig3 === 'object' ? JSON.stringify(sig3).substring(0, 8) : sig3.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig3 === 'object' ? sig3.signature : sig3}`)}`);
-            
-            // Update visual flow diagram
-            this.displayTransactionFlowDiagram(wallets, txStatus);
-            
-            // Wait for balance update
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // 6. Verify balances
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Verifying balances...`);
-            
-            const test1Balance = await this.solanaEngine.executeConnectionMethod('getBalance', wallets.test1.keypair.publicKey);
-            wallets.test1.balance = test1Balance / LAMPORTS_PER_SOL;
-            
-            const test2Balance = await this.solanaEngine.executeConnectionMethod('getBalance', wallets.test2.keypair.publicKey);
-            wallets.test2.balance = test2Balance / LAMPORTS_PER_SOL;
-            
-            const test3Balance = await this.solanaEngine.executeConnectionMethod('getBalance', wallets.test3.keypair.publicKey);
-            wallets.test3.balance = test3Balance / LAMPORTS_PER_SOL;
-            
-            steps.verifyBalances = true;
-            this.logApi.info(`${this.formatLog.tag()} Test1 balance: ${wallets.test1.balance} SOL`);
-            this.logApi.info(`${this.formatLog.tag()} Test2 balance: ${wallets.test2.balance} SOL`);
-            this.logApi.info(`${this.formatLog.tag()} Test3 balance: ${wallets.test3.balance} SOL`);
-            
-            // 7. Return funds to source wallet
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Returning funds from Test3 to source wallet...`);
-            
-            const sig4 = await this.transferSol(
-                wallets.test3.keypair,
-                wallets.source.publicKey,
-                testAmount - 0.003 // Account for fees in the three transactions
-            );
-            
-            steps.returnFunds = true;
-            txStatus.test3_to_source = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Funds returned to source wallet: ${typeof sig4 === 'object' ? JSON.stringify(sig4).substring(0, 8) : sig4.substring(0, 8)}...`)}`);
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`View transfer: https://solscan.io/tx/${typeof sig4 === 'object' ? sig4.signature : sig4}`)}`);
-            
-            // Update visual flow diagram
-            this.displayTransactionFlowDiagram(wallets, txStatus);
-            
-            // Wait for balance update
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Get updated source balance
-            const updatedSourceBalance = await this.solanaEngine.executeConnectionMethod('getBalance', sourceKeypair.publicKey);
-            const updatedSolBalance = updatedSourceBalance / LAMPORTS_PER_SOL;
-            
-            // 7. If we have an original sender, return funds to them
-            if (originalSender) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Returning funds to original sender...`);
+            // Step 3: If a recovery address is specified, return funds there
+            if (fundingResult.sender && fundingResult.sender !== sourcePublicKey) {
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION')} Step 3: Returning funds to original sender...`);
                 
-                // The amount to return would be what we have in the source wallet now
-                const returnAmount = updatedSolBalance - 0.001; // Keep a small amount for fees
+                const returnAmount = targetBalanceSOL * 0.9; // Return 90% to account for fees
+                const returnSuccess = await this.fundWallet(targetKeypair, fundingResult.sender, returnAmount);
                 
-                if (returnAmount > 0.001) {
-                    const returnResult = await this.returnFundsToSender(
-                        sourceKeypair,
-                        originalSender,
-                        returnAmount
-                    );
-                    
-                    if (returnResult.success) {
-                        txStatus.source_to_sender = true;
-                        this.displayTransactionFlowDiagram(wallets, txStatus, originalSender);
-                        steps.returnToOriginalSender = true;
-                        
-                        // Create highly visible success banner for return transaction
-                        const returnBanner = [
-                            `\n${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-                            `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  ✅ CERTIFICATION COMPLETE! FUNDS RETURNED TO ORIGINAL SENDER              ✅  ${this.fancyColors.RESET}`,
-                            `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-                            `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  Transaction: ${returnResult.solscanLink}                           ${this.fancyColors.RESET}`,
-                            `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  Amount: ${returnAmount.toFixed(6)} SOL                                               ${this.fancyColors.RESET}`,
-                            `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  Recipient: ${originalSender.substring(0, 8)}...                                           ${this.fancyColors.RESET}`,
-                            `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-                            `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  SERVICE INITIALIZATION CONTINUING - ALL TESTS PASSED                       ${this.fancyColors.RESET}`,
-                            `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}\n`
-                        ];
-                        
-                        // Display banner
-                        returnBanner.forEach(line => this.logApi.info(line));
-                        
-                        // Also log detail for logs
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Successfully returned ${returnAmount.toFixed(6)} SOL to original sender`)}`);
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction confirmed on blockchain: ${typeof returnResult.txid === 'object' ? JSON.stringify(returnResult.txid) : returnResult.txid}`)}`);
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`View transaction: ${typeof returnResult.solscanLink === 'object' ? 'https://solscan.io/tx/' + (typeof returnResult.txid === 'object' ? returnResult.txid.toString() : returnResult.txid) : returnResult.solscanLink}`)}`);
-                    } else {
-                        this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Could not return funds to original sender: ${returnResult.error}`)}`);
-                    }
+                if (returnSuccess) {
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Returned ${returnAmount} SOL to original sender: ${fundingResult.sender}`)}`);
                 } else {
-                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Not enough funds to return to original sender (${returnAmount.toFixed(6)} SOL)`)}`);
+                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to return funds to original sender. The sender can recover ${targetBalanceSOL} SOL from: ${targetPublicKey}`)}`);
                 }
-            } 
-            
-            // Calculate time taken
-            const duration = Date.now() - startTime;
-            
-            // All steps completed successfully
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Completed in ${duration}ms`);
-            
-            // Mark certification as complete
-            if (this._currentCertification) {
-                this._currentCertification.inProgress = false;
-                this._currentCertification.completed = true;
-                this._currentCertification.completedAt = Date.now();
+            } else {
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION')} No identifiable sender, skipping return step.`);
             }
             
+            // Certification completed successfully
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CERTIFICATION COMPLETE')} All tests passed!`);
+            
+            // Update certification status
+            if (this._currentCertification && this._currentCertification.id === certificationId) {
+                this._currentCertification.inProgress = false;
+                this._currentCertification.success = true;
+                this._currentCertification.endTime = Date.now();
+                this._currentCertification.duration = this._currentCertification.endTime - this._currentCertification.startTime;
+            }
+            
+            // Return successful result
             return {
                 success: true,
-                certificationId,
-                message: `Treasury certification completed successfully in ${duration}ms`,
-                steps,
-                returnedToSender: steps.returnToOriginalSender
+                message: 'Certification completed successfully',
+                wallets: {
+                    source: sourcePublicKey,
+                    intermediate: intermediatePublicKey,
+                    target: targetPublicKey
+                },
+                certificationId
             };
             
         } catch (error) {
-            const duration = Date.now() - startTime;
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Certification failed after ${duration}ms: ${error.message}`)}`, {
-                error: error.message,
-                stack: error.stack,
-                steps
-            });
+            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Certification error: ${error.message}`)}`);
             
-            // Mark certification as failed but keep wallet info for recovery
-            if (this._currentCertification) {
+            // Update certification status
+            if (this._currentCertification && this._currentCertification.id === certificationId) {
                 this._currentCertification.inProgress = false;
-                this._currentCertification.failed = true;
+                this._currentCertification.success = false;
                 this._currentCertification.error = error.message;
-                this._currentCertification.failedAt = Date.now();
-                // Keep wallet information for recovery attempts
+                this._currentCertification.endTime = Date.now();
+                this._currentCertification.duration = this._currentCertification.endTime - this._currentCertification.startTime;
             }
             
-            // If certification fails but we identified an original sender, try to return whatever funds remain
-            if (originalSender && wallets.source && wallets.source.keypair) {
-                try {
-                    // Get current balance
-                    const currentBalance = await this.solanaEngine.executeConnectionMethod('getBalance', wallets.source.keypair.publicKey);
-                    const solBalance = currentBalance / LAMPORTS_PER_SOL;
-                    
-                    if (solBalance > 0.002) { // Only try if there's enough to return
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`RECOVERY`)} Attempting to return remaining funds to original sender...`);
-                        
-                        const returnResult = await this.returnFundsToSender(
-                            wallets.source.keypair,
-                            originalSender,
-                            solBalance - 0.001 // Keep a small amount for fees
-                        );
-                        
-                        if (returnResult.success) {
-                            txStatus.source_to_sender = true;
-                            this.displayTransactionFlowDiagram(wallets, txStatus, originalSender);
-                            
-                            // The recovery path is only for partial cert failures during the test transfers
-                            // This means the internal wallet transactions failed, but the return-to-sender works
-                            const recoveryBanner = [
-                                `\n${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-                                `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  ✅ FUNDS SUCCESSFULLY RETURNED TO ORIGINAL SENDER                        ✅  ${this.fancyColors.RESET}`,
-                                `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-                                `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  Transaction: ${returnResult.solscanLink}                           ${this.fancyColors.RESET}`,
-                                `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  Amount: ${(solBalance - 0.001).toFixed(6)} SOL                                         ${this.fancyColors.RESET}`,
-                                `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}`,
-                                `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}  SERVICE INITIALIZATION CONTINUING - CRITICAL FUNCTION VALIDATED          ${this.fancyColors.RESET}`,
-                                `${this.fancyColors.BG_GREEN}${this.fancyColors.BLACK}                                                                               ${this.fancyColors.RESET}\n`
-                            ];
-                            
-                            // Display banner
-                            recoveryBanner.forEach(line => this.logApi.info(line));
-                            
-                            // Also log the detail
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovery: Successfully returned ${(solBalance - 0.001).toFixed(6)} SOL to original sender`)}`);
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovery transaction confirmed: ${typeof returnResult.txid === 'object' ? JSON.stringify(returnResult.txid) : returnResult.txid}`)}`);
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`View transaction: ${typeof returnResult.solscanLink === 'object' ? 'https://solscan.io/tx/' + (typeof returnResult.txid === 'object' ? returnResult.txid.toString() : returnResult.txid) : returnResult.solscanLink}`)}`);
-                        }
-                    }
-                } catch (returnError) {
-                    this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Recovery attempt failed: ${returnError.message}`)}`);
-                }
-            }
-            
+            // Return error result
             return {
                 success: false,
-                certificationId,
-                message: `Certification failed: ${error.message}`,
                 error: error.message,
-                steps
+                wallets: {
+                    source: sourcePublicKey,
+                    intermediate: intermediatePublicKey,
+                    target: targetPublicKey
+                },
+                certificationId
             };
         }
     }
     
     /**
-     * Display a visual transaction flow diagram showing the movement of funds
+     * Scan for stranded funds from previous certification runs
+     * Attempts to identify and recover funds from wallets created in previous runs
      * 
-     * @param {Object} wallets - Map of wallet objects
-     * @param {Object} txStatus - Status of transactions between wallets
-     * @param {string} [originalSender=null] - Original sender address if known
-     */
-    displayTransactionFlowDiagram(wallets, txStatus, originalSender = null) {
-        const sourceAddr = wallets.source.publicKey.substring(0, 8);
-        const test1Addr = wallets.test1.publicKey.substring(0, 8);
-        const test2Addr = wallets.test2.publicKey.substring(0, 8);
-        const test3Addr = wallets.test3.publicKey.substring(0, 8);
-        const senderAddr = originalSender ? originalSender.substring(0, 8) : "???????";
-        
-        // Color formatting for nodes and arrows
-        const formatNode = (addr) => `${this.fancyColors.CYAN}[${addr}]${this.fancyColors.RESET}`;
-        const formatCompletedArrow = () => `${this.fancyColors.GREEN}====>${this.fancyColors.RESET}`;
-        const formatPendingArrow = () => `${this.fancyColors.YELLOW}---->${this.fancyColors.RESET}`;
-        
-        // Create the diagram
-        const diagram = [
-            `\n${this.fancyColors.BOLD}${this.fancyColors.WHITE}TRANSACTION FLOW DIAGRAM${this.fancyColors.RESET}\n`,
-        ];
-        
-        // Add sender if known
-        if (originalSender) {
-            diagram.push(`${formatNode(senderAddr)} ${txStatus.source_to_sender ? formatCompletedArrow() : formatPendingArrow()} ${formatNode(sourceAddr)}`);
-        }
-        
-        // Show the main flow
-        diagram.push(`${formatNode(sourceAddr)} ${txStatus.source_to_test1 ? formatCompletedArrow() : formatPendingArrow()} ${formatNode(test1Addr)}`);
-        diagram.push(`${formatNode(test1Addr)} ${txStatus.test1_to_test2 ? formatCompletedArrow() : formatPendingArrow()} ${formatNode(test2Addr)}`);
-        diagram.push(`${formatNode(test2Addr)} ${txStatus.test2_to_test3 ? formatCompletedArrow() : formatPendingArrow()} ${formatNode(test3Addr)}`);
-        diagram.push(`${formatNode(test3Addr)} ${txStatus.test3_to_source ? formatCompletedArrow() : formatPendingArrow()} ${formatNode(sourceAddr)}`);
-        
-        // Show return to sender if sender is known
-        if (originalSender) {
-            diagram.push(`${formatNode(sourceAddr)} ${txStatus.source_to_sender ? formatCompletedArrow() : formatPendingArrow()} ${formatNode(senderAddr)}`);
-        }
-        
-        // Legend
-        diagram.push(`\n${this.fancyColors.YELLOW}---->${this.fancyColors.RESET} = Pending   ${this.fancyColors.GREEN}====>${this.fancyColors.RESET} = Completed\n`);
-        
-        // Output diagram
-        diagram.forEach(line => this.logApi.info(line));
-    }
-    
-    /**
-     * Create a keypair from a private key in various formats
-     * 
-     * @param {string} privateKey - The private key string
-     * @returns {Keypair|null} - The created keypair or null if unable to create
-     */
-    createKeypairFromPrivateKey(privateKey) {
-        try {
-            // Try to parse as JSON array (64 elements)
-            if (privateKey.startsWith('[')) {
-                try {
-                    const parsed = JSON.parse(privateKey);
-                    if (Array.isArray(parsed) && parsed.length === 64) {
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Creating keypair from JSON array (64 elements)`)}`);
-                        return Keypair.fromSecretKey(Uint8Array.from(parsed));
-                    }
-                } catch (e) {
-                    this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Not a valid JSON array: ${e.message}`)}`);
-                }
-            }
-            
-            // Try as hex string (128 chars)
-            if (/^[0-9a-fA-F]{128}$/.test(privateKey)) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Creating keypair from hex string (128 chars)`)}`);
-                return Keypair.fromSecretKey(Buffer.from(privateKey, 'hex'));
-            }
-            
-            // Try as base58 encoded string
-            try {
-                const decoded = bs58.decode(privateKey);
-                if (decoded.length === 64) {
-                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Creating keypair from base58 encoded string (64 bytes)`)}`);
-                    return Keypair.fromSecretKey(decoded);
-                } else if (decoded.length === 32) {
-                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Creating keypair from base58 encoded seed (32 bytes)`)}`);
-                    return Keypair.fromSeed(decoded);
-                }
-            } catch (e) {
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Not a valid base58 string: ${e.message}`)}`);
-            }
-            
-            // Try as base64 encoded string
-            try {
-                const decoded = Buffer.from(privateKey, 'base64');
-                if (decoded.length === 64) {
-                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Creating keypair from base64 encoded string (64 bytes)`)}`);
-                    return Keypair.fromSecretKey(decoded);
-                }
-            } catch (e) {
-                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Not a valid base64 string: ${e.message}`)}`);
-            }
-            
-            this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Could not create keypair from private key`)}`);
-            return null;
-        } catch (error) {
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Error creating keypair: ${error.message}`)}`);
-            return null;
-        }
-    }
-    
-    /**
-     * Execute a SOL transfer between wallets
-     * 
-     * @param {Keypair} fromKeypair - Source wallet keypair
-     * @param {string} toAddress - Destination wallet address
-     * @param {number} amount - Amount of SOL to transfer
-     * @returns {Promise<string>} - Transaction signature
-     */
-    async transferSol(fromKeypair, toAddress, amount) {
-        try {
-            // Convert SOL to lamports
-            const lamportsToSend = Math.round(amount * LAMPORTS_PER_SOL);
-            // Get raw connection for fee estimation
-            const connection = this.solanaEngine.getConnection();
-            // Fetch a recent blockhash for fee estimation
-            const { blockhash } = await connection.getLatestBlockhash();
-            // Build a dummy transaction to estimate fee
-            const dummyTx = new Transaction({ recentBlockhash: blockhash, feePayer: fromKeypair.publicKey })
-                .add(
-                    SystemProgram.transfer({
-                        fromPubkey: fromKeypair.publicKey,
-                        toPubkey: new PublicKey(toAddress),
-                        lamports: lamportsToSend,
-                    })
-                );
-            // Estimate transaction fee
-            let feeLamports;
-            if (typeof connection.getFeeForMessage === 'function') {
-                const feeResponse = await connection.getFeeForMessage(dummyTx.compileMessage());
-                feeLamports = feeResponse.value !== undefined ? feeResponse.value : feeResponse;
-            } else {
-                const feeCalcResponse = await connection.getFeeCalculatorForBlockhash(blockhash);
-                feeLamports = feeCalcResponse.value?.feeCalculator?.lamportsPerSignature
-                    || feeCalcResponse.feeCalculator?.lamportsPerSignature;
-            }
-            // Make sure we leave enough to cover the fee
-            if (lamportsToSend <= feeLamports) {
-                throw new Error(
-                    `Requested ${lamportsToSend} lamports but estimated fee is ${feeLamports} lamports`
-                );
-            }
-            // Subtract fee from send amount
-            const sendLamports = lamportsToSend - feeLamports;
-            // Build real transaction
-            const transaction = new Transaction()
-                .add(
-                    SystemProgram.transfer({
-                        fromPubkey: fromKeypair.publicKey,
-                        toPubkey: new PublicKey(toAddress),
-                        lamports: sendLamports,
-                    })
-                );
-            transaction.feePayer = fromKeypair.publicKey;
-            // (Blockhash will be set by solanaEngine internally)
-            // Send the transaction using SolanaEngine
-            const signature = await this.solanaEngine.sendTransaction(
-                transaction,
-                [fromKeypair],
-                {
-                    commitment: 'confirmed',
-                    skipPreflight: true,
-                    maxRetries: 5,
-                }
-            );
-            return signature;
-        } catch (error) {
-            this.logApi.error(
-                `${this.formatLog.tag()} ${this.formatLog.error(`Transfer failed: ${error.message}`)}`
-            );
-            throw error;
-        }
-    }
-    
-    /**
-     * Try to load keypairs from saved files
-     * 
-     * @param {string} certificationId - The ID of the certification to load
-     * @returns {Promise<Object|null>} - Recovered wallet keypairs or null if not found
-     */
-    async loadSavedKeypairs(certificationId) {
-        try {
-            // Read all files in the certification directory
-            const files = fs.readdirSync(this.certKeypairsDir);
-            
-            // Filter for files matching this certification ID
-            const certFiles = files.filter(file => file.startsWith(certificationId));
-            
-            if (certFiles.length === 0) {
-                return null;
-            }
-            
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('RECOVERY')} Found ${certFiles.length} keypair files for certification ${certificationId}`);
-            
-            // Load each keypair
-            const wallets = {
-                source: null,
-                test1: null, 
-                test2: null,
-                test3: null
-            };
-            
-            for (const file of certFiles) {
-                const filepath = path.join(this.certKeypairsDir, file);
-                const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-                
-                // Create keypair from secret key
-                const secretKey = Uint8Array.from(data.secretKey);
-                const keypair = Keypair.fromSecretKey(secretKey);
-                
-                // Store in the appropriate wallet slot
-                if (data.label === 'source') {
-                    wallets.source = {
-                        publicKey: data.publicKey,
-                        keypair,
-                        balance: 0
-                    };
-                } else if (data.label === 'test1') {
-                    wallets.test1 = {
-                        publicKey: data.publicKey,
-                        keypair,
-                        balance: 0
-                    };
-                } else if (data.label === 'test2') {
-                    wallets.test2 = {
-                        publicKey: data.publicKey,
-                        keypair,
-                        balance: 0
-                    };
-                } else if (data.label === 'test3') {
-                    wallets.test3 = {
-                        publicKey: data.publicKey,
-                        keypair,
-                        balance: 0
-                    };
-                }
-                
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovered ${data.label} keypair: ${data.publicKey.substring(0, 8)}...`)}`);
-            }
-            
-            return wallets;
-        } catch (error) {
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to load saved keypairs: ${error.message}`)}`);
-            return null;
-        }
-    }
-
-    /**
-     * Check for any stranded funds in certification wallets and attempt to recover them
-     * This should be called during startup to clean up any leftover funds from failed certifications
-     * 
-     * @param {string} recoveryAddress - Address to send recovered funds to
-     * @returns {Promise<{recoveredFunds: boolean, totalRecovered: number, details: Array}>}
+     * @param {string} recoveryAddress - The address to send recovered funds to (usually the treasury wallet)
+     * @returns {Promise<Object>} - Result of the recovery operation, including total amount recovered
      */
     async scanForStrandedFunds(recoveryAddress) {
-        if (!recoveryAddress) {
-            this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning('No recovery address provided for stranded fund recovery')}`);
-            return { recoveredFunds: false, totalRecovered: 0, details: [] };
+        // Make sure the directory exists
+        if (!fs.existsSync(this.certKeypairsDir)) {
+            try {
+                fs.mkdirSync(this.certKeypairsDir, { recursive: true });
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Created certification keypairs directory: ${this.certKeypairsDir}`)}`);
+            } catch (error) {
+                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to ensure certification keypairs directory exists: ${error.message}`)}`);
+                return {
+                    recoveredFunds: false,
+                    totalRecovered: 0,
+                    error: `Failed to access certification directory: ${error.message}`
+                };
+            }
         }
         
-        try {
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('SCANNING FOR STRANDED FUNDS')}`);
-            
-            // Read all files in the certification directory
-            const files = fs.readdirSync(this.certKeypairsDir);
-            
-            if (files.length === 0) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('No stored certification keypairs found')}`);
-                return { recoveredFunds: false, totalRecovered: 0, details: [] };
-            }
-            
-            // Group files by certification ID
-            const certifications = {};
-            
-            for (const file of files) {
-                const parts = file.split('_');
-                if (parts.length >= 2) {
-                    const certId = parts[0];
-                    const label = parts[1];
-                    
-                    if (!certifications[certId]) {
-                        certifications[certId] = [];
-                    }
-                    
-                    certifications[certId].push({
-                        label,
-                        file
-                    });
-                }
-            }
-            
-            // Process each certification for stranded funds
-            let totalRecovered = 0;
-            const recoveryDetails = [];
-            
-            for (const [certId, keypairs] of Object.entries(certifications)) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Checking certification ${certId} for stranded funds...`)}`);
-                
-                // Loop through each keypair in this certification
-                for (const keypairInfo of keypairs) {
-                    const filepath = path.join(this.certKeypairsDir, keypairInfo.file);
-                    const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-                    
-                    // Create keypair from secret key
-                    const secretKey = Uint8Array.from(data.secretKey);
-                    const keypair = Keypair.fromSecretKey(secretKey);
-                    
-                    // Get the balance of this wallet
-                    const balance = await this.solanaEngine.executeConnectionMethod('getBalance', keypair.publicKey);
-                    const solBalance = balance / LAMPORTS_PER_SOL;
-                    
-                    // Check if this wallet has enough SOL to be worth recovering (more than transaction fee)
-                    if (solBalance > 0.001) {
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Found stranded funds: ${solBalance.toFixed(6)} SOL in ${data.label} wallet (${data.publicKey.substring(0, 8)}...)`)}`);
-                        
-                        // Attempt to return the funds to the recovery address
-                        try {
-                            const returnResult = await this.returnFundsToSender(
-                                keypair,
-                                recoveryAddress,
-                                solBalance - 0.0005 // Keep a small cushion for fees
-                            );
-                            
-                            if (returnResult.success) {
-                                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Successfully recovered ${returnResult.amount.toFixed(6)} SOL from ${data.label} wallet`)}`);
-                                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Transaction: ${returnResult.solscanLink}`)}`);
-                                
-                                totalRecovered += returnResult.amount;
-                                recoveryDetails.push({
-                                    certificationId: certId,
-                                    walletLabel: data.label,
-                                    walletAddress: data.publicKey,
-                                    recovered: returnResult.amount,
-                                    txid: returnResult.txid
-                                });
-                            } else {
-                                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to recover funds from ${data.label} wallet: ${returnResult.error}`)}`);
-                            }
-                        } catch (returnError) {
-                            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Error recovering funds from ${data.label} wallet: ${returnError.message}`)}`);
-                        }
-                    } else if (solBalance > 0) {
-                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Found small balance (${solBalance.toFixed(6)} SOL) in ${data.label} wallet - not worth recovering due to fees`)}`);
-                    }
-                }
-            }
-            
-            // Report summary
-            if (totalRecovered > 0) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('FUND RECOVERY COMPLETE')} Recovered total of ${totalRecovered.toFixed(6)} SOL from ${recoveryDetails.length} wallets`);
-                return { 
-                    recoveredFunds: true, 
-                    totalRecovered, 
-                    details: recoveryDetails 
-                };
-            } else {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('FUND RECOVERY COMPLETE')} No funds recovered - no stranded balances found`);
-                return { 
-                    recoveredFunds: false, 
-                    totalRecovered: 0, 
-                    details: [] 
-                };
-            }
-        } catch (error) {
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Fund recovery scan failed: ${error.message}`)}`);
-            return { 
-                recoveredFunds: false, 
-                totalRecovered: 0, 
-                details: [], 
-                error: error.message 
+        // Initialize persistent pool if we don't have it yet
+        if (!this.persistentPool) {
+            await this.initPersistentCertificationPool();
+        }
+        
+        // If no recovery address is provided, try to use the original funder
+        if (!recoveryAddress && this.persistentPool.originalFunder) {
+            recoveryAddress = this.persistentPool.originalFunder;
+        }
+        
+        // Find wallet keypair files
+        const files = fs.readdirSync(this.certKeypairsDir);
+        const keypairFiles = files.filter(file => file.includes('certification_') && file.endsWith('.json'));
+        
+        if (keypairFiles.length === 0) {
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('No certification keypair files found.')}`);
+            return {
+                recoveredFunds: false,
+                totalRecovered: 0
             };
         }
-    }
-
-    /**
-     * Creates a summary of all stored certification keypairs
-     * 
-     * @returns {Promise<void>}
-     */
-    async listStoredCertifications() {
-        try {
-            // Read all files in the certification directory
-            const files = fs.readdirSync(this.certKeypairsDir);
-            
-            if (files.length === 0) {
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('No stored certification keypairs found')}`);
-                return;
-            }
-            
-            // Group files by certification ID
-            const certifications = {};
-            
-            for (const file of files) {
-                const parts = file.split('_');
-                if (parts.length >= 2) {
-                    const certId = parts[0];
-                    const label = parts[1];
-                    
-                    if (!certifications[certId]) {
-                        certifications[certId] = [];
-                    }
-                    
-                    certifications[certId].push({
-                        label,
-                        file
-                    });
-                }
-            }
-            
-            // Display summary
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('STORED CERTIFICATIONS')} Found ${Object.keys(certifications).length} certification(s)`);
-            
-            for (const [certId, keypairs] of Object.entries(certifications)) {
-                // Load the first keypair to get more info
-                const firstFile = keypairs[0].file;
-                const filepath = path.join(this.certKeypairsDir, firstFile);
-                const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+        
+        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Found ${keypairFiles.length} potential certification keypair files.`)}`);
+        
+        // Process each wallet to check for funds
+        let totalRecovered = 0;
+        const recoveryDetails = [];
+        
+        for (const file of keypairFiles) {
+            try {
+                // Load the keypair data
+                const keypairData = JSON.parse(fs.readFileSync(path.join(this.certKeypairsDir, file), 'utf8'));
+                const secretKey = Uint8Array.from(keypairData.secretKey);
+                const keypair = Keypair.fromSecretKey(secretKey);
+                const walletAddress = keypair.publicKey.toString();
                 
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Certification ID: ${certId}`)}`);
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`  - Created: ${data.timestamp}`)}`);
-                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`  - Keypairs: ${keypairs.map(k => k.label).join(', ')}`)}`);
-            }
-            
-        } catch (error) {
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to list stored certifications: ${error.message}`)}`);
-        }
-    }
-    
-    /**
-     * Clean up any in-progress certification resources
-     * This method is called during service shutdown to ensure any funds
-     * are returned to the original sender if possible
-     * 
-     * @returns {Promise<void>}
-     */
-    async cleanup() {
-        try {
-            // Check if we have wallet information for recovery
-            if (this._currentCertification && this._currentCertification.wallets) {
-                const { sourceWallet, originalSender, balance } = this._currentCertification.wallets;
+                // Check for balance
+                const balance = await this.solanaEngine.executeConnectionMethod('getBalance', keypair.publicKey);
+                const balanceSOL = balance / LAMPORTS_PER_SOL;
                 
-                // Check if we have an original sender to return funds to
-                if (sourceWallet && originalSender && balance > 0.001) {
-                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('CLEANUP')} Found in-progress certification with funds to return`);
-                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Will attempt to return ${balance} SOL from ${sourceWallet.substring(0, 8)}... to ${originalSender.substring(0, 8)}...`)}`);
+                // If the wallet has a balance, try to recover the funds
+                if (balanceSOL > 0.001) { // Recover if more than 0.001 SOL (to account for transaction fees)
+                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Found ${balanceSOL} SOL in wallet: ${walletAddress} (${file})`)}`);
                     
-                    // Get current balance to make sure funds are still there
-                    try {
-                        const currentBalance = await this.solanaEngine.executeConnectionMethod(
-                            'getBalance',
-                            new PublicKey(sourceWallet)
-                        ) / LAMPORTS_PER_SOL;
+                    // Calculate amount to recover (90% of balance to account for fees)
+                    const recoverAmount = balanceSOL * 0.9;
+                    
+                    // Transfer the funds to the recovery address
+                    const transferSuccess = await this.fundWallet(keypair, recoveryAddress, recoverAmount);
+                    
+                    if (transferSuccess) {
+                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovered ${recoverAmount} SOL from wallet: ${walletAddress} to ${recoveryAddress}`)}`);
                         
-                        if (currentBalance > 0.001) {
-                            // Find the source keypair in our certification state
-                            const sourceKeypair = this._currentCertification.sourceKeypair;
-                            
-                            if (sourceKeypair) {
-                                // Try to return funds to the original sender
-                                await this.returnFundsToSender(sourceKeypair, originalSender, currentBalance);
-                                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('Successfully returned funds during cleanup')}`);
-                            } else {
-                                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning('Source keypair not found for cleanup')}`);
-                                
-                                // Try to load keypairs from saved files
-                                if (this._currentCertification.id) {
-                                    const certId = this._currentCertification.id;
-                                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Attempting to load source keypair from saved files for certification ${certId}`)}`);
-                                    
-                                    const savedWallets = await this.loadSavedKeypairs(certId);
-                                    
-                                    if (savedWallets && savedWallets.source) {
-                                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Successfully loaded source keypair for recovery`)}`);
-                                        
-                                        // Try to return funds to the original sender using the loaded keypair
-                                        await this.returnFundsToSender(savedWallets.source.keypair, originalSender, currentBalance);
-                                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('Successfully returned funds during cleanup using saved keypair')}`);
-                                    }
-                                }
-                            }
-                        } else {
-                            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('No funds to return during cleanup')}`);
-                        }
-                    } catch (balanceError) {
-                        this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to get balance during cleanup: ${balanceError.message}`)}`);
+                        totalRecovered += recoverAmount;
+                        recoveryDetails.push({
+                            walletAddress,
+                            file,
+                            recovered: recoverAmount,
+                            originalBalance: balanceSOL
+                        });
+                    } else {
+                        this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to recover ${recoverAmount} SOL from wallet: ${walletAddress}`)}`);
                     }
                 }
+            } catch (error) {
+                this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Error processing keypair file ${file}: ${error.message}`)}`);
             }
-            
-            // Write a summary of all stored certifications
-            await this.listStoredCertifications();
-            
-        } catch (error) {
-            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Cleanup error: ${error.message}`)}`);
         }
+        
+        // Return the recovery results
+        return {
+            recoveredFunds: totalRecovered > 0,
+            totalRecovered,
+            details: recoveryDetails
+        };
     }
 }
 

@@ -9,9 +9,9 @@
 # and do not persist beyond that or affect other parts of the application.
 
 # API Settings for Database Comparison Analysis
-export OPENAI_MODEL="gpt-4o"        # Model to use for database comparison analysis
-export OPENAI_TEMPERATURE="0.7"      # Temperature (0.0-1.0, lower = more deterministic)
-export OPENAI_MAX_TOKENS="2000"      # Maximum tokens in the response
+export OPENAI_MODEL="gpt-4.1-mini"   # Model to use for database comparison analysis
+export OPENAI_TEMPERATURE="0.4"      # Temperature (0.0-1.0, lower = more deterministic)
+export OPENAI_MAX_TOKENS="5000"      # Maximum tokens in the response
 
 # Prompt Settings for Database Schema Comparison
 export OPENAI_SYSTEM_PROMPT="You are a PostgreSQL and Prisma ORM expert who provides clear, actionable advice for reconciling database differences."

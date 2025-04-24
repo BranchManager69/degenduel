@@ -184,33 +184,33 @@ const AI_SERVICE_CONFIG = {
   loadouts: {
     // Default loadout - used when no specific loadout is specified
     default: {
-      model: 'gpt-4o',
-      maxTokens: 1000,
-      temperature: 0.76,
+      model: 'gpt-4.1-mini',
+      maxTokens: 2000,
+      temperature: 0.5,
       systemPrompt: "You are a helpful assistant for DegenDuel users."
     },
     
     // Special loadout for error analysis - focused on precision
     errorAnalysis: {
-      model: 'gpt-4o',
-      maxTokens: 2000,  // More tokens for thorough analysis
-      temperature: 0.3, // Lower temperature for more deterministic analysis
+      model: 'gpt-4.1-mini',
+      maxTokens: 3000,
+      temperature: 0.4,
       systemPrompt: "You are an error analysis assistant for DegenDuel..."
     },
     
     // Special loadout for admin log analysis - focused on pattern detection
     adminAnalysis: {
-      model: 'gpt-4o',
-      maxTokens: 2000,  // More tokens for thorough analysis
-      temperature: 0.3, // Lower temperature for more deterministic analysis
+      model: 'gpt-4.1-mini',
+      maxTokens: 3000,  // More tokens for thorough analysis
+      temperature: 0.4, // Lower temperature for more deterministic analysis
       systemPrompt: "You are an admin activity analysis assistant for DegenDuel..."
     },
     
     // Creative personality for Degen Terminal
     degenTerminal: {
-      model: 'gpt-4o',
-      maxTokens: 600,   // Shorter, punchier responses
-      temperature: 0.9, // Higher temperature for more creative responses
+      model: 'gpt-4.1-mini',
+      maxTokens: 2000,   // Shorter, punchier responses
+      temperature: 0.7, // Higher temperature for more creative responses
       systemPrompt: "You are Dgen, the sassy and fun virtual assistant for DegenDuel..."
     },
     
@@ -300,8 +300,8 @@ const AI_SERVICE_CONFIG = {
     
     // Custom loadout for tournament analysis
     tournamentAnalysis: {
-      model: 'gpt-4o',
-      maxTokens: 1800,
+      model: 'gpt-4.1-mini',
+      maxTokens: 2000,
       temperature: 0.4,
       systemPrompt: "You are a tournament analysis expert for DegenDuel..."
     }

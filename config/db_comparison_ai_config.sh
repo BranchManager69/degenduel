@@ -9,11 +9,11 @@
 # and do not persist beyond that or affect other parts of the application.
 
 # API Settings for Database Comparison Analysis
-export OPENAI_MODEL="o3-mini"         # Model to use for database comparison analysis (options: gpt-4o, gpt-4o-mini, o1, o1-mini, o3-mini)
-export OPENAI_TEMPERATURE="0.3"      # Temperature (0.0-1.0, lower = more deterministic)
-                                    # Note: Temperature is not supported for o3-mini model and will be omitted
-export OPENAI_MAX_TOKENS="2000"      # Maximum tokens in the response
-                                    # Note: For o1 and o3 models, this will be used as max_completion_tokens
+export OPENAI_MODEL="gpt-4.1-mini"   # Model to use for database comparison analysis (options: gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, o3, o4-mini-high, ...)
+export OPENAI_TEMPERATURE="0.4"      # Temperature (0.0-1.0, lower = more deterministic)
+                                     # Note: Temperature is not supported for o3-mini model and will be omitted
+export OPENAI_MAX_TOKENS="5000"      # Maximum tokens in the response
+                                     # Note: For o1 and o3 models, this will be used as max_completion_tokens
 
 # Prompt Settings for Database Schema Comparison
 export OPENAI_SYSTEM_PROMPT="You are a PostgreSQL and Prisma ORM expert who provides clear, actionable advice for reconciling database differences."
