@@ -21,7 +21,7 @@ The pool monitoring system uses WebSockets to provide real-time updates when poo
 First, establish a WebSocket connection to the DegenDuel WebSocket server (same as for wallet balance tracking):
 
 ```javascript
-const wsUrl = 'wss://api.degenduel.com/ws';
+const wsUrl = 'wss://degenduel.com/api/v69/ws';
 const ws = new WebSocket(wsUrl);
 
 ws.onopen = () => {

@@ -13,6 +13,9 @@ import { Keypair, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from
 import bs58 from 'bs58';
 import https from 'https';
 import qrcode from 'qrcode-terminal';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * Generate a QR code for display in the console
@@ -129,8 +132,66 @@ class TreasuryCertifier {
         this.decryptPrivateKey = decryptPrivateKey;
         this.config = config;
         
+        // Set up path for storing certification keypairs
+        // Get the root project directory path
+        const currentFilePath = fileURLToPath(import.meta.url);
+        const projectRoot = path.resolve(path.dirname(currentFilePath), '../../');
+        this.certKeypairsDir = path.join(projectRoot, 'addresses', 'certification');
+        
+        // Ensure the certification keypairs directory exists
+        try {
+            if (!fs.existsSync(this.certKeypairsDir)) {
+                fs.mkdirSync(this.certKeypairsDir, { recursive: true });
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Created certification keypairs directory: ${this.certKeypairsDir}`)}`);
+            }
+        } catch (error) {
+            this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning(`Failed to ensure certification keypairs directory exists: ${error.message}`)}`);
+        }
+        
         // Track current certification state for cleanup
         this._currentCertification = null;
+    }
+    
+    /**
+     * Save keypair to disk for recovery
+     * 
+     * @param {Keypair} keypair - The keypair to save
+     * @param {string} label - A label for the keypair (e.g., 'source', 'test1')
+     * @param {string} certificationId - The ID of the certification
+     * @returns {Promise<boolean>} - Whether the keypair was saved successfully
+     */
+    async saveKeypairToDisk(keypair, label, certificationId) {
+        try {
+            if (!keypair) {
+                return false;
+            }
+            
+            // Get the keypair data in multiple formats for recovery
+            const secretKey = Array.from(keypair.secretKey);
+            const publicKey = keypair.publicKey.toString();
+            const keypairData = {
+                publicKey,
+                secretKey,
+                base58PrivateKey: bs58.encode(keypair.secretKey),
+                timestamp: new Date().toISOString(),
+                certificationId,
+                label
+            };
+            
+            // Create filename with certification ID, label, and timestamp
+            const timestamp = Date.now();
+            const filename = `${certificationId}_${label}_${timestamp}.json`;
+            const filepath = path.join(this.certKeypairsDir, filename);
+            
+            // Write keypair data to disk
+            fs.writeFileSync(filepath, JSON.stringify(keypairData, null, 2));
+            
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Saved ${label} keypair to ${filepath}`)}`);
+            return true;
+        } catch (error) {
+            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to save keypair to disk: ${error.message}`)}`);
+            return false;
+        }
     }
     
     /**
@@ -463,12 +524,17 @@ class TreasuryCertifier {
         // Get test amount from config
         const testAmount = this.config.service_test?.contest_wallet_test_amount || 0.006;
         
+        // Generate a unique certification ID
+        const certificationId = `CERT-${Date.now().toString(36).toUpperCase()}`;
+        
         // Log startup banner
         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('TREASURY CERTIFIER')} Starting treasury certification process`);
-        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Initial delay: ${delayMs/1000}s, Test amount: ${testAmount} SOL`)}`);
+        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Certification ID: ${certificationId}, Initial delay: ${delayMs/1000}s, Test amount: ${testAmount} SOL`)}`);
+        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Keypairs will be saved to ${this.certKeypairsDir}`)}`);
         
         // Reset current certification tracking
         this._currentCertification = {
+            id: certificationId,
             inProgress: true,
             startTime: Date.now(),
             testAmount,
@@ -597,7 +663,8 @@ class TreasuryCertifier {
      */
     async performCertification(testAmount, sourceKeypair, originalSender = null, originalAmount = 0) {
         const startTime = Date.now();
-        const certificationId = `CERT-${Date.now().toString(36).toUpperCase()}`;
+        // Use the certification ID from current certification, or generate a new one
+        const certificationId = this._currentCertification?.id || `CERT-${Date.now().toString(36).toUpperCase()}`;
         
         this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header(`${certificationId}`)} Starting treasury validation cycle`);
         
@@ -640,6 +707,9 @@ class TreasuryCertifier {
                 balance: 0
             };
             
+            // Save source keypair to disk
+            await this.saveKeypairToDisk(sourceKeypair, 'source', certificationId);
+            
             // Create test wallets
             const test1Keypair = Keypair.generate();
             wallets.test1 = {
@@ -647,6 +717,8 @@ class TreasuryCertifier {
                 keypair: test1Keypair,
                 balance: 0
             };
+            // Save test1 keypair to disk
+            await this.saveKeypairToDisk(test1Keypair, 'test1', certificationId);
             
             const test2Keypair = Keypair.generate();
             wallets.test2 = {
@@ -654,6 +726,8 @@ class TreasuryCertifier {
                 keypair: test2Keypair,
                 balance: 0
             };
+            // Save test2 keypair to disk
+            await this.saveKeypairToDisk(test2Keypair, 'test2', certificationId);
             
             const test3Keypair = Keypair.generate();
             wallets.test3 = {
@@ -661,9 +735,11 @@ class TreasuryCertifier {
                 keypair: test3Keypair,
                 balance: 0
             };
+            // Save test3 keypair to disk
+            await this.saveKeypairToDisk(test3Keypair, 'test3', certificationId);
             
             steps.createWallets = true;
-            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Created test wallets`)}`);
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Created test wallets and saved keypairs to ${this.certKeypairsDir}`)}`);
             this.logApi.info(`${this.formatLog.tag()} Source: ${wallets.source.publicKey.substring(0, 8)}...`);
             this.logApi.info(`${this.formatLog.tag()} Test1: ${wallets.test1.publicKey.substring(0, 8)}...`);
             this.logApi.info(`${this.formatLog.tag()} Test2: ${wallets.test2.publicKey.substring(0, 8)}...`);
@@ -1120,6 +1196,133 @@ class TreasuryCertifier {
     }
     
     /**
+     * Try to load keypairs from saved files
+     * 
+     * @param {string} certificationId - The ID of the certification to load
+     * @returns {Promise<Object|null>} - Recovered wallet keypairs or null if not found
+     */
+    async loadSavedKeypairs(certificationId) {
+        try {
+            // Read all files in the certification directory
+            const files = fs.readdirSync(this.certKeypairsDir);
+            
+            // Filter for files matching this certification ID
+            const certFiles = files.filter(file => file.startsWith(certificationId));
+            
+            if (certFiles.length === 0) {
+                return null;
+            }
+            
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('RECOVERY')} Found ${certFiles.length} keypair files for certification ${certificationId}`);
+            
+            // Load each keypair
+            const wallets = {
+                source: null,
+                test1: null, 
+                test2: null,
+                test3: null
+            };
+            
+            for (const file of certFiles) {
+                const filepath = path.join(this.certKeypairsDir, file);
+                const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+                
+                // Create keypair from secret key
+                const secretKey = Uint8Array.from(data.secretKey);
+                const keypair = Keypair.fromSecretKey(secretKey);
+                
+                // Store in the appropriate wallet slot
+                if (data.label === 'source') {
+                    wallets.source = {
+                        publicKey: data.publicKey,
+                        keypair,
+                        balance: 0
+                    };
+                } else if (data.label === 'test1') {
+                    wallets.test1 = {
+                        publicKey: data.publicKey,
+                        keypair,
+                        balance: 0
+                    };
+                } else if (data.label === 'test2') {
+                    wallets.test2 = {
+                        publicKey: data.publicKey,
+                        keypair,
+                        balance: 0
+                    };
+                } else if (data.label === 'test3') {
+                    wallets.test3 = {
+                        publicKey: data.publicKey,
+                        keypair,
+                        balance: 0
+                    };
+                }
+                
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Recovered ${data.label} keypair: ${data.publicKey.substring(0, 8)}...`)}`);
+            }
+            
+            return wallets;
+        } catch (error) {
+            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to load saved keypairs: ${error.message}`)}`);
+            return null;
+        }
+    }
+
+    /**
+     * Creates a summary of all stored certification keypairs
+     * 
+     * @returns {Promise<void>}
+     */
+    async listStoredCertifications() {
+        try {
+            // Read all files in the certification directory
+            const files = fs.readdirSync(this.certKeypairsDir);
+            
+            if (files.length === 0) {
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('No stored certification keypairs found')}`);
+                return;
+            }
+            
+            // Group files by certification ID
+            const certifications = {};
+            
+            for (const file of files) {
+                const parts = file.split('_');
+                if (parts.length >= 2) {
+                    const certId = parts[0];
+                    const label = parts[1];
+                    
+                    if (!certifications[certId]) {
+                        certifications[certId] = [];
+                    }
+                    
+                    certifications[certId].push({
+                        label,
+                        file
+                    });
+                }
+            }
+            
+            // Display summary
+            this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.header('STORED CERTIFICATIONS')} Found ${Object.keys(certifications).length} certification(s)`);
+            
+            for (const [certId, keypairs] of Object.entries(certifications)) {
+                // Load the first keypair to get more info
+                const firstFile = keypairs[0].file;
+                const filepath = path.join(this.certKeypairsDir, firstFile);
+                const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+                
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Certification ID: ${certId}`)}`);
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`  - Created: ${data.timestamp}`)}`);
+                this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`  - Keypairs: ${keypairs.map(k => k.label).join(', ')}`)}`);
+            }
+            
+        } catch (error) {
+            this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Failed to list stored certifications: ${error.message}`)}`);
+        }
+    }
+    
+    /**
      * Clean up any in-progress certification resources
      * This method is called during service shutdown to ensure any funds
      * are returned to the original sender if possible
@@ -1154,6 +1357,22 @@ class TreasuryCertifier {
                                 this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('Successfully returned funds during cleanup')}`);
                             } else {
                                 this.logApi.warn(`${this.formatLog.tag()} ${this.formatLog.warning('Source keypair not found for cleanup')}`);
+                                
+                                // Try to load keypairs from saved files
+                                if (this._currentCertification.id) {
+                                    const certId = this._currentCertification.id;
+                                    this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info(`Attempting to load source keypair from saved files for certification ${certId}`)}`);
+                                    
+                                    const savedWallets = await this.loadSavedKeypairs(certId);
+                                    
+                                    if (savedWallets && savedWallets.source) {
+                                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success(`Successfully loaded source keypair for recovery`)}`);
+                                        
+                                        // Try to return funds to the original sender using the loaded keypair
+                                        await this.returnFundsToSender(savedWallets.source.keypair, originalSender, currentBalance);
+                                        this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.success('Successfully returned funds during cleanup using saved keypair')}`);
+                                    }
+                                }
                             }
                         } else {
                             this.logApi.info(`${this.formatLog.tag()} ${this.formatLog.info('No funds to return during cleanup')}`);
@@ -1163,6 +1382,10 @@ class TreasuryCertifier {
                     }
                 }
             }
+            
+            // Write a summary of all stored certifications
+            await this.listStoredCertifications();
+            
         } catch (error) {
             this.logApi.error(`${this.formatLog.tag()} ${this.formatLog.error(`Cleanup error: ${error.message}`)}`);
         }

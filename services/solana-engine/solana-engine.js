@@ -255,85 +255,134 @@ class SolanaEngineService extends BaseService {
    * @returns {Promise<Object>} The result of the transaction
    */
   async sendTransaction(transaction, signers = [], options = {}) {
-    try {
-      // Track transaction in stats
-      this.transactionStats.sent++;
-      
-      // Get the connection
-      const connection = this.getConnection();
-      
-      // Get the latest blockhash
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      
-      // Set the blockhash for the transaction if it's a legacy transaction
-      if (!transaction.version) {
-        transaction.recentBlockhash = blockhash;
-        transaction.lastValidBlockHeight = lastValidBlockHeight;
-      }
-      
-      // Sign the transaction with all signers
-      if (signers.length > 0) {
-        // For versioned transactions
-        if (transaction.version !== undefined) {
-          transaction = await transaction.sign(signers);
-        } else {
-          // For legacy transactions
-          transaction = await sendAndConfirmTransaction(connection, transaction, signers, {
-            skipPreflight: options.skipPreflight || false,
-            preflightCommitment: options.preflightCommitment || 'confirmed',
-            maxRetries: options.maxRetries || 3,
-          });
+    // Maximum retry attempts for block height exceeded errors
+    const MAX_BLOCK_HEIGHT_RETRIES = options.blockHeightRetries || 3;
+    let attemptCount = 0;
+    let lastError = null;
+    
+    // Continue retrying until we succeed or exhaust our retry attempts
+    while (attemptCount <= MAX_BLOCK_HEIGHT_RETRIES) {
+      try {
+        // On retry attempts, clone the transaction to avoid using the same one again
+        let txToSend = transaction;
+        if (attemptCount > 0) {
+          // Log that we're retrying
+          logApi.info(`${formatLog.tag()} ${formatLog.info(`Retrying transaction after block height exceeded error (attempt ${attemptCount}/${MAX_BLOCK_HEIGHT_RETRIES})`)}`)
           
-          // Update stats
-          this.transactionStats.confirmed++;
+          // For non-versioned transactions, create a clone
+          if (!transaction.version) {
+            // Create a new transaction with the same instructions
+            // but we'll get a fresh blockhash below
+            txToSend = new Transaction();
+            txToSend.add(...transaction.instructions);
+            txToSend.feePayer = transaction.feePayer;
+          } else {
+            // For versioned transactions, this is more complex and might not be supported
+            // without fully re-constructing the transaction
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning('Retrying versioned transaction may not work as expected')}`)
+          }
+        }
+        
+        // Track transaction in stats
+        this.transactionStats.sent++;
+        
+        // Get the connection
+        const connection = this.getConnection();
+        
+        // Get the latest blockhash
+        // We always get a fresh blockhash on retries to help avoid block height exceeded errors
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+        
+        // Set the blockhash for the transaction if it's a legacy transaction
+        if (!txToSend.version) {
+          txToSend.recentBlockhash = blockhash;
+          txToSend.lastValidBlockHeight = lastValidBlockHeight;
+        }
+        
+        // Sign the transaction with all signers
+        if (signers.length > 0) {
+          // For versioned transactions
+          if (txToSend.version !== undefined) {
+            txToSend = await txToSend.sign(signers);
+          } else {
+            // For legacy transactions
+            txToSend = await sendAndConfirmTransaction(connection, txToSend, signers, {
+              skipPreflight: options.skipPreflight || false,
+              preflightCommitment: options.preflightCommitment || 'confirmed',
+              maxRetries: options.maxRetries || 3,
+            });
+            
+            // Update stats
+            this.transactionStats.confirmed++;
+            
+            // Return early for legacy transactions
+            return {
+              signature: txToSend,
+              confirmationStatus: 'confirmed',
+              blockhash,
+              lastValidBlockHeight
+            };
+          }
+        }
+        
+        // Send the raw transaction
+        const txid = await connection.sendTransaction(txToSend, {
+          skipPreflight: options.skipPreflight || false,
+          preflightCommitment: options.preflightCommitment || 'confirmed',
+          maxRetries: options.maxRetries || 3,
+        });
+        
+        // Log the transaction
+        logApi.info(`${formatLog.tag()} ${formatLog.info('Transaction sent')} Signature: ${txid}`);
+        
+        // If confirmation is requested, wait for confirmation
+        if (options.waitForConfirmation !== false) {
+          const confirmationStatus = await this.confirmTransaction(txid, blockhash, lastValidBlockHeight, options);
           
-          // Return early for legacy transactions
           return {
-            signature: transaction,
-            confirmationStatus: 'confirmed',
+            signature: txid,
+            confirmationStatus,
             blockhash,
             lastValidBlockHeight
           };
         }
-      }
-      
-      // Send the raw transaction
-      const txid = await connection.sendTransaction(transaction, {
-        skipPreflight: options.skipPreflight || false,
-        preflightCommitment: options.preflightCommitment || 'confirmed',
-        maxRetries: options.maxRetries || 3,
-      });
-      
-      // Log the transaction
-      logApi.info(`${formatLog.tag()} ${formatLog.info('Transaction sent')} Signature: ${txid}`);
-      
-      // If confirmation is requested, wait for confirmation
-      if (options.waitForConfirmation !== false) {
-        const confirmationStatus = await this.confirmTransaction(txid, blockhash, lastValidBlockHeight, options);
         
         return {
           signature: txid,
-          confirmationStatus,
+          confirmationStatus: 'sent',
           blockhash,
           lastValidBlockHeight
         };
+      } catch (error) {
+        lastError = error;
+        
+        // Check if this is a block height exceeded error and if we should retry
+        if (error.message && error.message.includes('block height exceeded') && attemptCount < MAX_BLOCK_HEIGHT_RETRIES) {
+          logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Transaction failed with block height exceeded. Retrying (${attemptCount + 1}/${MAX_BLOCK_HEIGHT_RETRIES})`)}`);
+          attemptCount++;
+          // Wait a short delay before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+        
+        // If we get here, either it's not a block height error or we've exhausted our retries
+        // Update stats
+        this.transactionStats.failed++;
+        
+        // Log the error
+        logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction failed:')} ${error.message}`);
+        
+        // Throw the error
+        throw error;
       }
-      
-      return {
-        signature: txid,
-        confirmationStatus: 'sent',
-        blockhash,
-        lastValidBlockHeight
-      };
-    } catch (error) {
-      // Update stats
-      this.transactionStats.failed++;
-      
-      // Log the error
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction failed:')} ${error.message}`);
-      
-      // Throw the error
-      throw error;
+    }
+    
+    // This should never be reached due to the loop logic above
+    // But just in case, make sure we have an error to throw
+    if (lastError) {
+      throw lastError;
+    } else {
+      throw new Error('Transaction failed after all retry attempts');
     }
   }
   
@@ -365,9 +414,17 @@ class SolanaEngineService extends BaseService {
       
       // Check if the confirmation was successful
       if (confirmation?.value?.err) {
+        const errorMsg = JSON.stringify(confirmation.value.err);
         this.transactionStats.failed++;
-        logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction confirmed with error:')} ${JSON.stringify(confirmation.value.err)}`);
-        throw new Error(`Transaction confirmed with error: ${JSON.stringify(confirmation.value.err)}`);
+        logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction confirmed with error:')} ${errorMsg}`);
+        
+        // If the error is 'block height exceeded', we'll let the calling method handle it
+        // This allows the sendTransaction method to retry with a fresh blockhash
+        if (errorMsg.includes('block height exceeded')) {
+          throw new Error(`Transaction confirmed with error: block height exceeded`);
+        }
+        
+        throw new Error(`Transaction confirmed with error: ${errorMsg}`);
       }
       
       // Update stats
