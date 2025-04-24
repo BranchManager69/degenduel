@@ -187,8 +187,16 @@ class DiscordNotificationService extends BaseService {
       // Count configured webhooks
       const webhookCount = Object.values(this.webhooks).filter(webhook => webhook !== undefined).length;
       
+      // Create formatted log tag for Discord service
+      const formatLog = {
+        tag: () => `${fancyColors.CYAN}[Discord]${fancyColors.RESET}`,
+        success: (text) => `${fancyColors.GREEN}${text}${fancyColors.RESET}`,
+        warning: (text) => `${fancyColors.YELLOW}${text}${fancyColors.RESET}`,
+        error: (text) => `${fancyColors.RED}${text}${fancyColors.RESET}`,
+      };
+      
       if (!hasWebhooks) {
-        logger.warn(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}No webhooks configured`, {
+        logger.warn(`${formatLog.tag()} ${formatLog.warning('No webhooks configured')}`, {
           eventType: 'service_health_check',
           details: {
             hasWebhooks: false,
@@ -196,7 +204,7 @@ class DiscordNotificationService extends BaseService {
           }
         });
       } else {
-        logger.debug(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Webhook check successful`, {
+        logger.debug(`${formatLog.tag()} ${formatLog.success('Webhook check successful')}`, {
           eventType: 'service_health_check',
           details: {
             hasWebhooks: true,
@@ -210,8 +218,8 @@ class DiscordNotificationService extends BaseService {
       
       const endTime = Date.now();
       
-      // Log performance metrics
-      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Service operation completed`, {
+      // Log performance metrics with proper formatting
+      logger.info(`${formatLog.tag()} ${formatLog.success('Service operation completed')}`, {
         eventType: 'service_heartbeat',
         durationMs: endTime - startTime,
         details: {
@@ -223,7 +231,12 @@ class DiscordNotificationService extends BaseService {
       
       return true;
     } catch (error) {
-      logger.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Perform operation error:`, {
+      const formatLog = {
+        tag: () => `${fancyColors.CYAN}[Discord]${fancyColors.RESET}`,
+        error: (text) => `${fancyColors.RED}${text}${fancyColors.RESET}`,
+      };
+      
+      logger.error(`${formatLog.tag()} ${formatLog.error('Perform operation error:')}`, {
         eventType: 'service_operation_error',
         error,
         details: {

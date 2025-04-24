@@ -17,6 +17,10 @@ public/images/**
 keys/
 keys/**
 
+# Home scrapes
+home/
+home/**
+
 # Purgatory
 purgatory/
 purgatory/**

@@ -104,9 +104,17 @@ class ServiceInitializer {
         
         // Register services - order matters!
         // SolanaEngine is the primary Solana connection service
-        serviceManager.register(solanaEngine);
+        if (config.services.solana_engine_service) {
+            serviceManager.register(solanaEngine);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of solana_engine_service - disabled in config${fancyColors.RESET}`);
+        }
         // Legacy solanaService kept for compatibility until full migration
-        serviceManager.register(solanaService);
+        if (config.services.solana_service) {
+            serviceManager.register(solanaService);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of solana_service - disabled in config${fancyColors.RESET}`);
+        }
         
         // Only register wallet generator and liquidity services if they're enabled in the config
         if (config.services.wallet_generator_service) {
@@ -115,15 +123,20 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of wallet_generator_service - disabled in config${fancyColors.RESET}`);
         }
         
+        // Register liquidity service
         if (config.services.liquidity) {
             serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of liquidity_service - disabled in config${fancyColors.RESET}`);
         }
         
-        // Register Discord notification service (always enabled)
-        serviceManager.register(discordNotificationService);
-        logApi.info(`${fancyColors.CYAN}Registered Discord notification service${fancyColors.RESET}`);
+        // Register Discord notification service
+        if (config.services.discord_notification_service) {
+            serviceManager.register(discordNotificationService);
+            logApi.info(`${fancyColors.CYAN}Registered Discord notification service${fancyColors.RESET}`);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of discord_notification_service - disabled in config${fancyColors.RESET}`);
+        }
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ INFRASTRUCTURE LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
@@ -143,7 +156,7 @@ class ServiceInitializer {
         
         // tokenSyncService has been permanently removed
         
-        // Register market data service only if enabled in config
+        // Register market data service only if market_data service is enabled in config + what's in the service profile
         if (config.services.market_data) {
             serviceManager.register(marketDataService, [SERVICE_NAMES.SOLANA_ENGINE]);
             

@@ -19,18 +19,19 @@ const test_secret_dev_access_token = process.env.BRANCH_MANAGER_ACCESS_SECRET ||
 const MASTER_RPC_THROTTLE = process.env.MASTER_RPC_THROTTLE || 1.0; // (default = 1.0) applies to variables marked with ^^^
 
  // Helpful DegenDuel API endpoints
-const LOBBY_API = process.env.LOBBY_API; // future
-const REFLECTIONS_API = process.env.REFLECTIONS_API; // future
-const DD_SERV_API = process.env.DD_SERV_API; // deprecating
-const DATA_API = process.env.DATA_API; // deprecating
-const GAME_API = process.env.GAME_API; // deprecating
+const LOBBY_API = process.env.LOBBY_API; // DEPRECATED
+const REFLECTIONS_API = process.env.REFLECTIONS_API; // DEPRECATED
+const DD_SERV_API = process.env.DD_SERV_API; // deprecating!
+const DATA_API = process.env.DATA_API; // DEPRECATED
+const GAME_API = process.env.GAME_API; // DEPRECATED
 // Fallback API in case data service is unavailable
 const LOCAL_FALLBACK_API = null; // (DISABLED to avoid circular dependency issue during startup)
 ////const LOCAL_PORT = process.env.PORT || process.env.API_PORT || 3004;
 
 // DegenDuel launch config
-const DEGENDUEL_LAUNCH_DATE = new Date('2025-04-01T15:00:00Z'); // (UTC date time)
-const DEGENDUEL_LAUNCH_DATE_STRING = DEGENDUEL_LAUNCH_DATE.toLocaleString('en-US', {
+const DEGENDUEL_LAUNCH_DATETIME_STRING_FROM_ENV = process.env.DEGENDUEL_LAUNCH_DATETIME_STRING || '2025-12-25T18:00:00Z';
+const DEGENDUEL_LAUNCH_DATETIME = new Date(DEGENDUEL_LAUNCH_DATETIME_STRING_FROM_ENV); // (UTC date time)
+const DEGENDUEL_LAUNCH_DATETIME_STRING = DEGENDUEL_LAUNCH_DATETIME.toLocaleString('en-US', {
   month: 'long',
   day: 'numeric',
   year: 'numeric',
@@ -67,9 +68,9 @@ const OPENAI_DEFAULT_ASSISTANT_PROMPT = `
 const OPENAI_DEFAULT_SYSTEM_PROMPT = `
   YOU:  Your name is Didi, and you are the AI brain powering the backend mainframe of DegenDuel.
   YOUR GOAL:  Building casual mystique and intrigue around our major imminent simultaneous launch of the DegenDuel trading platform and $DUEL token mint.
-  YOUR PURPOSE:  Occupy users' time and attention until the simultaneous launch (${DEGENDUEL_LAUNCH_DATE_STRING}).
+  YOUR PURPOSE:  Occupy users' time and attention until the simultaneous launch (${DEGENDUEL_LAUNCH_DATETIME_STRING}).
   THE CLIENT:  The client (user) will likely be chatting with you via the 'cyberpunk CLI terminal'-themed chat component of the https://degenduel.me landing page.
-  DEGENDUEL:  DegenDuel is a much-anticipated new trading and gaming platform coming to the Solana blockchain on ${DEGENDUEL_LAUNCH_DATE_STRING}.
+  DEGENDUEL:  DegenDuel is a much-anticipated new trading and gaming platform coming to the Solana blockchain on ${DEGENDUEL_LAUNCH_DATETIME_STRING}.
   RESPONSE GUIDELINES:  Your responses must be short, concise, and to the point with no emotion or sentiment (you are essentially the Mewtwo of AI assistants here). 
 `;
 
@@ -616,6 +617,7 @@ const config = {
     // Production profile - all services enabled
     production: {
       // token_sync has been permanently removed
+      ai_service: true,
       market_data: true, 
       contest_evaluation: true,
       token_whitelist: true,
@@ -630,18 +632,20 @@ const config = {
       admin_wallet_service: true,
       wallet_generator_service: true,
       vanity_wallet_service: true, // Vanity Wallet Service
-      ai_service: true,
       solana_service: true,
       solana_engine_service: true, // New SolanaEngine service
       token_refresh_scheduler: true, // Advanced token refresh scheduler
       token_dex_data_service: true, // DEX pool data service
+      discord_notification_service: true, // Discord notification service
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
     
-    // Development profile - services disabled by default (just API testing)
+    // Development profile - services disabled by default (just AI API for now)
     development: {
       // token_sync has been permanently removed
+      ai_service: true, // Keep AI service enabled in development for testing
+      discord_notification_service: true, // Enable Discord notification service in development
       market_data: false, // Disabled to prevent token fetching in dev environment
       contest_evaluation: false,
       token_whitelist: false,
@@ -656,9 +660,8 @@ const config = {
       admin_wallet_service: false,
       wallet_generator_service: false,
       vanity_wallet_service: false, // Disable vanity wallet service in development
-      ai_service: true, // Keep AI service enabled in development for testing
-      solana_service: true, // Keep Solana service enabled in development for connection management
-      solana_engine_service: true, // Keep SolanaEngine service enabled in development for testing
+      solana_service: false, // [EDIT: DISABLED 4/24/25] Keep Solana service enabled in development for connection management
+      solana_engine_service: false, // [EDIT: DISABLED 4/24/25] Keep SolanaEngine service enabled in development for testing
       token_refresh_scheduler: false, // Disable advanced token refresh scheduler in development
       token_dex_data_service: false, // Disable DEX pool data service in development
       // Additional services would be disabled here too
@@ -666,31 +669,23 @@ const config = {
     }
   },
   
-  // GPU Server Configuration
-  gpuServer: {
-    // Allow multiple IPs separated by commas, or IP patterns with wildcards
-    // First IP in the list is used as the default when connecting to the server
-    allowedIps: (process.env.ALLOWED_GPU_SERVER_IPS || '192.222.51.124,192.222.51.*,127.0.0.1,localhost').split(','),
-    port: process.env.GPU_SERVER_PORT || 80,
-  },
-  
   // Vanity Wallet Generator Configuration
   vanityWallet: {
     // Number of worker threads to use for generation (default: CPU cores - 1)
-    numWorkers: parseInt(process.env.VANITY_WALLET_NUM_WORKERS || (os.cpus().length - 1)), 
+    numWorkers: parseInt(process.env.VANITY_WALLET_NUM_WORKERS || (os.cpus().length - 1)), // Intent: 1 worker per CPU core (minus 1 for main thread)
     // Number of addresses to check per batch
-    batchSize: parseInt(process.env.VANITY_WALLET_BATCH_SIZE || 10000),
+    batchSize: parseInt(process.env.VANITY_WALLET_BATCH_SIZE || 10000), // Intent: 10 thousand addresses per batch
     // Maximum number of attempts before giving up
-    maxAttempts: parseInt(process.env.VANITY_WALLET_MAX_ATTEMPTS || 50000000),
+    maxAttempts: parseInt(process.env.VANITY_WALLET_MAX_ATTEMPTS || 50000000), // Intent: 50 million attempts
     // Target counts for automatic generation
     targetCounts: {
       DUEL: parseInt(process.env.VANITY_WALLET_TARGET_DUEL || 5), // Keep original targets
       DEGEN: parseInt(process.env.VANITY_WALLET_TARGET_DEGEN || 3) // Keep original targets
     },
     // Check interval in minutes
-    checkIntervalMinutes: parseInt(process.env.VANITY_WALLET_CHECK_INTERVAL || 30), // Increased from 5 to 30 minutes
+    checkIntervalMinutes: parseInt(process.env.VANITY_WALLET_CHECK_INTERVAL || 2 * 60), // Intent: Every 2 minutes
     // Maximum concurrent generation jobs
-    maxConcurrentJobs: parseInt(process.env.VANITY_WALLET_MAX_CONCURRENT_JOBS || 1),
+    maxConcurrentJobs: parseInt(process.env.VANITY_WALLET_MAX_CONCURRENT_JOBS || 1), // Intent: 1 job at a time
   },
 
   // Active service configuration (based on profile)
@@ -707,7 +702,10 @@ const config = {
     },
     
     get token_monitor() {
-      return true; // Always enable token monitoring service for testing
+      //return true; // WAS PREVIOUSLY ALWAYS TRUE (4/24/25)
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.token_monitor;
     },
     
     get market_data() {
@@ -822,10 +820,27 @@ const config = {
                      config.service_profiles.development;
       return profile.token_dex_data_service;
     },
+
+    get discord_notification_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.discord_notification_service;
+    },
   },
+
+  // GPU Server Configuration (DEPRECATED AND NOT USED)
+  gpuServer: {
+    // Allow multiple IPs separated by commas, or IP patterns with wildcards
+    // First IP in the list is used as the default when connecting to the server
+    allowedIps: (process.env.ALLOWED_GPU_SERVER_IPS || '192.222.51.124,192.222.51.*,127.0.0.1,localhost').split(','),
+    port: process.env.GPU_SERVER_PORT || 80,
+  },  
+
+  // DDAPI Debug Mode (DEPRECATED)
   debug_mode: 
     process.env.DD_API_DEBUG_MODE || 'false',
-  // v69 WSS testing
+  
+    // v69 WSS testing
   wss_testing: {
     test_secret_dev_access_token: test_secret_dev_access_token,
   },

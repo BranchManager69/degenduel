@@ -1,5 +1,11 @@
 // config/service-tiers.js
 
+/* 
+!!!
+NO CLUE IF ANY OF THIS IS USED AT ALL 
+!!!
+*/
+
 export const ServiceTier = {
   CRITICAL: "critical", // Never stops (price updates, system monitoring)
   STANDARD: "standard", // Stops in maintenance mode
