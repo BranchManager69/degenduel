@@ -122,7 +122,7 @@ export async function analyzeErrorLogs(aiService, limit = 50) {
  * @param {number} limit - Maximum number of log lines to analyze
  * @returns {Object|null} Analysis result or null if analysis was skipped
  */
-export async function analyzeGeneralLogs(aiService, logPath = '/home/websites/degenduel/logs', limit = 1000) {
+export async function analyzeGeneralLogs(aiService, logPath = '/home/branchmanager/websites/degenduel/logs', limit = 1000) {
   try {
     // Resolve path to log directory
     const logsDirectory = path.resolve(logPath);

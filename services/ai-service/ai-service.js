@@ -164,7 +164,7 @@ class AIService extends BaseService {
           if (shouldRunGeneralLogs) {
             results.logs.general = await analyzeGeneralLogs(
               this,
-              '/home/websites/degenduel/logs', 
+              '/home/branchmanager/websites/degenduel/logs', 
               this.config.analysis.logs.generalLogs.maxLines
             );
             this.lastLogAnalysisRun = this.lastLogAnalysisRun || {};

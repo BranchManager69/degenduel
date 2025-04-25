@@ -30,7 +30,7 @@ async function testLogAnalyzer() {
     
     // Test general log analysis with actual logs
     console.log('\n🔍 Testing general log analysis with real logs...');
-    const logDir = '/home/websites/degenduel/logs';
+    const logDir = '/home/branchmanager/websites/degenduel/logs';
     
     // Check that log directory exists
     if (!fs.existsSync(logDir)) {
