@@ -10,6 +10,7 @@
 
 // Import restart monitor (for Logtail alerting)
 import './scripts/pm2-restart-monitor.js';
+import events from 'events';
 
 // Check for cluster mode 
 const isClusterMode = process.env.exec_mode === 'cluster_mode';
