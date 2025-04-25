@@ -20,13 +20,14 @@ import { fancyColors } from '../../../utils/colors.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // (new way of storing found keypairs)
-const OUTPUT_DIR_KEYPAIRS = '../../../addresses/keypairs';
+// Fix path to use absolute path from project root
+const OUTPUT_DIR_KEYPAIRS = path.join(__dirname, '../../../../addresses/keypairs');
 // Branded contest wallets (three flavors)
-const OUTPUT_DIR_DEGEN = path.join(__dirname, OUTPUT_DIR_KEYPAIRS, 'public/_DEGEN');
-const OUTPUT_DIR_DUEL = path.join(__dirname, OUTPUT_DIR_KEYPAIRS, 'public/_DUEL');
-const OUTPUT_DIR_BRANCH = path.join(__dirname, OUTPUT_DIR_KEYPAIRS, 'public/_BRANCH');
+const OUTPUT_DIR_DEGEN = path.join(OUTPUT_DIR_KEYPAIRS, 'public/_DEGEN');
+const OUTPUT_DIR_DUEL = path.join(OUTPUT_DIR_KEYPAIRS, 'public/_DUEL');
+const OUTPUT_DIR_BRANCH = path.join(OUTPUT_DIR_KEYPAIRS, 'public/_BRANCH');
 // Other vanity wallets
-const OUTPUT_DIR_OTHER = path.join(__dirname, OUTPUT_DIR_KEYPAIRS, 'other');
+const OUTPUT_DIR_OTHER = path.join(OUTPUT_DIR_KEYPAIRS, 'other');
 
 // Configuration
 const NUM_CPUS = cpus().length; // why unused?
@@ -56,7 +57,23 @@ class LocalVanityGenerator {
     this.activeJobs = new Map();
     this.jobQueue = [];
     this.isProcessing = false;
-    this.outputDir = OUTPUT_DIR_KEYPAIRS;
+    
+    // Make sure all output directories exist
+    if (!fs.existsSync(OUTPUT_DIR_KEYPAIRS)) {
+      fs.mkdirSync(OUTPUT_DIR_KEYPAIRS, { recursive: true });
+    }
+    if (!fs.existsSync(OUTPUT_DIR_DEGEN)) {
+      fs.mkdirSync(OUTPUT_DIR_DEGEN, { recursive: true });
+    }
+    if (!fs.existsSync(OUTPUT_DIR_DUEL)) {
+      fs.mkdirSync(OUTPUT_DIR_DUEL, { recursive: true });
+    }
+    if (!fs.existsSync(OUTPUT_DIR_BRANCH)) {
+      fs.mkdirSync(OUTPUT_DIR_BRANCH, { recursive: true });
+    }
+    if (!fs.existsSync(OUTPUT_DIR_OTHER)) {
+      fs.mkdirSync(OUTPUT_DIR_OTHER, { recursive: true });
+    }
     
     // Check for and kill any orphaned solana-keygen processes
     this.cleanupOrphanedProcesses();
@@ -187,21 +204,40 @@ class LocalVanityGenerator {
       });
       
       // Check for orphaned files in the output directory
-      const files = fs.readdirSync(this.outputDir).filter(f => f !== '.' && f !== '..');
-      if (files.length > 0) {
-        logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ORPHANED FILES ${fancyColors.RESET} Found ${files.length} files in temp directory`);
+      try {
+        // Make sure the directory exists first
+        if (!fs.existsSync(OUTPUT_DIR_KEYPAIRS)) {
+          fs.mkdirSync(OUTPUT_DIR_KEYPAIRS, { recursive: true });
+          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Created missing keypairs directory${fancyColors.RESET}`);
+          return; // No files to clean if we just created the directory
+        }
         
-        // Log and remove each orphaned file
-        files.forEach(file => {
-          try {
-            const filePath = path.join(this.outputDir, file);
-            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Removing orphaned file:${fancyColors.RESET} ${file}`);
-            fs.unlinkSync(filePath);
-            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Removed orphaned file${fancyColors.RESET}`);
-          } catch (fileError) {
-            logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error removing orphaned file:${fancyColors.RESET} ${fileError.message}`);
-          }
-        });
+        const files = fs.readdirSync(OUTPUT_DIR_KEYPAIRS).filter(f => f !== '.' && f !== '..');
+        if (files.length > 0) {
+          logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} ORPHANED FILES ${fancyColors.RESET} Found ${files.length} files in temp directory`);
+          
+          // Log and remove each orphaned file
+          files.forEach(file => {
+            try {
+              const filePath = path.join(OUTPUT_DIR_KEYPAIRS, file);
+              logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Removing orphaned file:${fancyColors.RESET} ${file}`);
+              fs.unlinkSync(filePath);
+              logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Removed orphaned file${fancyColors.RESET}`);
+            } catch (fileError) {
+              logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error removing orphaned file:${fancyColors.RESET} ${fileError.message}`);
+            }
+          });
+        }
+      } catch (dirError) {
+        // This is the error we're seeing in the logs
+        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Creating keypairs directory structure...${fancyColors.RESET}`);
+        // Create directories if they don't exist
+        fs.mkdirSync(OUTPUT_DIR_KEYPAIRS, { recursive: true });
+        fs.mkdirSync(OUTPUT_DIR_DEGEN, { recursive: true });
+        fs.mkdirSync(OUTPUT_DIR_DUEL, { recursive: true });
+        fs.mkdirSync(OUTPUT_DIR_BRANCH, { recursive: true });
+        fs.mkdirSync(OUTPUT_DIR_OTHER, { recursive: true });
+      }
       }
     } catch (error) {
       logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error during orphaned process cleanup:${fancyColors.RESET} ${error.message}`);
