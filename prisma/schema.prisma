@@ -1446,14 +1446,15 @@ model rpc_benchmark_results {
   @@map("rpc_benchmark_results")
 }
 
-// Token pool information for DEXes
+// Token rank history information
 model token_rank_history {
-  id          Int       @id @default(autoincrement())
-  token_id    Int       // Foreign key to tokens table
-  rank        Int       // Position in ranking (1-1000+)
-  timestamp   DateTime  @default(now()) @db.Timestamptz(6)
-  source      String?   @db.VarChar(50) // Source of ranking data (e.g. 'jupiter', 'manual')
-  snapshot_id String?   @db.VarChar(100) // Optional batch ID for grouping ranks from same update
+  id          Int       @id @default(autoincrement())       // id
+  token_id    Int                                           // Foreign key to tokens table
+  rank        Int                                           // Position in ranking (1-1000+)
+  timeframe   String?   @db.VarChar(20)                     // [new 4/25/25] options are 5m, 1h, 6h, 24h (i think?)
+  timestamp   DateTime  @default(now()) @db.Timestamptz(6)  // ts
+  source      String?   @db.VarChar(50)                     // Source of ranking data (e.g. 'jupiter', 'manual')
+  snapshot_id String?   @db.VarChar(100)                    // Optional batch ID for grouping ranks from same update
   
   // Relations
   tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
