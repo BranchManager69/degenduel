@@ -211,123 +211,200 @@ export const serviceColors = {
   failed: fancyColors.SERVICE_FAILED,      // Kept as is for consistency
 };
 
-// Service-specific colors using our exotic new colors
+// Service-specific colors organized by color families
 export const serviceSpecificColors = {
-  // Current service colors
-  tokenSync: {
-    tag: '\x1b[1m\x1b[38;5;201m',                   // Magenta (201)
-    header: '\x1b[1m\x1b[38;5;201m\x1b[48;5;236m',  // Magenta on dark gray
-    info: '\x1b[38;5;201m',                         // Regular magenta
-    success: '\x1b[38;5;46m',                       // Standard green
-    warning: '\x1b[38;5;214m',                      // Standard orange
-    error: '\x1b[38;5;196m',                        // Standard red
-  },
-  tokenDEXData: {
-    tag: '\x1b[1m\x1b[38;5;147m',                   // Light Purple (147)
-    header: '\x1b[1m\x1b[38;5;147m\x1b[48;5;236m',  // Light Purple on dark gray
-    info: '\x1b[38;5;147m',                         // Regular light purple
-    success: '\x1b[38;5;46m',                       // Standard green
-    warning: '\x1b[38;5;214m',                      // Standard orange
-    error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;147m',             // Bold light purple for highlights
-    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
-    count: '\x1b[38;5;46m',                         // Green for counts
-  },
-  contestWallet: {
-    tag: '\x1b[1m\x1b[38;5;51m',                    // Cyan (51)
-    header: '\x1b[1m\x1b[38;5;51m\x1b[48;5;236m',   // Cyan on dark gray
-    info: '\x1b[38;5;51m',                          // Regular cyan
-    success: '\x1b[38;5;46m',                       // Standard green
-    warning: '\x1b[38;5;214m',                      // Standard orange
-    error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;51m',              // Bold cyan for highlights
-    batch: '\x1b[1m\x1b[48;5;239m\x1b[48;5;17m',    // Bold grey on navy for batch operations
-    transfer: '\x1b[1m\x1b[38;5;51m\x1b[48;5;17m',  // Bold cyan on navy for transfer operations
-  },
-  heliusClient: {
-    tag: '\x1b[1m\x1b[38;5;127m',                   // Purple (127)
-    header: '\x1b[1m\x1b[38;5;127m\x1b[48;5;236m',  // Purple on dark gray
-    info: '\x1b[38;5;127m',                         // Regular purple
-    highlight: '\x1b[1m\x1b[38;5;127m',             // Bold purple for highlights
-    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
-    count: '\x1b[1m\x1b[38;5;141m',                 // Lavender for counts
-    success: '\x1b[38;5;46m',                       // Standard green
-    warning: '\x1b[38;5;214m',                      // Standard orange
-    error: '\x1b[38;5;196m',                        // Standard red
-  },
-  jupiterClient: {
-    tag: '\x1b[1m\x1b[38;5;208m',                   // Orange (208)
-    header: '\x1b[1m\x1b[38;5;208m\x1b[48;5;236m',  // Orange on dark gray
-    info: '\x1b[38;5;208m',                         // Regular orange
-    success: '\x1b[38;5;46m',                       // Standard green
-    warning: '\x1b[38;5;214m',                      // Standard orange
-    error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;208m',             // Bold orange for highlights
-    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
-    price: '\x1b[38;5;226m',                        // Yellow for prices
-    count: '\x1b[38;5;208m',                        // Dark orange for counts
-  },
-  dexscreenerClient: {
-    tag: '\x1b[1m\x1b[38;5;141m',                   // Lavender (141)
-    header: '\x1b[1m\x1b[38;5;141m\x1b[48;5;236m',  // Lavender on dark gray
-    info: '\x1b[38;5;141m',                         // Regular lavender
-    success: '\x1b[38;5;46m',                       // Standard green
-    warning: '\x1b[38;5;214m',                      // Standard orange
-    error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;141m',             // Bold lavender for highlights
-    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
-    count: '\x1b[38;5;46m',                         // Green for counts
-  },
+  // =============================================================
+  // 1. BLUE FAMILY - Solana API Services
+  // =============================================================
+  
+  // Parent Service - Navy Background
   solanaEngine: {
+    tag: '\x1b[1m\x1b[38;5;17m',                    // Navy/Dark Blue (17)
+    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;17m',   // White on Navy background
+    info: '\x1b[38;5;17m',                          // Navy
+    success: '\x1b[38;5;17m',                       // Navy
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;17m',              // Bold Navy
+    token: '\x1b[1m\x1b[38;5;17m',                  // Bold Navy
+    count: '\x1b[1m\x1b[38;5;17m',                  // Bold Navy
+  },
+  
+  // Child Services - Blue variants
+  heliusClient: {
     tag: '\x1b[1m\x1b[38;5;75m',                    // Blue (75)
     header: '\x1b[1m\x1b[38;5;75m\x1b[48;5;236m',   // Blue on dark gray
     info: '\x1b[38;5;75m',                          // Regular blue
-    success: '\x1b[38;5;46m',                       // Standard green
+    highlight: '\x1b[1m\x1b[38;5;75m',              // Bold blue for highlights
+    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
+    count: '\x1b[1m\x1b[38;5;75m',                  // Blue for counts
+    success: '\x1b[38;5;75m',                       // Blue instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;75m',              // Bold blue for highlights
-    token: '\x1b[1m\x1b[38;5;75m',                  // Bold blue for token
-    count: '\x1b[1m\x1b[38;5;75m',                  // Bold blue for count
   },
   
-  // New service colors using our exotic theme additions
-  ddcomment: {
-    tag: '\x1b[1m\x1b[38;5;93m',                    // Bold Indigo (93)
-    header: '\x1b[1m\x1b[38;5;93m\x1b[48;5;236m',   // Bold Indigo on dark gray
-    info: '\x1b[38;5;93m',                          // Regular Indigo
-    success: '\x1b[38;5;46m',                       // Standard green
+  jupiterClient: {
+    tag: '\x1b[1m\x1b[38;5;51m',                    // Cyan (51)
+    header: '\x1b[1m\x1b[38;5;51m\x1b[48;5;236m',   // Cyan on dark gray
+    info: '\x1b[38;5;51m',                          // Regular cyan
+    success: '\x1b[38;5;51m',                       // Cyan instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;51m',              // Bold cyan for highlights
+    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
+    price: '\x1b[38;5;226m',                        // Yellow for prices
+    count: '\x1b[38;5;51m',                         // Cyan for counts
   },
-  aiService: {
-    tag: '\x1b[1m\x1b[38;5;112m',                   // Bold Lime (112)
-    header: '\x1b[1m\x1b[38;5;112m\x1b[48;5;236m',  // Bold Lime on dark gray
-    info: '\x1b[38;5;112m',                         // Regular Lime
-    success: '\x1b[38;5;46m',                       // Standard green
+  
+  dexscreenerClient: {
+    tag: '\x1b[1m\x1b[38;5;39m',                    // Sky Blue (39)
+    header: '\x1b[1m\x1b[38;5;39m\x1b[48;5;236m',   // Sky Blue on dark gray
+    info: '\x1b[38;5;39m',                          // Regular Sky Blue
+    success: '\x1b[38;5;39m',                       // Sky Blue instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;39m',              // Bold Sky Blue for highlights
+    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
+    count: '\x1b[38;5;39m',                         // Sky Blue for counts
   },
-  adminTools: {
-    tag: '\x1b[1m\x1b[38;5;209m',                   // Bold Salmon (209)
-    header: '\x1b[1m\x1b[38;5;209m\x1b[48;5;236m',  // Bold Salmon on dark gray
-    info: '\x1b[38;5;209m',                         // Regular Salmon
-    success: '\x1b[38;5;46m',                       // Standard green
+  
+  // =============================================================
+  // 2. GOLD/BRONZE FAMILY - Data Processing Services
+  // =============================================================
+  
+  // Parent Service - Gold with background
+  marketDataService: {
+    tag: '\x1b[1m\x1b[38;5;220m',                   // Gold (220)
+    header: '\x1b[1m\x1b[38;5;232m\x1b[48;5;220m',  // Black on Gold background
+    info: '\x1b[38;5;220m',                         // Regular Gold
+    success: '\x1b[38;5;220m',                      // Gold instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;220m',             // Bold Gold
+    broadcast: '\x1b[1m\x1b[38;5;232m\x1b[48;5;183m', // Black on Mauve for broadcasts
+    token: '\x1b[38;5;220m',                        // Gold for tokens
+    count: '\x1b[38;5;220m',                        // Gold for counts
   },
-  marketAnalytics: {
-    tag: '\x1b[1m\x1b[38;5;43m',                    // Bold Teal (43)
-    header: '\x1b[1m\x1b[38;5;43m\x1b[48;5;236m',   // Bold Teal on dark gray
-    info: '\x1b[38;5;43m',                          // Regular Teal
-    success: '\x1b[38;5;46m',                       // Standard green
+  
+  // Child Services - Gold/Bronze variants
+  tokenSync: {
+    tag: '\x1b[1m\x1b[38;5;214m',                   // Amber (214)
+    header: '\x1b[1m\x1b[38;5;214m\x1b[48;5;236m',  // Amber on dark gray
+    info: '\x1b[38;5;214m',                         // Regular amber
+    success: '\x1b[38;5;214m',                      // Amber instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;214m',             // Bold amber
   },
+  
+  tokenDEXData: {
+    tag: '\x1b[1m\x1b[38;5;130m',                   // Copper/Bronze (130)
+    header: '\x1b[1m\x1b[38;5;130m\x1b[48;5;236m',  // Copper on dark gray
+    info: '\x1b[38;5;130m',                         // Regular copper
+    success: '\x1b[38;5;130m',                      // Copper instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;130m',             // Bold copper for highlights
+    token: '\x1b[38;5;220m',                        // Gold for token identifiers
+    count: '\x1b[38;5;130m',                        // Copper for counts
+  },
+  
+  // =============================================================
+  // 3. FOREST/OLIVE FAMILY - Wallet Services
+  // =============================================================
+  
+  // Parent Service - Forest Green with background
+  contestWallet: {
+    tag: '\x1b[1m\x1b[38;5;29m',                    // Forest Green (29)
+    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;29m',   // White on Forest Green background
+    info: '\x1b[38;5;29m',                          // Regular Forest Green
+    success: '\x1b[38;5;29m',                       // Forest Green instead of bright green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;29m',              // Bold Forest Green
+    batch: '\x1b[1m\x1b[38;5;255m\x1b[48;5;29m',    // White on Forest Green for batch operations
+    transfer: '\x1b[1m\x1b[38;5;255m\x1b[48;5;29m', // White on Forest Green for transfers
+  },
+  
+  // Child Service - Olive Green
+  vanityWallet: {
+    tag: '\x1b[1m\x1b[38;5;64m',                    // Olive Green (64)
+    header: '\x1b[1m\x1b[38;5;64m\x1b[48;5;236m',   // Olive Green on dark gray
+    info: '\x1b[38;5;64m',                          // Regular Olive Green
+    success: '\x1b[38;5;64m',                       // Olive Green instead of bright green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;64m',              // Bold Olive Green
+  },
+  
+  // =============================================================
+  // 4. YELLOW/ORANGE FAMILY - Analytics & Tracking
+  // =============================================================
+  
+  // Balance Tracking - Dark Yellow with subtle background
   balanceTracking: {
-    tag: '\x1b[1m\x1b[38;5;29m',                    // Bold Sea Green (29)
-    header: '\x1b[1m\x1b[38;5;29m\x1b[48;5;236m',   // Bold Sea Green on dark gray
-    info: '\x1b[38;5;29m',                          // Regular Sea Green
-    success: '\x1b[38;5;46m',                       // Standard green
+    tag: '\x1b[1m\x1b[38;5;178m',                   // Dark Yellow (178)
+    header: '\x1b[1m\x1b[38;5;232m\x1b[48;5;178m',  // Black on Dark Yellow background
+    info: '\x1b[38;5;178m',                         // Regular Dark Yellow
+    success: '\x1b[38;5;178m',                      // Dark Yellow instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;178m',             // Bold Dark Yellow
+  },
+  
+  // Market Analytics - Orange
+  marketAnalytics: {
+    tag: '\x1b[1m\x1b[38;5;208m',                   // Orange (208)
+    header: '\x1b[1m\x1b[38;5;208m\x1b[48;5;236m',  // Orange on dark gray
+    info: '\x1b[38;5;208m',                         // Regular Orange
+    success: '\x1b[38;5;208m',                      // Orange instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;208m',             // Bold Orange
+  },
+  
+  // =============================================================
+  // 5. RUST/PLUM FAMILY - Admin & Infrastructure
+  // =============================================================
+  
+  // Parent Service - Rust with background
+  aiService: {
+    tag: '\x1b[1m\x1b[38;5;166m',                   // Rust (166)
+    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;166m',  // White on Rust background
+    info: '\x1b[38;5;166m',                         // Regular Rust
+    success: '\x1b[38;5;166m',                      // Rust instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;166m',             // Bold Rust
+  },
+  
+  // Child Services - Plum and Slate variants
+  adminTools: {
+    tag: '\x1b[1m\x1b[38;5;96m',                    // Plum (96)
+    header: '\x1b[1m\x1b[38;5;96m\x1b[48;5;236m',   // Plum on dark gray
+    info: '\x1b[38;5;96m',                          // Regular Plum
+    success: '\x1b[38;5;96m',                       // Plum instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;96m',              // Bold Plum
+  },
+  
+  discord: {
+    tag: '\x1b[1m\x1b[38;5;102m',                   // Slate Gray (102)
+    header: '\x1b[1m\x1b[38;5;102m\x1b[48;5;236m',  // Slate Gray on dark gray
+    info: '\x1b[38;5;102m',                         // Regular Slate Gray
+    success: '\x1b[38;5;102m',                      // Slate Gray instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;102m',             // Bold Slate Gray
+  },
+  
+  // Legacy service - keeping for backward compatibility
+  ddcomment: {
+    tag: '\x1b[1m\x1b[38;5;102m',                   // Slate Gray (102) - matching discord
+    header: '\x1b[1m\x1b[38;5;102m\x1b[48;5;236m',  // Slate Gray on dark gray
+    info: '\x1b[38;5;102m',                         // Regular Slate Gray
+    success: '\x1b[38;5;102m',                      // Slate Gray instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
   }

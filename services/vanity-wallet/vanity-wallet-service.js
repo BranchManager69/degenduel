@@ -8,7 +8,7 @@
  */
 
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../utils/colors.js';
+import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
 import prisma from '../../config/prisma.js';
 import config from '../../config/config.js';
 import VanityApiClient from './vanity-api-client.js';
@@ -17,10 +17,11 @@ import { exec } from 'child_process';
 
 class VanityWalletService extends BaseService {
   constructor() {
-    // Pass proper configuration object to BaseService constructor
+    // Pass proper configuration object to BaseService constructor with 60 second interval
     super({
       name: 'vanity_wallet_service',
-      description: 'Vanity wallet generation and management'
+      description: 'Vanity wallet generation and management',
+      checkIntervalMs: 60000 // Check every 60 seconds (1 minute)
     });
     
     // Configuration
@@ -29,7 +30,7 @@ class VanityWalletService extends BaseService {
       DUEL: 5,  // Maintain 5 available DUEL addresses
       DEGEN: 3  // Maintain 3 available DEGEN addresses
     };
-    this.intervalMs = 1000 * 60 * 5; // Check every 5 minutes
+    this.intervalMs = 60000; // Check every 60 seconds (1 minute)
     this.isGenerating = false;
     this.maxConcurrentJobs = 1; // Only generate one at a time to avoid high CPU usage
     
@@ -45,11 +46,11 @@ class VanityWalletService extends BaseService {
    */
   async init() {
     try {
-      logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initializing ${fancyColors.RESET} Vanity Wallet Service`);
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initializing ${fancyColors.RESET} Vanity Wallet Service`);
       
       // Check if WALLET_ENCRYPTION_KEY is set
       if (!process.env.WALLET_ENCRYPTION_KEY) {
-        logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Warning ${fancyColors.RESET} WALLET_ENCRYPTION_KEY is not set. Private keys will not be encrypted.`);
+        logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Warning ${fancyColors.RESET} WALLET_ENCRYPTION_KEY is not set. Private keys will not be encrypted.`);
       }
       
       // Read configuration
@@ -61,14 +62,18 @@ class VanityWalletService extends BaseService {
         this.intervalMs = 1000 * 60 * config.vanityWallet.checkIntervalMinutes;
         // Also update the base service check interval
         this.config.checkIntervalMs = this.intervalMs;
+      } else {
+        // Use default 60 second interval if not configured
+        this.intervalMs = 60000; 
+        this.config.checkIntervalMs = 60000;
       }
       
       if (config.vanityWallet?.maxConcurrentJobs) {
         this.maxConcurrentJobs = config.vanityWallet.maxConcurrentJobs;
       }
       
-      logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Configuration: Check interval ${this.intervalMs/1000/60} minutes, Max concurrent jobs: ${this.maxConcurrentJobs}${fancyColors.RESET}`);
-      logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Target counts: DUEL: ${this.targetCounts.DUEL}, DEGEN: ${this.targetCounts.DEGEN}${fancyColors.RESET}`);
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Configuration: Check interval ${this.intervalMs/1000/60} minutes, Max concurrent jobs: ${this.maxConcurrentJobs}${fancyColors.RESET}`);
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Target counts: DUEL: ${this.targetCounts.DUEL}, DEGEN: ${this.targetCounts.DEGEN}${fancyColors.RESET}`);
       
       // Set as operational
       this.isOperational = true;
@@ -78,7 +83,7 @@ class VanityWalletService extends BaseService {
       
       return true;
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Initializing service: ${error.message}`, {
+      logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Initializing service: ${error.message}`, {
         error: error.message,
         stack: error.stack
       });
@@ -100,7 +105,7 @@ class VanityWalletService extends BaseService {
    * Called when the service starts
    */
   async onServiceStart() {
-    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting ${fancyColors.RESET} Vanity Wallet Service`);
+    logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting ${fancyColors.RESET} Vanity Wallet Service`);
     
     // Find and clean up any orphaned processes that might be using resources
     await this.cleanupOrphanedProcesses();
@@ -111,7 +116,7 @@ class VanityWalletService extends BaseService {
     // Set up status report interval (every 1 minute)
     this.statusReportInterval = setInterval(() => this.logJobStatus(), 60 * 1000);
     
-    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Started ${fancyColors.RESET} Vanity Wallet Service`);
+    logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Started ${fancyColors.RESET} Vanity Wallet Service`);
     
     // Run an initial check
     await this.checkAndGenerateAddresses();
@@ -171,25 +176,25 @@ class VanityWalletService extends BaseService {
       });
       
       // Format and log the results
-      logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} JOB STATUS ${fancyColors.RESET} Vanity wallet generation status`);
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} JOB STATUS ${fancyColors.RESET} Vanity wallet generation status`);
       
       // Log status counts by pattern
       if (statusCounts.length > 0) {
-        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Pattern Counts:${fancyColors.RESET}`);
+        logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Pattern Counts:${fancyColors.RESET}`);
         for (const row of statusCounts) {
           const statusColor = 
             row.status === 'completed' ? fancyColors.GREEN : 
             row.status === 'processing' ? fancyColors.YELLOW : 
             fancyColors.BLUE;
-          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET}   ${row.pattern}: ${statusColor}${row.status}${fancyColors.RESET} = ${row.count}`);
+          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET}   ${row.pattern}: ${statusColor}${row.status}${fancyColors.RESET} = ${row.count}`);
         }
       } else {
-        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}No jobs found in database${fancyColors.RESET}`);
+        logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}No jobs found in database${fancyColors.RESET}`);
       }
       
       // Log details of currently processing jobs
       if (processingDetails.length > 0) {
-        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Currently Processing Jobs (${processingDetails.length}):${fancyColors.RESET}`);
+        logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Currently Processing Jobs (${processingDetails.length}):${fancyColors.RESET}`);
         for (const job of processingDetails) {
           // Color code based on processing time
           const timeColor = 
@@ -197,22 +202,22 @@ class VanityWalletService extends BaseService {
             job.processingTime > 15 ? fancyColors.YELLOW :
             fancyColors.GREEN;
           
-          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET}   Job #${job.id} (${job.pattern}): Processing for ${timeColor}${job.processingTime} minutes${fancyColors.RESET}`);
+          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET}   Job #${job.id} (${job.pattern}): Processing for ${timeColor}${job.processingTime} minutes${fancyColors.RESET}`);
         }
       } else {
-        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}No jobs currently processing${fancyColors.RESET}`);
+        logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}No jobs currently processing${fancyColors.RESET}`);
       }
       
       // Get summary of available and used addresses
       if (completedUsedCounts.length > 0) {
-        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Available/Used Addresses:${fancyColors.RESET}`);
+        logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Available/Used Addresses:${fancyColors.RESET}`);
         for (const row of completedUsedCounts) {
           const usedColor = row.is_used ? fancyColors.YELLOW : fancyColors.GREEN;
-          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET}   ${row.pattern}: ${usedColor}${row.is_used ? 'Used' : 'Available'}${fancyColors.RESET} = ${row.count}`);
+          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET}   ${row.pattern}: ${usedColor}${row.is_used ? 'Used' : 'Available'}${fancyColors.RESET} = ${row.count}`);
         }
       }
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error getting job status: ${error.message}${fancyColors.RESET}`);
+      logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error getting job status: ${error.message}${fancyColors.RESET}`);
     }
   }
   
@@ -226,7 +231,7 @@ class VanityWalletService extends BaseService {
         exec('ps aux | grep solana-keygen | grep -v grep', (error, stdout, stderr) => {
           if (stdout) {
             const processes = stdout.trim().split('\n');
-            logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ORPHANED PROCESSES ${fancyColors.RESET} Found ${processes.length} orphaned solana-keygen processes`);
+            logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ORPHANED PROCESSES ${fancyColors.RESET} Found ${processes.length} orphaned solana-keygen processes`);
             
             let killedCount = 0;
             let pendingKills = processes.length;
@@ -237,27 +242,27 @@ class VanityWalletService extends BaseService {
                 const parts = process.trim().split(/\s+/);
                 const pid = parts[1];
                 
-                logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Killing orphaned process${fancyColors.RESET} PID: ${pid}`);
+                logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Killing orphaned process${fancyColors.RESET} PID: ${pid}`);
                 
                 // Kill the process
                 exec(`kill -9 ${pid}`, (killError) => {
                   pendingKills--;
                   
                   if (killError) {
-                    logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to kill process ${pid}:${fancyColors.RESET} ${killError.message}`);
+                    logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to kill process ${pid}:${fancyColors.RESET} ${killError.message}`);
                   } else {
                     killedCount++;
-                    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Killed orphaned process${fancyColors.RESET} PID: ${pid}`);
+                    logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Killed orphaned process${fancyColors.RESET} PID: ${pid}`);
                   }
                   
                   if (pendingKills === 0) {
-                    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Cleanup complete:${fancyColors.RESET} Killed ${killedCount} orphaned processes`);
+                    logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Cleanup complete:${fancyColors.RESET} Killed ${killedCount} orphaned processes`);
                     resolve(killedCount);
                   }
                 });
               } catch (parseError) {
                 pendingKills--;
-                logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error parsing process info:${fancyColors.RESET} ${parseError.message}`);
+                logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error parsing process info:${fancyColors.RESET} ${parseError.message}`);
                 
                 if (pendingKills === 0) {
                   resolve(killedCount);
@@ -271,7 +276,7 @@ class VanityWalletService extends BaseService {
         });
       });
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error during orphaned process cleanup:${fancyColors.RESET} ${error.message}`);
+      logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error during orphaned process cleanup:${fancyColors.RESET} ${error.message}`);
       return 0;
     }
   }
@@ -293,11 +298,11 @@ class VanityWalletService extends BaseService {
       });
       
       if (stuckJobs.length > 0) {
-        logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} STUCK JOBS ${fancyColors.RESET} Found ${stuckJobs.length} stuck jobs in 'processing' state for >30 minutes`);
+        logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} STUCK JOBS ${fancyColors.RESET} Found ${stuckJobs.length} stuck jobs in 'processing' state for >30 minutes`);
         
         // Reset stuck jobs to 'pending' state
         for (const job of stuckJobs) {
-          logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Resetting stuck job ${job.id}${fancyColors.RESET} (pattern: ${job.pattern}, stuck since ${job.updated_at})`);
+          logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Resetting stuck job ${job.id}${fancyColors.RESET} (pattern: ${job.pattern}, stuck since ${job.updated_at})`);
           
           await prisma.vanity_wallet_pool.update({
             where: { id: job.id },
@@ -308,12 +313,12 @@ class VanityWalletService extends BaseService {
           });
         }
         
-        logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Reset ${stuckJobs.length} stuck jobs to 'pending' state${fancyColors.RESET}`);
+        logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Reset ${stuckJobs.length} stuck jobs to 'pending' state${fancyColors.RESET}`);
       }
       
       return stuckJobs.length;
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error resetting stuck jobs:${fancyColors.RESET} ${error.message}`);
+      logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error resetting stuck jobs:${fancyColors.RESET} ${error.message}`);
       return 0;
     }
   }
@@ -322,7 +327,7 @@ class VanityWalletService extends BaseService {
    * Called when the service stops
    */
   async onServiceStop() {
-    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Stopping ${fancyColors.RESET} Vanity Wallet Service`);
+    logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Stopping ${fancyColors.RESET} Vanity Wallet Service`);
     
     // Clean up the status report interval
     if (this.statusReportInterval) {
@@ -341,7 +346,7 @@ class VanityWalletService extends BaseService {
   async checkAndGenerateAddresses() {
     // Skip if we're already generating
     if (this.isGenerating) {
-      logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Already generating addresses, skipping check${fancyColors.RESET}`);
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Already generating addresses, skipping check${fancyColors.RESET}`);
       return;
     }
     
@@ -361,11 +366,11 @@ class VanityWalletService extends BaseService {
       // If there are too many pending jobs already, skip creating more
       const MAX_PENDING_JOBS = 10; // Hard limit to avoid endless generation
       if (pendingJobsCount >= MAX_PENDING_JOBS) {
-        logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} TOO MANY JOBS ${fancyColors.RESET} There are already ${pendingJobsCount} pending/processing vanity wallet jobs. Limiting to ${MAX_PENDING_JOBS} maximum.`);
+        logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} TOO MANY JOBS ${fancyColors.RESET} There are already ${pendingJobsCount} pending/processing vanity wallet jobs. Limiting to ${MAX_PENDING_JOBS} maximum.`);
         
         // Clean up any excess jobs if there are too many (50+)
         if (pendingJobsCount > 50) {
-          logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CLEANUP ${fancyColors.RESET} Cancelling excess jobs (${pendingJobsCount} > 50)`);
+          logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CLEANUP ${fancyColors.RESET} Cancelling excess jobs (${pendingJobsCount} > 50)`);
           
           // First, check for stuck processing jobs (they may indicate a problem)
           const stuckProcessingJobs = await prisma.vanity_wallet_pool.findMany({
@@ -382,7 +387,7 @@ class VanityWalletService extends BaseService {
           
           // If there are stuck processing jobs, cancel them first
           if (stuckProcessingJobs.length > 0) {
-            logApi.warn(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} STUCK JOBS ${fancyColors.RESET} Found ${stuckProcessingJobs.length} stuck processing jobs older than 30 minutes`);
+            logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} STUCK JOBS ${fancyColors.RESET} Found ${stuckProcessingJobs.length} stuck processing jobs older than 30 minutes`);
             
             for (const job of stuckProcessingJobs) {
               try {
@@ -395,9 +400,9 @@ class VanityWalletService extends BaseService {
                   }
                 });
                 
-                logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Cancelled stuck processing job #${job.id} for pattern ${job.pattern}${fancyColors.RESET}`);
+                logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Cancelled stuck processing job #${job.id} for pattern ${job.pattern}${fancyColors.RESET}`);
               } catch (cancelError) {
-                logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to cancel stuck job #${job.id}: ${cancelError.message}${fancyColors.RESET}`);
+                logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to cancel stuck job #${job.id}: ${cancelError.message}${fancyColors.RESET}`);
               }
             }
           }
@@ -425,9 +430,9 @@ class VanityWalletService extends BaseService {
                 }
               });
               
-              logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Cancelled excess job #${job.id} for pattern ${job.pattern} (status: ${job.status})${fancyColors.RESET}`);
+              logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Cancelled excess job #${job.id} for pattern ${job.pattern} (status: ${job.status})${fancyColors.RESET}`);
             } catch (cancelError) {
-              logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to cancel job #${job.id}: ${cancelError.message}${fancyColors.RESET}`);
+              logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to cancel job #${job.id}: ${cancelError.message}${fancyColors.RESET}`);
             }
           }
         }
@@ -463,7 +468,7 @@ class VanityWalletService extends BaseService {
         const needed = Math.max(0, target - effectiveCount);
         
         if (needed > 0) {
-          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Need to generate ${needed} ${pattern} addresses (current: ${count}, pending: ${pendingCount}, target: ${target})`);
+          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Need to generate ${needed} ${pattern} addresses (current: ${count}, pending: ${pendingCount}, target: ${target})`);
           
           // Generate addresses one by one (not all at once to avoid CPU spikes)
           const remainingJobSlots = MAX_PENDING_JOBS - pendingJobsCount;
@@ -473,14 +478,14 @@ class VanityWalletService extends BaseService {
             await this.generateVanityAddress(pattern);
           }
         } else {
-          logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Have enough ${pattern} addresses (${count} available + ${pendingCount} pending, target: ${target})${fancyColors.RESET}`);
+          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.success}Have enough ${pattern} addresses (${count} available + ${pendingCount} pending, target: ${target})${fancyColors.RESET}`);
         }
       }
       
       // Log current status
-      logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Current vanity wallet status: DUEL: ${counts.DUEL || 0}, DEGEN: ${counts.DEGEN || 0}${fancyColors.RESET}`);
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.info}Current vanity wallet status: DUEL: ${counts.DUEL || 0}, DEGEN: ${counts.DEGEN || 0}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Checking and generating addresses: ${error.message}`, {
+      logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Checking and generating addresses: ${error.message}`, {
         error: error.message,
         stack: error.stack
       });
@@ -497,7 +502,7 @@ class VanityWalletService extends BaseService {
   async generateVanityAddress(pattern) {
     try {
       // Start the generation process
-      logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Starting generation of ${pattern} address`);
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Starting generation of ${pattern} address`);
       
       // Create the request
       await VanityApiClient.createVanityAddressRequest({
@@ -510,7 +515,7 @@ class VanityWalletService extends BaseService {
       
       // The VanityApiClient will handle the rest (generation, encryption, storage)
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Generating ${pattern} address: ${error.message}`, {
+      logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Generating ${pattern} address: ${error.message}`, {
         error: error.message,
         stack: error.stack
       });
@@ -565,7 +570,7 @@ class VanityWalletService extends BaseService {
         maxConcurrentJobs: this.maxConcurrentJobs
       };
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Getting status: ${error.message}`, {
+      logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Getting status: ${error.message}`, {
         error: error.message,
         stack: error.stack
       });
