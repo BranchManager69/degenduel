@@ -245,12 +245,13 @@ class ContestEvaluationService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
-            // Check SolanaEngine dependency first
-            if (!solanaEngine.isInitialized()) {
+            // Check SolanaEngine dependency first - using same pattern as contest-wallet service
+            if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                 logApi.warn(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} INITIALIZING SOLANAENGINE ${fancyColors.RESET} SolanaEngine was not initialized, attempting to initialize it now`);
                 await solanaEngine.initialize();
                 
-                if (!solanaEngine.isInitialized()) {
+                // Check again after initialization
+                if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                     throw ServiceError.initialization('Failed to initialize SolanaEngine');
                 }
                 
