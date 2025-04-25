@@ -9,7 +9,7 @@
  */
 
 import { logApi } from '../../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../../utils/colors.js';
+import { fancyColors, serviceSpecificColors } from '../../../utils/colors.js';
 import prisma from '../../../config/prisma.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -36,12 +36,12 @@ export async function analyzeErrorLogs(aiService, limit = 50) {
     
     // If we didn't find any recent errors, log a warning
     if (recentErrors.length === 0) {
-      logApi.warn(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} No client errors found in the database`);
+      logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} No client errors found in the database`);
     }
     
     // Skip if not enough errors to analyze
     if (recentErrors.length < 10) {
-      logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Skipping error log analysis - only ${recentErrors.length} errors found (minimum: 10)`);
+      logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Skipping error log analysis - only ${recentErrors.length} errors found (minimum: 10)`);
       return null;
     }
     
@@ -182,7 +182,7 @@ async function processLogFile(aiService, logsDirectory, logFileName, limit) {
     const lastNLines = logLines.slice(-maxLines);
     
     if (lastNLines.length < 100) {
-      logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Skipping general log analysis - insufficient log lines (${lastNLines.length})`);
+      logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Skipping general log analysis - insufficient log lines (${lastNLines.length})`);
       return null;
     }
     
@@ -330,7 +330,7 @@ export async function analyzeServiceLogs(aiService, serviceKey, limit = 500) {
       const wsBroadcaster = (await import('../../../utils/websocket-suite/ws-broadcaster.js')).default;
       
       // Log WebSocket status before attempting broadcast
-      logApi.debug(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} WebSocket status check: ${JSON.stringify({
+      logApi.debug(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} WebSocket status check: ${JSON.stringify({
         hasWebSocketConfig: !!config.websocket,
         hasUnifiedWebSocket: !!config.websocket?.unifiedWebSocket,
         serviceType: 'ai_service',
@@ -348,12 +348,12 @@ export async function analyzeServiceLogs(aiService, serviceKey, limit = 500) {
       
       // Only log success if we actually sent messages
       if (sentCount > 0) {
-        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Broadcasted new ${serviceKey} log analysis to ${sentCount} admins`);
+        logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Broadcasted new ${serviceKey} log analysis to ${sentCount} admins`);
       } else {
-        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Service log analysis complete, but no admin clients connected to receive broadcast`);
+        logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Service log analysis complete, but no admin clients connected to receive broadcast`);
       }
     } catch (broadcastError) {
-      logApi.warn(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Failed to broadcast service log analysis: ${broadcastError.message}`);
+      logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Failed to broadcast service log analysis: ${broadcastError.message}`);
     }
     
     return {

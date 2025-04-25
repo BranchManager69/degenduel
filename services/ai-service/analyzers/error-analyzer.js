@@ -11,7 +11,7 @@
  */
 
 import { logApi } from '../../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../../utils/colors.js'; // Only import fancyColors to avoid duplicates
+import { fancyColors, serviceSpecificColors } from '../../../utils/colors.js'; // Import service colors
 import prisma from '../../../config/prisma.js';
 
 /**
@@ -22,23 +22,25 @@ import prisma from '../../../config/prisma.js';
  */
 export async function analyzeRecentClientErrors(aiService) {
   try {
-    // Get cutoff time for analysis window
-    const cutoffTime = new Date(Date.now() - (aiService.config.analysis.clientErrors.lookbackMinutes * 60 * 1000));
-    
-    // Find errors since last analysis or cutoff time
-    const lastRunTime = aiService.analysisStats.clientErrors.lastRunAt || cutoffTime;
-    
-    // Get recent errors
+    // Get unanalyzed errors - instead of using a time window, check which errors haven't been analyzed yet
+    // Find errors that don't exist in the ai_analyzed_errors table
     const recentErrors = await prisma.client_errors.findMany({
       where: {
-        created_at: { gte: lastRunTime }
+        // Look for errors that don't have an entry in the ai_analyzed_errors table
+        NOT: {
+          error_id: {
+            in: (await prisma.ai_analyzed_errors.findMany({
+              select: { error_id: true }
+            })).map(e => e.error_id)
+          }
+        }
       },
       orderBy: { created_at: 'desc' }
     });
     
     // Skip if not enough errors to analyze
     if (recentErrors.length < aiService.config.analysis.clientErrors.minErrorsToAnalyze) {
-      logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Skipping client error analysis - only ${recentErrors.length} errors found (minimum: ${aiService.config.analysis.clientErrors.minErrorsToAnalyze})`);
+      logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Skipping client error analysis - only ${recentErrors.length} errors found (minimum: ${aiService.config.analysis.clientErrors.minErrorsToAnalyze})`);
       return null;
     }
     
@@ -78,7 +80,7 @@ export async function analyzeRecentClientErrors(aiService) {
     };
     
     // Log the analysis
-    logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} ${fancyColors.GREEN}AI Client Error Analysis Complete:${fancyColors.RESET} ${recentErrors.length} errors analyzed`, {
+    logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${serviceSpecificColors.aiService.success}AI Client Error Analysis Complete:${fancyColors.RESET} ${recentErrors.length} errors analyzed`, {
       summary: result.content.substring(0, 300) + (result.content.length > 300 ? '...' : ''),
       loadout: 'errorAnalysis'
     });
@@ -124,7 +126,14 @@ export async function analyzeRecentClientErrors(aiService) {
         browser_distribution: browserDistribution,
         os_distribution: osDistribution,
         top_errors: topErrors,
-        created_by: 'system'
+        created_by: 'system',
+        // Create records in the junction table for each analyzed error
+        analyzed_errors: {
+          create: recentErrors.map(error => ({
+            error_id: error.error_id,
+            analyzed_at: new Date()
+          }))
+        }
       }
     });
     
@@ -134,7 +143,7 @@ export async function analyzeRecentClientErrors(aiService) {
       const wsBroadcaster = (await import('../../../utils/websocket-suite/ws-broadcaster.js')).default;
       
       // Log WebSocket status before attempting broadcast
-      logApi.debug(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} WebSocket status check: ${JSON.stringify({
+      logApi.debug(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} WebSocket status check: ${JSON.stringify({
         hasWebSocketConfig: !!config.websocket,
         hasUnifiedWebSocket: !!config.websocket?.unifiedWebSocket,
         serviceType: 'ai_service',
@@ -160,13 +169,13 @@ export async function analyzeRecentClientErrors(aiService) {
       // Only log success if we actually sent messages
       const totalRecipients = adminCount + superAdminCount;
       if (totalRecipients > 0) {
-        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Broadcasted new error analysis to ${totalRecipients} admin recipients`);
+        logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Broadcasted new error analysis to ${totalRecipients} admin recipients`);
       } else {
-        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Error analysis complete, but no admin clients connected to receive broadcast`);
+        logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Error analysis complete, but no admin clients connected to receive broadcast`);
       }
     } catch (broadcastError) {
       // Don't fail if broadcasting fails
-      logApi.warn(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Failed to broadcast error analysis: ${broadcastError.message}`);
+      logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Failed to broadcast error analysis: ${broadcastError.message}`);
     }
     
     return {
@@ -175,7 +184,7 @@ export async function analyzeRecentClientErrors(aiService) {
       timestamp: new Date()
     };
   } catch (error) {
-    logApi.error(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} ${fancyColors.RED}Client error analysis failed:${fancyColors.RESET}`, error);
+    logApi.error(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.RED}Client error analysis failed:${fancyColors.RESET}`, error);
     return null;
   }
 }

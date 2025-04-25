@@ -367,15 +367,16 @@ export const serviceSpecificColors = {
   // 5. RUST/PLUM FAMILY - Admin & Infrastructure
   // =============================================================
   
-  // Parent Service - Rust with background
+  // Parent Service - Vibrant turquoise with background (Special color for AI Service)
   aiService: {
-    tag: '\x1b[1m\x1b[38;5;166m',                   // Rust (166)
-    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;166m',  // White on Rust background
-    info: '\x1b[38;5;166m',                         // Regular Rust
-    success: '\x1b[38;5;166m',                      // Rust instead of green
+    tag: '\x1b[1m\x1b[38;5;43m',                    // Turquoise (43)
+    header: '\x1b[1m\x1b[38;5;232m\x1b[48;5;43m',   // Black on Turquoise background
+    info: '\x1b[38;5;43m',                          // Regular Turquoise
+    success: '\x1b[38;5;43m',                       // Turquoise instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;166m',             // Bold Rust
+    highlight: '\x1b[1m\x1b[38;5;43m',              // Bold Turquoise
+    ai: '\x1b[1m\x1b[38;5;232m\x1b[48;5;43m',       // Black on Turquoise for AI-specific messages
   },
   
   // Child Services - Plum and Slate variants

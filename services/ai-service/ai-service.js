@@ -13,8 +13,8 @@ import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import { ServiceError } from '../../utils/service-suite/service-error.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../utils/colors.js';
-// Note: Explicitly only importing fancyColors to avoid duplicate serviceColors
+import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
+// Import both fancyColors and service-specific colors
 import OpenAI from 'openai';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../../config/prisma.js';
@@ -78,13 +78,13 @@ class AIService extends BaseService {
     try {
       // Check if AI service is disabled via service profile
       if (!config.services?.ai_service) {
-        logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} AI Service is disabled in the '${config.services.active_profile}' service profile`);
+        logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} AI Service is disabled in the '${config.services.active_profile}' service profile`);
         return false;
       }
       
       // Ensure we have an API key
       if (!config.api_keys?.openai) {
-        logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} MISSING API KEY ${fancyColors.RESET} OpenAI API key is not configured. AI features will be disabled.`);
+        logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} MISSING API KEY ${fancyColors.RESET} OpenAI API key is not configured. AI features will be disabled.`);
         return false;
       }
       
@@ -289,7 +289,7 @@ class AIService extends BaseService {
           );
         } catch (error) {
           // If there's an error getting user data, just use the default prompt
-          logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Failed to enhance system prompt with user data:`, error);
+          logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Failed to enhance system prompt with user data:`, error);
         }
       }
       
@@ -300,7 +300,7 @@ class AIService extends BaseService {
       const messagesWithSystem = ensureSystemPrompt(sanitizedMessages, systemPrompt);
       
       // Log request (with sensitive data removed)
-      logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} AI chat request received`, {
+      logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} AI chat request received`, {
         userId: options.userId || 'anonymous',
         model: loadout.model,
         loadout: loadoutType,
@@ -320,7 +320,7 @@ class AIService extends BaseService {
       });
       
       // Log successful response (with usage metrics for cost tracking)
-      logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} AI chat response generated`, {
+      logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} AI chat response generated`, {
         userId: options.userId || 'anonymous',
         model: loadout.model,
         promptTokens: response.usage.prompt_tokens,

@@ -238,7 +238,6 @@ class LocalVanityGenerator {
         fs.mkdirSync(OUTPUT_DIR_BRANCH, { recursive: true });
         fs.mkdirSync(OUTPUT_DIR_OTHER, { recursive: true });
       }
-      }
     } catch (error) {
       logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error during orphaned process cleanup:${fancyColors.RESET} ${error.message}`);
     }

@@ -1092,35 +1092,65 @@ model ai_conversation_messages {
 
 // AI analysis for client errors
 model ai_error_analyses {
-  id                     Int       @id @default(autoincrement())
-  summary                String    @db.Text
-  analyzed_at            DateTime  @default(now()) @db.Timestamptz(6)
+  id                     Int                @id @default(autoincrement())
+  summary                String             @db.Text
+  analyzed_at            DateTime           @default(now()) @db.Timestamptz(6)
   error_count            Int
   time_window_minutes    Int
-  severity_distribution  Json?     @default("{}")
-  browser_distribution   Json?     @default("{}")
-  os_distribution        Json?     @default("{}")
-  top_errors             Json?     @default("[]")
-  created_by             String?   @db.VarChar(44)
+  severity_distribution  Json?              @default("{}")
+  browser_distribution   Json?              @default("{}")
+  os_distribution        Json?              @default("{}")
+  top_errors             Json?              @default("[]")
+  created_by             String?            @db.VarChar(44)
+  analyzed_errors        ai_analyzed_errors[]
 
   @@index([analyzed_at])
   @@map("ai_error_analyses")
 }
 
+// Junction table to track which errors have been analyzed
+model ai_analyzed_errors {
+  id              Int                @id @default(autoincrement())
+  error_id        String             // References client_errors.error_id
+  analysis_id     Int                
+  analyzed_at     DateTime           @default(now()) @db.Timestamptz(6)
+  analysis        ai_error_analyses  @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+  
+  @@unique([error_id, analysis_id])
+  @@index([error_id])
+  @@index([analysis_id])
+  @@map("ai_analyzed_errors")
+}
+
 // AI analysis for admin actions
 model ai_admin_action_analyses {
-  id                     Int       @id @default(autoincrement())
-  summary                String    @db.Text
-  analyzed_at            DateTime  @default(now()) @db.Timestamptz(6)
+  id                     Int                       @id @default(autoincrement())
+  summary                String                    @db.Text
+  analyzed_at            DateTime                  @default(now()) @db.Timestamptz(6)
   action_count           Int
   time_window_minutes    Int
-  action_distribution    Json?     @default("{}")
-  admin_distribution     Json?     @default("{}")
-  top_actions            Json?     @default("[]")
-  created_by             String?   @db.VarChar(44)
+  action_distribution    Json?                     @default("{}")
+  admin_distribution     Json?                     @default("{}")
+  top_actions            Json?                     @default("[]")
+  analyzed_actions       ai_analyzed_admin_actions[]
+  created_by             String?                   @db.VarChar(44)
 
   @@index([analyzed_at])
   @@map("ai_admin_action_analyses")
+}
+
+// Junction table to track which admin actions have been analyzed
+model ai_analyzed_admin_actions {
+  id              Int                       @id @default(autoincrement())
+  action_id       Int                       // References admin_logs.id
+  analysis_id     Int                
+  analyzed_at     DateTime                  @default(now()) @db.Timestamptz(6)
+  analysis        ai_admin_action_analyses  @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+  
+  @@unique([action_id, analysis_id])
+  @@index([action_id])
+  @@index([analysis_id])
+  @@map("ai_analyzed_admin_actions")
 }
 
 model ai_log_analyses {
