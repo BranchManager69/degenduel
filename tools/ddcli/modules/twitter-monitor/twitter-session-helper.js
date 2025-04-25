@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Constants - Server is always Linux
-const SERVER_IP = '147.79.74.67';
+const SERVER_IP = '3.17.208.200'; // OLD VPS: 147.79.74.67  NEW AWS EC2: 3.17.208.200
 const SERVER_USERNAME = 'branchmanager';
 const SERVER_SCRIPT_PATH = '/home/websites/degenduel/scripts/twitter/utils/twitter-login-and-save-session.cjs';
 const SERVER_UPLOAD_PATH = '/home/websites/degenduel/keys/twitter-session.json';

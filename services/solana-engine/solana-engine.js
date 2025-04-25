@@ -96,6 +96,9 @@ class SolanaEngineService extends BaseService {
     
     // Track initialization status separately from property
     this._initialized = false;
+
+    // Track last health check time
+    this._lastHealthLog = 0;
   }
 
   /**
@@ -1271,21 +1274,51 @@ class SolanaEngineService extends BaseService {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('Connection issue detected:')} ${connectionStatus.message}`);
       }
       
+      // Check Solana Engine client
+      const solanaEngineStatus = solanaEngine.isOperational();
+      if (!solanaEngineStatus) {
+        throw new Error('Solana Engine client is not operational');
+      }
+
       // Check Jupiter client (most critical for price updates)
       const jupiterStatus = jupiterClient.isOperational();
       if (!jupiterStatus) {
         throw new Error('Jupiter client is not operational');
-      }
+      }      
       
+      // Check DexScreener client
+      const dexscreenerStatus = dexscreenerClient.isOperational();
+      if (!dexscreenerStatus) {
+        throw new Error('DexScreener client is not operational');
+      }
+
+      // Check Helius main client
+      const heliusClientStatus = heliusClient.isOperational();
+      if (!heliusClientStatus) {
+        throw new Error('Helius main client is not operational');
+      }
+
+      // Check Helius pool tracker client
+      const heliusPoolTrackerStatus = heliusPoolTracker.isOperational();
+      if (!heliusPoolTrackerStatus) {
+        throw new Error('Helius pool tracker client is not operational');
+      }
+
       // Check that we have at least some tokens subscribed
       if (this.subscribedTokens.size === 0 && this.isStarted) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('No tokens subscribed for price updates')}`);
         // Try to reload tokens from database
         await this.loadWatchedTokens();
       }
+
+      // Log health check every 30 seconds
+      const now = Date.now();
+      if (now - this._lastHealthLog > 30000) { // once every 30s max
+        logApi.debug(`${formatLog.tag()} ${formatLog.success('Health check successful:')} Monitoring ${formatLog.count(this.subscribedTokens.size)} tokens`);
+        this._lastHealthLog = now;
+      }
       
-      logApi.debug(`${formatLog.tag()} ${formatLog.success('Health check successful:')} Monitoring ${formatLog.count(this.subscribedTokens.size)} tokens`);
-      
+      // Return true to indicate success
       return true;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Perform operation error:')} ${error.message}`);

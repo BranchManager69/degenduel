@@ -16,14 +16,26 @@ import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
 
 // Determine current file directory for temporary files
+// (old way of storing found keypairs)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// (new way of storing found keypairs)
+const OUTPUT_DIR_KEYPAIRS = '../../../addresses/keypairs';
+// Branded contest wallets (three flavors)
+const OUTPUT_DIR_DEGEN = path.join(__dirname, OUTPUT_DIR_KEYPAIRS, 'public/_DEGEN');
+const OUTPUT_DIR_DUEL = path.join(__dirname, OUTPUT_DIR_KEYPAIRS, 'public/_DUEL');
+const OUTPUT_DIR_BRANCH = path.join(__dirname, OUTPUT_DIR_KEYPAIRS, 'public/_BRANCH');
+// Other vanity wallets
+const OUTPUT_DIR_OTHER = path.join(__dirname, OUTPUT_DIR_KEYPAIRS, 'other');
 
 // Configuration
-const NUM_CPUS = cpus().length;
-const DEFAULT_WORKERS = 5; // Use 5 threads as requested
-const DEFAULT_CPU_LIMIT = 50; // Lower CPU usage limit to 50%
-const SOLANA_KEYGEN_PATH = '/home/branchmanager/.local/share/solana/install/active_release/bin/solana-keygen';
+const NUM_CPUS = cpus().length; // why unused?
+const DEFAULT_WORKERS = 6; // Use 6 threads (arbitrary; AWS EC2 currently has 8 cores [4/25/25])
+const DEFAULT_CPU_LIMIT = 75; // CPU usage limit (exceeds VPS limits since we're now on AWS EC2)
+
+// Solana Keygen Path
+const SOLANA_KEYGEN_PATH = process.env.SOLANA_KEYGEN_PATH || 'solana-keygen'; // (I don't mind bypassing config here; it's one time)
+////const SOLANA_KEYGEN_PATH = '/home/branchmanager/.local/share/solana/install/active_release/bin/solana-keygen';
 
 /**
  * LocalVanityGenerator class
@@ -44,17 +56,37 @@ class LocalVanityGenerator {
     this.activeJobs = new Map();
     this.jobQueue = [];
     this.isProcessing = false;
-    this.outputDir = path.join(__dirname, '../temp_keypairs');
-    
-    // Ensure output directory exists
-    if (!fs.existsSync(this.outputDir)) {
-      fs.mkdirSync(this.outputDir, { recursive: true });
-    }
+    this.outputDir = OUTPUT_DIR_KEYPAIRS;
     
     // Check for and kill any orphaned solana-keygen processes
     this.cleanupOrphanedProcesses();
     
     logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initialized ${fancyColors.RESET} with solana-keygen grind, ${this.numWorkers} threads (reduced), ${this.cpuLimit}% CPU limit (lowered)`);
+  }
+
+  /**
+   * Get the destination directory for a given pattern
+   * @param {string} pattern The pattern to search for
+   * @returns {string} The output directory path
+   */
+  getDestinationDirForPattern(pattern) {
+    const normalized = pattern.toUpperCase();
+    if (normalized.startsWith('DEGEN')) return OUTPUT_DIR_DEGEN;
+    if (normalized.startsWith('DUEL')) return OUTPUT_DIR_DUEL;
+    if (normalized.startsWith('BRANCH')) return OUTPUT_DIR_BRANCH;
+    return OUTPUT_DIR_OTHER;
+  }
+
+  /**
+   * Get the keypair file path for a given job ID and pattern
+   * @param {string} jobId The ID of the job
+   * @param {string} pattern The pattern to search for
+   * @returns {string} The output file path
+   */
+  getKeypairFilePath(jobId, pattern) {
+    const baseDir = this.getDestinationDirForPattern(pattern);
+    if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
+    return path.join(baseDir, `${pattern}_${jobId}.json`);
   }
   
   /**
@@ -299,336 +331,85 @@ class LocalVanityGenerator {
   }
   
   /**
-   * Generate a filename for a keypair based on job ID
-   * @param {string} jobId Job ID
-   * @param {string} pattern Pattern being searched for
-   * @returns {string} The output file path
-   */
-  getKeypairFilePath(jobId, pattern) {
-    return path.join(this.outputDir, `${pattern}_${jobId}.json`);
-  }
-  
-  /**
-   * Start solana-keygen process to generate a vanity address
-   * @param {Object} job The job to process
-   */
+ * Start solana-keygen process to generate a vanity address
+ * @param {Object} job The job to process
+ */
   startSolanaKeygen(job) {
     const startTime = Date.now();
     const outputFile = this.getKeypairFilePath(job.id, job.pattern);
-    
-    // Enhanced logging with more details and highlighted formatting
-    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} STARTING ${fancyColors.RESET} Keygen job ${job.id} - ${fancyColors.CYAN}pattern: ${fancyColors.YELLOW}${job.pattern}${fancyColors.RESET}, case-sensitive: ${job.caseSensitive ? 'yes' : 'no'}, suffix: ${job.isSuffix ? 'yes' : 'no'}, file: ${outputFile}`);
-    
-    // Build the solana-keygen command arguments
-    const args = ['grind'];
-    
-    // Add pattern to search for
-    args.push('--starts-with');
-    args.push(`${job.pattern}:1`); // Only generate 1 address
-    
-    // Set case sensitivity
-    if (!job.caseSensitive) {
-      args.push('--ignore-case');
-    }
-    
-    // Set thread count
-    args.push('--num-threads');
-    args.push(this.numWorkers.toString());
-    
-    // Note: solana-keygen automatically creates a file named after the generated public key
-    // We'll need to find and read that file after generation completes
-    
+
+    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} STARTING ${fancyColors.RESET} Keygen job ${job.id} - ${fancyColors.CYAN}pattern: ${fancyColors.YELLOW}${job.pattern}${fancyColors.RESET}, file: ${outputFile}`);
+
+    const args = ['grind', '--starts-with', `${job.pattern}:1`, '--num-threads', this.numWorkers.toString()];
+    if (!job.caseSensitive) args.push('--ignore-case');
+
     logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Running solana-keygen ${args.join(' ')}${fancyColors.RESET}`);
-    
-    // Add a try/catch to properly log any error during process spawning
+
     let process;
     try {
-      // Spawn the solana-keygen process
       process = spawn(SOLANA_KEYGEN_PATH, args);
-    } catch (spawnError) {
-      // Log any error that might occur during process creation
-      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SPAWN ERROR ${fancyColors.RESET} Failed to spawn solana-keygen process: ${spawnError.message}`, {
-        error: spawnError.message,
-        stack: spawnError.stack,
-        command: `${SOLANA_KEYGEN_PATH} ${args.join(' ')}`,
-        jobId: job.id
-      });
-      
-      // Fail the job immediately
-      job.onComplete({
-        status: 'Failed',
-        id: job.id,
-        error: `Failed to spawn solana-keygen process: ${spawnError.message}`,
-        duration_ms: Date.now() - startTime
-      });
-      
-      // Remove from active jobs
+    } catch (err) {
+      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Failed to spawn solana-keygen: ${err.message}`);
+      job.onComplete({ status: 'Failed', id: job.id, error: err.message, duration_ms: Date.now() - startTime });
       this.activeJobs.delete(job.id);
-      
-      // Start the next job
       this.processNextJob();
-      return; // Exit this function early
+      return;
     }
-    
-    // Log PID for tracking
-    logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Started solana-keygen process with PID ${process.pid} for job ${job.id}${fancyColors.RESET}`);
-    
-    // Start resource monitoring
+
     const monitorInterval = this.monitorResourceUsage(job.id, process.pid);
-    
-    // Calculate CPU limit value (percentage of total CPU)
-    const cpuLimitValue = Math.floor(this.cpuLimit);
-    
-    // Create job info for tracking
-    const jobInfo = {
-      job,
-      process,
-      startTime,
-      cpulimitProcess: null,
-      outputPath: outputFile,
-      monitorInterval // Store for cleanup
-    };
-    
+    const jobInfo = { job, process, startTime, cpulimitProcess: null, outputPath: outputFile, monitorInterval };
     this.activeJobs.set(job.id, jobInfo);
-    
-    // Set up CPU limiting with cpulimit
-    if (this.cpuLimit < 100) {
-      try {
-        // Create the cpulimit command
-        const cpulimitProcess = spawn('cpulimit', [
-          '-p', process.pid.toString(),
-          '-l', cpuLimitValue.toString()
-        ]);
-        
-        // Store cpulimit process for cleanup
-        jobInfo.cpulimitProcess = cpulimitProcess;
-        
-        // Log cpulimit status
-        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Applied CPU limit of ${this.cpuLimit}% to process ${process.pid}${fancyColors.RESET}`);
-        
-        // Handle cpulimit errors
-        cpulimitProcess.on('error', (err) => {
-          logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CPU Limit Error ${fancyColors.RESET} Job ${job.id}: ${err.message}`, {
-            error: err.message,
-            jobId: job.id
-          });
-        });
-      } catch (error) {
-        logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CPU Limit Error ${fancyColors.RESET} Failed to apply CPU limit: ${error.message}`, {
-          error: error.message,
-          jobId: job.id
-        });
-      }
-    }
-    
-    // Track output data for progress reporting
+
     let outputBuffer = '';
-    
-    // Handle stdout data
-    process.stdout.on('data', (data) => {
-      const output = data.toString();
-      outputBuffer += output;
-      
-      // Check if we have progress information
-      if (output.includes('Searching with') || output.includes('Generated') || output.includes('Found vanity address')) {
-        // Send progress update if callback provided
-        if (job.onProgress) {
-          job.onProgress({
-            id: job.id,
-            attempts: 0, // No accurate way to track with solana-keygen
-            duration_ms: Date.now() - startTime,
-            output: output.trim()
-          });
-        }
-        
-        // Log progress
-        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Progress for job ${job.id} (PID: ${process.pid}): ${output.trim()}${fancyColors.RESET}`);
-      }
-    });
-    
-    // Handle stderr data
-    process.stderr.on('data', (data) => {
-      const output = data.toString();
-      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Keygen Error ${fancyColors.RESET} Job ${job.id} (PID: ${process.pid}): ${output.trim()}`, {
-        error: output.trim(),
-        jobId: job.id,
-        processPid: process.pid
-      });
-    });
-    
-    // Handle process completion
-    process.on('close', async (code) => {
-      // Track end time
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      // Clear resource monitoring
-      if (jobInfo.monitorInterval) {
-        clearInterval(jobInfo.monitorInterval);
-      }
-      
-      // Kill cpulimit process if it exists
-      if (jobInfo.cpulimitProcess) {
-        try {
-          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Stopping CPU limit process for job ${job.id}${fancyColors.RESET}`);
-          process.kill(jobInfo.cpulimitProcess.pid);
-        } catch (error) {
-          // Ignore errors from already terminated processes
-          logApi.debug(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}CPU limiter already stopped:${fancyColors.RESET} ${error.message}`);
-        }
-      }
-      
-      // Enhanced completion log with status icon
-      const icon = code === 0 ? '✅' : '❌';
-      logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${code === 0 ? fancyColors.GREEN : fancyColors.RED}${icon} Process ${process.pid} for job ${job.id} exited with code ${code} after ${(duration/1000).toFixed(2)}s${fancyColors.RESET}`);
-      
-      if (code === 0) {
-        // Success - keypair was generated 
-        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SUCCESS ${fancyColors.RESET} Vanity address ${fancyColors.YELLOW}${job.pattern}${fancyColors.RESET} generated for job ${job.id} in ${fancyColors.GREEN}${(duration / 1000).toFixed(2)}s${fancyColors.RESET}`);
-        
-        try {
-          // Extract the public key and file path from the output
-          let publicKey = '';
-          let generatedFilePath = '';
-          
-          const lines = outputBuffer.split('\n');
-          for (const line of lines) {
-            // Look for the "Wrote keypair to" line which contains the file path
-            if (line.includes('Wrote keypair to')) {
-              const match = line.match(/Wrote keypair to ([\w\d]+\.json)/);
-              if (match && match[1]) {
-                generatedFilePath = match[1];
-                // The public key is in the filename (without the .json extension)
-                publicKey = match[1].replace('.json', '');
-                break;
-              }
-            }
-          }
-          
-          if (!generatedFilePath) {
-            throw new Error('Could not find generated keypair file path in output');
-          }
-          
-          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Found generated keypair at:${fancyColors.RESET} ${generatedFilePath} with public key ${publicKey}`);
-          
-          // Check if file exists and log stats
-          if (fs.existsSync(generatedFilePath)) {
-            const fileStats = fs.statSync(generatedFilePath);
-            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Output file verified:${fancyColors.RESET} ${generatedFilePath} (size: ${fileStats.size} bytes)`);
-            
-            // Read the keypair file
-            const keypairContent = fs.readFileSync(generatedFilePath, 'utf8');
-            const keypairArray = JSON.parse(keypairContent);
-            
-            // Move the file to our controlled output directory
-            const newFilePath = path.join(this.outputDir, `${job.pattern}_${job.id}.json`);
-            fs.renameSync(generatedFilePath, newFilePath);
-            logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.GREEN}Moved keypair to:${fancyColors.RESET} ${newFilePath}`);
-            
-            // If we somehow still don't have a public key, use the pattern as a fallback
-            if (!publicKey) {
-              publicKey = `${job.pattern}...`;
-              logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Could not determine public key for job ${job.id}, using fallback${fancyColors.RESET}`);
-            }
-          
-            // Clean up this job
-            this.activeJobs.delete(job.id);
-            
-            // Call completion callback
-          } else {
-            throw new Error(`Generated keypair file ${generatedFilePath} not found`);
-          }
-          job.onComplete({
-            status: 'Completed',
-            id: job.id,
-            result: {
-              address: publicKey,
-              keypair_bytes: keypairArray
-            },
-            duration_ms: duration
-          });
-          
-          // Start next job if there's one in the queue
-          this.processNextJob();
-        } catch (error) {
-          logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} File Error ${fancyColors.RESET} Job ${job.id}: ${error.message}`, {
-            error: error.message,
-            stack: error.stack,
-            jobId: job.id
-          });
-          
-          // Clean up this job
-          this.activeJobs.delete(job.id);
-          
-          // Call completion callback with failure
-          job.onComplete({
-            status: 'Failed',
-            id: job.id,
-            error: `Failed to read keypair file: ${error.message}`,
-            duration_ms: duration
-          });
-          
-          // Start next job if there's one in the queue
-          this.processNextJob();
-        }
-      } else {
-        // Process exited with non-zero code
-        logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Process Error ${fancyColors.RESET} Job ${job.id}: solana-keygen exited with code ${code}`, {
-          error: `solana-keygen exited with code ${code}`,
-          jobId: job.id
-        });
-        
-        // Clean up this job
-        this.activeJobs.delete(job.id);
-        
-        // Call completion callback with failure
-        job.onComplete({
-          status: 'Failed',
-          id: job.id,
-          error: `solana-keygen exited with code ${code}`,
-          duration_ms: duration
-        });
-        
-        // Start next job if there's one in the queue
-        this.processNextJob();
-      }
-    });
-    
-    // Handle process errors - this catches both spawn errors and runtime errors
-    process.on('error', (error) => {
-      // Log with maximum detail for debugging
-      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Process Error ${fancyColors.RESET} Job ${job.id}: ${error.message}`, {
-        error: error.message,
-        error_code: error.code,
-        stack: error.stack,
-        command: `${SOLANA_KEYGEN_PATH} ${args.join(' ')}`,
-        jobId: job.id,
-        jobPattern: job.pattern,
-        error_time: new Date().toISOString(),
-        process_id: process.pid
-      });
-      
-      // Kill cpulimit process if it exists
-      if (jobInfo.cpulimitProcess) {
-        try {
-          process.kill(jobInfo.cpulimitProcess.pid);
-        } catch (cpuError) {
-          // Ignore errors from already terminated processes
-        }
-      }
-      
-      // Clean up this job
+    process.stdout.on('data', (data) => outputBuffer += data.toString());
+    process.stderr.on('data', (data) => logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} stderr: ${data}`));
+
+    process.on('close', async () => {
+      clearInterval(monitorInterval);
       this.activeJobs.delete(job.id);
-      
-      // Call completion callback with failure
-      job.onComplete({
-        status: 'Failed',
-        id: job.id,
-        error: error.message,
-        duration_ms: Date.now() - startTime
-      });
-      
-      // Start next job if there's one in the queue
+      try {
+        const line = outputBuffer.split('\n').find(l => l.includes('Wrote keypair to'));
+        const match = line?.match(/Wrote keypair to (\S+\.json)/);
+        if (!match) throw new Error('Output parsing failed');
+
+        const originalPath = match[1];
+        const finalPath = this.getKeypairFilePath(job.id, job.pattern);
+        fs.renameSync(originalPath, finalPath);
+
+        const keypair = JSON.parse(fs.readFileSync(finalPath, 'utf8'));
+
+        // 🔽 DROP A PLAINTEXT VERSION
+        const plaintextKeyPath = finalPath.replace('/keypairs/', '/pkeys/').replace(/\.json$/, '.key');
+        const raw = JSON.stringify(keypair);
+        const plainDir = path.dirname(plaintextKeyPath);
+        if (!fs.existsSync(plainDir)) fs.mkdirSync(plainDir, { recursive: true });
+        fs.writeFileSync(plaintextKeyPath, raw);
+
+        // 🔄 Persist to database
+        await prisma.vanity_wallet_pool.create({
+          data: {
+            wallet_address: path.basename(finalPath, '.json'),
+            private_key: raw,
+            pattern: job.pattern,
+            is_suffix: !!job.isSuffix,
+            case_sensitive: job.caseSensitive !== false,
+            is_used: false,
+            status: 'completed',
+            job_id: job.id,
+            duration_ms: Date.now() - startTime
+          }
+        });
+
+        job.onComplete({
+          status: 'Completed',
+          id: job.id,
+          result: { address: path.basename(finalPath, '.json'), keypair_bytes: keypair },
+          duration_ms: Date.now() - startTime
+        });
+      } catch (err) {
+        logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Post-processing failed: ${err.message}`);
+        job.onComplete({ status: 'Failed', id: job.id, error: err.message, duration_ms: Date.now() - startTime });
+      }
       this.processNextJob();
     });
   }

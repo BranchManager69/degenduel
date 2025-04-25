@@ -13,7 +13,7 @@ Technical Work Order: Vanity Solana Address Integration
   Security Requirements
 
   - Restrict access to vanity-grinder API using firewall rules
-  - Only allow connections from our Command Server (147.79.74.67)
+  - Only allow connections from our Command Server (3.17.208.200)
   - Implement validation on callback data
   - Store keypairs securely, following our encryption standards
 
@@ -22,7 +22,7 @@ Technical Work Order: Vanity Solana Address Integration
   1. GPU Server Configuration
 
   # Open firewall port only to our server IP
-  sudo ufw allow from 147.79.74.67 to any port 7777
+  sudo ufw allow from 3.17.208.200 to any port 7777
 
   # Start API server as background service
   nohup /home/ubuntu/degenduel-gpu/vanity-grinder/target/release/vanity-grinder serve --host
@@ -44,7 +44,7 @@ Technical Work Order: Vanity Solana Address Integration
   const router = Router();
   const VANITY_API = config.vanityGrinder.apiUrl; // "http://gpu-server-ip:7777"
   const CALLBACK_URL = config.vanityGrinder.callbackUrl; // 
-  "http://147.79.74.67:8080/api/internal/vanity-callback"
+  "http://3.17.208.200:8080/api/internal/vanity-callback"
 
   // Request schema for frontend
   const vanityRequestSchema = {
@@ -405,7 +405,7 @@ Technical Work Order: Vanity Solana Address Integration
     "pattern": "BRANCH",
     "is_suffix": false,
     "case_sensitive": true,
-    "callback_url": "http://147.79.74.67:8080/api/internal/vanity-callback?requestId=550e8400-e2
+    "callback_url": "http://3.17.208.200:8080/api/internal/vanity-callback?requestId=550e8400-e2
   9b-41d4-a716-446655440000"
   }
 

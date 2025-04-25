@@ -10,8 +10,12 @@
  * @module services/contest-wallet/contestWalletService
  */
 
+// Polyfill WebSocket for Node.js (use ws package)
+import WebSocket from 'ws';
+global.WebSocket = WebSocket;
+
 // ** Service Auth **
-import { generateServiceAuthHeader } from '../../config/service-auth.js';
+import { generateServiceAuthHeader } from '../../config/service-auth.js'; // why unused?
 // ** Service Class **
 import { BaseService } from '../../utils/service-suite/base-service.js';
 import { ServiceError, ServiceErrorTypes } from '../../utils/service-suite/service-error.js';
@@ -19,12 +23,17 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
-
+import { Keypair, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
+import bs58 from 'bs58';
+import crypto from 'crypto';
+import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
 // Import SolanaEngine (new direct integration)
 import { solanaEngine } from '../../services/solana-engine/index.js';
-
 // Import TreasuryCertifier for certification and stranded funds recovery
 import TreasuryCertifier from './treasury-certifier.js';
+
+// Config
+import { config } from '../../config/config.js';
 
 // Contest Wallet formatting helpers
 const formatLog = {
@@ -80,17 +89,6 @@ const formatLog = {
     }
   }
 };
-
-// Solana
-import { Keypair, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
-import bs58 from 'bs58';
-import crypto from 'crypto';
-import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
-//import { fa } from '@faker-js/faker';
-
-// Config
-import { config } from '../../config/config.js';
-
 // Contest Wallet Config
 const CONTEST_WALLET_CONFIG = {
     name:
