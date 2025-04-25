@@ -416,38 +416,55 @@ class ContestEvaluationService extends BaseService {
 
     // Perform a blockchain transfer
     /**
-     * Performs a blockchain transfer
+     * Performs a blockchain transfer using SolanaEngine
      * @param {Object} contestWallet - The contest wallet object
      * @param {string} recipientAddress - The recipient address
-     * @param {number} amount - The amount to transfer
+     * @param {number} amount - The amount to transfer in SOL
      * @returns {Promise<string>} - The signature of the transaction
      */
     async performBlockchainTransfer(contestWallet, recipientAddress, amount) {
         try {
+            // Decrypt the private key
             const decryptedPrivateKey = this.decryptPrivateKey(contestWallet.private_key);
             const privateKeyBytes = bs58.decode(decryptedPrivateKey);
             const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
 
-            // Create a transaction to transfer SOL
+            // Create transaction object - standard SOL transfer
             const transaction = new Transaction().add(
                 SystemProgram.transfer({
                     fromPubkey: fromKeypair.publicKey,
                     toPubkey: new PublicKey(recipientAddress),
-                    lamports: Math.floor(amount * LAMPORTS_PER_SOL)
+                    lamports: Math.round(amount * LAMPORTS_PER_SOL) // Convert SOL to lamports, using round instead of floor
                 })
             );
-
-            // Use SolanaEngine to send the transaction
-            const result = await solanaEngine.sendTransaction(transaction, [fromKeypair]);
             
-            // Return the transaction signature
+            // Send the transaction using SolanaEngine with optimal configuration
+            const result = await solanaEngine.sendTransaction(
+                transaction, 
+                [fromKeypair], 
+                {
+                    commitment: 'confirmed',
+                    skipPreflight: false,
+                    maxRetries: 3,
+                    blockHeightRetries: 2
+                }
+            );
+            
+            // Log successful transaction
+            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD_GREEN}Transaction successful:${fancyColors.RESET} Sent ${amount} SOL to ${recipientAddress.substring(0, 6)}...${recipientAddress.substring(recipientAddress.length - 4)}, signature: ${result.signature}`);
+            
+            // Return only the signature string as expected by calling methods
             return result.signature;
         } catch (error) {
+            // Proper error handling with blockchain service error category
+            logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Transaction failed:${fancyColors.RESET} ${error.message}`);
+            
             throw ServiceError.blockchain('Blockchain transfer failed', {
                 error: error.message,
                 contestWallet: contestWallet.wallet_address,
                 recipient: recipientAddress,
-                amount
+                amount,
+                timestamp: new Date().toISOString()
             });
         }
     }
