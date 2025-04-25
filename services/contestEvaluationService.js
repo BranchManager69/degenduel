@@ -18,14 +18,16 @@ import { config } from '../config/config.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import AdminLogger from '../utils/admin-logger.js';
 import prisma from '../config/prisma.js';
-import { fancyColors } from '../utils/colors.js';
+import { fancyColors, serviceSpecificColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import crypto from 'crypto';
+// Import SolanaEngine (for centralized connection management)
+import { solanaEngine } from './solana-engine/index.js';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
 //import marketDataService from './marketDataService.js';
@@ -122,12 +124,12 @@ class ContestEvaluationService extends BaseService {
             });
         }
         
-        // Initialize a new Solana connection
-        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
-        // TODO: Use the singleton connection from solana-connection-v2.js instead of creating our own
+        // We no longer initialize our own Solana connection
+        // Instead we use the centralized solanaEngine for all RPC operations
+        // This provides better resource management and centralized error handling
         
-        // Connection is ready immediately - log success
-        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.WHITE} 🌐 ${fancyColors.BG_DARK_BLACK} Early Solana connection initialized ${fancyColors.RESET}`);
+        // Log integration with SolanaEngine
+        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.WHITE} 🌐 ${fancyColors.BG_DARK_BLACK} Using SolanaEngine for Solana RPC access ${fancyColors.RESET}`);
 
         // Initialize service-specific stats
         this.evaluationStats = {
@@ -243,7 +245,19 @@ class ContestEvaluationService extends BaseService {
             // Call parent initialize first
             await super.initialize();
             
-            // Check dependencies
+            // Check SolanaEngine dependency first
+            if (!solanaEngine.isInitialized()) {
+                logApi.warn(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} INITIALIZING SOLANAENGINE ${fancyColors.RESET} SolanaEngine was not initialized, attempting to initialize it now`);
+                await solanaEngine.initialize();
+                
+                if (!solanaEngine.isInitialized()) {
+                    throw ServiceError.initialization('Failed to initialize SolanaEngine');
+                }
+                
+                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SOLANAENGINE READY ${fancyColors.RESET} SolanaEngine initialized successfully`);
+            }
+            
+            // Check other dependencies
             const marketDataStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.MARKET_DATA);
             if (!marketDataStatus) {
                 throw ServiceError.initialization('Market Data Service not healthy');
@@ -345,6 +359,9 @@ class ContestEvaluationService extends BaseService {
             // Clear active evaluations
             this.activeEvaluations.clear();
             
+            // We no longer need to close the connection explicitly
+            // as it's now managed by the solanaEngine
+            
             // Final stats update
             await serviceManager.markServiceStopped(
                 this.name,
@@ -410,19 +427,20 @@ class ContestEvaluationService extends BaseService {
             const privateKeyBytes = bs58.decode(decryptedPrivateKey);
             const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
 
-            // Import the transferSOL function dynamically to avoid circular dependencies
-            // Use the fixed implementation that properly uses the centralized RPC queue
-            const { transferSOL } = await import('../utils/solana-suite/web3-v2/solana-transaction-fixed.js');
-            
-            // Use the transaction utility with centralized rate limiting
-            const { signature } = await transferSOL(
-                this.connection,
-                fromKeypair,
-                recipientAddress,
-                amount
+            // Create a transaction to transfer SOL
+            const transaction = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey: fromKeypair.publicKey,
+                    toPubkey: new PublicKey(recipientAddress),
+                    lamports: Math.floor(amount * LAMPORTS_PER_SOL)
+                })
             );
 
-            return signature;
+            // Use SolanaEngine to send the transaction
+            const result = await solanaEngine.sendTransaction(transaction, [fromKeypair]);
+            
+            // Return the transaction signature
+            return result.signature;
         } catch (error) {
             throw ServiceError.blockchain('Blockchain transfer failed', {
                 error: error.message,
@@ -742,7 +760,8 @@ class ContestEvaluationService extends BaseService {
      */
     async validateContestWalletBalance(contestWallet, totalPrizePool) {
         try {
-            const balance = await this.connection.getBalance(new PublicKey(contestWallet.wallet_address));
+            // Use solanaEngine to execute the RPC call instead of direct connection
+            const balance = await solanaEngine.executeConnectionMethod('getBalance', new PublicKey(contestWallet.wallet_address));
             const minimumBuffer = config.master_wallet.min_contest_wallet_balance * LAMPORTS_PER_SOL; // 0.01 SOL
             const requiredBalance = Math.ceil(totalPrizePool * LAMPORTS_PER_SOL) + minimumBuffer;
             
@@ -772,13 +791,20 @@ class ContestEvaluationService extends BaseService {
      */
     async validateTokenBalance(wallet, mint, amount) {
         try {
+            // Dynamic import of SPL token functions to avoid direct dependencies
+            const { getAssociatedTokenAddress, getAccount } = await import('@solana/spl-token');
+            
             const associatedTokenAddress = await getAssociatedTokenAddress(
                 new PublicKey(mint),
                 new PublicKey(wallet.wallet_address)
             );
 
             try {
-                const tokenAccount = await getAccount(this.connection, associatedTokenAddress);
+                // Use solanaEngine's connection via executeRpc
+                const tokenAccount = await solanaEngine.executeRpc(
+                    connection => getAccount(connection, associatedTokenAddress)
+                );
+                
                 if (tokenAccount.amount < BigInt(amount)) {
                     throw new Error(`Insufficient token balance. Required: ${amount}, Available: ${tokenAccount.amount}`);
                 }
