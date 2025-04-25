@@ -2091,21 +2091,30 @@ class MarketDataService extends BaseService {
                 
                 // 1. Process token updates in a single transaction if there are any
                 if (tokenUpdates.length > 0) {
-                    await marketDb.$transaction(async (tx) => {
-                        for (const update of tokenUpdates) {
-                            await tx.tokens.update({
-                                where: { id: update.id },
-                                data: update.data
-                            });
-                        }
+                    const TOKEN_UPDATE_BATCH_SIZE = 25; // Smaller batch size to avoid timeouts
+                    
+                    // Process in smaller batches
+                    for (let i = 0; i < tokenUpdates.length; i += TOKEN_UPDATE_BATCH_SIZE) {
+                        const updateBatch = tokenUpdates.slice(i, i + TOKEN_UPDATE_BATCH_SIZE);
                         
-                        // Get token symbols for logging context
-                        const updatedTokenSymbols = tokenUpdates.map(update => 
-                            existingTokenMap[update.data.address]?.symbol || update.data.symbol || update.data.address.substring(0, 8)
-                        ).slice(0, 5);
-                        
-                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Completed ${tokenUpdates.length} token updates (examples: ${updatedTokenSymbols.join(', ')}${tokenUpdates.length > 5 ? '...' : ''})`);
-                    });
+                        await marketDb.$transaction(async (tx) => {
+                            for (const update of updateBatch) {
+                                await tx.tokens.update({
+                                    where: { id: update.id },
+                                    data: update.data
+                                });
+                            }
+                            
+                            // Get token symbols for logging context
+                            const updatedTokenSymbols = updateBatch.map(update => 
+                                existingTokenMap[update.data.address]?.symbol || update.data.symbol || update.data.address.substring(0, 8)
+                            ).slice(0, 5);
+                            
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Completed ${updateBatch.length} token updates (examples: ${updatedTokenSymbols.join(', ')}${updateBatch.length > 5 ? '...' : ''})`);
+                        }, { 
+                            timeout: 15000 // Increase timeout to 15 seconds
+                        });
+                    }
                 }
                 
                 // 2. Process token creations in batches of 50 to limit connection time
@@ -2175,6 +2184,8 @@ class MarketDataService extends BaseService {
                                         }
                                     }
                                 }
+                            }, {
+                                timeout: 15000 // Increase timeout to 15 seconds for token creation
                             });
                         } catch (createError) {
                             // Skip duplicates without failing the whole batch

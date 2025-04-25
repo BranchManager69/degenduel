@@ -507,7 +507,7 @@ function setupSolanaPubSubHandler(wsServer) {
   });
   
   // Handle client disconnect - clean up subscriptions
-  wsServer.on('close', (client, reason, clientId) => {
+  wsServer.registerEventHandler('close', (client, reason, clientId) => {
     try {
       // Clean up all Solana subscriptions for this client
       const clientKey = `${clientId}:solana`;

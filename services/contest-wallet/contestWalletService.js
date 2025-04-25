@@ -980,9 +980,11 @@ class ContestWalletService extends BaseService {
         return new Promise((resolve, reject) => {
             try {
                 // Get WebSocket server URL from config
+                // Fix: Use the same port that the unified WebSocket is actually running on (3004 or 3005)
+                // We need to check both the app port and the unified websocket port configuration
                 const wsProtocol = 'ws:'; // For internal comms, we use ws
                 const host = 'localhost';
-                const port = config.port || 3004;
+                const port = config.websocket.port || config.port || 3004;
                 const path = config.websocket.config.path || '/api/v69/ws';
                 
                 const wsUrl = `${wsProtocol}//${host}:${port}${path}`;
