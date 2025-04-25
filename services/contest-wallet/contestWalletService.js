@@ -383,6 +383,9 @@ class ContestWalletService extends BaseService {
                 error: err.message,
                 status: 'fallback_to_polling'
             };
+            
+            // Start the traditional polling fallback
+            this.startPollingFallback();
         });
             
             // Initialize the TreasuryCertifier first, then optionally run self-test
@@ -863,6 +866,80 @@ class ContestWalletService extends BaseService {
     
     // Bulk update all wallets' balances
     /**
+     * Start the traditional polling fallback for wallet balances
+     * This method is called when WebSocket monitoring fails or is unavailable
+     */
+    startPollingFallback() {
+        // Clear any existing polling interval
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+        }
+        
+        // Log start of polling fallback
+        logApi.info(`${formatLog.tag()} ${formatLog.header('FALLBACK')} Starting balance polling fallback mechanism`);
+        
+        // Start polling interval - run updateAllWalletBalances at regular intervals
+        const pollingIntervalMs = this.config.checkIntervalMs || 5 * 60 * 1000; // 5 minutes default
+        
+        // Run first poll immediately
+        this.updateAllWalletBalances()
+            .then(result => {
+                logApi.info(`${formatLog.tag()} ${formatLog.success(`Initial polling completed: ${result.updated_count} wallets updated`)}`);
+            })
+            .catch(err => {
+                logApi.error(`${formatLog.tag()} ${formatLog.error(`Initial polling fallback error: ${err.message}`)}`, {
+                    error: err.message,
+                    stack: err.stack
+                });
+            });
+        
+        // Set up regular polling interval
+        this.pollingInterval = setInterval(() => {
+            if (this.isOperational && !this.isShuttingDown) {
+                // Check if WebSocket monitoring is back online
+                if (this.websocketSubscriptions.unifiedWsConnection && 
+                    this.websocketSubscriptions.unifiedWsConnection.readyState === 1) {
+                    logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket connection restored, stopping polling fallback')}`);
+                    
+                    // WebSocket is back online, stop polling
+                    clearInterval(this.pollingInterval);
+                    this.pollingInterval = null;
+                    
+                    // Update status
+                    this.walletStats.websocket_monitoring = {
+                        enabled: true,
+                        reconnected_at: new Date().toISOString(),
+                        status: 'active'
+                    };
+                    
+                    return;
+                }
+                
+                // WebSocket still not available, continue polling
+                this.updateAllWalletBalances().catch(err => {
+                    logApi.error(`${formatLog.tag()} ${formatLog.error(`Polling fallback error: ${err.message}`)}`, {
+                        error: err.message,
+                        stack: err.stack
+                    });
+                });
+            }
+        }, pollingIntervalMs);
+        
+        // Ensure interval doesn't keep process alive during shutdown
+        if (this.pollingInterval && this.pollingInterval.unref) {
+            this.pollingInterval.unref();
+        }
+        
+        // Store in stats
+        this.walletStats.polling_fallback = {
+            started_at: new Date().toISOString(),
+            interval_ms: pollingIntervalMs,
+            status: 'active'
+        };
+    }
+    
+    /**
      * Bulk update all wallets' balances
      * 
      * @returns {Promise<Object>} - The results of the operation
@@ -975,8 +1052,39 @@ class ContestWalletService extends BaseService {
             }
         }
         
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try {
+                // Check if the global WebSocketReadyEmitter exists
+                if (global.webSocketReadyEmitter) {
+                    logApi.info(`${formatLog.tag()} ${formatLog.info('Waiting for WebSocket server to be ready...')}`);
+                    
+                    // Wait for the websocket:ready event
+                    await new Promise(waitResolve => {
+                        // If the server is already ready, resolve immediately
+                        if (global.webSocketServerReady === true) {
+                            waitResolve();
+                            return;
+                        }
+                        
+                        // Otherwise wait for the ready event
+                        const readyHandler = () => {
+                            global.webSocketReadyEmitter.off('websocket:ready', readyHandler);
+                            logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket server is now ready')}`);
+                            global.webSocketServerReady = true;
+                            waitResolve();
+                        };
+                        
+                        global.webSocketReadyEmitter.once('websocket:ready', readyHandler);
+                        
+                        // Add a timeout just in case the event never fires
+                        setTimeout(() => {
+                            global.webSocketReadyEmitter.off('websocket:ready', readyHandler);
+                            logApi.warn(`${formatLog.tag()} ${formatLog.warning('Timed out waiting for WebSocket server ready event')}`);
+                            waitResolve(); // Continue anyway after timeout
+                        }, 30000); // 30 second timeout
+                    });
+                }
+                
                 // Get WebSocket server URL from config
                 // Fix: Use the same port that the unified WebSocket is actually running on (3004 or 3005)
                 // We need to check both the app port and the unified websocket port configuration
@@ -988,49 +1096,94 @@ class ContestWalletService extends BaseService {
                 const wsUrl = `${wsProtocol}//${host}:${port}${path}`;
                 logApi.info(`${formatLog.tag()} ${formatLog.info(`Connecting to unified WebSocket at ${wsUrl}`)}`);
                 
-                // Create WebSocket connection
-                const ws = new WebSocket(wsUrl);
-                
-                // Set up event handlers
-                ws.onopen = () => {
-                    logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket connection established')}`);
-                    this.websocketSubscriptions.unifiedWsConnection = ws;
-                    resolve(ws);
-                };
-                
-                ws.onclose = (event) => {
-                    logApi.warn(`${formatLog.tag()} ${formatLog.warning(`WebSocket connection closed: ${event.code}`)}`);
-                    
-                    // Clear subscriptions since connection is closed
-                    this.websocketSubscriptions.activeSubscriptions.clear();
-                    
-                    // Reconnect after delay unless service is shutting down
-                    if (this.isOperational && !this.isShuttingDown) {
-                        setTimeout(() => {
-                            this.createServiceWebSocketClient().catch(err => {
-                                logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to reconnect WebSocket: ${err.message}`)}`, {
-                                    error: err.message
-                                });
-                            });
-                        }, 5000); // 5 second delay before reconnect
+                // Add retry mechanism for connection attempts
+                let retryCount = 0;
+                const maxRetries = 10;
+                const connectWithRetry = async () => {
+                    try {
+                        // Create WebSocket connection
+                        const ws = new WebSocket(wsUrl);
+                        
+                        // Set up event handlers
+                        ws.onopen = () => {
+                            logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket connection established')}`);
+                            this.websocketSubscriptions.unifiedWsConnection = ws;
+                            this.websocketSubscriptions.connectionRetries = 0; // Reset retry counter on success
+                            resolve(ws);
+                        };
+                        
+                        ws.onclose = (event) => {
+                            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`WebSocket connection closed: ${event.code}`)}`);
+                            
+                            // Clear subscriptions since connection is closed
+                            this.websocketSubscriptions.activeSubscriptions.clear();
+                            
+                            // Reconnect after delay unless service is shutting down
+                            if (this.isOperational && !this.isShuttingDown) {
+                                // Use exponential backoff for reconnection attempts
+                                const reconnectRetries = this.websocketSubscriptions.connectionRetries || 0;
+                                const backoffTime = Math.min(1000 * Math.pow(2, reconnectRetries), 60000);
+                                this.websocketSubscriptions.connectionRetries = reconnectRetries + 1;
+                                
+                                logApi.info(`${formatLog.tag()} ${formatLog.info(`Will attempt to reconnect in ${backoffTime/1000} seconds (retry #${this.websocketSubscriptions.connectionRetries})`)}`);
+                                
+                                setTimeout(() => {
+                                    this.createServiceWebSocketClient().catch(err => {
+                                        logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to reconnect WebSocket: ${err.message}`)}`, {
+                                            error: err.message
+                                        });
+                                    });
+                                }, backoffTime);
+                            }
+                        };
+                        
+                        ws.onerror = (error) => {
+                            logApi.error(`${formatLog.tag()} ${formatLog.error(`WebSocket error: ${error.message || 'Unknown error'}`)}`);
+                            
+                            if (!this.websocketSubscriptions.unifiedWsConnection) {
+                                // For connection errors, attempt retry if below max retries
+                                if (retryCount < maxRetries) {
+                                    retryCount++;
+                                    const delay = Math.min(1000 * Math.pow(2, retryCount), 30000); // Exponential backoff with max 30 sec
+                                    
+                                    logApi.info(`${formatLog.tag()} ${formatLog.info(`Connection attempt failed. Retrying in ${delay/1000} seconds (attempt ${retryCount}/${maxRetries})`)}`);
+                                    
+                                    setTimeout(connectWithRetry, delay);
+                                } else {
+                                    logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to traditional polling for wallet balances')}`);
+                                    reject(new Error(`Failed to connect to WebSocket after ${maxRetries} attempts`));
+                                }
+                            }
+                        };
+                        
+                        ws.onmessage = (event) => {
+                            this.handleWebSocketMessage(event);
+                        };
+                    } catch (error) {
+                        if (retryCount < maxRetries) {
+                            retryCount++;
+                            const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+                            
+                            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`WebSocket connection error: ${error.message}. Retrying in ${delay/1000} seconds (attempt ${retryCount}/${maxRetries})`)}`);
+                            
+                            setTimeout(connectWithRetry, delay);
+                        } else {
+                            logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to traditional polling for wallet balances')}`);
+                            reject(error);
+                        }
                     }
                 };
                 
-                ws.onerror = (error) => {
-                    logApi.error(`${formatLog.tag()} ${formatLog.error(`WebSocket error: ${error.message}`)}`, {
-                        error: error.message
-                    });
-                    
-                    if (!this.websocketSubscriptions.unifiedWsConnection) {
-                        // If not yet connected, reject the promise
-                        reject(new Error(`WebSocket connection error: ${error.message}`));
-                    }
-                };
+                // Initialize retry counter if it doesn't exist
+                if (this.websocketSubscriptions.connectionRetries === undefined) {
+                    this.websocketSubscriptions.connectionRetries = 0;
+                }
                 
-                ws.onmessage = (event) => {
-                    this.handleWebSocketMessage(event);
-                };
+                // Start connection process with retry mechanism
+                connectWithRetry();
+                
             } catch (error) {
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to traditional polling for wallet balances')}`);
                 reject(error);
             }
         });
@@ -1224,15 +1377,30 @@ class ContestWalletService extends BaseService {
      * Start periodic recovery of failed WebSocket subscriptions
      */
     startSubscriptionRecovery() {
+        // Clear existing interval if it exists
+        if (this.subscriptionRecoveryInterval) {
+            clearInterval(this.subscriptionRecoveryInterval);
+            this.subscriptionRecoveryInterval = null;
+        }
+        
+        logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Starting subscription recovery interval`);
+        
         // Run recovery process every 5 minutes
-        setInterval(() => {
-            this.recoverFailedSubscriptions().catch(err => {
-                logApi.error(`${formatLog.tag()} ${formatLog.error(`Subscription recovery error: ${err.message}`)}`, {
-                    error: err.message,
-                    stack: err.stack
+        this.subscriptionRecoveryInterval = setInterval(() => {
+            if (this.isOperational && !this.isShuttingDown) {
+                this.recoverFailedSubscriptions().catch(err => {
+                    logApi.error(`${formatLog.tag()} ${formatLog.error(`Subscription recovery error: ${err.message}`)}`, {
+                        error: err.message,
+                        stack: err.stack
+                    });
                 });
-            });
+            }
         }, 5 * 60 * 1000); // 5 minutes
+        
+        // Ensure interval doesn't keep process alive during shutdown
+        if (this.subscriptionRecoveryInterval && this.subscriptionRecoveryInterval.unref) {
+            this.subscriptionRecoveryInterval.unref();
+        }
     }
     
     /**
@@ -2679,6 +2847,34 @@ class ContestWalletService extends BaseService {
      * @returns {Promise<boolean>}
      */
     async stop() {
+        // Mark service as shutting down to prevent new operations
+        this.isShuttingDown = true;
+        
+        // Clean up polling interval if it exists
+        if (this.pollingInterval) {
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up polling interval...')}`);
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+        }
+        
+        // Clean up subscription recovery interval if it exists
+        if (this.subscriptionRecoveryInterval) {
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up subscription recovery interval...')}`);
+            clearInterval(this.subscriptionRecoveryInterval);
+            this.subscriptionRecoveryInterval = null;
+        }
+        
+        // Clean up WebSocket connection if it exists
+        if (this.websocketSubscriptions && this.websocketSubscriptions.unifiedWsConnection) {
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up WebSocket connection...')}`);
+            try {
+                this.websocketSubscriptions.unifiedWsConnection.close();
+                this.websocketSubscriptions.unifiedWsConnection = null;
+            } catch (error) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error closing WebSocket connection: ${error.message}`)}`);
+            }
+        }
+        
         // Clean up certification resources if there was an active treasury certifier
         if (this.treasuryCertifier) {
             try {
@@ -2691,6 +2887,9 @@ class ContestWalletService extends BaseService {
                 logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error cleaning up Treasury Certification: ${error.message}`)}`);
             }
         }
+        
+        // Reset shutdown flag before calling super.stop() to ensure clean state
+        this.isShuttingDown = false;
         
         // Continue with normal service shutdown
         return super.stop();

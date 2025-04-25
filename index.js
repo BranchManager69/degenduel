@@ -510,6 +510,20 @@ async function initializeServer() {
                 await WebSocketInitializer.initializeWebSockets(server, initResults);
                 logApi.info('✅ All WebSocket servers initialized successfully');
                 
+                // Add an event emitter to track when WebSocket server is fully ready
+                if (!global.webSocketReadyEmitter) {
+                    global.webSocketReadyEmitter = new events.EventEmitter();
+                }
+                
+                // Set up the WebSocket server ready event
+                // This signals that the WebSocket server is ready to accept connections
+                if (config.websocket && config.websocket.unifiedWebSocket) {
+                    logApi.info('💬 WebSocket server ready, emitting ready event');
+                    global.webSocketReadyEmitter.emit('websocket:ready', config.websocket.unifiedWebSocket);
+                } else {
+                    logApi.warn('⚠️ WebSocket server may not be fully initialized');
+                }
+                
                 // Initialize Services Layer with simplified logging
                 logApi.info('\n🛠️ Services Layer Initialization');
                 
