@@ -244,46 +244,46 @@ export const serviceSpecificColors = {
   },
   
   jupiterClient: {
-    tag: '\x1b[1m\x1b[38;5;51m',                    // Cyan (51)
-    header: '\x1b[1m\x1b[38;5;51m\x1b[48;5;236m',   // Cyan on dark gray
-    info: '\x1b[38;5;51m',                          // Regular cyan
-    success: '\x1b[38;5;51m',                       // Cyan instead of green
+    tag: '\x1b[1m\x1b[38;5;32m',                    // Blue-Green Teal (32)
+    header: '\x1b[1m\x1b[38;5;32m\x1b[48;5;236m',   // Blue-Green Teal on dark gray
+    info: '\x1b[38;5;32m',                          // Regular Blue-Green Teal
+    success: '\x1b[38;5;32m',                       // Blue-Green Teal instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;51m',              // Bold cyan for highlights
-    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
+    highlight: '\x1b[1m\x1b[38;5;32m',              // Bold Blue-Green Teal for highlights
+    token: '\x1b[38;5;32m',                         // Blue-Green Teal for token identifiers
     price: '\x1b[38;5;226m',                        // Yellow for prices
-    count: '\x1b[38;5;51m',                         // Cyan for counts
+    count: '\x1b[38;5;32m',                         // Blue-Green Teal for counts
   },
   
   dexscreenerClient: {
-    tag: '\x1b[1m\x1b[38;5;39m',                    // Sky Blue (39)
-    header: '\x1b[1m\x1b[38;5;39m\x1b[48;5;236m',   // Sky Blue on dark gray
-    info: '\x1b[38;5;39m',                          // Regular Sky Blue
-    success: '\x1b[38;5;39m',                       // Sky Blue instead of green
+    tag: '\x1b[1m\x1b[38;5;117m',                   // Lighter Sky Blue (117)
+    header: '\x1b[1m\x1b[38;5;117m\x1b[48;5;236m',  // Lighter Sky Blue on dark gray
+    info: '\x1b[38;5;117m',                         // Regular Lighter Sky Blue
+    success: '\x1b[38;5;117m',                      // Lighter Sky Blue instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;39m',              // Bold Sky Blue for highlights
-    token: '\x1b[38;5;51m',                         // Cyan for token identifiers
-    count: '\x1b[38;5;39m',                         // Sky Blue for counts
+    highlight: '\x1b[1m\x1b[38;5;117m',             // Bold Lighter Sky Blue for highlights
+    token: '\x1b[38;5;117m',                        // Lighter Sky Blue for token identifiers
+    count: '\x1b[38;5;117m',                        // Lighter Sky Blue for counts
   },
   
   // =============================================================
-  // 2. GOLD/BRONZE FAMILY - Data Processing Services
+  // 2. DEEP BLUE/BRONZE FAMILY - Data Processing Services
   // =============================================================
   
-  // Parent Service - Gold with background
+  // Parent Service - Deep Navy Blue with background
   marketDataService: {
-    tag: '\x1b[1m\x1b[38;5;220m',                   // Gold (220)
-    header: '\x1b[1m\x1b[38;5;232m\x1b[48;5;220m',  // Black on Gold background
-    info: '\x1b[38;5;220m',                         // Regular Gold
-    success: '\x1b[38;5;220m',                      // Gold instead of green
+    tag: '\x1b[1m\x1b[38;5;17m',                    // Deep Navy Blue (17)
+    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;17m',   // White on Navy Blue background
+    info: '\x1b[38;5;17m',                          // Regular Navy Blue
+    success: '\x1b[38;5;17m',                       // Navy Blue instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;220m',             // Bold Gold
-    broadcast: '\x1b[1m\x1b[38;5;232m\x1b[48;5;183m', // Black on Mauve for broadcasts
-    token: '\x1b[38;5;220m',                        // Gold for tokens
-    count: '\x1b[38;5;220m',                        // Gold for counts
+    highlight: '\x1b[1m\x1b[38;5;17m',              // Bold Navy Blue
+    broadcast: '\x1b[1m\x1b[38;5;255m\x1b[48;5;17m', // White on Navy Blue for broadcasts
+    token: '\x1b[38;5;17m',                         // Navy Blue for tokens
+    count: '\x1b[38;5;17m',                         // Navy Blue for counts
   },
   
   // Child Services - Gold/Bronze variants
@@ -310,31 +310,31 @@ export const serviceSpecificColors = {
   },
   
   // =============================================================
-  // 3. FOREST/OLIVE FAMILY - Wallet Services
+  // 3. PURPLE/VIOLET FAMILY - Wallet Services
   // =============================================================
   
-  // Parent Service - Forest Green with background
+  // Parent Service - Royal Purple with background
   contestWallet: {
-    tag: '\x1b[1m\x1b[38;5;29m',                    // Forest Green (29)
-    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;29m',   // White on Forest Green background
-    info: '\x1b[38;5;29m',                          // Regular Forest Green
-    success: '\x1b[38;5;29m',                       // Forest Green instead of bright green
+    tag: '\x1b[1m\x1b[38;5;93m',                    // Royal Purple (93)
+    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;93m',   // White on Royal Purple background
+    info: '\x1b[38;5;93m',                          // Regular Royal Purple
+    success: '\x1b[38;5;93m',                       // Royal Purple instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;29m',              // Bold Forest Green
-    batch: '\x1b[1m\x1b[38;5;255m\x1b[48;5;29m',    // White on Forest Green for batch operations
-    transfer: '\x1b[1m\x1b[38;5;255m\x1b[48;5;29m', // White on Forest Green for transfers
+    highlight: '\x1b[1m\x1b[38;5;93m',              // Bold Royal Purple
+    batch: '\x1b[1m\x1b[38;5;255m\x1b[48;5;93m',    // White on Royal Purple for batch operations
+    transfer: '\x1b[1m\x1b[38;5;255m\x1b[48;5;93m', // White on Royal Purple for transfers
   },
   
-  // Child Service - Olive Green
+  // Child Service - Lavender/Violet
   vanityWallet: {
-    tag: '\x1b[1m\x1b[38;5;64m',                    // Olive Green (64)
-    header: '\x1b[1m\x1b[38;5;64m\x1b[48;5;236m',   // Olive Green on dark gray
-    info: '\x1b[38;5;64m',                          // Regular Olive Green
-    success: '\x1b[38;5;64m',                       // Olive Green instead of bright green
+    tag: '\x1b[1m\x1b[38;5;140m',                   // Lavender/Violet (140)
+    header: '\x1b[1m\x1b[38;5;140m\x1b[48;5;236m',  // Lavender/Violet on dark gray
+    info: '\x1b[38;5;140m',                         // Regular Lavender/Violet
+    success: '\x1b[38;5;140m',                      // Lavender/Violet instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;64m',              // Bold Olive Green
+    highlight: '\x1b[1m\x1b[38;5;140m',             // Bold Lavender/Violet
   },
   
   // =============================================================

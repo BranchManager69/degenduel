@@ -55,13 +55,53 @@ export const environmentMiddleware = (req, res, next) => {
     !seenOrigins.has(requestKey) ||
     seenOrigins.size === 0
   ) {
+    // Get client IP and user agent for improved logging
+    const clientIp = req.ip || 
+                    req.headers['x-forwarded-for'] || 
+                    req.headers['x-real-ip'] || 
+                    req.connection.remoteAddress || 'no-ip';
+    const userAgent = req.headers['user-agent'] || 'no-ua';
+    
+    // Extract useful device info from user agent
+    let deviceInfo = '';
+    if (userAgent) {
+      // Detect iOS, Android, Windows, Mac, etc.
+      if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+        const iosMatch = userAgent.match(/OS (\d+[._]\d+)/);
+        deviceInfo = iosMatch ? `iOS ${iosMatch[1].replace('_', '.')}` : 'iOS';
+      } else if (userAgent.includes('Android')) {
+        const androidMatch = userAgent.match(/Android (\d+(\.\d+)?)/);
+        deviceInfo = androidMatch ? `Android ${androidMatch[1]}` : 'Android';
+      } else if (userAgent.includes('Windows')) {
+        deviceInfo = 'Windows';
+      } else if (userAgent.includes('Mac OS X')) {
+        deviceInfo = 'macOS';
+      } else if (userAgent.includes('Linux')) {
+        deviceInfo = 'Linux';
+      }
+      
+      // Add browser info
+      if (userAgent.includes('Chrome')) {
+        deviceInfo += ' Chrome';
+      } else if (userAgent.includes('Safari')) {
+        deviceInfo += ' Safari';
+      } else if (userAgent.includes('Firefox')) {
+        deviceInfo += ' Firefox';
+      } else if (userAgent.includes('Edge')) {
+        deviceInfo += ' Edge';
+      }
+    }
+    
+    // Use dark gray color for environment logs (not green)
     logApi.info(
-      `[Environment Middleware] Origin: ${formattedOrigin}, NODE_ENV: ${config.services.active_profile}, Environment: ${environment}, Port: ${config.port}`, 
+      `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${req.method} ${req.originalUrl || req.url} - ${deviceInfo} - ${clientIp}`, 
       { 
         environment,
         origin: req.headers.origin || 'internal',
         path: req.originalUrl || req.url,
-        method: req.method
+        method: req.method,
+        ip: clientIp,
+        userAgent
       }
     );
     
