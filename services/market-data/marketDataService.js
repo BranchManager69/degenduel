@@ -11,23 +11,23 @@
  */
 
 // Core imports
-import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
-import { logApi } from '../utils/logger-suite/logger.js';
+import { BaseService } from '../../utils/service-suite/base-service.js';
+import { ServiceError } from '../../utils/service-suite/service-error.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
 import { PrismaClient } from '@prisma/client';
-import serviceManager from '../utils/service-suite/service-manager.js';
-import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
-import { fancyColors } from '../utils/colors.js';
-import serviceEvents from '../utils/service-suite/service-events.js';
-import { config } from '../config/config.js';
-import solanaEngine from './solana-engine/index.js';
-import { heliusClient } from './solana-engine/helius-client.js';
-import { getJupiterClient, jupiterClient } from './solana-engine/jupiter-client.js';
-import { dexscreenerClient } from './solana-engine/dexscreener-client.js';
-import tokenHistoryFunctions from './token-history-functions.js';
+import serviceManager from '../../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
+import { fancyColors } from '../../utils/colors.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
+import { config } from '../../config/config.js';
+import solanaEngine from '../solana-engine/index.js';
+import { heliusClient } from '../solana-engine/helius-client.js';
+import { getJupiterClient, jupiterClient } from '../solana-engine/jupiter-client.js';
+import { dexscreenerClient } from '../solana-engine/dexscreener-client.js';
+import tokenHistoryFunctions from '../token-history-functions.js';
 
 // Import modular components
-import marketData from './market-data/index.js';
+import marketData from './index.js';
 const {
     rankTracker,
     batchProcessor,
