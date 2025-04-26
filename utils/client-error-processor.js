@@ -9,6 +9,70 @@ import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { logApi } from './logger-suite/logger.js';
 
+/**
+ * Helper function to truncate strings to prevent database column size errors
+ * @param {String} str - String to truncate 
+ * @param {Number} maxLength - Maximum length
+ * @returns {String} - Truncated string
+ */
+const truncate = (str, maxLength) => {
+  if (!str) return str;
+  if (typeof str !== 'string') {
+    try {
+      str = String(str);
+    } catch (e) {
+      return null;
+    }
+  }
+  return str.length > maxLength ? str.substring(0, maxLength) : str;
+};
+
+/**
+ * Limit the size of the metadata JSON object
+ * @param {Object} metadata - Metadata object to limit
+ * @returns {Object} - Size-limited metadata object
+ */
+function limitMetadataSize(metadata) {
+  if (!metadata) return {};
+  
+  // Make a copy to avoid modifying the original
+  const result = { ...metadata };
+  
+  // Truncate large string fields
+  if (result.original_error && typeof result.original_error === 'string') {
+    result.original_error = truncate(result.original_error, 5000);
+  }
+  
+  if (result.user_agent && typeof result.user_agent === 'string') {
+    result.user_agent = truncate(result.user_agent, 255);
+  }
+  
+  // Limit occurrences array to most recent 10
+  if (result.occurrences && Array.isArray(result.occurrences) && result.occurrences.length > 10) {
+    result.occurrences = result.occurrences.slice(-10);
+  }
+  
+  // Serialize to check size
+  let serialized = JSON.stringify(result);
+  
+  // If it's still too large, create a minimal version
+  if (serialized.length > 8000) {
+    const minimal = {
+      note: "Metadata was truncated due to size constraints",
+      timestamp: new Date().toISOString()
+    };
+    
+    // Keep some key fields if they exist
+    if (result.occurrences && Array.isArray(result.occurrences)) {
+      minimal.recent_occurrences = result.occurrences.slice(-5);
+    }
+    
+    return minimal;
+  }
+  
+  return result;
+}
+
 const prisma = new PrismaClient();
 
 /**
@@ -117,28 +181,28 @@ const formatErrorData = (logEntry, metadata) => {
   
   const errorId = generateErrorId(errorData);
 
-  // Format data for database storage
+  // Format data for database storage with truncation to prevent column overflow errors
   return {
     error_id: errorId,
-    wallet_address: metadata.walletAddress,
-    message: message || 'Unknown error',
-    level: logEntry.level || 'error',
-    stack_trace: typeof stack === 'string' ? stack : JSON.stringify(stack),
-    source_url: source,
+    wallet_address: truncate(metadata.walletAddress, 44),
+    message: truncate(message || 'Unknown error', 10000),
+    level: truncate(logEntry.level || 'error', 20),
+    stack_trace: truncate(typeof stack === 'string' ? stack : JSON.stringify(stack), 10000),
+    source_url: truncate(source, 1000),
     line_number: lineno || null,
     column_number: colno || null,
-    browser,
-    browser_version: browserVersion,
-    os,
-    device,
-    ip_address: metadata.clientIp,
-    session_id: metadata.sessionId,
-    environment: metadata.environment || 'production',
-    tags: Array.isArray(tags) ? tags : [],
-    metadata: {
+    browser: truncate(browser, 100),
+    browser_version: truncate(browserVersion, 50),
+    os: truncate(os, 50),
+    device: truncate(device, 50),
+    ip_address: truncate(metadata.clientIp, 45),
+    session_id: truncate(metadata.sessionId, 100),
+    environment: truncate(metadata.environment || 'production', 20),
+    tags: Array.isArray(tags) ? tags.slice(0, 20) : [],
+    metadata: limitMetadataSize({
       ...details,
       originalTimestamp: timestamp
-    }
+    })
   };
 };
 
@@ -165,32 +229,38 @@ export const processClientError = async (logEntry, metadata) => {
     });
 
     if (existingError) {
+      // Prepare sanitized data with proper truncation
+      const mergedTags = [...new Set([...existingError.tags, ...errorData.tags])].slice(0, 20);
+      
+      // Prepare metadata with size limits
+      const updatedMetadata = limitMetadataSize({
+        ...existingError.metadata,
+        occurrences: [
+          ...(existingError.metadata.occurrences || []),
+          {
+            timestamp: new Date(),
+            ip: truncate(errorData.ip_address, 45),
+            sessionId: truncate(errorData.session_id, 100)
+          }
+        ].slice(-20) // Keep the last 20 occurrences
+      });
+      
       // Update existing error with new occurrence
       const updatedError = await prisma.client_errors.update({
         where: { id: existingError.id },
         data: {
           occurrences: { increment: 1 },
           last_occurred_at: new Date(),
-          // If we have a wallet address and the existing record doesn't, update it
+          // If we have a wallet address and the existing record doesn't, update it (with truncation)
           wallet_address: !existingError.wallet_address && errorData.wallet_address 
-            ? errorData.wallet_address 
+            ? truncate(errorData.wallet_address, 44) 
             : undefined,
-          // Keep the latest stack trace which might have more details
-          stack_trace: errorData.stack_trace || existingError.stack_trace,
-          // Merge tags without duplicates
-          tags: [...new Set([...existingError.tags, ...errorData.tags])],
-          // Add new occurrence to metadata
-          metadata: {
-            ...existingError.metadata,
-            occurrences: [
-              ...(existingError.metadata.occurrences || []),
-              {
-                timestamp: new Date(),
-                ip: errorData.ip_address,
-                sessionId: errorData.session_id
-              }
-            ].slice(-20) // Keep the last 20 occurrences
-          }
+          // Keep the latest stack trace which might have more details (with truncation)
+          stack_trace: truncate(errorData.stack_trace || existingError.stack_trace, 10000),
+          // Merge tags without duplicates and limit size
+          tags: mergedTags,
+          // Add new occurrence to metadata with size limiting
+          metadata: updatedMetadata
         }
       });
       
@@ -215,19 +285,36 @@ export const processClientError = async (logEntry, metadata) => {
       }
 
       try {
+        // Apply string truncation to prevent "column too long" errors
+        const sanitizedData = {
+          ...errorData,
+          user_id: userId,
+          message: truncate(errorData.message, 10000),
+          level: truncate(errorData.level, 20),
+          stack_trace: truncate(errorData.stack_trace, 10000),
+          source_url: truncate(errorData.source_url, 1000),
+          browser: truncate(errorData.browser, 100),
+          browser_version: truncate(errorData.browser_version, 50),
+          os: truncate(errorData.os, 50),
+          device: truncate(errorData.device, 50),
+          ip_address: truncate(errorData.ip_address, 45),
+          session_id: truncate(errorData.session_id, 100),
+          environment: truncate(errorData.environment, 20),
+          wallet_address: truncate(errorData.wallet_address, 44),
+          resolution_note: truncate(errorData.resolution_note, 1000),
+          tags: Array.isArray(errorData.tags) ? errorData.tags.slice(0, 20) : [],
+          metadata: limitMetadataSize({
+            ...errorData.metadata,
+            occurrences: [{
+              timestamp: new Date(),
+              ip: errorData.ip_address,
+              sessionId: errorData.session_id
+            }]
+          })
+        };
+        
         const newError = await prisma.client_errors.create({
-          data: {
-            ...errorData,
-            user_id: userId,
-            metadata: {
-              ...errorData.metadata,
-              occurrences: [{
-                timestamp: new Date(),
-                ip: errorData.ip_address,
-                sessionId: errorData.session_id
-              }]
-            }
-          }
+          data: sanitizedData
         });
         
         logApi.info(`Created new client error record (ID: ${newError.id})`, {
@@ -246,32 +333,38 @@ export const processClientError = async (logEntry, metadata) => {
           });
           
           if (existingError) {
-            // Update using the earlier logic
+            // Prepare sanitized data with proper truncation
+            const mergedTags = [...new Set([...existingError.tags, ...errorData.tags])].slice(0, 20);
+            
+            // Prepare metadata with size limits
+            const updatedMetadata = limitMetadataSize({
+              ...existingError.metadata,
+              occurrences: [
+                ...(existingError.metadata.occurrences || []),
+                {
+                  timestamp: new Date(),
+                  ip: truncate(errorData.ip_address, 45),
+                  sessionId: truncate(errorData.session_id, 100)
+                }
+              ].slice(-20) // Keep the last 20 occurrences
+            });
+            
+            // Update existing error with new occurrence
             const updatedError = await prisma.client_errors.update({
               where: { id: existingError.id },
               data: {
                 occurrences: { increment: 1 },
                 last_occurred_at: new Date(),
-                // If we have a wallet address and the existing record doesn't, update it
+                // If we have a wallet address and the existing record doesn't, update it (with truncation)
                 wallet_address: !existingError.wallet_address && errorData.wallet_address 
-                  ? errorData.wallet_address 
+                  ? truncate(errorData.wallet_address, 44) 
                   : undefined,
-                // Keep the latest stack trace which might have more details
-                stack_trace: errorData.stack_trace || existingError.stack_trace,
-                // Merge tags without duplicates
-                tags: [...new Set([...existingError.tags, ...errorData.tags])],
-                // Add new occurrence to metadata
-                metadata: {
-                  ...existingError.metadata,
-                  occurrences: [
-                    ...(existingError.metadata.occurrences || []),
-                    {
-                      timestamp: new Date(),
-                      ip: errorData.ip_address,
-                      sessionId: errorData.session_id
-                    }
-                  ].slice(-20) // Keep the last 20 occurrences
-                }
+                // Keep the latest stack trace which might have more details (with truncation)
+                stack_trace: truncate(errorData.stack_trace || existingError.stack_trace, 10000),
+                // Merge tags without duplicates and limit size
+                tags: mergedTags,
+                // Add new occurrence to metadata with size limiting
+                metadata: updatedMetadata
               }
             });
             
