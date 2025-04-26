@@ -23,7 +23,7 @@ import liquidityService from '../../services/liquidityService.js';
 // Data Layer
 // tokenSyncService has been permanently removed
 // tokenWhitelistService has been permanently disabled (using token.is_active flag instead)
-import marketDataService from '../../services/marketDataService.js';
+import marketDataService from '../../services/market-data/marketDataService.js';
 import tokenRefreshIntegration from '../../services/token-refresh-integration.js';
 import tokenDEXDataService from '../../services/token-dex-data-service.js';
 // Legacy solana service - imported but not used as primary

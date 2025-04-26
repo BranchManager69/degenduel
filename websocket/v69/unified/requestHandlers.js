@@ -13,7 +13,7 @@ import { getTokenAddress } from '../../../utils/token-config-util.js';
 import { fetchTerminalData } from './services.js';
 import { MESSAGE_TYPES, TOPICS, normalizeTopic } from './utils.js';
 import { heliusBalanceTracker } from '../../../services/solana-engine/helius-balance-tracker.js';
-import marketDataService from '../../../services/marketDataService.js';
+import marketDataService from '../../../services/market-data/marketDataService.js';
 // TO BE IMPLEMENTED:
 //import tokenBalanceModule from './modules/token-balance-module.js'; // DOES THIS EXIST?
 //import solanaBalanceModule from './modules/solana-balance-module.js'; // DOES THIS EXIST?

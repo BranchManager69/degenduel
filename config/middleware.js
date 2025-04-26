@@ -112,6 +112,8 @@ export function configureMiddleware(app) {
     'https://branch.bet', 
     'https://app.branch.bet',
     'https://dduel.me',
+    'https://www.dduel.me',
+    'https://privy.degenduel.me',
     // OAuth provider origins
     'https://twitter.com',
     'https://x.com',
@@ -305,6 +307,7 @@ export function configureMiddleware(app) {
             'https://*.degenduel.me', 'wss://*.degenduel.me',
             'https://*.branch.bet', 'wss://*.branch.bet',
             'https://dduel.me', 'wss://dduel.me',
+            'https://*.dduel.me', 'wss://*.dduel.me',
             // Development origins
             'http://localhost:*', 'ws://localhost:*'
           ],

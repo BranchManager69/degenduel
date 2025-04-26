@@ -6,7 +6,7 @@ export const DB_CONFIG = {
   
   export const CORS_CONFIG = {
     ALLOWED_ORIGINS: {
-      production: ['https://degenduel.me', 'https://www.degenduel.me', 'https://data.degenduel.me', 'https://dev.degenduel.me', 'https://game.degenduel.me', 'https://www.manager.degenduel.me', 'https://talk.degenduel.me', 'https://reflections.degenduel.me', 'https://branch.bet', 'https://app.branch.bet'],
+      production: ['https://degenduel.me', 'https://www.degenduel.me', 'https://data.degenduel.me', 'https://dev.degenduel.me', 'https://game.degenduel.me', 'https://www.manager.degenduel.me', 'https://talk.degenduel.me', 'https://reflections.degenduel.me', 'https://branch.bet', 'https://app.branch.bet', 'https://dduel.me', 'https://www.dduel.me', 'https://privy.degenduel.me'],
       development: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005', 'http://localhost:3006', 'http://localhost:3007', 'http://localhost:3008', 'http://localhost:3009', 'http://localhost:3010', 'http://localhost:3011', 'http://localhost:3012', 'http://localhost:3013', 'http://localhost:3014', 'http://localhost:3015', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:5177']
     },
     MAX_AGE: 86400,

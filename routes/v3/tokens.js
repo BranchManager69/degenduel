@@ -6,7 +6,7 @@
 import express from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
-import marketDataService from '../../services/marketDataService.js';
+import marketDataService from '../../services/market-data/marketDataService.js';
 
 const router = express.Router();
 

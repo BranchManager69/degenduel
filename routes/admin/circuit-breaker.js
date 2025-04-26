@@ -14,7 +14,7 @@ import express from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import { requireAdmin } from '../../middleware/auth.js';
-import marketDataService from '../../services/marketDataService.js';
+import marketDataService from '../../services/market-data/marketDataService.js';
 import adminLogger from '../../utils/admin-logger.js';
 import { fancyColors } from '../../utils/colors.js';
 

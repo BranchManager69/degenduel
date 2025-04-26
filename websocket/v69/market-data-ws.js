@@ -27,7 +27,7 @@ import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 import prisma from '../../config/prisma.js';
-import marketDataService from '../../services/marketDataService.js';
+import marketDataService from '../../services/market-data/marketDataService.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 
 // Message type constants

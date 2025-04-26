@@ -32,6 +32,8 @@ const DEFAULT_ALLOWED_ORIGINS = [
     'https://data.degenduel.me',
     'https://dev.degenduel.me',
     'https://dduel.me',
+    'https://www.dduel.me',
+    'https://privy.degenduel.me',
 ];
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
     ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())

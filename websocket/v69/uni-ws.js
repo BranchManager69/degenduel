@@ -38,7 +38,7 @@ logApi.info('AUTH_DEBUG_MODE (uni-ws):', AUTH_DEBUG_MODE);
 logApi.info('WS_DEBUG_MODE (uni-ws):', WS_DEBUG_MODE);
 
 // Import services as needed
-import marketDataService from '../../services/marketDataService.js';
+import marketDataService from '../../services/market-data/marketDataService.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 import tokenBalanceModule from './token-balance-module.js';
 import solanaBalanceModule from './solana-balance-module.js';

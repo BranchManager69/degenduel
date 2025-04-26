@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import marketDataService from '../../services/marketDataService.js';
+import marketDataService from '../../services/market-data/marketDataService.js';
 import AdminLogger from '../../utils/admin-logger.js';
 
 const router = express.Router();
