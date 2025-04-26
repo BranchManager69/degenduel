@@ -546,7 +546,7 @@ class HeliusBalanceTracker {
    */
   async fetchSolanaBalance(walletAddress) {
     try {
-      const accounts = await heliusClient.fetchFromHeliusRPC('getBalance', [walletAddress]);
+      const accounts = await heliusClient.tokens.fetchFromHeliusRPC('getBalance', [walletAddress]);
       
       // Convert lamports to SOL (1 SOL = 1,000,000,000 lamports)
       const solBalance = accounts / 1_000_000_000;

@@ -397,12 +397,102 @@ class TokenMonitorService extends BaseService {
    */
   handlePriceUpdate(priceData) {
     try {
+      // Track changes for detailed logging
+      const significantChanges = [];
+      
       // Update price cache
-      for (const [tokenAddress, price] of Object.entries(priceData)) {
+      for (const [tokenAddress, priceInfo] of Object.entries(priceData)) {
         if (this.monitoredTokens.has(tokenAddress)) {
+          // Get token data
+          const tokenData = this.monitoredTokens.get(tokenAddress);
+          const symbol = tokenData.token_symbol || 'UNKNOWN';
+          
+          // Get previous price data if available
+          const previousPriceData = this.priceCache.get(tokenAddress);
+          const previousPrice = previousPriceData?.price_usd;
+          
+          // Current price from Jupiter
+          const currentPrice = typeof priceInfo === 'object' ? 
+            (priceInfo.price || 0) : 
+            (priceInfo || 0);
+            
+          // Extra data from Jupiter if available
+          const marketCap = priceInfo.marketCap;
+          const volume24h = priceInfo.volume24h;
+          const priceChange24h = priceInfo.priceChange24h;
+            
+          // Calculate price change if we have previous data
+          let priceChangeAmount = 0;
+          let priceChangePercent = 0;
+          
+          if (previousPrice !== undefined && previousPrice !== null && previousPrice > 0) {
+            priceChangeAmount = currentPrice - previousPrice;
+            priceChangePercent = (priceChangeAmount / previousPrice) * 100;
+          }
+          
+          // Update cache with new price
           this.priceCache.set(tokenAddress, {
-            price_usd: price,
+            price_usd: currentPrice,
+            previous_price: previousPrice,
+            market_cap: marketCap,
+            volume_24h: volume24h,
+            price_change_percent: priceChangePercent,
             last_updated: Date.now()
+          });
+          
+          // Add to significant changes if price change is notable (>0.5%)
+          // or this is a first-time price
+          if (Math.abs(priceChangePercent) > 0.5 || previousPrice === undefined) {
+            significantChanges.push({
+              address: tokenAddress,
+              symbol,
+              currentPrice,
+              previousPrice,
+              changePercent: priceChangePercent,
+              changeAmount: priceChangeAmount,
+              marketCap,
+              volume24h
+            });
+          }
+        }
+      }
+      
+      // Log significant changes
+      if (significantChanges.length > 0) {
+        for (const change of significantChanges) {
+          const direction = change.changePercent >= 0 ? 'up' : 'down';
+          const absChange = Math.abs(change.changePercent).toFixed(2);
+          
+          let message = `${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Price ${direction} by ${absChange}%: `;
+          message += `${fancyColors.YELLOW}${change.symbol}${fancyColors.RESET} `;
+          
+          if (change.previousPrice) {
+            message += `$${change.previousPrice.toFixed(8)} → $${change.currentPrice.toFixed(8)}`;
+          } else {
+            message += `New price: $${change.currentPrice.toFixed(8)}`;
+          }
+          
+          // Add volume and market cap if available
+          if (change.volume24h) {
+            message += ` | Vol: $${change.volume24h.toLocaleString()}`;
+          }
+          
+          if (change.marketCap) {
+            message += ` | MCap: $${change.marketCap.toLocaleString()}`;
+          }
+          
+          logApi.info(message);
+          
+          // Emit price update event for this token
+          serviceEvents.emit(SERVICE_EVENTS.TOKEN_PRICE_UPDATE, {
+            token_address: change.address,
+            token_symbol: change.symbol,
+            price: change.currentPrice,
+            previous_price: change.previousPrice || 0,
+            price_change_percent: change.changePercent,
+            market_cap: change.marketCap,
+            volume_24h: change.volume24h,
+            timestamp: Date.now()
           });
         }
       }

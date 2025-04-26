@@ -251,6 +251,8 @@ model tokens {
   website_url               String?                     @db.VarChar(255)
   coingeckoId               String?                     // Coingecko ID for this token 
   tags                      Json?                       // Tags from Jupiter stored as JSON
+  raw_supply                BigInt?                     // Total supply in smallest units (raw from blockchain)
+  total_supply              Decimal?                    @db.Decimal(38, 18) // Normalized supply with decimals applied
   refresh_interval_seconds  Int                         @default(30) // Default refresh every 30 seconds
   priority_score            Int                         @default(0) // Higher score = higher priority for refreshing
   last_refresh_attempt      DateTime?                   // When refresh was last attempted

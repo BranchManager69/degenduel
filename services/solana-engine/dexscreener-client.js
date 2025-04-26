@@ -15,7 +15,14 @@ const formatLog = {
   error: (text) => `${serviceSpecificColors.dexscreenerClient.error}${text}${fancyColors.RESET}`,
   info: (text) => `${serviceSpecificColors.dexscreenerClient.info}${text}${fancyColors.RESET}`,
   highlight: (text) => `${serviceSpecificColors.dexscreenerClient.highlight}${text}${fancyColors.RESET}`,
-  token: (symbol) => `${serviceSpecificColors.dexscreenerClient.token}${symbol || ''}${fancyColors.RESET}`,
+  // Enhanced token display with DexScreener link
+  token: (address, chainId = 'solana', symbol = null) => {
+    // If we have a symbol, show it with the address
+    const displayText = symbol ? `${symbol} (${address.slice(0, 8)}...)` : address.slice(0, 12) + '...';
+    // Format as a DexScreener link
+    const dexScreenerUrl = `https://dexscreener.com/${chainId}/${address}`;
+    return `${serviceSpecificColors.dexscreenerClient.token}${displayText} [${dexScreenerUrl}]${fancyColors.RESET}`;
+  },
   count: (num) => `${serviceSpecificColors.dexscreenerClient.count}${Number(num) || 0}${fancyColors.RESET}`,
 };
 
@@ -101,10 +108,8 @@ class DexScreenerBase {
    * @returns {Promise<any>} - Response data
    */
   async makeRequest(method, endpoint, endpointType, data = null, params = null) {
-    // Wait if a request is already in progress
+    // Wait if a request is already in progress - but don't log every instance
     if (this.isRequestInProgress) {
-      logApi.info(`${formatLog.tag()} ${formatLog.info('Waiting for another request to complete')}`);
-      
       // Wait up to 5 seconds for the current request to finish
       const maxWaitTime = 5000;
       const startWait = Date.now();
@@ -130,7 +135,10 @@ class DexScreenerBase {
       const rateLimitDelay = this.calculateRateLimitDelay(endpointType);
       
       if (rateLimitDelay > 0) {
-        logApi.info(`${formatLog.tag()} ${formatLog.info(`Rate limit reached for ${endpointType} endpoints, waiting ${rateLimitDelay}ms`)}`);
+        // Only log rate limit delays above a threshold to reduce spam
+        if (rateLimitDelay > 1000) {
+          logApi.info(`${formatLog.tag()} ${formatLog.info(`Rate limit reached for ${endpointType} endpoints, waiting ${rateLimitDelay}ms`)}`);
+        }
         await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
         
         // Recheck window after waiting
@@ -389,15 +397,14 @@ class TokenPairsService extends DexScreenerBase {
    */
   async getPoolsByToken(chainId, tokenAddress) {
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} pools for token ${formatLog.token(tokenAddress)}`);
-      
+      // No longer log individual token fetch operations to reduce log spam
       const endpoint = this.config.endpoints.tokenPairs.getPoolsByToken(chainId, tokenAddress);
       const response = await this.makeRequest('GET', endpoint, 'enhanced');
-      
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched pools for token')} ${formatLog.token(tokenAddress)}`);
       return response;
     } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch pools for token:')} ${error.message}`);
+      // Still log errors, but don't log successful operations
+      // Use enhanced token formatting with chainId parameter for better error logs
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch pools for token:')} ${formatLog.token(tokenAddress, chainId)} - ${error.message}`);
       throw error;
     }
   }
@@ -410,44 +417,69 @@ class TokenPairsService extends DexScreenerBase {
    */
   async getPoolsForMultipleTokens(chainId, tokenAddresses) {
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} pools for ${formatLog.count(tokenAddresses.length)} tokens`);
+      // Initial log with token count
+      logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} pools for ${formatLog.count(tokenAddresses.length)} tokens (all timeframes)`);
       
       const results = {};
       let successCount = 0;
       let failureCount = 0;
+      let startTime = Date.now();
       
-      // Process tokens sequentially with proper rate limiting
-      for (let i = 0; i < tokenAddresses.length; i++) {
-        const tokenAddress = tokenAddresses[i];
-        try {
-          // Get pools for this token
-          const tokenPools = await this.getPoolsByToken(chainId, tokenAddress);
-          results[tokenAddress] = tokenPools;
-          successCount++;
-          
-          // Log progress periodically
-          if (tokenAddresses.length > 10 && (i + 1) % 10 === 0) {
-            const progress = Math.round(((i + 1) / tokenAddresses.length) * 100);
-            logApi.info(`${formatLog.tag()} Progress: ${progress}% (${i + 1}/${tokenAddresses.length})`);
-          }
-        } catch (error) {
-          failureCount++;
-          results[tokenAddress] = { error: error.message };
-          
-          // Only log first few errors in detail
-          if (failureCount <= 3) {
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error fetching pools for token ${tokenAddress}:`)} ${error.message}`);
-          } else if (failureCount === 4) {
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning('Additional errors occurring, suppressing detailed logs')}`);
-          }
-        }
+      // Create a buffer of tokens being processed to reduce logging
+      const batchSize = 50;
+      const tokenBatches = [];
+      
+      // Split tokens into batches for consolidated logging
+      for (let i = 0; i < tokenAddresses.length; i += batchSize) {
+        tokenBatches.push(tokenAddresses.slice(i, i + batchSize));
       }
       
-      // Final summary with error count if any
+      // Process token batches
+      for (let batchIndex = 0; batchIndex < tokenBatches.length; batchIndex++) {
+        const batch = tokenBatches[batchIndex];
+        const batchStart = Date.now();
+        const batchStartCount = successCount;
+        let batchFailures = 0;
+        
+        // Process tokens in this batch
+        for (const tokenAddress of batch) {
+          try {
+            // Get pools without logging each individual request
+            const tokenPools = await this.getPoolsByToken(chainId, tokenAddress);
+            results[tokenAddress] = tokenPools;
+            successCount++;
+          } catch (error) {
+            failureCount++;
+            batchFailures++;
+            results[tokenAddress] = { error: error.message };
+            
+            // Only log first few errors in detail
+            if (failureCount <= 3) {
+              logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error fetching pools for token ${tokenAddress}:`)} ${error.message}`);
+            } else if (failureCount === 4) {
+              logApi.warn(`${formatLog.tag()} ${formatLog.warning('Additional errors occurring, suppressing detailed logs')}`);
+            }
+          }
+        }
+        
+        // Log once per batch with meaningful stats
+        const processed = (batchIndex + 1) * batchSize > tokenAddresses.length ? 
+            tokenAddresses.length : (batchIndex + 1) * batchSize;
+        const progress = Math.round((processed / tokenAddresses.length) * 100);
+        const batchTime = ((Date.now() - batchStart) / 1000).toFixed(1);
+        const tokensPerSec = ((successCount - batchStartCount) / (batchTime || 1)).toFixed(1);
+        
+        logApi.info(`${formatLog.tag()} Progress: ${progress}% (${processed}/${tokenAddresses.length}) - ${tokensPerSec} tokens/sec${batchFailures > 0 ? ` - ${batchFailures} failures in batch` : ''}`);
+      }
+      
+      // Final summary with performance stats
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      const avgRate = (successCount / (totalTime || 1)).toFixed(1);
+      
       if (failureCount > 0) {
-        logApi.info(`${formatLog.tag()} ${formatLog.success(`Successfully fetched pools for ${successCount} tokens`)} - ${formatLog.warning(`${failureCount} failures`)}`);
+        logApi.info(`${formatLog.tag()} ${formatLog.success(`Completed in ${totalTime}s at ${avgRate} tokens/sec. Successfully fetched ${successCount} tokens`)} - ${formatLog.warning(`${failureCount} failures`)}`);
       } else {
-        logApi.info(`${formatLog.tag()} ${formatLog.success(`Successfully fetched pools for all ${successCount} tokens`)}`);
+        logApi.info(`${formatLog.tag()} ${formatLog.success(`Completed in ${totalTime}s at ${avgRate} tokens/sec. Successfully fetched all ${successCount} tokens`)}`);
       }
       
       return results;

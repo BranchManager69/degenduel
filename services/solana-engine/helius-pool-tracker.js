@@ -344,8 +344,8 @@ class HeliusPoolTracker {
         throw new Error(`Pool not found in database: ${poolAddress}`);
       }
       
-      // Get account data from Helius
-      const accountInfo = await heliusClient.fetchFromHeliusRPC('getAccountInfo', [
+      // Get account data from Helius - use the tokens service which has fetchFromHeliusRPC through HeliusBase
+      const accountInfo = await heliusClient.tokens.fetchFromHeliusRPC('getAccountInfo', [
         poolAddress,
         { encoding: 'jsonParsed' }
       ]);

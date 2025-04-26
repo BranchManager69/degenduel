@@ -11,6 +11,8 @@
     "benchmarks": "node scripts/benchmark-menu.js",
     "monitor": "node scripts/monitor-menu.js",
     "summary": "node tools/token-data-summary.js",
+    "pool-listener": "node tests/direct-token-monitor.js",
+    "pools-debug": "node tests/debug-pools.js",
     "// LEGACY BENCHMARK COMMANDS": "====================================================================================================",
     "benchmark:run": "python3 tests/solana_rpc_benchmark_enhanced.py --simple",
     "benchmark:run-and-import": "npm run benchmark:run && node scripts/import-benchmark-results.js",

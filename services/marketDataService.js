@@ -1272,6 +1272,7 @@ class MarketDataService extends BaseService {
     async updateTokenData() {
         const startTime = Date.now();
         
+        // [THIS SINGLE TRY-CATCH BLOCK IS OVER 1400 LINES LONG!]
         try {
             // Check service health
             await this.checkServiceHealth();
@@ -1463,6 +1464,7 @@ class MarketDataService extends BaseService {
                     }
                 }
                 
+                // Log drops
                 if (exits.length > 0) {
                     const exitSymbols = exits.map(e => e.symbol).slice(0, 5);
                     logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DROPPED OUT ${fancyColors.RESET} ${exits.length} tokens exited top ${MAX_TOKENS_TO_PROCESS}: ${exitSymbols.join(', ')}${exits.length > 5 ? '...' : ''}`);
@@ -1481,6 +1483,7 @@ class MarketDataService extends BaseService {
                 // Record the current token ranks for historical tracking
                 this.recordTokenRanks(tokenSubset, currentTokenRanks);
                 
+                // Process each token that stayed in the list
                 currentTopAddresses.forEach(address => {
                     if (previousTopAddresses.has(address)) {
                         // Get previous and current positions
@@ -1698,63 +1701,113 @@ class MarketDataService extends BaseService {
             logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Sorted ${tokenList.length} tokens by volume/relevance. Processing top ${tokenSubset.length} according to the DegenDuel algo...`);
             
             // Use Jupiter's max supported batch size
-            // Jupiter API has a limit of 100 tokens per request
-            const batchSize = MAX_TOKENS_PER_BATCH; // Jupiter API limit per request
+            // Jupiter API has a limit of 100 tokens per request and 10 requests per second
+            const PARALLEL_BATCHES_JUPITER_API = 10; // Process 10 batches in parallel (Jupiter API rate limit on our current plan; might increase in the future)
+            const batchSize = MAX_TOKENS_PER_BATCH; // Jupiter API limit per request (100)
             const totalBatches = Math.ceil(tokenSubset.length / batchSize);
+            const totalGroups = Math.ceil(totalBatches / PARALLEL_BATCHES_JUPITER_API);
+            // Log optimization details
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} OPTIMIZATION ${fancyColors.RESET} Processing ${totalBatches} batches in ${totalGroups} parallel groups (${PARALLEL_BATCHES_JUPITER_API} batches per group)`);
             
-            for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-                const batchStart = batchIndex * batchSize;
-                const batchEnd = Math.min(batchStart + batchSize, tokenSubset.length);
-                const batchTokens = tokenSubset.slice(batchStart, batchEnd);
+            // Process batches in groups of PARALLEL_BATCHES_JUPITER_API (Jupiter's rate limit)
+            for (let groupIndex = 0; groupIndex < totalGroups; groupIndex++) {
+                const startBatch = groupIndex * PARALLEL_BATCHES_JUPITER_API;
+                const endBatch = Math.min(startBatch + PARALLEL_BATCHES_JUPITER_API, totalBatches);
+                const batchesInGroup = endBatch - startBatch;
+                const tokensInGroup = Math.min(batchesInGroup * batchSize, tokenSubset.length - (startBatch * batchSize)); // why is this unused?
                 
-                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processing batch ${batchIndex + 1}/${totalBatches} (${batchTokens.length} tokens)`);
+                const groupStartTime = Date.now(); // why is this unused?
+                const groupTokenCount = Math.min(batchesInGroup * batchSize, tokenSubset.length - (startBatch * batchSize));
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.BLACK} BATCH GROUP ${groupIndex + 1}/${totalGroups} ${fancyColors.RESET} Processing ${batchesInGroup} batches (${groupTokenCount} tokens) in parallel`);
                 
-                // Add a small delay between batches to avoid hitting rate limits
-                if (batchIndex > 0 && batchIndex % 5 === 0) {
-                    // Every 5 batches = ~500 tokens, add a small pause
-                    const pauseTime = 300; // 300ms pause
-                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Rate limit protection: Pausing for ${pauseTime}ms${fancyColors.RESET}`);
-                    await new Promise(resolve => setTimeout(resolve, pauseTime));
-                }
+                // Create an array of promises for concurrent batch processing
+                const batchPromises = [];
                 
-                // Get token addresses for the batch
-                const tokenAddresses = batchTokens
-                    .map(token => {
-                        // Handle both object and string tokens
-                        if (typeof token === 'string') {
-                            return token.replace(/^["']+|["']+$/g, '').replace(/\\"/g, '');
+                // Create a function to process a single batch
+                const processBatch = async (batchIndex) => {
+                    try {
+                        const batchStartTime = Date.now();
+                        
+                        const batchStart = batchIndex * batchSize;
+                        const batchEnd = Math.min(batchStart + batchSize, tokenSubset.length);
+                        const batchTokens = tokenSubset.slice(batchStart, batchEnd);
+                        
+                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Starting batch ${batchIndex + 1}/${totalBatches} with ${batchTokens.length} tokens`);
+                        
+                        // Get token addresses for the batch
+                        const tokenAddresses = batchTokens
+                            .map(token => {
+                                // Handle both object and string tokens
+                                if (typeof token === 'string') {
+                                    return token.replace(/^["']+|["']+$/g, '').replace(/\\"/g, '');
+                                }
+                                return token.address;
+                            })
+                            .filter(address => address !== null && address !== undefined);
+                        
+                        // Get metadata from Helius for this batch
+                        let tokenMetadata = [];
+                        try {
+                            tokenMetadata = await heliusClient.getTokensMetadata(tokenAddresses);
+                            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Batch ${batchIndex + 1}/${totalBatches}: Fetched metadata for ${tokenMetadata.length}/${tokenAddresses.length} tokens`);
+                        } catch (error) {
+                            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Batch ${batchIndex + 1}/${totalBatches}: Error fetching metadata:${fancyColors.RESET}`, error.message);
                         }
-                        return token.address;
-                    })
-                    .filter(address => address !== null && address !== undefined);
-                
-                // Get metadata from Helius for this batch
-                let tokenMetadata = [];
-                try {
-                    tokenMetadata = await heliusClient.getTokensMetadata(tokenAddresses);
-                } catch (error) {
-                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error fetching token metadata from Helius:${fancyColors.RESET}`, error);
-                }
-                
-                // Create a map of metadata by mint address
-                const metadataMap = tokenMetadata.reduce((map, metadata) => {
-                    map[metadata.mint] = metadata;
-                    return map;
-                }, {});
-                
-                // Get prices from Jupiter for this batch
-                let tokenPrices = {};
-                try {
-                    tokenPrices = await jupiterClient.getPrices(tokenAddresses);
-                    
-                    // Debug log for Jupiter API response - check if volume/liquidity/market cap fields are present
-                    if (Object.keys(tokenPrices).length > 0) {
-                        const sampleToken = Object.values(tokenPrices)[0];
-                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} JUPITER DATA ${fancyColors.RESET} Sample token fields: price=${!!sampleToken.price}, market_cap=${!!sampleToken.marketCap}, volume_24h=${!!sampleToken.volume24h}, liquidity=${!!sampleToken.liquidity}`);
+                        
+                        // Create a map of metadata by mint address
+                        const metadataMap = tokenMetadata.reduce((map, metadata) => {
+                            map[metadata.mint] = metadata;
+                            return map;
+                        }, {});
+                        
+                        // Get prices from Jupiter for this batch
+                        let tokenPrices = {};
+                        try {
+                            tokenPrices = await jupiterClient.getPrices(tokenAddresses);
+                            const priceCount = Object.keys(tokenPrices).length;
+                            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Batch ${batchIndex + 1}/${totalBatches}: Fetched prices for ${priceCount}/${tokenAddresses.length} tokens`);
+                            
+                            // Only log sample fields for the first batch in each group
+                            if (batchIndex === startBatch && Object.keys(tokenPrices).length > 0) {
+                                const sampleToken = Object.values(tokenPrices)[0];
+                                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}JUPITER SAMPLE DATA${fancyColors.RESET} price=${!!sampleToken.price}, market_cap=${!!sampleToken.marketCap}, volume_24h=${!!sampleToken.volume24h}, liquidity=${!!sampleToken.liquidity}`);
+                            }
+                        } catch (error) {
+                            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Batch ${batchIndex + 1}/${totalBatches}: Error fetching prices:${fancyColors.RESET}`, error.message);
+                        }
+                        
+                        const fetchTime = Date.now() - batchStartTime;
+                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Batch ${batchIndex + 1}/${totalBatches}: Data fetch completed in ${fetchTime}ms`);
+                        
+                        return {
+                            batchIndex,
+                            batchTokens,
+                            metadataMap,
+                            tokenPrices,
+                            tokenAddresses,
+                            fetchTime
+                        };
+                    } catch (error) {
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing batch ${batchIndex + 1}/${totalBatches}:${fancyColors.RESET}`, error);
+                        return {
+                            batchIndex,
+                            error: error.message,
+                            batchTokens: [],
+                            metadataMap: {},
+                            tokenPrices: {},
+                            tokenAddresses: []
+                        };
                     }
-                } catch (error) {
-                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error fetching token prices from Jupiter:${fancyColors.RESET}`, error);
+                };
+                
+                // Queue up concurrent batch operations
+                for (let batchIndex = startBatch; batchIndex < endBatch; batchIndex++) {
+                    batchPromises.push(processBatch(batchIndex));
                 }
+                
+                // Process all batches in this group concurrently and wait for results
+                const batchResults = await Promise.all(batchPromises);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}Completed all ${batchesInGroup} batches in group ${groupIndex + 1}${fancyColors.RESET}`);
                 
                 // OPTIMIZED DB OPERATIONS: Prepare batch arrays to reduce database connections
                 const tokenUpdates = []; // Existing tokens to update
@@ -1764,13 +1817,25 @@ class MarketDataService extends BaseService {
                 const websiteUpdates = []; // Website updates for each token 
                 const socialUpdates = []; // Social media updates for each token
                 
-                // First pass: Prepare all data without DB operations
-                for (const token of batchTokens) {
-                    try {
+                // First pass: Process all data from our parallel batches
+                for (const batchResult of batchResults) {
+
+                    // Skip batch if there's an error
+                    if (batchResult.error) {
+                        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Skipping batch ${batchResult.batchIndex + 1} due to error: ${batchResult.error}${fancyColors.RESET}`);
+                        continue;
+                    }
+                    
+                    // Process each token in the batch
+                    for (const token of batchResult.batchTokens) {
+
+                        // Increment the processed count
                         processedCount++;
                         
-                        // If the token is a string (which happens with some pump tokens), convert to an object
+                        // New token object post-processing
                         let processedToken = token;
+
+                        // If the token is a string (which happens with some pump tokens?), convert to an object
                         if (typeof token === 'string') {
                             // Remove surrounding quotes if present
                             const cleanedAddress = token.replace(/^["']+|["']+$/g, '').replace(/\\"/g, '');
@@ -1782,19 +1847,17 @@ class MarketDataService extends BaseService {
                         
                         // Skip tokens with missing or invalid addresses
                         if (!cleanedAddress) {
-                            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Skipping token - invalid address format${fancyColors.RESET}`, {
-                                original_token: processedToken
-                            });
+                            logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Skipping token - invalid address format${fancyColors.RESET}`);
                             continue;
                         }
                         
                         // Update token address with cleaned version
                         processedToken.address = cleanedAddress;
                         
-                        // Get metadata and price info for this token
-                        const metadata = metadataMap[cleanedAddress] || {};
-                        const priceInfo = tokenPrices[cleanedAddress] || {};
-                        
+                        // Get metadata and price info for this token from the batch result
+                        const metadata = batchResult.metadataMap[cleanedAddress] || {};
+                        const priceInfo = batchResult.tokenPrices[cleanedAddress] || {};    
+
                         // Add validation function to handle string field lengths
                         const validateStringLength = (str, maxLength, defaultValue = '') => {
                             if (!str) return defaultValue;
@@ -1811,6 +1874,15 @@ class MarketDataService extends BaseService {
                             image_url: validateStringLength(metadata.logoURI || metadata.uri || processedToken.logoURI || null, 255),
                             // Include tags from Jupiter API (important for token categorization)
                             tags: processedToken.tags || null,
+                            // Add description from Helius metadata
+                            description: validateStringLength(metadata.metadata?.description || '', 500),
+                            // Add supply information from Helius metadata - with PostgreSQL BigInt limits (2^63-1)
+                            raw_supply: metadata.raw_supply ? 
+                                // Check if value is too large for PostgreSQL BigInt
+                                (BigInt(metadata.raw_supply.toString()) > BigInt('9223372036854775807') ? 
+                                 '9223372036854775807' : metadata.raw_supply.toString()) : 
+                                null,
+                            total_supply: metadata.total_supply ? metadata.total_supply.toString() : null,
                             updated_at: new Date()
                         };
                         
@@ -1870,6 +1942,7 @@ class MarketDataService extends BaseService {
                                     telegram: metadata.extensions.telegram
                                 };
                                 
+                                // Add to social updates array
                                 for (const [type, url] of Object.entries(socialMap)) {
                                     if (url) {
                                         socialUpdates.push({
@@ -1896,6 +1969,8 @@ class MarketDataService extends BaseService {
                             tokenCreates.push({
                                 tokenData: {
                                     ...tokenData,
+                                    // We don't need to add raw_supply again as it's already in tokenData
+                                    // with proper BigInt limit handling
                                     created_at: new Date()
                                 },
                                 priceData: priceInfo.price ? priceData : null,
@@ -1953,12 +2028,17 @@ class MarketDataService extends BaseService {
                                 }
                             }
                         }
+                    }
+
+                    try {
+
                     } catch (tokenError) {
                         logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token data:${fancyColors.RESET}`, tokenError);
                     }
                     
-                    // Log progress every 10 tokens processed (for data preparation)
-                    if (processedCount % 10 === 0) {
+                    // Log progress every T tokens processed (for data preparation)
+                    const LOG_PROGRESS_INTERVAL_EVERY_T_TOKENS = 50; // whatever
+                    if (processedCount % LOG_PROGRESS_INTERVAL_EVERY_T_TOKENS === 0) {
                         const progressPercent = Math.round((processedCount / tokenSubset.length) * 100);
                         logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Data preparation progress: ${progressPercent}% (${processedCount}/${tokenSubset.length})`);
                     }
@@ -2007,8 +2087,8 @@ class MarketDataService extends BaseService {
                             }
                         }
                     } catch (statsError) {
-                        // Silently handle statistical calculation errors
-                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error calculating price significance: ${statsError.message}`);
+                        // Handle statistical calculation errors
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error calculating price significance: ${statsError.message}`);
                     }
                     
                     // Reset for next batch
@@ -2097,8 +2177,8 @@ class MarketDataService extends BaseService {
                             }
                         }
                     } catch (volumeStatsError) {
-                        // Silently handle statistical calculation errors
-                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error calculating volume statistics: ${volumeStatsError.message}`);
+                        // Handle statistical calculation errors
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error calculating volume statistics: ${volumeStatsError.message}`);
                     }
                     
                     // Reset for next batch
@@ -2270,7 +2350,8 @@ class MarketDataService extends BaseService {
                                 });
                             }
                         } catch (error) {
-                            // Silently handle any errors in price change logging
+                            // Handle any errors in price change logging
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Error calculating price changes: ${error.message}`);
                         }
                         
                         logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Completed batch of ${priceBatch.length} price updates`);
@@ -2554,7 +2635,14 @@ class MarketDataService extends BaseService {
                     logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processed batch of ${socialBatch.length} social updates`);
                 }
                 
-                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}Completed all database operations for batch ${batchIndex + 1}/${totalBatches}${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}Completed all database operations for group ${groupIndex + 1}/${totalGroups}${fancyColors.RESET}`);
+                
+                // Add a delay between groups to respect rate limits
+                if (groupIndex < totalGroups - 1) {
+                    const waitTime = 1000; // 1 second wait between groups
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Rate limit protection: Waiting ${waitTime}ms before next group${fancyColors.RESET}`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
             }
             
             // Update stats
@@ -2576,7 +2664,7 @@ class MarketDataService extends BaseService {
             
             // Log a more detailed summary to provide insight into token coverage
             const tokenCoverage = ((processedCount / tokenList.length) * 100).toFixed(1);
-            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Update Summary:${fancyColors.RESET} Coverage: ${tokenCoverage}%, New tokens: ${newTokensCount}, Updated tokens: ${updatedTokensCount}`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.CYAN}Update Summary:${fancyColors.RESET} Coverage: ${tokenCoverage}%, New tokens: ${newTokensCount}, Updated tokens: ${updatedTokensCount}, Processed in ${totalGroups} parallel groups`);
             
             return true;
         } catch (error) {

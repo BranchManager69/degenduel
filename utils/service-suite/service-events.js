@@ -32,6 +32,7 @@ export const SERVICE_EVENTS = {
     LARGE_TRANSACTION: 'transaction:large',
     TOKEN_PURCHASE: 'token:purchase',
     TOKEN_SALE: 'token:sale',
+    TOKEN_PRICE_UPDATE: 'token:price_update',
     
     // System events
     SYSTEM_ALERT: 'system:alert',

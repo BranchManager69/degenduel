@@ -470,24 +470,162 @@ class TokenService extends HeliusBase {
 
   /**
    * Convert getAsset response to token metadata format
+   * Enhanced to capture all valuable data from Helius API response
    * @param {Object} assetData - Response from getAsset
-   * @returns {Object} - Converted token metadata
+   * @returns {Object} - Converted token metadata with extended information
+   */
+  /**
+   * Calculate normalized token supply from raw supply and decimals
+   * @param {BigInt|number|string} rawSupply - Raw supply in smallest units
+   * @param {number} decimals - Token decimals
+   * @returns {string} - Normalized supply with decimals applied as a string
+   */
+  calculateNormalizedSupply(rawSupply, decimals) {
+    if (!rawSupply) return null;
+    
+    try {
+      // Ensure rawSupply is a BigInt for precision
+      const rawSupplyBigInt = BigInt(rawSupply);
+      
+      // Handle edge cases
+      if (decimals === 0) return rawSupplyBigInt.toString();
+      if (decimals < 0) return null; // Invalid decimals
+      
+      // Calculate the normalizing divisor (10^decimals)
+      const divisor = BigInt(10) ** BigInt(decimals);
+      
+      // Calculate integer part and fractional part separately for precision
+      const integerPart = rawSupplyBigInt / divisor;
+      const fractionalPart = rawSupplyBigInt % divisor;
+      
+      // Keep everything as strings to maintain precision
+      const integerStr = integerPart.toString();
+      let fractionalStr = fractionalPart.toString();
+      
+      // Pad with leading zeros if needed
+      while (fractionalStr.length < decimals) {
+        fractionalStr = '0' + fractionalStr;
+      }
+      
+      // Combine as a properly formatted decimal string
+      // This avoids JavaScript's Number precision limitations
+      const normalizedSupplyStr = 
+        fractionalStr === '0'.repeat(decimals) 
+          ? integerStr 
+          : `${integerStr}.${fractionalStr}`;
+      
+      return normalizedSupplyStr;
+    } catch (error) {
+      console.error(`Error calculating normalized supply: ${error.message}`, {
+        rawSupply,
+        decimals,
+        error
+      });
+      
+      // Return null on error rather than propagating an invalid value
+      return null;
+    }
+  }
+
+  /**
+   * Convert getAsset response to token metadata format
+   * Enhanced to capture all valuable data from Helius API response
+   * @param {Object} assetData - Response from getAsset
+   * @returns {Object} - Converted token metadata with extended information
    */
   mapAssetToTokenMetadata(assetData) {
     if (!assetData) return null;
+    
+    // Extract the most used image URL formats - both direct and CDN if available
+    const imageUri = assetData.content?.files?.[0]?.uri || null;
+    const imageCdnUri = assetData.content?.files?.[0]?.cdn_uri || null;
+    const linksImage = assetData.content?.links?.image || null;
+    
+    // Get the best available image URL
+    const bestImageUrl = imageCdnUri || imageUri || linksImage || null;
+    
+    // Get all possible image sources for complete data
+    const allImageSources = {
+      primary: bestImageUrl,
+      uri: imageUri,
+      cdn_uri: imageCdnUri,
+      links_image: linksImage
+    };
+    
+    // Extract decimals from token info or content metadata
+    const decimals = assetData.token_info?.decimals || 
+                      assetData.content?.metadata?.decimals || 
+                      0;
+    
+    // Extract raw supply (in smallest units)
+    const rawSupply = assetData.token_info?.supply || null;
+    
+    // Calculate normalized total supply with decimals applied
+    const totalSupply = rawSupply ? this.calculateNormalizedSupply(rawSupply, decimals) : null;
+    
+    // Extract price information if available
+    const priceInfo = assetData.token_info?.price_info ? {
+      price: assetData.token_info.price_info.price_per_token,
+      currency: assetData.token_info.price_info.currency,
+      timestamp: Date.now() // Add timestamp for price freshness tracking
+    } : null;
+    
+    // Extract supply information with both raw and normalized values
+    const supplyInfo = assetData.token_info ? {
+      raw_supply: rawSupply,
+      total_supply: totalSupply,
+      decimals: decimals,
+      token_program: assetData.token_info.token_program
+    } : null;
+    
+    // Extract royalty and ownership information if relevant
+    const royaltyInfo = assetData.royalty ? {
+      royalty_model: assetData.royalty.royalty_model,
+      percent: assetData.royalty.percent,
+      basis_points: assetData.royalty.basis_points,
+      primary_sale_happened: assetData.royalty.primary_sale_happened,
+      locked: assetData.royalty.locked
+    } : null;
+    
+    // Extract creator information if available
+    const creatorInfo = assetData.creators && assetData.creators.length > 0 ? 
+      assetData.creators.map(creator => ({
+        address: creator.address,
+        verified: creator.verified,
+        share: creator.share
+      })) : null;
+    
+    // Get full description
+    const description = assetData.content?.metadata?.description || '';
     
     return {
       mint: assetData.id,
       name: assetData.content?.metadata?.name || '',
       symbol: assetData.content?.metadata?.symbol || '',
-      decimals: assetData.content?.metadata?.decimals || 0,
-      logoURI: assetData.content?.files?.[0]?.uri || null,
+      decimals: decimals,
+      logoURI: bestImageUrl,
       uri: assetData.content?.json_uri || null,
+      
+      // Supply information for database storage
+      raw_supply: rawSupply,
+      total_supply: totalSupply,
+      
+      // Extended data from Helius
+      price_info: priceInfo, 
+      supply_info: supplyInfo,
+      
+      // Expanded metadata
       metadata: {
         name: assetData.content?.metadata?.name || '',
         symbol: assetData.content?.metadata?.symbol || '',
-        description: assetData.content?.metadata?.description || '',
-        image: assetData.content?.files?.[0]?.uri || null,
+        description: description,
+        image: bestImageUrl,
+        all_images: allImageSources,
+        token_standard: assetData.content?.metadata?.token_standard || null,
+        royalty: royaltyInfo,
+        creators: creatorInfo,
+        interface_type: assetData.interface || null,
+        helius_last_updated: Date.now()
       }
     };
   }
