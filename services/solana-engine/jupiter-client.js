@@ -1,10 +1,22 @@
 // services/solana-engine/jupiter-client.js
 
+/**
+ * This file contains the Jupiter API client for the solana-engine service.
+ * It includes functions for fetching token lists and prices from the Jupiter API.
+ * 
+ * @author @BranchManager69
+ * @version 1.9.0
+ * @since 2025-04-26
+ */
+
 import axios from 'axios';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { jupiterConfig } from '../../config/external-api/jupiter-config.js';
-import redisManager from '../../utils/redis-suite/redis-manager.js';
+import redisManager from '../../utils/redis-suite/redis-manager.js'; // why import if unused?
+
+// Config
+import { config } from '../../config/config.js'; // currently unused but really should be used
 
 // Formatting helpers for consistent logging
 const formatLog = {
@@ -111,20 +123,20 @@ class PriceService extends JupiterBase {
     super(config, 'jupiter:token:prices:');
     
     // Polling configuration
+    //   IMPORTANT: Automatic polling disabled by default
+    //     The TokenRefreshScheduler is the primary mechanism for token price updates
+    //     This avoids conflicts between the two systems hitting rate limits
     this.pollingInterval = null;
     this.pollingFrequency = 30000; // Poll every 30 seconds by default (if enabled)
     this.priceUpdateCallbacks = [];
     this.subscriptions = new Map();
-    
+    this.automaticPollingEnabled = false; // flag to control automatic polling
+    // Batch fetch gap
+    const MINIMUM_FETCH_GAP = 15; // in seconds
+    this.minimumFetchGap = 1000 * MINIMUM_FETCH_GAP; // minimum time between full batch fetches
     // Add a lock to prevent multiple concurrent batch processes
     this.isFetchingPrices = false;
     this.lastFetchTime = 0;
-    this.minimumFetchGap = 15000; // At least 15 seconds between full batch fetches
-    
-    // IMPORTANT: Automatic polling disabled by default
-    // The TokenRefreshScheduler is the primary mechanism for token price updates
-    // This avoids conflicts between the two systems hitting rate limits
-    this.automaticPollingEnabled = false; // New flag to control automatic polling
   }
 
   /**
@@ -189,6 +201,9 @@ class PriceService extends JupiterBase {
 
   /**
    * Stop polling for price updates
+   * 
+   * NOTE: By default, automatic polling is now disabled to prevent conflicts with
+   * the TokenRefreshScheduler. Set automaticPollingEnabled to true to re-enable.
    */
   stopPolling() {
     if (this.pollingInterval) {
@@ -388,17 +403,19 @@ class PriceService extends JupiterBase {
           }
           // Fallback to shortened address
           return addr.substring(0, 6) + '...';
-        }).join(', ');
+        }).join(', '); // why define if unused?
         
         // Include timestamp and source service info when available
         const timestamp = new Date().toLocaleTimeString();
-        // Process batch metadata correctly
-        // If batch contains plain addresses (strings), use batch[0] as is
-        // If batch contains objects (for TokenRefreshScheduler), extract metadata from the batch itself
+        
+        // Initialize variables
         let sourceService = '';
         let batchGroup = '';
         let sourceInfo = '';
         
+        // Process batch metadata correctly
+        //   If batch contains plain addresses (strings), use batch[0] as is
+        //   If batch contains objects (for TokenRefreshScheduler), extract metadata from the batch itself
         if (Array.isArray(batch) && batch.length > 0) {
           // Check if batch contains metadata in the array itself
           if (batch.source_service) {
@@ -433,17 +450,17 @@ class PriceService extends JupiterBase {
         
         try {
           // Add an enforced delay between batches to respect rate limits
-          // First batch doesn't need a delay
+          //   First batch doesn't need a delay
           if (batchIndex > 0) {
             // Calculate delay based on rate limits
-            // Minimum delay of 1000ms / max requests per second
+            //   Minimum delay of 1000ms / max requests per second
             const minDelayMs = Math.max(1000 / this.config.rateLimit.maxRequestsPerSecond, 20);
             await new Promise(resolve => setTimeout(resolve, minDelayMs));
           }
           
           // Make the API request with this batch
           const response = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, { ids: queryString });
-          
+          // Check if the response is valid
           if (!response || !response.data) {
             logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Invalid response for batch ${batchNum}/${totalBatches}`)}`);
             continue; // Skip this batch and continue with next one
@@ -490,17 +507,25 @@ class PriceService extends JupiterBase {
               
               // For the current batch, split it into two parts and try again
               if (batch.length > 10) {
+                // Log the split
+                logApi.info(`${formatLog.tag()} ${formatLog.info(`Splitting current batch into two parts for retry (${batch.length} tokens)`)}`);
+
+                // Split the batch into two parts
                 const halfSize = Math.ceil(batch.length / 2);
                 const firstHalf = batch.slice(0, halfSize);
                 const secondHalf = batch.slice(halfSize);
                 
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`Splitting current batch into two parts (${firstHalf.length} and ${secondHalf.length} tokens)`)}`);
+                // Log the split
+                logApi.info(`${formatLog.tag()} ${formatLog.info(`Splitting current batch into two parts for retry (${firstHalf.length} and ${secondHalf.length} tokens)`)}`);
                 
                 // Try the first half
                 try {
+                  // Make the API request with the first half
                   const firstResponse = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, 
                     { ids: firstHalf.join(',') });
+                  // Check if the response is valid
                   if (firstResponse && firstResponse.data) {
+                    // Merge the results with the overall results
                     Object.assign(allFetchedPrices, firstResponse.data);
                   }
                 } catch (splitError) {
@@ -512,9 +537,12 @@ class PriceService extends JupiterBase {
                 
                 // Try the second half
                 try {
+                  // Make the API request with the second half
                   const secondResponse = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, 
                     { ids: secondHalf.join(',') });
+                  // Check if the response is valid
                   if (secondResponse && secondResponse.data) {
+                    // Merge the results with the overall results
                     Object.assign(allFetchedPrices, secondResponse.data);
                   }
                 } catch (splitError) {
@@ -538,13 +566,13 @@ class PriceService extends JupiterBase {
       // Final summary with error count if any
       const fetchedCount = Object.keys(allFetchedPrices).length;
       const successMsg = `${formatLog.success('Successfully fetched prices for')} ${formatLog.count(fetchedCount)} tokens (${fetchedCount}/${mintAddresses.length}, ${Math.round(fetchedCount/mintAddresses.length*100)}%)`;
-      
       if (fetchErrorCount > 0) {
         logApi.info(`${formatLog.tag()} ${successMsg} - ${formatLog.warning(`${fetchErrorCount} batch errors occurred`)}`);
       } else {
         logApi.info(`${formatLog.tag()} ${successMsg}`);
       }
       
+      // Return all fetched prices
       return allFetchedPrices;
     } catch (error) {
       // Use a single detailed error log instead of multiple similar ones
@@ -564,7 +592,7 @@ class PriceService extends JupiterBase {
     if (this.isFetchingPrices) {
       logApi.info(`${formatLog.tag()} ${formatLog.info('Delaying price history fetch as a price batch is still processing')}`);
       // Wait for the current operation to complete with a maximum timeout
-      const maxWaitMs = 5000;
+      const maxWaitMs = 5000; // 5 seconds
       const startWait = Date.now();
       while (this.isFetchingPrices && (Date.now() - startWait < maxWaitMs)) {
         await new Promise(resolve => setTimeout(resolve, 100)); // Wait in 100ms intervals
@@ -580,22 +608,28 @@ class PriceService extends JupiterBase {
     this.isFetchingPrices = true;
     this.lastFetchTime = Date.now();
     
+    // Fetch the price history
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} price history for token ${formatLog.token(mintAddress)} over ${interval}`);
       
+      // Make the API request
       const response = await this.makeRequest('GET', this.config.endpoints.price.getPriceHistory(mintAddress), null, { interval });
       
+      // Check if the response is valid
       if (!response.data || !response.data[mintAddress]) {
         throw new Error('Invalid response from Jupiter API');
       }
       
+      // Get the price history
       const priceHistory = response.data[mintAddress];
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched price history for')} ${formatLog.token(mintAddress)}`);
       
+      // Return the price history
       return priceHistory;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch price history:')} ${error.message}`);
+      // Re-throw the error
       throw error;
     } finally {
       // Always release the lock when done
@@ -621,13 +655,16 @@ class SwapService extends JupiterBase {
     try {
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} swap quote from ${formatLog.token(params.inputMint)} to ${formatLog.token(params.outputMint)}`);
       
+      // Make the API request
       const response = await this.makeRequest('GET', this.config.endpoints.quote.getQuote, null, params);
       
       logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully fetched swap quote')} with best price: ${formatLog.price(response.outAmount)}`);
       
+      // Return the response
       return response;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch swap quote:')} ${error.message}`);
+      // Re-throw the error
       throw error;
     }
   }

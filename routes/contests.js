@@ -1,5 +1,12 @@
 // /routes/contests.js
 
+/**
+ * This file contains the routes for the contests API.
+ * 
+ * It includes routes for getting contests, entering contests, and getting contest leaderboards.
+ * 
+ */
+
 import pkg from '@prisma/client';
 import express from 'express';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
@@ -7,21 +14,24 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { createContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import { verifyTransaction } from '../utils/solana-suite/web3-v2/solana-connection-v2.js';
 import { colors, fancyColors } from '../utils/colors.js';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js'; // why import if unused?
 import prisma from '../config/prisma.js';
 import ReferralService from '../services/referralService.js';
 import contestImageService from '../services/contestImageService.js';
 import cache from '../utils/cache.js';
+import * as crypto from 'crypto';
+
+// Config
 import { config } from '../config/config.js';
-////import { sendSMSAlert, formatContestWalletAlert } from '../utils/notification-suite/sms-alerts.js';
 
-const { Prisma } = pkg;
+const { Prisma } = pkg; // what the fuck is this doing?  should it be using our unified prisma client?
 
+// Router
 const router = express.Router();
 
 // For Decimal type and error handling
 const { Decimal } = Prisma;
-const { PrismaClientKnownRequestError } = Prisma;
+const { PrismaClientKnownRequestError } = Prisma; // why import if unused?
 
 /**
  * @swagger
@@ -189,6 +199,7 @@ const { PrismaClientKnownRequestError } = Prisma;
  *                 error:
  *                   type: string
  */
+
 /**
  * @swagger
  * /api/contests/user-participations:
@@ -245,7 +256,6 @@ const { PrismaClientKnownRequestError } = Prisma;
  *                   type: string
  *                   example: "Missing wallet_address parameter"
  */
-
 // Get all contests with optional filters (NO AUTH REQUIRED)
 //   example: GET https://degenduel.me/api/contests?status=active&limit=10&offset=0
 router.get('/', async (req, res) => {
@@ -900,6 +910,71 @@ const TIMEOUTS = {
   TOTAL_REQUEST: 45000         // 45 seconds
 };
 
+/**
+ * @swagger
+ * /api/contests/{id}/enter:
+ *   post:
+ *     summary: Enter a contest with initial portfolio in a single atomic transaction
+ *     tags: [Contests]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Contest ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - wallet_address
+ *               - transaction_signature
+ *               - portfolio
+ *             properties:
+ *               wallet_address:
+ *                 type: string
+ *                 example: "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp"
+ *               transaction_signature:
+ *                 type: string
+ *                 example: "5KtP3EMKPGYyQ..."
+ *               portfolio:
+ *                 type: object
+ *                 required:
+ *                   - tokens
+ *                 properties:
+ *                   tokens:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       required:
+ *                         - token_id
+ *                         - weight
+ *                       properties:
+ *                         token_id:
+ *                           type: integer
+ *                           example: 1
+ *                         weight:
+ *                           type: integer
+ *                           minimum: 0
+ *                           maximum: 100
+ *                           example: 50
+ *     responses:
+ *       200:
+ *         description: Successfully entered contest with portfolio
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 participation:
+ *                   $ref: '#/components/schemas/ContestParticipant'
+ *                 portfolio:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Portfolio'
+ */
+// Enter a contest with initial portfolio in a single atomic transaction
 router.post('/:id/enter', requireAuth, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -2205,18 +2280,8 @@ router.post('/:id/end', requireAuth, requireAdmin, async (req, res) => {
  *     and a Contest_Series should be a property of a Contest_Series_Season (...)
  * 
  * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
  *   ^ ALL OF THE ABOVE IS ANCIENT CODE; LEADERBOARD IS PROBABLY BROKEN!
- * 
- * 
- * 
- * 
+ *  
  */
 // Get a contest's "leaderboard"(*) (NO AUTH REQUIRED)
 router.get('/:id/leaderboard', async (req, res) => {
