@@ -1861,10 +1861,38 @@ class MarketDataService extends BaseService {
                         // Add validation function to handle string field lengths
                         const validateStringLength = (str, maxLength, defaultValue = '') => {
                             if (!str) return defaultValue;
-                            return str.toString().substring(0, maxLength);
+                            // Clean control characters and invalid Unicode chars
+                            const cleanStr = String(str).replace(/[\x00-\x1F\x7F-\x9F\uFFFE\uFFFF]/g, '');
+                            return cleanStr.substring(0, maxLength);
                         };
                         
-                        // Prepare token data with validated length fields
+                        // Helper function to safely clean object data
+                        const sanitizeObject = (obj) => {
+                            if (!obj) return null;
+                            try {
+                                // Test if object is serializeable without errors
+                                const serialized = JSON.stringify(obj);
+                                // If it passes, parse it back
+                                return JSON.parse(serialized);
+                            } catch (e) {
+                                // If serialization fails, create a new clean object
+                                const safeObj = {};
+                                for (const [key, value] of Object.entries(obj)) {
+                                    if (typeof value === 'string') {
+                                        // Replace invalid characters in strings
+                                        safeObj[key] = value.replace(/[\x00-\x1F\x7F-\x9F\uFFFE\uFFFF]/g, '');
+                                    } else if (typeof value === 'number' || value === null || value === undefined) {
+                                        safeObj[key] = value;
+                                    } else if (typeof value === 'object') {
+                                        // Recursively sanitize nested objects
+                                        safeObj[key] = sanitizeObject(value);
+                                    }
+                                }
+                                return safeObj;
+                            }
+                        };
+                        
+                        // Prepare token data with validated length fields and sanitized objects
                         const tokenData = {
                             address: cleanedAddress,
                             symbol: validateStringLength(processedToken.symbol || metadata.symbol || '', 20), // Limit symbol to 20 chars
@@ -1872,8 +1900,8 @@ class MarketDataService extends BaseService {
                             decimals: processedToken.decimals || metadata.decimals || 9,
                             is_active: true,
                             image_url: validateStringLength(metadata.logoURI || metadata.uri || processedToken.logoURI || null, 255),
-                            // Include tags from Jupiter API (important for token categorization)
-                            tags: processedToken.tags || null,
+                            // Include tags from Jupiter API (important for token categorization) - sanitize to prevent JSON errors
+                            tags: sanitizeObject(processedToken.tags) || null,
                             // Add description from Helius metadata
                             description: validateStringLength(metadata.metadata?.description || '', 500),
                             // Add supply information from Helius metadata - with PostgreSQL BigInt limits (2^63-1)
@@ -2434,28 +2462,40 @@ class MarketDataService extends BaseService {
                                                 // Use the highest liquidity pool for metrics
                                                 const topPool = sortedPools[0];
                                                 
+                                                // Helper function to safely parse floating point numbers
+                                                const safeParseFloat = (val) => {
+                                                    if (!val) return null;
+                                                    try {
+                                                        const parsed = parseFloat(val);
+                                                        if (isNaN(parsed) || !isFinite(parsed)) return null;
+                                                        return parsed.toString();
+                                                    } catch (e) {
+                                                        return null;
+                                                    }
+                                                };
+                                                
                                                 // Create comprehensive metrics object with all time periods
                                                 const enhancedMetrics = {
                                                     // Volume metrics for all time periods
-                                                    volume_24h: topPool.volume?.h24 ? parseFloat(topPool.volume.h24).toString() : null,
-                                                    volume_6h: topPool.volume?.h6 ? parseFloat(topPool.volume.h6).toString() : null,
-                                                    volume_1h: topPool.volume?.h1 ? parseFloat(topPool.volume.h1).toString() : null,
-                                                    volume_5m: topPool.volume?.m5 ? parseFloat(topPool.volume.m5).toString() : null,
+                                                    volume_24h: safeParseFloat(topPool.volume?.h24),
+                                                    volume_6h: safeParseFloat(topPool.volume?.h6),
+                                                    volume_1h: safeParseFloat(topPool.volume?.h1),
+                                                    volume_5m: safeParseFloat(topPool.volume?.m5),
                                                     
                                                     // Price change metrics for all time periods
-                                                    change_24h: topPool.priceChange?.h24 ? parseFloat(topPool.priceChange.h24).toString() : null,
-                                                    change_6h: topPool.priceChange?.h6 ? parseFloat(topPool.priceChange.h6).toString() : null,
-                                                    change_1h: topPool.priceChange?.h1 ? parseFloat(topPool.priceChange.h1).toString() : null,
-                                                    change_5m: topPool.priceChange?.m5 ? parseFloat(topPool.priceChange.m5).toString() : null,
+                                                    change_24h: safeParseFloat(topPool.priceChange?.h24),
+                                                    change_6h: safeParseFloat(topPool.priceChange?.h6),
+                                                    change_1h: safeParseFloat(topPool.priceChange?.h1),
+                                                    change_5m: safeParseFloat(topPool.priceChange?.m5),
                                                     
                                                     // Liquidity and market cap
-                                                    liquidity: topPool.liquidity?.usd ? parseFloat(topPool.liquidity.usd).toString() : null,
-                                                    market_cap: topPool.marketCap ? parseFloat(topPool.marketCap).toString() : null,
-                                                    fdv: topPool.fdv ? parseFloat(topPool.fdv).toString() : null,
+                                                    liquidity: safeParseFloat(topPool.liquidity?.usd),
+                                                    market_cap: safeParseFloat(topPool.marketCap),
+                                                    fdv: safeParseFloat(topPool.fdv),
                                                     
                                                     // Additional metadata
-                                                    dex: topPool.dexId || null,
-                                                    pair_address: topPool.pairAddress || null,
+                                                    dex: topPool.dexId ? validateStringLength(topPool.dexId, 50) : null,
+                                                    pair_address: topPool.pairAddress ? validateStringLength(topPool.pairAddress, 100) : null,
                                                     last_updated: new Date().toISOString()
                                                 };
                                                 
