@@ -1146,7 +1146,7 @@ class ContestWalletService extends BaseService {
                                     retryCount++;
                                     const delay = Math.min(1000 * Math.pow(2, retryCount), 30000); // Exponential backoff with max 30 sec
                                     
-                                    logApi.info(`${formatLog.tag()} ${formatLog.info(`Connection attempt failed. Retrying in ${delay/1000} seconds (attempt ${retryCount}/${maxRetries})`)}`);
+                                    logApi.error(`${formatLog.tag()} ${formatLog.error(`Connection attempt failed. Retrying in ${delay/1000} seconds (attempt ${retryCount}/${maxRetries})`)}`);
                                     
                                     setTimeout(connectWithRetry, delay);
                                 } else {
@@ -1811,7 +1811,7 @@ class ContestWalletService extends BaseService {
                 const totalSOL = walletsWithBalance.reduce((sum, wallet) => sum + wallet.balance, 0);
                 logApi.info(`${formatLog.tag()} ${formatLog.header('TOTAL SOL')} ${totalSOL.toFixed(4)} SOL across ${walletsWithBalance.length} wallets`);
             } else {
-                logApi.info(`${formatLog.tag()} ${formatLog.warning('No wallets found with SOL balance')}`);
+                logApi.info(`${formatLog.tag()} ${formatLog.info('No wallets found with SOL balance')}`);
             }
             
             // Add a cooldown period after batch completion to prevent immediate rate limiting in other services

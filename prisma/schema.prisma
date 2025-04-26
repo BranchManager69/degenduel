@@ -1094,19 +1094,38 @@ model ai_conversation_messages {
 
 // AI analysis for client errors
 model ai_error_analyses {
-  id                     Int                @id @default(autoincrement())
-  summary                String             @db.Text
-  analyzed_at            DateTime           @default(now()) @db.Timestamptz(6)
-  error_count            Int
-  time_window_minutes    Int
-  severity_distribution  Json?              @default("{}")
-  browser_distribution   Json?              @default("{}")
-  os_distribution        Json?              @default("{}")
-  top_errors             Json?              @default("[]")
-  created_by             String?            @db.VarChar(44)
-  analyzed_errors        ai_analyzed_errors[]
+  id                      Int                @id @default(autoincrement())
+  summary                 String             @db.Text
+  analyzed_at             DateTime           @default(now()) @db.Timestamptz(6)
+  error_count             Int
+  time_window_minutes     Int
+  severity_distribution   Json?              @default("{}")
+  browser_distribution    Json?              @default("{}")
+  os_distribution         Json?              @default("{}")
+  top_errors              Json?              @default("[]")
+  created_by              String?            @db.VarChar(44)
+  analyzed_errors         ai_analyzed_errors[]
+  
+  // AI model and cost tracking
+  model_used              String?            @db.VarChar(50) // The AI model used (e.g., "gpt-4", "claude-3-opus")
+  tokens_used             Int?               // Total tokens used for this analysis
+  tokens_prompt           Int?               // Tokens used in the prompt
+  tokens_completion       Int?               // Tokens used in the completion/response
+  estimated_cost_usd      Float?             // Estimated cost in USD
+
+  // New extension fields
+  actionability_score     Int?               // 1-10 score indicating how actionable the insights are
+  issue_categories        Json?              @default("[]") // Array of issue categories (routing, auth, ui, etc.)
+  recommended_actions     Json?              @default("[]") // Structured list of recommended actions
+  resolution_status       String?            @db.VarChar(20) // "pending", "in_progress", "resolved", "wont_fix"
+  assigned_to             String?            @db.VarChar(44) // Wallet address of user assigned to fix
+  priority                Int?               // 1-5 scale where 5 is highest priority
+  estimated_impact        String?            @db.VarChar(50) // User impact description (e.g., "10% of admin users")
+  related_services        Json?              @default("[]") // List of related services affected
 
   @@index([analyzed_at])
+  @@index([resolution_status])
+  @@index([assigned_to])
   @@map("ai_error_analyses")
 }
 
@@ -1168,17 +1187,46 @@ model ai_log_analyses {
 }
 
 model ai_service_log_analyses {
-  id                     Int       @id @default(autoincrement())
-  service                String    @db.VarChar(50)
-  summary                String    @db.Text
-  analyzed_at            DateTime  @default(now()) @db.Timestamptz(6)
+  id                     Int                        @id @default(autoincrement())
+  service                String                     @db.VarChar(50)
+  summary                String                     @db.Text
+  analyzed_at            DateTime                   @default(now()) @db.Timestamptz(6)
   log_count              Int
   time_window_hours      Int
-  created_by             String?   @db.VarChar(44)
+  created_by             String?                    @db.VarChar(44)
+  analyzed_logs          ai_analyzed_service_logs[]
+  
+  // New extension fields
+  performance_score      Int?                       // 1-10 score where 10 is excellent performance
+  health_status          String?                    @db.VarChar(20) // "healthy", "degraded", "failing", "unknown"
+  log_patterns           Json?                      @default("[]")  // Array of detected log patterns
+  anomalies_detected     Json?                      @default("[]")  // Array of anomalies detected in logs
+  common_operations      Json?                      @default("[]")  // Most common operations in logs
+  operation_frequency    Json?                      @default("{}")  // Frequency of different operations
+  operation_success_rate Json?                      @default("{}")  // Success rate by operation type
+  performance_metrics    Json?                      @default("{}")  // Performance metrics extracted from logs
+  service_dependencies   Json?                      @default("[]")  // Other services this service depends on
+  recommendations        Json?                      @default("[]")  // AI recommendations for service improvement
 
   @@index([analyzed_at])
   @@index([service])
+  @@index([health_status])
   @@map("ai_service_log_analyses")
+}
+
+model ai_analyzed_service_logs {
+  id              Int                      @id @default(autoincrement())
+  log_id          Int                      // References service_logs.id
+  service         String                   @db.VarChar(50)
+  analysis_id     Int                
+  analyzed_at     DateTime                 @default(now()) @db.Timestamptz(6)
+  analysis        ai_service_log_analyses  @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+  
+  @@unique([log_id, analysis_id])
+  @@index([log_id])
+  @@index([analysis_id])
+  @@index([service])
+  @@map("ai_analyzed_service_logs")
 }
 
 // Service logs for tracking service-specific events and states

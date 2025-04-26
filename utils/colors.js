@@ -12,8 +12,10 @@ export const fancyColors = {
   // Foreground colors
   BLUE: '\x1b[38;5;21m',
   GREEN: '\x1b[38;5;46m',
+  BRIGHT_GREEN: '\x1b[38;5;118m',
   YELLOW: '\x1b[38;5;226m',
   RED: '\x1b[38;5;196m',
+  BRIGHT_RED: '\x1b[38;5;197m',
   CYAN: '\x1b[38;5;51m',
   NEON: '\x1b[38;5;207m',
   MAGENTA: '\x1b[38;5;201m',
@@ -338,7 +340,55 @@ export const serviceSpecificColors = {
   },
   
   // =============================================================
-  // 4. YELLOW/ORANGE FAMILY - Analytics & Tracking
+  // 4. MAGENTA/PINK FAMILY - Contest Services
+  // =============================================================
+  
+  // Contest Evaluation Service - Light Pink
+  contestEvaluation: {
+    tag: '\x1b[1m\x1b[38;5;218m',                   // Light Pink (218)
+    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;218m',  // White on Light Pink background
+    info: '\x1b[38;5;218m',                         // Regular Light Pink
+    success: '\x1b[38;5;218m',                      // Light Pink instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;218m',             // Bold Light Pink
+  },
+  
+  // Contest Scheduler Service - Pink
+  contestScheduler: {
+    tag: '\x1b[1m\x1b[38;5;211m',                   // Pink (211)
+    header: '\x1b[1m\x1b[38;5;211m\x1b[48;5;236m',  // Pink on dark gray
+    info: '\x1b[38;5;211m',                         // Regular Pink
+    success: '\x1b[38;5;211m',                      // Pink instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;211m',             // Bold Pink
+  },
+  
+  // Contest Core Service - Hot Pink
+  contestService: {
+    tag: '\x1b[1m\x1b[38;5;198m',                   // Hot Pink (198)
+    header: '\x1b[1m\x1b[38;5;198m\x1b[48;5;236m',  // Hot Pink on dark gray
+    info: '\x1b[38;5;198m',                         // Regular Hot Pink
+    success: '\x1b[38;5;198m',                      // Hot Pink instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;198m',             // Bold Hot Pink
+  },
+  
+  // Contest Image Service - Turquoise (AI Service)
+  contestImage: {
+    tag: '\x1b[1m\x1b[38;5;43m',                    // Turquoise (43) - like AI Service
+    header: '\x1b[1m\x1b[38;5;43m\x1b[48;5;236m',   // Turquoise on dark gray
+    info: '\x1b[38;5;43m',                          // Regular Turquoise
+    success: '\x1b[38;5;43m',                       // Turquoise instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;43m',              // Bold Turquoise
+  },
+  
+  // =============================================================
+  // 5. YELLOW/ORANGE FAMILY - Analytics & Tracking
   // =============================================================
   
   // Balance Tracking - Dark Yellow with subtle background
@@ -391,21 +441,21 @@ export const serviceSpecificColors = {
   },
   
   discord: {
-    tag: '\x1b[1m\x1b[38;5;102m',                   // Slate Gray (102)
-    header: '\x1b[1m\x1b[38;5;102m\x1b[48;5;236m',  // Slate Gray on dark gray
-    info: '\x1b[38;5;102m',                         // Regular Slate Gray
-    success: '\x1b[38;5;102m',                      // Slate Gray instead of green
+    tag: '\x1b[1m\x1b[38;5;105m',                   // Steel Blue-Purple (105)
+    header: '\x1b[1m\x1b[38;5;105m\x1b[48;5;236m',  // Steel Blue-Purple on dark gray
+    info: '\x1b[38;5;105m',                         // Regular Steel Blue-Purple
+    success: '\x1b[38;5;105m',                      // Steel Blue-Purple instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
-    highlight: '\x1b[1m\x1b[38;5;102m',             // Bold Slate Gray
+    highlight: '\x1b[1m\x1b[38;5;105m',             // Bold Steel Blue-Purple
   },
   
   // Legacy service - keeping for backward compatibility
   ddcomment: {
-    tag: '\x1b[1m\x1b[38;5;102m',                   // Slate Gray (102) - matching discord
-    header: '\x1b[1m\x1b[38;5;102m\x1b[48;5;236m',  // Slate Gray on dark gray
-    info: '\x1b[38;5;102m',                         // Regular Slate Gray
-    success: '\x1b[38;5;102m',                      // Slate Gray instead of green
+    tag: '\x1b[1m\x1b[38;5;105m',                   // Steel Blue-Purple (105) - matching discord
+    header: '\x1b[1m\x1b[38;5;105m\x1b[48;5;236m',  // Steel Blue-Purple on dark gray
+    info: '\x1b[38;5;105m',                         // Regular Steel Blue-Purple
+    success: '\x1b[38;5;105m',                      // Steel Blue-Purple instead of green
     warning: '\x1b[38;5;214m',                      // Standard orange
     error: '\x1b[38;5;196m',                        // Standard red
   }

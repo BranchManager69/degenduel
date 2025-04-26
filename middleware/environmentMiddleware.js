@@ -62,48 +62,130 @@ export const environmentMiddleware = (req, res, next) => {
                     req.connection.remoteAddress || 'no-ip';
     const userAgent = req.headers['user-agent'] || 'no-ua';
     
-    // Extract useful device info from user agent
-    let deviceInfo = '';
+    // Extract OS, browser, and device type info from user agent
+    let osInfo = '';
+    let browserInfo = '';
+    let deviceTypeEmoji = '💻'; // Default to desktop emoji
+    let osEmoji = '❓';        // Default OS emoji
+    let browserEmoji = '❓';   // Default browser emoji
+    
     if (userAgent) {
-      // Detect iOS, Android, Windows, Mac, etc.
+      // Detect device type first (mobile vs desktop)
+      const isMobile = /Mobile|Android|iPhone|iPad|iPod|Windows Phone|IEMobile/i.test(userAgent);
+      deviceTypeEmoji = isMobile ? '📱' : '💻';
+      
+      // Detect OS with version and assign emoji
       if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
         const iosMatch = userAgent.match(/OS (\d+[._]\d+)/);
-        deviceInfo = iosMatch ? `iOS ${iosMatch[1].replace('_', '.')}` : 'iOS';
+        osInfo = iosMatch ? `iOS ${iosMatch[1].replace('_', '.')}` : 'iOS';
+        osEmoji = '🍎'; // Apple emoji for iOS
       } else if (userAgent.includes('Android')) {
         const androidMatch = userAgent.match(/Android (\d+(\.\d+)?)/);
-        deviceInfo = androidMatch ? `Android ${androidMatch[1]}` : 'Android';
+        osInfo = androidMatch ? `Android ${androidMatch[1]}` : 'Android';
+        osEmoji = '🤖'; // Robot emoji for Android
       } else if (userAgent.includes('Windows')) {
-        deviceInfo = 'Windows';
+        osInfo = 'Windows';
+        osEmoji = '🪟'; // Window emoji for Windows
       } else if (userAgent.includes('Mac OS X')) {
-        deviceInfo = 'macOS';
+        osInfo = 'macOS';
+        osEmoji = '🍎'; // Apple emoji for macOS
       } else if (userAgent.includes('Linux')) {
-        deviceInfo = 'Linux';
+        osInfo = 'Linux';
+        osEmoji = '🐧'; // Penguin emoji for Linux (Tux)
+      } else {
+        osInfo = 'Unknown OS';
+        osEmoji = '❓'; // Question mark for unknown OS
       }
       
-      // Add browser info
-      if (userAgent.includes('Chrome')) {
-        deviceInfo += ' Chrome';
-      } else if (userAgent.includes('Safari')) {
-        deviceInfo += ' Safari';
+      // Detect browser separately and assign emoji
+      if (userAgent.includes('Chrome') && !userAgent.includes('Edge')) {
+        browserInfo = 'Chrome';
+        browserEmoji = '🌐'; // Globe with meridians for Chrome
+      } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+        browserInfo = 'Safari';
+        browserEmoji = '🧭'; // Compass emoji for Safari
       } else if (userAgent.includes('Firefox')) {
-        deviceInfo += ' Firefox';
+        browserInfo = 'Firefox';
+        browserEmoji = '🦊'; // Fox emoji for Firefox
       } else if (userAgent.includes('Edge')) {
-        deviceInfo += ' Edge';
+        browserInfo = 'Edge';
+        browserEmoji = '💠'; // Diamond with dot for Edge
+      } else if (userAgent.includes('MSIE') || userAgent.includes('Trident/')) {
+        browserInfo = 'IE';
+        browserEmoji = '🔄'; // Arrows in circle for Internet Explorer (legacy)
+      } else {
+        browserInfo = 'Unknown Browser';
+        browserEmoji = '❓'; // Question mark for unknown browser
       }
     }
     
-    // Use dark gray color for environment logs (not green)
-    logApi.info(
-      `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${req.method} ${req.originalUrl || req.url} - ${deviceInfo} - ${clientIp}`, 
-      { 
+    // Format method and path with colors
+    const methodColor = req.method === 'GET' ? fancyColors.BLUE : 
+                        req.method === 'POST' ? fancyColors.GREEN :
+                        req.method === 'PUT' ? fancyColors.YELLOW :
+                        req.method === 'DELETE' ? fancyColors.RED : fancyColors.CYAN;
+                        
+    const formattedMethod = `${methodColor}${req.method}${fancyColors.RESET}`;
+    const formattedPath = `${fancyColors.BOLD}${req.originalUrl || req.url}${fancyColors.RESET}`;
+    
+    // Format OS and browser info
+    const formattedOS = osInfo ? `${fancyColors.CYAN}${osInfo}${fancyColors.RESET}` : '';
+    const formattedBrowser = browserInfo ? `${fancyColors.PURPLE}${browserInfo}${fancyColors.RESET}` : '';
+    
+    // Format IP clearly
+    const formattedIP = `${fancyColors.YELLOW}${clientIp}${fancyColors.RESET}`;
+    
+    // Use the IPInfo service to get location data (if available in logApi)
+    if (typeof logApi.getIpInfo === 'function') {
+      try {
+        // Use the existing getIpInfo function to avoid duplicating logic
+        logApi.getIpInfo(clientIp).then(ipInfo => {
+          let locationInfo = '';
+          
+          // Only add location if we have valid data
+          if (ipInfo && !ipInfo.bogon && !ipInfo.error) {
+            locationInfo = `${ipInfo.city || ''}${ipInfo.region ? ', ' + ipInfo.region : ''}${ipInfo.country ? ' (' + ipInfo.country + ')' : ''}`;
+          }
+          
+          // Format the final log with vertical bars and proper spacing (all on one line)
+          const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}${locationInfo ? ' 🌎' + locationInfo : ''}`;
+          
+          // Send the log with minimal metadata in the JSON
+          logApi.info(logMessage, { 
+            environment,
+            origin: req.headers.origin || 'internal',
+            path: req.originalUrl || req.url
+          });
+        }).catch(() => {
+          // If IPInfo fails, fall back to a simpler log without location
+          const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}`;
+          
+          logApi.info(logMessage, { 
+            environment,
+            origin: req.headers.origin || 'internal',
+            path: req.originalUrl || req.url
+          });
+        });
+      } catch (error) {
+        // Fallback if getIpInfo fails completely
+        const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}`;
+        
+        logApi.info(logMessage, { 
+          environment,
+          origin: req.headers.origin || 'internal',
+          path: req.originalUrl || req.url
+        });
+      }
+    } else {
+      // If IPInfo service isn't available, use the simple format
+      const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}`;
+      
+      logApi.info(logMessage, { 
         environment,
         origin: req.headers.origin || 'internal',
-        path: req.originalUrl || req.url,
-        method: req.method,
-        ip: clientIp,
-        userAgent
-      }
-    );
+        path: req.originalUrl || req.url
+      });
+    }
     
     // Add to seen origins
     seenOrigins.add(requestKey);

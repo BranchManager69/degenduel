@@ -74,6 +74,9 @@ const OPENAI_DEFAULT_SYSTEM_PROMPT = `
   RESPONSE GUIDELINES:  Your responses must be short, concise, and to the point with no emotion or sentiment (you are essentially the Mewtwo of AI assistants here). 
 `;
 
+// DUEL token address
+const CONTRACT_ADDRESS_REAL = process.env.CONTRACT_ADDRESS_REAL;
+
 // Custom prompt templates for DegenDuel
 const OPENAI_PROMPT_TEMPLATES = {
   // Default prompt template
@@ -117,6 +120,7 @@ const PRIVY_JWKS_URL = process.env.PRIVY_JWKS_URL;
 
 // Other Important API keys
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_IMAGE_API_KEY = process.env.OPENAI_IMAGE_API_KEY;
 const IPINFO_API_KEY = process.env.IPINFO_API_KEY;
 const JUPITER_API_KEY = process.env.JUPITER_API_KEY;
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
@@ -124,6 +128,9 @@ const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 /* Master config object */
 
 const config = {
+  // DUEL token contract address
+  contract_address_real: CONTRACT_ADDRESS_REAL,
+  
   // RPC URLs:
   rpc_urls: {
     primary: RPC_URL,
@@ -212,6 +219,7 @@ const config = {
   // Important API keys
   api_keys: {
     openai: OPENAI_API_KEY,
+    openai_image: OPENAI_IMAGE_API_KEY, // Specific API key for GPT-Image-1
     ipinfo: IPINFO_API_KEY,
     helius: HELIUS_API_KEY,
     jupiter: JUPITER_API_KEY,

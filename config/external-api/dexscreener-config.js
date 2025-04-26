@@ -56,10 +56,10 @@ const getHeaders = () => ({
 
 // Rate limiting configuration based on documentation
 const rateLimit = {
-  // Standard rate limit (60 req/min)
+  // Standard rate limit (60 req/min) - 1 req per second
   standardEndpoints: {
-    maxRequestsPerMinute: 60,
-    delayBetweenRequests: 1050, // Slightly over 1 second to be safe
+    maxRequestsPerMinute: 58, // Keep slightly under the limit to be safe (58 instead of 60)
+    delayBetweenRequests: 50, // Much more aggressive - only 50ms between requests
     endpoints: [
       'tokenProfiles.getLatest',
       'tokenBoosts.getLatest',
@@ -68,10 +68,10 @@ const rateLimit = {
     ]
   },
   
-  // Enhanced rate limit (300 req/min)
+  // Enhanced rate limit (300 req/min) - 5 req per second
   enhancedEndpoints: {
-    maxRequestsPerMinute: 300,
-    delayBetweenRequests: 210, // Slightly over 200ms to be safe
+    maxRequestsPerMinute: 290, // Keep slightly under the limit to be safe (290 instead of 300)
+    delayBetweenRequests: 20, // Extremely aggressive - only 20ms between requests
     endpoints: [
       'pairs.getByPair',
       'pairs.search',
@@ -81,9 +81,9 @@ const rateLimit = {
   
   // Common configuration
   batchingEnabled: true,
-  batchFailureBackoffMs: 2000,
-  maxBackoffMs: 60000,
-  backoffFactor: 2.0,
+  batchFailureBackoffMs: 1000, // Reduce from 2000ms to 1000ms
+  maxBackoffMs: 10000, // Reduce from 60000ms to 10000ms - more aggressive retry
+  backoffFactor: 1.5, // Less aggressive backoff factor
 };
 
 // Export the DexScreener configuration

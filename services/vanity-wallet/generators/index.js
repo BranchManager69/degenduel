@@ -33,7 +33,7 @@ class VanityWalletGeneratorManager {
   }
   
   /**
-   * Submit a new vanity wallet generation job
+   * Add a new vanity wallet generation job to the processing queue
    * 
    * @param {Object} jobConfig Job configuration
    * @param {string} jobConfig.id Unique job ID
@@ -44,7 +44,7 @@ class VanityWalletGeneratorManager {
    * @param {Function} onProgress Optional callback function for progress updates
    * @returns {Promise<Object>} Job information
    */
-  async submitJob(jobConfig, onComplete, onProgress) {
+  async addJob(jobConfig, onComplete, onProgress) {
     if (!jobConfig.id) {
       throw new Error('Job ID is required');
     }
@@ -80,8 +80,10 @@ class VanityWalletGeneratorManager {
     };
     
     // Submit to local generator
-    if (!this.localGenerator.addJob(job)) {
-      throw new Error(`Failed to add job ${jobConfig.id} to generator`);
+    try {
+      this.localGenerator.addJob(job);
+    } catch (error) {
+      throw new Error(`Failed to add job ${jobConfig.id} to generator: ${error.message}`);
     }
     
     logApi.info(`${fancyColors.MAGENTA}[VanityGeneratorManager]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Submitted ${fancyColors.RESET} Job ${jobConfig.id} for pattern ${jobConfig.pattern}`);
@@ -185,6 +187,21 @@ class VanityWalletGeneratorManager {
     }
     
     return instance;
+  }
+  
+  /**
+   * Legacy method for compatibility
+   * @deprecated Use addJob instead
+   * @param {Object} jobConfig - Job configuration 
+   * @param {Function} onComplete - Callback function when job completes
+   * @param {Function} onProgress - Optional callback function for progress updates
+   * @returns {Promise<Object>} Job information
+   */
+  async submitJob(jobConfig, onComplete, onProgress) {
+    logApi.warn(`${fancyColors.MAGENTA}[VanityGeneratorManager]${fancyColors.RESET} ${fancyColors.YELLOW}DEPRECATED: submitJob is deprecated, use addJob instead${fancyColors.RESET}`);
+    
+    // Forward to the standardized method
+    return this.addJob(jobConfig, onComplete, onProgress);
   }
 }
 

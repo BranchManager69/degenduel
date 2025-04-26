@@ -83,8 +83,15 @@ async function getTokenConfig(forceRefresh = false) {
  * @returns {Promise<string|null>} - The token contract address or null if not found
  */
 async function getTokenAddress(forceRefresh = false) {
-  const config = await getTokenConfig(forceRefresh);
-  return config?.address || null;
+  // First try to get from database config (preferred method)
+  const dbConfig = await getTokenConfig(forceRefresh);
+  if (dbConfig?.address) {
+    return dbConfig.address;
+  }
+  
+  // Fall back to the config.js if database doesn't have it
+  const mainConfig = await import('../config/config.js');
+  return mainConfig.default.contract_address_real || null;
 }
 
 /**

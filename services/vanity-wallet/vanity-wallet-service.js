@@ -14,6 +14,7 @@ import config from '../../config/config.js';
 import VanityApiClient from './vanity-api-client.js';
 import { BaseService } from '../../utils/service-suite/base-service.js';
 import { exec } from 'child_process';
+import VanityWalletGeneratorManager from './generators/index.js';
 
 class VanityWalletService extends BaseService {
   constructor() {
@@ -39,6 +40,13 @@ class VanityWalletService extends BaseService {
     
     // Service interval for checkAndGenerateAddresses
     this.checkAndGenerateInterval = null;
+    
+    // Use the same generator instance as VanityApiClient for consistency
+    this.generator = VanityWalletGeneratorManager.getInstance({
+      numWorkers: config.vanityWallet?.numWorkers || undefined,
+      batchSize: config.vanityWallet?.batchSize || undefined,
+      maxAttempts: config.vanityWallet?.maxAttempts || undefined
+    });
   }
   
   /**
@@ -478,12 +486,25 @@ class VanityWalletService extends BaseService {
             await this.generateVanityAddress(pattern);
           }
         } else {
-          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.success}Have enough ${pattern} addresses (${count} available + ${pendingCount} pending, target: ${target})${fancyColors.RESET}`);
+          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.success}Target met: ${pendingCount}/${target} ${pattern} jobs in progress${fancyColors.RESET}`);
         }
       }
       
-      // Log current status
-      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.info}Current vanity wallet status: DUEL: ${counts.DUEL || 0}, DEGEN: ${counts.DEGEN || 0}${fancyColors.RESET}`);
+      // Log current status with clear separation between available and pending
+      // Get pending counts for each pattern - using same query as above
+      const duelPendingCount = await prisma.vanity_wallet_pool.count({
+        where: {
+          pattern: "DUEL",
+          status: { in: ['pending', 'processing'] }
+        }
+      });
+      const degenPendingCount = await prisma.vanity_wallet_pool.count({
+        where: {
+          pattern: "DEGEN",
+          status: { in: ['pending', 'processing'] }
+        }
+      });
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.info}Available addresses: DUEL: ${counts.DUEL || 0}, DEGEN: ${counts.DEGEN || 0} | Pending jobs: DUEL: ${duelPendingCount || 0}, DEGEN: ${degenPendingCount || 0}${fancyColors.RESET}`);
     } catch (error) {
       logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Checking and generating addresses: ${error.message}`, {
         error: error.message,
@@ -504,14 +525,17 @@ class VanityWalletService extends BaseService {
       // Start the generation process
       logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Starting generation of ${pattern} address`);
       
-      // Create the request
-      await VanityApiClient.createVanityAddressRequest({
+      // Create the request, which will automatically be processed by the generator
+      // Since we're now using the same generator instance, we don't need to submit it separately
+      const dbRecord = await VanityApiClient.createVanityAddressRequest({
         pattern,
         isSuffix: false,
         caseSensitive: true,
         requestedBy: 'vanity_wallet_service',
         requestIp: '127.0.0.1'
       });
+      
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Submitted ${fancyColors.RESET} Job #${dbRecord.id} for pattern ${pattern}`);
       
       // The VanityApiClient will handle the rest (generation, encryption, storage)
     } catch (error) {

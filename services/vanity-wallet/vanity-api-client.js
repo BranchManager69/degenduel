@@ -84,7 +84,7 @@ class VanityApiClient {
         });
         
         // Start the job with the local generator
-        await generatorManager.submitJob(
+        await generatorManager.addJob(
           {
             id: dbRecord.id.toString(),
             pattern,

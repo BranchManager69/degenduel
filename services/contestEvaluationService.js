@@ -107,7 +107,7 @@ class ContestEvaluationService extends BaseService {
     constructor() {
         // Add logging before super call
         if (VERBOSE_CONTEST_EVALUATION_INIT) {
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Initializing Contest Evaluation Service with config:${fancyColors.RESET}`, {
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Initializing Contest Evaluation Service with config:`, {
                 name: SERVICE_NAMES.CONTEST_EVALUATION,
                 config: CONTEST_EVALUATION_CONFIG
             });
@@ -118,7 +118,7 @@ class ContestEvaluationService extends BaseService {
         
         // Add logging after super call
         if (VERBOSE_CONTEST_EVALUATION_INIT) {
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest Evaluation Service base initialization complete:${fancyColors.RESET}`, {
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Contest Evaluation Service base initialization complete:`, {
                 name: this.name,
                 config: this.config
             });
@@ -129,7 +129,7 @@ class ContestEvaluationService extends BaseService {
         // This provides better resource management and centralized error handling
         
         // Log integration with SolanaEngine
-        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.WHITE} 🌐 ${fancyColors.BG_DARK_BLACK} Using SolanaEngine for Solana RPC access ${fancyColors.RESET}`);
+        logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.WHITE} 🌐 Using SolanaEngine for Solana RPC access`);
 
         // Initialize service-specific stats
         this.evaluationStats = {
@@ -204,7 +204,7 @@ class ContestEvaluationService extends BaseService {
             
             // Only update if different from current interval
             if (this.config.checkIntervalMs !== configuredInterval) {
-                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.BLACK} INTERVAL UPDATED ${fancyColors.RESET} ${fancyColors.CYAN}${this.config.checkIntervalMs}ms → ${configuredInterval}ms${fancyColors.RESET}`);
+                logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.BLACK} INTERVAL UPDATED ${fancyColors.RESET} ${fancyColors.CYAN}${this.config.checkIntervalMs}ms → ${configuredInterval}ms${fancyColors.RESET}`);
                 
                 // Update the config
                 this.config.checkIntervalMs = configuredInterval;
@@ -220,7 +220,7 @@ class ContestEvaluationService extends BaseService {
             }
         } catch (error) {
             // Don't let errors in interval checking break the service
-            logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Error checking for interval updates:${fancyColors.RESET}`, {
+            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Error checking for interval updates:${fancyColors.RESET}`, {
                 error: error.message
             });
         }
@@ -238,7 +238,7 @@ class ContestEvaluationService extends BaseService {
         try {
             // Check if service is enabled via service profile
             if (!config.services.contest_evaluation) {
-                logApi.warn(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Contest Evaluation Service is disabled in the '${config.services.active_profile}' service profile`);
+                logApi.warn(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Contest Evaluation Service is disabled in the '${config.services.active_profile}' service profile`);
                 return false; // Skip initialization
             }
             
@@ -247,7 +247,7 @@ class ContestEvaluationService extends BaseService {
             
             // Check SolanaEngine dependency first - using same pattern as contest-wallet service
             if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
-                logApi.warn(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} INITIALIZING SOLANAENGINE ${fancyColors.RESET} SolanaEngine was not initialized, attempting to initialize it now`);
+                logApi.warn(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} INITIALIZING SOLANAENGINE ${fancyColors.RESET} SolanaEngine was not initialized, attempting to initialize it now`);
                 await solanaEngine.initialize();
                 
                 // Check again after initialization
@@ -255,7 +255,7 @@ class ContestEvaluationService extends BaseService {
                     throw ServiceError.initialization('Failed to initialize SolanaEngine');
                 }
                 
-                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SOLANAENGINE READY ${fancyColors.RESET} SolanaEngine initialized successfully`);
+                logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SOLANAENGINE READY ${fancyColors.RESET} SolanaEngine initialized successfully`);
             }
             
             // Check other dependencies
@@ -313,7 +313,7 @@ class ContestEvaluationService extends BaseService {
 
             // Log initialization details
             if (VERBOSE_CONTEST_EVALUATION_INIT) {
-                logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest Evaluation Service initialized:${fancyColors.RESET}`, {
+                logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Contest Evaluation Service initialized:`, {
                     activeContests,
                     completedContests,
                     cancelledContests
@@ -322,7 +322,7 @@ class ContestEvaluationService extends BaseService {
 
             return true;
         } catch (error) {
-            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Contest Evaluation Service initialization error:${fancyColors.RESET}`, {
+            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Contest Evaluation Service initialization error:${fancyColors.RESET}`, {
                 error: error.message
             });
             await this.handleError(error);
@@ -373,9 +373,9 @@ class ContestEvaluationService extends BaseService {
                 }
             );
             
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest Evaluation Service stopped successfully${fancyColors.RESET}`);
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Contest Evaluation Service stopped successfully`);
         } catch (error) {
-            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Error stopping Contest Evaluation Service:${fancyColors.RESET}`, {
+            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Error stopping Contest Evaluation Service:${fancyColors.RESET}`, {
                 error: error.message
             });
             throw error;
@@ -451,13 +451,13 @@ class ContestEvaluationService extends BaseService {
             );
             
             // Log successful transaction
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD_GREEN}Transaction successful:${fancyColors.RESET} Sent ${amount} SOL to ${recipientAddress.substring(0, 6)}...${recipientAddress.substring(recipientAddress.length - 4)}, signature: ${result.signature}`);
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD_GREEN}Transaction successful:${fancyColors.RESET} Sent ${amount} SOL to ${recipientAddress.substring(0, 6)}...${recipientAddress.substring(recipientAddress.length - 4)}, signature: ${result.signature}`);
             
             // Return only the signature string as expected by calling methods
             return result.signature;
         } catch (error) {
             // Proper error handling with blockchain service error category
-            logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Transaction failed:${fancyColors.RESET} ${error.message}`);
+            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Transaction failed:${fancyColors.RESET} ${error.message}`);
             
             throw ServiceError.blockchain('Blockchain transfer failed', {
                 error: error.message,
@@ -1111,7 +1111,7 @@ class ContestEvaluationService extends BaseService {
                 'cancelled': '\x1b[31m'  // red
             }[status] || '\x1b[0m';     // default/reset
 
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest Status Change: ${contestName}${fancyColors.RESET}`, {
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Contest Status Change: ${contestName}`, {
                 contest_id: contestId,
                 previous_status: `${statusColor}${previousStatus}\x1b[0m`,
                 new_status: `${statusColor}${status}\x1b[0m`,
@@ -1157,7 +1157,7 @@ class ContestEvaluationService extends BaseService {
         return this.cancelContest(
             contest,
             this.config.states.COMPLETED,
-            `${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest ${contest.contest_name} completed with no participants${fancyColors.RESET}`,
+            `Contest ${contest.contest_name} completed with no participants`,
             AdminLogger.Actions.CONTEST.END
         );
     }
@@ -1174,7 +1174,7 @@ class ContestEvaluationService extends BaseService {
         return this.cancelContest(
             contest,
             this.config.states.CANCELLED,
-            `${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest cancelled due to insufficient participants (${actualCount}/${requiredCount})${fancyColors.RESET}`,
+            `Contest cancelled due to insufficient participants (${actualCount}/${requiredCount})`,
             AdminLogger.Actions.CONTEST.CANCEL,
             {
                 required_participants: requiredCount,
@@ -1238,7 +1238,7 @@ class ContestEvaluationService extends BaseService {
             totalPrizeNeeded.add(platformFeeAmount).toNumber()
         );
 
-        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON} Contest wallet balance validated ${fancyColors.RESET}`, {
+        logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Contest wallet balance validated`, {
             contest_id: contest.id,
             wallet: contestWallet.wallet_address,
             actualPrizePool: actualPrizePool.toString(),
@@ -1329,7 +1329,7 @@ class ContestEvaluationService extends BaseService {
         });
 
         // Log platform fee recording
-        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Platform fee recorded for Contest ${contest.id}. The Solana balance is awaiting collection by the Rake Service${fancyColors.RESET}`, {
+        logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Platform fee recorded for Contest ${contest.id}. The Solana balance is awaiting collection by the Rake Service`, {
             contest_id: contest.id,
             amount: platformFeeAmount.toString()
         });
@@ -1357,7 +1357,7 @@ class ContestEvaluationService extends BaseService {
             }
         );
 
-        logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Contest ${contest.id} evaluated successfully${fancyColors.RESET}`, {
+        logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Contest ${contest.id} evaluated successfully`, {
             prizeDistributions: prizeDistributionResults,
             platformFee: platformFeeAmount.toString()
         });
@@ -1378,7 +1378,7 @@ class ContestEvaluationService extends BaseService {
             
             // Explicitly reject zero-value refunds
             if (refundAmount.equals(0)) {
-                logApi.error(`${fancyColors.DARK_CYAN}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${fancyColors.RED}Cannot process zero-value refund:${fancyColors.RESET}`, {
+                logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ERROR ${fancyColors.RESET} ${fancyColors.RED}Cannot process zero-value refund:${fancyColors.RESET}`, {
                     contest_id: contest.id,
                     wallet_address: participant.wallet_address,
                     contest_code: contest.contest_code
@@ -1449,7 +1449,7 @@ class ContestEvaluationService extends BaseService {
 
             return { success: true, signature };
         } catch (error) {
-            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Refund failed:${fancyColors.RESET}`, {
+            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Refund failed:${fancyColors.RESET}`, {
                 error: error.message,
                 participant: participant.wallet_address,
                 contest: contest.id,
@@ -1517,7 +1517,7 @@ class ContestEvaluationService extends BaseService {
             await this.validateContestWalletBalance(contestWallet, totalRefundAmount.toNumber());
 
             // Log the contest refund validation
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.NEON}${fancyColors.BOLD}Contest wallet balance${fancyColors.RESET}${fancyColors.NEON} validated as sufficient to issue ${fancyColors.BOLD}${participants.length}${fancyColors.RESET} ${fancyColors.NEON}refunds${fancyColors.BG_YELLOW}${fancyColors.RESET}`, {
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD}Contest wallet balance validated as sufficient to issue ${fancyColors.BOLD}${participants.length}${fancyColors.RESET} refunds`, {
                 contest_id: contest.id,
                 wallet: contestWallet.wallet_address,
                 total_refund_amount: totalRefundAmount.toString()
@@ -1562,7 +1562,7 @@ class ContestEvaluationService extends BaseService {
                 results
             };
         } catch (error) {
-            logApi.error(`${fancyColors.BG_RED}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_RED}Failed to process contest refunds:${fancyColors.RESET}`, {
+            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Failed to process contest refunds:${fancyColors.RESET}`, {
                 error: error.message
             });
             throw error;
@@ -1591,9 +1591,9 @@ class ContestEvaluationService extends BaseService {
         // Find and process contests that should start
         const contestsToStart = await this.findContestsToStart(now);
         if (contestsToStart.length > 0) {
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Found ${fancyColors.BOLD}${contestsToStart.length}${fancyColors.RESET}${fancyColors.BG_NEON} pending contests${fancyColors.RESET}`);
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Found ${fancyColors.BOLD}${contestsToStart.length}${fancyColors.RESET} pending contests`);
         } else {
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}No pending contests to ${fancyColors.BOLD}start${fancyColors.RESET}`);
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} No pending contests to ${fancyColors.BOLD}start${fancyColors.RESET}`);
         }
         
         // Process each contest that should start
@@ -1612,7 +1612,7 @@ class ContestEvaluationService extends BaseService {
                 }
             } catch (error) {
                 // Log the error
-                logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to process contest ${contest.id} start:${fancyColors.RESET}`, error);
+                logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Failed to process contest ${contest.id} start:${fancyColors.RESET}`, error);
                 // Increment the failures count
                 results.failures++;
                 // Increment the failed operations count
@@ -1624,10 +1624,10 @@ class ContestEvaluationService extends BaseService {
         const contestsToEnd = await this.findContestsToEnd(now);
         if (contestsToEnd.length > 0) {
             // Log the number of active contests due to end
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Found ${fancyColors.BOLD}${contestsToEnd.length}${fancyColors.RESET}${fancyColors.BG_NEON} active contests due to end ${fancyColors.RESET}`);
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Found ${fancyColors.BOLD}${contestsToEnd.length}${fancyColors.RESET} active contests due to end`);
         } else {
             // No active contests due to end
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}No active contests to ${fancyColors.BOLD}end${fancyColors.RESET}`);
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} No active contests to ${fancyColors.BOLD}end${fancyColors.RESET}`);
         }
         
         for (const contest of contestsToEnd) {
@@ -1638,7 +1638,7 @@ class ContestEvaluationService extends BaseService {
                 results.contestsEnded++;
             } catch (error) {
                 // Log the error
-                logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to evaluate contest ${contest.id}:${fancyColors.RESET}`, error);
+                logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Failed to evaluate contest ${contest.id}:${fancyColors.RESET}`, error);
                 // Increment the failures count
                 results.failures++;
                 // Increment the failed operations count
@@ -1693,7 +1693,7 @@ class ContestEvaluationService extends BaseService {
 
     // This is just a helper method for logging
     logCompletionMessage() {
-        return `${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA}Contest Evaluation Service completed task${fancyColors.RESET}`;
+        return `${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Contest Evaluation Service completed task`;
     }
 
     // Helper methods for performOperation
@@ -1760,7 +1760,7 @@ class ContestEvaluationService extends BaseService {
             });
 
             // Log contest status change (start)
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_LIGHT_MAGENTA}Contest Status Change:${fancyColors.RESET} ${fancyColors.BOLD}${contest.contest_name || `Contest #${contest.id}`}${fancyColors.RESET}`, {
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Contest Status Change: ${fancyColors.BOLD}${contest.contest_name || `Contest #${contest.id}`}${fancyColors.RESET}`, {
                 contest_id: contest.id,
                 previous_status: `\x1b[33m${previousStatus}\x1b[0m`, // yellow for previous
                 new_status: `\x1b[32mactive\x1b[0m`, // green for active
@@ -1788,7 +1788,7 @@ class ContestEvaluationService extends BaseService {
             return true;
         } catch (error) {
             // Log the error
-            logApi.error(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}Failed to start contest ${contest.id}:${fancyColors.RESET}`, error);
+            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Failed to start contest ${contest.id}:${fancyColors.RESET}`, error);
             throw error;
         }
     }
@@ -1843,7 +1843,7 @@ class ContestEvaluationService extends BaseService {
         // Process refunds if there were participants
         if (cancellationResult && contest.contest_participants && contest.contest_participants.length > 0) {
             // Log the refund initiation
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Initiating refund process for auto-cancelled insufficient-participants contest ${contest.id}${fancyColors.RESET}`);
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Initiating refund process for auto-cancelled insufficient-participants contest ${contest.id}`);
             // Process the refunds
             this.processContestRefunds(contest)
                 .catch(error => {
@@ -1883,7 +1883,7 @@ class ContestEvaluationService extends BaseService {
         // Process refunds if there are participants
         if (cancellationResult && contest.contest_participants && contest.contest_participants.length > 0) {
             // Log the refund initiation
-            logApi.info(`${fancyColors.MAGENTA}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_NEON}Initiating refund process for auto-cancelled single-participant contest ${contest.id}${fancyColors.RESET}`);
+            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} Initiating refund process for auto-cancelled single-participant contest ${contest.id}`);
             // Process the refunds
             this.processContestRefunds(contest)
                 .catch(error => {
@@ -1974,7 +1974,7 @@ class ContestEvaluationService extends BaseService {
             };
         } catch (error) {
             // Log the error
-            logApi.error(`${fancyColors.DARK_CYAN}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} EVALUATION FAILED ${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`, error);
+            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} EVALUATION FAILED ${fancyColors.RESET} ${fancyColors.RED}${error.message}${fancyColors.RESET}`, error);
             throw error;
         }
     }
@@ -1993,7 +1993,7 @@ class ContestEvaluationService extends BaseService {
                 const tiebreakStats = await this.getParticipantTiebreakStats(participant, contest);
                 
                 // Log the tiebreak details
-                logApi.info(`${fancyColors.DARK_CYAN}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} TIEBREAK ${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}Details for participant in contest ${contest.id}${fancyColors.RESET}`, {
+                logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BG_DARK_CYAN}${fancyColors.WHITE} TIEBREAK ${fancyColors.RESET} ${fancyColors.LIGHT_CYAN}Details for participant in contest ${contest.id}${fancyColors.RESET}`, {
                     contest_id: contest.id,
                     wallet_address: participant.wallet_address,
                     tiebreak_metrics: {

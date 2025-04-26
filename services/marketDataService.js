@@ -1367,7 +1367,7 @@ class MarketDataService extends BaseService {
                     const volume = token.daily_volume ? `$${parseFloat(token.daily_volume).toLocaleString()}` : 'unknown volume';
                     return `${symbol} (price: ${price}, volume: ${volume})`;
                 });
-                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} TOP TOKENS ${fancyColors.RESET} Current top 3 by volume/relevance: ${top3Tokens.join(' | ')}`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} TOP TOKENS ${fancyColors.RESET} Current top 3 by volume/relevance: ${top3Tokens.join(' | ')}`);
             }
             
             // Track entrances, exits, and rank changes from the top token list
@@ -1707,7 +1707,7 @@ class MarketDataService extends BaseService {
             const totalBatches = Math.ceil(tokenSubset.length / batchSize);
             const totalGroups = Math.ceil(totalBatches / PARALLEL_BATCHES_JUPITER_API);
             // Log optimization details
-            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} OPTIMIZATION ${fancyColors.RESET} Processing ${totalBatches} batches in ${totalGroups} parallel groups (${PARALLEL_BATCHES_JUPITER_API} batches per group)`);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} OPTIMIZATION ${fancyColors.RESET} Processing ${totalBatches} batches in ${totalGroups} parallel groups (${PARALLEL_BATCHES_JUPITER_API} batches per group)`);
             
             // Process batches in groups of PARALLEL_BATCHES_JUPITER_API (Jupiter's rate limit)
             for (let groupIndex = 0; groupIndex < totalGroups; groupIndex++) {
@@ -1718,7 +1718,7 @@ class MarketDataService extends BaseService {
                 
                 const groupStartTime = Date.now(); // why is this unused?
                 const groupTokenCount = Math.min(batchesInGroup * batchSize, tokenSubset.length - (startBatch * batchSize));
-                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.BLACK} BATCH GROUP ${groupIndex + 1}/${totalGroups} ${fancyColors.RESET} Processing ${batchesInGroup} batches (${groupTokenCount} tokens) in parallel`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} BATCH GROUP ${groupIndex + 1}/${totalGroups} ${fancyColors.RESET} Processing ${batchesInGroup} batches (${groupTokenCount} tokens) in parallel`);
                 
                 // Create an array of promises for concurrent batch processing
                 const batchPromises = [];
@@ -1807,7 +1807,7 @@ class MarketDataService extends BaseService {
                 
                 // Process all batches in this group concurrently and wait for results
                 const batchResults = await Promise.all(batchPromises);
-                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}Completed all ${batchesInGroup} batches in group ${groupIndex + 1}${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Completed all ${batchesInGroup} batches in group ${groupIndex + 1}${fancyColors.RESET}`);
                 
                 // OPTIMIZED DB OPERATIONS: Prepare batch arrays to reduce database connections
                 const tokenUpdates = []; // Existing tokens to update
@@ -2236,7 +2236,7 @@ class MarketDataService extends BaseService {
                                 existingTokenMap[update.data.address]?.symbol || update.data.symbol || update.data.address.substring(0, 8)
                             ).slice(0, 5);
                             
-                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Completed ${updateBatch.length} token updates (examples: ${updatedTokenSymbols.join(', ')}${updateBatch.length > 5 ? '...' : ''})`);
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Completed ${updateBatch.length} token updates${fancyColors.RESET}${updateBatch.length > 0 ? ` ${fancyColors.DARK_GRAY}(examples: ${updatedTokenSymbols.slice(0, 3).join(', ')}${updateBatch.length > 3 ? '...' : ''})${fancyColors.RESET}` : ''}`);
                         }, { 
                             timeout: 30000 // Increased timeout to 30 seconds to handle larger batch of 100 tokens
                         });
@@ -2423,139 +2423,155 @@ class MarketDataService extends BaseService {
                 
                 // Get rich DexScreener data for ALL tokens
                 if (tokensToEnhance.length > 0) {
-                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} DEXSCREENER ${fancyColors.RESET} Getting rich data for ${tokensToEnhance.length} tokens (all timeframes)`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GOLD} DEXSCREENER ${fancyColors.RESET} Getting rich data for ${tokensToEnhance.length} tokens (all timeframes)`);
                     
                     try {
-                        // Get DexScreener client directly - no fallback, pure DexScreener goodness
-                        const dexScreenerApiReady = await dexscreenerClient.initialize();
-                        
-                        if (!dexScreenerApiReady) {
-                            throw new Error('Failed to initialize DexScreener client');
+                        // Create a map of token addresses to tokens for easy lookup when processing results
+                        const tokenAddressMap = {};
+                        for (const token of tokensToEnhance) {
+                            tokenAddressMap[token.address] = token;
                         }
                         
-                        // Process in small batches to respect DexScreener rate limits (300 req/min for enhanced endpoints)
-                        const ENHANCEMENT_BATCH_SIZE = 25; // Increased batch size since this is the primary path now
-                        for (let i = 0; i < tokensToEnhance.length; i += ENHANCEMENT_BATCH_SIZE) {
-                            const enhancementBatch = tokensToEnhance.slice(i, i + ENHANCEMENT_BATCH_SIZE);
+                        // Get all token addresses to fetch in a single array
+                        const tokenAddresses = tokensToEnhance.map(token => token.address);
+                        
+                        // Check if DexScreener client is initialized before making the request
+                        if (!dexscreenerClient.initialized) {
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}DexScreener client not initialized, initializing now...${fancyColors.RESET}`);
+                            await dexscreenerClient.initialize();
+                        }
+                        
+                        // If we have too many tokens, split into smaller batches to prevent request lock timeouts
+                        const MAX_BATCH_SIZE = 500; // Process at most 500 tokens at once to prevent locking issues
+                        const tokenBatches = [];
+                        
+                        for (let i = 0; i < tokenAddresses.length; i += MAX_BATCH_SIZE) {
+                            tokenBatches.push(tokenAddresses.slice(i, i + MAX_BATCH_SIZE));
+                        }
+                        
+                        // Process each batch with a delay between batches
+                        const allResults = {};
+                        for (let i = 0; i < tokenBatches.length; i++) {
+                            const batchAddresses = tokenBatches[i];
+                            
+                            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GOLD} DEXSCREENER ${fancyColors.RESET} Processing batch ${i+1}/${tokenBatches.length} (${batchAddresses.length} tokens)`);
+                            
+                            // Use the batch processing method to efficiently fetch token data for this batch
+                            const batchResult = await dexscreenerClient.getMultipleTokenPools('solana', batchAddresses);
+                            
+                            // Merge results
+                            Object.assign(allResults, batchResult);
+                            
+                            // Add a delay between batches to prevent locking issues (only if more batches coming)
+                            if (i < tokenBatches.length - 1) {
+                                await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay between batches
+                            }
+                        }
+                        
+                        const tokenPoolsResult = allResults;
+                        
+                        // Process the results
+                        let enhancedCount = 0;
+                        let failedCount = 0;
+                        
+                        // Helper function to safely parse floating point numbers
+                        const safeParseFloat = (val) => {
+                            if (!val) return null;
+                            try {
+                                const parsed = parseFloat(val);
+                                if (isNaN(parsed) || !isFinite(parsed)) return null;
+                                return parsed.toString();
+                            } catch (e) {
+                                return null;
+                            }
+                        };
+                        
+                        for (const [tokenAddress, poolData] of Object.entries(tokenPoolsResult)) {
+                            try {
+                                const token = tokenAddressMap[tokenAddress];
                                 
-                            // Process each token in the batch
-                            for (const token of enhancementBatch) {
-                                try {
-                                    // Get token data DIRECTLY from DexScreener - no intermediaries!
-                                    const poolData = await dexscreenerClient.getTokenPools('solana', token.address);
-                                    
-                                    if (poolData && poolData.pairs && poolData.pairs.length > 0) {
-                                        // No need to get database price details - DexScreener is the source of truth
-                                        
-                                        // Get direct data from DexScreener instead of just using database
-                                        try {
-                                            const poolData = await dexscreenerClient.getTokenPools('solana', token.address);
-                                            
-                                            if (poolData && poolData.pairs && poolData.pairs.length > 0) {
-                                                // Sort pools by liquidity
-                                                const sortedPools = poolData.pairs.sort((a, b) => {
-                                                    const liquidityA = parseFloat(a.liquidity?.usd || '0');
-                                                    const liquidityB = parseFloat(b.liquidity?.usd || '0');
-                                                    return liquidityB - liquidityA;
-                                                });
-                                                
-                                                // Use the highest liquidity pool for metrics
-                                                const topPool = sortedPools[0];
-                                                
-                                                // Helper function to safely parse floating point numbers
-                                                const safeParseFloat = (val) => {
-                                                    if (!val) return null;
-                                                    try {
-                                                        const parsed = parseFloat(val);
-                                                        if (isNaN(parsed) || !isFinite(parsed)) return null;
-                                                        return parsed.toString();
-                                                    } catch (e) {
-                                                        return null;
-                                                    }
-                                                };
-                                                
-                                                // Create comprehensive metrics object with all time periods
-                                                const enhancedMetrics = {
-                                                    // Volume metrics for all time periods
-                                                    volume_24h: safeParseFloat(topPool.volume?.h24),
-                                                    volume_6h: safeParseFloat(topPool.volume?.h6),
-                                                    volume_1h: safeParseFloat(topPool.volume?.h1),
-                                                    volume_5m: safeParseFloat(topPool.volume?.m5),
-                                                    
-                                                    // Price change metrics for all time periods
-                                                    change_24h: safeParseFloat(topPool.priceChange?.h24),
-                                                    change_6h: safeParseFloat(topPool.priceChange?.h6),
-                                                    change_1h: safeParseFloat(topPool.priceChange?.h1),
-                                                    change_5m: safeParseFloat(topPool.priceChange?.m5),
-                                                    
-                                                    // Liquidity and market cap
-                                                    liquidity: safeParseFloat(topPool.liquidity?.usd),
-                                                    market_cap: safeParseFloat(topPool.marketCap),
-                                                    fdv: safeParseFloat(topPool.fdv),
-                                                    
-                                                    // Additional metadata
-                                                    dex: topPool.dexId ? validateStringLength(topPool.dexId, 50) : null,
-                                                    pair_address: topPool.pairAddress ? validateStringLength(topPool.pairAddress, 100) : null,
-                                                    last_updated: new Date().toISOString()
-                                                };
-                                                
-                                                // Store enhanced metrics
-                                                enhancedTokenData.set(token.id, enhancedMetrics);
-                                                
-                                                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Enhanced token ${token.symbol} with rich DexScreener data (all timeframes)`);
-                                                
-                                                // Also update our database with this comprehensive data
-                                                try {
-                                                    await marketDb.token_prices.update({
-                                                        where: { token_id: token.id },
-                                                        data: {
-                                                            volume_24h: enhancedMetrics.volume_24h,
-                                                            volume_6h: enhancedMetrics.volume_6h,
-                                                            volume_1h: enhancedMetrics.volume_1h,
-                                                            volume_5m: enhancedMetrics.volume_5m,
-                                                            change_24h: enhancedMetrics.change_24h,
-                                                            change_6h: enhancedMetrics.change_6h,
-                                                            change_1h: enhancedMetrics.change_1h,
-                                                            change_5m: enhancedMetrics.change_5m,
-                                                            liquidity: enhancedMetrics.liquidity,
-                                                            market_cap: enhancedMetrics.market_cap,
-                                                            fdv: enhancedMetrics.fdv,
-                                                            updated_at: new Date()
-                                                        }
-                                                    });
-                                                } catch (dbError) {
-                                                    // If database update fails, we still have the enhanced data for this run
-                                                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Could not update token_prices table with DexScreener data:${fancyColors.RESET} ${dbError.message}`);
-                                                }
-                                            } else {
-                                                // Fall back to database values if DexScreener doesn't return pools
-                                                enhancedTokenData.set(token.id, {
-                                                    volume_24h: tokenPriceDetails?.volume_24h,
-                                                    liquidity: tokenPriceDetails?.liquidity,
-                                                    market_cap: tokenPriceDetails?.market_cap
-                                                });
-                                            }
-                                        } catch (dexError) {
-                                            // Fall back to database values if DexScreener call fails
-                                            logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}DexScreener lookup failed, using DB values:${fancyColors.RESET} ${dexError.message}`);
-                                            enhancedTokenData.set(token.id, {
-                                                volume_24h: tokenPriceDetails?.volume_24h,
-                                                liquidity: tokenPriceDetails?.liquidity,
-                                                market_cap: tokenPriceDetails?.market_cap
-                                            });
-                                        }
-                                        
-                                        logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Enhanced token ${token.symbol} with DexScreener data`);
-                                    }
-                                } catch (enhancementError) {
-                                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Could not enhance token ${token.symbol}:${fancyColors.RESET} ${enhancementError.message}`);
+                                // Skip if no token matched (shouldn't happen, but just to be safe)
+                                if (!token) continue;
+                                
+                                // Skip if no pool data or error occurred
+                                if (!poolData || poolData.error || !poolData.pairs || !poolData.pairs.length) {
+                                    failedCount++;
+                                    continue;
                                 }
                                 
-                                // Small delay between tokens
-                                await new Promise(resolve => setTimeout(resolve, 100));
+                                // Sort pools by liquidity
+                                const sortedPools = poolData.pairs.sort((a, b) => {
+                                    const liquidityA = parseFloat(a.liquidity?.usd || '0');
+                                    const liquidityB = parseFloat(b.liquidity?.usd || '0');
+                                    return liquidityB - liquidityA;
+                                });
+                                
+                                // Use the highest liquidity pool for metrics
+                                const topPool = sortedPools[0];
+                                
+                                // Create comprehensive metrics object with all time periods
+                                const enhancedMetrics = {
+                                    // Volume metrics for all time periods
+                                    volume_24h: safeParseFloat(topPool.volume?.h24),
+                                    volume_6h: safeParseFloat(topPool.volume?.h6),
+                                    volume_1h: safeParseFloat(topPool.volume?.h1),
+                                    volume_5m: safeParseFloat(topPool.volume?.m5),
+                                    
+                                    // Price change metrics for all time periods
+                                    change_24h: safeParseFloat(topPool.priceChange?.h24),
+                                    change_6h: safeParseFloat(topPool.priceChange?.h6),
+                                    change_1h: safeParseFloat(topPool.priceChange?.h1),
+                                    change_5m: safeParseFloat(topPool.priceChange?.m5),
+                                    
+                                    // Liquidity and market cap
+                                    liquidity: safeParseFloat(topPool.liquidity?.usd),
+                                    market_cap: safeParseFloat(topPool.marketCap),
+                                    fdv: safeParseFloat(topPool.fdv),
+                                    
+                                    // Additional metadata
+                                    dex: topPool.dexId ? validateStringLength(topPool.dexId, 50) : null,
+                                    pair_address: topPool.pairAddress ? validateStringLength(topPool.pairAddress, 100) : null,
+                                    last_updated: new Date().toISOString()
+                                };
+                                
+                                // Store enhanced metrics
+                                enhancedTokenData.set(token.id, enhancedMetrics);
+                                enhancedCount++;
+                                
+                                // Also update our database with this comprehensive data
+                                try {
+                                    await marketDb.token_prices.update({
+                                        where: { token_id: token.id },
+                                        data: {
+                                            volume_24h: enhancedMetrics.volume_24h,
+                                            volume_6h: enhancedMetrics.volume_6h,
+                                            volume_1h: enhancedMetrics.volume_1h,
+                                            volume_5m: enhancedMetrics.volume_5m,
+                                            change_24h: enhancedMetrics.change_24h,
+                                            change_6h: enhancedMetrics.change_6h,
+                                            change_1h: enhancedMetrics.change_1h,
+                                            change_5m: enhancedMetrics.change_5m,
+                                            liquidity: enhancedMetrics.liquidity,
+                                            market_cap: enhancedMetrics.market_cap,
+                                            fdv: enhancedMetrics.fdv,
+                                            updated_at: new Date()
+                                        }
+                                    });
+                                } catch (dbError) {
+                                    // If database update fails, we still have the enhanced data for this run
+                                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Could not update token_prices table with DexScreener data:${fancyColors.RESET} ${dbError.message}`);
+                                }
+                                
+                            } catch (enhancementError) {
+                                failedCount++;
+                                const token = tokenAddressMap[tokenAddress];
+                                const symbol = token ? token.symbol : tokenAddress.substring(0, 8);
+                                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Could not enhance token ${symbol}:${fancyColors.RESET} ${enhancementError.message}`);
                             }
-                            
                         }
+                        
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} DexScreener enhancement completed: ${enhancedCount} tokens enhanced, ${failedCount} tokens failed`);
+                        
                     } catch (error) {
                         logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Error enhancing tokens with DexScreener:${fancyColors.RESET} ${error.message}`);
                     }

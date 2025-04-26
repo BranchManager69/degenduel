@@ -380,13 +380,55 @@ class PriceService extends JupiterBase {
         const queryString = batch.join(',');
         const batchNum = batchIndex + 1;  // Batch numbers start from 1
         
-        // Always log which batch we're processing for better traceability
-        logApi.info(`${formatLog.tag()} ${formatLog.info(`Processing batch ${batchNum}/${totalBatches} (${batch.length} tokens)`)}`);
+        // Enhanced logging with token examples and current time
+        const tokenExamples = batch.slice(0, 5).map(addr => {
+          // Try to get readable token symbol info if available in tokenMap
+          if (this.constructor.tokenMap && this.constructor.tokenMap[addr]) {
+            return this.constructor.tokenMap[addr].symbol || addr.substring(0, 6);
+          }
+          // Fallback to shortened address
+          return addr.substring(0, 6) + '...';
+        }).join(', ');
+        
+        // Include timestamp and source service info when available
+        const timestamp = new Date().toLocaleTimeString();
+        // Process batch metadata correctly
+        // If batch contains plain addresses (strings), use batch[0] as is
+        // If batch contains objects (for TokenRefreshScheduler), extract metadata from the batch itself
+        let sourceService = '';
+        let batchGroup = '';
+        let sourceInfo = '';
+        
+        if (Array.isArray(batch) && batch.length > 0) {
+          // Check if batch contains metadata in the array itself
+          if (batch.source_service) {
+            sourceService = batch.source_service;
+            batchGroup = batch.batch_group || '';
+          } 
+          // Or check if batch items are objects that might contain metadata
+          else if (typeof batch[0] === 'object' && batch[0] !== null) {
+            sourceService = batch[0].source_service || '';
+            batchGroup = batch[0].batch_group || '';
+          }
+          
+          // Format source info string for logging
+          if (sourceService) {
+            sourceInfo = ` (from ${sourceService}${batchGroup ? ' group '+batchGroup : ''})`;
+          }
+        }
+        
+        // Enhanced logging with batch info and timestamp (without token examples)
+        logApi.info(`${formatLog.tag()} ${formatLog.info(`[${timestamp}] Processing batch ${batchNum}/${totalBatches} (${batch.length} tokens)${sourceInfo}`)}`);
         
         // For large batches, also log progress percentage
         if (totalBatches > 10 && batchNum % Math.ceil(totalBatches/10) === 0) {
           const progress = Math.round((batchNum / totalBatches) * 100);
           logApi.info(`${formatLog.tag()} Progress: ${progress}% (${startIndex + batch.length}/${mintAddresses.length})`);
+        }
+        
+        // Cache tokenMap for future logs if we don't have it already
+        if (!this.constructor.tokenMap && this.tokenMap) {
+          this.constructor.tokenMap = this.tokenMap;
         }
         
         try {

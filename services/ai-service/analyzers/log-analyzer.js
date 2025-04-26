@@ -13,6 +13,7 @@ import { fancyColors, serviceSpecificColors } from '../../../utils/colors.js';
 import prisma from '../../../config/prisma.js';
 import fs from 'fs/promises';
 import path from 'path';
+import config from '../../../config/config.js';
 
 /**
  * Analyze error logs from the database
@@ -149,10 +150,15 @@ export async function analyzeGeneralLogs(aiService, logPath = '/home/branchmanag
     
     // Process the most recent error log file
     const mostRecentLogFile = logFiles[logFiles.length - 1];
-    logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Using error log file: ${mostRecentLogFile}`);
+    logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Using error log file: ${mostRecentLogFile}`, {
+      service: "ai_service" // Match service name in SERVICE_NAMES constant
+    });
     return await processLogFile(aiService, logsDirectory, mostRecentLogFile, limit);
   } catch (error) {
-    logApi.error(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} ${fancyColors.RED}General log analysis failed:${fancyColors.RESET}`, error);
+    logApi.error(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.RED}General log analysis failed:${fancyColors.RESET}`, {
+      service: "ai_service", // Match service name in SERVICE_NAMES constant
+      error
+    });
     return null;
   }
 }
@@ -211,7 +217,8 @@ async function processLogFile(aiService, logsDirectory, logFileName, limit) {
     });
     
     // Log analysis results to server logs like we do with admin actions
-    logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} ${fancyColors.GREEN}AI Log Analysis Complete:${fancyColors.RESET} ${lastNLines.length} lines analyzed from ${logFileName}`, {
+    logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.GREEN}AI Log Analysis Complete:${fancyColors.RESET} ${lastNLines.length} lines analyzed from ${logFileName}`, {
+      service: "ai_service", // Match service name in SERVICE_NAMES constant
       summary: result.content.substring(0, 300) + (result.content.length > 300 ? '...' : ''),
       loadout: 'logAnalysis'
     });
@@ -230,9 +237,13 @@ async function processLogFile(aiService, logsDirectory, logFileName, limit) {
       
       await wsBroadcaster.broadcastToRole('ADMIN', 'ai_analysis', 'new_log_analysis', notificationData);
       
-      logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Broadcasted new general log analysis to admins`);
+      logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Broadcasted new general log analysis to admins`, {
+        service: "ai_service" // Match service name in SERVICE_NAMES constant
+      });
     } catch (broadcastError) {
-      logApi.warn(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Failed to broadcast log analysis: ${broadcastError.message}`);
+      logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Failed to broadcast log analysis: ${broadcastError.message}`, {
+        service: "ai_service" // Match service name in SERVICE_NAMES constant
+      });
     }
     
     return {
@@ -242,7 +253,10 @@ async function processLogFile(aiService, logsDirectory, logFileName, limit) {
       timestamp: new Date()
     };
   } catch (error) {
-    logApi.error(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} ${fancyColors.RED}Log file processing failed:${fancyColors.RESET}`, error);
+    logApi.error(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.RED}Log file processing failed:${fancyColors.RESET}`, {
+      service: "ai_service", // Match service name in SERVICE_NAMES constant
+      error
+    });
     return null;
   }
 }
@@ -261,11 +275,25 @@ export async function analyzeServiceLogs(aiService, serviceKey, limit = 500) {
     
     // Check if service_logs table exists
     try {
-      // Fetch service-specific logs from database
+      // Fetch unanalyzed service-specific logs from database
+      // Get IDs of logs that have already been analyzed for this service
+      const analyzedLogIds = await prisma.ai_analyzed_service_logs.findMany({
+        where: { service: serviceKey },
+        select: { log_id: true }
+      });
+      
+      // Create a list of IDs to exclude from the query
+      const analyzedIds = analyzedLogIds.map(item => item.log_id);
+      
+      // Get logs that haven't been analyzed yet, prioritizing newer logs
       serviceLogs = await prisma.service_logs.findMany({
         where: {
           service: serviceKey,
-          created_at: { gte: new Date(Date.now() - (3 * 60 * 60 * 1000)) } // Last 3 hours
+          created_at: { gte: new Date(Date.now() - (3 * 60 * 60 * 1000)) }, // Last 3 hours
+          // Exclude logs that have already been analyzed
+          NOT: {
+            id: { in: analyzedIds }
+          }
         },
         orderBy: { created_at: 'desc' },
         take: limit
@@ -276,12 +304,16 @@ export async function analyzeServiceLogs(aiService, serviceKey, limit = 500) {
       const minLogsRequired = 5;
       
       if (!serviceLogs || serviceLogs.length < minLogsRequired) {
-        logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Skipping service log analysis for ${serviceKey} - insufficient logs (${serviceLogs?.length || 0}), need at least ${minLogsRequired}`);
+        logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Skipping service log analysis for ${serviceKey} - insufficient logs (${serviceLogs?.length || 0}), need at least ${minLogsRequired}`, {
+          service: "ai_service" // Match service name in SERVICE_NAMES constant
+        });
         return null;
       }
     } catch (dbError) {
       // Handle case where service_logs table doesn't exist
-      logApi.warn(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} Service logs table not found - skipping analysis for ${serviceKey}: ${dbError.message}`);
+      logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Service logs table not found - skipping analysis for ${serviceKey}: ${dbError.message}`, {
+        service: "ai_service" // Match service name in SERVICE_NAMES constant
+      });
       return null;
     }
     
@@ -318,9 +350,37 @@ export async function analyzeServiceLogs(aiService, serviceKey, limit = 500) {
       }
     });
     
-    // Log analysis results to server logs
-    logApi.info(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} ${fancyColors.GREEN}AI Service Log Analysis Complete:${fancyColors.RESET} ${serviceLogs.length} logs analyzed for ${serviceKey}`, {
-      service: serviceKey, 
+    // Track which logs have been analyzed to avoid reprocessing
+    const logIdsToTrack = serviceLogs.map(log => log.id);
+    if (logIdsToTrack.length > 0) {
+      // Store record of analyzed logs to prevent re-analysis
+      try {
+        await prisma.$transaction(
+          logIdsToTrack.map(logId => 
+            prisma.ai_analyzed_service_logs.create({
+              data: {
+                service: serviceKey,
+                log_id: logId,
+                analysis_id: analysisResult.id,
+                analyzed_at: new Date()
+              }
+            })
+          )
+        );
+        logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Tracked ${logIdsToTrack.length} analyzed logs for ${serviceKey}`, {
+          service: "ai_service"
+        });
+      } catch (trackError) {
+        logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Error tracking analyzed logs: ${trackError.message}`, {
+          service: "ai_service",
+          error: trackError.message
+        });
+      }
+    }
+    
+    // Log analysis results to server logs - Using proper service name for metadata
+    logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.GREEN}AI Service Log Analysis Complete:${fancyColors.RESET} ${serviceLogs.length} logs analyzed for ${serviceKey}`, {
+      service: "ai_service", // Match service name in SERVICE_NAMES constant
       summary: result.content.substring(0, 300) + (result.content.length > 300 ? '...' : ''),
       loadout: 'serviceLogAnalysis'
     });
@@ -363,7 +423,7 @@ export async function analyzeServiceLogs(aiService, serviceKey, limit = 500) {
       timestamp: new Date()
     };
   } catch (error) {
-    logApi.error(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} ${fancyColors.RED}Service log analysis failed for ${serviceKey}:${fancyColors.RESET}`, error);
+    logApi.error(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.RED}Service log analysis failed for ${serviceKey}:${fancyColors.RESET}`, error);
     return null;
   }
 }

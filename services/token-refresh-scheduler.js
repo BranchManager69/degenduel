@@ -29,7 +29,7 @@ import MetricsCollector from './token-refresh-scheduler/metrics-collector.js';
 const prisma = new PrismaClient();
 
 // Constants and configuration
-const DEFAULT_MAX_TOKENS_PER_BATCH = 100;  // Max tokens per API call - Jupiter allows 100
+const DEFAULT_MAX_TOKENS_PER_BATCH = 500;  // Updated from 100 to 500 for better Jupiter batching
 const DEFAULT_MIN_INTERVAL_SECONDS = 15;   // Minimum refresh interval
 const DEFAULT_BATCH_DELAY_MS = 3000;       // Min 3000ms delay between batch executions to avoid rate limiting
 const DEFAULT_API_RATE_LIMIT = 30;         // Requests per second (30% of 100 limit to be conservative)
@@ -714,8 +714,19 @@ class TokenRefreshScheduler extends BaseService {
       this.lastBatchStartTime = Date.now();
       this.currentBatch = batch;
       
-      // Always log batch processing with batch numbers for clarity
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Processing batch ${batchNum}/${totalBatches} of ${batch.length} tokens`);
+      // Enhanced batch processing log with token examples and time
+      // Get some example token symbols for better log context
+      const tokenExamples = batch.slice(0, 5)
+        .map(token => token.symbol || `ID:${token.id}`)
+        .join(', ');
+      
+      // Include timestamp and more detailed context
+      const timestamp = new Date().toLocaleTimeString();
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} [${timestamp}] Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens (examples: ${tokenExamples}...)`);
+      
+      // Set metadata on the batch for Jupiter to use in its logs
+      batch.source_service = 'token_refresh_scheduler';
+      batch.batch_group = `group-${new Date().getHours()}-${Math.floor(Date.now()/300000)}`; // 5-min groups for tracking
       
       // Increment API call counter
       this.apiCallsInCurrentWindow++;
