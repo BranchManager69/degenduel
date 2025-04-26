@@ -23,6 +23,67 @@ class MarketDataRepository {
         this.WEBSITE_BATCH_SIZE = 100;
         this.SOCIAL_BATCH_SIZE = 100;
     }
+    
+    /**
+     * Get all existing tokens from the database
+     * @param {PrismaClient} marketDb - The database client
+     * @returns {Promise<Array>} - Array of tokens with their details
+     */
+    async getExistingTokens(marketDb) {
+        try {
+            // Query all tokens with their basic details
+            const tokens = await marketDb.tokens.findMany({
+                select: {
+                    id: true,
+                    address: true,
+                    symbol: true,
+                    name: true,
+                    token_prices: {
+                        select: {
+                            price: true,
+                            market_cap: true,
+                            liquidity: true
+                        }
+                    }
+                }
+            });
+            
+            return tokens;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting existing tokens:${fancyColors.RESET}`, error);
+            return [];
+        }
+    }
+    
+    /**
+     * Create a map of tokens by address for fast lookup
+     * @param {Array} tokens - Array of tokens from the database
+     * @returns {Object} - Map of tokens with address as the key
+     */
+    createTokenMap(tokens) {
+        const tokenMap = {};
+        
+        if (!tokens || tokens.length === 0) {
+            return tokenMap;
+        }
+        
+        // Create a map for fast token lookup by address
+        for (const token of tokens) {
+            if (token.address) {
+                tokenMap[token.address] = {
+                    id: token.id,
+                    address: token.address,
+                    symbol: token.symbol || '',
+                    name: token.name || '',
+                    price: token.token_prices?.price || null,
+                    marketCap: token.token_prices?.market_cap || null,
+                    liquidity: token.token_prices?.liquidity || null
+                };
+            }
+        }
+        
+        return tokenMap;
+    }
 
     /**
      * Process batch updates for tokens in database
@@ -243,6 +304,84 @@ class MarketDataRepository {
         
         logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Created ${createdCount} price history records`);
         return createdCount;
+    }
+    
+    /**
+     * Handle price updates from various sources
+     * @param {Object} priceData - Object with token prices
+     * @param {PrismaClient} marketDb - Database client
+     * @param {Function} recordPriceHistory - Function to record price history
+     * @returns {Promise<number>} - Number of updated prices
+     */
+    async handlePriceUpdate(priceData, marketDb, recordPriceHistory) {
+        let updatedCount = 0;
+        
+        try {
+            if (!priceData || Object.keys(priceData).length === 0) {
+                return updatedCount;
+            }
+            
+            // Process each token's price update individually
+            for (const [tokenId, priceInfo] of Object.entries(priceData)) {
+                try {
+                    // Validate token ID
+                    const id = parseInt(tokenId, 10);
+                    if (isNaN(id)) {
+                        logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Invalid token ID for price update: ${tokenId}${fancyColors.RESET}`);
+                        continue;
+                    }
+                    
+                    // Build price update data
+                    const updateData = {};
+                    
+                    // Handle different price data formats
+                    if (typeof priceInfo === 'number' || typeof priceInfo === 'string') {
+                        // Simple price value
+                        updateData.price = priceInfo.toString();
+                    } else if (typeof priceInfo === 'object' && priceInfo !== null) {
+                        // Object with price and possibly other fields
+                        if (priceInfo.price !== undefined) {
+                            updateData.price = priceInfo.price.toString();
+                        }
+                        
+                        // Add other fields if present
+                        if (priceInfo.change_24h !== undefined) updateData.change_24h = priceInfo.change_24h;
+                        if (priceInfo.market_cap !== undefined) updateData.market_cap = priceInfo.market_cap;
+                        if (priceInfo.fdv !== undefined) updateData.fdv = priceInfo.fdv;
+                        if (priceInfo.liquidity !== undefined) updateData.liquidity = priceInfo.liquidity;
+                        if (priceInfo.volume_24h !== undefined) updateData.volume_24h = priceInfo.volume_24h;
+                    }
+                    
+                    // Only update if we have data
+                    if (Object.keys(updateData).length > 0) {
+                        // Update token price
+                        await marketDb.token_prices.upsert({
+                            where: { token_id: id },
+                            update: updateData,
+                            create: {
+                                token_id: id,
+                                ...updateData
+                            }
+                        });
+                        
+                        // Record price history if we have a price and callback function
+                        if (updateData.price && typeof recordPriceHistory === 'function') {
+                            await recordPriceHistory(id, updateData.price, 'manual_update');
+                        }
+                        
+                        updatedCount++;
+                    }
+                } catch (updateError) {
+                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating price for token ${tokenId}:${fancyColors.RESET}`, updateError);
+                }
+            }
+            
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Updated prices for ${updatedCount} tokens`);
+            return updatedCount;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling price updates:${fancyColors.RESET}`, error);
+            return updatedCount;
+        }
     }
 
     /**
@@ -486,6 +625,78 @@ class MarketDataRepository {
             return totalProcessed;
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error creating comprehensive history:${fancyColors.RESET}`, error);
+            return 0;
+        }
+    }
+    
+    /**
+     * Record token history for multiple tokens
+     * @param {Array} tokensForHistory - Array of tokens to record history for
+     * @param {Object} historyFunctions - Object with history recording functions
+     * @returns {Promise<number>} - Number of tokens processed
+     */
+    async recordTokenHistory(tokensForHistory, historyFunctions) {
+        try {
+            if (!tokensForHistory || tokensForHistory.length === 0 || !historyFunctions) {
+                return 0;
+            }
+            
+            // Process in batches for better performance
+            const BATCH_SIZE = 100;
+            let totalProcessed = 0;
+            
+            for (let i = 0; i < tokensForHistory.length; i += BATCH_SIZE) {
+                const historyBatch = tokensForHistory.slice(i, i + BATCH_SIZE);
+                
+                try {
+                    // Use the provided history functions to record token data
+                    await historyFunctions.recordComprehensiveTokenHistory(historyBatch, 'jupiter_api');
+                    totalProcessed += historyBatch.length;
+                } catch (batchError) {
+                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error recording history batch:${fancyColors.RESET}`, batchError);
+                }
+            }
+            
+            if (totalProcessed > 0) {
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Recorded history for ${totalProcessed} tokens`);
+            }
+            
+            return totalProcessed;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error recording token history:${fancyColors.RESET}`, error);
+            return 0;
+        }
+    }
+    
+    /**
+     * Record price history in batch for multiple tokens
+     * @param {Array} priceHistoryRecords - Array of price history records
+     * @param {PrismaClient} marketDb - Database client
+     * @returns {Promise<number>} - Number of records created
+     */
+    async recordPriceHistoryBatch(priceHistoryRecords, marketDb) {
+        try {
+            if (!priceHistoryRecords || priceHistoryRecords.length === 0) {
+                return 0;
+            }
+            
+            // Format the records for database insertion
+            const records = priceHistoryRecords.map(record => ({
+                token_id: record.tokenId,
+                price: record.price.toString(),
+                source: record.source || 'system',
+                timestamp: record.timestamp || new Date()
+            }));
+            
+            // Use createMany for efficient bulk insertion
+            const result = await marketDb.token_price_history.createMany({
+                data: records,
+                skipDuplicates: true // Skip if exact duplicate exists
+            });
+            
+            return result.count;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error recording price history batch:${fancyColors.RESET}`, error);
             return 0;
         }
     }

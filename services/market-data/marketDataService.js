@@ -109,8 +109,14 @@ class MarketDataService extends BaseService {
             checkIntervalMs: 60 * 1000 // Once per minute
         });
         
-        // Initialize config with MARKET_DATA_CONFIG to fix intervalMs error
-        this.config = MARKET_DATA_CONFIG;
+        // Initialize config with MARKET_DATA_CONFIG but preserve name
+        this.config = {
+            ...MARKET_DATA_CONFIG,
+            name: SERVICE_NAMES.MARKET_DATA // Explicitly ensure name is correct
+        };
+        
+        // Explicitly set name for serviceManager calls
+        this.name = SERVICE_NAMES.MARKET_DATA;
         
         // State management
         this.broadcastInterval = null;
@@ -566,7 +572,7 @@ class MarketDataService extends BaseService {
                 
                 // Update service heartbeat with updated stats
                 serviceManager.updateServiceHeartbeat(
-                    this.name,
+                    SERVICE_NAMES.MARKET_DATA, // Use constant instead of this.name
                     this.config,
                     this.stats
                 );
@@ -604,7 +610,7 @@ class MarketDataService extends BaseService {
                 
                 // Update service heartbeat with error status
                 serviceManager.updateServiceHeartbeat(
-                    this.name,
+                    SERVICE_NAMES.MARKET_DATA, // Use constant instead of this.name
                     this.config,
                     this.stats
                 );
@@ -668,7 +674,7 @@ class MarketDataService extends BaseService {
             // Try to update ServiceManager state, but don't fail if it doesn't work
             try {
                 await serviceManager.updateServiceHeartbeat(
-                    this.name,
+                    SERVICE_NAMES.MARKET_DATA, // Use constant instead of this.name
                     this.config,
                     {
                         ...this.stats,
@@ -1062,7 +1068,7 @@ class MarketDataService extends BaseService {
             
             // Final stats update
             await serviceManager.markServiceStopped(
-                this.name,
+                SERVICE_NAMES.MARKET_DATA, // Use constant instead of this.name
                 this.config,
                 {
                     ...this.stats,

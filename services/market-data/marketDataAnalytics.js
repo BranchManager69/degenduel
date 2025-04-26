@@ -223,6 +223,108 @@ class MarketDataAnalytics {
             return `$${value.toFixed(2)}`;
         }
     }
+    
+    /**
+     * Sort tokens by their relevance for processing
+     * Uses the same scoring formula as rankTracker
+     * @param {Array} tokens - Array of tokens from Jupiter API
+     * @returns {Array} - Sorted array of tokens by relevance
+     */
+    sortTokensByRelevance(tokens) {
+        try {
+            if (!tokens || !Array.isArray(tokens) || tokens.length === 0) {
+                return [];
+            }
+            
+            // Make a copy to avoid modifying the original
+            const tokensCopy = [...tokens];
+            
+            // Process tokens and add a hotness score
+            const tokensWithScores = tokensCopy.map(token => {
+                // Extract token data
+                const address = typeof token === 'string' ? token : token.address;
+                const symbol = typeof token === 'string' ? '' : (token.symbol || '');
+                
+                // Extract numeric metrics (safely handle parsing)
+                const marketCap = this._safeParseFloat(token.marketCap);
+                const volume = this._safeParseFloat(token.volume24h);
+                const liquidity = this._safeParseFloat(token.liquidity);
+                const price = this._safeParseFloat(token.price);
+                
+                // -------------------------------------------------------------------------
+                // TOKEN HOTNESS SCORING - SAME FORMULA AS IN RANK TRACKER
+                // -------------------------------------------------------------------------
+                
+                // Calculate logarithmic rank importance similar to rankTracker's approach
+                // Higher values are better for all these metrics
+                
+                // Base score starts at 0
+                let hotnessScore = 0;
+                
+                // Market Cap component - high cap tokens are more important
+                if (marketCap > 0) {
+                    hotnessScore += Math.log10(marketCap) * 3;
+                }
+                
+                // Volume component - high volume indicates active trading
+                if (volume > 0) {
+                    hotnessScore += Math.log10(volume) * 5;
+                }
+                
+                // Liquidity component - high liquidity indicates stability
+                if (liquidity > 0) {
+                    hotnessScore += Math.log10(liquidity) * 2;
+                }
+                
+                // Add a bonus for tokens that have a price
+                if (price > 0) {
+                    hotnessScore += 10;
+                }
+                
+                // Add a bonus for tokens with proper identifiers
+                if (symbol && symbol.length > 0) {
+                    hotnessScore += 15;
+                }
+                if (address && address.length > 25) {
+                    hotnessScore += 5;
+                }
+                
+                // Return the token with its score
+                return {
+                    ...token,
+                    _hotnessScore: hotnessScore
+                };
+            });
+            
+            // Sort by the hotness score (highest first)
+            const sortedTokens = tokensWithScores.sort((a, b) => {
+                return b._hotnessScore - a._hotnessScore;
+            });
+            
+            // Log top tokens in debug mode
+            if (sortedTokens.length > 0) {
+                const topTokenSymbols = sortedTokens.slice(0, 5)
+                    .map(t => `${t.symbol || t.address.substring(0, 6)}`)
+                    .join(', ');
+                logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Sorted ${sortedTokens.length} tokens by relevance score. Top tokens: ${topTokenSymbols}`);
+            }
+            
+            return sortedTokens;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error sorting tokens by relevance:${fancyColors.RESET}`, error);
+            return tokens || []; // Return original array on error
+        }
+    }
+    
+    /**
+     * Helper method to safely parse float values
+     * @private
+     */
+    _safeParseFloat(value) {
+        if (value === undefined || value === null) return 0;
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
+    }
 }
 
 // Create and export a singleton instance
