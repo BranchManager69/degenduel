@@ -1090,10 +1090,18 @@ class ContestWalletService extends BaseService {
                 // We need to check both the app port and the unified websocket port configuration
                 const wsProtocol = 'ws:'; // For internal comms, we use ws
                 const host = 'localhost';
-                const port = config.websocket.port || config.port || 3004;
-                const path = config.websocket.config.path || '/api/v69/ws';
+                
+                // IMPORTANT: API_PORT is used for internal WebSocket connections
+                // This is critical for proper WebSocket connectivity on development and production
+                const port = process.env.API_PORT || config.port || 3004;
+                
+                // The unified WebSocket path
+                const path = config.websocket?.config?.path || '/api/v69/ws';
                 
                 const wsUrl = `${wsProtocol}//${host}:${port}${path}`;
+                
+                // Add debug information
+                logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Connection details: host=${host}, port=${port}, path=${path}`);
                 logApi.info(`${formatLog.tag()} ${formatLog.info(`Connecting to unified WebSocket at ${wsUrl}`)}`);
                 
                 // Add retry mechanism for connection attempts

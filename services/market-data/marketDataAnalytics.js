@@ -29,7 +29,7 @@ class MarketDataAnalytics {
      */
     addPriceChange(symbol, price, change, volume, address) {
         this.priceChanges.push({
-            symbol: symbol || address.substring(0, 8),
+            symbol: symbol || (address ? address.substring(0, 8) : 'unknown'),
             price,
             change,
             volume: volume || 0,
@@ -46,7 +46,7 @@ class MarketDataAnalytics {
      */
     addVolumeChange(symbol, volume, price, address) {
         this.volumeChanges.push({
-            symbol: symbol || address.substring(0, 8),
+            symbol: symbol || (address ? address.substring(0, 8) : 'unknown'),
             volume,
             price,
             address
@@ -304,7 +304,7 @@ class MarketDataAnalytics {
             // Log top tokens in debug mode
             if (sortedTokens.length > 0) {
                 const topTokenSymbols = sortedTokens.slice(0, 5)
-                    .map(t => `${t.symbol || t.address.substring(0, 6)}`)
+                    .map(t => `${t.symbol || (t.address ? t.address.substring(0, 6) : 'unknown')}`)
                     .join(', ');
                 logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Sorted ${sortedTokens.length} tokens by relevance score. Top tokens: ${topTokenSymbols}`);
             }

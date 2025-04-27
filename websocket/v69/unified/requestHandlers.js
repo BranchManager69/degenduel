@@ -14,9 +14,8 @@ import { fetchTerminalData } from './services.js';
 import { MESSAGE_TYPES, TOPICS, normalizeTopic } from './utils.js';
 import { heliusBalanceTracker } from '../../../services/solana-engine/helius-balance-tracker.js';
 import marketDataService from '../../../services/market-data/marketDataService.js';
-// TO BE IMPLEMENTED:
-//import tokenBalanceModule from './modules/token-balance-module.js'; // DOES THIS EXIST?
-//import solanaBalanceModule from './modules/solana-balance-module.js'; // DOES THIS EXIST?
+import tokenBalanceModule from './modules/token-balance-module.js';
+import solanaBalanceModule from './modules/solana-balance-module.js';
 
 // Config
 import config from '../../../config/config.js';
@@ -444,6 +443,24 @@ async function handleTerminalRequest(ws, message, sendMessage, sendError) {
       }
       break;
       
+    case 'getVanityDashboard':
+      try {
+        // Fetch vanity wallet dashboard data
+        const dashboardData = await fetchVanityDashboardData();
+        sendMessage(ws, {
+          type: MESSAGE_TYPES.DATA,
+          topic: TOPICS.TERMINAL,
+          subtype: 'vanity-dashboard',
+          action: 'update',
+          data: dashboardData,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        logApi.error(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.RED}Error fetching vanity dashboard data:${fancyColors.RESET}`, error);
+        sendError(ws, 'Error fetching vanity dashboard data', 5002);
+      }
+      break;
+      
     default:
       sendError(ws, `Unknown action for terminal topic: ${message.action}`, 4009);
   }
@@ -546,9 +563,8 @@ async function handleSolanaBalanceRequest(ws, message, sendMessage, sendError) {
   message.server = { sendMessage, sendError }; // Pass server methods to the module
   
   try {
-    // TO BE IMPLEMENTED
-    //await solanaBalanceModule.handleOperation(ws, message, ws.clientInfo);
-    logApi.info(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.CYAN}Solana balance request received:${fancyColors.RESET}`, message);
+    await solanaBalanceModule.handleOperation(ws, message, ws.clientInfo);
+    logApi.debug(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.CYAN}Solana balance request handled:${fancyColors.RESET} ${message.action}`);
   } catch (error) {
     logApi.error(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.RED}Error handling Solana balance request:${fancyColors.RESET}`, error);
     sendError(ws, 'Error handling Solana balance request', 5004);
@@ -571,9 +587,8 @@ async function handleTokenBalanceRequest(ws, message, sendMessage, sendError) {
   message.server = { sendMessage, sendError }; // Pass server methods to the module
   
   try {
-    // TO BE IMPLEMENTED
-    //await tokenBalanceModule.handleOperation(ws, message, ws.clientInfo);
-    logApi.info(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.CYAN}Token balance request received:${fancyColors.RESET}`, message);
+    await tokenBalanceModule.handleOperation(ws, message, ws.clientInfo);
+    logApi.debug(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.CYAN}Token balance request handled:${fancyColors.RESET} ${message.action}`);
   } catch (error) {
     logApi.error(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.RED}Error handling token balance request:${fancyColors.RESET}`, error);
     sendError(ws, 'Error handling token balance request', 5004);

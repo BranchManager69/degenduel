@@ -84,6 +84,208 @@ class MarketDataRepository {
         
         return tokenMap;
     }
+    
+    /**
+     * Get all tokens with their prices and social information
+     * @param {PrismaClient} marketDb - The database client
+     * @returns {Promise<Array>} - Array of tokens with their details
+     */
+    async getAllTokens(marketDb) {
+        try {
+            // Query tokens with their associated details
+            const tokens = await marketDb.tokens.findMany({
+                select: {
+                    id: true,
+                    address: true,
+                    symbol: true,
+                    name: true,
+                    image_url: true,
+                    color: true,
+                    decimals: true,
+                    buy_pressure: true,
+                    token_prices: {
+                        select: {
+                            price: true,
+                            change_24h: true,
+                            market_cap: true,
+                            fdv: true,
+                            liquidity: true,
+                            volume_24h: true
+                        }
+                    },
+                    token_socials: {
+                        select: {
+                            type: true,
+                            url: true
+                        }
+                    },
+                    token_websites: {
+                        select: {
+                            label: true,
+                            url: true
+                        }
+                    }
+                },
+                orderBy: [
+                    {
+                        token_prices: {
+                            market_cap: 'desc'
+                        }
+                    },
+                    {
+                        token_prices: {
+                            volume_24h: 'desc'
+                        }
+                    }
+                ],
+                take: 5000 // Limit to top tokens
+            });
+            
+            return tokens;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting all tokens:${fancyColors.RESET}`, error);
+            return [];
+        }
+    }
+    
+    /**
+     * Get token by symbol
+     * @param {string} symbol - Token symbol
+     * @param {PrismaClient} marketDb - The database client
+     * @returns {Promise<Object|null>} - Token data or null if not found
+     */
+    async getTokenBySymbol(symbol, marketDb) {
+        try {
+            // Ensure symbol is a string and not null
+            if (!symbol) {
+                return null;
+            }
+            
+            // Find all tokens with matching symbol (case-insensitive)
+            const matchingTokens = await marketDb.tokens.findMany({
+                where: {
+                    symbol: {
+                        equals: symbol,
+                        mode: 'insensitive' // Case-insensitive match
+                    }
+                },
+                select: {
+                    id: true,
+                    address: true,
+                    symbol: true,
+                    name: true,
+                    image_url: true,
+                    color: true,
+                    decimals: true,
+                    buy_pressure: true,
+                    token_prices: {
+                        select: {
+                            price: true,
+                            change_24h: true,
+                            market_cap: true,
+                            fdv: true,
+                            liquidity: true,
+                            volume_24h: true
+                        }
+                    },
+                    token_socials: {
+                        select: {
+                            type: true,
+                            url: true
+                        }
+                    },
+                    token_websites: {
+                        select: {
+                            label: true,
+                            url: true
+                        }
+                    }
+                },
+                orderBy: [
+                    {
+                        token_prices: {
+                            market_cap: 'desc' // Prioritize tokens with higher market cap
+                        }
+                    },
+                    {
+                        token_prices: {
+                            volume_24h: 'desc' // Then by volume
+                        }
+                    }
+                ]
+            });
+            
+            // Log warning if multiple tokens found with same symbol
+            if (matchingTokens.length > 1) {
+                const addresses = matchingTokens.map(t => t.address.substring(0, 8) + '...').join(', ');
+                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Multiple tokens found with symbol ${symbol}: ${matchingTokens.length} matches (${addresses})${fancyColors.RESET}`);
+            }
+            
+            // Return the first token (which will be the one with highest market cap due to sorting)
+            return matchingTokens.length > 0 ? matchingTokens[0] : null;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token by symbol:${fancyColors.RESET}`, error);
+            return null;
+        }
+    }
+    
+    /**
+     * Get token by address
+     * @param {string} address - Token address
+     * @param {PrismaClient} marketDb - The database client
+     * @returns {Promise<Object|null>} - Token data or null if not found
+     */
+    async getTokenByAddress(address, marketDb) {
+        try {
+            // Ensure address is a string and not null
+            if (!address) {
+                return null;
+            }
+            
+            const token = await marketDb.tokens.findFirst({
+                where: {
+                    address: address
+                },
+                select: {
+                    id: true,
+                    address: true,
+                    symbol: true,
+                    name: true,
+                    image_url: true,
+                    color: true,
+                    decimals: true,
+                    buy_pressure: true,
+                    token_prices: {
+                        select: {
+                            price: true,
+                            change_24h: true,
+                            market_cap: true,
+                            fdv: true,
+                            liquidity: true,
+                            volume_24h: true
+                        }
+                    },
+                    token_socials: {
+                        select: {
+                            type: true,
+                            url: true
+                        }
+                    },
+                    token_websites: {
+                        select: {
+                            label: true,
+                            url: true
+                        }
+                    }
+                }
+            });
+            
+            return token;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token by address:${fancyColors.RESET}`, error);
+            return null;
+        }
+    }
 
     /**
      * Process batch updates for tokens in database

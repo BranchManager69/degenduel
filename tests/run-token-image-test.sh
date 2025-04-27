@@ -15,6 +15,8 @@ chmod +x tests/test-contest-image-with-tokens.js
 
 # Run the test
 node tests/test-contest-image-with-tokens.js
+TEST_EXIT_CODE=$?
 
 echo "======================================================"
-echo "Test completed."
+echo "Test completed with exit code: $TEST_EXIT_CODE"
+exit $TEST_EXIT_CODE

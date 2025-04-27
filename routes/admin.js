@@ -16,6 +16,7 @@ import aiSqlRoutes from './admin/ai-sql.js';
 import aiAnalysisRoutes from './admin/ai-analysis.js';
 import serviceMetricsRoutes from './admin/service-metrics.js';
 import vanityWalletsRoutes from './admin/vanity-wallets.js';
+import vanityDashboardRoutes from './admin/vanity-dashboard.js';
 import vanityCallbackRoutes from './admin/vanity-callback.js';
 import tokenSyncRoutes from './admin/token-sync.js';
 import tokenRefreshRoutes from './admin/token-refresh.js';
@@ -58,6 +59,9 @@ router.use('/admin/token-refresh', tokenRefreshRoutes);
 
 // Mount the Vanity Wallets routes
 router.use('/admin/vanity-wallets', vanityWalletsRoutes);
+
+// Mount the Vanity Dashboard routes
+router.use('/admin/vanity-dashboard', vanityDashboardRoutes);
 
 // Mount the Vanity Callback routes
 router.use('/admin/vanity-callback', vanityCallbackRoutes);

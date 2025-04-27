@@ -66,7 +66,9 @@ class ContestSchedulerService extends BaseService {
                 created: 0, 
                 scheduled: 0,
                 failed: 0,
-                createdDuringMaintenance: 0
+                createdDuringMaintenance: 0,
+                createdFromDatabaseSchedules: 0,
+                createdFromConfigSchedules: 0
             },
             performance: {
                 lastOperationTimeMs: 0,
@@ -79,6 +81,7 @@ class ContestSchedulerService extends BaseService {
                 operationsDuringMaintenance: 0,
                 lastMaintenanceCheckTime: null
             },
+            usingDatabaseSchedules: false,
             lastCreatedContests: [] // Array of recently created contests
         };
     }
@@ -134,34 +137,70 @@ class ContestSchedulerService extends BaseService {
             // Log the detailed initialization
             logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.DARK_MAGENTA} Starting Contest Scheduler Service... ${fancyColors.RESET}`);
             
-            // Log detailed schedule information
-            const schedules = this.config.contests.schedules.filter(s => s.enabled !== false);
+            // Check for migration of config to database
+            await this.migrateConfigToDatabaseIfNeeded();
             
-            // Create a pretty formatted schedule summary
-            const scheduleSummary = schedules.map(s => {
-                const template = this.config.contests[s.template] || this.config.contests.defaultTemplate;
-                
-                // Format days nicely
-                const days = s.days ? s.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(',') : 'All days';
-                
-                // Format hours - handling array of hours for tri-hourly
-                let hourText;
-                if (Array.isArray(s.hour)) {
-                    hourText = s.hour.map(h => `${h}:${String(s.minute || 0).padStart(2, '0')}`).join(', ');
-                } else {
-                    hourText = `${s.hour || template.hour || 12}:${String(s.minute || template.minute || 0).padStart(2, '0')}`;
-                }
-                
-                // Get duration and fee info
-                const duration = s.durationHours || template.duration_hours || 1;
-                const fee = s.entryFeeOverride || template.entry_fee;
-                
-                return `${fancyColors.GREEN}${s.name}${fancyColors.RESET}: ${fancyColors.YELLOW}${days}${fancyColors.RESET} at ${fancyColors.CYAN}${hourText}${fancyColors.RESET} | Duration: ${fancyColors.MAGENTA}${duration}h${fancyColors.RESET} | Fee: ${fancyColors.BLUE}${fee} SOL${fancyColors.RESET}`;
-            }).join('\n\t');
+            // Load schedules from database
+            const dbSchedules = await this.loadSchedulesFromDatabase();
             
-            // Log startup banner
-            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} 🏆 CONTEST SCHEDULER INITIALIZED 🏆 ${fancyColors.RESET}`);
-            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.DARK_GREEN} Loaded ${schedules.length} active contest schedules:${fancyColors.RESET}\n\t${scheduleSummary}`);
+            // Format and output the schedule information
+            if (dbSchedules && dbSchedules.length > 0) {
+                // Create a pretty formatted schedule summary for database schedules
+                const scheduleSummary = dbSchedules.map(s => {
+                    // Format days nicely
+                    const days = s.days ? s.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(',') : 'All days';
+                    
+                    // Format hours - handling array of hours for tri-hourly
+                    let hourText;
+                    if (s.allow_multiple_hours && s.multiple_hours && s.multiple_hours.length > 0) {
+                        hourText = s.multiple_hours.map(h => `${h}:${String(s.minute || 0).padStart(2, '0')}`).join(', ');
+                    } else {
+                        hourText = `${s.hour || 12}:${String(s.minute || 0).padStart(2, '0')}`;
+                    }
+                    
+                    // Get duration and fee info
+                    const duration = s.duration_hours || 1;
+                    const fee = s.entry_fee_override?.toString() || "0.1";
+                    
+                    return `${fancyColors.GREEN}${s.name}${fancyColors.RESET}: ${fancyColors.YELLOW}${days}${fancyColors.RESET} at ${fancyColors.CYAN}${hourText}${fancyColors.RESET} | Duration: ${fancyColors.MAGENTA}${duration}h${fancyColors.RESET} | Fee: ${fancyColors.BLUE}${fee} SOL${fancyColors.RESET}`;
+                }).join('\n\t');
+                
+                // Log startup banner for database schedules
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} 🏆 CONTEST SCHEDULER INITIALIZED 🏆 ${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.DARK_GREEN} Loaded ${dbSchedules.length} active contest schedules from database:${fancyColors.RESET}\n\t${scheduleSummary}`);
+            } else {
+                // Fall back to legacy config file schedules
+                const legacySchedules = this.config.contests.schedules.filter(s => s.enabled !== false);
+                
+                // Create a pretty formatted schedule summary for legacy config
+                const legacyScheduleSummary = legacySchedules.map(s => {
+                    const template = this.config.contests[s.template] || this.config.contests.defaultTemplate;
+                    
+                    // Format days nicely
+                    const days = s.days ? s.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(',') : 'All days';
+                    
+                    // Format hours - handling array of hours for tri-hourly
+                    let hourText;
+                    if (Array.isArray(s.hour)) {
+                        hourText = s.hour.map(h => `${h}:${String(s.minute || 0).padStart(2, '0')}`).join(', ');
+                    } else {
+                        hourText = `${s.hour || template.hour || 12}:${String(s.minute || template.minute || 0).padStart(2, '0')}`;
+                    }
+                    
+                    // Get duration and fee info
+                    const duration = s.durationHours || template.duration_hours || 1;
+                    const fee = s.entryFeeOverride || template.entry_fee;
+                    
+                    return `${fancyColors.GREEN}${s.name}${fancyColors.RESET}: ${fancyColors.YELLOW}${days}${fancyColors.RESET} at ${fancyColors.CYAN}${hourText}${fancyColors.RESET} | Duration: ${fancyColors.MAGENTA}${duration}h${fancyColors.RESET} | Fee: ${fancyColors.BLUE}${fee} SOL${fancyColors.RESET}`;
+                }).join('\n\t');
+                
+                // Log startup banner for config file schedules
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} 🏆 CONTEST SCHEDULER INITIALIZED 🏆 ${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.DARK_GREEN} Loaded ${legacySchedules.length} active contest schedules from config:${fancyColors.RESET}\n\t${legacyScheduleSummary}`);
+                
+                // Warning about database migration
+                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}⚠️ Using legacy config file schedules. Consider migrating to database schedules.${fancyColors.RESET}`);
+            }
             
             // Show maintenance mode bypass capabilities
             logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}Supports operation during maintenance mode${fancyColors.RESET}`);
@@ -176,134 +215,345 @@ class ContestSchedulerService extends BaseService {
             throw error;
         }
     }
+    
+    /**
+     * Add helper methods for DB integration
+     */
+    async loadSchedulesFromDatabase() {
+        try {
+            // Query active schedules from the database
+            const dbSchedules = await prisma.contest_schedule.findMany({
+                where: { enabled: true },
+                include: {
+                    template: true // Include the related contest template
+                }
+            });
+
+            if (dbSchedules.length > 0) {
+                this.schedulerStats.usingDatabaseSchedules = true;
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Loaded ${dbSchedules.length} schedules from database.`);
+            }
+            return dbSchedules;
+        } catch (error) {
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Error loading schedules from database:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Migrate config schedules to database if needed
+     */
+    async migrateConfigToDatabaseIfNeeded() {
+        try {
+            // Check if we've already migrated
+            const migrationFlag = await prisma.system_settings.findUnique({
+                where: { key: 'contest_scheduler_migrated' }
+            });
+            
+            if (migrationFlag?.value?.migrated === true) {
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Config already migrated to database.`);
+                return;
+            }
+            
+            // First check if we have any existing contest schedules in DB
+            const existingSchedules = await prisma.contest_schedule.count();
+            if (existingSchedules > 0) {
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Found ${existingSchedules} existing database schedules, skipping migration.`);
+                
+                // Mark as migrated so we don't check again
+                await prisma.system_settings.upsert({
+                    where: { key: 'contest_scheduler_migrated' },
+                    update: { value: { migrated: true } },
+                    create: { 
+                        key: 'contest_scheduler_migrated', 
+                        value: { migrated: true } 
+                    }
+                });
+                
+                return;
+            }
+            
+            // No existing schedules found, migrate from config
+            const configSchedules = this.config.contests.schedules.filter(s => s.enabled !== false);
+            if (!configSchedules || configSchedules.length === 0) {
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} No config schedules to migrate.`);
+                return;
+            }
+            
+            // First, create or find the default template
+            let defaultTemplate = await prisma.contest_templates.findFirst({
+                where: { name: 'Default Template' }
+            });
+            
+            if (!defaultTemplate) {
+                defaultTemplate = await prisma.contest_templates.create({
+                    data: {
+                        name: 'Default Template',
+                        description: 'Default contest template with standard rules',
+                        duration_minutes: 60,
+                        entry_fee: new Decimal(this.config.contests.defaultTemplate.entry_fee || "0.1"),
+                        max_participants: this.config.contests.defaultTemplate.max_participants || 100,
+                        is_active: true
+                    }
+                });
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created default contest template.`);
+            }
+            
+            // Migrate each schedule
+            for (const schedule of configSchedules) {
+                const template = this.config.contests[schedule.template] || this.config.contests.defaultTemplate;
+                
+                // Create the database schedule
+                await prisma.contest_schedule.create({
+                    data: {
+                        name: schedule.name,
+                        template_id: defaultTemplate.id,
+                        hour: Array.isArray(schedule.hour) ? schedule.hour[0] : schedule.hour,
+                        minute: schedule.minute || 0,
+                        days: schedule.days || [0, 1, 2, 3, 4, 5, 6], // Default to all days
+                        entry_fee_override: new Decimal(schedule.entryFeeOverride || template.entry_fee || "0.1"),
+                        name_override: schedule.nameOverride || template.name,
+                        description_override: schedule.descriptionOverride || template.description,
+                        duration_hours: schedule.durationHours || template.duration_hours || 1,
+                        enabled: schedule.enabled !== false,
+                        advance_notice_hours: schedule.advanceNoticeHours || template.advance_notice_hours || 1,
+                        min_participants_override: schedule.minParticipantsOverride || template.min_participants,
+                        max_participants_override: schedule.maxParticipantsOverride || template.max_participants,
+                        allow_multiple_hours: Array.isArray(schedule.hour),
+                        multiple_hours: Array.isArray(schedule.hour) ? schedule.hour : []
+                    }
+                });
+            }
+            
+            // Mark as migrated
+            await prisma.system_settings.upsert({
+                where: { key: 'contest_scheduler_migrated' },
+                update: { value: { migrated: true } },
+                create: {
+                    key: 'contest_scheduler_migrated',
+                    value: { migrated: true }
+                }
+            });
+            
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Successfully migrated ${configSchedules.length} schedules to database.${fancyColors.RESET}`);
+        } catch (error) {
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Error migrating config to database:`, error);
+        }
+    }
 
     /**
      * Create a new contest based on template
+     * @param {Object} schedule - The schedule configuration, can be from database or config
+     * @returns {Promise<Object>} - The created contest and wallet
      */
     async createScheduledContest(schedule) {
-        const startTime = Date.now();
+        const functionStartTime = Date.now();
         try {
-            // Get template configuration
-            const template = this.config.contests[schedule.template] || this.config.contests.defaultTemplate;
-            if (!template) {
-                throw new Error(`Template "${schedule.template}" not found in configuration`);
+            let templateData;
+            let isDbSchedule = false;
+            
+            // Determine if this is a database schedule or a config schedule
+            if (schedule.template_id && schedule.template) {
+                // This is a database schedule
+                isDbSchedule = true;
+                templateData = {
+                    name: schedule.template.name,
+                    description: schedule.template.description,
+                    duration_hours: schedule.template.duration_minutes ? schedule.template.duration_minutes / 60 : 1,
+                    entry_fee: schedule.template.entry_fee || "0.1",
+                    min_participants: 2,
+                    max_participants: schedule.template.max_participants || 100,
+                    allowed_buckets: [],
+                    advance_notice_hours: schedule.advance_notice_hours || 1,
+                    contest_code: "DUEL"
+                };
+                
+                logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Using database schedule: ${schedule.name} (Template ID: ${schedule.template_id})`);
+            } else {
+                // This is a config schedule
+                templateData = this.config.contests[schedule.template] || this.config.contests.defaultTemplate;
+                
+                if (!templateData) {
+                    throw new Error(`Template "${schedule.template}" not found in configuration`);
+                }
+                
+                logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Using config schedule: ${schedule.name} (Template: ${schedule.template})`);
             }
 
             // Calculate contest times
             const now = new Date();
-            const startTime = new Date();
+            const contestStartTime = new Date();
             
             // Set start time to the next scheduled time
-            if (Array.isArray(schedule.hour)) {
+            if (
+                (isDbSchedule && schedule.allow_multiple_hours && schedule.multiple_hours && schedule.multiple_hours.length > 0) ||
+                (!isDbSchedule && Array.isArray(schedule.hour))
+            ) {
                 // For schedules with multiple hours (like tri-hourly)
                 const currentHour = now.getHours();
+                const hourArray = isDbSchedule ? schedule.multiple_hours : schedule.hour;
+                
                 // Find the next hour that is greater than current hour
-                const nextHour = schedule.hour.find(h => h > currentHour);
+                const nextHour = hourArray.find(h => h > currentHour);
+                
                 // If found, use it, otherwise use the first hour (for tomorrow)
-                const hourToUse = nextHour !== undefined ? nextHour : schedule.hour[0];
-                startTime.setHours(hourToUse);
+                const hourToUse = nextHour !== undefined ? nextHour : hourArray[0];
+                contestStartTime.setHours(hourToUse);
             } else {
                 // For single-hour schedules
-                startTime.setHours(schedule.hour || template.hour || 12);
+                const hour = isDbSchedule ? 
+                    (schedule.hour || 12) : 
+                    (schedule.hour || templateData.hour || 12);
+                    
+                contestStartTime.setHours(hour);
             }
-            startTime.setMinutes(schedule.minute || template.minute || 0);
-            startTime.setSeconds(0);
-            startTime.setMilliseconds(0);
+            
+            const minute = isDbSchedule ? 
+                (schedule.minute || 0) : 
+                (schedule.minute || templateData.minute || 0);
+                
+            contestStartTime.setMinutes(minute);
+            contestStartTime.setSeconds(0);
+            contestStartTime.setMilliseconds(0);
             
             // If the scheduled time has already passed today, find the next occurrence
-            // For regular schedules (single hour), just find the next occurrence
-            if (startTime <= now) {
-                // For multi-hour schedules (like the tri-hourly schedule) find the next upcoming slot
-                if (Array.isArray(schedule.hour)) {
-                    // Get current hour
+            if (contestStartTime <= now) {
+                // For multi-hour schedules find the next upcoming slot
+                if (
+                    (isDbSchedule && schedule.allow_multiple_hours && schedule.multiple_hours && schedule.multiple_hours.length > 0) ||
+                    (!isDbSchedule && Array.isArray(schedule.hour))
+                ) {
                     const currentHour = now.getHours();
+                    const hourArray = isDbSchedule ? schedule.multiple_hours : schedule.hour;
                     
-                    // Find the next hour in the array that is greater than the current hour
-                    const nextHour = schedule.hour.find(h => h > currentHour);
+                    // Find the next hour that is greater than current hour
+                    const nextHour = hourArray.find(h => h > currentHour);
                     
                     if (nextHour !== undefined) {
                         // We found a next slot today
-                        startTime.setHours(nextHour);
-                        startTime.setMinutes(schedule.minute || 0);
-                        startTime.setSeconds(0);
-                        startTime.setMilliseconds(0);
+                        contestStartTime.setHours(nextHour);
+                        contestStartTime.setMinutes(minute);
+                        contestStartTime.setSeconds(0);
+                        contestStartTime.setMilliseconds(0);
                     } else {
                         // No more slots today, move to first slot tomorrow
-                        startTime.setDate(startTime.getDate() + 1);
-                        startTime.setHours(schedule.hour[0]);
-                        startTime.setMinutes(schedule.minute || 0);
-                        startTime.setSeconds(0);
-                        startTime.setMilliseconds(0);
+                        contestStartTime.setDate(contestStartTime.getDate() + 1);
+                        contestStartTime.setHours(hourArray[0]);
+                        contestStartTime.setMinutes(minute);
+                        contestStartTime.setSeconds(0);
+                        contestStartTime.setMilliseconds(0);
                     }
                 } else {
                     // Simple schedule (single hour value), move to tomorrow
-                    startTime.setDate(startTime.getDate() + 1);
+                    contestStartTime.setDate(contestStartTime.getDate() + 1);
                 }
             }
             
             // Check if this day of the week is included in the schedule
-            const dayOfWeek = startTime.getDay(); // 0 = Sunday, 6 = Saturday
-            if (schedule.days && !schedule.days.includes(dayOfWeek)) {
+            const dayOfWeek = contestStartTime.getDay(); // 0 = Sunday, 6 = Saturday
+            const scheduleDays = schedule.days || [0, 1, 2, 3, 4, 5, 6]; // Default to all days
+            
+            if (scheduleDays && !scheduleDays.includes(dayOfWeek)) {
                 // This day is not in the schedule, find the next valid day
                 let daysToAdd = 1;
                 let nextDayOfWeek = (dayOfWeek + daysToAdd) % 7;
                 
-                while (!schedule.days.includes(nextDayOfWeek) && daysToAdd < 7) {
+                while (!scheduleDays.includes(nextDayOfWeek) && daysToAdd < 7) {
                     daysToAdd++;
                     nextDayOfWeek = (dayOfWeek + daysToAdd) % 7;
                 }
                 
-                startTime.setDate(startTime.getDate() + daysToAdd);
+                contestStartTime.setDate(contestStartTime.getDate() + daysToAdd);
             }
             
             // Check if we're too close to the start time (within advance notice window)
-            const advanceNoticeHours = schedule.advanceNoticeHours || template.advance_notice_hours || 1;
+            const advanceNoticeHours = 
+                (isDbSchedule ? schedule.advance_notice_hours : schedule.advanceNoticeHours) || 
+                templateData.advance_notice_hours || 
+                1;
+                
             const minimumAdvanceMs = advanceNoticeHours * 60 * 60 * 1000; 
             
-            if (startTime.getTime() - now.getTime() < minimumAdvanceMs) {
+            if (contestStartTime.getTime() - now.getTime() < minimumAdvanceMs) {
                 // Too close to start time, so move to the next scheduled occurrence
-                startTime.setDate(startTime.getDate() + 1);
+                contestStartTime.setDate(contestStartTime.getDate() + 1);
                 
                 // If specific days are configured, find the next valid day
-                if (schedule.days) {
-                    const newDayOfWeek = startTime.getDay();
-                    if (!schedule.days.includes(newDayOfWeek)) {
+                if (scheduleDays && scheduleDays.length < 7) {
+                    const newDayOfWeek = contestStartTime.getDay();
+                    if (!scheduleDays.includes(newDayOfWeek)) {
                         let daysToAdd = 1;
                         let nextDayOfWeek = (newDayOfWeek + daysToAdd) % 7;
                         
-                        while (!schedule.days.includes(nextDayOfWeek) && daysToAdd < 7) {
+                        while (!scheduleDays.includes(nextDayOfWeek) && daysToAdd < 7) {
                             daysToAdd++;
                             nextDayOfWeek = (newDayOfWeek + daysToAdd) % 7;
                         }
                         
-                        startTime.setDate(startTime.getDate() + daysToAdd);
+                        contestStartTime.setDate(contestStartTime.getDate() + daysToAdd);
                     }
                 }
             }
             
-            // Calculate end time - default to 1 hour now instead of 24
-            const durationHours = schedule.durationHours || template.duration_hours || 1;
-            const endTime = new Date(startTime);
+            // Calculate end time
+            const durationHours = 
+                isDbSchedule ? 
+                    (schedule.duration_hours || 1) : 
+                    (schedule.durationHours || templateData.duration_hours || 1);
+                    
+            const endTime = new Date(contestStartTime);
             endTime.setHours(endTime.getHours() + durationHours);
             
-            // Generate a unique contest code with hour to ensure uniqueness for hourly contests
-            let hourStr = String(startTime.getHours()).padStart(2, '0');
-            let minuteStr = String(startTime.getMinutes()).padStart(2, '0');
-            const dateStr = startTime.toISOString().slice(0, 10).replace(/-/g, '');
-            const contestCode = `${schedule.contestCodePrefix || template.contest_code || 'AUTO'}-${dateStr}-${hourStr}${minuteStr}`;
+            // Generate a unique contest code with date and time
+            let hourStr = String(contestStartTime.getHours()).padStart(2, '0');
+            let minuteStr = String(contestStartTime.getMinutes()).padStart(2, '0');
+            const dateStr = contestStartTime.toISOString().slice(0, 10).replace(/-/g, '');
             
-            // Build contest data
+            // The contest code prefix can come from different places depending on the schedule type
+            const contestCodePrefix = 
+                isDbSchedule ? 
+                    "DUEL" : // For DB schedules, use a default
+                    (schedule.contestCodePrefix || templateData.contest_code || 'AUTO');
+                    
+            const contestCode = `${contestCodePrefix}-${dateStr}-${hourStr}${minuteStr}`;
+            
+            // Build contest data with appropriate values based on schedule type
             const contestData = {
-                name: schedule.nameOverride || template.name,
+                name: isDbSchedule ? 
+                    (schedule.name_override || templateData.name) : 
+                    (schedule.nameOverride || templateData.name),
+                    
                 contest_code: contestCode,
-                description: schedule.descriptionOverride || template.description,
-                entry_fee: new Decimal(schedule.entryFeeOverride || template.entry_fee),
-                start_time: startTime,
+                
+                description: isDbSchedule ? 
+                    (schedule.description_override || templateData.description) : 
+                    (schedule.descriptionOverride || templateData.description),
+                    
+                entry_fee: new Decimal(
+                    isDbSchedule ? 
+                        (schedule.entry_fee_override || templateData.entry_fee) : 
+                        (schedule.entryFeeOverride || templateData.entry_fee)
+                ),
+                
+                start_time: contestStartTime,
                 end_time: endTime,
-                min_participants: schedule.minParticipantsOverride || template.min_participants,
-                max_participants: schedule.maxParticipantsOverride || template.max_participants,
-                allowed_buckets: schedule.allowedBucketsOverride || template.allowed_buckets,
-                status: 'pending'
+                
+                min_participants: isDbSchedule ? 
+                    (schedule.min_participants_override || templateData.min_participants || 2) : 
+                    (schedule.minParticipantsOverride || templateData.min_participants || 2),
+                    
+                max_participants: isDbSchedule ? 
+                    (schedule.max_participants_override || templateData.max_participants) : 
+                    (schedule.maxParticipantsOverride || templateData.max_participants),
+                    
+                allowed_buckets: isDbSchedule ? 
+                    [] : // For DB schedules, we don't have this yet
+                    (schedule.allowedBucketsOverride || templateData.allowed_buckets || []),
+                    
+                status: 'pending',
+                
+                // If this is a database schedule, link it to the schedule
+                schedule_id: isDbSchedule ? schedule.id : null
             };
             
             // Create contest and wallet in a transaction
@@ -317,6 +567,12 @@ class ContestSchedulerService extends BaseService {
                 logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Details: ${contest.name} (ID: ${contest.id}, Code: ${contest.contest_code})`);
                 logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Timeframe: ${new Date(contest.start_time).toLocaleString()} to ${new Date(contest.end_time).toLocaleString()}`);
                 logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Entry fee: ${contest.entry_fee}, Participants: ${contest.min_participants}-${contest.max_participants || 'unlimited'}`);
+                
+                if (isDbSchedule) {
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created from database schedule ID: ${schedule.id}`);
+                } else {
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created from config schedule: ${schedule.name}`);
+                }
                 
                 // 2. Use contest wallet service to create wallet (this properly handles vanity wallets)
                 // Import the service (already configured with proper vanity wallet handling)
@@ -360,23 +616,53 @@ class ContestSchedulerService extends BaseService {
                     const path = await import('path');
                     
                     try {
-                        // Get all placeholder files
-                        const placeholdersDir = path.join(process.cwd(), 'public', 'images', 'contests', 'placeholders');
-                        const files = await fs.readdir(placeholdersDir);
-                        const pngFiles = files.filter(file => file.endsWith('.png'));
-                        
-                        if (pngFiles.length > 0) {
-                            // Pick a random placeholder
-                            const randomFile = pngFiles[Math.floor(Math.random() * pngFiles.length)];
-                            const placeholderUrl = `/images/contests/placeholders/${randomFile}`;
+                        // Instead of using random placeholders, use contest_code directly for the image URL
+                        // This ensures frontend and all systems can reliably construct the URL without querying DB
+                        if (contest.contest_code) {
+                            // Generate a predictable image URL based on contest code
+                            const standardImageUrl = `/images/contests/${contest.contest_code}.png`;
                             
-                            // Set the placeholder image URL in the database
+                            // Set the standardized image URL in the database
                             await prisma.contests.update({
                                 where: { id: contest.id },
-                                data: { image_url: placeholderUrl }
+                                data: { image_url: standardImageUrl }
                             });
                             
-                            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Set temporary placeholder image for contest: ${placeholderUrl}`);
+                            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Set standardized image URL for contest: ${standardImageUrl}`);
+                            
+                            // Copy a default placeholder to this location immediately so there's something to display
+                            try {
+                                const placeholdersDir = path.join(process.cwd(), 'public', 'images', 'contests', 'placeholders');
+                                const defaultPlaceholder = path.join(placeholdersDir, 'contest_default.png');
+                                const targetPath = path.join(process.cwd(), 'public', 'images', 'contests', `${contest.contest_code}.png`);
+                                
+                                // Create directory if it doesn't exist
+                                await fs.mkdir(path.dirname(targetPath), { recursive: true });
+                                
+                                // Check if default placeholder exists, otherwise use any placeholder
+                                let sourceFile = defaultPlaceholder;
+                                try {
+                                    await fs.access(defaultPlaceholder);
+                                } catch (err) {
+                                    // Default not found, use any placeholder
+                                    const files = await fs.readdir(placeholdersDir);
+                                    const pngFiles = files.filter(file => file.endsWith('.png'));
+                                    if (pngFiles.length > 0) {
+                                        const randomFile = pngFiles[Math.floor(Math.random() * pngFiles.length)];
+                                        sourceFile = path.join(placeholdersDir, randomFile);
+                                    }
+                                }
+                                
+                                // Only copy if we have a source file
+                                if (sourceFile) {
+                                    await fs.copyFile(sourceFile, targetPath);
+                                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Copied placeholder to standardized location: ${targetPath}`);
+                                }
+                            } catch (copyError) {
+                                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Failed to copy placeholder: ${copyError.message}`);
+                            }
+                        } else {
+                            logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Contest has no contest_code, cannot set standardized image URL`);
                         }
                     } catch (placeholderError) {
                         logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Failed to set placeholder image: ${placeholderError.message}`);
@@ -402,7 +688,7 @@ class ContestSchedulerService extends BaseService {
             this.schedulerStats.contests.scheduled++;
             
             // Update performance metrics
-            this.schedulerStats.performance.lastContestCreationMs = Date.now() - startTime;
+            this.schedulerStats.performance.lastContestCreationMs = Date.now() - functionStartTime;
             
             // Add to recently created contests list
             this.schedulerStats.lastCreatedContests.push({
@@ -412,7 +698,9 @@ class ContestSchedulerService extends BaseService {
                 start_time: result.contest.start_time,
                 end_time: result.contest.end_time,
                 created_at: new Date(),
-                creation_time_ms: Date.now() - startTime
+                creation_time_ms: Date.now() - functionStartTime,
+                schedule_type: isDbSchedule ? 'database' : 'config',
+                schedule_id: isDbSchedule ? schedule.id : null
             });
 
             // Send Discord notification for contest creation
@@ -430,7 +718,8 @@ class ContestSchedulerService extends BaseService {
                     prize_pool: result.contest.prize_pool,
                     entry_fee: result.contest.entry_fee,
                     status: result.contest.status,
-                    wallet_address: result.wallet?.wallet_address || 'Unknown'
+                    wallet_address: result.wallet?.wallet_address || 'Unknown',
+                    schedule_type: isDbSchedule ? 'database' : 'config'
                 });
                 
                 logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} 📢 Discord notification sent for new contest`);
@@ -453,14 +742,34 @@ class ContestSchedulerService extends BaseService {
 
     /**
      * Check if a contest with similar schedule already exists
+     * @param {Object} schedule - The schedule to check (can be from database or config)
+     * @returns {Promise<boolean>} - True if a contest already exists for this schedule
      */
     async contestAlreadyExists(schedule) {
         const startTime = Date.now();
         try {
-            // Get template
-            const template = this.config.contests[schedule.template] || this.config.contests.defaultTemplate;
-            if (!template) {
-                throw new Error(`Template "${schedule.template}" not found in configuration`);
+            let templateData;
+            let isDbSchedule = false;
+            
+            // Determine if this is a database schedule or a config schedule
+            if (schedule.template_id && schedule.template) {
+                // This is a database schedule
+                isDbSchedule = true;
+                templateData = {
+                    hour: null,
+                    minute: 0
+                };
+                
+                logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Checking existing contests for database schedule: ${schedule.name} (ID: ${schedule.id})`);
+            } else {
+                // This is a config schedule
+                templateData = this.config.contests[schedule.template] || this.config.contests.defaultTemplate;
+                
+                if (!templateData) {
+                    throw new Error(`Template "${schedule.template}" not found in configuration`);
+                }
+                
+                logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Checking existing contests for config schedule: ${schedule.name}`);
             }
 
             // Calculate start time window
@@ -477,24 +786,83 @@ class ContestSchedulerService extends BaseService {
             });
             
             // Check if any of the existing contests match this schedule
-            const targetHour = schedule.hour || template.hour || 12;
-            const targetMinute = schedule.minute || template.minute || 0;
+            let targetHour;
+            const targetMinute = isDbSchedule ? 
+                (schedule.minute || 0) : 
+                (schedule.minute || templateData.minute || 0);
+                
+            // Get the hour(s) to check
+            if (
+                (isDbSchedule && schedule.allow_multiple_hours && schedule.multiple_hours && schedule.multiple_hours.length > 0) ||
+                (!isDbSchedule && Array.isArray(schedule.hour))
+            ) {
+                // For multi-hour schedules, use the next hour from the array
+                const hourArray = isDbSchedule ? schedule.multiple_hours : schedule.hour;
+                const currentHour = now.getHours();
+                
+                // Find the next hour after current time
+                targetHour = hourArray.find(h => h > currentHour);
+                
+                // If no next hour today, use the first hour for tomorrow
+                if (targetHour === undefined) {
+                    targetHour = hourArray[0];
+                }
+            } else {
+                // For single-hour schedules
+                targetHour = isDbSchedule ? 
+                    (schedule.hour || 12) : 
+                    (schedule.hour || templateData.hour || 12);
+            }
+            
+            const scheduleDays = schedule.days || [0, 1, 2, 3, 4, 5, 6]; // Default to all days
             
             for (const contest of existingContests) {
                 const contestHour = contest.start_time.getHours();
                 const contestMinute = contest.start_time.getMinutes();
                 
-                // Check if hours and minutes match
-                if (contestHour === targetHour && Math.abs(contestMinute - targetMinute) <= 5) {
+                // For database schedules, if there's a schedule_id, check if it matches directly
+                if (isDbSchedule && contest.schedule_id === schedule.id) {
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Contest already exists for this database schedule: ${schedule.name} (Contest ID: ${contest.id}, Code: ${contest.contest_code})`);
+                    
+                    // Update performance metric
+                    this.schedulerStats.performance.lastScheduleCheckMs = Date.now() - startTime;
+                    
+                    return true;
+                }
+                
+                // Check if hours and minutes match closely (within 5 minutes)
+                if (targetHour !== undefined && contestHour === targetHour && Math.abs(contestMinute - targetMinute) <= 5) {
                     // Check if the contest is on one of the scheduled days
                     const contestDay = contest.start_time.getDay();
-                    if (!schedule.days || schedule.days.includes(contestDay)) {
+                    if (!scheduleDays || scheduleDays.includes(contestDay)) {
                         logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Contest already exists for schedule: ${schedule.name} (Contest ID: ${contest.id}, Code: ${contest.contest_code})`);
                         
                         // Update performance metric
                         this.schedulerStats.performance.lastScheduleCheckMs = Date.now() - startTime;
                         
                         return true;
+                    }
+                }
+                
+                // For multi-hour schedules, check all hours in the array
+                if (
+                    (isDbSchedule && schedule.allow_multiple_hours && schedule.multiple_hours && schedule.multiple_hours.length > 0) ||
+                    (!isDbSchedule && Array.isArray(schedule.hour))
+                ) {
+                    const hourArray = isDbSchedule ? schedule.multiple_hours : schedule.hour;
+                    
+                    // Check if this contest matches any of the hours in the multi-hour schedule
+                    if (hourArray.includes(contestHour) && Math.abs(contestMinute - targetMinute) <= 5) {
+                        // Check if the contest is on one of the scheduled days
+                        const contestDay = contest.start_time.getDay();
+                        if (!scheduleDays || scheduleDays.includes(contestDay)) {
+                            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Contest already exists for multi-hour schedule: ${schedule.name} (Contest ID: ${contest.id}, Code: ${contest.contest_code})`);
+                            
+                            // Update performance metric
+                            this.schedulerStats.performance.lastScheduleCheckMs = Date.now() - startTime;
+                            
+                            return true;
+                        }
                     }
                 }
             }
@@ -524,14 +892,28 @@ class ContestSchedulerService extends BaseService {
                 logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.YELLOW} System is in maintenance mode, but contest scheduler will continue to operate ${fancyColors.RESET}`);
             }
             
-            // Get enabled schedules
-            const enabledSchedules = this.config.contests.schedules.filter(s => s.enabled !== false);
+            // Check if we have database schedules first
+            const dbSchedules = await this.loadSchedulesFromDatabase();
+            
+            // Choose database schedules if available, otherwise use config schedules
+            let schedules;
+            let scheduleSource;
+            
+            if (dbSchedules && dbSchedules.length > 0) {
+                schedules = dbSchedules;
+                scheduleSource = 'database';
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Using ${schedules.length} active schedules from database`);
+            } else {
+                schedules = this.config.contests.schedules.filter(s => s.enabled !== false);
+                scheduleSource = 'config';
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Using ${schedules.length} active schedules from config file`);
+            }
             
             // Check each schedule
             let createdCount = 0;
             let skippedCount = 0;
             
-            for (const schedule of enabledSchedules) {
+            for (const schedule of schedules) {
                 try {
                     // Check if a contest for this schedule already exists
                     const exists = await this.contestAlreadyExists(schedule);
@@ -595,7 +977,8 @@ class ContestSchedulerService extends BaseService {
             // Create summary lines
             const summaryLines = [
                 `║ ${fancyColors.CYAN}Time${fancyColors.RESET}: ${formattedTime} ${formattedDate}${' '.repeat(30)}${fancyColors.RESET} ║`,
-                `║ ${fancyColors.YELLOW}Schedules Checked${fancyColors.RESET}: ${enabledSchedules.length}${' '.repeat(40 - String(enabledSchedules.length).length)}${fancyColors.RESET} ║`,
+                `║ ${fancyColors.MAGENTA}Schedule Source${fancyColors.RESET}: ${scheduleSource.toUpperCase()}${' '.repeat(41 - scheduleSource.length)}${fancyColors.RESET} ║`,
+                `║ ${fancyColors.YELLOW}Schedules Checked${fancyColors.RESET}: ${schedules.length}${' '.repeat(40 - String(schedules.length).length)}${fancyColors.RESET} ║`,
                 `║ ${fancyColors.GREEN}Contests Created${fancyColors.RESET}: ${createdCount}${' '.repeat(41 - String(createdCount).length)}${fancyColors.RESET} ║`,
                 `║ ${fancyColors.BLUE}Schedules Skipped${fancyColors.RESET}: ${skippedCount}${' '.repeat(40 - String(skippedCount).length)}${fancyColors.RESET} ║`
             ];
@@ -631,7 +1014,12 @@ class ContestSchedulerService extends BaseService {
                     const codeStr = `${fancyColors.YELLOW}Code: ${c.contest_code}${fancyColors.RESET}`;
                     const timeStr = `${fancyColors.GREEN}Time: ${startTime}${fancyColors.RESET}`;
                     
-                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ║ ${fancyColors.BOLD}${c.name}${fancyColors.RESET}${' '.repeat(Math.max(0, 60 - c.name.length))} ║`);
+                    // Add note about schedule source
+                    const sourceStr = c.schedule_type === 'database' ? 
+                        `${fancyColors.MAGENTA}[DB: ${c.schedule_id}]${fancyColors.RESET}` : 
+                        `${fancyColors.BLUE}[Config]${fancyColors.RESET}`;
+                    
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ║ ${fancyColors.BOLD}${c.name}${fancyColors.RESET} ${sourceStr}${' '.repeat(Math.max(0, 60 - c.name.length - (sourceStr.length - 15)))} ║`);
                     logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ║ ${idStr} | ${codeStr} | ${timeStr}${' '.repeat(Math.max(0, 15))} ║`);
                     
                     if (recentlyCreated.indexOf(c) < recentlyCreated.length - 1) {
@@ -655,8 +1043,9 @@ class ContestSchedulerService extends BaseService {
             return {
                 created: createdCount,
                 skipped: skippedCount,
-                total: enabledSchedules.length,
-                maintenanceMode: isInMaintenance
+                total: schedules.length,
+                maintenanceMode: isInMaintenance,
+                scheduleSource
             };
         } catch (error) {
             // Update operation stats

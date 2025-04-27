@@ -8,13 +8,13 @@ import { Keypair } from '@solana/web3.js';
 import { PublicKey } from '@solana/web3.js';
 
 // Pattern to generate - simple and quick "TST" prefix (no numbers)
-// This should be very fast to generate (a few seconds at most)
+// This should be very fast to generate (a few seconds at most with optimized settings)
 const TEST_PATTERN = 'TST';
 
 // Calculate an appropriate timeout based on pattern length and complexity
 function calculateTimeout(pattern, caseSensitive = true) {
-  // Benchmark: 4-character case-sensitive pattern took ~106 seconds 
-  const BASE_TIME_4_CHARS = 159; // seconds (with safety margin)
+  // Updated benchmark: 4-character case-sensitive pattern should take ~60 seconds with optimized settings
+  const BASE_TIME_4_CHARS = 60; // seconds (with optimized settings using all 8 cores)
   const BASE_CHAR_COUNT = 4;
   
   // Character space depends on case sensitivity
@@ -27,8 +27,8 @@ function calculateTimeout(pattern, caseSensitive = true) {
     : 1 / Math.pow(charSpace, -lengthDiff); // Each fewer character divides difficulty by charSpace
   
   // Calculate timeout in milliseconds with reasonable limits
-  const MIN_TIMEOUT = 30 * 1000;  // 30 seconds minimum
-  const MAX_TIMEOUT = 30 * 60 * 1000; // 30 minutes maximum
+  const MIN_TIMEOUT = 20 * 1000;  // 20 seconds minimum (faster with optimized settings)
+  const MAX_TIMEOUT = 20 * 60 * 1000; // 20 minutes maximum (faster with optimized settings)
   
   const calculatedTimeout = BASE_TIME_4_CHARS * difficultyFactor * 1000;
   const timeout = Math.min(Math.max(calculatedTimeout, MIN_TIMEOUT), MAX_TIMEOUT);
@@ -190,6 +190,11 @@ async function testVanityWalletService() {
     vanityWalletService.targetCounts[TEST_PATTERN] = 1;
     
     // Make sure our pattern is in the patterns list
+    // Initialize patterns property if it doesn't exist
+    if (!vanityWalletService.patterns) {
+      vanityWalletService.patterns = ['DUEL', 'DEGEN'];
+    }
+    
     if (!vanityWalletService.patterns.includes(TEST_PATTERN)) {
       vanityWalletService.patterns.push(TEST_PATTERN);
     }

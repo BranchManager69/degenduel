@@ -20,6 +20,8 @@ import { fancyColors, wsColors } from '../../../utils/colors.js';
 import { handleRequest } from './requestHandlers.js';
 import { MESSAGE_TYPES, TOPICS, formatAuthFlowVisual, parseClientInfo, getLocationInfo, normalizeTopic } from './utils.js';
 import { fetchTerminalData } from './services.js';
+import { rateLimiter } from './modules/rate-limiter.js';
+import { heliusBalanceTracker } from '../../../services/solana-engine/helius-balance-tracker.js';
 
 // Config
 import config from '../../../config/config.js';
@@ -449,6 +451,34 @@ export function handleDisconnect(ws, server) {
           server.clientsByUserId.delete(userId);
         }
       }
+    }
+    
+    // Clean up rate limiter subscriptions
+    rateLimiter.cleanupClient(clientId);
+    
+    // Clean up token balance subscriptions
+    if (ws.tokenBalanceHandlers) {
+      for (const [key, handler] of ws.tokenBalanceHandlers.entries()) {
+        const [walletAddr, tokenAddr] = key.split('_');
+        try {
+          heliusBalanceTracker.unsubscribeTokenBalance(walletAddr, tokenAddr, handler);
+        } catch (e) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error unsubscribing token balance on disconnect:${fancyColors.RESET}`, e);
+        }
+      }
+      ws.tokenBalanceHandlers.clear();
+    }
+    
+    // Clean up SOL balance subscriptions
+    if (ws.solanaBalanceHandlers) {
+      for (const [walletAddr, handler] of ws.solanaBalanceHandlers.entries()) {
+        try {
+          heliusBalanceTracker.unsubscribeSolanaBalance(walletAddr, handler);
+        } catch (e) {
+          logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error unsubscribing SOL balance on disconnect:${fancyColors.RESET}`, e);
+        }
+      }
+      ws.solanaBalanceHandlers.clear();
     }
     
     // Update metrics

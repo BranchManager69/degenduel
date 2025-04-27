@@ -1,27 +1,60 @@
 // services/discordNotificationService.js
+
+/**
+ * This service is responsible for sending notifications to Discord.
+ * It is used to send notifications to the Discord server for various events.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @since 2025-04-27
+ */
+
 import DiscordWebhook from '../utils/discord-webhook.js';
-import { config } from '../config/config.js';
 import prisma from '../config/prisma.js';
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { SERVICE_EVENTS } from '../utils/service-suite/service-events.js';
-import { logApi } from '../utils/logger-suite/logger.js';
 import { fancyColors } from '../utils/colors.js';
 
-// Create a service-specific logger that writes to the database
+// This is a service-specific logger that writes to the database
+//   TODO: Why do we only do this for the Discord Notification Service? Seems like a big missed opportunity to have our existing single logger for all services doing the task in question.
+import { logApi } from '../utils/logger-suite/logger.js';
 const logger = logApi.forService(SERVICE_NAMES.DISCORD_NOTIFICATION);
 
+// Config
+import { config } from '../config/config.js';
+
+// Get the set of DegenDuel Discord webhook URLs
+const discordWebhookUrls = config.discord_webhook_urls;
+// Get each individual webhook URL
+const adminLogsWebhookUrl = discordWebhookUrls.admin_logs;
+const systemWebhookUrl = discordWebhookUrls.system;
+const alertsWebhookUrl = discordWebhookUrls.alerts;
+const contestsWebhookUrl = discordWebhookUrls.contests;
+const transactionsWebhookUrl = discordWebhookUrls.transactions;
+const tokensWebhookUrl = discordWebhookUrls.tokens;
+const tradesWebhookUrl = discordWebhookUrls.trades;
+// might be missing a few webhooks here (e.g. #general !?!?s)
+
 /**
- * Discord notification service for sending automated notifications to Discord
+ * Discord notification service for sending automated notifications to the DegenDuel Discord server via webhooks.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @since 2025-04-27
  */
 class DiscordNotificationService extends BaseService {
   constructor() {
+    // Check for webhook health every N seconds
+    const checkIntervalSeconds = 60;
+
+    // Initialize the service
     super({ 
       name: SERVICE_NAMES.DISCORD_NOTIFICATION,
       description: 'Discord webhook integration service',
       layer: 'INFRASTRUCTURE',
       criticalLevel: 'low',
-      checkIntervalMs: 60000, // Check every minute
+      checkIntervalMs: checkIntervalSeconds * 1000, // Check for webhook health on a configurable interval
       circuitBreaker: {
         enabled: true,
         failureThreshold: 5,
@@ -33,10 +66,13 @@ class DiscordNotificationService extends BaseService {
     
     // Default webhooks - these would come from config or environment variables
     this.webhookUrls = {
-      alerts: process.env.DISCORD_WEBHOOK_ALERTS || '',
-      contests: process.env.DISCORD_WEBHOOK_CONTESTS || '',
-      transactions: process.env.DISCORD_WEBHOOK_TRANSACTIONS || '',
-      system: process.env.DISCORD_WEBHOOK_SYSTEM || '',
+      adminLogs: adminLogsWebhookUrl,
+      system: systemWebhookUrl,
+      alerts: alertsWebhookUrl,
+      contests: contestsWebhookUrl,
+      transactions: transactionsWebhookUrl,
+      tokens: tokensWebhookUrl,
+      trades: tradesWebhookUrl,
     };
     
     // Initialize webhook clients
@@ -47,15 +83,22 @@ class DiscordNotificationService extends BaseService {
       }
     }
     
+    // Set up event listeners
     this.setupEventListeners();
   }
 
+  /**
+   * Initialize the service
+   * @returns {Promise<boolean>} - True if initialization was successful, false otherwise
+   */
   async init() {
     try {
+      // Get the service configuration from the database
       const serviceConfig = await prisma.service_configuration.findUnique({
         where: { service_name: this.name }
       });
       
+      // Log the service configuration
       if (serviceConfig) {
         logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}Loading service configuration`, {
           eventType: 'service_init',
@@ -68,9 +111,11 @@ class DiscordNotificationService extends BaseService {
         });
       }
       
+      // Set the service as initialized
       this.initialized = true;
       return true;
     } catch (error) {
+      // Log the initialization error
       logger.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Initialization error:`, {
         eventType: 'service_init_error',
         error
@@ -113,6 +158,11 @@ class DiscordNotificationService extends BaseService {
     // Listen for system startup/shutdown events
     process.on('SIGTERM', () => this.sendServerShutdownNotification());
     process.on('SIGINT', () => this.sendServerShutdownNotification());
+
+    //
+    // (add more / better event listeners here)
+    //
+
   }
   
   /**
@@ -120,9 +170,11 @@ class DiscordNotificationService extends BaseService {
    * This should be called during application initialization
    */
   async sendServerStartupNotification() {
+    // Check if the system webhook is configured
     if (!this.webhooks.system) return;
     
-    try {
+    try { 
+      // Create a success embed
       const embed = this.webhooks.system.createSuccessEmbed(
         '🚀 Server Started',
         'DegenDuel server has successfully started.'
@@ -135,9 +187,11 @@ class DiscordNotificationService extends BaseService {
         { name: 'Time', value: new Date().toLocaleString(), inline: true },
       ];
       
+      // Send the embed to the system webhook
       await this.webhooks.system.sendEmbed(embed);
       logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent server startup notification\x1b[0m`);
     } catch (error) {
+      // Log the error
       logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send server startup notification:${fancyColors.RESET}`, error);
     }
   }
@@ -147,9 +201,11 @@ class DiscordNotificationService extends BaseService {
    * This is automatically called on SIGTERM and SIGINT signals
    */
   async sendServerShutdownNotification() {
+    // Check if the system webhook is configured
     if (!this.webhooks.system) return;
     
     try {
+      // Create an info embed
       const embed = this.webhooks.system.createInfoEmbed(
         '🔌 Server Shutting Down',
         'DegenDuel server is shutting down.'
@@ -162,9 +218,11 @@ class DiscordNotificationService extends BaseService {
         { name: 'Time', value: new Date().toLocaleString(), inline: true },
       ];
       
+      // Send the embed to the system webhook
       await this.webhooks.system.sendEmbed(embed);
       logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent server shutdown notification\x1b[0m`);
     } catch (error) {
+      // Log the error
       logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send server shutdown notification:${fancyColors.RESET}`, error);
     }
   }
@@ -175,17 +233,23 @@ class DiscordNotificationService extends BaseService {
    * and is used for circuit breaker recovery
    */
   async onPerformOperation() {
-    try {
-      // For the Discord service, we just need to check if our webhook configs are valid
-      // No continuous operation needed - we just respond to events
-      
+    // For the Discord service, we just need to check if our webhook configs are valid
+    // No continuous operation needed - we just respond to events
+    
+    // Check if any webhooks are configured
+    const hasWebhooks = Object.values(this.webhooks).some(webhook => webhook !== undefined);
+    // Count configured webhooks
+    const webhookCount = Object.values(this.webhooks).filter(webhook => webhook !== undefined).length;
+    
+    try {      
+      // Log the start time
       const startTime = Date.now();
       
+      // (moved before try block for now)
       // Check if any webhooks are configured
-      const hasWebhooks = Object.values(this.webhooks).some(webhook => webhook !== undefined);
-      
+      //const hasWebhooks = Object.values(this.webhooks).some(webhook => webhook !== undefined);
       // Count configured webhooks
-      const webhookCount = Object.values(this.webhooks).filter(webhook => webhook !== undefined).length;
+      //const webhookCount = Object.values(this.webhooks).filter(webhook => webhook !== undefined).length;
       
       // Create formatted log tag for Discord service
       const formatLog = {
@@ -195,7 +259,9 @@ class DiscordNotificationService extends BaseService {
         error: (text) => `${fancyColors.RED}${text}${fancyColors.RESET}`,
       };
       
+      // Check if any webhooks are configured
       if (!hasWebhooks) {
+        // Log the warning that no websockets are configured
         logger.warn(`${formatLog.tag()} ${formatLog.warning('No webhooks configured')}`, {
           eventType: 'service_health_check',
           details: {
@@ -204,6 +270,7 @@ class DiscordNotificationService extends BaseService {
           }
         });
       } else {
+        // Log the successful webhook check
         logger.debug(`${formatLog.tag()} ${formatLog.success('Webhook check successful')}`, {
           eventType: 'service_health_check',
           details: {
@@ -216,6 +283,7 @@ class DiscordNotificationService extends BaseService {
         });
       }
       
+      // Log the end time
       const endTime = Date.now();
       
       // Log performance metrics with proper formatting
@@ -229,13 +297,16 @@ class DiscordNotificationService extends BaseService {
         }
       });
       
+      // Return true to indicate success
       return true;
     } catch (error) {
+      // Log the error
       const formatLog = {
         tag: () => `${fancyColors.CYAN}[Discord]${fancyColors.RESET}`,
         error: (text) => `${fancyColors.RED}${text}${fancyColors.RESET}`,
       };
       
+      // Log the error
       logger.error(`${formatLog.tag()} ${formatLog.error('Perform operation error:')}`, {
         eventType: 'service_operation_error',
         error,
@@ -245,7 +316,9 @@ class DiscordNotificationService extends BaseService {
           errorStack: error.stack
         }
       });
-      throw error; // Important: re-throw to trigger circuit breaker
+      
+      // Re-throw to trigger circuit breaker
+      throw error;
     }
   }
 
@@ -254,6 +327,7 @@ class DiscordNotificationService extends BaseService {
    * @param {Object} contestData - Contest data
    */
   async onContestCreated(contestData) {
+    // Check if the contests webhook is configured
     if (!this.webhooks.contests) return;
     
     try {
@@ -265,30 +339,119 @@ class DiscordNotificationService extends BaseService {
           contestId: contestData.id,
           contestName: contestData.name,
           startTime: contestData.start_time,
-          prizePool: contestData.prize_pool
+          prizePool: contestData.prize_pool,
+          status: contestData.status
         }
       });
       
+      // Calculate time until contest starts for better messaging
+      const now = new Date();
+      const startTime = new Date(contestData.start_time);
+      const timeUntilStart = startTime - now;
+      const hoursUntilStart = Math.max(0, Math.round(timeUntilStart / (1000 * 60 * 60) * 10) / 10);
+      
+      // Set variables based on contest state
+      let title, actionMessage, embedColor, statusEmoji;
+      
+      // Configure notification based on contest state
+      switch (contestData.status) {
+
+        // 1. PENDING
+        //   - Contest is pending, meaning it's waiting to start
+        //   - This is the initial state when the contest is created
+        //   - Users may still join the contest before it starts
+        case 'pending':
+          // Set the title and embed color
+          title = `🎮 NEW: ${contestData.name}`;
+          embedColor = 0x00bfff; // Deep Sky Blue for pending
+          statusEmoji = '⏳';
+          
+          // Time-based messaging for pending contests
+          if (hoursUntilStart <= 1) {
+            actionMessage = `**Starting soon!** Join now to secure your spot in this exciting contest!`;
+          } else if (hoursUntilStart <= 24) {
+            actionMessage = `**Starting in ${hoursUntilStart} hours!** Join now to compete and win rewards!`;
+          } else {
+            actionMessage = `Join now to compete and win rewards! Contest starts on ${startTime.toLocaleDateString()}.`;
+          }
+          break;
+          
+        // 2. ACTIVE
+        //   - Contest changes from 'pending' to 'active' when it starts
+        //   - This is the state when the contest is UNDERWAY! Entrants are competing; non-entrants are spectating
+        //   - At this point, it is too late for new entrants to join the contest
+        case 'active':
+          // Set the title and embed color
+          title = `🟢 STARTING NOW: ${contestData.name}`;
+          actionMessage = `**Contest is LIVE!** If you entered, you may now take your seat and start making moves. \n\nSpectators are welcome to watch the action.`;
+          embedColor = 0x00ff00; // Green for active
+          statusEmoji = '🟢';
+          break;
+        
+        // 3. COMPLETED
+        //   - Contest changes from 'active' to 'completed' when it ends and winners have been determined
+        //   - This is the state when the contest is OVER! It started, entrants competed to the bitter end, and now the results are final
+        //   - Final portfolio ranks are now frozen and the contest results are final. Payouts are to be distributed to winners within minutes
+        case 'completed':
+          // Set the title and embed color
+          title = `🏁 FINISHED: ${contestData.name}`;
+          actionMessage = `**Contest has ended!** View the results and winners.`;
+          embedColor = 0xffd700; // Gold for completed
+          statusEmoji = '🏁';
+          break;
+          
+        // 4. CANCELLED
+        //   - Contest changes from 'active' to 'cancelled' when it is cancelled before it starts
+        //   - This is the state when the contest is cancelled before it starts
+        //   - Entry fees are to be refunded to entrants of cancelled contests within minutes
+        //   --  The most common reason for cancellations is the contest minimum entrant count not being met by the scheduled contest start time (very slight leeway is quietly given; ~90 seconds)
+        case 'cancelled':
+          // Set the title and embed color
+          title = `❌ CANCELLED: ${contestData.name}`;
+          actionMessage = `**Bad news:** This contest was just cancelled. Darn! \n\n**Good news:** All entrants will be automatically refunded within a few minutes.`;
+          embedColor = 0xff0000; // Red for cancelled
+          statusEmoji = '❌';
+          break;
+          
+        // 5. UNKNOWN
+        //   - This is the default state when the contest status is not known
+        //   - This is the state when the contest is unknown or not yet started
+        //default:
+        //  title = `🎮 UPDATE: ${contestData.name}`;
+        //  actionMessage = `Contest status update.`;
+        //  embedColor = 0x808080; // Gray for unknown
+        //  statusEmoji = '❓';
+      
+      }
+      
       // Create a rich embed with enhanced visual appeal
       const embed = {
-        title: `🎮 New Contest Created: ${contestData.name}`,
-        description: `A new contest has been created with a prize pool of **${contestData.prize_pool} SOL**!\n\nJoin now to compete and win rewards!`,
-        color: 0x00bfff, // Deep Sky Blue color for contests
+        title: title,
+        description: `Crypto trading contest with a prize pool of **${contestData.prize_pool} SOL**!\n\n${actionMessage}`,
+        color: embedColor,
         timestamp: new Date().toISOString(),
         footer: {
           text: 'DegenDuel Platform',
           icon_url: 'https://degenduel.me/assets/images/logo.png'
         },
         fields: [
-          { name: 'Contest Code', value: contestData.contest_code, inline: true },
-          { name: 'Start Time', value: new Date(contestData.start_time).toLocaleString(), inline: true },
-          { name: 'Prize Pool', value: `${contestData.prize_pool} SOL`, inline: true },
-          { name: 'Entry Fee', value: `${contestData.entry_fee} SOL`, inline: true },
-          { name: 'Status', value: contestData.status, inline: true }
+          { name: 'Contest Code', value: contestData.contest_code, inline: true }, // (not super important, tbh...)
+          { name: 'Start Time', value: startTime.toLocaleString(), inline: true }, // Very important, but where is duration?
+          { name: 'Prize Pool', value: `${contestData.prize_pool} SOL`, inline: true }, // Very important, but where is max participants?
+          { name: 'Entry Fee', value: `${contestData.entry_fee} SOL`, inline: true } // Very important
         ]
       };
       
-      // Add contest image if available or use a default
+      // Add status field with appropriate emoji
+      embed.fields.push({ 
+        name: 'Status', 
+        value: `${statusEmoji} ${contestData.status.charAt(0).toUpperCase() + contestData.status.slice(1)}`, 
+        inline: true 
+      });
+      
+      // Add contest image
+
+      // Ideally, get the image from the contest data
       if (contestData.image_url) {
         // Ensure the imageUrl is an absolute URL
         const baseUrl = process.env.BASE_URL || 'https://degenduel.me';
@@ -296,20 +459,22 @@ class DiscordNotificationService extends BaseService {
           ? contestData.image_url 
           : `${baseUrl}${contestData.image_url}`;
         
+        // Use the image field for larger images
         embed.image = {
           url: fullImageUrl
         };
+      // If no image is available, use a placeholder image
       } else {
-        // Use a default placeholder image
+        // Use some default placeholder image
         embed.thumbnail = {
           url: 'https://degenduel.me/assets/images/logo.png'
         };
       }
       
-      // Create action buttons to link to contest
+      // Create action buttons based on contest state
       const contestUrl = `https://degenduel.me/contests/${contestData.id}`;
       
-      // Create components with buttons
+      // Create button components appropriate for the contest state
       const components = [
         {
           type: 1, // Action Row
@@ -317,30 +482,92 @@ class DiscordNotificationService extends BaseService {
             {
               type: 2, // Button
               style: 5, // Link style
-              label: 'View Contest',
+              label: 'Duel Details',
               url: contestUrl
-            },
-            {
-              type: 2, // Button
-              style: 5, // Link style
-              label: 'Join Now',
-              url: `${contestUrl}?action=join`
             }
           ]
         }
       ];
       
-      const startTime = Date.now();
+      // Add state-specific buttons
+      switch (contestData.status) {
+        case 'pending':
+          // For pending contests, add entry and calendar buttons
+          components[0].components.push({
+            type: 2, // Button
+            style: 5, // Link style
+            label: 'Enter Duel',
+            url: `${contestUrl}?action=join`
+          });
+          
+          // Add a button to add the contest to the user's calendar
+          // (do we eveN have such an endpoint? eh, whatever)
+          components[0].components.push({
+            type: 2, // Button
+            style: 5, // Link style
+            label: 'Add to Calendar',
+            url: `https://degenduel.me/contests/${contestData.id}/calendar`
+          });
+          break;
+          
+        case 'active':
+          // For active contests, add leaderboard button
+          components[0].components.push({
+            type: 2, // Button
+            style: 5, // Link style
+            label: 'Leaderboard',
+            url: `${contestUrl}?tab=leaderboard`
+          });
+          
+          components[0].components.push({
+            type: 2, // Button
+            style: 5, // Link style
+            label: 'Duel Now',
+            url: `${contestUrl}?tab=trading`
+          });
+          break;
+          
+        case 'completed':
+          // For completed contests, add results and history buttons
+          components[0].components.push({
+            type: 2, // Button
+            style: 5, // Link style
+            label: 'Duel Results',
+            url: `${contestUrl}?tab=results`
+          });
+          
+          components[0].components.push({
+            type: 2, // Button
+            style: 5, // Link style
+            label: 'Trade History',
+            url: `${contestUrl}?tab=history`
+          });
+          break;
+          
+        case 'cancelled':
+          // For cancelled contests, add refund status button
+          components[0].components.push({
+            type: 2, // Button
+            style: 5, // Link style
+            label: 'Refund Status',
+            url: `${contestUrl}?tab=refunds`
+          });
+          break;
+      }
+      
+      // Send the embed and components to the contests webhook
+      const requestStartTime = Date.now();
       await this.webhooks.contests.sendEmbed(embed, components);
-      const endTime = Date.now();
+      const requestEndTime = Date.now();
       
       // Log successful notification with performance metrics
-      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent enhanced contest creation notification`, {
+      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent enhanced contest notification`, {
         eventType: 'webhook_sent',
         relatedEntity: contestData.contest_code,
-        durationMs: endTime - startTime,
+        durationMs: requestEndTime - requestStartTime,
         details: {
           contestId: contestData.id,
+          contestStatus: contestData.status,
           webhookType: 'contests',
           notificationType: 'contest_creation',
           hasImage: !!contestData.image_url,
@@ -369,21 +596,38 @@ class DiscordNotificationService extends BaseService {
   async onSystemAlert(alertData) {
     if (!this.webhooks.alerts) return;
     
-    try {
-      const embed = this.webhooks.alerts.createErrorEmbed(
-        `⚠️ System Alert: ${alertData.title}`,
-        alertData.message
-      );
-      
-      if (alertData.fields) {
-        embed.fields = alertData.fields;
-      }
-      
-      await this.webhooks.alerts.sendEmbed(embed);
-      logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent system alert notification\x1b[0m`);
-    } catch (error) {
-      logApi.error(`\x1b[96m[Discord]\x1b[0m \x1b[31mFailed to send system alert: ${error.message}\x1b[0m`);
+    // Create a rich embed with enhanced visual appeal
+    //   (I just made half of these up, tbh)
+    const embed = {
+      title: `⚠️ System Alert: ${alertData.title}`,
+      description: alertData.message,
+      color: 0xFF0000, // Red color for error
+      timestamp: new Date().toISOString(),
+      thumbnail: {
+        url: 'https://degenduel.me/assets/images/logo.png'
+      },
+      image: {
+        url: 'https://degenduel.me/assets/images/logo.png'
+      },
+      footer: {
+        text: 'DegenDuel',
+        icon_url: 'https://degenduel.me/assets/images/logo.png'
+      },
+      fields: []
+    };
+    
+    // Add details to the embed if available
+    if (alertData.fields) {
+      embed.fields = alertData.fields;
     }
+    
+    // Send the embed to the alerts webhook
+    await this.webhooks.alerts.sendEmbed(embed);
+    // Log the success
+    logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent system alert notification\x1b[0m`);
+  } catch (error) {
+    // Log the error
+    logApi.error(`\x1b[96m[Discord]\x1b[0m \x1b[31mFailed to send system alert: ${error.message}\x1b[0m`);
   }
 
   /**
@@ -962,4 +1206,5 @@ function getRandomCongratulation() {
   return congratulations[Math.floor(Math.random() * congratulations.length)];
 }
 
+// Export the Discord Notification Service as a singleton
 export default new DiscordNotificationService();

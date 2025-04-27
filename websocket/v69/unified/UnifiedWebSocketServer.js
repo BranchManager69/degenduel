@@ -29,7 +29,6 @@ import {
   fetchTerminalData
 } from './services.js';
 
-
 import {
   handleRequest,
 } from './requestHandlers.js';

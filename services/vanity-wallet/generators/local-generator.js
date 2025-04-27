@@ -32,8 +32,8 @@ const OUTPUT_DIR_BRANCH = path.join(OUTPUT_DIR_KEYPAIRS, 'public/_BRANCH');
 const OUTPUT_DIR_OTHER = path.join(OUTPUT_DIR_KEYPAIRS, 'other');
 
 // Calculate number of worker threads based on available CPU cores
-const DEFAULT_WORKERS = Math.max(1, Math.min(4, Math.floor(cpus().length * 0.6))); // 60% of cores
-const DEFAULT_CPU_LIMIT = 75; // 75% CPU limit
+const DEFAULT_WORKERS = Math.max(2, Math.floor(cpus().length * 0.8)); // 80% of cores, min 2
+const DEFAULT_CPU_LIMIT = 90; // 90% CPU limit
 
 // Path to solana-keygen
 const SOLANA_KEYGEN_PATH = process.env.SOLANA_KEYGEN_PATH || 'solana-keygen'; // (I don't mind bypassing config here; it's one time)
@@ -125,6 +125,7 @@ class LocalVanityGenerator {
       // Set job parameters
       const isSuffix = job.isSuffix || false;
       const caseSensitive = job.caseSensitive !== false; // True by default
+      const numThreads = job.numThreads || this.numWorkers;
       
       // Build solana-keygen command
       const options = ["grind", "--no-bip39-passphrase"]; // Base command options
@@ -141,8 +142,8 @@ class LocalVanityGenerator {
         options.push('--ignore-case');
       }
       
-      // Add num-threads parameter if available
-      options.push('--num-threads', this.numWorkers.toString());
+      // Add num-threads parameter, allowing override per job
+      options.push('--num-threads', numThreads.toString());
       
       // Create a temp file for output - but don't specify with flag (will use default)
       const outputFile = path.join('/tmp', `vanity-${job.id}-${Date.now()}.json`);
@@ -272,6 +273,19 @@ class LocalVanityGenerator {
         // Store progress in result object
         result.attempts = lastAttemptCount;
         
+        // Update database with attempts count
+        try {
+          prisma.vanity_wallet_pool.update({
+            where: { id: parseInt(job.id) },
+            data: { attempts: lastAttemptCount }
+          }).catch(err => {
+            // Ignore errors here, we'll just keep processing
+            logApi.debug(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Error updating attempts: ${err.message}`);
+          });
+        } catch (err) {
+          // Ignore this error too
+        }
+        
         // Log progress every million attempts
         if (lastAttemptCount % 1000000 === 0) {
           const duration = Date.now() - startTime;
@@ -311,6 +325,12 @@ class LocalVanityGenerator {
 
         // 🔄 Update existing record in database instead of creating a new one
         try {
+          // Get theoretical probability based on pattern and case sensitivity
+          const charSpace = job.caseSensitive !== false ? 58 : 33; // 58 for case-sensitive, 33 for case-insensitive
+          const theoreticalAttempts = Math.pow(charSpace, job.pattern.length);
+          const efficiency = (theoreticalAttempts / (result.attempts || lastAttemptCount || 1)) * 100;
+          
+          // Enhanced data collection - removed unsupported metadata field
           await prisma.vanity_wallet_pool.update({
             where: { id: parseInt(job.id) }, // Use the job ID to find the existing record
             data: {
@@ -321,6 +341,7 @@ class LocalVanityGenerator {
               duration_ms: Date.now() - startTime,
               completed_at: new Date(),
               updated_at: new Date()
+              // Removed metadata field as it's not in the schema
             }
           });
           logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} UPDATED DB ${fancyColors.RESET} Successfully updated record for job #${job.id} with completed address ${publicKey}`);
@@ -332,21 +353,48 @@ class LocalVanityGenerator {
           });
         }
 
+        // Calculate performance metrics
+        const charSpace = job.caseSensitive !== false ? 58 : 33;
+        const theoreticalAttempts = Math.pow(charSpace, job.pattern.length);
+        const attempts = result.attempts || lastAttemptCount || 0;
+        const duration = Date.now() - startTime;
+        const attemptsPerSec = Math.round(attempts / (duration / 1000));
+        const efficiency = (theoreticalAttempts / (attempts || 1)) * 100;
+        
+        // Enhanced completion callback with detailed metrics
         job.onComplete({
           status: 'Completed',
           id: job.id,
-          result: { address: publicKey, keypair_bytes: keypair },
-          duration_ms: Date.now() - startTime,
-          attempts: result.attempts || lastAttemptCount || 0 // Include the attempt count
+          result: { 
+            address: publicKey, 
+            keypair_bytes: keypair,
+            metrics: {
+              theoretical_attempts: theoreticalAttempts,
+              efficiency_percentage: efficiency,
+              character_space: charSpace,
+              attempts_per_second: attemptsPerSec,
+              pattern_length: job.pattern.length,
+              is_suffix: job.isSuffix || false,
+              case_sensitive: job.caseSensitive !== false
+            }
+          },
+          duration_ms: duration,
+          attempts: attempts
         });
       } catch (err) {
         logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Post-processing failed: ${err.message}`);
+        const attempts = result.attempts || lastAttemptCount || 0;
+        const duration = Date.now() - startTime;
+        
         job.onComplete({ 
           status: 'Failed', 
           id: job.id, 
           error: err.message, 
-          duration_ms: Date.now() - startTime,
-          attempts: result.attempts || lastAttemptCount || 0 // Include attempt count even for failed jobs
+          duration_ms: duration,
+          attempts: attempts,
+          pattern: job.pattern,
+          isSuffix: job.isSuffix || false,
+          caseSensitive: job.caseSensitive !== false
         });
       }
       this.processNextJob();

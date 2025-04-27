@@ -1,10 +1,11 @@
 // services/discord/discord-interactive-service.js
 
 /**
- * @file services/discord/discord-interactive-service.js
- * @description Interactive Discord bot for rich notifications
- * @author DegenDuel
- * @version 1.9.0
+ * This service is responsible for sending interactive notifications to 
+ * the Discord server via the DegenDuel AI Discord bot for various events.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
  * @since 2025-04-26
  */
 
@@ -17,10 +18,7 @@ import serviceEvents from '../../utils/service-suite/service-events.js';
 import prisma from '../../config/prisma.js';
 
 // Config
-// [bandaid fix for now:]
-import dotenv from 'dotenv';
-dotenv.config();
-////import config from '../../config/config.js';
+import config from '../../config/config.js';
 
 /**
  * @class DiscordInteractiveService
@@ -44,10 +42,15 @@ class DiscordInteractiveService extends BaseService {
       ]
     });
 
+    // Use channel IDs from config
     this.channelIds = {
-      contests: process.env.DISCORD_CONTESTS_CHANNEL_ID,
-      trades: process.env.DISCORD_TRADES_CHANNEL_ID,
-      announcements: process.env.DISCORD_ANNOUNCEMENTS_CHANNEL_ID
+      contests: config.discord.channel_ids.contests,
+      trades: config.discord.channel_ids.trades,
+      announcements: config.discord.channel_ids.announcements,
+      // Fix quotes in environment variables
+      bigNews: config.discord.channel_ids.big_news?.replace(/"/g, ''),
+      help: config.discord.channel_ids.help?.replace(/"/g, ''),
+      devYap: config.discord.channel_ids.dev_yap?.replace(/"/g, '')
     };
 
     // Track active contests for interaction state
@@ -59,17 +62,39 @@ class DiscordInteractiveService extends BaseService {
 
   async initialize() {
     try {
+      const botToken = config.discord.bot.token;
+      if (!botToken) {
+        logApi.error('No Discord bot token found in configuration!');
+        return false;
+      }
+      
+      // Log channel configuration for debugging
+      logApi.info(`Discord channel configuration:`, {
+        contests: this.channelIds.contests,
+        trades: this.channelIds.trades,
+        announcements: this.channelIds.announcements
+      });
+      
       // Initialize Discord client
-      await this.client.login(process.env.DISCORD_BOT_TOKEN);
+      await this.client.login(botToken);
 
       // Set up interaction handling
       this.setupInteractionHandlers();
 
       logApi.info(`Discord Interactive Bot connected as ${this.client.user.tag}`);
+      
+      // List servers the bot is in
+      const guilds = this.client.guilds.cache;
+      logApi.info(`Bot is in ${guilds.size} Discord servers: ${[...guilds.values()].map(g => g.name).join(', ')}`);
+      
       this.isInitialized = true;
       return true;
     } catch (error) {
       logApi.error('Discord Interactive Bot initialization failed:', error);
+      logApi.error(`Error details: ${error.message}`, {
+        code: error.code,
+        httpStatus: error.httpStatus
+      });
       return false;
     }
   }
@@ -129,11 +154,18 @@ class DiscordInteractiveService extends BaseService {
   }
 
   async handleContestCreated(contestData) {
-    if (!this.channelIds.contests) return;
+    if (!this.channelIds.contests) {
+      logApi.error(`No contests channel ID configured. Current config: ${JSON.stringify(this.channelIds)}`);
+      return;
+    }
 
     try {
+      logApi.info(`Attempting to fetch channel with ID: ${this.channelIds.contests}`);
+      console.log(`Bot authenticated as: ${this.client.user.tag}`);
+      console.log(`Bot permissions:`, this.client.user.flags?.toArray() || 'No flags');
+      
       const channel = await this.client.channels.fetch(this.channelIds.contests);
-
+      
       // Track this contest
       this.activeContests.set(contestData.id.toString(), {
         contestCode: contestData.contest_code,
@@ -178,7 +210,37 @@ class DiscordInteractiveService extends BaseService {
       await channel.send({ embeds: [embed], components: [row] });
       logApi.info(`Sent interactive contest creation notification for ${contestData.name}`);
     } catch (error) {
-      logApi.error('Failed to send contest creation notification:', error);
+      // More detailed error logging
+      logApi.error(`Failed to send contest creation notification:`, {
+        error: error.message,
+        code: error.code,
+        status: error.status,
+        httpStatus: error.httpStatus,
+        channelId: this.channelIds.contests,
+        botId: this.client.user?.id,
+        requestBody: error.requestBody || {},
+        stack: error.stack
+      });
+      
+      // If it's a permissions issue, log more specific info
+      if (error.code === 50001) { // Missing Access error
+        logApi.error(`Discord bot missing permissions! Please check that the bot has been invited to the channel and has proper permissions.`);
+        
+        // Attempt to get guild (server) info
+        try {
+          const guilds = this.client.guilds.cache;
+          logApi.info(`Bot is in ${guilds.size} servers: ${[...guilds.values()].map(g => g.name).join(', ')}`);
+          
+          for (const guild of guilds.values()) {
+            const botMember = guild.members.cache.get(this.client.user.id);
+            if (botMember) {
+              logApi.info(`Bot permissions in ${guild.name}: ${botMember.permissions.toArray().join(', ')}`);
+            }
+          }
+        } catch (guildError) {
+          logApi.error(`Could not fetch guild info: ${guildError.message}`);
+        }
+      }
     }
   }
 
@@ -638,6 +700,187 @@ class DiscordInteractiveService extends BaseService {
       return (num / 1000).toFixed(1) + 'K';
     }
     return num.toFixed(2);
+  }
+  
+  /**
+   * Send a message to a specific channel
+   * @param {string} channelType - The type of channel (contests, trades, announcements, bigNews, help, devYap)
+   * @param {string} message - Text message to send
+   * @param {object[]} embeds - Optional array of embeds
+   * @param {object[]} components - Optional array of components
+   * @returns {Promise<object>} - The sent message
+   */
+  async sendToChannel(channelType, message, embeds = [], components = []) {
+    if (!this.channelIds[channelType]) {
+      throw new Error(`Channel type "${channelType}" not configured`);
+    }
+    
+    try {
+      const channel = await this.client.channels.fetch(this.channelIds[channelType]);
+      
+      if (!channel) {
+        throw new Error(`Could not find channel for ${channelType}`);
+      }
+      
+      const messageOptions = {};
+      
+      if (message) {
+        messageOptions.content = message;
+      }
+      
+      if (embeds && embeds.length > 0) {
+        messageOptions.embeds = embeds;
+      }
+      
+      if (components && components.length > 0) {
+        messageOptions.components = components;
+      }
+      
+      const sentMessage = await channel.send(messageOptions);
+      
+      logApi.info(`Sent message to ${channelType} channel`, {
+        channelId: this.channelIds[channelType],
+        channelName: channel.name,
+        messageId: sentMessage.id
+      });
+      
+      return sentMessage;
+    } catch (error) {
+      logApi.error(`Failed to send message to ${channelType} channel`, {
+        error: error.message,
+        stack: error.stack,
+        channelId: this.channelIds[channelType]
+      });
+      throw error;
+    }
+  }
+  
+  /**
+   * Send an announcement to the big-news channel
+   * @param {string} title - The announcement title
+   * @param {string} message - The announcement message
+   * @param {object} options - Optional parameters
+   * @returns {Promise<object>} - The sent message
+   */
+  async sendBigNews(title, message, options = {}) {
+    const embed = new EmbedBuilder()
+      .setTitle(title)
+      .setDescription(message)
+      .setColor(options.color || 0x00bfff)
+      .setTimestamp();
+      
+    if (options.footer) {
+      embed.setFooter({
+        text: options.footer.text || 'DegenDuel Platform',
+        iconURL: options.footer.iconURL || 'https://degenduel.me/assets/images/logo.png'
+      });
+    }
+    
+    if (options.thumbnail) {
+      embed.setThumbnail(options.thumbnail);
+    }
+    
+    if (options.image) {
+      embed.setImage(options.image);
+    }
+    
+    if (options.fields && Array.isArray(options.fields)) {
+      embed.addFields(...options.fields);
+    }
+    
+    const components = [];
+    if (options.url) {
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel(options.urlLabel || 'View Details')
+            .setURL(options.url)
+            .setStyle(ButtonStyle.Link)
+        );
+      components.push(row);
+    }
+    
+    return this.sendToChannel('bigNews', null, [embed], components.length > 0 ? components : null);
+  }
+  
+  /**
+   * Send a help message to the help channel
+   * @param {string} title - The help topic title
+   * @param {string} message - The help content
+   * @param {object} options - Optional parameters
+   * @returns {Promise<object>} - The sent message
+   */
+  async sendHelpMessage(title, message, options = {}) {
+    const embed = new EmbedBuilder()
+      .setTitle(`💡 ${title}`)
+      .setDescription(message)
+      .setColor(options.color || 0x57F287) // Green
+      .setTimestamp();
+      
+    if (options.footer) {
+      embed.setFooter({
+        text: options.footer.text || 'DegenDuel Help',
+        iconURL: options.footer.iconURL || 'https://degenduel.me/assets/images/logo.png'
+      });
+    }
+    
+    if (options.fields && Array.isArray(options.fields)) {
+      embed.addFields(...options.fields);
+    }
+    
+    const components = [];
+    if (options.url) {
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel(options.urlLabel || 'Learn More')
+            .setURL(options.url)
+            .setStyle(ButtonStyle.Link)
+        );
+      components.push(row);
+    }
+    
+    return this.sendToChannel('help', null, [embed], components.length > 0 ? components : null);
+  }
+  
+  /**
+   * Send a developer update to the dev-yap channel
+   * @param {string} title - The dev update title
+   * @param {string} message - The dev update content
+   * @param {object} options - Optional parameters
+   * @returns {Promise<object>} - The sent message
+   */
+  async sendDevUpdate(title, message, options = {}) {
+    const embed = new EmbedBuilder()
+      .setTitle(`🔧 ${title}`)
+      .setDescription(message)
+      .setColor(options.color || 0xEB459E) // Pink
+      .setTimestamp();
+      
+    if (options.footer) {
+      embed.setFooter({
+        text: options.footer.text || 'DegenDuel Development',
+        iconURL: options.footer.iconURL || 'https://degenduel.me/assets/images/logo.png'
+      });
+    }
+    
+    if (options.fields && Array.isArray(options.fields)) {
+      embed.addFields(...options.fields);
+    }
+    
+    const components = [];
+    if (options.url) {
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel(options.urlLabel || 'View Details')
+            .setURL(options.url)
+            .setStyle(ButtonStyle.Link)
+        );
+      components.push(row);
+    }
+    
+    return this.sendToChannel('devYap', null, [embed], components.length > 0 ? components : null);
   }
 
   async performOperation() {

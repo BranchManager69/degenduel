@@ -122,6 +122,9 @@ import blinksRoutes from "./routes/blinks/index.js";
 // Solana RPC Proxy route
 import solanaRpcProxyRoutes from "./routes/solana-rpc-proxy.js";
 
+// Import Liquidity Sim admin routes
+import liquiditySimRoutes from './routes/liquidity-sim-routes.js';
+
 // Path module for static file serving
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -282,6 +285,9 @@ app.use("/api/admin/ip-tracking", ipTrackingRoutes);
 app.use("/api/admin/role", roleManagementRoutes);
 app.use("/api/admin/vanity-wallets", vanityWalletsRoutes);
 app.use("/api/admin/vanity-callback", vanityCallbackRoutes);
+
+// Mount Liquidity Sim admin routes
+app.use("/api", liquiditySimRoutes);
 
 // Protected routes (with maintenance check)
 // earliest protected routes

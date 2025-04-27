@@ -1,3 +1,5 @@
+// utils/websocket-suite/ws-broadcaster.js
+
 /**
  * WebSocket Broadcaster Utility
  * 

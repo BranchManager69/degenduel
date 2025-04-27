@@ -4,11 +4,9 @@
  * Vanity Wallet Service Entry Point
  */
 
-import VanityWalletService from './vanity-wallet-service.js';
+import vanityWalletService from './vanity-wallet-service.js';
 import VanityApiClient from './vanity-api-client.js';
 
-// Create a singleton instance of the service
-const vanityWalletService = new VanityWalletService();
-
-export { VanityWalletService, VanityApiClient };
+// Export components
+export { VanityApiClient };
 export default vanityWalletService;

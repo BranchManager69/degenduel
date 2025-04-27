@@ -39,6 +39,8 @@ class VanityApiClient {
    * @param {string} options.pattern - The pattern to search for (e.g., "DUEL")
    * @param {boolean} options.isSuffix - Whether the pattern should be at the end of the address
    * @param {boolean} options.caseSensitive - Whether the pattern matching is case sensitive
+   * @param {number} options.numThreads - Number of threads to use for generation (defaults to generator config)
+   * @param {number} options.cpuLimit - CPU usage limit as percentage (defaults to generator config)
    * @param {string} options.requestedBy - The admin who requested this wallet
    * @param {string} options.requestIp - The IP address that requested this wallet
    * @returns {Promise<Object>} - The created database record
@@ -48,6 +50,8 @@ class VanityApiClient {
       pattern,
       isSuffix = false,
       caseSensitive = true,
+      numThreads = config.vanityWallet?.numWorkers,
+      cpuLimit = config.vanityWallet?.cpuLimit,
       requestedBy,
       requestIp
     } = options;
@@ -89,7 +93,9 @@ class VanityApiClient {
             id: dbRecord.id.toString(),
             pattern,
             isSuffix,
-            caseSensitive
+            caseSensitive,
+            numThreads,
+            cpuLimit
           },
           // Completion callback
           async (result) => {

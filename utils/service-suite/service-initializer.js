@@ -26,6 +26,9 @@ import liquidityService from '../../services/liquidityService.js';
 import marketDataService from '../../services/market-data/marketDataService.js';
 import tokenRefreshIntegration from '../../services/token-refresh-integration.js';
 import tokenDEXDataService from '../../services/token-dex-data-service.js';
+import tokenDetectionService from '../../services/market-data/tokenDetectionService.js';
+// Token enrichment service will be imported once implemented
+// import tokenEnrichmentService from '../../services/token-enrichment/index.js';
 // Legacy solana service - imported but not used as primary
 import solanaService from '../../services/solanaService.js';
 // Discord notification service
@@ -185,6 +188,23 @@ class ServiceInitializer {
             } else {
                 logApi.info(`${fancyColors.YELLOW}Skipping registration of token_dex_data_service - disabled in config${fancyColors.RESET}`);
             }
+            
+            // Register token detection service if enabled in config
+            if (config.services.token_detection_service) {
+                serviceManager.register(tokenDetectionService, [SERVICE_NAMES.SOLANA_ENGINE]);
+                logApi.info(`${fancyColors.GREEN}Registered token detection service${fancyColors.RESET}`);
+            } else {
+                logApi.info(`${fancyColors.YELLOW}Skipping registration of token_detection_service - disabled in config${fancyColors.RESET}`);
+            }
+            
+            // Register token enrichment service if enabled in config
+            // This will be uncommented when the service is implemented
+            /*if (config.services.token_enrichment_service) {
+                serviceManager.register(tokenEnrichmentService, [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE]);
+                logApi.info(`${fancyColors.GREEN}Registered token enrichment service${fancyColors.RESET}`);
+            } else {
+                logApi.info(`${fancyColors.YELLOW}Skipping registration of token_enrichment_service - disabled in config${fancyColors.RESET}`);
+            }*/
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of market_data_service - disabled in config${fancyColors.RESET}`);
         }
@@ -270,11 +290,18 @@ class ServiceInitializer {
         }
         
         // DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
+        // SAFETY CHECK: Skip registration of wallet_rake_service - it's deprecated
+        if (config.services.wallet_rake) {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of wallet_rake_service - deprecated and replaced by contest_wallet_service${fancyColors.RESET}`);
+        }
         
         // Ensure schema exists for user balance tracking
         if (config.services.user_balance_tracking) {
             await ensureSchemaExists();
             serviceManager.register(userBalanceTrackingService, [SERVICE_NAMES.SOLANA_ENGINE]);
+            
+            // Debug log to check what's being registered next
+            logApi.info(`${fancyColors.RED}DEBUG: After registering user_balance_tracking_service${fancyColors.RESET}`);
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of user_balance_tracking_service - disabled in config${fancyColors.RESET}`);
         }
@@ -317,6 +344,8 @@ class ServiceInitializer {
                 [SERVICE_NAMES.VANITY_WALLET]: 'vanity_wallet_service',
                 [SERVICE_NAMES.TOKEN_DEX_DATA]: 'token_dex_data_service',
                 [SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER]: 'token_refresh_scheduler_service',
+                [SERVICE_NAMES.TOKEN_DETECTION]: 'token_detection_service',
+                [SERVICE_NAMES.TOKEN_ENRICHMENT]: 'token_enrichment_service',
                 // Add other services as they get profile support
             };
             

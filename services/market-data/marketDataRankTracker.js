@@ -54,8 +54,8 @@ class MarketDataRankTracker {
                 
                 // Store the token's position and symbol for comparison
                 const symbol = typeof token === 'string' ? 
-                    address.substring(0, 8) : 
-                    token.symbol || address.substring(0, 8);
+                    (address ? address.substring(0, 8) : 'unknown') : 
+                    token.symbol || (address ? address.substring(0, 8) : 'unknown');
                     
                 this.previousTokenRanks.set(address, {
                     position: index + 1, // 1-based position
@@ -76,8 +76,8 @@ class MarketDataRankTracker {
                 token.address;
             
             const symbol = typeof token === 'string' ? 
-                address.substring(0, 8) : 
-                token.symbol || address.substring(0, 8);
+                (address ? address.substring(0, 8) : 'unknown') : 
+                token.symbol || (address ? address.substring(0, 8) : 'unknown');
                 
             currentTokenRanks.set(address, {
                 position: index + 1, // 1-based position
@@ -100,8 +100,8 @@ class MarketDataRankTracker {
                 );
                 
                 const symbol = typeof token === 'string' ? 
-                    address.substring(0, 8) : 
-                    token.symbol || address.substring(0, 8);
+                    (address ? address.substring(0, 8) : 'unknown') : 
+                    token.symbol || (address ? address.substring(0, 8) : 'unknown');
                     
                 entrances.push({ address, symbol });
             }
@@ -113,7 +113,7 @@ class MarketDataRankTracker {
                 // Get previous information for this token
                 const tokenInfo = this.previousTokenRanks.get(address);
                 const prevRank = tokenInfo?.position || 0;
-                const symbol = tokenInfo?.symbol || address.substring(0, 8);
+                const symbol = tokenInfo?.symbol || (address ? address.substring(0, 8) : 'unknown');
                 
                 exits.push({ 
                     address, 
@@ -131,7 +131,7 @@ class MarketDataRankTracker {
             // Log each entrance individually with more details if we have few of them
             if (entrances.length <= 5) {
                 entrances.forEach(entrance => {
-                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}NEW LIST ENTRY:${fancyColors.RESET} ${entrance.symbol} (${entrance.address.substring(0, 8)}...)`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.GREEN}NEW LIST ENTRY:${fancyColors.RESET} ${entrance.symbol} (${entrance.address ? entrance.address.substring(0, 8) : 'unknown'}...)`);
                 });
             }
         }
@@ -144,7 +144,7 @@ class MarketDataRankTracker {
             // Log each exit individually with more details if we have few of them
             if (exits.length <= 5) {
                 exits.forEach(exit => {
-                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}DROPPED FROM LIST:${fancyColors.RESET} ${exit.symbol} (${exit.address.substring(0, 8)}...)`);
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}DROPPED FROM LIST:${fancyColors.RESET} ${exit.symbol} (${exit.address ? exit.address.substring(0, 8) : 'unknown'}...)`);
                 });
             }
         }

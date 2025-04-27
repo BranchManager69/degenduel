@@ -1,3 +1,5 @@
+// tests/token-balance-tracking-test.js
+
 /**
  * Token Balance Tracking Test
  * 
@@ -8,21 +10,23 @@
 import { logApi } from '../utils/logger-suite/logger.js';
 import { heliusBalanceTracker } from '../services/solana-engine/helius-balance-tracker.js';
 import { fancyColors } from '../utils/colors.js';
-import dotenv from 'dotenv';
 import prisma from '../config/prisma.js';
 
-// Load environment variables
-dotenv.config();
+// testing...
+// import discordNotificationService from '../services/discordNotificationService.js';
+// how can we send a notification to the discord channel when a user balance changes significantly?
 
-// Import config to get the real contract address
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
+// Import config to get the REAL contract address
 import config from '../config/config.js';
 
 // Set up test parameters
 // Use the real contract address from config
 const DEFAULT_TOKEN_ADDRESS = config.contract_address_real;
-
 // Timeout to automatically end the script after some time
-const TEST_TIMEOUT_MS = 60 * 1000 * 5; // 5 minutes
+const TEST_TIMEOUT_MS = (60 * 1000) * 5; // 5 minutes
 
 /**
  * Handle SOL balance updates for a user

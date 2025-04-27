@@ -10,6 +10,7 @@ import { fancyColors } from '../utils/colors.js';
 import prisma from '../config/prisma.js';
 import { config } from '../config/config.js';
 import dexscreenerClient from '../services/solana-engine/dexscreener-client.js';
+import serviceEvents from '../utils/service-suite/service-events.js';
 
 // Initialize OpenAI API client with dedicated image generation API key
 const openai = new OpenAI({
@@ -118,6 +119,42 @@ async function enhanceTokensWithMetadata(tokens) {
               if (bestPool.baseToken.websiteUrl) {
                 enhancedToken.metadata.website = bestPool.baseToken.websiteUrl;
                 logApi.debug(`${fancyColors.GREEN}[contestImageService]${fancyColors.RESET} Found Website from DexScreener: ${bestPool.baseToken.websiteUrl}`);
+              }
+              
+              // Check for info.socials and info.websites from the newer DexScreener API structure
+              if (bestPool.info) {
+                // Process social links from info.socials
+                if (bestPool.info.socials && Array.isArray(bestPool.info.socials)) {
+                  for (const social of bestPool.info.socials) {
+                    if (social.type && social.url) {
+                      // Store in metadata for immediate use
+                      enhancedToken.metadata[social.type] = social.url;
+                      logApi.debug(`${fancyColors.GREEN}[contestImageService]${fancyColors.RESET} Found ${social.type} from DexScreener info.socials: ${social.url}`);
+                    }
+                  }
+                }
+                
+                // Process websites from info.websites
+                if (bestPool.info.websites && Array.isArray(bestPool.info.websites)) {
+                  // Store as additional websites in metadata
+                  enhancedToken.metadata.additionalWebsites = bestPool.info.websites.map(site => ({
+                    label: site.label || 'Website',
+                    url: site.url
+                  }));
+                  
+                  logApi.debug(`${fancyColors.GREEN}[contestImageService]${fancyColors.RESET} Found ${bestPool.info.websites.length} websites from DexScreener info.websites`);
+                  
+                  // If we have at least one website and no website URL is set on the token,
+                  // use the first website as the primary
+                  if (!enhancedToken.metadata.website && bestPool.info.websites.length > 0 && bestPool.info.websites[0].url) {
+                    enhancedToken.metadata.website = bestPool.info.websites[0].url;
+                  }
+                }
+                
+                // Store image URL in metadata if available
+                if (bestPool.info.imageUrl) {
+                  enhancedToken.metadata.imageUrl = bestPool.info.imageUrl;
+                }
               }
             }
           } catch (dexError) {
@@ -306,10 +343,21 @@ async function generateContestImage(contest, options = {}) {
     // Determine file extension based on output format
     const fileExt = config.output_format || 'png';
     
-    // Generate filename using contest_code if available, fallback to id + uuid if not
-    const filename = contest.contest_code 
-      ? `${contest.contest_code}.${fileExt}`
-      : `contest_${contest.id || 'new'}_${uuidv4()}.${fileExt}`;
+    // Always use contest_code for image filenames
+    let filename;
+    
+    if (contest.contest_code) {
+      // Use contest code if available - this is the preferred method
+      filename = `${contest.contest_code}.${fileExt}`;
+    } else if (contest.id) {
+      // Fallback for contests without codes but with IDs
+      logApi.warn(`⚠️ ${fancyColors.YELLOW}[contestImageService]${fancyColors.RESET} Contest ID ${contest.id} has no contest_code, using ID-based format`);
+      filename = `CONTEST-${contest.id}.${fileExt}`;
+    } else {
+      // Last resort for new contests that don't have an ID yet
+      logApi.warn(`⚠️ ${fancyColors.YELLOW}[contestImageService]${fancyColors.RESET} Contest has no code or ID, using temporary name`);
+      filename = `TEMP-${new Date().toISOString().replace(/[:.]/g, '-')}.${fileExt}`;
+    }
     const imagePath = path.join(IMAGES_DIR, filename);
     
     // Save the image to disk

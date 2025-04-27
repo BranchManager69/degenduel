@@ -16,14 +16,14 @@ import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
 // Configuration
-const PATTERN = 'www'; // n-character pattern for benchmarking
+const PATTERN = 'dump'; // n-character pattern for benchmarking
 const CASE_SENSITIVE = true; // Whether to use case-sensitive matching
-const IS_SUFFIX = false; // Whether to search for a suffix instead of prefix
-const NUM_THREADS = 4; // Number of CPU threads to use
-const CPU_LIMIT = 75; // CPU usage limit as percentage
+const IS_SUFFIX = true; // Whether to search for a suffix instead of prefix
+const NUM_THREADS = 8; // Use all 8 CPU threads for maximum performance
+const CPU_LIMIT = 90; // 90% CPU usage limit for better performance
 const NUM_RUNS = 1;     // Number of benchmark runs
-const MAX_RUNTIME_MINUTES = 15; // minutes
-const MAX_RUNTIME_MS = MAX_RUNTIME_MINUTES * 60 * 1000; // 15 minutes max per run
+const MAX_RUNTIME_MINUTES = 15; // (input in minutes)
+const MAX_RUNTIME_MS = MAX_RUNTIME_MINUTES * 60 * 1000; // max runtime in milliseconds
 
 /**
  * Run a single benchmark
@@ -34,6 +34,18 @@ async function runBenchmark(runNumber) {
   logApi.info(`Started at: ${new Date().toISOString()}`);
   
   const startTime = Date.now();
+  
+  // err occurence:
+  // 11:40:06 AM [INFO] [LocalVanityGenerator]  UPDATED DB  Successfully updated record for job #323 with completed address qTkXcpX9kGPEQRT9Tm4zT7XMLLfc2R9cVW7Hf6Jdump
+  // 11:40:06 AM [INFO] [VanityApiClient]  Processing  local result for request #323 {"jobStatus":"Completed"}
+  // 11:40:06 AM [INFO] [VanityApiClient]  Success  Vanity wallet generated: qTkXcpX9kGPEQRT9Tm4zT7XMLLfc2R9cVW7Hf6Jdump {"address":"qTkXcpX9kGPEQRT9Tm4zT7XMLLfc2R9cVW7Hf6Jdump","pattern":"dump"}
+  // 11:40:06 AM [INFO] 
+  // ✅ SUCCESS: Generated dump address in 827 seconds
+  // 11:40:06 AM [INFO] Address: qTkXcpX9kGPEQRT9Tm4zT7XMLLfc2R9cVW7Hf6Jdump
+  // 11:40:06 AM [INFO] Attempts: 135,000,000
+  // 11:40:06 AM [ERROR] Error during benchmark: Cannot mix BigInt and other types, use explicit conversions
+  // 11:40:06 AM [INFO] 
+  // ❌ No successful runs to calculate statistics  try {
   
   try {
     // Create a vanity address request
@@ -53,26 +65,28 @@ async function runBenchmark(runNumber) {
     let completed = false;
     let attempts = 0;
     
+    // Loop until the job is completed or the timeout is reached
     while (!completed && (Date.now() - startTime) < MAX_RUNTIME_MS) {
-      // Check current status
+      // Check status
       const currentStatus = await prisma.vanity_wallet_pool.findUnique({
         where: { id: dbRecord.id }
       });
-      
       if (!currentStatus) {
         throw new Error('Job record not found');
       }
       
-      // If completed or failed
+      // If completed or failed or cancelled
       if (currentStatus.status === 'completed' || 
           currentStatus.status === 'failed' ||
           currentStatus.status === 'cancelled') {
         completed = true;
         attempts = currentStatus.attempts || 0;
         
+        // Calculate duration
         const duration = Date.now() - startTime;
         const durationSec = Math.round(duration / 1000);
         
+        // If completed
         if (currentStatus.status === 'completed') {
           logApi.info(`\n✅ SUCCESS: Generated ${PATTERN} address in ${durationSec} seconds`);
           logApi.info(`Address: ${currentStatus.wallet_address}`);
@@ -82,7 +96,9 @@ async function runBenchmark(runNumber) {
           // Calculate theoretical probabilities
           const characterSpace = CASE_SENSITIVE ? 58 : 33; // 58 for case-sensitive (base58), 33 for case-insensitive
           const theoreticalAttempts = Math.pow(characterSpace, PATTERN.length);
-          const efficiency = (theoreticalAttempts / attempts) * 100;
+          // Convert potential BigInt to Number to avoid mixing types
+          const attemptsNum = Number(attempts);
+          const efficiency = (theoreticalAttempts / attemptsNum) * 100;
           
           logApi.info(`Theoretical probability: 1 in ${theoreticalAttempts.toLocaleString()}`);
           logApi.info(`Efficiency rating: ${efficiency.toFixed(2)}%`);

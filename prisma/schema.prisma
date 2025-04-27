@@ -56,16 +56,17 @@ model contest_portfolios {
 }
 
 model contest_templates {
-  id                  Int       @id @default(autoincrement())
+  id                  Int               @id @default(autoincrement())
   name                String
   description         String?
   duration_minutes    Int?
-  entry_fee           Decimal?  @default(0) @db.Decimal(20, 0)
-  max_participants    Int?      @default(2)
-  bucket_requirements Json?     @default("{}")
-  scoring_rules       Json?     @default("{}")
-  is_active           Boolean?  @default(true)
-  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  entry_fee           Decimal?          @default(0) @db.Decimal(20, 0)
+  max_participants    Int?              @default(2)
+  bucket_requirements Json?             @default("{}")
+  scoring_rules       Json?             @default("{}")
+  is_active           Boolean?          @default(true)
+  created_at          DateTime?         @default(now()) @db.Timestamptz(6)
+  schedule            contest_schedule[]
 
   @@index([name], map: "idx_contest_templates_name")
   @@map("contest_templates")
@@ -174,6 +175,8 @@ model contests {
   contest_wallets           contest_wallets?
   transactions              transactions[]
   vanity_wallet             vanity_wallet_pool?
+  schedule                  contest_schedule?           @relation(fields: [schedule_id], references: [id])
+  schedule_id               Int?
 
   @@index([status])
   @@index([start_time])
@@ -207,7 +210,7 @@ model token_buckets {
 model token_prices {
   token_id   Int       @id
   price      Decimal?  @db.Decimal(20, 8)
-  change_24h Decimal?  @db.Decimal(5, 2)
+  change_24h Decimal?  @db.Decimal(10, 2)
   market_cap Decimal?  @db.Decimal(20, 0)
   volume_24h Decimal?  @db.Decimal(20, 0)
   liquidity  Decimal?  @db.Decimal(20, 0)
@@ -1625,6 +1628,33 @@ model token_config {
   @@map("token_config")
 }
 
+model contest_schedule {
+  id                  Int               @id @default(autoincrement())
+  name                String            // Name of the schedule
+  template_id         Int               // References contest_templates
+  hour                Int?              // Hour of day (0-23)
+  minute              Int?              @default(0) // Minute of hour (0-59)
+  days                Int[]             // Days of week (0=Sunday, 6=Saturday) 
+  entry_fee_override  Decimal?          @db.Decimal(20, 8) // Optional override of template fee
+  name_override       String?           // Optional override of contest name
+  description_override String?          // Optional override of contest description
+  duration_hours      Float?            @default(1.0) // Duration in hours
+  enabled             Boolean           @default(true) // Whether this schedule is active
+  advance_notice_hours Int?             @default(1) // Hours in advance to create contest
+  min_participants_override Int?        // Override min participants from template
+  max_participants_override Int?        // Override max participants from template
+  allow_multiple_hours Boolean          @default(false) // For tri-hourly type schedules
+  multiple_hours      Int[]             // Array of hours for multiple hour schedules
+  created_at          DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime          @updatedAt @db.Timestamptz(6)
+  template            contest_templates @relation(fields: [template_id], references: [id])
+  contests            contests[]
+
+  @@index([enabled])
+  @@index([template_id])
+  @@map("contest_schedule")
+}
+
 model roadmap_phases {
   id             Int            @id @default(autoincrement())
   quarter_number Int
@@ -1679,4 +1709,36 @@ model pool_price_changes {
   @@index([tokenAddress, timestamp(sort: Desc)])
   @@index([changePercent(sort: Desc)])
   @@map("pool_price_changes")
+}
+
+// Token refresh priority configuration
+model token_refresh_priority_tiers {
+  id                        Int       @id @default(autoincrement())
+  name                      String    @unique @db.VarChar(50) // e.g., "CRITICAL", "HIGH", etc.
+  description               String?   @db.Text
+  
+  // Core configuration
+  priority_score            Int       // Priority score used for sorting (higher = refreshed sooner)
+  refresh_interval_seconds  Int       // Base refresh interval in seconds
+  rank_threshold            Int       // Maximum rank for this tier
+  
+  // Advanced settings
+  volatility_factor         Float     @default(1.0)  // Multiplier for adjusting intervals based on volatility
+  max_tokens_per_batch      Int?      // Maximum tokens per batch for this tier (null = use global default)
+  batch_delay_ms            Int?      // Delay between batches for this tier (null = use global default)
+  
+  // Tokens in this tier (virtual relationship - not stored)
+  token_count               Int       @default(0)    // Number of tokens currently in this tier
+  
+  // Admin metadata
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @updatedAt @db.Timestamptz(6)
+  updated_by                String?   @db.VarChar(44) // Admin who updated this tier
+  is_active                 Boolean   @default(true)  // Whether this tier is currently active
+  
+  @@index([priority_score])
+  @@index([refresh_interval_seconds])
+  @@index([rank_threshold])
+  @@index([is_active])
+  @@map("token_refresh_priority_tiers")
 }

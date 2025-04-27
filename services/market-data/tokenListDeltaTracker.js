@@ -1,0 +1,207 @@
+// services/market-data/tokenListDeltaTracker.js
+
+/**
+ * Token List Delta Tracker
+ * 
+ * Efficiently tracks changes to token lists using Redis for fast set operations.
+ * This module detects new and removed tokens when comparing successive token lists.
+ * 
+ * @module services/market-data/tokenListDeltaTracker
+ */
+
+import { default as redisManager } from '../../utils/redis-suite/redis-manager.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
+import { fancyColors } from '../../utils/colors.js';
+
+class TokenListDeltaTracker {
+  constructor() {
+    this.KEY_PREFIX = 'jupiter_tokens';
+    this.LATEST_KEY = `${this.KEY_PREFIX}_latest`;
+    this.EXPIRY_DAYS = 1; // Keep sets for 1 day
+  }
+
+  /**
+   * Store a new token list and calculate what changed since the last update
+   * @param {Array<string>} tokenAddresses - Array of token addresses
+   * @returns {Promise<Object>} - Delta information (added, removed, unchanged tokens)
+   */
+  async trackChanges(tokenAddresses) {
+    try {
+      if (!Array.isArray(tokenAddresses) || tokenAddresses.length === 0) {
+        logApi.warn(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.YELLOW}Invalid token address list provided${fancyColors.RESET}`);
+        return {
+          added: [],
+          removed: [],
+          unchanged: 0,
+          error: 'Invalid token list'
+        };
+      }
+
+      // Get Redis client
+      const client = redisManager.client;
+      const timestamp = Date.now();
+      const currentKey = `${this.KEY_PREFIX}_${timestamp}`;
+      
+      // Store the new set
+      const pipeline = client.pipeline();
+      
+      // Add all addresses to a new set
+      pipeline.sadd(currentKey, ...tokenAddresses);
+      pipeline.expire(currentKey, 60 * 60 * 24 * this.EXPIRY_DAYS); // Expire after EXPIRY_DAYS
+      
+      // Get the previous latest key
+      pipeline.get(this.LATEST_KEY);
+      
+      // Execute pipeline and get results
+      const results = await pipeline.exec();
+      
+      // Handle any pipeline errors
+      if (!results) {
+        throw new Error('Redis pipeline execution failed');
+      }
+      
+      // Get previous key from results
+      const previousKey = results[2][1]; // [command index][1 for value, 0 for error]
+      
+      // Set the current key as the latest
+      await client.set(this.LATEST_KEY, currentKey);
+      
+      // If there's no previous key, everything is new
+      if (!previousKey) {
+        logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}First token list tracked: ${tokenAddresses.length} tokens${fancyColors.RESET}`);
+        return {
+          added: tokenAddresses,
+          removed: [],
+          unchanged: 0,
+          totalNew: tokenAddresses.length
+        };
+      }
+      
+      // Find new tokens (in current but not previous)
+      const newTokens = await client.sdiff(currentKey, previousKey);
+      
+      // Find removed tokens (in previous but not current)
+      const removedTokens = await client.sdiff(previousKey, currentKey);
+      
+      // Calculate unchanged count
+      const unchanged = tokenAddresses.length - newTokens.length;
+      
+      logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.GREEN}Change detected: ${fancyColors.RESET}+${newTokens.length} new, -${removedTokens.length} removed, ${unchanged} unchanged tokens`);
+      
+      return {
+        added: newTokens,
+        removed: removedTokens,
+        unchanged,
+        totalTracked: tokenAddresses.length
+      };
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.RED}Error tracking token changes:${fancyColors.RESET}`, error);
+      return {
+        added: [],
+        removed: [],
+        unchanged: 0,
+        error: error.message
+      };
+    }
+  }
+  
+  /**
+   * Get all previously seen tokens (useful for recovery)
+   * @returns {Promise<Array<string>>} - Array of all tracked token addresses
+   */
+  async getAllTrackedTokens() {
+    try {
+      const client = redisManager.client;
+      const latestKey = await client.get(this.LATEST_KEY);
+      
+      if (!latestKey) {
+        return [];
+      }
+      
+      return await client.smembers(latestKey);
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.RED}Error getting tracked tokens:${fancyColors.RESET}`, error);
+      return [];
+    }
+  }
+  
+  /**
+   * Clean up old token sets to save memory
+   * @param {number} keepDays - Number of days to keep token sets
+   * @returns {Promise<number>} - Number of keys removed
+   */
+  async cleanupOldSets(keepDays = 1) {
+    try {
+      const client = redisManager.client;
+      const keys = await client.keys(`${this.KEY_PREFIX}_*`);
+      const latestKey = await client.get(this.LATEST_KEY);
+      
+      const cutoffTime = Date.now() - (keepDays * 24 * 60 * 60 * 1000);
+      let removedCount = 0;
+      
+      for (const key of keys) {
+        // Skip the latest key indicator
+        if (key === this.LATEST_KEY) continue;
+        
+        // Don't delete the latest set
+        if (key === latestKey) continue;
+        
+        // Parse timestamp from key
+        const keyParts = key.split('_');
+        const keyTimestamp = parseInt(keyParts[keyParts.length - 1], 10);
+        
+        // If older than cutoff, delete it
+        if (keyTimestamp < cutoffTime) {
+          await client.del(key);
+          removedCount++;
+          logApi.debug(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} Cleaned up old token set: ${key}`);
+        }
+      }
+      
+      if (removedCount > 0) {
+        logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}Cleaned up ${removedCount} old token sets${fancyColors.RESET}`);
+      }
+      
+      return removedCount;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.RED}Error cleaning up old token sets:${fancyColors.RESET}`, error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Get stats about tracked token lists
+   * @returns {Promise<Object>} - Statistics about tracked tokens
+   */
+  async getStats() {
+    try {
+      const client = redisManager.client;
+      const latestKey = await client.get(this.LATEST_KEY);
+      const allKeys = await client.keys(`${this.KEY_PREFIX}_*`);
+      
+      // Skip the LATEST_KEY itself
+      const setKeys = allKeys.filter(key => key !== this.LATEST_KEY);
+      
+      let latestCount = 0;
+      if (latestKey) {
+        latestCount = await client.scard(latestKey);
+      }
+      
+      return {
+        totalTokens: latestCount,
+        trackedSets: setKeys.length,
+        latestTimestamp: latestKey ? parseInt(latestKey.split('_').pop(), 10) : null,
+        memoryUsage: 'N/A' // Redis memory usage stats could be added here
+      };
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.RED}Error getting stats:${fancyColors.RESET}`, error);
+      return {
+        error: error.message
+      };
+    }
+  }
+}
+
+// Create and export a singleton instance
+const tokenListDeltaTracker = new TokenListDeltaTracker();
+export default tokenListDeltaTracker;

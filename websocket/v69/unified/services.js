@@ -5,6 +5,7 @@
  * 
  * This module provides service functions for the unified WebSocket system:
  * - Terminal data fetching
+ * - Vanity wallet dashboard data fetching
  * - Service event registration
  * - Solana PubSub WebSocket proxying
  */
@@ -23,6 +24,9 @@ const SOLANA_SUBSCRIPTION_LIMITS = {
   USER: 10,       // User tier (authenticated users): 10 accounts max
   ADMIN: 1000,    // Admin/superadmin tier: 1000 accounts max
 };
+
+// Import vanity wallet service
+import vanityWalletService from '../../../services/vanity-wallet/vanity-wallet-service.js';
 
 /**
  * Fetch terminal data from the database
@@ -243,6 +247,23 @@ async function getSystemComponentStatus() {
  * Register service event handlers with the unified WebSocket server
  * @param {Object} server - The unified WebSocket server instance
  */
+/**
+ * Fetch vanity dashboard data from the service
+ * @returns {Promise<Object>} Vanity dashboard data object
+ */
+export async function fetchVanityDashboardData() {
+  try {
+    // Call the vanity wallet service API to get dashboard data
+    const dashboardData = await vanityWalletService.getDashboardData();
+    
+    // Return the dashboard data
+    return dashboardData;
+  } catch (error) {
+    logApi.error(`${wsColors.tag}[services]${fancyColors.RESET} ${fancyColors.RED}Error fetching vanity dashboard data:${fancyColors.RESET}`, error);
+    throw error;
+  }
+}
+
 export function registerServiceEvents(server) {
   // Store reference in global config for other services to use
   config.websocket.unifiedWebSocket = server;
@@ -265,6 +286,19 @@ export function registerServiceEvents(server) {
       type: 'DATA',
       topic: config.websocket.topics.TERMINAL,
       subtype: 'terminal',
+      action: 'update',
+      data: data,
+      timestamp: new Date().toISOString()
+    })
+  );
+  
+  // Vanity Dashboard event handlers
+  server.registerEventHandler(
+    'vanity:dashboard_update', 
+    (data) => server.broadcastToTopic(config.websocket.topics.TERMINAL, {
+      type: 'DATA',
+      topic: config.websocket.topics.TERMINAL,
+      subtype: 'vanity-dashboard',
       action: 'update',
       data: data,
       timestamp: new Date().toISOString()

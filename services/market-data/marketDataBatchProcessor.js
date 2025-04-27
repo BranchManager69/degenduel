@@ -154,15 +154,47 @@ class MarketDataBatchProcessor {
             logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Starting batch ${batchIndex + 1}/${totalBatches} with ${batchTokens.length} tokens`);
             
             // Get token addresses for the batch
-            const tokenAddresses = batchTokens
-                .map(token => {
-                    // Handle both object and string tokens
-                    if (typeof token === 'string') {
-                        return token.replace(/^["']+|["']+$/g, '').replace(/\\"/g, '');
-                    }
-                    return token.address;
-                })
+            // Add debug info to understand token format issues
+            const initialLength = batchTokens.length;
+            const tokenAddressMappingResults = batchTokens.map(token => {
+                // Handle both object and string tokens
+                if (typeof token === 'string') {
+                    return { 
+                        type: 'string', 
+                        result: token.replace(/^["']+|["']+$/g, '').replace(/\\"/g, '')
+                    };
+                }
+                return { 
+                    type: typeof token, 
+                    hasAddress: !!token.address, 
+                    result: token.address
+                };
+            });
+            
+            // Count tokens by type
+            const stringTokens = tokenAddressMappingResults.filter(r => r.type === 'string').length;
+            const objectTokens = tokenAddressMappingResults.filter(r => r.type === 'object').length;
+            const addressedTokens = tokenAddressMappingResults.filter(r => r.hasAddress).length;
+            
+            // Extract just the addresses for actual processing
+            const tokenAddresses = tokenAddressMappingResults
+                .map(r => r.result)
                 .filter(address => address !== null && address !== undefined);
+            
+            // Log debug info if token addresses were lost
+            if (tokenAddresses.length === 0 && initialLength > 0) {
+                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}BATCH ${batchIndex + 1}/${totalBatches}: All ${initialLength} tokens had invalid addresses!${fancyColors.RESET} Types: ${stringTokens} strings, ${objectTokens} objects, ${addressedTokens} with address`);
+                
+                // Log a sample token for debugging if available
+                if (batchTokens.length > 0) {
+                    const sample = batchTokens[0];
+                    logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Sample token:${fancyColors.RESET}`, 
+                        typeof sample === 'string' ? 
+                            { type: 'string', value: sample.substring(0, 30) } : 
+                            { type: typeof sample, keys: Object.keys(sample), sample: JSON.stringify(sample).substring(0, 100) }
+                    );
+                }
+            }
             
             // Get metadata from Helius for this batch
             let tokenMetadata = [];

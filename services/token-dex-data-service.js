@@ -369,7 +369,18 @@ class TokenDEXDataService extends BaseService {
       // Fetch pools from DexScreener
       const poolsData = await dexscreenerClient.getTokenPools('solana', tokenAddress);
       
-      if (!poolsData || !poolsData.pairs || !Array.isArray(poolsData.pairs)) {
+      // Check if we got an array directly (newer API response format)
+      let pools = [];
+      if (Array.isArray(poolsData)) {
+        pools = poolsData;
+        logApi.info(`${formatLog.tag()} ${formatLog.info('Got pool data as array, found')} ${formatLog.count(pools.length)} pools`);
+      } else if (poolsData && poolsData.pairs && Array.isArray(poolsData.pairs)) {
+        // Legacy format
+        pools = poolsData.pairs;
+        logApi.info(`${formatLog.tag()} ${formatLog.info('Got pool data in legacy format, found')} ${formatLog.count(pools.length)} pools`);
+      }
+      
+      if (pools.length === 0) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('No pools found for token')} ${formatLog.token(tokenAddress)}`);
         return { 
           success: false, 
@@ -377,9 +388,12 @@ class TokenDEXDataService extends BaseService {
           poolsUpdated: 0 
         };
       }
+      
+      // Create a compatible poolsData object if needed
+      const normalizedPoolsData = Array.isArray(poolsData) ? { pairs: poolsData } : poolsData;
 
       // Filter to Solana pools only (should already be Solana-only since we specified 'solana' in the API call)
-      const solanaPoolsRaw = poolsData.pairs.filter(pair => 
+      const solanaPoolsRaw = pools.filter(pair => 
         pair && pair.chainId === 'solana' && pair.dexId && pair.pairAddress
       );
 
@@ -465,45 +479,135 @@ class TokenDEXDataService extends BaseService {
         if (solanaPoolsLimited.length > 0) {
           highestLiquidityPool = solanaPoolsLimited[0]; // Already sorted by liquidity
 
+          // Log the entire highestLiquidityPool for debugging
+          logApi.debug(`${formatLog.tag()} ${formatLog.info('Highest liquidity pool data:')} ${JSON.stringify(highestLiquidityPool)}`);
+
           // Determine if our token is the base or quote token
-          if (highestLiquidityPool.baseToken && highestLiquidityPool.baseToken.address.toLowerCase() === tokenAddress.toLowerCase()) {
+          if (highestLiquidityPool.baseToken && highestLiquidityPool.baseToken.address && 
+              highestLiquidityPool.baseToken.address.toLowerCase() === tokenAddress.toLowerCase()) {
             tokenMetadata = highestLiquidityPool.baseToken;
-          } else if (highestLiquidityPool.quoteToken && highestLiquidityPool.quoteToken.address.toLowerCase() === tokenAddress.toLowerCase()) {
+            logApi.debug(`${formatLog.tag()} ${formatLog.info('Found token in baseToken')}`);
+          } else if (highestLiquidityPool.quoteToken && highestLiquidityPool.quoteToken.address && 
+                    highestLiquidityPool.quoteToken.address.toLowerCase() === tokenAddress.toLowerCase()) {
             tokenMetadata = highestLiquidityPool.quoteToken;
+            logApi.debug(`${formatLog.tag()} ${formatLog.info('Found token in quoteToken')}`);
+          } else {
+            // If we can't find the specific token, handle this case
+            // Sometimes our token might be in a different field or has different casing
+            logApi.debug(`${formatLog.tag()} ${formatLog.warning('Could not find exact token match in baseToken or quoteToken')}`);
+            
+            // Try alternate approaches
+            if (highestLiquidityPool.baseToken) {
+              tokenMetadata = highestLiquidityPool.baseToken;
+              logApi.debug(`${formatLog.tag()} ${formatLog.info('Using baseToken as fallback')}`);
+            } else if (highestLiquidityPool.quoteToken) {
+              tokenMetadata = highestLiquidityPool.quoteToken;
+              logApi.debug(`${formatLog.tag()} ${formatLog.info('Using quoteToken as fallback')}`);
+            }
           }
           
           // Extract additional token info from the pool
-          tokenInfo = highestLiquidityPool.info || null;
+          // Try multiple possible locations for this data
+          if (highestLiquidityPool.info) {
+            tokenInfo = highestLiquidityPool.info;
+            logApi.debug(`${formatLog.tag()} ${formatLog.info('Found token info in pool.info')}`);
+          } else if (tokenMetadata && tokenMetadata.info) {
+            tokenInfo = tokenMetadata.info;
+            logApi.debug(`${formatLog.tag()} ${formatLog.info('Found token info in tokenMetadata.info')}`);
+          } else if (highestLiquidityPool.baseToken && highestLiquidityPool.baseToken.info) {
+            tokenInfo = highestLiquidityPool.baseToken.info;
+            logApi.debug(`${formatLog.tag()} ${formatLog.info('Found token info in baseToken.info')}`);
+          } else if (highestLiquidityPool.quoteToken && highestLiquidityPool.quoteToken.info) {
+            tokenInfo = highestLiquidityPool.quoteToken.info;
+            logApi.debug(`${formatLog.tag()} ${formatLog.info('Found token info in quoteToken.info')}`);
+          }
+          
+          // If we still don't have tokenInfo, try root level properties
+          if (!tokenInfo) {
+            tokenInfo = {};
+            // Check if socials might be at the pool root level
+            if (highestLiquidityPool.socials) {
+              tokenInfo.socials = highestLiquidityPool.socials;
+              logApi.debug(`${formatLog.tag()} ${formatLog.info('Found socials at pool root level')}`);
+            }
+            // Check if websites might be at the pool root level
+            if (highestLiquidityPool.websites) {
+              tokenInfo.websites = highestLiquidityPool.websites;
+              logApi.debug(`${formatLog.tag()} ${formatLog.info('Found websites at pool root level')}`);
+            }
+            // Check if imageUrl might be at the pool root level
+            if (highestLiquidityPool.imageUrl) {
+              tokenInfo.imageUrl = highestLiquidityPool.imageUrl;
+              logApi.debug(`${formatLog.tag()} ${formatLog.info('Found imageUrl at pool root level')}`);
+            }
+          }
         }
         
         // Extract social links and websites
         const socialLinks = {};
         const websites = [];
         
+        // Try to extract socials from multiple possible locations
+        let socials = [];
         if (tokenInfo && tokenInfo.socials && Array.isArray(tokenInfo.socials)) {
-          tokenInfo.socials.forEach(social => {
-            if (social.type === 'twitter') {
-              socialLinks.twitter_url = social.url;
-            } else if (social.type === 'telegram') {
-              socialLinks.telegram_url = social.url;
-            } else if (social.type === 'discord') {
-              socialLinks.discord_url = social.url;
-            }
-          });
+          socials = tokenInfo.socials;
+          logApi.debug(`${formatLog.tag()} ${formatLog.info('Found socials in tokenInfo.socials')}`);
+        } else if (highestLiquidityPool && highestLiquidityPool.socials && Array.isArray(highestLiquidityPool.socials)) {
+          socials = highestLiquidityPool.socials;
+          logApi.debug(`${formatLog.tag()} ${formatLog.info('Found socials in highestLiquidityPool.socials')}`);
+        } else if (tokenMetadata && tokenMetadata.socials && Array.isArray(tokenMetadata.socials)) {
+          socials = tokenMetadata.socials;
+          logApi.debug(`${formatLog.tag()} ${formatLog.info('Found socials in tokenMetadata.socials')}`);
         }
         
+        // Process the socials
+        socials.forEach(social => {
+          logApi.debug(`${formatLog.tag()} ${formatLog.info(`Processing social: ${JSON.stringify(social)}`)}`);
+          if (social.type && social.url) {
+            if (social.type.toLowerCase() === 'twitter') {
+              socialLinks.twitter_url = social.url;
+              logApi.debug(`${formatLog.tag()} ${formatLog.success('Added Twitter URL')}: ${social.url}`);
+            } else if (social.type.toLowerCase() === 'telegram') {
+              socialLinks.telegram_url = social.url;
+              logApi.debug(`${formatLog.tag()} ${formatLog.success('Added Telegram URL')}: ${social.url}`);
+            } else if (social.type.toLowerCase() === 'discord') {
+              socialLinks.discord_url = social.url;
+              logApi.debug(`${formatLog.tag()} ${formatLog.success('Added Discord URL')}: ${social.url}`);
+            } else {
+              logApi.debug(`${formatLog.tag()} ${formatLog.info(`Skipping unsupported social type: ${social.type}`)}`);
+            }
+          }
+        });
+        
+        // Try to extract websites from multiple possible locations
+        let websiteList = [];
         if (tokenInfo && tokenInfo.websites && Array.isArray(tokenInfo.websites)) {
-          tokenInfo.websites.forEach(website => {
+          websiteList = tokenInfo.websites;
+          logApi.debug(`${formatLog.tag()} ${formatLog.info('Found websites in tokenInfo.websites')}`);
+        } else if (highestLiquidityPool && highestLiquidityPool.websites && Array.isArray(highestLiquidityPool.websites)) {
+          websiteList = highestLiquidityPool.websites;
+          logApi.debug(`${formatLog.tag()} ${formatLog.info('Found websites in highestLiquidityPool.websites')}`);
+        } else if (tokenMetadata && tokenMetadata.websites && Array.isArray(tokenMetadata.websites)) {
+          websiteList = tokenMetadata.websites;
+          logApi.debug(`${formatLog.tag()} ${formatLog.info('Found websites in tokenMetadata.websites')}`);
+        }
+        
+        // Process the websites
+        websiteList.forEach(website => {
+          logApi.debug(`${formatLog.tag()} ${formatLog.info(`Processing website: ${JSON.stringify(website)}`)}`);
+          if (website.url) {
             websites.push({
               url: website.url,
               label: website.label || 'Website'
             });
-          });
-          
-          // Set the primary website URL in the token record
-          if (websites.length > 0) {
-            socialLinks.website_url = websites[0].url;
+            logApi.debug(`${formatLog.tag()} ${formatLog.success('Added website')}: ${website.url}`);
           }
+        });
+        
+        // Set the primary website URL in the token record
+        if (websites.length > 0) {
+          socialLinks.website_url = websites[0].url;
+          logApi.debug(`${formatLog.tag()} ${formatLog.success('Set primary website URL')}: ${websites[0].url}`);
         }
         
         // Extract tags from token data
@@ -559,6 +663,16 @@ class TokenDEXDataService extends BaseService {
         // Add image URL if available
         if (tokenInfo && tokenInfo.imageUrl) {
           tokenUpdateData.image_url = tokenInfo.imageUrl;
+          logApi.debug(`${formatLog.tag()} ${formatLog.success('Setting image URL from tokenInfo.imageUrl')}: ${tokenInfo.imageUrl}`);
+        } else if (highestLiquidityPool && highestLiquidityPool.imageUrl) {
+          tokenUpdateData.image_url = highestLiquidityPool.imageUrl;
+          logApi.debug(`${formatLog.tag()} ${formatLog.success('Setting image URL from highestLiquidityPool.imageUrl')}: ${highestLiquidityPool.imageUrl}`);
+        } else if (tokenMetadata && tokenMetadata.imageUrl) {
+          tokenUpdateData.image_url = tokenMetadata.imageUrl;
+          logApi.debug(`${formatLog.tag()} ${formatLog.success('Setting image URL from tokenMetadata.imageUrl')}: ${tokenMetadata.imageUrl}`);
+        } else if (tokenMetadata && tokenMetadata.logo) {
+          tokenUpdateData.image_url = tokenMetadata.logo;
+          logApi.debug(`${formatLog.tag()} ${formatLog.success('Setting image URL from tokenMetadata.logo')}: ${tokenMetadata.logo}`);
         }
         
         // Add highest liquidity pool information
@@ -576,7 +690,17 @@ class TokenDEXDataService extends BaseService {
             const liquidity = highestLiquidityPool.liquidity?.usd ? parseFloat(highestLiquidityPool.liquidity.usd) : null;
             const priceUsd = highestLiquidityPool.priceUsd ? parseFloat(highestLiquidityPool.priceUsd) : null;
             const volume24h = highestLiquidityPool.volume?.h24 ? parseFloat(highestLiquidityPool.volume.h24) : null;
-            const priceChange24h = highestLiquidityPool.priceChange?.h24 ? parseFloat(highestLiquidityPool.priceChange.h24) : null;
+            
+            // Parse the 24h price change
+            let priceChange24h = null;
+            if (highestLiquidityPool.priceChange?.h24) {
+              const rawChange = parseFloat(highestLiquidityPool.priceChange.h24);
+              // Use null if value is invalid
+              if (!isNaN(rawChange)) {
+                // Store actual price change without caps - schema now supports larger values
+                priceChange24h = rawChange;
+              }
+            }
             
             // Store price in token_prices table
             const existingPrice = await tx.token_prices.findUnique({
@@ -608,7 +732,6 @@ class TokenDEXDataService extends BaseService {
                   fdv: fdv,
                   liquidity: liquidity,
                   volume_24h: volume24h,
-                  created_at: new Date(),
                   updated_at: new Date()
                 }
               });
@@ -704,6 +827,8 @@ class TokenDEXDataService extends BaseService {
           });
           
           if (token) {
+            logApi.info(`${formatLog.tag()} ${formatLog.info(`Storing ${websites.length} websites for token ${tokenAddress}`)}`);
+            
             // Delete existing websites for this token
             await tx.token_websites.deleteMany({
               where: { token_id: token.id }
@@ -720,15 +845,20 @@ class TokenDEXDataService extends BaseService {
                     created_at: new Date()
                   }
                 });
+                logApi.info(`${formatLog.tag()} ${formatLog.success(`Saved website for token ${tokenAddress}`)}: ${website.url}`);
               } catch (error) {
                 logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error creating website for token ${tokenAddress}:`)} ${error.message}`);
               }
             }
+          } else {
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Could not find token ID for ${tokenAddress}, websites not saved`)}`);
           }
+        } else {
+          logApi.info(`${formatLog.tag()} ${formatLog.info(`No websites found for token ${tokenAddress}`)}`);
         }
         
         // Handle socials in token_socials table
-        if (tokenInfo && tokenInfo.socials && Array.isArray(tokenInfo.socials)) {
+        if (socials.length > 0) {
           // Get token ID
           const token = await tx.tokens.findUnique({
             where: { address: tokenAddress },
@@ -736,27 +866,38 @@ class TokenDEXDataService extends BaseService {
           });
           
           if (token) {
+            logApi.info(`${formatLog.tag()} ${formatLog.info(`Storing ${socials.length} social links for token ${tokenAddress}`)}`);
+            
             // Delete existing socials for this token
             await tx.token_socials.deleteMany({
               where: { token_id: token.id }
             });
             
             // Add new socials
-            for (const social of tokenInfo.socials) {
+            for (const social of socials) {
               try {
-                await tx.token_socials.create({
-                  data: {
-                    token_id: token.id,
-                    type: social.type,
-                    url: social.url,
-                    created_at: new Date()
-                  }
-                });
+                if (social.type && social.url) {
+                  await tx.token_socials.create({
+                    data: {
+                      token_id: token.id,
+                      type: social.type,
+                      url: social.url,
+                      created_at: new Date()
+                    }
+                  });
+                  logApi.info(`${formatLog.tag()} ${formatLog.success(`Saved social link for token ${tokenAddress}`)}: ${social.type} - ${social.url}`);
+                } else {
+                  logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Skipping invalid social for token ${tokenAddress}`)}: ${JSON.stringify(social)}`);
+                }
               } catch (error) {
                 logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error creating social for token ${tokenAddress}:`)} ${error.message}`);
               }
             }
+          } else {
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Could not find token ID for ${tokenAddress}, social links not saved`)}`);
           }
+        } else {
+          logApi.info(`${formatLog.tag()} ${formatLog.info(`No social links found for token ${tokenAddress}`)}`);
         }
 
         return {

@@ -397,6 +397,12 @@ class TokenService extends HeliusBase {
    */
   async getTokensMetadata(mintAddresses) {
     try {
+      // Skip processing if no addresses provided
+      if (!mintAddresses || !Array.isArray(mintAddresses) || mintAddresses.length === 0) {
+        logApi.info(`${formatLog.tag()} ${formatLog.warning('Skipping metadata fetch - no valid mint addresses provided')}`);
+        return [];
+      }
+      
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} metadata for ${mintAddresses.length} tokens`);
       
       // Fetch tokens directly from Helius - no caching

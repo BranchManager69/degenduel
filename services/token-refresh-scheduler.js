@@ -35,37 +35,44 @@ const DEFAULT_BATCH_DELAY_MS = 3000;       // Min 3000ms delay between batch exe
 const DEFAULT_API_RATE_LIMIT = 30;         // Requests per second (30% of 100 limit to be conservative)
 const DEFAULT_METRICS_INTERVAL_MS = 60000; // Metrics reporting interval (1 minute)
 
-// Token priority tiers (used for dynamic scheduling)
-const PRIORITY_TIERS = {
+// Token priority tiers - initialized from database
+let PRIORITY_TIERS = {
+  // Default fallback tiers (will be overridden by database values)
   CRITICAL: { 
     score: 1000,
     interval: 15,    // 15 seconds
-    volatility_factor: 2.0
+    volatility_factor: 2.0,
+    rank_threshold: 50
   },
   HIGH: { 
     score: 500,
     interval: 30,    // 30 seconds 
-    volatility_factor: 1.5
+    volatility_factor: 1.5,
+    rank_threshold: 200
   },
   MEDIUM: { 
     score: 200,
     interval: 60,    // 1 minute
-    volatility_factor: 1.2
+    volatility_factor: 1.2,
+    rank_threshold: 500
   },
   LOW: { 
     score: 100,
     interval: 180,   // 3 minutes
-    volatility_factor: 1.0
+    volatility_factor: 1.0,
+    rank_threshold: 1000
   },
   MINIMAL: { 
     score: 50,
     interval: 300,   // 5 minutes
-    volatility_factor: 0.8
+    volatility_factor: 0.8,
+    rank_threshold: 3000
   },
   INACTIVE: { 
     score: 10,
     interval: 600,   // 10 minutes
-    volatility_factor: 0.5
+    volatility_factor: 0.5,
+    rank_threshold: 100000
   }
 };
 
@@ -181,9 +188,6 @@ class TokenRefreshScheduler extends BaseService {
    */
   async loadConfiguration() {
     try {
-      // In future, load from database config table
-      // For now, use environment variables if available
-
       // Override defaults with environment variables if present
       this.config.maxTokensPerBatch = parseInt(process.env.TOKEN_REFRESH_MAX_BATCH_SIZE || DEFAULT_MAX_TOKENS_PER_BATCH);
       this.config.minIntervalSeconds = parseInt(process.env.TOKEN_REFRESH_MIN_INTERVAL || DEFAULT_MIN_INTERVAL_SECONDS);
@@ -195,6 +199,9 @@ class TokenRefreshScheduler extends BaseService {
       this.config.prioritizationEnabled = process.env.TOKEN_REFRESH_PRIORITIZATION !== 'false';
       this.config.dynamicIntervalsEnabled = process.env.TOKEN_REFRESH_DYNAMIC_INTERVALS !== 'false';
       this.config.adaptiveRateLimitEnabled = process.env.TOKEN_REFRESH_ADAPTIVE_RATE !== 'false';
+      
+      // Load priority tiers from database
+      await this.loadPriorityTiers();
       
       logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Configuration loaded:`, {
         maxTokensPerBatch: this.config.maxTokensPerBatch,
@@ -210,6 +217,51 @@ class TokenRefreshScheduler extends BaseService {
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error loading configuration:`, error);
       // Use defaults if configuration loading fails
+    }
+  }
+  
+  /**
+   * Load priority tiers from database
+   */
+  async loadPriorityTiers() {
+    try {
+      // Get priority tiers from database
+      const tiers = await prisma.token_refresh_priority_tiers.findMany({
+        where: {
+          is_active: true
+        },
+        orderBy: {
+          priority_score: 'desc'
+        }
+      });
+      
+      if (tiers.length === 0) {
+        logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} No priority tiers found in database. Using defaults.`);
+        return;
+      }
+      
+      // Reset default tiers with database values
+      const newTiers = {};
+      
+      for (const tier of tiers) {
+        newTiers[tier.name] = {
+          score: tier.priority_score,
+          interval: tier.refresh_interval_seconds,
+          volatility_factor: tier.volatility_factor,
+          rank_threshold: tier.rank_threshold,
+          max_tokens_per_batch: tier.max_tokens_per_batch,
+          batch_delay_ms: tier.batch_delay_ms
+        };
+      }
+      
+      // Update global PRIORITY_TIERS
+      PRIORITY_TIERS = newTiers;
+      
+      // Log loaded tiers
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Loaded ${tiers.length} priority tiers from database`);
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error loading priority tiers:`, error);
+      logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Using default priority tiers`);
     }
   }
 
@@ -305,32 +357,59 @@ class TokenRefreshScheduler extends BaseService {
     // Start with base priority score from database
     let priorityScore = token.priority_score || 0;
     
-    // Determine base tier from rank
-    let baseTier = PRIORITY_TIERS.LOW;
+    // Get latest rank
     let latestRank = token.rank_history?.[0]?.rank;
     
-    if (latestRank !== undefined) {
-      if (latestRank <= 50) {
-        baseTier = PRIORITY_TIERS.CRITICAL;
-      } else if (latestRank <= 200) {
-        baseTier = PRIORITY_TIERS.HIGH;
-      } else if (latestRank <= 500) {
-        baseTier = PRIORITY_TIERS.MEDIUM;
-      } else if (latestRank <= 1000) {
-        baseTier = PRIORITY_TIERS.LOW;
-      } else if (latestRank <= 3000) {
-        baseTier = PRIORITY_TIERS.MINIMAL;
-      } else {
-        baseTier = PRIORITY_TIERS.INACTIVE;
+    // Determine base tier from rank using database tier definitions
+    let baseTier = null;
+    const tierNames = Object.keys(PRIORITY_TIERS);
+    
+    // Sort tiers by rank_threshold in descending order to find the appropriate tier
+    const sortedTiers = [...tierNames].sort((a, b) => 
+      PRIORITY_TIERS[b].rank_threshold - PRIORITY_TIERS[a].rank_threshold
+    );
+    
+    // Default to lowest tier if no rank
+    if (latestRank === undefined) {
+      // Get tier with highest rank threshold (lowest priority)
+      baseTier = PRIORITY_TIERS[sortedTiers[0]];
+    } else {
+      // Find appropriate tier based on rank
+      for (const tierName of sortedTiers) {
+        const tier = PRIORITY_TIERS[tierName];
+        if (latestRank <= tier.rank_threshold) {
+          baseTier = tier;
+        } else {
+          break; // Stop once we've found the correct tier
+        }
+      }
+      
+      // Fallback to lowest priority tier if no match found
+      if (!baseTier) {
+        baseTier = PRIORITY_TIERS[sortedTiers[0]];
       }
     }
     
-    // Apply bonus for tokens used in contests
+    // If no valid tier was found, use a default
+    if (!baseTier) {
+      baseTier = {
+        name: 'DEFAULT',
+        score: 50,
+        interval: 300,
+        volatility_factor: 1.0
+      };
+      logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} No valid tier found for token ${token.id} (${token.symbol}), using defaults.`);
+    }
+    
+    // Apply bonus for tokens used in contests - ensure at least HIGH priority
     if (token.contest_portfolios && token.contest_portfolios.length > 0) {
-      // Active in contest - ensure at least HIGH priority
-      if (baseTier.score < PRIORITY_TIERS.HIGH.score) {
-        baseTier = PRIORITY_TIERS.HIGH;
+      const highTier = Object.values(PRIORITY_TIERS)
+        .find(tier => tier.name === 'HIGH' || tier.score >= 500);
+      
+      if (highTier && baseTier.score < highTier.score) {
+        baseTier = highTier;
       }
+      
       priorityScore += 300; // Substantial bonus for contest usage
     }
     
@@ -366,9 +445,14 @@ class TokenRefreshScheduler extends BaseService {
       adjustedInterval = baseInterval;
     }
     
+    // Extract tier name from baseTier (either name property or the key itself)
+    const tierName = baseTier.name || 
+                   Object.keys(PRIORITY_TIERS).find(key => PRIORITY_TIERS[key] === baseTier) || 
+                   'UNKNOWN';
+    
     return {
       score: priorityScore,
-      baseTier: baseTier.name,
+      baseTier: tierName,
       refreshInterval: adjustedInterval,
       volatilityFactor: volatilityFactor
     };

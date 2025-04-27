@@ -18,6 +18,7 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js'; // why import if unused?
 import prisma from '../config/prisma.js';
 import ReferralService from '../services/referralService.js';
 import contestImageService from '../services/contestImageService.js';
+import contestSchedulerController from '../controllers/contestSchedulerController.js';
 import cache from '../utils/cache.js';
 import * as crypto from 'crypto';
 
@@ -3012,6 +3013,281 @@ router.get('/user-participations', async (req, res) => {
     res.status(500).json({
       error: 'Failed to fetch user contest participations',
       message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/contests/schedules:
+ *   get:
+ *     summary: Get all active contest schedules with upcoming contests
+ *     tags: [Contests]
+ *     description: Returns all active contest schedules with their upcoming contests
+ *     responses:
+ *       200:
+ *         description: List of active schedules with upcoming contests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       name:
+ *                         type: string
+ *                         example: "Daily Contest"
+ *                       days:
+ *                         type: array
+ *                         items:
+ *                           type: integer
+ *                         example: [1, 2, 3, 4, 5]
+ *                       hour:
+ *                         type: integer
+ *                         example: 14
+ *                       minute:
+ *                         type: integer
+ *                         example: 0
+ *                       duration_hours:
+ *                         type: number
+ *                         format: float
+ *                         example: 1.5
+ *                       entry_fee:
+ *                         type: string
+ *                         example: "1.00"
+ *                       upcoming_contests:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                               example: 101
+ *                             name:
+ *                               type: string
+ *                               example: "Daily Contest #101"
+ *                             start_time:
+ *                               type: string
+ *                               format: date-time
+ *                             end_time:
+ *                               type: string
+ *                               format: date-time
+ *                             entry_fee:
+ *                               type: string
+ *                               example: "1.00"
+ *                             prize_pool:
+ *                               type: string
+ *                               example: "100.00"
+ *                             status:
+ *                               type: string
+ *                               enum: [pending, active, completed, cancelled]
+ *                               example: "pending"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Failed to retrieve public contest schedules"
+ */
+router.get('/schedules', contestSchedulerController.getPublicSchedules);
+
+/**
+ * @swagger
+ * /api/contests/schedules/{id}:
+ *   get:
+ *     summary: Get a specific contest schedule by ID
+ *     tags: [Contests]
+ *     description: Returns a specific contest schedule with its upcoming contests
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The schedule ID
+ *     responses:
+ *       200:
+ *         description: Schedule details with upcoming contests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     name:
+ *                       type: string
+ *                       example: "Daily Contest"
+ *                     template:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 1
+ *                         name:
+ *                           type: string
+ *                           example: "Standard Contest"
+ *                     days:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *                       example: [1, 2, 3, 4, 5]
+ *                     hour:
+ *                       type: integer
+ *                       example: 14
+ *                     minute:
+ *                       type: integer
+ *                       example: 0
+ *                     contests:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 101
+ *                           name:
+ *                             type: string
+ *                             example: "Daily Contest #101"
+ *                           start_time:
+ *                             type: string
+ *                             format: date-time
+ *                           end_time:
+ *                             type: string
+ *                             format: date-time
+ *       404:
+ *         description: Schedule not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Schedule not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Failed to retrieve schedule"
+ */
+router.get('/schedules/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid schedule ID'
+      });
+    }
+    
+    // Only return active schedules with upcoming contests for public access
+    const schedule = await prisma.contest_schedule.findFirst({
+      where: { 
+        id: parseInt(id),
+        enabled: true
+      },
+      include: {
+        template: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            icon: true,
+            entry_fee: true,
+            min_participants: true,
+            max_participants: true
+          }
+        },
+        contests: {
+          where: {
+            start_time: {
+              gte: new Date()
+            },
+            status: 'pending'
+          },
+          orderBy: {
+            start_time: 'asc'
+          },
+          take: 10
+        }
+      }
+    });
+    
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        error: 'Schedule not found'
+      });
+    }
+    
+    // Format response for public consumption
+    const formattedSchedule = {
+      id: schedule.id,
+      name: schedule.name,
+      template: schedule.template,
+      days: schedule.days,
+      hour: schedule.hour,
+      minute: schedule.minute,
+      duration_hours: schedule.duration_hours,
+      entry_fee: schedule.entry_fee_override || schedule.template.entry_fee,
+      allow_multiple_hours: schedule.allow_multiple_hours,
+      multiple_hours: schedule.multiple_hours || [],
+      upcoming_contests: schedule.contests.map(contest => ({
+        id: contest.id,
+        name: contest.name,
+        start_time: contest.start_time,
+        end_time: contest.end_time,
+        entry_fee: contest.entry_fee.toString(),
+        prize_pool: contest.prize_pool.toString(),
+        status: contest.status
+      }))
+    };
+    
+    res.json({
+      success: true,
+      data: formattedSchedule
+    });
+  } catch (error) {
+    logApi.error('Failed to get public contest schedule by ID:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve schedule'
     });
   }
 });

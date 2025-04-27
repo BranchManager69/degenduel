@@ -28,8 +28,17 @@ class VanityWalletService extends BaseService {
     // Configuration
     this.patterns = ['DUEL', 'DEGEN'];
     this.targetCounts = {
-      DUEL: 5,  // Maintain 5 available DUEL addresses
-      DEGEN: 3  // Maintain 3 available DEGEN addresses
+      DUEL: 15,  // Maintain 15 available DUEL addresses (3x the original value of 5)
+      DEGEN: 9   // Maintain 9 available DEGEN addresses (3x the original value of 3)
+    };
+    // Define pattern timeouts based on benchmark data
+    this.patternTimeouts = {
+      // Formula based on benchmarks: baseTime * characterSpace^(length - baseLength)
+      // For a 3-character pattern like 'TST': ~20-60 seconds (typical)
+      // For a 4-character pattern like 'DUEL' or 'DEGEN': ~100-500 seconds (typical)
+      // For a 5-character pattern: ~10-30 minutes (typical)
+      'DUEL': this.calculateTimeout('DUEL'),
+      'DEGEN': this.calculateTimeout('DEGEN')
     };
     this.intervalMs = 60000; // Check every 60 seconds (1 minute)
     this.isGenerating = false;
@@ -47,6 +56,37 @@ class VanityWalletService extends BaseService {
       batchSize: config.vanityWallet?.batchSize || undefined,
       maxAttempts: config.vanityWallet?.maxAttempts || undefined
     });
+  }
+  
+  /**
+   * Calculate an appropriate timeout based on pattern length and complexity
+   * @param {string} pattern - The vanity address pattern
+   * @param {boolean} caseSensitive - Whether the pattern is case sensitive
+   * @returns {number} - Timeout in milliseconds
+   */
+  calculateTimeout(pattern, caseSensitive = true) {
+    // Benchmark: 4-character case-sensitive pattern took ~106 seconds 
+    const BASE_TIME_4_CHARS = 159; // seconds (with safety margin)
+    const BASE_CHAR_COUNT = 4;
+    
+    // Character space depends on case sensitivity
+    const charSpace = caseSensitive ? 58 : 33;
+    
+    // Calculate difficulty factor based on pattern length difference
+    const lengthDiff = pattern.length - BASE_CHAR_COUNT;
+    const difficultyFactor = lengthDiff >= 0 
+      ? Math.pow(charSpace, lengthDiff)  // Each additional character multiplies difficulty by charSpace
+      : 1 / Math.pow(charSpace, -lengthDiff); // Each fewer character divides difficulty by charSpace
+    
+    // Calculate timeout in milliseconds with reasonable limits
+    const MIN_TIMEOUT = 60 * 1000;  // 60 seconds minimum
+    const MAX_TIMEOUT = 30 * 60 * 1000; // 30 minutes maximum
+    
+    const calculatedTimeout = BASE_TIME_4_CHARS * difficultyFactor * 1000;
+    const timeout = Math.min(Math.max(calculatedTimeout, MIN_TIMEOUT), MAX_TIMEOUT);
+    
+    logApi.info(`${fancyColors.MAGENTA}[VanityWalletService]${fancyColors.RESET} Calculated timeout for pattern "${pattern}" (${pattern.length} chars): ${Math.round(timeout/1000)} seconds`);
+    return timeout;
   }
   
   /**
@@ -290,7 +330,7 @@ class VanityWalletService extends BaseService {
   }
   
   /**
-   * Reset any jobs stuck in 'processing' state
+   * Reset any jobs stuck in 'processing' state and detect invalid wallet addresses
    */
   async resetStuckJobs() {
     try {
@@ -299,18 +339,34 @@ class VanityWalletService extends BaseService {
         where: {
           status: 'processing',
           updated_at: {
-            // Stuck jobs are those in processing state for more than 30 minutes
-            lt: new Date(Date.now() - 30 * 60 * 1000)
+            // Stuck jobs are those in processing state for more than 15 minutes (reduced from 30)
+            lt: new Date(Date.now() - 15 * 60 * 1000)
           }
         }
       });
       
       if (stuckJobs.length > 0) {
-        logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} STUCK JOBS ${fancyColors.RESET} Found ${stuckJobs.length} stuck jobs in 'processing' state for >30 minutes`);
+        logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} STUCK JOBS ${fancyColors.RESET} Found ${stuckJobs.length} stuck jobs in 'processing' state for >15 minutes`);
         
         // Reset stuck jobs to 'pending' state
         for (const job of stuckJobs) {
           logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Resetting stuck job ${job.id}${fancyColors.RESET} (pattern: ${job.pattern}, stuck since ${job.updated_at})`);
+          
+          // Check if any solana-keygen processes exist for this job
+          try {
+            const jobPid = await this.findJobProcessId(job.id);
+            if (jobPid) {
+              logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Found process for job ${job.id}, PID: ${jobPid}, killing...${fancyColors.RESET}`);
+              try {
+                await this.killProcess(jobPid);
+                logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Killed process ${jobPid} for job ${job.id}${fancyColors.RESET}`);
+              } catch (killError) {
+                logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Failed to kill process ${jobPid} for job ${job.id}: ${killError.message}${fancyColors.RESET}`);
+              }
+            }
+          } catch (processError) {
+            logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error checking process for job ${job.id}: ${processError.message}${fancyColors.RESET}`);
+          }
           
           await prisma.vanity_wallet_pool.update({
             where: { id: job.id },
@@ -324,11 +380,93 @@ class VanityWalletService extends BaseService {
         logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Reset ${stuckJobs.length} stuck jobs to 'pending' state${fancyColors.RESET}`);
       }
       
-      return stuckJobs.length;
+      // Also check for invalid completed wallet addresses (like job_id_pattern format)
+      const invalidWalletAddresses = await prisma.vanity_wallet_pool.findMany({
+        where: {
+          status: 'completed',
+          OR: [
+            { wallet_address: { contains: '_' } },
+            { wallet_address: { startsWith: 'DUEL_' } },
+            { wallet_address: { startsWith: 'DEGEN_' } },
+            { wallet_address: { endsWith: '_DUEL' } },
+            { wallet_address: { endsWith: '_DEGEN' } }
+          ]
+        }
+      });
+      
+      if (invalidWalletAddresses.length > 0) {
+        logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} INVALID WALLETS ${fancyColors.RESET} Found ${invalidWalletAddresses.length} completed wallets with invalid address format`);
+        
+        // Mark them as failed so they can be regenerated
+        for (const wallet of invalidWalletAddresses) {
+          logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Invalid wallet address format: ${wallet.wallet_address} for job ${wallet.id}${fancyColors.RESET}`);
+          
+          await prisma.vanity_wallet_pool.update({
+            where: { id: wallet.id },
+            data: {
+              status: 'failed',
+              updated_at: new Date(),
+              completed_at: new Date()
+            }
+          });
+        }
+        
+        logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Marked ${invalidWalletAddresses.length} wallets with invalid addresses as failed${fancyColors.RESET}`);
+      }
+      
+      return stuckJobs.length + invalidWalletAddresses.length;
     } catch (error) {
       logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error resetting stuck jobs:${fancyColors.RESET} ${error.message}`);
       return 0;
     }
+  }
+  
+  /**
+   * Find process ID for a job
+   * @param {string} jobId The job ID to find
+   * @returns {Promise<string|null>} The process ID if found, null otherwise
+   */
+  async findJobProcessId(jobId) {
+    return new Promise((resolve) => {
+      const { exec } = require('child_process');
+      
+      // Look for solana-keygen process with the job ID
+      exec(`ps -ef | grep solana-keygen | grep ${jobId} | grep -v grep`, (error, stdout) => {
+        if (error || !stdout.trim()) {
+          // No process found
+          resolve(null);
+          return;
+        }
+        
+        // Parse the process ID from ps output
+        const parts = stdout.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          resolve(parts[1]);
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  }
+  
+  /**
+   * Kill a process by PID
+   * @param {string} pid The process ID to kill
+   * @returns {Promise<boolean>} Whether the process was killed successfully
+   */
+  async killProcess(pid) {
+    return new Promise((resolve, reject) => {
+      const { exec } = require('child_process');
+      
+      exec(`kill -9 ${pid}`, (error) => {
+        if (error) {
+          reject(new Error(`Failed to kill process ${pid}: ${error.message}`));
+          return;
+        }
+        
+        resolve(true);
+      });
+    });
   }
   
   /**
@@ -482,8 +620,19 @@ class VanityWalletService extends BaseService {
           const remainingJobSlots = MAX_PENDING_JOBS - pendingJobsCount;
           const jobsToCreate = Math.min(needed, this.maxConcurrentJobs, remainingJobSlots);
           
+          // Configure generation options based on pattern preferences
+          const options = {};
+          
+          // For DUEL and DEGEN, use default prefix search
+          // You can customize specific pattern settings here
+          if (pattern === 'DUEL' || pattern === 'DEGEN') {
+            options.isSuffix = false;
+            options.caseSensitive = true;
+            options.numThreads = config.vanityWallet?.numWorkers || 4;
+          }
+          
           for (let i = 0; i < jobsToCreate; i++) {
-            await this.generateVanityAddress(pattern);
+            await this.generateVanityAddress(pattern, options);
           }
         } else {
           logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.success}Target met: ${pendingCount}/${target} ${pattern} jobs in progress${fancyColors.RESET}`);
@@ -519,18 +668,37 @@ class VanityWalletService extends BaseService {
    * Generate a single vanity address
    * 
    * @param {string} pattern - The pattern to generate
+   * @param {Object} options - Optional configuration overrides
+   * @param {boolean} options.isSuffix - Whether to search for a suffix (default: false)
+   * @param {boolean} options.caseSensitive - Whether pattern matching is case sensitive (default: true)
+   * @param {number} options.numThreads - Number of threads to use (default: from config)
+   * @param {number} options.cpuLimit - CPU usage limit as percentage (default: from config)
    */
-  async generateVanityAddress(pattern) {
+  async generateVanityAddress(pattern, options = {}) {
     try {
-      // Start the generation process
-      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Starting generation of ${pattern} address`);
+      // Get configuration or use defaults
+      const isSuffix = options.isSuffix !== undefined ? options.isSuffix : false;
+      const caseSensitive = options.caseSensitive !== undefined ? options.caseSensitive : true;
+      const numThreads = options.numThreads || config.vanityWallet?.numWorkers || 4;
+      const cpuLimit = options.cpuLimit || config.vanityWallet?.cpuLimit || 75;
       
-      // Create the request, which will automatically be processed by the generator
-      // Since we're now using the same generator instance, we don't need to submit it separately
+      // Start the generation process
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Generating ${fancyColors.RESET} Starting generation of ${pattern} address (${isSuffix ? 'suffix' : 'prefix'}, ${caseSensitive ? 'case-sensitive' : 'case-insensitive'}, ${numThreads} threads, ${cpuLimit}% CPU)`);
+      
+      // Calculate theoretical probability
+      const charSpace = caseSensitive ? 58 : 33; // Base58 character set size
+      const theoreticalAttempts = Math.pow(charSpace, pattern.length);
+      const timeout = this.calculateTimeout(pattern, caseSensitive);
+      
+      logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BLUE}Estimated difficulty: 1 in ${theoreticalAttempts.toLocaleString()} chance, timeout: ${Math.round(timeout/1000)}s${fancyColors.RESET}`);
+      
+      // Create the request with enhanced options
       const dbRecord = await VanityApiClient.createVanityAddressRequest({
         pattern,
-        isSuffix: false,
-        caseSensitive: true,
+        isSuffix,
+        caseSensitive,
+        numThreads,
+        cpuLimit,
         requestedBy: 'vanity_wallet_service',
         requestIp: '127.0.0.1'
       });
@@ -538,11 +706,13 @@ class VanityWalletService extends BaseService {
       logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Submitted ${fancyColors.RESET} Job #${dbRecord.id} for pattern ${pattern}`);
       
       // The VanityApiClient will handle the rest (generation, encryption, storage)
+      return dbRecord;
     } catch (error) {
       logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Generating ${pattern} address: ${error.message}`, {
         error: error.message,
         stack: error.stack
       });
+      throw error;
     }
   }
   
@@ -607,4 +777,745 @@ class VanityWalletService extends BaseService {
   }
 }
 
-export default VanityWalletService;
+/**
+ * Dashboard methods
+ */
+
+/**
+ * Get dashboard data for the vanity wallet UI
+ * @returns {Promise<Object>} Dashboard data
+ */
+async function getDashboardData() {
+  try {
+    // Fetch generator status
+    const queuedJobs = await prisma.vanity_wallet_jobs.count({
+      where: { status: 'queued' }
+    });
+    
+    const activeJobs = await prisma.vanity_wallet_jobs.findMany({
+      where: { status: 'processing' },
+      select: {
+        id: true,
+        pattern: true,
+        started_at: true
+      }
+    });
+    
+    const generatorStatus = {
+      queuedJobs,
+      activeJobs: activeJobs.map(job => ({
+        id: job.id,
+        pattern: job.pattern,
+        runtime_ms: Date.now() - new Date(job.started_at).getTime()
+      }))
+    };
+    
+    // Fetch system health metrics
+    const jobCounts = {
+      total: await prisma.vanity_wallet_jobs.count(),
+      active: await prisma.vanity_wallet_jobs.count({ where: { status: 'processing' } }),
+      queued: await prisma.vanity_wallet_jobs.count({ where: { status: 'queued' } }),
+      completed: await prisma.vanity_wallet_jobs.count({ where: { status: 'completed' } }),
+      failed: await prisma.vanity_wallet_jobs.count({ where: { status: 'failed' } }),
+      cancelled: await prisma.vanity_wallet_jobs.count({ where: { status: 'cancelled' } })
+    };
+    
+    const successRate = jobCounts.total > 0 ? 
+      (jobCounts.completed / jobCounts.total * 100) : 0;
+    
+    const completedJobs = await prisma.vanity_wallet_jobs.findMany({
+      where: { status: 'completed' },
+      orderBy: { completed_at: 'desc' },
+      take: 1
+    });
+    
+    const lastCompletion = completedJobs.length > 0 ? {
+      id: completedJobs[0].id,
+      pattern: completedJobs[0].pattern,
+      completed_at: completedJobs[0].completed_at,
+      duration_ms: new Date(completedJobs[0].completed_at) - new Date(completedJobs[0].started_at),
+      attempts: completedJobs[0].attempts
+    } : null;
+    
+    const oldestPendingJob = await prisma.vanity_wallet_jobs.findFirst({
+      where: { status: 'queued' },
+      orderBy: { created_at: 'asc' },
+      select: {
+        id: true,
+        pattern: true,
+        created_at: true
+      }
+    });
+    
+    // Calculate average completion time
+    const avgCompletionTimeData = await prisma.vanity_wallet_jobs.findMany({
+      where: { status: 'completed' },
+      select: {
+        started_at: true,
+        completed_at: true
+      }
+    });
+    
+    let avgCompletionTimeMs = 0;
+    if (avgCompletionTimeData.length > 0) {
+      const totalDuration = avgCompletionTimeData.reduce((sum, job) => {
+        const duration = new Date(job.completed_at) - new Date(job.started_at);
+        return sum + duration;
+      }, 0);
+      avgCompletionTimeMs = totalDuration / avgCompletionTimeData.length;
+    }
+    
+    // Check generator health
+    const isGeneratorRunning = await prisma.vanity_wallet_jobs.count({
+      where: { status: 'processing' }
+    }) > 0;
+    
+    const stalledJobs = await prisma.vanity_wallet_jobs.findMany({
+      where: {
+        status: 'processing',
+        started_at: {
+          lt: new Date(Date.now() - 3600000) // 1 hour ago
+        }
+      },
+      select: {
+        id: true,
+        pattern: true,
+        started_at: true
+      }
+    });
+    
+    const recentCompletions = await prisma.vanity_wallet_jobs.findMany({
+      where: {
+        status: 'completed',
+        completed_at: {
+          gt: new Date(Date.now() - 600000) // 10 minutes ago
+        }
+      },
+      orderBy: { completed_at: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        pattern: true,
+        completed_at: true,
+        attempts: true
+      }
+    });
+    
+    const hasRecentCompletions = recentCompletions.length > 0;
+    
+    // Determine overall status
+    let generatorHealthStatus = 'healthy';
+    if (!isGeneratorRunning) {
+      generatorHealthStatus = 'inactive';
+    } else if (stalledJobs.length > 0) {
+      generatorHealthStatus = 'stalled';
+    } else if (!hasRecentCompletions && jobCounts.active === 0) {
+      generatorHealthStatus = 'inactive';
+    }
+    
+    const systemHealth = {
+      jobCounts,
+      successRate,
+      avgCompletionTimeMs,
+      avgCompletionTimeFormatted: formatMilliseconds(avgCompletionTimeMs),
+      lastCompletion,
+      oldestPendingJob,
+      systemConfig: {
+        numWorkers: 4, // Placeholder values - replace with actual config
+        cpuLimit: 75,
+        maxAttempts: 5000000
+      },
+      generatorHealth: {
+        status: generatorHealthStatus,
+        isHealthy: generatorHealthStatus === 'healthy',
+        hasRecentCompletions,
+        stalledJobs,
+        recentCompletions
+      }
+    };
+    
+    // Performance metrics
+    // Get completed jobs for analysis
+    const completedJobsData = await prisma.vanity_wallet_jobs.findMany({
+      where: { status: 'completed' },
+      orderBy: { completed_at: 'desc' }
+    });
+    
+    // Process for performance metrics
+    const processedJobs = completedJobsData.map(job => {
+      const durationMs = new Date(job.completed_at) - new Date(job.started_at);
+      const attemptsPerSecond = durationMs > 0 ? 
+        Math.round(job.attempts / (durationMs / 1000)) : 0;
+      
+      return {
+        id: job.id,
+        pattern: job.pattern,
+        patternLength: job.pattern.length,
+        isSuffix: job.is_suffix,
+        caseSensitive: job.case_sensitive,
+        attempts: job.attempts,
+        durationMs,
+        durationFormatted: formatMilliseconds(durationMs),
+        attemptsPerSecond,
+        completedAt: job.completed_at
+      };
+    });
+    
+    // Calculate overall performance stats
+    const totalAttempts = processedJobs.reduce((sum, job) => sum + job.attempts, 0);
+    const totalDuration = processedJobs.reduce((sum, job) => sum + job.durationMs, 0);
+    const avgAttemptsPerSecond = totalDuration > 0 ? 
+      Math.round(totalAttempts / (totalDuration / 1000)) : 0;
+    
+    // Find fastest and slowest jobs
+    const sortedBySpeed = [...processedJobs].sort((a, b) => b.attemptsPerSecond - a.attemptsPerSecond);
+    const fastestJob = sortedBySpeed.length > 0 ? sortedBySpeed[0] : null;
+    const slowestJob = sortedBySpeed.length > 0 ? sortedBySpeed[sortedBySpeed.length - 1] : null;
+    
+    // Get performance by pattern length
+    const byPatternLength = [];
+    const patternLengths = [...new Set(processedJobs.map(job => job.patternLength))].sort();
+    
+    for (const length of patternLengths) {
+      const jobsWithLength = processedJobs.filter(job => job.patternLength === length);
+      const count = jobsWithLength.length;
+      
+      if (count === 0) continue;
+      
+      const lengthAttempts = jobsWithLength.reduce((sum, job) => sum + job.attempts, 0);
+      const lengthDuration = jobsWithLength.reduce((sum, job) => sum + job.durationMs, 0);
+      const avgLengthDurationMs = Math.round(lengthDuration / count);
+      const lengthAttemptsPerSecond = lengthDuration > 0 ? 
+        Math.round(lengthAttempts / (lengthDuration / 1000)) : 0;
+      
+      byPatternLength.push({
+        patternLength: length,
+        avgAttemptsPerSecond: lengthAttemptsPerSecond,
+        avgDurationMs: avgLengthDurationMs,
+        avgDurationFormatted: formatMilliseconds(avgLengthDurationMs),
+        count,
+        successRate: 100 // All these are completed jobs
+      });
+    }
+    
+    // Calculate performance by case sensitivity
+    const caseSensitiveJobs = processedJobs.filter(job => job.caseSensitive);
+    const caseInsensitiveJobs = processedJobs.filter(job => !job.caseSensitive);
+    
+    const caseSensitiveAttempts = caseSensitiveJobs.reduce((sum, job) => sum + job.attempts, 0);
+    const caseSensitiveDuration = caseSensitiveJobs.reduce((sum, job) => sum + job.durationMs, 0);
+    const avgCaseSensitive = caseSensitiveDuration > 0 ? 
+      Math.round(caseSensitiveAttempts / (caseSensitiveDuration / 1000)) : 0;
+    
+    const caseInsensitiveAttempts = caseInsensitiveJobs.reduce((sum, job) => sum + job.attempts, 0);
+    const caseInsensitiveDuration = caseInsensitiveJobs.reduce((sum, job) => sum + job.durationMs, 0);
+    const avgCaseInsensitive = caseInsensitiveDuration > 0 ? 
+      Math.round(caseInsensitiveAttempts / (caseInsensitiveDuration / 1000)) : 0;
+    
+    const performanceMetrics = {
+      overall: {
+        avgAttemptsPerSecond,
+        totalJobsAnalyzed: processedJobs.length,
+        mostRecentJob: processedJobs.length > 0 ? processedJobs[0] : null,
+        fastestJob,
+        slowestJob
+      },
+      byPatternLength,
+      caseOptions: {
+        avgCaseSensitive,
+        avgCaseInsensitive,
+        caseSensitiveCount: caseSensitiveJobs.length,
+        caseInsensitiveCount: caseInsensitiveJobs.length
+      },
+      recentJobData: processedJobs.slice(0, 20) // Last 20 jobs for visualization
+    };
+    
+    // Pattern statistics
+    // Count pattern occurrences and collect metrics
+    const patternData = {};
+    
+    completedJobsData.forEach(job => {
+      const pattern = job.pattern;
+      
+      if (!patternData[pattern]) {
+        patternData[pattern] = {
+          count: 0,
+          successful: 0,
+          durations: [],
+          attempts: []
+        };
+      }
+      
+      patternData[pattern].count++;
+      patternData[pattern].successful++;
+      
+      const duration = new Date(job.completed_at) - new Date(job.started_at);
+      patternData[pattern].durations.push(duration);
+      patternData[pattern].attempts.push(job.attempts);
+    });
+    
+    // Generate popular patterns data
+    const popularPatterns = Object.entries(patternData)
+      .map(([pattern, data]) => {
+        const avgDurationMs = data.durations.length > 0 ? 
+          Math.round(data.durations.reduce((a, b) => a + b, 0) / data.durations.length) : 0;
+        const avgAttempts = data.attempts.length > 0 ? 
+          Math.round(data.attempts.reduce((a, b) => a + b, 0) / data.attempts.length) : 0;
+        
+        return {
+          pattern,
+          count: data.count,
+          successful: data.successful,
+          successRate: (data.successful / data.count * 100).toFixed(1),
+          avgDurationMs,
+          avgDurationFormatted: formatMilliseconds(avgDurationMs),
+          avgAttempts
+        };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 patterns
+    
+    // Generate length distribution data
+    const lengthDistribution = {};
+    
+    completedJobsData.forEach(job => {
+      const length = job.pattern.length;
+      
+      if (!lengthDistribution[length]) {
+        lengthDistribution[length] = {
+          count: 0,
+          successful: 0,
+          durations: [],
+          attempts: []
+        };
+      }
+      
+      lengthDistribution[length].count++;
+      lengthDistribution[length].successful++;
+      
+      const duration = new Date(job.completed_at) - new Date(job.started_at);
+      lengthDistribution[length].durations.push(duration);
+      lengthDistribution[length].attempts.push(job.attempts);
+    });
+    
+    const lengthStats = Object.entries(lengthDistribution)
+      .map(([length, data]) => {
+        const avgDurationMs = data.durations.length > 0 ? 
+          Math.round(data.durations.reduce((a, b) => a + b, 0) / data.durations.length) : 0;
+        const avgAttempts = data.attempts.length > 0 ? 
+          Math.round(data.attempts.reduce((a, b) => a + b, 0) / data.attempts.length) : 0;
+        
+        return {
+          length: parseInt(length),
+          count: data.count,
+          successful: data.successful,
+          successRate: (data.successful / data.count * 100).toFixed(1),
+          avgDurationMs,
+          avgDurationFormatted: formatMilliseconds(avgDurationMs),
+          avgAttempts
+        };
+      })
+      .sort((a, b) => a.length - b.length);
+    
+    // Recently completed jobs
+    const recentlyCompleted = processedJobs.slice(0, 20); // Last 20 completed jobs
+    
+    const patternStats = {
+      popularPatterns,
+      lengthDistribution: lengthStats,
+      recentlyCompleted
+    };
+    
+    // Other sections
+    // Completion time statistics
+    // Calculate probability and estimated attempts for different pattern lengths
+    const theoreticalEstimates = [];
+    
+    // Character set sizes (a-z, A-Z, 0-9 for case-sensitive; a-z, 0-9 for case-insensitive)
+    const caseSensitiveSize = 62;
+    const caseInsensitiveSize = 36;
+    
+    // Calculate for pattern lengths 1-8
+    for (let patternLength = 1; patternLength <= 8; patternLength++) {
+      // Calculate probability for case-sensitive
+      const caseSensitiveProbability = 1 / Math.pow(caseSensitiveSize, patternLength);
+      const caseSensitiveEstimatedAttempts = Math.round(1 / caseSensitiveProbability);
+      
+      // Calculate probability for case-insensitive
+      const caseInsensitiveProbability = 1 / Math.pow(caseInsensitiveSize, patternLength);
+      const caseInsensitiveEstimatedAttempts = Math.round(1 / caseInsensitiveProbability);
+      
+      theoreticalEstimates.push({
+        patternLength,
+        caseSensitive: {
+          probability: caseSensitiveProbability,
+          estimatedAttempts: caseSensitiveEstimatedAttempts
+        },
+        caseInsensitive: {
+          probability: caseInsensitiveProbability,
+          estimatedAttempts: caseInsensitiveEstimatedAttempts
+        }
+      });
+    }
+    
+    // Create real-world estimates based on actual performance
+    const realWorldEstimates = theoreticalEstimates.map(theoretical => {
+      const { patternLength } = theoretical;
+      
+      // Find performance data for this pattern length
+      const lengthData = byPatternLength.find(item => item.patternLength === patternLength);
+      
+      const actualAvgAttempts = lengthData ? lengthData.avgAttemptsPerSecond : avgAttemptsPerSecond;
+      const actualAvgDurationMs = lengthData ? lengthData.avgDurationMs : 0;
+      
+      // Calculate estimated completion time
+      const estimatedCompletionTimeCaseSensitiveMs = actualAvgAttempts > 0 ? 
+        Math.round(theoretical.caseSensitive.estimatedAttempts / actualAvgAttempts * 1000) : 
+        Number.MAX_SAFE_INTEGER;
+      
+      const estimatedCompletionTimeCaseInsensitiveMs = actualAvgAttempts > 0 ? 
+        Math.round(theoretical.caseInsensitive.estimatedAttempts / actualAvgAttempts * 1000) : 
+        Number.MAX_SAFE_INTEGER;
+      
+      return {
+        patternLength,
+        actualAvgAttempts,
+        actualAvgDurationMs,
+        actualAvgDurationFormatted: formatMilliseconds(actualAvgDurationMs),
+        actualAttemptsPerSecond: lengthData ? lengthData.avgAttemptsPerSecond : avgAttemptsPerSecond,
+        theoreticalEstimates: theoretical,
+        estimatedCompletionTimeCaseSensitiveMs,
+        estimatedCompletionTimeCaseSensitiveFormatted: formatMilliseconds(estimatedCompletionTimeCaseSensitiveMs),
+        estimatedCompletionTimeCaseInsensitiveMs,
+        estimatedCompletionTimeCaseInsensitiveFormatted: formatMilliseconds(estimatedCompletionTimeCaseInsensitiveMs)
+      };
+    });
+    
+    const completionTimeStats = {
+      theoreticalEstimates,
+      realWorldEstimates,
+      globalAvgAttemptsPerSecond: avgAttemptsPerSecond
+    };
+    
+    // Time series data
+    // Create raw time series data
+    const rawTimeSeries = processedJobs.map(job => ({
+      timestamp: new Date(job.completedAt).getTime(),
+      date: job.completedAt,
+      jobId: job.id,
+      pattern: job.pattern,
+      patternLength: job.patternLength,
+      attemptsPerSecond: job.attemptsPerSecond,
+      durationMs: job.durationMs
+    }));
+    
+    // Create daily time series
+    // Group by date (YYYY-MM-DD)
+    const dailyData = {};
+    
+    completedJobsData.forEach(job => {
+      const date = new Date(job.completed_at).toISOString().split('T')[0];
+      
+      if (!dailyData[date]) {
+        dailyData[date] = {
+          jobs: [],
+          totalAttempts: 0,
+          totalDurationMs: 0
+        };
+      }
+      
+      const durationMs = new Date(job.completed_at) - new Date(job.started_at);
+      
+      dailyData[date].jobs.push({
+        id: job.id,
+        pattern: job.pattern,
+        patternLength: job.pattern.length,
+        attempts: job.attempts,
+        durationMs
+      });
+      
+      dailyData[date].totalAttempts += job.attempts;
+      dailyData[date].totalDurationMs += durationMs;
+    });
+    
+    // Convert to array and calculate averages
+    const dailyTimeSeries = Object.entries(dailyData)
+      .map(([date, data]) => {
+        const avgAttemptsPerSecond = data.totalDurationMs > 0 ? 
+          Math.round(data.totalAttempts / (data.totalDurationMs / 1000)) : 0;
+        
+        return {
+          date,
+          totalJobs: data.jobs.length,
+          totalAttempts: data.totalAttempts,
+          totalDurationMs: data.totalDurationMs,
+          avgAttemptsPerSecond,
+          jobs: data.jobs
+        };
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    // Calculate 7-day moving average
+    const movingAverage = [];
+    
+    if (dailyTimeSeries.length >= 7) {
+      for (let i = 6; i < dailyTimeSeries.length; i++) {
+        const window = dailyTimeSeries.slice(i - 6, i + 1);
+        const totalAttempts = window.reduce((sum, day) => sum + day.totalAttempts, 0);
+        const totalDurationMs = window.reduce((sum, day) => sum + day.totalDurationMs, 0);
+        const avgAttemptsPerSecond = totalDurationMs > 0 ? 
+          Math.round(totalAttempts / (totalDurationMs / 1000)) : 0;
+        
+        movingAverage.push({
+          date: dailyTimeSeries[i].date,
+          avgAttemptsPerSecond
+        });
+      }
+    }
+    
+    // Group by pattern length for trends
+    const patternLengthData = {};
+    
+    completedJobsData.forEach(job => {
+      const length = job.pattern.length;
+      
+      if (!patternLengthData[length]) {
+        patternLengthData[length] = [];
+      }
+      
+      const durationMs = new Date(job.completed_at) - new Date(job.started_at);
+      const attemptsPerSecond = durationMs > 0 ? 
+        Math.round(job.attempts / (durationMs / 1000)) : 0;
+      
+      patternLengthData[length].push({
+        date: job.completed_at,
+        attemptsPerSecond,
+        durationMs,
+        attempts: job.attempts
+      });
+    });
+    
+    // Calculate trends for each pattern length
+    const patternLengthTrends = {};
+    
+    Object.entries(patternLengthData).forEach(([length, data]) => {
+      if (data.length < 2) return; // Skip if not enough data
+      
+      // Sort by date
+      data.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      // Group into time periods (e.g., months)
+      const periods = {};
+      
+      data.forEach(point => {
+        const date = new Date(point.date);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const periodKey = `${year}-${month}`;
+        
+        if (!periods[periodKey]) {
+          periods[periodKey] = {
+            startDate: new Date(year, month, 1),
+            endDate: new Date(year, month + 1, 0),
+            dataPoints: [],
+            totalAttempts: 0,
+            totalDurationMs: 0
+          };
+        }
+        
+        periods[periodKey].dataPoints.push(point);
+        periods[periodKey].totalAttempts += point.attempts;
+        periods[periodKey].totalDurationMs += point.durationMs;
+      });
+      
+      // Calculate averages for each period
+      patternLengthTrends[length] = Object.values(periods).map(period => {
+        const avgAttemptsPerSecond = period.totalDurationMs > 0 ? 
+          Math.round(period.totalAttempts / (period.totalDurationMs / 1000)) : 0;
+        
+        return {
+          startDate: period.startDate,
+          endDate: period.endDate,
+          avgAttemptsPerSecond,
+          dataPoints: period.dataPoints
+        };
+      });
+    });
+    
+    const timeSeriesData = {
+      rawTimeSeries,
+      dailyTimeSeries,
+      movingAverage,
+      patternLengthTrends
+    };
+    
+    // System resource utilization
+    // Import OS module for system information
+    const os = require('os');
+    
+    // CPU information
+    const cpus = os.cpus();
+    const cpu = {
+      cores: cpus.length,
+      model: cpus[0]?.model || 'Unknown',
+      speed: cpus[0]?.speed || 0,
+      loadAvg: os.loadavg()
+    };
+    
+    // Memory information
+    const totalMemory = os.totalmem();
+    const freeMemory = os.freemem();
+    const memory = {
+      totalMemory,
+      freeMemory,
+      usedMemory: totalMemory - freeMemory,
+      usedPercentage: Math.round((totalMemory - freeMemory) / totalMemory * 100)
+    };
+    
+    // Disk information
+    let disk = {
+      filesystem: 'Unknown',
+      total: 'Unknown',
+      used: 'Unknown',
+      available: 'Unknown',
+      usedPercentage: 'Unknown',
+      mountPoint: '/'
+    };
+    
+    try {
+      // Try to get disk information using exec
+      const { execSync } = require('child_process');
+      const dfOutput = execSync('df -h /').toString();
+      const lines = dfOutput.split('\n');
+      
+      if (lines.length >= 2) {
+        const parts = lines[1].split(/\s+/);
+        
+        if (parts.length >= 6) {
+          disk = {
+            filesystem: parts[0],
+            total: parts[1],
+            used: parts[2],
+            available: parts[3],
+            usedPercentage: parts[4],
+            mountPoint: parts[5]
+          };
+        }
+      }
+    } catch (diskError) {
+      logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Unable to get disk information: ${diskError.message}${fancyColors.RESET}`);
+    }
+    
+    // Process information
+    let processes = {
+      nodeProcesses: 0,
+      solanaKeygenProcesses: 0
+    };
+    
+    try {
+      // Try to get process information using exec
+      const { execSync } = require('child_process');
+      const psOutput = execSync('ps -ef | grep -v grep | grep -c "node\\|nodejs"').toString();
+      const solanaOutput = execSync('ps -ef | grep -v grep | grep -c "solana-keygen"').toString();
+      
+      processes = {
+        nodeProcesses: parseInt(psOutput.trim(), 10) || 0,
+        solanaKeygenProcesses: parseInt(solanaOutput.trim(), 10) || 0
+      };
+    } catch (procError) {
+      logApi.warn(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Unable to get process information: ${procError.message}${fancyColors.RESET}`);
+    }
+    
+    // Uptime information
+    const uptime = {
+      uptime: formatUptime(os.uptime())
+    };
+    
+    const systemResources = {
+      cpu,
+      memory,
+      disk,
+      processes,
+      uptime,
+      timestamp: new Date()
+    };
+    
+    // Return the complete dashboard data
+    return {
+      generatorStatus,
+      systemHealth,
+      performanceMetrics,
+      patternStats,
+      completionTimeStats,
+      timeSeriesData,
+      systemResources
+    };
+  } catch (error) {
+    logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.RED}Error fetching dashboard data: ${error.message}${fancyColors.RESET}`, {
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
+}
+
+/**
+ * Format milliseconds into a human-readable string
+ * @param {number} ms - Milliseconds to format
+ * @returns {string} Formatted time string
+ */
+function formatMilliseconds(ms) {
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
+  } else if (ms < 60000) {
+    return `${(ms / 1000).toFixed(1)}s`;
+  } else if (ms < 3600000) {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}m ${seconds}s`;
+  } else {
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    return `${hours}h ${minutes}m`;
+  }
+}
+
+/**
+ * Format uptime in seconds to a human-readable string
+ * @param {number} seconds - Uptime in seconds
+ * @returns {string} Formatted uptime string
+ */
+function formatUptime(seconds) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor(((seconds % 86400) % 3600) / 60);
+  const secs = Math.floor(((seconds % 86400) % 3600) % 60);
+  
+  const parts = [];
+  
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+  
+  return parts.join(' ');
+}
+
+// Create a singleton instance
+const vanityWalletService = new VanityWalletService();
+
+// Export the service instance and its methods
+export default {
+  init: () => vanityWalletService.init(),
+  start: () => vanityWalletService.start(),
+  stop: () => vanityWalletService.stop(),
+  getStatus: () => vanityWalletService.getStatus(),
+  getDashboardData,
+  // Expose properties needed by tests and other modules
+  patterns: vanityWalletService.patterns,
+  targetCounts: vanityWalletService.targetCounts,
+  calculateTimeout: (pattern, caseSensitive) => vanityWalletService.calculateTimeout(pattern, caseSensitive),
+  checkAndGenerateAddresses: () => vanityWalletService.checkAndGenerateAddresses(),
+  generateVanityAddress: (pattern, options) => vanityWalletService.generateVanityAddress(pattern, options),
+  generator: vanityWalletService.generator
+};

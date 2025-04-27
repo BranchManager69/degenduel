@@ -331,17 +331,39 @@ router.get('/status/generator', requireAdmin, async (req, res) => {
   try {
     const status = await VanityApiClient.getGeneratorStatus();
     
+    // Get additional system metrics for enhanced dashboard display
+    const systemMetrics = {
+      activeJobs: status.generatorStatus.activeJobs.length,
+      queuedJobs: status.generatorStatus.queuedJobs,
+      recentlyCompleted: await getRecentlyCompletedJobs(),
+      completion: await getCompletionStats(),
+      performance: await getGeneratorPerformance(),
+      patterns: await getPopularPatterns(),
+      worker: {
+        threads: config.vanityWallet?.numWorkers || 4,
+        cpuLimit: config.vanityWallet?.cpuLimit || 75,
+        maxAttempts: config.vanityWallet?.maxAttempts || 50000000
+      }
+    };
+    
+    // Enrich the response with system metrics
+    const enrichedResponse = {
+      ...status,
+      systemMetrics
+    };
+    
     // Log admin action
     await AdminLogger.logAction(
       req.user.wallet_address,
       'VANITY_GENERATOR_STATUS_CHECK',
       {
-        status
+        status,
+        metrics: systemMetrics
       },
       req
     );
     
-    return res.status(200).json(status);
+    return res.status(200).json(enrichedResponse);
   } catch (error) {
     logApi.error(`${fancyColors.MAGENTA}[VanityWallets]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Getting generator status: ${error.message}`, {
       error: error.message,
@@ -354,5 +376,240 @@ router.get('/status/generator', requireAdmin, async (req, res) => {
     });
   }
 });
+
+/**
+ * Helper function to get recently completed vanity wallet jobs
+ * @returns {Promise<Array>} Array of recently completed jobs
+ */
+async function getRecentlyCompletedJobs() {
+  try {
+    // Get the 5 most recently completed jobs
+    const recentJobs = await prisma.vanity_wallet_pool.findMany({
+      where: {
+        status: 'completed'
+      },
+      orderBy: {
+        completed_at: 'desc'
+      },
+      take: 5,
+      select: {
+        id: true,
+        pattern: true,
+        is_suffix: true,
+        case_sensitive: true,
+        attempts: true,
+        duration_ms: true,
+        wallet_address: true,
+        completed_at: true
+      }
+    });
+    
+    return recentJobs;
+  } catch (error) {
+    logApi.error(`Error fetching recently completed jobs: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Helper function to get completion statistics
+ * @returns {Promise<Object>} Completion statistics
+ */
+async function getCompletionStats() {
+  try {
+    // Calculate success rate and average completion time
+    const [
+      totalJobs,
+      completedJobs,
+      failedJobs,
+      cancelledJobs,
+      pendingJobs,
+      processingJobs
+    ] = await Promise.all([
+      prisma.vanity_wallet_pool.count(),
+      prisma.vanity_wallet_pool.count({ where: { status: 'completed' } }),
+      prisma.vanity_wallet_pool.count({ where: { status: 'failed' } }),
+      prisma.vanity_wallet_pool.count({ where: { status: 'cancelled' } }),
+      prisma.vanity_wallet_pool.count({ where: { status: 'pending' } }),
+      prisma.vanity_wallet_pool.count({ where: { status: 'processing' } })
+    ]);
+    
+    // Get average duration for completed jobs
+    const avgDurationResult = await prisma.vanity_wallet_pool.aggregate({
+      where: {
+        status: 'completed',
+        duration_ms: { not: null }
+      },
+      _avg: {
+        duration_ms: true,
+        attempts: true
+      }
+    });
+    
+    const avgDuration = avgDurationResult._avg.duration_ms || 0;
+    const avgAttempts = avgDurationResult._avg.attempts || 0;
+    
+    // Get distribution by pattern length
+    const patternLengthData = await prisma.$queryRaw`
+      SELECT 
+        LENGTH(pattern) as length,
+        COUNT(*) as count,
+        AVG(duration_ms) as avg_duration,
+        AVG(attempts) as avg_attempts
+      FROM vanity_wallet_pool
+      WHERE status = 'completed'
+      GROUP BY LENGTH(pattern)
+      ORDER BY length ASC
+    `;
+    
+    return {
+      totalJobs,
+      completedJobs,
+      failedJobs,
+      cancelledJobs,
+      pendingJobs,
+      processingJobs,
+      successRate: totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0,
+      avgDurationMs: avgDuration,
+      avgDurationSeconds: avgDuration / 1000,
+      avgAttempts,
+      patternLengthStats: patternLengthData.map(item => ({
+        length: Number(item.length),
+        count: Number(item.count),
+        avgDurationSeconds: Number(item.avg_duration) / 1000,
+        avgAttempts: Number(item.avg_attempts)
+      }))
+    };
+  } catch (error) {
+    logApi.error(`Error calculating completion stats: ${error.message}`);
+    return {
+      totalJobs: 0,
+      completedJobs: 0,
+      failedJobs: 0,
+      cancelledJobs: 0,
+      pendingJobs: 0,
+      processingJobs: 0,
+      successRate: 0,
+      avgDurationMs: 0,
+      avgDurationSeconds: 0,
+      avgAttempts: 0,
+      patternLengthStats: []
+    };
+  }
+}
+
+/**
+ * Helper function to get generator performance metrics
+ * @returns {Promise<Object>} Performance metrics
+ */
+async function getGeneratorPerformance() {
+  try {
+    // Calculate average attempts per second
+    const performanceData = await prisma.vanity_wallet_pool.findMany({
+      where: {
+        status: 'completed',
+        duration_ms: { not: 0 },
+        attempts: { not: 0 }
+      },
+      select: {
+        pattern: true,
+        case_sensitive: true,
+        attempts: true,
+        duration_ms: true
+      },
+      orderBy: {
+        completed_at: 'desc'
+      },
+      take: 20 // Use the 20 most recent completions for performance stats
+    });
+    
+    // Calculate attempts per second for each job
+    const performanceStats = performanceData.map(job => {
+      const attemptsPerSecond = job.attempts / (job.duration_ms / 1000);
+      const characterSpace = job.case_sensitive ? 58 : 33; // 58 for case-sensitive (base58), 33 for case-insensitive
+      
+      return {
+        pattern: job.pattern,
+        length: job.pattern.length,
+        caseSensitive: job.case_sensitive,
+        attempts: job.attempts,
+        durationSeconds: job.duration_ms / 1000,
+        attemptsPerSecond
+      };
+    });
+    
+    // Calculate averages
+    const avgAttemptsPerSecond = performanceStats.length > 0 
+      ? performanceStats.reduce((sum, job) => sum + job.attemptsPerSecond, 0) / performanceStats.length
+      : 0;
+      
+    // Group by pattern length
+    const performanceByLength = {};
+    performanceStats.forEach(stat => {
+      if (!performanceByLength[stat.length]) {
+        performanceByLength[stat.length] = [];
+      }
+      performanceByLength[stat.length].push(stat);
+    });
+    
+    // Calculate averages by length
+    const averagesByLength = Object.entries(performanceByLength).map(([length, stats]) => {
+      const avgAttemptsPerSecond = stats.reduce((sum, job) => sum + job.attemptsPerSecond, 0) / stats.length;
+      
+      return {
+        patternLength: parseInt(length),
+        avgAttemptsPerSecond,
+        count: stats.length
+      };
+    });
+    
+    return {
+      avgAttemptsPerSecond,
+      recentCompletions: performanceStats,
+      byPatternLength: averagesByLength
+    };
+  } catch (error) {
+    logApi.error(`Error calculating generator performance: ${error.message}`);
+    return {
+      avgAttemptsPerSecond: 0,
+      recentCompletions: [],
+      byPatternLength: []
+    };
+  }
+}
+
+/**
+ * Helper function to get popular patterns
+ * @returns {Promise<Array>} Popular patterns statistics
+ */
+async function getPopularPatterns() {
+  try {
+    // Get the most popular patterns
+    const popularPatterns = await prisma.$queryRaw`
+      SELECT 
+        pattern,
+        COUNT(*) as count,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as successful,
+        AVG(CASE WHEN status = 'completed' THEN duration_ms ELSE NULL END) as avg_duration,
+        AVG(CASE WHEN status = 'completed' THEN attempts ELSE NULL END) as avg_attempts
+      FROM vanity_wallet_pool
+      GROUP BY pattern
+      ORDER BY count DESC
+      LIMIT 10
+    `;
+    
+    return popularPatterns.map(item => ({
+      pattern: item.pattern,
+      count: Number(item.count),
+      successful: Number(item.successful),
+      successRate: item.count > 0 ? (Number(item.successful) / Number(item.count)) * 100 : 0,
+      avgDurationSeconds: item.avg_duration ? Number(item.avg_duration) / 1000 : null,
+      avgAttempts: item.avg_attempts ? Number(item.avg_attempts) : null
+    }));
+  } catch (error) {
+    logApi.error(`Error fetching popular patterns: ${error.message}`);
+    return [];
+  }
+}
 
 export default router;

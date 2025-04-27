@@ -1,4 +1,11 @@
 // tests/direct-token-monitor.js
+
+/**
+ * This is a test script to monitor a token's price and activity.
+ * It uses the Jupiter API and the Helius API for token activities.
+ * It also uses the PoolDataManager to get the pool data for the token.
+ */
+
 // Comprehensive token monitoring with PoolDataManager, Jupiter for prices and Helius for token activities
 import dotenv from 'dotenv';
 dotenv.config();

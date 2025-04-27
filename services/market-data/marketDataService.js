@@ -17,6 +17,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { PrismaClient } from '@prisma/client';
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
+import { getCircuitBreakerConfig } from '../../utils/service-suite/circuit-breaker-config.js';
 import { fancyColors } from '../../utils/colors.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 import { config } from '../../config/config.js';
@@ -112,7 +113,8 @@ class MarketDataService extends BaseService {
         // FIX: Ensure config consistently uses the proper service name
         this.config = {
             ...MARKET_DATA_CONFIG,
-            name: SERVICE_NAME // Explicitly ensure name is correct
+            name: SERVICE_NAME, // Explicitly ensure name is correct
+            circuitBreaker: getCircuitBreakerConfig(SERVICE_NAME)
         };
         
         // FIX: Explicitly set name property for serviceManager calls
@@ -159,6 +161,11 @@ class MarketDataService extends BaseService {
                 inProgress: false,
                 lastStartTime: null,
                 lastCompleteTime: null
+            },
+            insights: {
+                lastUpdate: null,
+                priceChangesCount: 0,
+                volumeSpikesCount: 0
             }
         };
     }
@@ -900,6 +907,15 @@ class MarketDataService extends BaseService {
                 throw new Error('Failed to get token list from Jupiter');
             }
             
+            // Add debug logging to examine token list format
+            const sampleTokens = tokenList.slice(0, 3);
+            logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} TOKEN DEBUG ${fancyColors.RESET} Jupiter returned ${tokenList.length} tokens, sample format:`, 
+                sampleTokens.map(t => typeof t === 'string' ? 
+                    { type: 'string', value: t.substring(0, 15) + '...' } : 
+                    { type: typeof t, keys: Object.keys(t), hasAddress: !!t.address, hasSymbol: !!t.symbol }
+                )
+            );
+            
             // Delegate to modular components
             
             // 1. Process existing token map
@@ -926,6 +942,122 @@ class MarketDataService extends BaseService {
                     logPrefix: `${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET}`
                 }
             );
+            
+            // Process significant price and volume changes for alerts
+            try {
+                // Reset previous collections
+                analytics.resetCollections();
+                
+                // Add price changes for tokens with significant movement (>5%)
+                const significantTokens = tokenSubset.filter(token => 
+                    token.price_change_24h && Math.abs(token.price_change_24h) > 5
+                ).slice(0, 50); // Limit to 50 tokens to avoid processing too many
+                
+                // Special handling for specific high-interest tokens
+                const highInterestAddresses = [
+                    '8x8YipfqZctyTadL2sETH8YbMtinZAXZi6CYFebfpump',
+                    'DitHyRMQiSDhn5cnKMJV2CDDt6sVct96YrECiM49pump'
+                ];
+                
+                // Find these specific tokens in the token list and always include them
+                const highInterestTokens = tokenSubset.filter(token => 
+                    highInterestAddresses.includes(token.address)
+                );
+                
+                // Log if we found our high-interest tokens
+                if (highInterestTokens.length > 0) {
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} HIGH INTEREST ${fancyColors.RESET} Tracking ${highInterestTokens.length} high interest tokens: ${highInterestTokens.map(t => t.symbol || t.address.substring(0, 8)).join(', ')}`);
+                    
+                    // Always add high interest tokens regardless of price change
+                    highInterestTokens.forEach(token => {
+                        // Use a higher priority factor for detection
+                        const change = token.price_change_24h || 0;
+                        // Amplify the change for high interest tokens to ensure they're detected
+                        const amplifiedChange = change * 1.5;
+                        
+                        analytics.addPriceChange(
+                            token.symbol,
+                            token.price,
+                            amplifiedChange, // Use amplified change to increase detection chance
+                            token.volume_24h,
+                            token.address
+                        );
+                    });
+                }
+                
+                // Add price changes to analytics
+                significantTokens.forEach(token => {
+                    analytics.addPriceChange(
+                        token.symbol,
+                        token.price,
+                        token.price_change_24h,
+                        token.volume_24h,
+                        token.address
+                    );
+                });
+                
+                // Find significant volume changes
+                const highVolumeTokens = tokenSubset
+                    .filter(token => token.volume_24h && parseFloat(token.volume_24h) > 100000)
+                    .slice(0, 30); // Limit to 30 tokens
+                    
+                // Add volume changes to analytics
+                highVolumeTokens.forEach(token => {
+                    analytics.addVolumeChange(
+                        token.symbol,
+                        token.volume_24h,
+                        token.price,
+                        token.address
+                    );
+                });
+                
+                // Process collected data to find statistically significant changes
+                const significantPriceChanges = analytics.processPriceChanges();
+                const volumeChanges = analytics.processVolumeChanges();
+                
+                // Log result summary 
+                if (significantPriceChanges.length > 0 || volumeChanges.highVolumeTokens.length > 0) {
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} MARKET INSIGHTS ${fancyColors.RESET} Found ${significantPriceChanges.length} significant price movements and ${volumeChanges.volumeSpikes.length} volume spikes`);
+                    
+                    // Prepare data for websocket broadcast
+                    const broadcastData = {
+                        type: 'market_insights',
+                        timestamp: new Date().toISOString(),
+                        data: {
+                            significantPriceChanges: significantPriceChanges.map(item => ({
+                                symbol: item.symbol,
+                                price: item.price,
+                                change: item.change,
+                                address: item.address
+                            })),
+                            highVolumeTokens: volumeChanges.highVolumeTokens.map(item => ({
+                                symbol: item.symbol,
+                                volume: item.volume,
+                                price: item.price,
+                                address: item.address
+                            })),
+                            volumeSpikes: volumeChanges.volumeSpikes.map(item => ({
+                                symbol: item.symbol,
+                                volume: item.volume,
+                                price: item.price,
+                                address: item.address
+                            }))
+                        }
+                    };
+                    
+                    // Emit broadcast event for WebSocket to pick up
+                    serviceEvents.emit('market:insights', broadcastData);
+                    
+                    // Track that we emitted market insights
+                    this.marketStats.insights = {
+                        lastUpdate: new Date().toISOString(),
+                        priceChangesCount: significantPriceChanges.length,
+                        volumeSpikesCount: volumeChanges.volumeSpikes.length
+                    };
+                }
+            } catch (analyticsError) {
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing market analytics:${fancyColors.RESET}`, analyticsError);
+            }
             
             // 5. Handle token data enrichment
             await enricher.enhanceTokenData(

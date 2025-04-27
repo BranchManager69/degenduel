@@ -6,8 +6,7 @@
  * This service provides comprehensive Solana integration using Helius and Jupiter APIs.
  * It offers token metadata, market data, and blockchain operations.
  * 
- * NOTE: This service operates independently and does NOT depend on solanaService.
- * It will eventually replace solanaService, tokenSyncService, and marketDataService
+ * It replaces solanaService, tokenSyncService, and marketDataService
  * with a more robust implementation using premium APIs.
  * 
  * @module services/solana-engine/solana-engine

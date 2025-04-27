@@ -562,9 +562,12 @@ async function testContestImageWithTokens() {
   } catch (error) {
     console.error("\n❌ TEST FAILED:");
     console.error(error);
+    process.exit(1);
   } finally {
     // Clean up Prisma connection
     await prisma.$disconnect();
+    // Ensure script exits cleanly
+    process.exit(0);
   }
 }
 

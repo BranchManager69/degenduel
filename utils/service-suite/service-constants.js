@@ -25,6 +25,8 @@ export const SERVICE_NAMES = {
     TOKEN_WHITELIST: 'token_whitelist_service', // Kept for backwards compatibility
     TOKEN_REFRESH_SCHEDULER: 'token_refresh_scheduler_service', // Advanced token refresh scheduler
     TOKEN_DEX_DATA: 'token_dex_data_service', // DEX pool data service
+    TOKEN_DETECTION: 'token_detection_service', // New token detection service
+    TOKEN_ENRICHMENT: 'token_enrichment_service', // New token enrichment service
 
     // Contest Layer Services
     CONTEST_EVALUATION: 'contest_evaluation_service',
@@ -88,6 +90,20 @@ export const SERVICE_METADATA = {
         updateFrequency: '15m',
         criticalLevel: 'medium',
         dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
+    },
+    [SERVICE_NAMES.TOKEN_DETECTION]: {
+        layer: SERVICE_LAYERS.DATA,
+        description: 'Efficient detection of new tokens',
+        updateFrequency: '30s',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
+    },
+    [SERVICE_NAMES.TOKEN_ENRICHMENT]: {
+        layer: SERVICE_LAYERS.DATA,
+        description: 'Token metadata and price enrichment',
+        updateFrequency: '1m',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE]
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         layer: SERVICE_LAYERS.DATA,

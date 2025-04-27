@@ -668,12 +668,106 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
           volumes.push(dailyVolume);
         }
         
-        // Calculate daily sell amounts for each strategy
+        // Function to calculate max tokens that can be sold with given max price impact
+        const getMaxTokensForPriceImpact = (maxPriceImpactPct, poolBaseReserve, poolQuoteReserve) => {
+          // Calculate current price
+          const currentPrice = poolQuoteReserve / poolBaseReserve;
+          
+          // Calculate target price after impact (negative impact means price goes down)
+          const targetPrice = currentPrice * (1 + maxPriceImpactPct/100);
+          
+          // For constant product AMM (x*y=k), if we add Δx tokens to sell:
+          // (x + Δx) * (y - Δy) = k, where k = x * y
+          // And the new price is: (y - Δy) / (x + Δx) = targetPrice
+          
+          // Solving for Δx:
+          // (y - Δy) = targetPrice * (x + Δx)
+          // Δy = y - targetPrice * (x + Δx)
+          // (x + Δx) * (y - targetPrice * (x + Δx)) = x * y
+          // x*y - targetPrice*x*(x + Δx) - targetPrice*Δx*(x + Δx) = 0
+          // Simplifying and solving for Δx:
+          
+          // For our purposes, a simpler approximation works well:
+          const k = poolBaseReserve * poolQuoteReserve;
+          // The new state after selling would be:
+          // (poolBaseReserve + tokensToSell) * newQuoteReserve = k
+          // newQuoteReserve = k / (poolBaseReserve + tokensToSell)
+          // And the new price would be:
+          // newPrice = newQuoteReserve / (poolBaseReserve + tokensToSell)
+          
+          // With some algebra:
+          let tokensToSell = 0;
+          
+          // Negative price impact (price goes down when selling)
+          if (maxPriceImpactPct < 0) {
+            // Ensure we're using the absolute value for the calculation
+            const absPriceImpact = Math.abs(maxPriceImpactPct);
+            // For price drop of p%, use formula: poolBaseReserve * (p / (100 - p))
+            tokensToSell = poolBaseReserve * (absPriceImpact / (100 - absPriceImpact));
+          }
+          
+          return tokensToSell;
+        };
+
+        // Track remaining tokens for each strategy
+        let conservativeRemaining = personalHolding;
+        let moderateRemaining = personalHolding;
+        let aggressiveRemaining = personalHolding;
+        
+        // Dynamic price impact constraints (starts high, gradually decreases)
+        const initialPriceImpactLimit = -5.0; // Initial 5% max price impact
+        const finalPriceImpactLimit = -1.0;   // Final 1% max price impact
+        const priceImpactAdjustmentDays = 21; // Takes 3 weeks to reach final impact limit
+        
+        // Calculate daily sell amounts for each strategy with constraints
         for (let day = 0; day < days; day++) {
+          // Calculate max price impact for this day (linearly decreases)
+          let maxPriceImpact;
+          if (day < priceImpactAdjustmentDays) {
+            // Linear interpolation from initial to final impact
+            maxPriceImpact = initialPriceImpactLimit + 
+              (finalPriceImpactLimit - initialPriceImpactLimit) * 
+              (day / priceImpactAdjustmentDays);
+          } else {
+            maxPriceImpact = finalPriceImpactLimit;
+          }
+          
+          // Calculate max tokens that can be sold with the current price impact limit
+          const maxTokensForImpact = getMaxTokensForPriceImpact(
+            maxPriceImpact, baseReserve, quoteReserve);
+          
+          // Calculate volume-based amounts for each strategy
           const volumeInTokens = volumes[day] / price;
-          conservative.push(volumeInTokens * (conservativePctOfVolume / 100));
-          moderate.push(volumeInTokens * (moderatePctOfVolume / 100));
-          aggressive.push(volumeInTokens * (aggressivePctOfVolume / 100));
+          const conservativeVolumeAmount = volumeInTokens * (conservativePctOfVolume / 100);
+          const moderateVolumeAmount = volumeInTokens * (moderatePctOfVolume / 100);
+          const aggressiveVolumeAmount = volumeInTokens * (aggressivePctOfVolume / 100);
+          
+          // Apply constraints: min of (volume-based amount, remaining tokens, price impact limit)
+          const conservativeAmount = Math.min(
+            conservativeVolumeAmount, 
+            conservativeRemaining, 
+            maxTokensForImpact
+          );
+          const moderateAmount = Math.min(
+            moderateVolumeAmount, 
+            moderateRemaining, 
+            maxTokensForImpact
+          );
+          const aggressiveAmount = Math.min(
+            aggressiveVolumeAmount, 
+            aggressiveRemaining, 
+            maxTokensForImpact
+          );
+          
+          // Update remaining tokens
+          conservativeRemaining -= conservativeAmount;
+          moderateRemaining -= moderateAmount;
+          aggressiveRemaining -= aggressiveAmount;
+          
+          // Add daily amounts to arrays
+          conservative.push(conservativeAmount);
+          moderate.push(moderateAmount);
+          aggressive.push(aggressiveAmount);
         }
         
         // Calculate cumulative tokens sold and USD values for each strategy
@@ -755,12 +849,60 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
           volumes.push(dailyVolume);
         }
         
-        // Calculate daily sell amounts for each strategy
+        // Reset remaining tokens for each strategy for this scenario
+        conservativeRemaining = personalHolding;
+        moderateRemaining = personalHolding;
+        aggressiveRemaining = personalHolding;
+        
+        // Calculate daily sell amounts for each strategy with constraints
         for (let day = 0; day < days; day++) {
+          // Calculate max price impact for this day (linearly decreases)
+          let maxPriceImpact;
+          if (day < priceImpactAdjustmentDays) {
+            // Linear interpolation from initial to final impact
+            maxPriceImpact = initialPriceImpactLimit + 
+              (finalPriceImpactLimit - initialPriceImpactLimit) * 
+              (day / priceImpactAdjustmentDays);
+          } else {
+            maxPriceImpact = finalPriceImpactLimit;
+          }
+          
+          // Calculate max tokens that can be sold with the current price impact limit
+          const maxTokensForImpact = getMaxTokensForPriceImpact(
+            maxPriceImpact, baseReserve, quoteReserve);
+          
+          // Calculate volume-based amounts for each strategy
           const volumeInTokens = volumes[day] / price;
-          conservative.push(volumeInTokens * (conservativePctOfVolume / 100));
-          moderate.push(volumeInTokens * (moderatePctOfVolume / 100));
-          aggressive.push(volumeInTokens * (aggressivePctOfVolume / 100));
+          const conservativeVolumeAmount = volumeInTokens * (conservativePctOfVolume / 100);
+          const moderateVolumeAmount = volumeInTokens * (moderatePctOfVolume / 100);
+          const aggressiveVolumeAmount = volumeInTokens * (aggressivePctOfVolume / 100);
+          
+          // Apply constraints: min of (volume-based amount, remaining tokens, price impact limit)
+          const conservativeAmount = Math.min(
+            conservativeVolumeAmount, 
+            conservativeRemaining, 
+            maxTokensForImpact
+          );
+          const moderateAmount = Math.min(
+            moderateVolumeAmount, 
+            moderateRemaining, 
+            maxTokensForImpact
+          );
+          const aggressiveAmount = Math.min(
+            aggressiveVolumeAmount, 
+            aggressiveRemaining, 
+            maxTokensForImpact
+          );
+          
+          // Update remaining tokens
+          conservativeRemaining -= conservativeAmount;
+          moderateRemaining -= moderateAmount;
+          aggressiveRemaining -= aggressiveAmount;
+          
+          // Add daily amounts to arrays
+          conservative.push(conservativeAmount);
+          moderate.push(moderateAmount);
+          aggressive.push(aggressiveAmount);
         }
         
         // Calculate cumulative tokens sold and USD values for each strategy
@@ -842,13 +984,77 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
             // Apply price decline factor based on month
             const adjustedPrice = price * monthlyPriceDeclineFactors[month];
             
-            // Calculate token volume and selling amounts
+            // Calculate token volume and selling amounts with constraints
             const volumeInTokens = dailyVolume / adjustedPrice; // More tokens per $ as price declines
             
             volumes.push(dailyVolume);
-            conservative.push(volumeInTokens * (conservativePctOfVolume / 100));
-            moderate.push(volumeInTokens * (moderatePctOfVolume / 100));
-            aggressive.push(volumeInTokens * (aggressivePctOfVolume / 100));
+          }
+          
+          // Reset remaining tokens for each strategy for this scenario
+          conservativeRemaining = personalHolding;
+          moderateRemaining = personalHolding;
+          aggressiveRemaining = personalHolding;
+          
+          // Calculate daily sell amounts for each strategy with constraints
+          for (let day = 0; day < days; day++) {
+            // Determine which month we're in (0-based)
+            const month = Math.min(Math.floor(day / 30), monthlyPriceDeclineFactors.length - 1);
+            
+            // Apply price decline factor based on month
+            const adjustedPrice = price * monthlyPriceDeclineFactors[month];
+            
+            // Calculate max price impact for this day (linearly decreases)
+            let maxPriceImpact;
+            if (day < priceImpactAdjustmentDays) {
+              // Linear interpolation from initial to final impact
+              maxPriceImpact = initialPriceImpactLimit + 
+                (finalPriceImpactLimit - initialPriceImpactLimit) * 
+                (day / priceImpactAdjustmentDays);
+            } else {
+              maxPriceImpact = finalPriceImpactLimit;
+            }
+            
+            // In bear market, more aggressive impact limits may be needed
+            // Adjust max price impact by a bear market factor (less sensitivity)
+            const bearMarketImpactFactor = 1.5;  // Allow 50% more price impact in bear market
+            maxPriceImpact = maxPriceImpact * bearMarketImpactFactor;
+            
+            // Calculate max tokens that can be sold with the current price impact limit
+            const maxTokensForImpact = getMaxTokensForPriceImpact(
+              maxPriceImpact, baseReserve, quoteReserve);
+            
+            // Calculate volume-based amounts for each strategy
+            const volumeInTokens = volumes[day] / adjustedPrice;
+            const conservativeVolumeAmount = volumeInTokens * (conservativePctOfVolume / 100);
+            const moderateVolumeAmount = volumeInTokens * (moderatePctOfVolume / 100);
+            const aggressiveVolumeAmount = volumeInTokens * (aggressivePctOfVolume / 100);
+            
+            // Apply constraints: min of (volume-based amount, remaining tokens, price impact limit)
+            const conservativeAmount = Math.min(
+              conservativeVolumeAmount, 
+              conservativeRemaining, 
+              maxTokensForImpact
+            );
+            const moderateAmount = Math.min(
+              moderateVolumeAmount, 
+              moderateRemaining, 
+              maxTokensForImpact
+            );
+            const aggressiveAmount = Math.min(
+              aggressiveVolumeAmount, 
+              aggressiveRemaining, 
+              maxTokensForImpact
+            );
+            
+            // Update remaining tokens
+            conservativeRemaining -= conservativeAmount;
+            moderateRemaining -= moderateAmount;
+            aggressiveRemaining -= aggressiveAmount;
+            
+            // Add daily amounts to arrays
+            conservative.push(conservativeAmount);
+            moderate.push(moderateAmount);
+            aggressive.push(aggressiveAmount);
           }
           
           // Calculate cumulative tokens sold and USD values for each strategy
@@ -1222,6 +1428,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
     let volumeToMcapRatio = null;
     let liquidityToMcapRatio = null;
     let volumeToLiquidityRatio = null;
+    
     let solFor1Percent = null;
     let solFor5Percent = null;
     let solFor10Percent = null;

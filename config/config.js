@@ -1,11 +1,13 @@
 // config/config.js
 
 /**
- * 2025-03-25: Good!
+ * 2025-03-25: Therefore this is OLD but still in use
  */
 
-import dotenv from 'dotenv';
 import os from 'os';
+
+// OUTDATED WAY OF USING CONFIG, BUT OK...
+import dotenv from 'dotenv';
 dotenv.config();
 
 // v69 WSS testing
@@ -74,7 +76,7 @@ const OPENAI_DEFAULT_SYSTEM_PROMPT = `
   RESPONSE GUIDELINES:  Your responses must be short, concise, and to the point with no emotion or sentiment (you are essentially the Mewtwo of AI assistants here). 
 `;
 
-// DUEL token address
+// REAL TOKEN ADDRESS ($DUEL or testing address)
 const CONTRACT_ADDRESS_REAL = process.env.CONTRACT_ADDRESS_REAL;
 
 // Custom prompt templates for DegenDuel
@@ -131,6 +133,54 @@ const config = {
   // DUEL token contract address
   contract_address_real: CONTRACT_ADDRESS_REAL,
   
+  // Discord configuration
+  discord: {
+    // Discord webhooks
+    webhook_urls: {
+      admin_logs: process.env.DISCORD_WEBHOOK_ADMIN_LOGS,
+      system: process.env.DISCORD_WEBHOOK_SYSTEM,
+      alerts: process.env.DISCORD_WEBHOOK_ALERTS,
+      contests: process.env.DISCORD_WEBHOOK_CONTESTS,
+      transactions: process.env.DISCORD_WEBHOOK_TRANSACTIONS,
+      tokens: process.env.DISCORD_WEBHOOK_TOKENS,
+      trades: process.env.DISCORD_WEBHOOK_TRADES
+    },
+    // Discord OAuth configuration
+    oauth: {
+      client_id: process.env.DISCORD_CLIENT_ID,
+      client_secret: process.env.DISCORD_CLIENT_SECRET,
+      callback_uri: process.env.DISCORD_CALLBACK_URI,
+      callback_uri_development: process.env.DISCORD_CALLBACK_URI_DEVELOPMENT,
+      scopes: ['identify', 'email']
+    },
+    // Discord bot configuration
+    bot: {
+      token: process.env.DISCORD_BOT_TOKEN,
+      guild_id: process.env.DISCORD_GUILD_ID
+    },
+    // Discord channel IDs
+    channel_ids: {
+      contests: process.env.DISCORD_GENERAL_CHANNEL_ID, // Using main-chat instead of general
+      trades: process.env.DISCORD_TRADES_CHANNEL_ID,
+      // Remove quotes if present
+      announcements: process.env.DISCORD_ANNOUNCEMENTS_CHANNEL_ID?.replace(/"/g, ''),
+      big_news: process.env.DISCORD_ANNOUNCEMENTS_CHANNEL_ID?.replace(/"/g, ''), // Announcements instead of big-news
+      help: process.env.DISCORD_HELP_CHANNEL_ID?.replace(/"/g, ''),
+      dev_yap: process.env.DISCORD_DEV_YAP_CHANNEL_ID?.replace(/"/g, '')
+    }
+  },
+  
+  // Old Discord webhook URLs format (maintained for backward compatibility)
+  discord_webhook_urls: {
+    admin_logs: process.env.DISCORD_WEBHOOK_ADMIN_LOGS,
+    system: process.env.DISCORD_WEBHOOK_SYSTEM,
+    alerts: process.env.DISCORD_WEBHOOK_ALERTS,
+    contests: process.env.DISCORD_WEBHOOK_CONTESTS,
+    transactions: process.env.DISCORD_WEBHOOK_TRANSACTIONS,
+    tokens: process.env.DISCORD_WEBHOOK_TOKENS,
+    trades: process.env.DISCORD_WEBHOOK_TRADES
+  },
+  
   // RPC URLs:
   rpc_urls: {
     primary: RPC_URL,
@@ -183,7 +233,7 @@ const config = {
     CANCELLED: 'cancelled'
   },
   
-  // GPU Server config:
+  // GPU Server config (DEPRECATED):
   gpuServer: {
     ip: process.env.GPU_SERVER_IP || 'No GPU Server IP configured',
     port: process.env.GPU_SERVER_PORT || 80,
@@ -648,16 +698,25 @@ const config = {
       solana_engine_service: true, // New SolanaEngine service
       token_refresh_scheduler: true, // Advanced token refresh scheduler
       token_dex_data_service: true, // DEX pool data service
-      discord_notification_service: true, // Discord notification service
+      token_detection_service: true, // New token detection service
+      token_enrichment_service: true, // New token enrichment service
+      discord_notification_service: true, // Discord notification service (webhook notifications)
+      discord_interactive_service: true, // Discord interactive service (DegenDuel AI Discord Bot)
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
     
     // Development profile - services disabled by default (just AI API for now)
     development: {
-      // token_sync has been permanently removed
+
+      // ENABLED IN DEVELOPMENT
+      //   These are ULTIMATELY HARMLESS and MORE CONVENIENT for me to test:
       ai_service: true, // Keep AI service enabled in development for testing
-      discord_notification_service: true, // Enable Discord notification service in development
+
+      // DISABLED IN DEVELOPMENT 
+      //   These are NOT NEEDED and CAUSE SERIOUS ISSUES with concurrent prod services (race conditions):
+      discord_notification_service: false, // Disable Discord notification service in development
+      discord_interactive_service: false, // Disable Discord interactive service in development
       market_data: false, // Disabled to prevent token fetching in dev environment
       contest_evaluation: false,
       token_whitelist: false,
@@ -676,28 +735,31 @@ const config = {
       solana_engine_service: false, // [EDIT: DISABLED 4/24/25] Keep SolanaEngine service enabled in development for testing
       token_refresh_scheduler: false, // Disable advanced token refresh scheduler in development
       token_dex_data_service: false, // Disable DEX pool data service in development
-      // Additional services would be disabled here too
-      // etc.
+      token_detection_service: false, // Disable token detection service in development
+      token_enrichment_service: false, // Disable token enrichment service in development
+      // Any future services that may cause conflicts with prod services would be disabled here too
     }
   },
   
   // Vanity Wallet Generator Configuration
   vanityWallet: {
-    // Number of worker threads to use for generation (default: CPU cores - 1)
-    numWorkers: parseInt(process.env.VANITY_WALLET_NUM_WORKERS || (os.cpus().length - 1)), // Intent: 1 worker per CPU core (minus 1 for main thread)
+    // Number of worker threads to use for generation 
+    numWorkers: parseInt(process.env.VANITY_WALLET_NUM_WORKERS || 8), // Use all 8 cores for maximum performance
+    // CPU limit for generation processes
+    cpuLimit: parseInt(process.env.VANITY_WALLET_CPU_LIMIT || 80), // Use 80% CPU by default to leave more resources for other tasks
     // Number of addresses to check per batch
-    batchSize: parseInt(process.env.VANITY_WALLET_BATCH_SIZE || 10000), // Intent: 10 thousand addresses per batch
+    batchSize: parseInt(process.env.VANITY_WALLET_BATCH_SIZE || 25000), // 25 thousand addresses per batch for better performance
     // Maximum number of attempts before giving up
-    maxAttempts: parseInt(process.env.VANITY_WALLET_MAX_ATTEMPTS || 50000000), // Intent: 50 million attempts
+    maxAttempts: parseInt(process.env.VANITY_WALLET_MAX_ATTEMPTS || 100000000), // 100 million attempts
     // Target counts for automatic generation
     targetCounts: {
-      DUEL: parseInt(process.env.VANITY_WALLET_TARGET_DUEL || 5), // Keep original targets
-      DEGEN: parseInt(process.env.VANITY_WALLET_TARGET_DEGEN || 3) // Keep original targets
+      DUEL: parseInt(process.env.VANITY_WALLET_TARGET_DUEL || 60), // Target amount of DUEL-prefixed wallets to have pre-generated and ready to use (3x the original value of 20)
+      DEGEN: parseInt(process.env.VANITY_WALLET_TARGET_DEGEN || 60) // Target amount of DEGEN-prefixed wallets to have pre-generated and ready to use (3x the original value of 20)
     },
     // Check interval in minutes
-    checkIntervalMinutes: parseInt(process.env.VANITY_WALLET_CHECK_INTERVAL || 1), // Intent: Every minute
+    checkIntervalMinutes: parseInt(process.env.VANITY_WALLET_CHECK_INTERVAL || 1), // Every minute
     // Maximum concurrent generation jobs
-    maxConcurrentJobs: parseInt(process.env.VANITY_WALLET_MAX_CONCURRENT_JOBS || 1), // Intent: 1 job at a time
+    maxConcurrentJobs: parseInt(process.env.VANITY_WALLET_MAX_CONCURRENT_JOBS || 1), // Use 1 job at a time to maximize resources per job
   },
 
   // Active service configuration (based on profile)
@@ -784,6 +846,20 @@ const config = {
                      config.service_profiles.development;
       return profile.contest_wallet_service;
     },
+
+    // TODO: Add contest_image_service and contest_service (these are new; have not yet been brought fully to our established standard)
+    // 
+    //get contest_image_service() {
+    //  const profile = config.service_profiles[config.services.active_profile] || 
+    //                 config.service_profiles.development;
+    //  return profile.contest_image_service;
+    //},
+    //
+    //get contest_service() {
+    //  const profile = config.service_profiles[config.services.active_profile] || 
+    //                 config.service_profiles.development;
+    //  return profile.contest_service;
+    //},
     
     get admin_wallet_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
@@ -832,12 +908,33 @@ const config = {
                      config.service_profiles.development;
       return profile.token_dex_data_service;
     },
+    
+    get token_detection_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.token_detection_service;
+    },
+    
+    get token_enrichment_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.token_enrichment_service;
+    },
+
+    // TODO: Might be missing a few services
 
     get discord_notification_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.discord_notification_service;
     },
+
+    get discord_interactive_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.discord_interactive_service;
+    },
+  
   },
 
   // GPU Server Configuration (DEPRECATED AND NOT USED)
