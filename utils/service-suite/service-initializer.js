@@ -30,6 +30,7 @@ import tokenDEXDataService from '../../services/token-dex-data-service.js';
 import solanaService from '../../services/solanaService.js';
 // Discord notification service
 import discordNotificationService from '../../services/discordNotificationService.js';
+import discordInteractiveService from '../../services/discord/discord-interactive-service.js';
 
 // Contest Layer
 import contestEvaluationService from '../../services/contestEvaluationService.js';
@@ -136,6 +137,14 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.CYAN}Registered Discord notification service${fancyColors.RESET}`);
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of discord_notification_service - disabled in config${fancyColors.RESET}`);
+        }
+
+        // Register Discord interactive service
+        if (config.services.discord_interactive_service) {
+            serviceManager.register(discordInteractiveService);
+            logApi.info(`${fancyColors.CYAN}Registered Discord interactive service${fancyColors.RESET}`);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of discord_interactive_service - disabled in config${fancyColors.RESET}`);
         }
         
         if (VERBOSE_SERVICE_INIT_LOGS) {

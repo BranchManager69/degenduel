@@ -11,8 +11,34 @@ import { PublicKey } from '@solana/web3.js';
 // This should be very fast to generate (a few seconds at most)
 const TEST_PATTERN = 'TST';
 
-// Time to wait for generation (should be more than enough for a simple pattern)
-const MAX_WAIT_TIME = 60000; // 60 seconds
+// Calculate an appropriate timeout based on pattern length and complexity
+function calculateTimeout(pattern, caseSensitive = true) {
+  // Benchmark: 4-character case-sensitive pattern took ~106 seconds 
+  const BASE_TIME_4_CHARS = 159; // seconds (with safety margin)
+  const BASE_CHAR_COUNT = 4;
+  
+  // Character space depends on case sensitivity
+  const charSpace = caseSensitive ? 58 : 33;
+  
+  // Calculate difficulty factor based on pattern length difference
+  const lengthDiff = pattern.length - BASE_CHAR_COUNT;
+  const difficultyFactor = lengthDiff >= 0 
+    ? Math.pow(charSpace, lengthDiff)  // Each additional character multiplies difficulty by charSpace
+    : 1 / Math.pow(charSpace, -lengthDiff); // Each fewer character divides difficulty by charSpace
+  
+  // Calculate timeout in milliseconds with reasonable limits
+  const MIN_TIMEOUT = 30 * 1000;  // 30 seconds minimum
+  const MAX_TIMEOUT = 30 * 60 * 1000; // 30 minutes maximum
+  
+  const calculatedTimeout = BASE_TIME_4_CHARS * difficultyFactor * 1000;
+  const timeout = Math.min(Math.max(calculatedTimeout, MIN_TIMEOUT), MAX_TIMEOUT);
+  
+  console.log(`Calculated timeout for pattern "${pattern}" (${pattern.length} chars): ${Math.round(timeout/1000)} seconds`);
+  return timeout;
+}
+
+// Time to wait for generation based on pattern complexity
+const MAX_WAIT_TIME = calculateTimeout(TEST_PATTERN);
 
 /**
  * Tests the vanity wallet service by generating a real wallet with the TST prefix

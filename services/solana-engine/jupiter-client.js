@@ -350,30 +350,33 @@ class PriceService extends JupiterBase {
    * @returns {Promise<Object>} - Map of token addresses to price data
    */
   async getPrices(mintAddresses) {
+
+    // Get prices for specified tokens via Jupiter API
     try {
-      // Check if we have a valid array of mint addresses
+      // Check if mintAddresses is a valid array of mint addresses
       if (!Array.isArray(mintAddresses) || mintAddresses.length === 0) {
         return {};
       }
       
-      // Note: The lock (this.isFetchingPrices) should be set by the caller
+      // NOTE: The lock (this.isFetchingPrices) should be set by the caller
       // This method assumes the lock is already in place to avoid nested locking issues
       
       logApi.info(`${formatLog.tag()} ${formatLog.header('FETCHING')} prices for ${formatLog.count(mintAddresses.length)} tokens (delegated from solana_engine_service)`);
       
       // Batch tokens into optimal chunks based on previous API behavior
       // The Jupiter API docs specify a maximum of 100 tokens per request
-      // But we need to be careful about URI length limits (414 errors)
+      //   But we need to be careful about URI length limits (rare but possible)
+      //   Hard maximum is 100 tokens per request (enforced by Jupiter API on all paid tiers)
       const MAX_TOKENS_PER_REQUEST = this.config.rateLimit.maxTokensPerRequest || 100;
       
       // Track if we've had URI too long errors and use that to adapt
-      // Use class variables to persist across calls
+      //   Use class variables to persist across calls
       if (this.constructor.uriTooLongErrors === undefined) {
         this.constructor.uriTooLongErrors = 0;
         this.constructor.currentOptimalBatchSize = MAX_TOKENS_PER_REQUEST;
       }
       
-      // If we've hit URI too long errors before, reduce batch size
+      // If we've hit URI too long errors before, reduce batch size (seems arbitrary but ok)
       if (this.constructor.uriTooLongErrors > 0) {
         // Gradually reduce batch size based on number of previous errors
         this.constructor.currentOptimalBatchSize = Math.max(25, MAX_TOKENS_PER_REQUEST - (this.constructor.uriTooLongErrors * 10));
@@ -388,191 +391,92 @@ class PriceService extends JupiterBase {
       // Split into batches and process them sequentially with proper rate limiting
       const totalBatches = Math.ceil(mintAddresses.length / effectiveBatchSize);
       
-      // Setup sequential processing with proper rate limiting
+      // OPTIMIZATION: Setup parallel processing with concurrency control
+      //   Process multiple batches in parallel while respecting rate limits
+      const MAX_CONCURRENT_REQUESTS = this.config.rateLimit.maxRequestsPerSecond;
+      
+      // Define a throttle function to control concurrency
+      const throttleBatches = async (batches) => {
+        const results = {};
+        
+        // Process batches in chunks of MAX_CONCURRENT_REQUESTS
+        for (let i = 0; i < batches.length; i += MAX_CONCURRENT_REQUESTS) {
+          const batchChunk = batches.slice(i, i + MAX_CONCURRENT_REQUESTS);
+          
+          // Process this chunk of batches in parallel
+          const chunkPromises = batchChunk.map(({ batch, queryString, batchIndex }) => {
+            const batchNum = batchIndex + 1;  // Batch numbers start from 1
+            
+            // Return a promise that resolves to the batch results
+            return (async () => {
+              try {
+                logApi.info(`${formatLog.tag()} ${formatLog.info(`[${new Date().toLocaleTimeString()}] Processing batch ${batchNum}/${totalBatches} (${batch.length} tokens)`)}`);
+                
+                const response = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, { ids: queryString });
+                
+                if (response && response.data) {
+                  // Merge into results
+                  Object.assign(results, response.data);
+                }
+                
+                return { success: true };
+              } catch (error) {
+                return { 
+                  success: false, 
+                  error, 
+                  batchNum, 
+                  batchIndex,
+                  batch, 
+                  queryString 
+                };
+              }
+            })();
+          });
+          
+          // Wait for all promises in this chunk to resolve
+          const chunkResults = await Promise.all(chunkPromises);
+          
+          // Handle failures if needed
+          const failures = chunkResults.filter(result => !result.success);
+          if (failures.length > 0) {
+            // Log failures but continue with next chunk
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`${failures.length} batch failures in current chunk`)}`);
+            
+            // If we're hitting rate limits, add a small delay before the next chunk
+            const hasRateLimitErrors = failures.some(f => f.error?.response?.status === 429);
+            if (hasRateLimitErrors) {
+              logApi.warn(`${formatLog.tag()} ${formatLog.warning('Rate limit detected, adding delay before next chunk')}`);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+          
+          // Add a small delay between chunks to ensure we don't exceed rate limits
+          if (i + MAX_CONCURRENT_REQUESTS < batches.length) {
+            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms between chunks
+          }
+        }
+        
+        // Return the results
+        return results;
+      };
+      
+      // Prepare batches for throttled processing
+      const batchesForProcessing = [];
       for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
         const startIndex = batchIndex * effectiveBatchSize;
         const batch = mintAddresses.slice(startIndex, startIndex + effectiveBatchSize);
         const queryString = batch.join(',');
-        const batchNum = batchIndex + 1;  // Batch numbers start from 1
         
-        // Enhanced logging with token examples and current time
-        const tokenExamples = batch.slice(0, 5).map(addr => {
-          // Try to get readable token symbol info if available in tokenMap
-          if (this.constructor.tokenMap && this.constructor.tokenMap[addr]) {
-            return this.constructor.tokenMap[addr].symbol || addr.substring(0, 6);
-          }
-          // Fallback to shortened address
-          return addr.substring(0, 6) + '...';
-        }).join(', '); // why define if unused?
-        
-        // Include timestamp and source service info when available
-        const timestamp = new Date().toLocaleTimeString();
-        
-        // Initialize variables
-        let sourceService = '';
-        let batchGroup = '';
-        let sourceInfo = '';
-        
-        // Process batch metadata correctly
-        //   If batch contains plain addresses (strings), use batch[0] as is
-        //   If batch contains objects (for TokenRefreshScheduler), extract metadata from the batch itself
-        if (Array.isArray(batch) && batch.length > 0) {
-          // Check if batch contains metadata in the array itself
-          if (batch.source_service) {
-            sourceService = batch.source_service;
-            batchGroup = batch.batch_group || '';
-          } 
-          // Or check if batch items are objects that might contain metadata
-          else if (typeof batch[0] === 'object' && batch[0] !== null) {
-            sourceService = batch[0].source_service || '';
-            batchGroup = batch[0].batch_group || '';
-          }
-          
-          // Format source info string for logging
-          if (sourceService) {
-            sourceInfo = ` (from ${sourceService}${batchGroup ? ' group '+batchGroup : ''})`;
-          }
-        }
-        
-        // Enhanced logging with batch info and timestamp (without token examples)
-        logApi.info(`${formatLog.tag()} ${formatLog.info(`[${timestamp}] Processing batch ${batchNum}/${totalBatches} (${batch.length} tokens)${sourceInfo}`)}`);
-        
-        // For large batches, also log progress percentage
-        if (totalBatches > 10 && batchNum % Math.ceil(totalBatches/10) === 0) {
-          const progress = Math.round((batchNum / totalBatches) * 100);
-          logApi.info(`${formatLog.tag()} Progress: ${progress}% (${startIndex + batch.length}/${mintAddresses.length})`);
-        }
-        
-        // Cache tokenMap for future logs if we don't have it already
-        if (!this.constructor.tokenMap && this.tokenMap) {
-          this.constructor.tokenMap = this.tokenMap;
-        }
-        
-        try {
-          // Add an enforced delay between batches to respect rate limits
-          //   First batch doesn't need a delay
-          if (batchIndex > 0) {
-            // Calculate delay based on rate limits
-            //   Minimum delay of 1000ms / max requests per second
-            const minDelayMs = Math.max(1000 / this.config.rateLimit.maxRequestsPerSecond, 20);
-            await new Promise(resolve => setTimeout(resolve, minDelayMs));
-          }
-          
-          // Make the API request with this batch
-          const response = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, { ids: queryString });
-          // Check if the response is valid
-          if (!response || !response.data) {
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Invalid response for batch ${batchNum}/${totalBatches}`)}`);
-            continue; // Skip this batch and continue with next one
-          }
-          
-          // Merge this batch's results with the overall results
-          Object.assign(allFetchedPrices, response.data);
-          
-        } catch (batchError) {
-          fetchErrorCount++;
-          
-          // Handle different types of errors
-          if (batchError.response) {
-            // Rate limit errors - add exponential backoff
-            if (batchError.response.status === 429) {
-              // Use the backoff configuration parameters from Jupiter config if available
-              const initialBackoffMs = this.config.rateLimit.initialBackoffMs || 2000;
-              const maxBackoffMs = this.config.rateLimit.maxBackoffMs || 30000;
-              const backoffFactor = this.config.rateLimit.backoffFactor || 2.0;
-              
-              // Calculate backoff with the configured parameters
-              const backoffMs = Math.min(
-                initialBackoffMs * Math.pow(backoffFactor, fetchErrorCount), 
-                maxBackoffMs
-              );
-              
-              logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Rate limit hit for batch ${batchNum}/${totalBatches}, backing off for ${backoffMs}ms (attempt ${fetchErrorCount})`)}`);
-              await new Promise(resolve => setTimeout(resolve, backoffMs));
-            }
-            // URI too long errors - reduce batch size for future requests
-            else if (batchError.response.status === 414 || 
-                    (batchError.response.status === 400 && 
-                     batchError.message.includes('uri') && 
-                     batchError.message.toLowerCase().includes('long'))) {
-              
-              // Increment the URI too long error counter
-              this.constructor.uriTooLongErrors++;
-              
-              // Calculate a new reduced batch size for future requests
-              const newBatchSize = Math.max(25, Math.floor(batch.length * 0.8)); // Reduce by 20% but keep minimum
-              this.constructor.currentOptimalBatchSize = newBatchSize;
-              
-              logApi.warn(`${formatLog.tag()} ${formatLog.warning(`URI too long error detected! Reducing batch size to ${newBatchSize} tokens for future requests`)}`);
-              
-              // For the current batch, split it into two parts and try again
-              if (batch.length > 10) {
-                // Log the split
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`Splitting current batch into two parts for retry (${batch.length} tokens)`)}`);
+        batchesForProcessing.push({ batch, queryString, batchIndex });
+      }
+      
+      // Process all batches with throttling and get combined results
+      const allResults = await throttleBatches(batchesForProcessing);
+      
+      // Merge results into allFetchedPrices
+      Object.assign(allFetchedPrices, allResults);
 
-                // Split the batch into two parts
-                const halfSize = Math.ceil(batch.length / 2);
-                const firstHalf = batch.slice(0, halfSize);
-                const secondHalf = batch.slice(halfSize);
-                
-                // Log the split
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`Splitting current batch into two parts for retry (${firstHalf.length} and ${secondHalf.length} tokens)`)}`);
-                
-                // Try the first half
-                try {
-                  // Make the API request with the first half
-                  const firstResponse = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, 
-                    { ids: firstHalf.join(',') });
-                  // Check if the response is valid
-                  if (firstResponse && firstResponse.data) {
-                    // Merge the results with the overall results
-                    Object.assign(allFetchedPrices, firstResponse.data);
-                  }
-                } catch (splitError) {
-                  logApi.error(`${formatLog.tag()} ${formatLog.error(`Error fetching first half of split batch: ${splitError.message}`)}`);
-                }
-                
-                // Add delay before trying second half
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Try the second half
-                try {
-                  // Make the API request with the second half
-                  const secondResponse = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, 
-                    { ids: secondHalf.join(',') });
-                  // Check if the response is valid
-                  if (secondResponse && secondResponse.data) {
-                    // Merge the results with the overall results
-                    Object.assign(allFetchedPrices, secondResponse.data);
-                  }
-                } catch (splitError) {
-                  logApi.error(`${formatLog.tag()} ${formatLog.error(`Error fetching second half of split batch: ${splitError.message}`)}`);
-                }
-              }
-            }
-          }
-          
-          // Log with correct batch numbers
-          if (fetchErrorCount <= 3) {
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error fetching batch ${batchNum}/${totalBatches}:`)} ${batchError.message}`);
-          } 
-          // Just log a count for subsequent errors
-          else if (fetchErrorCount === 4) {
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning('Additional batch errors occurring, suppressing detailed logs')}`);
-          }
-        }
-      }
-      
-      // Final summary with error count if any
-      const fetchedCount = Object.keys(allFetchedPrices).length;
-      const successMsg = `${formatLog.success('Successfully fetched prices for')} ${formatLog.count(fetchedCount)} tokens (${fetchedCount}/${mintAddresses.length}, ${Math.round(fetchedCount/mintAddresses.length*100)}%)`;
-      if (fetchErrorCount > 0) {
-        logApi.info(`${formatLog.tag()} ${successMsg} - ${formatLog.warning(`${fetchErrorCount} batch errors occurred`)}`);
-      } else {
-        logApi.info(`${formatLog.tag()} ${successMsg}`);
-      }
-      
-      // Return all fetched prices
+      // Return the results
       return allFetchedPrices;
     } catch (error) {
       // Use a single detailed error log instead of multiple similar ones
@@ -637,9 +541,10 @@ class PriceService extends JupiterBase {
     }
   }
 }
-
 /**
  * Swap service module
+ * 
+ * @extends JupiterBase
  */
 class SwapService extends JupiterBase {
   constructor(config) {
@@ -862,15 +767,19 @@ class JupiterClient {
   }
 }
 
+// -----
+
 // Create and export a singleton instance
 let _instance = null;
 
+// Export the getJupiterClient function
 export function getJupiterClient() {
   if (!_instance) {
     _instance = new JupiterClient();
   }
   return _instance;
 }
-
+// Export the singleton instance of the Jupiter client
 export const jupiterClient = getJupiterClient();
+// Export the singleton instance of the Jupiter client as the default export
 export default jupiterClient;

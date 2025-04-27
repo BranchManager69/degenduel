@@ -235,9 +235,10 @@ class DiscordWebhook {
   /**
    * Send a rich embed message to Discord with rate limiting and deduplication
    * @param {Object} embed - Discord embed object
+   * @param {Array} components - Optional components (buttons, etc.)
    * @returns {Promise<boolean>} - Success status
    */
-  async sendEmbed(embed) {
+  async sendEmbed(embed, components = null) {
     try {
       if (!this.webhookUrl) {
         logApi.warn('[DiscordWebhook] No webhook URL provided');
@@ -267,8 +268,16 @@ class DiscordWebhook {
         return true; // Report success but skip sending
       }
 
-      // Queue the embed for rate-limited delivery
-      return await this._queueMessage({ embeds: [embed] });
+      // Prepare message data with embeds
+      const messageData = { embeds: [embed] };
+      
+      // Add components if provided (buttons, select menus, etc.)
+      if (components && Array.isArray(components)) {
+        messageData.components = components;
+      }
+
+      // Queue the message for rate-limited delivery
+      return await this._queueMessage(messageData);
     } catch (error) {
       logApi.error('[DiscordWebhook] Error sending embed:', error);
       return false;

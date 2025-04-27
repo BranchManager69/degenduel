@@ -51,8 +51,9 @@ export const SERVICE_NAMES = {
     AI_SERVICE: 'ai_service', // AI Analysis and Processing Service
     
     // Notification Services
-    DISCORD_NOTIFICATION: 'discord_notification_service', // Discord integration service
     NOTIFICATION: 'notification_service', // General notification service
+    DISCORD_NOTIFICATION: 'discord_notification_service', // Discord integration service
+    DISCORD_INTERACTIVE: 'discord_interactive_service', // Discord interactive service
 };
 
 export const SERVICE_LAYERS = {
@@ -64,6 +65,7 @@ export const SERVICE_LAYERS = {
 
 export const SERVICE_METADATA = {
     // Data Layer Services
+    
     // TOKEN_SYNC has been permanently removed
     
     [SERVICE_NAMES.MARKET_DATA]: {
@@ -216,6 +218,9 @@ export const SERVICE_METADATA = {
     [SERVICE_NAMES.SYSTEM_SETTINGS]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'System settings management',
+        updateFrequency: '1m',
+        criticalLevel: 'medium',
+        dependencies: []
     },
 
     // Notification services metadata
@@ -235,6 +240,15 @@ export const SERVICE_METADATA = {
         criticalLevel: 'low',
         dependencies: []
     },
+
+    // Discord interactive service metadata
+    [SERVICE_NAMES.DISCORD_INTERACTIVE]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'Interactive Discord bot integration',
+        updateFrequency: 'event-based',
+        criticalLevel: 'low',
+        dependencies: []
+    }
 
 };
 

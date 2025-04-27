@@ -73,12 +73,9 @@ const marketDb = new PrismaClient({
 const MARKET_DATA_CONFIG = {
     name: SERVICE_NAMES.MARKET_DATA,
     description: getServiceMetadata(SERVICE_NAMES.MARKET_DATA)?.description || 'Market data service',
-    // Simple circuit breaker configuration
-    circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeoutMs: 30000,
-        minHealthyPeriodMs: 60000
-    },
+    // Use the centralized circuit breaker configuration from service-constants.js
+    // This ensures consistency across the application
+    useDefaultCircuitBreaker: true,
     // Broadcast configuration
     broadcast: {
         intervalMs: BROADCAST_INTERVAL * 1000
@@ -100,23 +97,26 @@ const MARKET_DATA_CONFIG = {
  */
 class MarketDataService extends BaseService {
     constructor() {
+        // IMPORTANT: Define service name constant to prevent issues
+        const SERVICE_NAME = SERVICE_NAMES.MARKET_DATA; // market_data_service
+        
         // Create proper config object for BaseService
         super({
-            name: SERVICE_NAMES.MARKET_DATA,
+            name: SERVICE_NAME,
             description: 'Market price data aggregation',
             layer: 'INFRASTRUCTURE',
             criticalLevel: 'high',
             checkIntervalMs: 60 * 1000 // Once per minute
         });
         
-        // Initialize config with MARKET_DATA_CONFIG but preserve name
+        // FIX: Ensure config consistently uses the proper service name
         this.config = {
             ...MARKET_DATA_CONFIG,
-            name: SERVICE_NAMES.MARKET_DATA // Explicitly ensure name is correct
+            name: SERVICE_NAME // Explicitly ensure name is correct
         };
         
-        // Explicitly set name for serviceManager calls
-        this.name = SERVICE_NAMES.MARKET_DATA;
+        // FIX: Explicitly set name property for serviceManager calls
+        this.name = SERVICE_NAME;
         
         // State management
         this.broadcastInterval = null;
@@ -166,6 +166,13 @@ class MarketDataService extends BaseService {
     // Initialize the service
     async initialize() {
         try {
+            // IMPORTANT FIX: Explicitly register with ServiceManager using the correct name
+            // This ensures that events and circuit breaker operations use the correct service name
+            if (!serviceManager.services.has(SERVICE_NAMES.MARKET_DATA)) {
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} REGISTERING ${fancyColors.RESET} Explicitly registering service with name: ${SERVICE_NAMES.MARKET_DATA}`);
+                serviceManager.register(SERVICE_NAMES.MARKET_DATA, this);
+            }
+            
             // Check if service is enabled via service profile
             if (!config.services.market_data) {
                 logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Market Data Service is disabled in the '${config.services.active_profile}' service profile`);
@@ -209,8 +216,11 @@ class MarketDataService extends BaseService {
                 await this.registerTokenSyncTasks();
                 
                 // Start update interval to update token data in the database (every minute)
-                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Starting database update interval (every ${UPDATE_INTERVAL} seconds)...`);
-                this.startUpdateInterval();
+                // Add a delay before the first update to allow the system to fully initialize
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Scheduling database update interval (every ${UPDATE_INTERVAL} seconds) with 10-second initial delay...`);
+                setTimeout(() => {
+                    this.startUpdateInterval();
+                }, 10000);
                 
                 // Start broadcast interval
                 logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Starting broadcast interval...`);
@@ -570,12 +580,16 @@ class MarketDataService extends BaseService {
                     }
                 };
                 
-                // Update service heartbeat with updated stats
-                serviceManager.updateServiceHeartbeat(
-                    SERVICE_NAMES.MARKET_DATA, // Use constant instead of this.name
-                    this.config,
-                    this.stats
-                );
+                // Update service heartbeat with updated stats - FIXED to use constant SERVICE_NAMES.MARKET_DATA
+                try {
+                    serviceManager.updateServiceHeartbeat(
+                        SERVICE_NAMES.MARKET_DATA,
+                        this.config,
+                        this.stats
+                    );
+                } catch (updateError) {
+                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to update service heartbeat: ${updateError.message}${fancyColors.RESET}`);
+                }
             })
             .catch(err => {
                 this.syncScheduled = false;
@@ -608,12 +622,16 @@ class MarketDataService extends BaseService {
                     }
                 };
                 
-                // Update service heartbeat with error status
-                serviceManager.updateServiceHeartbeat(
-                    SERVICE_NAMES.MARKET_DATA, // Use constant instead of this.name
-                    this.config,
-                    this.stats
-                );
+                // Update service heartbeat with error status - FIXED to use constant SERVICE_NAMES.MARKET_DATA
+                try {
+                    serviceManager.updateServiceHeartbeat(
+                        SERVICE_NAMES.MARKET_DATA,
+                        this.config,
+                        this.stats
+                    );
+                } catch (updateError) {
+                    logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to update service heartbeat during error handling: ${updateError.message}${fancyColors.RESET}`);
+                }
                 
                 // Retry with exponential backoff
                 setTimeout(() => {
@@ -673,8 +691,9 @@ class MarketDataService extends BaseService {
             
             // Try to update ServiceManager state, but don't fail if it doesn't work
             try {
+                // FIXED: Always use the explicit constant name SERVICE_NAMES.MARKET_DATA
                 await serviceManager.updateServiceHeartbeat(
-                    SERVICE_NAMES.MARKET_DATA, // Use constant instead of this.name
+                    SERVICE_NAMES.MARKET_DATA,
                     this.config,
                     {
                         ...this.stats,
@@ -961,12 +980,8 @@ class MarketDataService extends BaseService {
             clearInterval(this.updateInterval);
         }
         
-        // Run an immediate update
-        this.updateTokenData().catch(error => {
-            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error in initial token data update:${fancyColors.RESET}`, error);
-        });
-        
-        // Set up regular updates
+        // Set up regular updates without immediate execution
+        // This gives time for all dependencies to be properly initialized
         this.updateInterval = setInterval(async () => {
             try {
                 await this.updateTokenData();
@@ -1066,15 +1081,20 @@ class MarketDataService extends BaseService {
                 this.fullSyncInterval = null;
             }
             
-            // Final stats update
-            await serviceManager.markServiceStopped(
-                SERVICE_NAMES.MARKET_DATA, // Use constant instead of this.name
-                this.config,
-                {
-                    ...this.stats,
-                    marketStats: this.marketStats
-                }
-            );
+            // Final stats update - FIXED to ensure we always use SERVICE_NAMES.MARKET_DATA
+            try {
+                await serviceManager.markServiceStopped(
+                    SERVICE_NAMES.MARKET_DATA,
+                    this.config,
+                    {
+                        ...this.stats,
+                        marketStats: this.marketStats
+                    }
+                );
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} STOP CONFIRMED ${fancyColors.RESET} Successfully marked service as stopped`);
+            } catch (stopError) {
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error marking service as stopped: ${stopError.message}${fancyColors.RESET}`);
+            }
             
             logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Service stopped`);
         } catch (error) {

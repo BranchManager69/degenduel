@@ -306,8 +306,10 @@ async function generateContestImage(contest, options = {}) {
     // Determine file extension based on output format
     const fileExt = config.output_format || 'png';
     
-    // Generate unique filename and save path
-    const filename = `contest_${contest.id || 'new'}_${uuidv4()}.${fileExt}`;
+    // Generate filename using contest_code if available, fallback to id + uuid if not
+    const filename = contest.contest_code 
+      ? `${contest.contest_code}.${fileExt}`
+      : `contest_${contest.id || 'new'}_${uuidv4()}.${fileExt}`;
     const imagePath = path.join(IMAGES_DIR, filename);
     
     // Save the image to disk
@@ -340,6 +342,7 @@ async function generateContestImage(contest, options = {}) {
           generated_at: new Date().toISOString()
         };
         
+        // Use the same base filename (without extension) for the JSON file
         const promptPath = path.join(IMAGES_DIR, `${path.parse(filename).name}.json`);
         await fs.writeFile(promptPath, JSON.stringify(promptInfo, null, 2));
       } catch (promptError) {

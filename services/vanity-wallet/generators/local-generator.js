@@ -15,6 +15,7 @@ import fs from 'fs';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
 import prisma from '../../../config/prisma.js';
+import { Keypair } from '@solana/web3.js';
 
 // Determine current file directory for temporary files
 // (old way of storing found keypairs)
@@ -256,7 +257,30 @@ class LocalVanityGenerator {
     this.activeJobs.set(job.id, jobInfo);
 
     let outputBuffer = '';
-    process.stdout.on('data', (data) => outputBuffer += data.toString());
+    let lastAttemptCount = 0;
+    
+    // Capture stdout data, including attempt count
+    process.stdout.on('data', (data) => {
+      const dataStr = data.toString();
+      outputBuffer += dataStr;
+      
+      // Parse attempt count from output
+      const attemptMatch = dataStr.match(/Searched (\d+) keypairs/);
+      if (attemptMatch && attemptMatch[1]) {
+        lastAttemptCount = parseInt(attemptMatch[1], 10);
+        
+        // Store progress in result object
+        result.attempts = lastAttemptCount;
+        
+        // Log progress every million attempts
+        if (lastAttemptCount % 1000000 === 0) {
+          const duration = Date.now() - startTime;
+          const attemptsPerSec = Math.round(lastAttemptCount / (duration / 1000));
+          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BLUE}Job ${job.id}${fancyColors.RESET} - ${lastAttemptCount.toLocaleString()} keypairs searched (${attemptsPerSec.toLocaleString()}/sec), runtime: ${Math.round(duration/1000)}s`);
+        }
+      }
+    });
+    
     process.stderr.on('data', (data) => logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} stderr: ${data}`));
 
     process.on('close', async () => {
@@ -273,6 +297,11 @@ class LocalVanityGenerator {
 
         const keypair = JSON.parse(fs.readFileSync(finalPath, 'utf8'));
 
+        // Get the actual Solana public key from the keypair
+        const secretKey = Uint8Array.from(keypair);
+        const wallet = Keypair.fromSecretKey(secretKey);
+        const publicKey = wallet.publicKey.toString();
+
         // 🔽 DROP A PLAINTEXT VERSION
         const plaintextKeyPath = finalPath.replace('/keypairs/', '/pkeys/').replace(/\.json$/, '.key');
         const raw = JSON.stringify(keypair);
@@ -285,16 +314,16 @@ class LocalVanityGenerator {
           await prisma.vanity_wallet_pool.update({
             where: { id: parseInt(job.id) }, // Use the job ID to find the existing record
             data: {
-              wallet_address: path.basename(finalPath, '.json'),
+              wallet_address: publicKey, // Use the actual Solana public key
               private_key: raw,
               status: 'completed',
-              attempts: result.attempts || 0,
+              attempts: result.attempts || lastAttemptCount || 0, // Use the parsed attempt count
               duration_ms: Date.now() - startTime,
               completed_at: new Date(),
               updated_at: new Date()
             }
           });
-          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} UPDATED DB ${fancyColors.RESET} Successfully updated record for job #${job.id} with completed address ${path.basename(finalPath, '.json')}`);
+          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} UPDATED DB ${fancyColors.RESET} Successfully updated record for job #${job.id} with completed address ${publicKey}`);
         } catch (dbError) {
           logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DB ERROR ${fancyColors.RESET} Failed to update database record for job #${job.id}: ${dbError.message}`, {
             error: dbError.message,
@@ -306,12 +335,19 @@ class LocalVanityGenerator {
         job.onComplete({
           status: 'Completed',
           id: job.id,
-          result: { address: path.basename(finalPath, '.json'), keypair_bytes: keypair },
-          duration_ms: Date.now() - startTime
+          result: { address: publicKey, keypair_bytes: keypair },
+          duration_ms: Date.now() - startTime,
+          attempts: result.attempts || lastAttemptCount || 0 // Include the attempt count
         });
       } catch (err) {
         logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Post-processing failed: ${err.message}`);
-        job.onComplete({ status: 'Failed', id: job.id, error: err.message, duration_ms: Date.now() - startTime });
+        job.onComplete({ 
+          status: 'Failed', 
+          id: job.id, 
+          error: err.message, 
+          duration_ms: Date.now() - startTime,
+          attempts: result.attempts || lastAttemptCount || 0 // Include attempt count even for failed jobs
+        });
       }
       this.processNextJob();
     });

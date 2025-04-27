@@ -179,7 +179,8 @@ const args = parseArgs();
 const TOKEN_ADDRESS = args.tokenAddress;
 
 // Format currency for display
-function formatCurrency(amount, decimals = 2) {
+const NUM_DECIMALS_CURRENCY_USD = 2;
+function formatCurrency(amount, decimals = NUM_DECIMALS_CURRENCY_USD) {
   if (amount === null || amount === undefined) return 'N/A';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -188,10 +189,22 @@ function formatCurrency(amount, decimals = 2) {
   }).format(amount);
 }
 
+// Format currency for display
+const NUM_DECIMALS_CURRENCY_SOL = 4;
+function formatCurrencySol(amount, decimals = NUM_DECIMALS_CURRENCY_SOL) {
+  if (amount === null || amount === undefined) return 'N/A';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'SOL',
+    maximumFractionDigits: decimals
+  }).format(amount);
+}
+
 // Format percentage change with colors
-function formatPercentage(value) {
+const NUM_DECIMALS_PERCENTAGE = 1;
+function formatPercentage(value, decimals = NUM_DECIMALS_PERCENTAGE) {
   if (value === undefined || value === null) return 'N/A';
-  const formatted = Number(value).toFixed(2) + '%';
+  const formatted = Number(value).toFixed(decimals) + '%';
   
   // Add colors based on value
   if (value > 0) {
@@ -1047,8 +1060,9 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
             
             // Format the SOL value properly
             const solUsdValue = solNeeded * solPrice;
-            
-            logApi.info(`${percentage}% of supply (${tokenAmount.toLocaleString()} ${baseSymbol}) → Requires ${solNeeded.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${quoteSymbol} (${formatCurrency(solUsdValue)}) | ${formatPercentage(priceImpact)} price impact`);
+            const solDisplayDecimals = NUM_DECIMALS_CURRENCY_SOL;
+            const solDisplayFormatted = formatCurrencySol(solNeeded, solDisplayDecimals);
+            logApi.info(`${percentage}% of supply (${tokenAmount.toLocaleString()} ${baseSymbol}) → Requires ${solDisplayFormatted} ${quoteSymbol} (${formatCurrency(solUsdValue)}) | ${formatPercentage(priceImpact)} price impact`);
           });
         }
         
@@ -1207,6 +1221,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
     // Initialize variables that might be used in conditional blocks
     let volumeToMcapRatio = null;
     let liquidityToMcapRatio = null;
+    let volumeToLiquidityRatio = null;
     let solFor1Percent = null;
     let solFor5Percent = null;
     let solFor10Percent = null;
@@ -1216,17 +1231,25 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
     let tokensFor10PercentDown = null;
     let tokensFor20PercentDown = null;
     
-    // Calculate key ratios for storage
+    // Calculate key ratios:
+    
+    // Calculate volume to market cap ratio
     if (marketCap && volume24h) {
       volumeToMcapRatio = (volume24h / marketCap) * 100;
     }
     
+    // Calculate liquidity to market cap ratio
     if (marketCap && liquidity) {
       liquidityToMcapRatio = (liquidity / marketCap) * 100;
     }
-    
+
+    // Volume to liquidity ratio
+    if (volume24h && liquidity) {
+      volumeToLiquidityRatio = (volume24h / liquidity) * 100;
+    }
+
     // Ensure we have values for liquidity depth metrics even if they weren't calculated
-    // in the display section (which might happen if JSON output was requested)
+    //   in the display section (which might happen if JSON output was requested)
     if (baseReserve && quoteReserve) {
       // Buy side metrics (if not already calculated)
       if (solFor1Percent === null) solFor1Percent = quoteReserve * (0.01 / 0.99);
@@ -1255,6 +1278,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
           return;
         }
         
+        // Calculate new pool state after selling tokens
         const newBaseReserve = baseReserve + tokenAmount;
         const newQuoteReserve = k / newBaseReserve;
         const solReceived = quoteReserve - newQuoteReserve;
@@ -1264,8 +1288,10 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
         const newPriceInSol = newQuoteReserve / newBaseReserve;
         const priceImpact = ((newPriceInSol - currentPriceInSol) / currentPriceInSol) * 100;
         
+        // Format the SOL value properly
         const solValue = solReceived * solPrice;
         
+        // Store the results
         priceImpactSell.push({
           amount: tokenAmount,
           solReceived,
@@ -1291,6 +1317,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
       supplyPercentages.forEach(percentage => {
         const tokenAmount = totalSupply * (percentage / 100);
         
+        // Skip if token amount exceeds available pool liquidity
         if (tokenAmount > baseReserve) {
           supplyPercentageImpact.selling.push({
             percentage,
@@ -1300,6 +1327,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
           return;
         }
         
+        // Calculate new pool state after selling tokens
         const newBaseReserve = baseReserve + tokenAmount;
         const newQuoteReserve = k / newBaseReserve;
         const solReceived = quoteReserve - newQuoteReserve;
@@ -1309,8 +1337,10 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
         const newPriceInSol = newQuoteReserve / newBaseReserve;
         const priceImpact = ((newPriceInSol - currentPriceInSol) / currentPriceInSol) * 100;
         
+        // Format the SOL value properly
         const solValue = solReceived * solPrice;
         
+        // Store the results
         supplyPercentageImpact.selling.push({
           percentage,
           tokenAmount,
@@ -1326,6 +1356,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
       supplyPercentages.forEach(percentage => {
         const tokenAmount = totalSupply * (percentage / 100);
         
+        // Skip if token amount exceeds available pool liquidity
         if (tokenAmount >= baseReserve) {
           supplyPercentageImpact.buying.push({
             percentage,
@@ -1344,8 +1375,10 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
         const newPriceInSol = (quoteReserve + solNeeded) / newBaseReserve;
         const priceImpact = ((newPriceInSol - currentPriceInSol) / currentPriceInSol) * 100;
         
+        // Format the SOL value properly
         const solValue = solNeeded * solPrice;
         
+        // Store the results
         supplyPercentageImpact.buying.push({
           percentage,
           tokenAmount,
@@ -1358,6 +1391,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
       });
     }
     
+    // Return the metrics
     return {
       // Token info
       address: tokenAddress,
@@ -1392,7 +1426,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
       k,
       volumeToMcapRatio,
       liquidityToMcapRatio,
-      
+      volumeToLiquidityRatio,
       // Liquidity depth metrics
       solFor1Percent,
       solFor5Percent,
@@ -1410,6 +1444,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
     };
     
   } catch (error) {
+    // Log the error
     console.error(`${fancyColors.RED}Error calculating market metrics:${fancyColors.RESET}`, error);
     return null;
   }
@@ -1417,6 +1452,7 @@ async function calculateMarketMetrics(tokenAddress, skipLogging = false) {
 
 // Format results as JSON
 function formatResultsAsJson(metrics) {
+  // Return error if metrics are not available
   if (!metrics) return { success: false, error: "Failed to calculate market metrics" };
   
   // Format pool data for JSON
@@ -1481,6 +1517,7 @@ function formatResultsAsJson(metrics) {
     }
   };
   
+  // Return the formatted results
   return {
     success: true,
     timestamp: new Date().toISOString(),
@@ -1495,6 +1532,7 @@ function formatResultsAsJson(metrics) {
 // Main function
 async function main() {
   try {
+    // Log the header
     if (args.outputFormat === 'text') {
       logApi.info(`${fancyColors.BOLD}${fancyColors.GREEN}======= TOKEN MARKET METRICS =======${fancyColors.RESET}`);
     }
@@ -1503,6 +1541,7 @@ async function main() {
     const skipLogging = args.outputFormat === 'json';
     const metrics = await calculateMarketMetrics(TOKEN_ADDRESS, skipLogging);
     
+    // Check if metrics were successfully calculated
     if (metrics) {
       if (args.outputFormat === 'json') {
         // Format and output as JSON
@@ -1513,6 +1552,7 @@ async function main() {
         logApi.info(`\n${fancyColors.BOLD}${fancyColors.GREEN}Analysis Complete: ${metrics.token} at ${formatCurrency(metrics.price, 6)}${fancyColors.RESET}`);
       }
     } else {
+      // Log error if metrics were not successfully calculated
       if (args.outputFormat === 'json') {
         console.log(JSON.stringify({ success: false, error: "Failed to calculate market metrics" }));
       } else {
@@ -1520,11 +1560,13 @@ async function main() {
       }
     }
     
+    // Exit the script
     process.exit(0);
   } catch (error) {
     // Handle rate limit errors specifically
     if (error.message.includes('Rate limit') || error.message.includes('timed out')) {
       if (args.outputFormat === 'json') {
+        // Return error if rate limit is exceeded
         console.log(JSON.stringify({ 
           success: false, 
           error: "Rate limit exceeded",
@@ -1532,6 +1574,7 @@ async function main() {
           suggestion: "Please wait a few minutes before trying again."
         }));
       } else {
+        // Log error if rate limit is exceeded
         logApi.error(`\n${fancyColors.RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${fancyColors.RESET}`);
         logApi.error(`${fancyColors.RED}Error: API Rate Limit Exceeded${fancyColors.RESET}`);
         logApi.error(`${fancyColors.YELLOW}${error.message}${fancyColors.RESET}`);
@@ -1541,11 +1584,14 @@ async function main() {
     } else {
       // Handle other errors
       if (args.outputFormat === 'json') {
+        // Return error if other error occurs
         console.log(JSON.stringify({ success: false, error: error.message }));
       } else {
+        // Log error if other error occurs
         logApi.error(`${fancyColors.RED}Fatal Error:${fancyColors.RESET}`, error);
       }
     }
+    // Exit the script with a non-zero status code
     process.exit(1);
   }
 }

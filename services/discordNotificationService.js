@@ -269,33 +269,82 @@ class DiscordNotificationService extends BaseService {
         }
       });
       
-      const embed = this.webhooks.contests.createInfoEmbed(
-        '🎮 New Contest Created',
-        `A new contest **${contestData.name}** has been created!`
-      );
+      // Create a rich embed with enhanced visual appeal
+      const embed = {
+        title: `🎮 New Contest Created: ${contestData.name}`,
+        description: `A new contest has been created with a prize pool of **${contestData.prize_pool} SOL**!\n\nJoin now to compete and win rewards!`,
+        color: 0x00bfff, // Deep Sky Blue color for contests
+        timestamp: new Date().toISOString(),
+        footer: {
+          text: 'DegenDuel Platform',
+          icon_url: 'https://degenduel.me/assets/images/logo.png'
+        },
+        fields: [
+          { name: 'Contest Code', value: contestData.contest_code, inline: true },
+          { name: 'Start Time', value: new Date(contestData.start_time).toLocaleString(), inline: true },
+          { name: 'Prize Pool', value: `${contestData.prize_pool} SOL`, inline: true },
+          { name: 'Entry Fee', value: `${contestData.entry_fee} SOL`, inline: true },
+          { name: 'Status', value: contestData.status, inline: true }
+        ]
+      };
       
-      // Add fields with contest details
-      embed.fields = [
-        { name: 'Contest Code', value: contestData.contest_code, inline: true },
-        { name: 'Start Time', value: new Date(contestData.start_time).toLocaleString(), inline: true },
-        { name: 'Prize Pool', value: `${contestData.prize_pool} SOL`, inline: true },
-        { name: 'Entry Fee', value: `${contestData.entry_fee} SOL`, inline: true },
-        { name: 'Status', value: contestData.status, inline: true },
+      // Add contest image if available or use a default
+      if (contestData.image_url) {
+        // Ensure the imageUrl is an absolute URL
+        const baseUrl = process.env.BASE_URL || 'https://degenduel.me';
+        const fullImageUrl = contestData.image_url.startsWith('http') 
+          ? contestData.image_url 
+          : `${baseUrl}${contestData.image_url}`;
+        
+        embed.image = {
+          url: fullImageUrl
+        };
+      } else {
+        // Use a default placeholder image
+        embed.thumbnail = {
+          url: 'https://degenduel.me/assets/images/logo.png'
+        };
+      }
+      
+      // Create action buttons to link to contest
+      const contestUrl = `https://degenduel.me/contests/${contestData.id}`;
+      
+      // Create components with buttons
+      const components = [
+        {
+          type: 1, // Action Row
+          components: [
+            {
+              type: 2, // Button
+              style: 5, // Link style
+              label: 'View Contest',
+              url: contestUrl
+            },
+            {
+              type: 2, // Button
+              style: 5, // Link style
+              label: 'Join Now',
+              url: `${contestUrl}?action=join`
+            }
+          ]
+        }
       ];
       
       const startTime = Date.now();
-      await this.webhooks.contests.sendEmbed(embed);
+      await this.webhooks.contests.sendEmbed(embed, components);
       const endTime = Date.now();
       
       // Log successful notification with performance metrics
-      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent contest creation notification`, {
+      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent enhanced contest creation notification`, {
         eventType: 'webhook_sent',
         relatedEntity: contestData.contest_code,
         durationMs: endTime - startTime,
         details: {
           contestId: contestData.id,
           webhookType: 'contests',
-          notificationType: 'contest_creation'
+          notificationType: 'contest_creation',
+          hasImage: !!contestData.image_url,
+          hasButtons: true
         }
       });
     } catch (error) {
