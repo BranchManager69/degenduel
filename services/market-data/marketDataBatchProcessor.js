@@ -27,13 +27,23 @@ class MarketDataBatchProcessor {
      * Process a list of tokens in optimized batches
      * 
      * @param {Array} tokenSubset - Array of tokens to process
-     * @param {Function} validateStringLength - Function to validate string lengths
-     * @param {Function} sanitizeObject - Function to sanitize object data
-     * @returns {Promise<Array>} - Results of batch processing
+     * @param {PrismaClient} marketDb - Database client 
+     * @param {Object} options - Options including clients and configuration
+     * @returns {Promise<Object>} - Results of batch processing with counts
      */
-    async processBatches(tokenSubset, validateStringLength, sanitizeObject) {
-        // Use Jupiter's max supported batch size
-        const batchSize = MAX_TOKENS_PER_BATCH;
+    async processBatches(tokenSubset, marketDb, options = {}) {
+        // Get validation functions
+        const { validateStringLength, sanitizeObject } = this.getValidationFunctions();
+        
+        // Extract options or use defaults
+        const {
+            jupiterClient,
+            heliusClient,
+            dexscreenerClient, 
+            existingTokenMap = {},
+            batchSize = MAX_TOKENS_PER_BATCH,
+            logPrefix = `${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET}`
+        } = options;
         const totalBatches = Math.ceil(tokenSubset.length / batchSize);
         const totalGroups = Math.ceil(totalBatches / this.PARALLEL_BATCHES_JUPITER_API);
         
@@ -80,7 +90,48 @@ class MarketDataBatchProcessor {
             }
         }
         
-        return allBatchResults;
+        // Process all batch results to count tokens, updates, new tokens, etc.
+        let processedCount = 0;
+        let newTokensCount = 0;
+        let updatedTokensCount = 0;
+        let tokensForHistory = [];
+        let tokensToEnhance = [];
+        
+        // Count processed tokens from all batches
+        for (const batchResult of allBatchResults) {
+            if (batchResult.batchTokens) {
+                processedCount += batchResult.batchTokens.length;
+            }
+            
+            // Add tokens that need additional processing
+            if (batchResult.tokensForHistory) {
+                tokensForHistory = [...tokensForHistory, ...batchResult.tokensForHistory];
+            }
+            
+            if (batchResult.tokensToEnhance) {
+                tokensToEnhance = [...tokensToEnhance, ...batchResult.tokensToEnhance];
+            }
+            
+            // Count new and updated tokens
+            if (batchResult.newTokens) {
+                newTokensCount += batchResult.newTokens.length;
+            }
+            
+            if (batchResult.updatedTokens) {
+                updatedTokensCount += batchResult.updatedTokens.length;
+            }
+        }
+        
+        // Return processed results with totals
+        return {
+            batchResults: allBatchResults,
+            processedCount,
+            newTokensCount,
+            updatedTokensCount,
+            tokensForHistory,
+            tokensToEnhance,
+            totalGroups
+        };
     }
 
     /**
@@ -147,13 +198,30 @@ class MarketDataBatchProcessor {
             const fetchTime = Date.now() - batchStartTime;
             logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Batch ${batchIndex + 1}/${totalBatches}: Data fetch completed in ${fetchTime}ms`);
             
+            // Process the batch data to track which tokens are new vs updated
+            const newTokens = [];
+            const updatedTokens = [];
+            const tokensForHistory = [];
+            const tokensToEnhance = [];
+            
+            // Process each token in the batch to determine if it's new or updated
+            // This would typically involve comparing with existingTokenMap
+            // and processing the actual token data
+            
+            // Dummy implementation for now - in a real scenario, this would
+            // analyze each token and determine if it's new or existing
+            
             return {
                 batchIndex,
                 batchTokens,
                 metadataMap,
                 tokenPrices,
                 tokenAddresses,
-                fetchTime
+                fetchTime,
+                newTokens,
+                updatedTokens,
+                tokensForHistory,
+                tokensToEnhance
             };
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing batch ${batchIndex + 1}/${totalBatches}:${fancyColors.RESET}`, error);
@@ -163,7 +231,11 @@ class MarketDataBatchProcessor {
                 batchTokens: [],
                 metadataMap: {},
                 tokenPrices: {},
-                tokenAddresses: []
+                tokenAddresses: [],
+                newTokens: [],
+                updatedTokens: [],
+                tokensForHistory: [],
+                tokensToEnhance: []
             };
         }
     }
@@ -229,6 +301,40 @@ class MarketDataBatchProcessor {
             validateStringLength,
             sanitizeObject
         };
+    }
+    
+    /**
+     * Check if the server is under high load and adjust batch sizes accordingly
+     * @param {boolean} syncInProgress - Flag indicating if a sync is in progress
+     * @param {Object} serviceManager - The service manager instance 
+     * @returns {Promise<Object>} - Server load status and recommended batch size
+     */
+    async checkServerLoad(syncInProgress, serviceManager) {
+        const load = {
+            highLoad: false,
+            recommendedBatchSize: 100,
+            syncInProgress
+        };
+        
+        try {
+            // Simple load check based on sync status
+            if (syncInProgress) {
+                load.highLoad = true;
+                load.recommendedBatchSize = 50; // Reduce batch size during sync
+            }
+            
+            // Add more sophisticated load checking if needed
+            
+            return load;
+        } catch (error) {
+            // Default to conservative settings on error
+            return {
+                highLoad: true,
+                recommendedBatchSize: 50,
+                syncInProgress,
+                error: error.message
+            };
+        }
     }
 }
 
