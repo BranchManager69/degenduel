@@ -328,9 +328,9 @@ const registerWithWebSocket = async () => {
       
       // Register event handler for broadcasting simulation results
       unifiedWs.registerEventHandler('liquidity:broadcast', (data) => {
-        unifiedWs.broadcastToTopic(config.websocket.topics.TERMINAL, {
+        unifiedWs.broadcastToTopic(config.websocket.topics.ADMIN, {
           type: config.websocket.messageTypes.DATA,
-          topic: config.websocket.topics.TERMINAL,
+          topic: config.websocket.topics.ADMIN,
           subtype: 'liquidity-sim',
           action: 'update',
           data: data,
@@ -381,7 +381,7 @@ if (IS_MAIN_MODULE) {
           if (config.websocket && config.websocket.unifiedWebSocket) {
             wsStatus = 'Available';
             wsPath = config.websocket.config.path;
-            wsTopic = config.websocket.topics.TERMINAL;
+            wsTopic = config.websocket.topics.ADMIN;
           }
         } catch (error) {
           wsStatus = `Error: ${error.message}`;
@@ -523,7 +523,7 @@ if (IS_MAIN_MODULE) {
             websocket: {
               available: wsAvailable,
               path: wsAvailable ? config.websocket.config.path : null,
-              topic: wsAvailable ? config.websocket.topics.TERMINAL : null,
+              topic: wsAvailable ? config.websocket.topics.ADMIN : null,
               subtype: 'liquidity-sim'
             }
           });

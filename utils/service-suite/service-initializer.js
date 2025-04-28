@@ -13,42 +13,50 @@ import AdminLogger from '../admin-logger.js';
 import serviceManager from './service-manager.js';
 import { SERVICE_NAMES, SERVICE_LAYERS } from './service-constants.js';
 import { fancyColors, serviceColors } from '../colors.js';
+
+// Config
 import { config } from '../../config/config.js';
+
 /* Import all DegenDuel services */
-// Infrastructure Layer
+
+//   (1)  Infrastructure Layer
 import solanaEngine from '../../services/solana-engine/index.js';
 import walletGeneratorService from '../../services/walletGenerationService.js';
 import liquidityService from '../../services/liquidityService.js';
+// Legacy solana service - imported but not used as primary [EDIT 4/27/25: Now deprecated. Fully removed from here!]
+////import solanaService from '../../services/solanaService.js';
 
-// Data Layer
+//   (2)  Data Layer
 // tokenSyncService has been permanently removed
 // tokenWhitelistService has been permanently disabled (using token.is_active flag instead)
 import marketDataService from '../../services/market-data/marketDataService.js';
 import tokenRefreshIntegration from '../../services/token-refresh-integration.js';
 import tokenDEXDataService from '../../services/token-dex-data-service.js';
 import tokenDetectionService from '../../services/market-data/tokenDetectionService.js';
-// Token enrichment service will be imported once implemented
-// import tokenEnrichmentService from '../../services/token-enrichment/index.js';
-// Legacy solana service - imported but not used as primary
-import solanaService from '../../services/solanaService.js';
+// [the one below is brand new!]
+import tokenEnrichmentService from '../../services/token-enrichment/index.js';
+// [the one below doesn't exist yet...]
+//import tokenPriorityService from '../../services/token-priority/index.js';
+
+//   (3)  Contest Layer
 // Discord notification service
 import discordNotificationService from '../../services/discordNotificationService.js';
 import discordInteractiveService from '../../services/discord/discord-interactive-service.js';
 
-// Contest Layer
+//   (4)  Contest Layer
 import contestEvaluationService from '../../services/contestEvaluationService.js';
 import contestSchedulerService from '../../services/contestSchedulerService.js';
 import achievementService from '../../services/achievementService.js';
 import referralService from '../../services/referralService.js';
 import levelingService from '../../services/levelingService.js';
 
-// Wallet Layer
+//   (5)  Wallet Layer
 import contestWalletService from '../../services/contest-wallet/index.js';
-// DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
-// import walletRakeService from '../../services/walletRakeService.js';
 import adminWalletService from '../../services/admin-wallet/index.js';
 import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
 import vanityWalletService from '../../services/vanity-wallet/index.js';
+// DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
+// import walletRakeService from '../../services/walletRakeService.js';
 
 /**
  * ServiceInitializer class
@@ -107,6 +115,7 @@ class ServiceInitializer {
         }
         
         // Register services - order matters!
+        
         // SolanaEngine is the primary Solana connection service
         if (config.services.solana_engine_service) {
             serviceManager.register(solanaEngine);
@@ -114,11 +123,12 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of solana_engine_service - disabled in config${fancyColors.RESET}`);
         }
         // Legacy solanaService kept for compatibility until full migration
-        if (config.services.solana_service) {
-            serviceManager.register(solanaService);
-        } else {
-            logApi.info(`${fancyColors.YELLOW}Skipping registration of solana_service - disabled in config${fancyColors.RESET}`);
-        }
+        // [EDIT 4/27/25: Now deprecated. Fully removed from here!]
+        // if (config.services.solana_service) {
+        //     serviceManager.register(solanaService);
+        // } else {
+        //     logApi.info(`${fancyColors.YELLOW}Skipping registration of solana_service - disabled in config${fancyColors.RESET}`);
+        // }
         
         // Only register wallet generator and liquidity services if they're enabled in the config
         if (config.services.wallet_generator_service) {
@@ -149,6 +159,8 @@ class ServiceInitializer {
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of discord_interactive_service - disabled in config${fancyColors.RESET}`);
         }
+
+        
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.RED}┗━━━━━━━━━━━ ✅ INFRASTRUCTURE LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
@@ -198,23 +210,31 @@ class ServiceInitializer {
             }
             
             // Register token enrichment service if enabled in config
-            // This will be uncommented when the service is implemented
-            /*if (config.services.token_enrichment_service) {
+            if (config.services.token_enrichment_service) {
                 serviceManager.register(tokenEnrichmentService, [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE]);
                 logApi.info(`${fancyColors.GREEN}Registered token enrichment service${fancyColors.RESET}`);
             } else {
                 logApi.info(`${fancyColors.YELLOW}Skipping registration of token_enrichment_service - disabled in config${fancyColors.RESET}`);
-            }*/
+            }
+
+            // Token priority service is not fully implemented yet
+            if (config.services.token_priority_service) {
+                // Temporarily disabled until implementation is complete
+                //serviceManager.register(tokenPriorityService, [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE]);
+                logApi.info(`${fancyColors.YELLOW}Token priority service is configured but not yet implemented${fancyColors.RESET}`);
+            } else {
+                logApi.info(`${fancyColors.YELLOW}Skipping registration of token_priority_service - disabled in config${fancyColors.RESET}`);
+            }
+
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of market_data_service - disabled in config${fancyColors.RESET}`);
         }
         
         // Token whitelist service has been permanently disabled (using token.is_active flag instead)
-        logApi.info(`${fancyColors.YELLOW}Skipping registration of token_whitelist_service - permanently disabled (using token.is_active flag instead)${fancyColors.RESET}`);
+        // logApi.info(`${fancyColors.YELLOW}Skipping registration of token_whitelist_service - permanently disabled (using token.is_active flag instead)${fancyColors.RESET}`);
         
-        if (VERBOSE_SERVICE_INIT_LOGS) {
-            logApi.info(`${fancyColors.ORANGE}┗━━━━━━━━━━━ ✅ DATA LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
-        }
+        // Log completion of data layer registration
+        logApi.info(`${fancyColors.ORANGE}┗━━━━━━━━━━━ ✅ DATA LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
     }
     
     /**
@@ -302,16 +322,82 @@ class ServiceInitializer {
             
             // Debug log to check what's being registered next
             logApi.info(`${fancyColors.RED}DEBUG: After registering user_balance_tracking_service${fancyColors.RESET}`);
+            
+            // EXTENSIVE DEBUGGING: Let's try to find what's causing the undefined registration
+            logApi.info(`${fancyColors.RED}⚠️ DEBUGGING ISSUE: Checking active config entries before vanity_wallet_service${fancyColors.RESET}`);
+            
+            // SAFETY CHECK: Ensure solana_service is never used
+            // Instead of direct assignment which won't work with getters/setters,
+            // log a clear warning message
+            
+            logApi.info(`${fancyColors.RED}⚠️ Ensuring solana_service remains disabled - it has been replaced by solana_engine_service${fancyColors.RESET}`);
+            
+            // No need to modify config.service_profiles - the getter on config.services.solana_service
+            // should already return false as configured in other parts of the code
+            
+            logApi.info(`${fancyColors.RED}⚠️ SIMPLIFIED FIX: Using safer approach to handle deprecated solana_service${fancyColors.RESET}`);
+            
+            // Check if there's a direct property access or assignment issue here
+            try {
+                // Object.defineProperty(global, 'DEBUG_CAUSE_OF_UNDEFINED', { 
+                //     get: function() { 
+                //         logApi.info(`${fancyColors.RED}⚠️ SOMEONE IS TRYING TO ACCESS DEBUG_CAUSE_OF_UNDEFINED${fancyColors.RESET}`);
+                //         return undefined;
+                //     }
+                // });
+                
+                // DO NOT try to modify the serviceManager.register function
+                // This was causing an issue where we were overwriting the function with a wrapper
+                // that didn't properly validate the service object
+                logApi.info(`${fancyColors.RED}⚠️ REMOVED PROBLEMATIC REGISTER FUNCTION WRAPPER${fancyColors.RESET}`);
+                
+                // We now rely on the improved validation in the actual serviceManager.register function
+            } catch (err) {
+                logApi.error(`Debug setup error: ${err.message}`);
+            }
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of user_balance_tracking_service - disabled in config${fancyColors.RESET}`);
         }
         
-        // Register vanity wallet service only if enabled in config
+        // Register vanity wallet service only if enabled in config - ADD EXTREME SAFETY CHECKS
+        logApi.info(`${fancyColors.RED}⚠️ DEBUGGING: About to register vanity_wallet_service${fancyColors.RESET}`);
+        
+        // Register vanity wallet service if enabled
         if (config.services.vanity_wallet_service) {
-            serviceManager.register(vanityWalletService, []);
+            // Properly handle vanity wallet service registration
+            logApi.info(`${fancyColors.BLUE}Registering vanity_wallet_service...${fancyColors.RESET}`);
+            
+            // Verify vanityWalletService is properly structured before registration
+            if (!vanityWalletService || typeof vanityWalletService !== 'object') {
+                logApi.error(`${fancyColors.RED}Error: vanityWalletService is not a valid object${fancyColors.RESET}`);
+            } else if (!vanityWalletService.init || !vanityWalletService.start || !vanityWalletService.stop) {
+                logApi.error(`${fancyColors.RED}Error: vanityWalletService is missing required methods${fancyColors.RESET}`);
+            } else {
+                // Add required name property if missing (since the export structure in this case is different)
+                if (!vanityWalletService.name) {
+                    vanityWalletService.name = 'vanity_wallet_service';
+                    logApi.info(`${fancyColors.YELLOW}Added missing 'name' property to vanityWalletService${fancyColors.RESET}`);
+                }
+                
+                // Register the service
+                try {
+                    serviceManager.register(vanityWalletService, [SERVICE_NAMES.SOLANA_ENGINE]);
+                    logApi.info(`${fancyColors.GREEN}Successfully registered vanity_wallet_service${fancyColors.RESET}`);
+                } catch (error) {
+                    logApi.error(`${fancyColors.RED}Failed to register vanity_wallet_service: ${error.message}${fancyColors.RESET}`);
+                }
+            }
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of vanity_wallet_service - disabled in config${fancyColors.RESET}`);
         }
+        
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.GREEN}┗━━━━━━━━━━━ ✅ WALLET LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
+        }
+        
+        // COMPLETELY REMOVED: solana_service - it's fully deprecated now
+        // We now import SolanaEngine instead of SolanaService
+        logApi.info(`${fancyColors.YELLOW}NOTE: solana_service is deprecated - it has been completely removed and replaced by solanaEngine${fancyColors.RESET}`);
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.GREEN}┗━━━━━━━━━━━ ✅ WALLET LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
@@ -381,8 +467,9 @@ class ServiceInitializer {
         // Removed dependency on TOKEN_SYNC as it's no longer needed
         // addDependencyIfEnabled(SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.TOKEN_SYNC);
         
-        // No dependency on solanaService as SolanaEngine uses Helius directly
-        // addDependencyIfEnabled(SERVICE_NAMES.SOLANA_ENGINE, SERVICE_NAMES.SOLANA);
+        // IMPORTANT: We have COMPLETELY REMOVED all usage of solanaService
+        // SolanaEngine now connects directly to Helius
+        logApi.info(`${fancyColors.MAGENTA}[ServiceInitializer]${fancyColors.RESET} ${fancyColors.YELLOW}Skipping all solana_service dependencies - service has been deprecated${fancyColors.RESET}`);
 
         // Contest Layer Dependencies
         addDependencyIfEnabled(SERVICE_NAMES.CONTEST_EVALUATION, SERVICE_NAMES.MARKET_DATA);

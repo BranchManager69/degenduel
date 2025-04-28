@@ -59,21 +59,7 @@ class LocalVanityGenerator {
     this.isProcessing = false;
     
     // Make sure all output directories exist
-    if (!fs.existsSync(OUTPUT_DIR_KEYPAIRS)) {
-      fs.mkdirSync(OUTPUT_DIR_KEYPAIRS, { recursive: true });
-    }
-    if (!fs.existsSync(OUTPUT_DIR_DEGEN)) {
-      fs.mkdirSync(OUTPUT_DIR_DEGEN, { recursive: true });
-    }
-    if (!fs.existsSync(OUTPUT_DIR_DUEL)) {
-      fs.mkdirSync(OUTPUT_DIR_DUEL, { recursive: true });
-    }
-    if (!fs.existsSync(OUTPUT_DIR_BRANCH)) {
-      fs.mkdirSync(OUTPUT_DIR_BRANCH, { recursive: true });
-    }
-    if (!fs.existsSync(OUTPUT_DIR_OTHER)) {
-      fs.mkdirSync(OUTPUT_DIR_OTHER, { recursive: true });
-    }
+    this.ensureOutputDirectoriesExist();
     
     // Check for and kill any orphaned solana-keygen processes
     this.cleanupOrphanedProcesses();
@@ -147,6 +133,9 @@ class LocalVanityGenerator {
       
       // Create a temp file for output - but don't specify with flag (will use default)
       const outputFile = path.join('/tmp', `vanity-${job.id}-${Date.now()}.json`);
+      
+      // Ensure output directories exist
+      this.ensureOutputDirectoriesExist();
       
       // Start the process
       this.startSolanaKeygenProcess(job, options, startTime, outputFile);
@@ -306,9 +295,30 @@ class LocalVanityGenerator {
         if (!match) throw new Error('Output parsing failed');
 
         const originalPath = match[1];
+        
+        // Get the intended final path
         const finalPath = this.getKeypairFilePath(job.id, job.pattern);
-        fs.renameSync(originalPath, finalPath);
-
+        
+        // Check if original path exists
+        if (!fs.existsSync(originalPath)) {
+          // Check if the file might be in the project root (this should NEVER happen with fixed code)
+          const possibleRootPath = path.join(process.cwd(), path.basename(originalPath));
+          if (fs.existsSync(possibleRootPath)) {
+            // IMPORTANT: This is a SEVERE warning - this should never happen with fixed code paths
+            // If you see this warning, it indicates a regression or new issue with file paths
+            logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CRITICAL WARNING ${fancyColors.RESET} Keypair incorrectly saved to project root! This indicates a possible regression. ${possibleRootPath}`);
+            logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Recovered by moving from project root to: ${finalPath}${fancyColors.RESET}`);
+            
+            // Still recover the file to prevent data loss, but make sure it's very visible in logs
+            fs.renameSync(possibleRootPath, finalPath);
+          } else {
+            throw new Error(`Keypair file not found at ${originalPath} or ${possibleRootPath}`);
+          }
+        } else {
+          // Move from original location to final location
+          fs.renameSync(originalPath, finalPath);
+        }
+        
         const keypair = JSON.parse(fs.readFileSync(finalPath, 'utf8'));
 
         // Get the actual Solana public key from the keypair
@@ -568,6 +578,11 @@ class LocalVanityGenerator {
       outputDir = OUTPUT_DIR_BRANCH;
     }
     
+    // Ensure the directory exists
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
     // Create a unique filename based on the job ID and pattern
     return path.join(outputDir, `${jobId}_${pattern}.json`);
   }
@@ -679,6 +694,38 @@ class LocalVanityGenerator {
    */
   get activeJobCount() {
     return this.activeJobs.size;
+  }
+  
+  /**
+   * Ensure all output directories exist
+   * This is extracted into a separate method for reuse
+   */
+  ensureOutputDirectoriesExist() {
+    try {
+      // Create the main keypairs directory first
+      if (!fs.existsSync(OUTPUT_DIR_KEYPAIRS)) {
+        fs.mkdirSync(OUTPUT_DIR_KEYPAIRS, { recursive: true });
+      }
+      
+      // Then create subdirectories
+      if (!fs.existsSync(OUTPUT_DIR_DEGEN)) {
+        fs.mkdirSync(OUTPUT_DIR_DEGEN, { recursive: true });
+      }
+      
+      if (!fs.existsSync(OUTPUT_DIR_DUEL)) {
+        fs.mkdirSync(OUTPUT_DIR_DUEL, { recursive: true });
+      }
+      
+      if (!fs.existsSync(OUTPUT_DIR_BRANCH)) {
+        fs.mkdirSync(OUTPUT_DIR_BRANCH, { recursive: true });
+      }
+      
+      if (!fs.existsSync(OUTPUT_DIR_OTHER)) {
+        fs.mkdirSync(OUTPUT_DIR_OTHER, { recursive: true });
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.RED}Error creating output directories: ${error.message}${fancyColors.RESET}`);
+    }
   }
 }
 

@@ -415,7 +415,7 @@ class TokenService extends HeliusBase {
         const BATCH_SIZE = 100;
         const batches = [];
         
-        // Split into batches
+        // Split mint addresses into batches
         for (let i = 0; i < mintAddresses.length; i += BATCH_SIZE) {
           batches.push(mintAddresses.slice(i, i + BATCH_SIZE));
         }
@@ -428,6 +428,8 @@ class TokenService extends HeliusBase {
             logApi.info(`${formatLog.tag()} ${formatLog.info(`Processing batch ${i+1}/${batches.length} (${batch.length} tokens)`)}`);
             // Use getAssetBatch if available, otherwise fall back to individual getAsset calls
             try {
+              // Get token metadata from Helius in bulk (method: getAssetBatch)
+              // 
               const batchData = await this.fetchFromHeliusRPC('getAssetBatch', [batch]);
               batchResults.push(...batchData.map(asset => this.mapAssetToTokenMetadata(asset)));
             } catch (batchError) {

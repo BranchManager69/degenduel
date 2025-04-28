@@ -7,9 +7,9 @@ import prisma from '../config/prisma.js';
 import { Keypair } from '@solana/web3.js';
 import { PublicKey } from '@solana/web3.js';
 
-// Pattern to generate - simple and quick "TST" prefix (no numbers)
+// Pattern to generate - simple and quick "FUCK" prefix (no numbers)
 // This should be very fast to generate (a few seconds at most with optimized settings)
-const TEST_PATTERN = 'TST';
+const TEST_PATTERN = 'FUCK';
 
 // Calculate an appropriate timeout based on pattern length and complexity
 function calculateTimeout(pattern, caseSensitive = true) {

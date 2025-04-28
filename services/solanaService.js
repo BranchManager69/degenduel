@@ -1,11 +1,19 @@
 // services/solanaService.js
 
-/*
- * This service manages the Solana blockchain connection and provides a standardized interface for other services to access Solana.
- * It also handles the connection health monitoring and automatic reconnection.
+/**
+ * THIS FILE IS NOW DEPRECATED!
+ *   We now use the solanaEngine service instead.
  * 
- * It implements a centralized request queue with global rate limiting to prevent 429 errors
- * across multiple services that make Solana RPC calls.
+ * This service PREVIOUSLY managed the Solana blockchain connection and provided a standardized interface for other services to access Solana.
+ *   It also handled the connection health monitoring and automatic reconnection.
+ * 
+ * It implemented a centralized request queue with global rate limiting to prevent 429 errors across multiple services that make Solana RPC calls.
+ * 
+ * @deprecated
+ * @see solanaEngine
+ * 
+ * @author @BranchManager69
+ * @version 0.6.9
  */
 
 import { Connection } from '@solana/web3.js';
@@ -43,8 +51,8 @@ const SOLANA_SERVICE_CONFIG = {
 };
 
 /**
+ * [Now Deprecated]
  * Service that maintains and monitors Solana blockchain connection
- * Provides a standardized interface for other services to access Solana
  */
 class SolanaService extends BaseService {
     constructor() {
@@ -347,8 +355,8 @@ class SolanaService extends BaseService {
     
     /**
      * Implements the onPerformOperation method required by BaseService
-     * This gets called regularly by the BaseService to perform the service's main operation
-     * and is used for circuit breaker recovery
+     *   This gets called regularly by the BaseService to perform the service's main operation
+     *   and is used for circuit breaker recovery
      * @returns {Promise<boolean>} Success status
      */
     async onPerformOperation() {

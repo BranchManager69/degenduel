@@ -30,6 +30,81 @@ const ensureServiceInitialized = async (req, res, next) => {
 
 /**
  * @swagger
+ * /api/admin/token-liquidation/search:
+ *   get:
+ *     summary: Search for tokens by name, symbol or address
+ *     tags: [Token Liquidation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: query
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Search results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 tokens:
+ *                   type: array
+ */
+router.get('/search', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.length < 2) {
+      return res.json({
+        success: true,
+        tokens: []
+      });
+    }
+    
+    // Search in the database for tokens matching the query
+    const tokens = await prisma.tokens.findMany({
+      where: {
+        OR: [
+          { address: { contains: query.toLowerCase() } },
+          { name: { contains: query, mode: 'insensitive' } }, 
+          { symbol: { contains: query, mode: 'insensitive' } }
+        ],
+        is_active: true
+      },
+      select: {
+        address: true,
+        name: true,
+        symbol: true,
+        price_usd: true,
+        market_cap: true,
+        total_supply: true,
+        circulating_supply: true
+      },
+      orderBy: { market_cap: 'desc' },
+      take: 10
+    });
+    
+    res.json({
+      success: true,
+      tokens
+    });
+  } catch (error) {
+    logApi.error('[LiquiditySim API] Error searching tokens:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search tokens',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * @swagger
  * /api/admin/token-liquidation/presets:
  *   get:
  *     summary: Get available volume profile presets

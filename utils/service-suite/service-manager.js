@@ -103,24 +103,100 @@ class ServiceManager {
      * Register a service with its dependencies
      */ 
     register(serviceOrName, dependencies = []) {
-        // Check if the service or name is provided
-        if (!serviceOrName) {
+        // Extreme debugging - log the caller
+        const callStack = new Error().stack || '';
+        logApi.info(`${fancyColors.RED}🔥 CALLER: ${callStack.split('\n').slice(0, 5).join('\n')}${fancyColors.RESET}`);
+        
+        // CRITICAL FIX: Prevent all undefined registrations
+        if (!serviceOrName || serviceOrName === undefined) {
+            // Log the entire stack trace for the undefined service
+            logApi.error(`${fancyColors.RED}🔥 CRITICAL: Attempted to register undefined service. Call stack: ${callStack}${fancyColors.RESET}`);
             throw new Error('Attempted to register undefined service');
         }
+        
+        // Enhanced SAFETY: Block any getters that might return undefined
+        // This prevents accessing a getter that doesn't exist on config.services
+        if (typeof serviceOrName === 'function') {
+            logApi.error(`${fancyColors.RED}🔥 CRITICAL: Attempted to register a function as a service. Call stack: ${callStack}${fancyColors.RESET}`);
+            throw new Error('Cannot register a function as a service');
+        }
+        
+        // SUPER CRITICAL SAFETY: Enhanced protection against problematic services
+        // These are cases we want to block from registration (but not crash)
+        
+        // Case 1: Direct registration of solana_service
+        if (
+            (typeof serviceOrName === 'string' && (serviceOrName === 'solana_service' || serviceOrName === 'solanaService')) ||
+            (typeof serviceOrName === 'object' && serviceOrName?.name === 'solana_service')
+        ) {
+            logApi.error(`${fancyColors.RED}🔥 CRITICAL: Blocked attempt to register deprecated solana_service. Call stack: ${callStack}${fancyColors.RESET}`);
+            // Instead of throwing an error, just return false to avoid crashing
+            return false;
+        }
+        
+        // Case 2: Service is the raw imported solanaService module (without name property)
+        if (
+            typeof serviceOrName === 'object' && 
+            !serviceOrName?.name && 
+            (serviceOrName?.connectionOptions && serviceOrName?.rpcStats)
+        ) {
+            logApi.error(`${fancyColors.RED}🔥 CRITICAL: Blocked attempt to register raw solanaService module. Call stack: ${callStack}${fancyColors.RESET}`);
+            return false;
+        }
+        
+        // Case 3: Service is undefined or literally has no name property
+        if (
+            typeof serviceOrName === 'object' && 
+            !serviceOrName?.name && 
+            !serviceOrName?.config?.name
+        ) {
+            logApi.error(`${fancyColors.RED}🔥 CRITICAL: Blocked attempt to register unknown service without name. Call stack: ${callStack}${fancyColors.RESET}`);
+            return false;
+        }
+        
+        // Detect if the problem is with vanity wallet service
+        if (
+            typeof serviceOrName === 'object' && 
+            serviceOrName && 
+            serviceOrName.name === 'vanity_wallet_service'
+        ) {
+            logApi.info(`${fancyColors.RED}🔥 VANITY WALLET HOOK POINT${fancyColors.RESET}`);
+            
+            // Print out the next 5 items in the call stack
+            logApi.info(`${fancyColors.RED}🔥 STACK AFTER VANITY: ${callStack.split('\n').slice(1, 10).join('\n')}${fancyColors.RESET}`);
+        }
 
-        // Handle both service instances and service names
-        const serviceName = typeof serviceOrName === 'string' 
-            ? serviceOrName 
-            : serviceOrName.config?.name || serviceOrName.name;
+        // Enhanced protection for service name resolution
+        let serviceName;
+        if (typeof serviceOrName === 'string') {
+            serviceName = serviceOrName;
+        } else if (typeof serviceOrName === 'object' && serviceOrName !== null) {
+            // Check for service name in multiple locations with protection against undefined
+            serviceName = serviceOrName.config?.name || serviceOrName.name;
+            if (!serviceName) {
+                logApi.error(`${fancyColors.RED}🔥 CRITICAL: Service object does not have a name property. Call stack: ${callStack}${fancyColors.RESET}`);
+                throw new Error('Service object must have a name property');
+            }
+        } else {
+            // This should never happen due to earlier checks, but just in case
+            logApi.error(`${fancyColors.RED}🔥 CRITICAL: Invalid service type '${typeof serviceOrName}'. Call stack: ${callStack}${fancyColors.RESET}`);
+            throw new Error(`Invalid service type '${typeof serviceOrName}'`);
+        }
+        
+        // Final validation for the service name
+        if (serviceName === 'undefined' || serviceName === undefined) {
+            logApi.error(`${fancyColors.RED}🔥 CRITICAL: Invalid service name '${serviceName}'. Call stack: ${callStack}${fancyColors.RESET}`);
+            throw new Error(`Invalid service name '${serviceName}'`);
+        }
 
         // Log the service registration
         logApi.info(`${fancyColors.LIGHT_MAGENTA}[ServiceManager]${fancyColors.RESET} ${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}Registering ${fancyColors.UNDERLINE}${serviceName}${fancyColors.RESET}${fancyColors.LIGHT_YELLOW}${fancyColors.ITALIC}...${fancyColors.RESET}`, {
-            //    type: typeof serviceOrName,
-            //    isInstance: serviceOrName instanceof BaseService,
-            //    hasConfig: serviceOrName?.config !== undefined,
-            //    configName: serviceOrName?.config?.name,
-            //    directName: serviceOrName?.name,
-            //    dependencies
+            type: typeof serviceOrName,
+            isInstance: serviceOrName instanceof BaseService,
+            hasConfig: serviceOrName?.config !== undefined,
+            configName: serviceOrName?.config?.name,
+            directName: serviceOrName?.name,
+            dependencies
             });
         
         // Debug name resolution

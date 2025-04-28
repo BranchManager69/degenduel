@@ -728,19 +728,53 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         // Fall back to direct wallet creation if service fails
         logApi.warn({
           requestId,
-          message: 'Wallet service failed, falling back to direct wallet creation',
-          error: walletError.message
+          message: '⚠️ VANITY WALLET FAILURE - Using fallback random wallet creation',
+          error: walletError.message,
+          stack: walletError.stack,
+          errorType: walletError.name || 'Unknown',
+          details: 'Contest wallet service failed to create vanity wallet - this will NOT affect functionality, but the contest will use a random wallet instead of a vanity wallet'
+        });
+        
+        // Also log with more visibility using logApi
+        logApi.error({
+          requestId,
+          message: `
+╔════════════════════════════════════════════════════════════════════════════╗
+║  ⚠️  VANITY WALLET CREATION FAILED FOR CONTEST #${contest.id}                  
+║  Error: ${walletError.message}
+║  Using fallback random wallet creation instead
+║  This should be investigated to restore vanity wallet functionality
+╚════════════════════════════════════════════════════════════════════════════╝`,
+          error: walletError.message,
+          stack: walletError.stack,
+          contestId: contest.id
         });
         
         // Direct wallet creation as a fallback
         const { publicKey, encryptedPrivateKey } = await createContestWallet();
         
+        // Create wallet with explicit is_vanity = false flag
         contestWallet = await prisma.contest_wallets.create({
           data: {
             contest_id: contest.id,
             wallet_address: publicKey,
             private_key: encryptedPrivateKey,
-            balance: '0'
+            balance: '0',
+            is_vanity: false,
+            vanity_type: null,
+            fallback_creation: true // Add a flag to track fallback creation
+          }
+        });
+        
+        // Log the fallback wallet creation clearly
+        logApi.info({
+          requestId,
+          message: 'Fallback wallet created successfully',
+          data: {
+            contest_id: contest.id,
+            wallet_address: publicKey,
+            is_vanity: false,
+            fallback_creation: true
           }
         });
       }

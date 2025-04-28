@@ -70,6 +70,7 @@ async function main() {
     let tokenName = 'Unknown Token';
     let priceHistory = [];
     
+    // Get token data from Solana Engine (specifically, token address, name, symbol, and price in USD; these come from the heliusClient via the getTokenData function)
     try {
       const tokenData = await solanaEngine.getTokenData([TOKEN_ADDRESS], { includeDexscreenerData: true });
       if (tokenData && tokenData.length > 0) {

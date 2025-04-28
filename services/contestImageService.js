@@ -23,12 +23,12 @@ const IMAGES_DIR = path.join(process.cwd(), 'public', 'images', 'contests');
 // GPT-Image-1 configuration
 const DEFAULT_CONFIG = {
   model: "gpt-image-1",     // Using GPT-Image-1 as default model
-  size: "1024x1024",        // Standard square size
-  quality: "high",          // High quality for GPT-Image-1
-  output_format: "png",     // PNG output format
-  background: "auto",       // Auto background detection
-  moderation: "low",        // Less restrictive filtering
-  useTokenData: true        // Use token data to enhance prompts when available
+  size: "1536x1024",        // Options: 1024x1024 (square), 1536x1024 (landscape), 1024x1536 (portrait)
+  quality: "medium",          // Options: "high", "medium", "low" (cost per image: $0.19, $0.07, and $0.02, respectively)
+  output_format: "png",     // Options: "png", "jpeg", "webp"
+  background: "auto",       // Options: "transparent", "opaque", "auto" (allows to set transparency for the background of the generated image)
+  moderation: "low",        // Options: "low", "auto"
+  useTokenData: true        // Use our proprietary token data to enhance prompts when available
 };
 
 /**
@@ -844,6 +844,7 @@ function getDefaultConfig() {
   return { ...DEFAULT_CONFIG };
 }
 
+// Export the service functions
 export default {
   generateContestImage,
   updateContestImage,

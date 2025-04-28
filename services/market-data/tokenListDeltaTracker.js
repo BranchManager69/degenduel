@@ -7,6 +7,35 @@
  * This module detects new and removed tokens when comparing successive token lists.
  * 
  * @module services/market-data/tokenListDeltaTracker
+ * 
+ * -----------------------------------------------------------------------------
+ * TOKEN PROCESSING SYSTEM ARCHITECTURE
+ * -----------------------------------------------------------------------------
+ * 
+ * The token processing system efficiently handles ~700,000 tokens through:
+ * 
+ * 1. TOKEN COLLECTION: tokenDetectionService.js fetches all Jupiter tokens
+ * 
+ * 2. REDIS BATCHING: tokenListDeltaTracker.js (this file) batches tokens
+ *    in groups of 1000 to prevent "Maximum call stack size exceeded" errors
+ *    and uses Redis SDIFF operations to find only new/removed tokens
+ * 
+ * 3. DELTA PROCESSING: Only newly discovered tokens continue to processing
+ * 
+ * 4. EVENT QUEUE: New tokens enter a processing queue where they're handled
+ *    in smaller batches (50) with delays between batches
+ * 
+ * 5. EVENT EMISSION: Each token gets a 'token:new' event that other services
+ *    can respond to for metadata enrichment, etc.
+ * 
+ * This design is extremely efficient because:
+ * - We only process new tokens, not the entire list
+ * - Redis set operations are blazingly fast
+ * - Multi-level batching prevents overwhelming any system
+ * - Delays prevent service disruptions
+ * 
+ * See TOKEN_PROCESSING_SYSTEM.md for complete documentation.
+ * -----------------------------------------------------------------------------
  */
 
 import { default as redisManager } from '../../utils/redis-suite/redis-manager.js';
@@ -45,8 +74,13 @@ class TokenListDeltaTracker {
       // Store the new set
       const pipeline = client.pipeline();
       
-      // Add all addresses to a new set
-      pipeline.sadd(currentKey, ...tokenAddresses);
+      // Add all addresses to a new set in batches to prevent stack overflow
+      const BATCH_SIZE = 1000; // Process in batches of 1000 tokens
+      for (let i = 0; i < tokenAddresses.length; i += BATCH_SIZE) {
+        const batch = tokenAddresses.slice(i, i + BATCH_SIZE);
+        pipeline.sadd(currentKey, ...batch);
+      }
+      
       pipeline.expire(currentKey, 60 * 60 * 24 * this.EXPIRY_DAYS); // Expire after EXPIRY_DAYS
       
       // Get the previous latest key

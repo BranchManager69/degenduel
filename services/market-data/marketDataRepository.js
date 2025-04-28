@@ -102,7 +102,6 @@ class MarketDataRepository {
                     image_url: true,
                     color: true,
                     decimals: true,
-                    buy_pressure: true,
                     token_prices: {
                         select: {
                             price: true,
@@ -177,7 +176,6 @@ class MarketDataRepository {
                     image_url: true,
                     color: true,
                     decimals: true,
-                    buy_pressure: true,
                     token_prices: {
                         select: {
                             price: true,
@@ -254,7 +252,6 @@ class MarketDataRepository {
                     image_url: true,
                     color: true,
                     decimals: true,
-                    buy_pressure: true,
                     token_prices: {
                         select: {
                             price: true,

@@ -473,4 +473,105 @@ router.get("/latest", async (req, res) => {
     });
 });
 
+/**
+ * @swagger
+ * /api/tokens/search:
+ *   get:
+ *     summary: Search for tokens by name, symbol, or address
+ *     tags: [Tokens]
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Search query (minimum 2 characters)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Maximum number of results to return
+ *     responses:
+ *       200:
+ *         description: Search results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 tokens:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       address:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       symbol:
+ *                         type: string
+ *                       price_usd:
+ *                         type: number
+ *                       market_cap:
+ *                         type: number
+ *                       total_supply:
+ *                         type: number
+ *                       circulating_supply:
+ *                         type: number
+ */
+router.get("/search", async (req, res) => {
+  try {
+    const { query } = req.query;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    if (!query || query.length < 2) {
+      return res.json({
+        success: true,
+        tokens: []
+      });
+    }
+    
+    // Search in the database for tokens matching the query
+    const tokens = await prisma.tokens.findMany({
+      where: {
+        OR: [
+          { address: { contains: query.toLowerCase() } },
+          { name: { contains: query, mode: 'insensitive' } }, 
+          { symbol: { contains: query, mode: 'insensitive' } }
+        ],
+        is_active: true
+      },
+      select: {
+        address: true,
+        name: true,
+        symbol: true,
+        price_usd: true,
+        market_cap: true,
+        total_supply: true,
+        circulating_supply: true,
+        logo_url: true,
+        volume_24h: true,
+        change_24h: true
+      },
+      orderBy: { market_cap: 'desc' },
+      take: limit
+    });
+    
+    res.json({
+      success: true,
+      tokens
+    });
+  } catch (error) {
+    logApi.error("Failed to search tokens:", error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search tokens',
+      message: error.message
+    });
+  }
+});
+
 export default router;
