@@ -1,0 +1,975 @@
+   * 
+   * This service is responsible for managing contest wallets.
+   * It has been updated to use SolanaEngine which provides enhanced 
+  RPC capabilities
+   * with multi-endpoint support and automatic failover.
+   * 
+   * @module services/contest-wallet/contestWalletService
+   */
+
+  // Polyfill WebSocket for Node.js (use ws package)
+  import WebSocket from 'ws';
+  global.WebSocket = WebSocket;
+
+● This code snippet shows a WebSocket polyfill being applied to the global scope in the
+  contestWalletService.js file.
+
+  What it's doing:
+
+  1. The service imports the ws package (a WebSocket implementation for Node.js)
+  2. It then assigns this implementation to the global WebSocket property with global.WebSocket = 
+  WebSocket
+
+  This is a polyfill technique that makes the Node.js environment work with browser-like WebSocket
+  APIs. In browsers, WebSocket is a built-in global object, but Node.js doesn't have this by
+  default. By assigning the imported ws package to global.WebSocket, the code ensures that any
+  subsequent code can use WebSocket as if it were in a browser environment.
+
+  This allows the contestWalletService to use WebSocket connections for real-time monitoring of
+  wallet balances on the Solana blockchain without having to adjust for the Node.js environment in
+  every place WebSockets are used.
+
+  The service likely needs this because:
+  1. It monitors Solana accounts in real-time via WebSocket connections
+  2. It may be using libraries that expect a browser-like WebSocket implementation
+  3. It provides a consistent WebSocket interface across the service's implementation
+
+  This is a common pattern when working with WebSockets in Node.js, especially when interfacing with
+   blockchain networks that provide WebSocket APIs.
+
+> Okay something is up here. 
+
+  Honestly I have so many different questions and I don't even know where to begin so I don't want 
+  to touch anything or break anything right now but I have a lot of questions let's just say that
+
+  OK so let me ask you a couple questions and these may be dumb but they may be smart I don't know 
+  so this I believe is one of the only if not the only of those that use my websocket stuff that 
+  felt like it had to require the polyfill technique and that's very curious so I'm thinking I'm not
+   doing something right or at least by best practices so I'm curious is it because of the following
+   which is around line 958 onto approximately 1209 and beyond (maybe)... I believe that this might 
+  be the only if not one of the only it's probably very very very very very few services who 
+  actually create web sockets or listen to web sockets to itself meaning within the same server I 
+  mean isn't this like an event kind of a thing rather than a websocket to itself thing but I don't 
+  know you tell me
+
+  /**
+       * Initialize WebSocket account monitoring for all contest wallets
+       * This method sets up real-time monitoring of contest wallet balances
+       * using the unified WebSocket system's Solana PubSub feature.
+       */
+      async initializeWebSocketMonitoring() {
+          logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Initializing WebSocket 
+  monitoring for contest wallets`);
+          
+          try {
+              // Check if unified WebSocket server is available
+              if (!config.websocket || !config.websocket.unifiedWebSocket) {
+                  throw new Error("Unified WebSocket server not available");
+              }
+              
+              // Get all active contest wallets from database
+              const contestWallets = await prisma.contest_wallets.findMany({
+                  include: {
+                      contests: {
+                          select: {
+                              status: true,
+                              id: true,
+                              contest_code: true
+                          }
+                      }
+                  }
+              });
+              
+              // Log wallet count that will be monitored
+              logApi.info(`${formatLog.tag()} ${formatLog.info(`Found ${contestWallets.length} 
+  contest wallets to monitor`)}`);
+              
+              // Create WebSocket client for internal service-to-service communication
+              await this.createServiceWebSocketClient();
+              
+              // Subscribe to all contest wallet accounts
+              const activeWallets = contestWallets.filter(wallet => 
+                  wallet.contests?.status === 'active' || wallet.contests?.status === 'pending'
+              );
+              
+              // Subscribe to active wallets first (max 50 at a time to prevent rate limits)
+              if (activeWallets.length > 0) {
+                  logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Subscribing to 
+  ${activeWallets.length} active contest wallets`);
+                  
+                  // Process in batches of 50
+                  const batchSize = 50;
+                  for (let i = 0; i < activeWallets.length; i += batchSize) {
+                      const batch = activeWallets.slice(i, i + batchSize);
+                      await this.subscribeToWalletBatch(batch);
+                      
+                      // Small delay between batches to prevent rate limits
+                      if (i + batchSize < activeWallets.length) {
+                          await new Promise(resolve => setTimeout(resolve, 1000));
+                      }
+                  }
+              }
+              
+              // Schedule subscription for remaining wallets gradually to avoid rate limits
+              const remainingWallets = contestWallets.filter(wallet => 
+                  !activeWallets.some(active => active.wallet_address === wallet.wallet_address)
+              );
+              
+              if (remainingWallets.length > 0) {
+                  logApi.info(`${formatLog.tag()} ${formatLog.info(`Scheduling subscription for 
+  ${remainingWallets.length} non-active wallets`)}`);
+                  
+                  // Schedule subscription for remaining wallets over time (1 batch every 5 seconds)
+                  const batchSize = 50;
+                  for (let i = 0; i < remainingWallets.length; i += batchSize) {
+                      const batchIndex = i / batchSize;
+                      const batch = remainingWallets.slice(i, i + batchSize);
+                      
+                      setTimeout(() => {
+                          this.subscribeToWalletBatch(batch).catch(err => {
+                              logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to 
+  subscribe to wallet batch: ${err.message}`)}`, {
+                                  error: err.message,
+                                  batchIndex
+                              });
+                          });
+                      }, batchIndex * 5000); // 5 seconds between batches
+                  }
+              }
+              
+              // Set up periodic recovery for subscriptions
+              this.startSubscriptionRecovery();
+              
+              return true;
+          } catch (error) {
+              logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to initialize WebSocket 
+  monitoring: ${error.message}`)}`, {
+                  error: error.message,
+                  stack: error.stack
+              });
+              throw error;
+          }
+      }
+      
+      /**
+       * Create a WebSocket client for service-to-service communication
+       * This client connects to the unified WebSocket server 
+       * to subscribe to Solana account updates
+       */
+      async createServiceWebSocketClient() {
+          // If WebSocket is already connected, disconnect it first
+          if (this.websocketSubscriptions.unifiedWsConnection) {
+              try {
+                  this.websocketSubscriptions.unifiedWsConnection.close();
+              } catch (err) {
+                  // Ignore close errors
+              }
+          }
+          
+          return new Promise(async (resolve, reject) => {
+              try {
+                  // Check if the global WebSocketReadyEmitter exists
+                  if (global.webSocketReadyEmitter) {
+                      logApi.info(`${formatLog.tag()} ${formatLog.info('Waiting for WebSocket server
+   to be ready...')}`);
+                      
+                      // Wait for the websocket:ready event
+                      await new Promise(waitResolve => {
+                          // If the server is already ready, resolve immediately
+                          if (global.webSocketServerReady === true) {
+                              waitResolve();
+                              return;
+                          }
+                          
+                          // Otherwise wait for the ready event
+                          const readyHandler = () => {
+                              global.webSocketReadyEmitter.off('websocket:ready', readyHandler);
+                              logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket server 
+  is now ready')}`);
+                              global.webSocketServerReady = true;
+                              waitResolve();
+                          };
+                          
+                          global.webSocketReadyEmitter.once('websocket:ready', readyHandler);
+                          
+                          // Add a timeout just in case the event never fires
+                          setTimeout(() => {
+                              global.webSocketReadyEmitter.off('websocket:ready', readyHandler);
+                              logApi.warn(`${formatLog.tag()} ${formatLog.warning('Timed out waiting
+   for WebSocket server ready event')}`);
+                              waitResolve(); // Continue anyway after timeout
+                          }, 30000); // 30 second timeout
+                      });
+                  }
+                  
+                  // Get WebSocket server URL from config
+                  // Fix: Use the same port that the unified WebSocket is actually running on (3004 
+  or 3005)
+                  // We need to check both the app port and the unified websocket port configuration
+                  const wsProtocol = 'ws:'; // For internal comms, we use ws
+                  const host = 'localhost';
+                  
+                  // IMPORTANT: API_PORT is used for internal WebSocket connections
+                  // This is critical for proper WebSocket connectivity on development and 
+  production
+                  const port = process.env.API_PORT || config.port || 3004;
+                  
+                  // The unified WebSocket path
+                  const path = config.websocket?.config?.path || '/api/v69/ws';
+                  
+                  const wsUrl = `${wsProtocol}//${host}:${port}${path}`;
+                  
+                  // Add debug information
+                  logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Connection 
+  details: host=${host}, port=${port}, path=${path}`);
+                  logApi.info(`${formatLog.tag()} ${formatLog.info(`Connecting to unified WebSocket 
+  at ${wsUrl}`)}`);
+                  
+                  // Add retry mechanism for connection attempts
+                  let retryCount = 0;
+                  const maxRetries = 10;
+                  const connectWithRetry = async () => {
+                      try {
+                          // Create WebSocket connection
+                          const ws = new WebSocket(wsUrl);
+                          
+                          // Set up event handlers
+                          ws.onopen = () => {
+                              logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket 
+  connection established')}`);
+                              this.websocketSubscriptions.unifiedWsConnection = ws;
+                              this.websocketSubscriptions.connectionRetries = 0; // Reset retry 
+  counter on success
+                              resolve(ws);
+                          };
+                          
+                          ws.onclose = (event) => {
+                              logApi.warn(`${formatLog.tag()} ${formatLog.warning(`WebSocket 
+  connection closed: ${event.code}`)}`);
+                              
+                              // Clear subscriptions since connection is closed
+                              this.websocketSubscriptions.activeSubscriptions.clear();
+                              
+                              // Reconnect after delay unless service is shutting down
+                              if (this.isOperational && !this.isShuttingDown) {
+                                  // Use exponential backoff for reconnection attempts
+                                  const reconnectRetries = 
+  this.websocketSubscriptions.connectionRetries || 0;
+                                  const backoffTime = Math.min(1000 * Math.pow(2, reconnectRetries),
+   60000);
+                                  this.websocketSubscriptions.connectionRetries = reconnectRetries +
+   1;
+                                  
+                                  logApi.info(`${formatLog.tag()} ${formatLog.info(`Will attempt to 
+  reconnect in ${backoffTime/1000} seconds (retry 
+  #${this.websocketSubscriptions.connectionRetries})`)}`);
+                                  
+                                  setTimeout(() => {
+                                      this.createServiceWebSocketClient().catch(err => {
+                                          logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed
+   to reconnect WebSocket: ${err.message}`)}`, {
+                                              error: err.message
+                                          });
+                                      });
+                                  }, backoffTime);
+                              }
+                          };
+                          
+                          ws.onerror = (error) => {
+                              logApi.error(`${formatLog.tag()} ${formatLog.error(`WebSocket error: 
+  ${error.message || 'Unknown error'}`)}`);
+                              
+                              if (!this.websocketSubscriptions.unifiedWsConnection) {
+                                  // For connection errors, attempt retry if below max retries
+                                  if (retryCount < maxRetries) {
+                                      retryCount++;
+                                      const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+   // Exponential backoff with max 30 sec
+                                      
+                                      logApi.error(`${formatLog.tag()} ${formatLog.error(`Connection
+   attempt failed. Retrying in ${delay/1000} seconds (attempt ${retryCount}/${maxRetries})`)}`);
+                                      
+                                      setTimeout(connectWithRetry, delay);
+                                  } else {
+                                      logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back
+   to traditional polling for wallet balances')}`);
+                                      reject(new Error(`Failed to connect to WebSocket after 
+  ${maxRetries} attempts`));
+                                  }
+                              }
+                          };
+                          
+                          ws.onmessage = (event) => {
+                              this.handleWebSocketMessage(event);
+                          };
+                      } catch (error) {
+                          if (retryCount < maxRetries) {
+                              retryCount++;
+                              const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+                              
+                              logApi.warn(`${formatLog.tag()} ${formatLog.warning(`WebSocket 
+  connection error: ${error.message}. Retrying in ${delay/1000} seconds (attempt 
+  ${retryCount}/${maxRetries})`)}`);
+                              
+                              setTimeout(connectWithRetry, delay);
+                          } else {
+                              logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to 
+  traditional polling for wallet balances')}`);
+                              reject(error);
+                          }
+                      }
+                  };
+                  
+                  // Initialize retry counter if it doesn't exist
+                  if (this.websocketSubscriptions.connectionRetries === undefined) {
+                      this.websocketSubscriptions.connectionRetries = 0;
+                  }
+                  
+                  // Start connection process with retry mechanism
+                  connectWithRetry();
+                  
+              } catch (error) {
+                  logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to traditional 
+  polling for wallet balances')}`);
+                  reject(error);
+              }
+          });
+      }
+
+✻ Thinking…
+
+  The user is asking about their WebSocket implementation in contestWalletService.js, specifically 
+  why this service requires a WebSocket polyfill when other services don't. They're questioning if 
+  the approach of having a service create a WebSocket connection to itself (to the same server) is 
+  the right architecture, versus using an event-based system.
+
+  Let me analyze the key points:
+
+  1. The service is using a WebSocket polyfill (global.WebSocket = WebSocket) which allows Node.js 
+  to use browser-like WebSocket APIs
+  2. The service has a method initializeWebSocketMonitoring() that sets up WebSocket connections
+  3. The service creates a connection to ws://localhost:port/api/v69/ws (their unified WebSocket 
+  server)
+  4. This appears to be a service-to-service communication pattern where the contest wallet service 
+  connects to the unified WebSocket server running on the same machine
+  5. The purpose is to monitor Solana account balances in real-time
+
+  The architecture is unusual because:
+  - The service is connecting to itself/the same server via WebSocket instead of using direct 
+  internal communication
+  - It needs the polyfill specifically to handle WebSocket client operations in Node.js
+  - It's creating a WebSocket connection to localhost (same machine)
+
+  This is indeed a somewhat unusual pattern and there are potentially more efficient approaches. Let
+   me explain the issues and alternatives.
+
+● You're right to be curious about this pattern. The code in contestWalletService.js is quite
+  unusual from an architectural perspective. Let me break down what's happening and explain some
+  alternatives:
+
+  What's Happening Here
+
+  This service is using WebSockets in an unusual way:
+
+  1. It polyfills WebSocket at the global level (global.WebSocket = WebSocket)
+  2. It then connects as a WebSocket client to your own unified WebSocket server running on the same
+   machine (ws://localhost:3004/api/v69/ws or similar)
+  3. It's essentially using WebSockets for "self-communication" within your own application
+
+  Why This Is Unusual
+
+  This approach has several architectural oddities:
+
+  1. Same-Process Communication via Network Protocol: The service is using a network protocol
+  (WebSockets) to communicate within the same Node.js process or at least the same machine. This
+  adds unnecessary overhead.
+  2. TCP Loopback: Every WebSocket message goes through the TCP stack, even though both the sender
+  and receiver are on the same machine.
+  3. Duplicated Logic: You have to maintain both WebSocket server and client logic for what's
+  essentially internal communication.
+
+  Better Alternatives
+
+  1. Event Emitters: For truly internal communication, Node.js's built-in EventEmitter system would
+  be much more efficient:
+  import { EventEmitter } from 'events';
+  const accountUpdateEmitter = new EventEmitter();
+
+  // One part of your code emits events
+  accountUpdateEmitter.emit('account:update', { address, newBalance });
+
+  // Another part listens for them
+  accountUpdateEmitter.on('account:update', (data) => { /* handle update */ });
+  2. Shared State & Observers: For state management across services, a simple observer pattern with
+  a shared state store would work.
+  3. Message Queue: If you need persistence or communication between separate processes, a
+  lightweight message queue would be more appropriate.
+
+  Why It Might Be Like This
+
+  There could be reasons this architecture evolved this way:
+
+  1. Unified Interface: Maybe you wanted all components (including browser clients) to use the same
+  WebSocket API for consistency.
+  2. Incremental Development: Perhaps it started as external communication and gradually turned into
+   self-communication.
+  3. External Service Migration: It might have been designed to eventually move to separate
+  services/machines.
+
+  Refactoring Approach
+
+  If you want to refactor this:
+
+  1. Create a direct communication layer for service-to-service interaction
+  2. Keep the WebSocket interface for external clients only
+  3. Consider a shared EventEmitter for internal account updates
+
+  The polyfill is needed because your service is acting as a WebSocket client, and the native
+  WebSocket API exists in browsers but not in Node.js. Other services probably don't need it because
+   they're not creating WebSocket client connections.
+
+  Would you like me to outline a more specific refactoring approach for this particular case?
+
+> OK this is going to take a pretty precise change set but I think that we're getting closer to the 
+  issues here at hand. Is it possible that you could do a quick scan for any similarly services that
+   might do the same thing I don't know how you find them without looking through each one perhaps 
+  you could just quickly do a scan for the polyfill thing
+
+✻ Thinking…
+
+  I'll search for other services that might be using the same WebSocket polyfill pattern. This would
+   likely involve looking for similar import patterns or the global.WebSocket assignment.
+
+  Let me search for:
+  1. Services that import 'ws' package
+  2. Services that set global.WebSocket
+  3. Services that might be using WebSocket clients to connect to their own server
+
+  This should help identify if there are other places with similar architecture.
+
+● I'll scan for other services that might be using a similar WebSocket polyfill pattern. Let's look
+  for imports of 'ws' and assignments to global.WebSocket:
+
+● Search(pattern: "import WebSocket from", path: "services")…
+  ⎿  Found 2 files (ctrl+r to expand)
+
+● Search(pattern: "global.WebSocket", path: "services")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Let's check the helius-client.js file to see how it's using WebSocket:
+
+● Search(pattern: "WebSocket", path: "services/solana-engine/helius-client.js")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Read(services/solana-engine/helius-client.js)…
+  ⎿  Read 50 lines (ctrl+r to expand)
+
+● Let's look for more WebSocket usage:
+
+● Search(pattern: "new WebSocket", path: "services")…
+  ⎿  Found 3 files (ctrl+r to expand)
+
+● Let's check how helius-client.js is using WebSockets by searching for WebSocket-related methods or
+   classes:
+
+● Bash(grep -A 10 "WebSocket"                                                        …
+      /home/branchmanager/websites/degenduel/services/solana-engine/helius-client.js)
+  ⎿  import WebSocket from 'ws';
+     import { logApi } from '../../utils/logger-suite/logger.js';
+     import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
+     import { heliusConfig } from '../../config/external-api/helius-config.js';
+     import redisManager from '../../utils/redis-suite/redis-manager.js';
+
+     … +231 lines (ctrl+r to expand)
+
+
+           return true;
+         } catch (error) {
+           logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to unsubscribe from token
+     transfers:')} ${error.message}`);
+           return false;
+
+● Let's also check if there are any other services creating WebSockets to our internal WebSocket
+  server:
+
+● Search(pattern: "ws://localhost", path: "services")…
+  ⎿  Error: No files found
+
+● Search(pattern: "'/api/v69/ws'", path: "services")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Based on my search, I can provide a clearer analysis:
+
+  WebSocket Usage Findings
+
+  I've scanned your codebase and found:
+
+  1. contestWalletService.js is the only service that:
+    - Assigns to global.WebSocket (the polyfill)
+    - Connects to your internal WebSocket server at '/api/v69/ws'
+    - Creates self-communication via WebSockets
+  2. helius-client.js also uses WebSockets, but:
+    - It uses WebSockets correctly to connect to an external Helius API
+    - It doesn't need the global polyfill (it just imports and uses ws directly)
+    - It's doing legitimate WebSocket client work to a third-party service
+
+  The Unique Issue
+
+  Your contestWalletService.js is unique in implementing this problematic pattern:
+
+  1. It's the only service connecting to its own WebSocket server
+  2. It's the only one doing self-communication via network protocol
+  3. It's the only one that felt the need to globally polyfill WebSocket
+
+  The helius-client.js uses WebSockets properly - connecting to an external API (Helius) to receive
+  real-time updates about blockchain events. This is a legitimate and efficient use case for
+  WebSockets.
+
+  Recommended Changes
+
+  For contestWalletService.js specifically:
+
+  1. Replace the WebSocket self-communication with EventEmitter:
+    - Create a central event bus for account updates
+    - Have your WebSocket server emit to this bus when it receives updates
+    - Have contestWalletService listen to this bus instead of connecting via WebSocket
+  2. Remove the global WebSocket polyfill:
+    - Once you're using EventEmitter, you won't need WebSockets for internal communication
+    - If you need WebSockets for other purposes, import and use without global assignment
+
+  This would give you a cleaner architecture with less overhead and fewer potential points of
+  failure.
+
+> OK this explains a lot. First of all we've got our work cut out for us as far as fixing the 
+  contest wallet service to use the correct approach and second of all I do intend to somehow have 
+  you help me make some sort of a systemic change that would allow me higher visibility into the web
+   socket activities or status specifically between the server and outside external services or apis
+   like helius. It's hard for me to explain what type of thing I'm looking for right now to be 
+  honest with you in that regard but I can tell you it's not going to be just your run of the mill 
+  oh I'll make a new type of api or whatever for you and yeah that's not going to work for me just 
+  think about that this this is almost like I need an ergonomic way that I can nicely just witness 
+  what that specific helios to server connection has going on inside of it... I think it's fine to 
+  just start with that one for now rather than because I don't even have any other api services in 
+  mind that I'm thinking of but that would be an excellent example to start with so what just runs 
+  through your mind when I'm talking about this kind of stuff. I mean theoretically it could be just
+   a separate utility script that I just run on the command line and somehow I get patched in 
+  exactly to witness literally like what it sees and the commute like all 2 way communication but I 
+  just don't even know if that's possible and I don't know the implications of it and I don't even 
+  know if that's good practice
+
+  Something you should know though and this will be the bulk of your individual task work until I 
+  give you clearance to proceed, I need you to find understand and be able to teach, because you 
+  understand it so well, the service event based system that we already have. I am positive that we 
+  have something along the lines of the event emitter central event bus that you are looking for but
+   I just don't have any clue or remember where it is or what it is right now
+
+✻ Thinking…
+
+  Let me analyze the request and understand what's needed:
+
+  1. First, understand the existing event-based system in the codebase that could serve as a central
+   event bus
+  2. Then teach/explain this system so it's clear how it could be used for the WebSocket 
+  communication in contestWalletService.js
+  3. Later (after clearance), possibly look at creating a way to monitor WebSocket activity with 
+  external services like Helius
+
+  Let me start by searching for event emitter implementation or similar patterns in the codebase:
+
+● I'll focus on understanding the existing event-based system in your codebase. Let's search for
+  potential event emitter implementations or service-to-service communication patterns:
+
+● Search(pattern: "EventEmitter|emitter|emit\(|on\(", path: "utils")…
+  ⎿  Found 24 files (ctrl+r to expand)
+
+● The service-events.js file looks promising. Let's examine it:
+
+● Read(utils/service-suite/service-events.js)…
+  ⎿  Read 63 lines (ctrl+r to expand)
+
+● Let's also look at how this is used in the base service class:
+
+● Read(utils/service-suite/base-service.js)…
+  ⎿  Read 100 lines (ctrl+r to expand)
+
+● Let's look at service-manager.js to understand how services are managed:
+
+● Read(utils/service-suite/service-manager.js)…
+  ⎿  Read 100 lines (ctrl+r to expand)
+
+● Now let's check for any services that are using these event mechanisms:
+
+● Search(pattern: "serviceEvents.emit|this.events.emit", path: "services")…
+  ⎿  Found 11 files (ctrl+r to expand)
+
+● Let's look at a specific example to see how events are used in practice:
+
+● Search(pattern: "this.events.emit", path: "services/contestEvaluationService.js")…
+  ⎿  Error: No files found
+
+● Search(pattern: "emit", path: "services/contestEvaluationService.js")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Bash(grep -A 3 "emit" /home/branchmanager/websites/degenduel/services/contestEvaluationService.js…
+
+  ⎿                 serviceEvents.emit(SERVICE_EVENTS.CONTEST_COMPLETED, {
+                        contest_id: contest.id,
+                        contest_name: contest.contest_name || `Contest #${contest.id}`,
+                        contest_code: contest.contest_code,
+    --
+                    logApi.warn(`Failed to emit contest completion event: ${discordError.message}`,
+    {
+                        error: discordError
+                    });
+                    // Non-critical error, continue execution
+
+● Let's look at one more example to see how this event system is used for communication between
+  services:
+
+● Search(pattern: "serviceEvents.on")…
+  ⎿  Found 26 files (ctrl+r to expand)
+
+● Let's look at one of the services that's listening for events:
+
+● Search(pattern: "serviceEvents.on", path: "services/discord/discord-interactive-service.js")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Bash(grep -A 10 "serviceEvents.on"                                                         …
+      /home/branchmanager/websites/degenduel/services/discord/discord-interactive-service.js)
+  ⎿      serviceEvents.on('contest:created', this.handleContestCreated.bind(this));
+
+         // Listen for contest state changes
+         serviceEvents.on('contest:started', this.handleContestStarted.bind(this));
+         serviceEvents.on('contest:completed', this.handleContestCompleted.bind(this));
+
+     … +8 lines (ctrl+r to expand)
+
+             if (!interaction.isButton()) return;
+
+             const [action, id] = interaction.customId.split(':');
+
+             switch(action) {
+
+● Based on my research, I can now provide you with a comprehensive explanation of the event-based
+  communication system in your codebase:
+
+  DegenDuel's Event-Based Communication System
+
+  Your codebase already has a robust event-based system implemented through
+  utils/service-suite/service-events.js, which is exactly what we need for the contestWalletService
+  refactoring.
+
+  Core Components:
+
+  1. serviceEvents Singleton:
+    - This is a Node.js EventEmitter that serves as the central event bus for your entire
+  application
+    - Defined in utils/service-suite/service-events.js
+    - It's a singleton, so all services use the same instance
+    - Has a raised limit of 50 listeners (more than Node's default of 10)
+  2. Standard Event Types:
+    - SERVICE_EVENTS constants define standardized event names used throughout the application
+    - Events are well-categorized (service, contest, user, transaction, system)
+    - Examples: contest:created, token:price_update, system:alert
+  3. BaseService Integration:
+    - Every proper service extending BaseService automatically gets access to events via this.events
+    - BaseService constructor has: this.events = serviceEvents;
+    - Services can both emit and listen for events
+  4. ServiceManager Event Tracking:
+    - The ServiceManager listens for service lifecycle events
+    - It tracks service state changes via events like service:started, service:error, etc.
+
+  How Services Use Events:
+
+  Services throughout your codebase are already using this event system:
+
+  1. Emitting Events:
+    - Services emit events when important things happen
+    - Example from contestEvaluationService: serviceEvents.emit(SERVICE_EVENTS.CONTEST_COMPLETED, 
+  {...})
+    - These events include relevant data for listeners
+  2. Listening for Events:
+    - Services subscribe to events they need to know about
+    - Example from discord-interactive-service: serviceEvents.on('contest:created', 
+  this.handleContestCreated.bind(this))
+    - When an event is emitted, all listeners receive it immediately
+
+  Perfect for contestWalletService Refactoring:
+
+  This existing system is exactly what we need for the contestWalletService refactoring:
+
+  1. Rather than using WebSockets to self-communicate:
+    - The unified WebSocket server could emit events when it receives account updates:
+  serviceEvents.emit('account:update', { address, newBalance })
+    - contestWalletService can listen for these events: serviceEvents.on('account:update', 
+  this.handleAccountUpdate.bind(this))
+  2. Advantages of this approach:
+    - Zero network overhead (events are in-memory)
+    - No need for global WebSocket polyfill
+    - Follows your established architectural pattern
+    - Simpler code with fewer failure points
+
+  Implementation Strategy:
+
+  When you're ready to refactor, we can:
+
+  1. Add new event types in SERVICE_EVENTS for account balance updates
+  2. Modify the unified WebSocket server to emit these events
+  3. Update contestWalletService to listen for events instead of making its own WebSocket connection
+  4. Remove the global WebSocket polyfill and self-connection code
+
+  This would fully leverage your existing architecture and fix the unusual WebSocket usage.
+
+  Would you like me to elaborate on any aspects of this event system or how specifically to apply it
+   to contestWalletService?
+
+> Excellent work truly truly excellent work here this is something that I will actually really focus
+   on for a while I may even copy paste this and frame it because it's such a valuable information 
+  that you've compiled here for me now this is going to be the Modis operandi for the next day or 2 
+  for me okay we are going to do exactly and continue to flesh out exactly what you've got described
+   here.
+
+  Okay but I do want to keep you going while you are smoking hot on just really solving issues and 
+  diagnosing issues here so one more question before we begin the updates maybe two questions...
+
+  First of all, can you please just for my information tell me as possible as as as complete as 
+  possible or just you know I don't want you to go through spending like tons of time doing this but
+   if it's really nice and easy for you I'd like an enumeration of all of the different types of 
+  events that it currently emits like the unified web socket server itself, is it a service? And 
+  does it okay so the reason I'm asking if it's a service itself is, because the base service 
+  obviously has things that all services can do and uniform, but if this is just the websocket 
+  emitting events randomly then or not randomly but loosely I should say then I don't know I would 
+  just change the way I look at stuff so can you please tell me all of the different events that it 
+  currently emits so just in other words as simply as possible, what events right now are currently 
+  in our code base being powered by web socket connections to external services? And by that I mean 
+  HELIUS since that's literally the only one that we do this type of thing for
+
+● You're right to ask about what events are currently being emitted from WebSocket connections to
+  external services. Let me analyze this for you:
+
+● Search(pattern: "emit\(.*EVENTS", path: "services/solana-engine")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Search(pattern: "emit\(", path: "services/solana-engine")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Bash(grep -A 5 "emit("                                                                   …
+      /home/branchmanager/websites/degenduel/services/solana-engine/helius-pool-tracker.js)
+  ⎿            serviceEvents.emit('token:price_update', {
+                 tokenAddress,
+                 poolAddress,
+                 price: price,
+                 previousPrice,
+                 changePercent: priceChange * 100,
+
+● Let's also check for handlers that deal with external WebSocket data and then emit events:
+
+● Search(pattern: "on\('message|onmessage", path: "services/solana-engine")…
+  ⎿  Found 2 files (ctrl+r to expand)
+
+● Bash(grep -B 10 -A 5 "on('message"                                                            …
+      /home/branchmanager/websites/degenduel/services/solana-engine/helius-client.js | head -20)
+  ⎿
+          this.wsClient = new WebSocket(this.config.websocket.url);
+
+          this.wsClient.on('open', () => {
+            this.wsConnected = true;
+
+    … +6 lines (ctrl+r to expand)
+
+            try {
+              const message = JSON.parse(data);
+              this.handleWebSocketMessage(message);
+            } catch (error) {
+              logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to parse WebSocket
+    message:')} ${error.message}`);
+
+● Let's look at that handler method:
+
+● Search(pattern: "handleWebSocketMessage", path: "services/solana-engine/helius-client.js")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Bash(grep -A 30 "handleWebSocketMessage"                                           …
+      /home/branchmanager/websites/degenduel/services/solana-engine/helius-client.js)
+  ⎿           this.handleWebSocketMessage(message);
+            } catch (error) {
+              logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to parse WebSocket
+    message:')} ${error.message}`);
+            }
+          });
+
+    … +53 lines (ctrl+r to expand)
+
+      /**
+       * Handle token transfer notifications from WebSocket
+       * @param {Object} message - The subscription notification message
+       */
+      handleTokenTransferNotification(message) {
+
+● Let's look at the token transfer notification handler:
+
+● Bash(grep -A 50 "handleTokenTransferNotification"                                  …
+      /home/branchmanager/websites/degenduel/services/solana-engine/helius-client.js)
+  ⎿        this.handleTokenTransferNotification(message);
+         } else {
+           // Handle other subscription updates
+           logApi.debug(`${formatLog.tag()} ${formatLog.info('Received WebSocket message:')}
+     ${JSON.stringify(message)}`);
+         }
+
+     … +52 lines (ctrl+r to expand)
+
+           // Look for SPL token transfer logs
+           // Example: "Program log: Instruction: Transfer"
+           // Example: "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke"
+
+           const hasTokenProgram = logs.some(log =>
+
+● Let's find the emitTokenTransferEvent method:
+
+● Search(pattern: "emitTokenTransferEvent", path: "services/solana-engine/helius-client.js")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Bash(grep -A 20 "emitTokenTransferEvent"                                           …
+      /home/branchmanager/websites/degenduel/services/solana-engine/helius-client.js)
+  ⎿            this.emitTokenTransferEvent(tokenTransferInfo);
+             }
+           }
+
+           // Process account notification (account data changes)
+
+     … +33 lines (ctrl+r to expand)
+
+        * @param {string} method - The RPC method to call
+        * @param {Array} params - The parameters for the RPC method
+        * @param {number} timeout - Timeout in milliseconds
+        * @returns {Promise<any>} - The response from the RPC call
+        */
+
+● Let's look at pool-related WebSocket events that might interact with Helius:
+
+● Search(pattern: "serviceEvents.emit", path: "services/pool-data-manager")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Bash(grep -A 5 "serviceEvents.emit"                                                        …
+      /home/branchmanager/websites/degenduel/services/pool-data-manager/pool-data-manager.js)
+  ⎿        serviceEvents.emit('pool:data_updated', {
+             tokenAddress,
+             poolCount: poolRecords.length,
+             source: 'pool-data-manager'
+           });
+
+● Now let's look at the unified WebSocket server to see if it's considered a service:
+
+● Read(websocket/v69/unified/UnifiedWebSocketServer.js)…
+  ⎿  Read 50 lines (ctrl+r to expand)
+
+● Let's check the unified WebSocket's service registration:
+
+● Read(websocket/v69/unified/services.js)…
+  ⎿  Read 754 lines (ctrl+r to expand)
+
+● Bash(grep -A 5 "setupSolanaPubSubHandler"                                    …
+      /home/branchmanager/websites/degenduel/websocket/v69/unified/services.js)
+  ⎿    setupSolanaPubSubHandler(server);
+
+       // Log successful registration
+       logApi.info(`${wsColors.tag}[services]${fancyColors.RESET} ${fancyColors.GREEN}Service event
+     handlers registered successfully${fancyColors.RESET}`);
+     }
+
+     --
+     function setupSolanaPubSubHandler(wsServer) {
+       // Storage for active subscriptions
+       const solanaPubSub = {
+         // Store active Solana subscriptions by clientId
+         clientSubscriptions: new Map(),
+         // Track clients subscribed to each account
+
+● Let me also check for any event handlers for account updates in the requestHandlers.js file:
+
+● Search(pattern: "account-update|account:update", path: "websocket/v69/unified")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Search(pattern: "accountNotification", path: "websocket/v69/unified")…
+  ⎿  Found 1 file (ctrl+r to expand)
+
+● Based on my thorough analysis, here's a comprehensive overview of the WebSocket events in your
+  system:
+
+  WebSocket Events in DegenDuel
+
+  External Service WebSocket Connections
+
+  Your system currently has one main external WebSocket connection to the Helius API:
+
+  1. Helius WebSocket (helius-client.js)
+    - Connects to Helius's WebSocket endpoint
+    - Listens for two main event types:
+        - accountNotification - Real-time updates to account data
+      - logsNotification - Real-time transaction logs (especially for token transfers)
+    - These external events are processed by handleWebSocketMessage and
+  handleTokenTransferNotification
+    - The client forwards relevant data by calling custom handlers on token transfers
+
+  Events Emitted Based on External WebSocket Data
+
+  When Helius sends WebSocket data, your system emits these events through serviceEvents:
+
+  1. Token Price Updates
+    - Event: token:price_update
+    - Source: helius-pool-tracker.js
+    - Data: tokenAddress, poolAddress, price, changePercent
+    - Generated from Helius pool data
+  2. Token Transfers
+    - Internal callbacks via tokenTransferHandlers (not using serviceEvents)
+    - The Helius client notifies registered handlers when token transfers occur
+    - These handlers process the data internally rather than emitting global events
+  3. Pool Data
+    - Event: pool:data_updated
+    - Source: pool-data-manager.js
+    - Data: tokenAddress, poolCount, source
+
+  Unified WebSocket Server
+
+  Your unified WebSocket server (v69) is not a formal service in the BaseService hierarchy. Instead,
+   it:
+
+  1. Provides a centralized WebSocket server for client connections
+  2. Registers event handlers to broadcast data to connected clients
+  3. Contains a Solana PubSub handler for account monitoring
+
+  The unified WebSocket server handles these events:
+
+  1. Market Data: market:broadcast
+  2. Terminal Data: terminal:broadcast
+  3. Vanity Dashboard: vanity:dashboard_update
+  4. System Status: system:status
+  5. Wallet Balance: wallet:balance_update
+
+  Solana PubSub Functionality
+
+  The unified WebSocket server also implements a WebSocket proxy for Solana account monitoring:
+
+  1. Clients subscribe to specific Solana accounts via the unified WebSocket
+  2. The server creates a direct WebSocket connection to Solana RPC for each account
+  3. When account updates arrive from Solana, they're forwarded to subscribed clients
+  4. Account data is broadcasted as account-update events to clients
+
+  This explains why contestWalletService is the only service creating its own WebSocket connection -
+   it's connecting to the unified WebSocket server to monitor Solana accounts, effectively doing the
+   same thing that clients would do through their WebSocket connection.
+
+  Key Finding
+
+  The root issue is that contestWalletService is using WebSockets to connect to itself (via the
+  unified WebSocket server) for Solana account monitoring, when it should instead:
+
+  1. Either connect directly to Solana's WebSocket RPC (like helius-client does)
+  2. Or use the event system to receive account updates directly
+
+  The simplest solution would be to modify the unified WebSocket server to emit internal
+  serviceEvents when account updates arrive from Solana (account:update), and have
+  contestWalletService listen for these events instead of making a WebSocket connection.
+
+  Does this explanation help clarify the current WebSocket event structure in your system?

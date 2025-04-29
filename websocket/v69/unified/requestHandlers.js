@@ -17,10 +17,15 @@ import marketDataService from '../../../services/market-data/marketDataService.j
 import tokenBalanceModule from './modules/token-balance-module.js';
 import solanaBalanceModule from './modules/solana-balance-module.js';
 
+// NOTE:
+// The 'Contest Service' was designed as a service but has since been converted 
+// to a module that exports functions. This is because the service was not 
+// properly registering as a service, so it may not be available to other services.
+import { joinContest, createContest, getContestById, getAllContests, getAllContestsByUser, getContestSchedules } from '../../../services/contestService.js';
+import { verifyUserHasCredit } from '../../../utils/contest-credit-verifier.js';
+
 // Config
 import config from '../../../config/config.js';
-// Import needed for contest operations
-import contestService from '../../../services/contestService.js';
 
 /**
  * Main request handling function that routes to specific topic handlers
@@ -659,10 +664,12 @@ async function handleWalletSettingsRequest(ws, message, sendMessage, sendError) 
   try {
     const walletAddress = ws.userId; // User wallet address from authentication
     
+    // Settings key in the system_settings table
+    const walletSettingsKey = `wallet_settings:${walletAddress}`;
+    
     switch (message.action) {
       case 'getSettings':
         // Get wallet settings from system_settings table
-        const walletSettingsKey = `wallet_settings:${walletAddress}`;
         const settings = await prisma.system_settings.findUnique({
           where: { key: walletSettingsKey }
         });
@@ -714,9 +721,6 @@ async function handleWalletSettingsRequest(ws, message, sendMessage, sendError) 
             timeFormat: message.data.settings.preferences?.timeFormat || '24h'
           }
         };
-        
-        // Settings key in the system_settings table
-        const walletSettingsKey = `wallet_settings:${walletAddress}`;
         
         try {
           // Update or create settings
@@ -794,35 +798,20 @@ async function handleContestRequest(ws, message, sendMessage, sendError) {
   try {
     switch (message.action) {
       case 'getContests':
-        // Get contests with optional filters
-        const contests = await prisma.contests.findMany({
-          where: message.data?.filters || {},
-          include: {
-            contest_participants: true,
-            contest_wallets: true
-          },
-          orderBy: {
-            created_at: 'desc'
-          },
-          take: message.data?.limit || 20,
-          skip: message.data?.offset || 0
-        });
+        // Get contests with optional filters using the exported module function
+        const contestsParams = {
+          filters: message.data?.filters || {},
+          limit: message.data?.limit || 20,
+          offset: message.data?.offset || 0
+        };
         
-        // Return contests with wallet addresses flattened
-        const formattedContests = contests.map(contest => ({
-          ...contest,
-          wallet_address: contest.contest_wallets?.wallet_address || null,
-          // Remove nested wallet objects to avoid duplication
-          contest_wallets: undefined,
-          // Add participant count
-          participant_count: contest.contest_participants?.length || 0
-        }));
+        const contests = await getAllContests(contestsParams);
         
         return sendMessage(ws, {
           type: MESSAGE_TYPES.RESPONSE,
           topic: TOPICS.CONTEST,
           action: 'getContests',
-          data: formattedContests,
+          data: contests,
           requestId: message.requestId
         });
         
@@ -832,46 +821,18 @@ async function handleContestRequest(ws, message, sendMessage, sendError) {
           return sendError(ws, 'Contest ID is required', 4006);
         }
         
-        // Get contest by ID
-        const contest = await prisma.contests.findUnique({
-          where: { id: parseInt(message.data.contestId) },
-          include: {
-            contest_participants: {
-              include: {
-                users: {
-                  select: {
-                    nickname: true,
-                    wallet_address: true
-                  }
-                }
-              }
-            },
-            contest_portfolios: {
-              include: {
-                tokens: true
-              }
-            },
-            contest_wallets: true
-          }
-        });
+        // Get contest by ID using the exported module function
+        const contest = await getContestById(parseInt(message.data.contestId));
         
         if (!contest) {
           return sendError(ws, 'Contest not found', 4404);
         }
         
-        // Flatten the wallet address into the contest object
-        const formattedContest = {
-          ...contest,
-          wallet_address: contest.contest_wallets?.wallet_address || null,
-          // Remove the nested contest_wallets object
-          contest_wallets: undefined
-        };
-        
         return sendMessage(ws, {
           type: MESSAGE_TYPES.RESPONSE,
           topic: TOPICS.CONTEST,
           action: 'getContest',
-          data: formattedContest,
+          data: contest,
           requestId: message.requestId
         });
         
@@ -884,9 +845,12 @@ async function handleContestRequest(ws, message, sendMessage, sendError) {
           return sendError(ws, `Missing required fields: ${missingFields.join(', ')}`, 4006);
         }
         
-        // Create contest by reusing logic from contest service
+        // Check if this is an admin or a user request
+        const isAdminRequest = ws.role === 'admin' || ws.role === 'superadmin';
+        const isUserRequest = !isAdminRequest && message.data.userCreated === true;
+        
         try {
-          // Extract contest data
+          // Prepare the contest data with common fields
           const contestData = {
             name: message.data.name,
             contest_code: message.data.contest_code,
@@ -894,105 +858,143 @@ async function handleContestRequest(ws, message, sendMessage, sendError) {
             entry_fee: message.data.entry_fee,
             start_time: new Date(message.data.start_time),
             end_time: new Date(message.data.end_time),
-            min_participants: message.data.min_participants || 2,
-            max_participants: message.data.max_participants || 10,
-            allowed_buckets: message.data.allowed_buckets || [],
-            status: 'pending',
-            prize_pool: message.data.prize_pool || 0,
-            created_at: new Date(),
-            updated_at: new Date()
+            allowed_buckets: message.data.allowed_buckets || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            visibility: message.data.visibility || 'public',
+            created_by: ws.userId,
+            // Unified approach to handle vanity wallet failures with fallback
+            allow_wallet_fallback: true // Flag to enable fallback for ALL contests
           };
-          
-          // Create contest in database
-          const createdContest = await prisma.contests.create({
-            data: contestData
-          });
-          
-          // Create contest wallet using contestWalletService (same as in API endpoints)
-          let contestWallet;
-          try {
-            // Import contestWalletService (avoid circular dependencies)
-            const contestWalletService = (await import('../../../services/contestWalletService.js')).default;
-            contestWallet = await contestWalletService.createContestWallet(createdContest.id);
+
+          // Add admin or user specific fields
+          if (isUserRequest) {
+            // Verify the user has an available credit
+            const creditResult = await verifyUserHasCredit(ws.userId);
             
-            // Log if this is a vanity wallet
-            if (contestWallet.is_vanity) {
-              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} Using ${contestWallet.vanity_type} vanity wallet for contest`, {
-                contest_id: createdContest.id,
-                wallet_address: contestWallet.wallet_address,
-                vanity_type: contestWallet.vanity_type
+            if (!creditResult.hasCredit) {
+              logApi.warn(`User ${ws.userId} attempted to create a contest without available credits via WebSocket`, {
+                error: creditResult.error
               });
+              
+              return sendError(ws, creditResult.error || 'No available contest creation credits', 4402);
             }
-          } catch (walletError) {
-            // Fall back to direct wallet creation if service fails
-            logApi.warn(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} VANITY WALLET FAILURE ${fancyColors.RESET}`, {
-              error: walletError.message,
-              stack: walletError.stack,
-              errorType: walletError.name || 'Unknown',
-              contestId: createdContest.id,
-              details: 'Contest wallet service failed to create vanity wallet - this will NOT affect functionality, but the contest will use a random wallet instead of a vanity wallet'
-            });
             
-            // Also log with more visibility using logApi
-            logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET}
-╔════════════════════════════════════════════════════════════════════════════╗
-║  ⚠️  VANITY WALLET CREATION FAILED FOR CONTEST #${createdContest.id}                  
-║  Error: ${walletError.message}
-║  Using fallback random wallet creation instead
-║  This should be investigated to restore vanity wallet functionality
-╚════════════════════════════════════════════════════════════════════════════╝`, {
-              error: walletError.message,
-              stack: walletError.stack,
-              contestId: createdContest.id
-            });
-            
-            // Direct wallet creation as a fallback
-            const { createContestWallet } = await import('../../../utils/solana-suite/solana-wallet.js');
-            const { publicKey, encryptedPrivateKey } = await createContestWallet();
-            
-            // Create wallet with explicit is_vanity = false flag
-            contestWallet = await prisma.contest_wallets.create({
-              data: {
-                contest_id: createdContest.id,
-                wallet_address: publicKey,
-                private_key: encryptedPrivateKey,
-                balance: '0',
-                is_vanity: false,
-                vanity_type: null,
-                fallback_creation: true // Add a flag to track fallback creation
-              }
-            });
+            // Add user-specific fields
+            contestData.min_participants = message.data.min_participants || 2;
+            contestData.max_participants = message.data.max_participants || 50;
+            contestData.credit_id = creditResult.credit?.id;
+            contestData.is_admin = false;
+          } else {
+            // Add admin-specific fields  
+            contestData.min_participants = message.data.min_participants || 2;
+            contestData.max_participants = message.data.max_participants || 10;
+            contestData.prize_pool = message.data.prize_pool || 0;
+            contestData.is_admin = true;
           }
           
-          // Return the created contest with wallet info
+          // Unified code path for both admin and user contests using the module function
+          const result = await createContest(contestData);
+          
+          if (!result.success) {
+            logApi.error(`Failed to create contest via WebSocket: ${result.error}`, {
+              isAdminRequest,
+              userId: ws.userId,
+              error: result.error
+            });
+            return sendError(ws, result.error || 'Failed to create contest', 5000);
+          }
+          
+          // Unified response
           return sendMessage(ws, {
             type: MESSAGE_TYPES.RESPONSE,
             topic: TOPICS.CONTEST,
             action: 'createContest',
-            data: {
-              ...createdContest,
-              wallet_address: contestWallet.wallet_address,
-              is_vanity: contestWallet.is_vanity || false,
-              vanity_type: contestWallet.vanity_type || null
-            },
+            data: result.contest,
             requestId: message.requestId
           });
-          
         } catch (error) {
           logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Failed to create contest:${fancyColors.RESET}`, {
             error: error.message,
             stack: error.stack,
-            requestData: message.data
+            requestData: message.data,
+            isUserRequest,
+            userId: ws.userId
           });
           return sendError(ws, `Failed to create contest: ${error.message}`, 5000);
         }
         
-      // You can add more contest-related actions here:
-      // - updateContest
-      // - cancelContest
-      // - startContest
-      // - endContest
-      // etc.
+      case 'joinContest':
+        // Verify authentication
+        if (!ws.isAuthenticated) {
+          return sendError(ws, 'Authentication required to join contest', 4003);
+        }
+        
+        // Validate contestId
+        if (!message.data?.contestId) {
+          return sendError(ws, 'Contest ID is required', 4006);
+        }
+        
+        try {
+          // Use the imported module function to join a contest
+          const result = await joinContest(
+            parseInt(message.data.contestId),
+            ws.userId,
+            message.data.tokenSelections || []
+          );
+          
+          if (!result.success) {
+            return sendError(ws, result.error || 'Failed to join contest', 4500);
+          }
+          
+          return sendMessage(ws, {
+            type: MESSAGE_TYPES.RESPONSE,
+            topic: TOPICS.CONTEST,
+            action: 'joinContest',
+            data: result.participation,
+            requestId: message.requestId
+          });
+        } catch (error) {
+          logApi.error(`Error joining contest: ${error.message}`, error);
+          return sendError(ws, `Failed to join contest: ${error.message}`, 5000);
+        }
+        
+      case 'getContestSchedules':
+        try {
+          // Get contest schedules using the imported module function
+          const schedules = await getContestSchedules();
+          
+          return sendMessage(ws, {
+            type: MESSAGE_TYPES.RESPONSE,
+            topic: TOPICS.CONTEST,
+            action: 'getContestSchedules',
+            data: schedules,
+            requestId: message.requestId
+          });
+        } catch (error) {
+          logApi.error(`Error getting contest schedules: ${error.message}`, error);
+          return sendError(ws, 'Failed to get contest schedules', 5000);
+        }
+        
+      case 'getUserContests':
+        // Verify authentication
+        if (!ws.isAuthenticated) {
+          return sendError(ws, 'Authentication required to get user contests', 4003);
+        }
+        
+        try {
+          // Use the imported module function to get user contests
+          const userContests = await getAllContestsByUser(ws.userId);
+          
+          return sendMessage(ws, {
+            type: MESSAGE_TYPES.RESPONSE,
+            topic: TOPICS.CONTEST, 
+            action: 'getUserContests',
+            data: userContests,
+            requestId: message.requestId
+          });
+        } catch (error) {
+          logApi.error(`Error getting user contests: ${error.message}`, error);
+          return sendError(ws, 'Failed to get user contests', 5000);
+        }
       
       default:
         return sendError(ws, `Unknown contest action: ${message.action}`, 4009);

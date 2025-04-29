@@ -114,8 +114,9 @@ class TokenEnrichmentService extends BaseService {
         datasourceUrl: process.env.DATABASE_URL
       });
       
-      // Register with service manager
-      serviceManager.register(this.name, this);
+      // Register with service manager with explicit dependencies
+      const dependencies = [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE];
+      serviceManager.register(this.name, dependencies);
       
       // Initialize collectors
       await jupiterCollector.initialize();
@@ -172,9 +173,15 @@ class TokenEnrichmentService extends BaseService {
         });
         
         // Only re-enqueue for enrichment if it's been a while or metadata is incomplete
+        // Get enrichment data from refresh_metadata if available
+        const refreshMetadata = existingToken.refresh_metadata || {};
+        const lastEnrichmentAttempt = refreshMetadata.last_enrichment_attempt 
+                                    ? new Date(refreshMetadata.last_enrichment_attempt) 
+                                    : null;
+        
         const shouldReEnrich = existingToken.metadata_status !== 'complete' || 
-                               !existingToken.last_enrichment_attempt ||
-                               new Date() - new Date(existingToken.last_enrichment_attempt) > 24 * 60 * 60 * 1000;
+                               !lastEnrichmentAttempt ||
+                               new Date() - lastEnrichmentAttempt > 24 * 60 * 60 * 1000;
         
         if (shouldReEnrich) {
           // Add to enrichment queue with medium priority
@@ -299,6 +306,27 @@ class TokenEnrichmentService extends BaseService {
   }
   
   /**
+   * Get current enrichment attempts count
+   * @param {string} tokenAddress - Token address
+   * @returns {Promise<number>} - Current attempts count or 0
+   */
+  async getEnrichmentAttempts(tokenAddress) {
+    try {
+      const token = await this.db.tokens.findFirst({
+        where: { address: tokenAddress }
+      });
+      
+      if (!token) return 0;
+      
+      // Get attempts from refresh_metadata if available
+      return token.refresh_metadata?.enrichment_attempts || 0;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting enrichment attempts:${fancyColors.RESET}`, error);
+      return 0;
+    }
+  }
+  
+  /**
    * Enrich a single token with metadata from all sources
    * @param {string} tokenAddress - Token address
    */
@@ -311,8 +339,11 @@ class TokenEnrichmentService extends BaseService {
       await this.db.tokens.updateMany({
         where: { address: tokenAddress },
         data: { 
-          last_enrichment_attempt: new Date(),
-          enrichment_attempts: { increment: 1 }
+          last_refresh_attempt: new Date(), // Using existing last_refresh_attempt field
+          refresh_metadata: {
+            last_enrichment_attempt: new Date().toISOString(),
+            enrichment_attempts: 1 // Initialize counter
+          }
         }
       });
       
@@ -328,7 +359,10 @@ class TokenEnrichmentService extends BaseService {
           where: { address: tokenAddress },
           data: { 
             metadata_status: 'failed',
-            last_enrichment_error: 'No data collected'
+            refresh_metadata: {
+              last_enrichment_error: 'No data collected',
+              last_error_time: new Date().toISOString()
+            }
           }
         });
         
@@ -372,7 +406,10 @@ class TokenEnrichmentService extends BaseService {
           where: { address: tokenAddress },
           data: { 
             metadata_status: 'failed',
-            last_enrichment_error: error.message
+            refresh_metadata: {
+              last_enrichment_error: error.message,
+              last_error_time: new Date().toISOString()
+            }
           }
         });
       } catch (dbError) {
@@ -464,7 +501,7 @@ class TokenEnrichmentService extends BaseService {
           color: combinedData.color || '#888888',
           image_url: combinedData.imageUrl,
           description: combinedData.description,
-          last_enrichment: new Date(),
+          last_refresh_success: new Date(), // Use existing field instead of 'last_enrichment'
           metadata_status: 'complete'
         }
       });

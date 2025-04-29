@@ -491,37 +491,45 @@ router.get('/:id', async (req, res) => {
  *                 message:
  *                   type: string
  */
-// Create a new contest (ADMIN ONLY)
+// Create a new contest 
+// - Admins can create contests directly
+// - Regular users can create contests using contest creation credits
 //   example: POST https://degenduel.me/api/contests
-//     body: { "name": "Weekly Trading Contest", "contest_code": "WTC-2024-01", "entry_fee": "1000000", "start_time": "2025-01-01T00:00:00Z", "end_time": "2025-01-07T23:59:59Z", "min_participants": 10, "max_participants": 100, "allowed_buckets": [1, 2, 3] }
+//     body: { "name": "Weekly Trading Contest", "contest_code": "WTC-2024-01", "entry_fee": "1000000", "start_time": "2025-01-01T00:00:00Z", "end_time": "2025-01-07T23:59:59Z", "min_participants": 10, "max_participants": 100, "allowed_buckets": [1, 2, 3], "visibility": "public" }
 //     headers: { "Authorization": "Bearer <JWT>" }
-router.post('/', requireAuth, requireAdmin, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
 
   try {
-    const {
-      name,
-      contest_code,
-      description,
-      entry_fee,
-      start_time,
-      end_time,
-      min_participants,
-      max_participants,
-      allowed_buckets = []
-    } = req.body;
+    // Import contestService
+    const { createContest } = await import('../services/contestService.js');
 
+    // Get contest data from request
+    const contestData = {
+      ...req.body,
+      allowed_buckets: req.body.allowed_buckets || []
+    };
+
+    // User data for authorization and tracking
+    const userData = {
+      wallet_address: req.user.wallet_address,
+      role: req.user.role
+    };
+
+    // Log creation attempt
     logApi.info({
       requestId,
       message: 'Creating new contest',
       data: {
-        contest_code,
-        name,
-        start_time,
-        end_time,
-        min_participants,
-        max_participants
+        contest_code: contestData.contest_code,
+        name: contestData.name,
+        start_time: contestData.start_time,
+        end_time: contestData.end_time,
+        min_participants: contestData.min_participants,
+        max_participants: contestData.max_participants,
+        isAdmin: userData.role === 'admin' || userData.role === 'superadmin',
+        userId: userData.wallet_address
       }
     });
 
@@ -599,9 +607,9 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     let parsedEntryFee;
     try {
       // Handle different input formats
-      if (typeof entry_fee === 'string') {
+      if (typeof contestData.entry_fee === 'string') {
         // Remove any commas and whitespace
-        const cleanedFee = entry_fee.replace(/,|\s/g, '');
+        const cleanedFee = contestData.entry_fee.replace(/,|\s/g, '');
         
         // Check if it's a valid decimal or integer format
         if (!/^\-?\d*\.?\d+$/.test(cleanedFee)) {
@@ -609,11 +617,11 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         }
 
         parsedEntryFee = cleanedFee;
-      } else if (typeof entry_fee === 'number') {
-        if (!Number.isFinite(entry_fee)) {
+      } else if (typeof contestData.entry_fee === 'number') {
+        if (!Number.isFinite(contestData.entry_fee)) {
           throw new Error('Invalid number');
         }
-        parsedEntryFee = entry_fee.toString();
+        parsedEntryFee = contestData.entry_fee.toString();
       } else {
         throw new Error('Invalid entry fee type');
       }
@@ -622,18 +630,21 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         logApi.warn({
           requestId,
           message: 'Negative entry fee provided',
-          data: { entry_fee, parsed: parsedEntryFee },
+          data: { entry_fee: contestData.entry_fee, parsed: parsedEntryFee },
           duration: Date.now() - startTime
         });
         return res.status(400).json({
           error: 'entry_fee cannot be negative'
         });
       }
+      
+      // Update the contest data with the parsed entry fee
+      contestData.entry_fee = new Decimal(parsedEntryFee);
     } catch (e) {
       logApi.warn({
         requestId,
         message: 'Invalid entry fee format',
-        data: { entry_fee, error: e.message },
+        data: { entry_fee: contestData.entry_fee, error: e.message },
         duration: Date.now() - startTime
       });
       return res.status(400).json({
@@ -643,176 +654,69 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     }
 
     // Validate allowed_buckets
-    if (!Array.isArray(allowed_buckets)) {
+    if (!Array.isArray(contestData.allowed_buckets)) {
       logApi.warn({
         requestId,
         message: 'Invalid allowed_buckets format',
-        data: { allowed_buckets },
+        data: { allowed_buckets: contestData.allowed_buckets },
         duration: Date.now() - startTime
       });
       return res.status(400).json({
         error: 'allowed_buckets must be an array'
       });
     }
-
-    // Create contest and wallet in a transaction
-    const result = await prisma.$transaction(async (prisma) => {
-      // 1. Create contest first
-      const contest = await prisma.contests.create({
-        data: {
-          name,
-          contest_code,
-          description,
-          entry_fee: new Decimal(parsedEntryFee),
-          start_time: startDate,
-          end_time: endDate,
-          min_participants,
-          max_participants,
-          allowed_buckets,
-          status: 'pending'
-        }
+    
+    try {
+      // Use the service to create the contest
+      const result = await createContest(contestData, userData, {
+        requestId,
+        generateImage: true
       });
 
-      logApi.info(`🏆 ${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} Contest created, generating wallet`, {
+      // Log successful creation
+      logApi.info(`🏆 ${fancyColors.CYAN}[routes/contests]${fancyColors.RESET} Contest created successfully`, {
         requestId,
-        contest_id: contest.id,
-        contest_code: contest.contest_code
+        contest_id: result.id,
+        contest_code: result.contest_code,
+        created_by_user: userId,
+        is_admin_created: isAdmin
       });
       
-      // Generate AI image for the contest (non-blocking)
-      // We don't await this to avoid slowing down contest creation
-      setTimeout(() => {
-        contestImageService.generateContestImage(contest)
-          .then(imageUrl => {
-            // Update contest with image URL
-            return prisma.contests.update({
-              where: { id: contest.id },
-              data: { image_url: imageUrl }
-            });
-          })
-          .then(() => {
-            logApi.info(`🎨 ${fancyColors.GREEN}[routes/contests]${fancyColors.RESET} Contest image generated and saved`, {
-              contest_id: contest.id,
-              contest_name: contest.name
-            });
-          })
-          .catch(error => {
-            logApi.error(`❌ ${fancyColors.RED}[routes/contests]${fancyColors.RESET} Failed to generate contest image`, {
-              contest_id: contest.id,
-              error: error.message,
-              stack: error.stack
-            });
-          });
-      }, 100); // Small delay to ensure transaction completes first
-
-      // 2. Use contestWalletService to create wallet (for proper vanity wallet support)
-      let contestWallet;
-      try {
-        // Import contestWalletService (avoid circular dependencies)
-        const contestWalletService = (await import('../services/contestWalletService.js')).default;
-        contestWallet = await contestWalletService.createContestWallet(contest.id);
-        
-        // Log if this is a vanity wallet
-        if (contestWallet.is_vanity) {
-          logApi.info({
-            requestId,
-            message: `Using ${contestWallet.vanity_type} vanity wallet for contest`,
-            data: {
-              contest_id: contest.id,
-              wallet_address: contestWallet.wallet_address,
-              vanity_type: contestWallet.vanity_type
-            }
-          });
-        }
-      } catch (walletError) {
-        // Fall back to direct wallet creation if service fails
-        logApi.warn({
-          requestId,
-          message: '⚠️ VANITY WALLET FAILURE - Using fallback random wallet creation',
-          error: walletError.message,
-          stack: walletError.stack,
-          errorType: walletError.name || 'Unknown',
-          details: 'Contest wallet service failed to create vanity wallet - this will NOT affect functionality, but the contest will use a random wallet instead of a vanity wallet'
-        });
-        
-        // Also log with more visibility using logApi
-        logApi.error({
-          requestId,
-          message: `
-╔════════════════════════════════════════════════════════════════════════════╗
-║  ⚠️  VANITY WALLET CREATION FAILED FOR CONTEST #${contest.id}                  
-║  Error: ${walletError.message}
-║  Using fallback random wallet creation instead
-║  This should be investigated to restore vanity wallet functionality
-╚════════════════════════════════════════════════════════════════════════════╝`,
-          error: walletError.message,
-          stack: walletError.stack,
-          contestId: contest.id
-        });
-        
-        // Direct wallet creation as a fallback
-        const { publicKey, encryptedPrivateKey } = await createContestWallet();
-        
-        // Create wallet with explicit is_vanity = false flag
-        contestWallet = await prisma.contest_wallets.create({
-          data: {
-            contest_id: contest.id,
-            wallet_address: publicKey,
-            private_key: encryptedPrivateKey,
-            balance: '0',
-            is_vanity: false,
-            vanity_type: null,
-            fallback_creation: true // Add a flag to track fallback creation
-          }
-        });
-        
-        // Log the fallback wallet creation clearly
-        logApi.info({
-          requestId,
-          message: 'Fallback wallet created successfully',
-          data: {
-            contest_id: contest.id,
-            wallet_address: publicKey,
-            is_vanity: false,
-            fallback_creation: true
-          }
-        });
-      }
-
-      // Send success SMS alert
+      // Simply return the result from contestService
+      // All wallet creation, image generation, etc. is now handled by the service
+      return result;
+      //res.status(201).json(result);
+    } catch (error) {
+      // Send error SMS alert
       //await sendSMSAlert(
-      //  formatContestWalletAlert('creation', {
-      //    contest_id: contest.id,
-      //    wallet_address: contestWallet.wallet_address
+      //  formatContestWalletAlert('error', {
+      //    contest_id: contest?.id || 'N/A',
+      //    error: error.message
       //  })
       //);
-      logApi.info({
+
+      // Log the error
+      logApi.error('Error in contest creation:', {
         requestId,
-        message: 'Contest wallet created successfully',
-        data: {
-          contest_id: contest.id,
-          wallet_address: contestWallet.wallet_address,
-          is_vanity: contestWallet.is_vanity || false,
-          vanity_type: contestWallet.vanity_type || null
-        }
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          stack: req.environment === 'development' ? error.stack : undefined
+        } : error,
+        duration: Date.now() - startTime
       });
 
-      // Return contest with wallet info
-      return {
-        ...contest,
-        wallet_address: contestWallet.wallet_address
-      };
-    });
-
-    res.status(201).json(result);
+      // Handle specific wallet errors
+      if (error.name === 'WalletError') {
+        return res.status(500).json({
+          error: 'Failed to create contest wallet',
+          code: error.code,
+          message: error.message
+        });
+      }
+    }
   } catch (error) {
-    // Send error SMS alert
-    //await sendSMSAlert(
-    //  formatContestWalletAlert('error', {
-    //    contest_id: contest?.id || 'N/A',
-    //    error: error.message
-    //  })
-    //);
     logApi.error('Error in contest creation:', {
       requestId,
       error: error instanceof Error ? {
@@ -823,21 +727,8 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       } : error,
       duration: Date.now() - startTime
     });
-
-    // Handle specific wallet errors
-    if (error.name === 'WalletError') {
-      return res.status(500).json({
-        error: 'Failed to create contest wallet',
-        code: error.code,
-        message: error.message
-      });
-    }
-
-    res.status(500).json({
-      error: 'Failed to create contest',
-      message: req.environment === 'development' ? error.message : undefined
-    });
   }
+  
 });
 
 /**
@@ -3326,4 +3217,5 @@ router.get('/schedules/:id', async (req, res) => {
   }
 });
 
+// Export the router
 export default router;

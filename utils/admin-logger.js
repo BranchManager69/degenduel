@@ -113,17 +113,27 @@ class AdminLogger {
             START: 'CONTEST_START',
             END: 'CONTEST_END',
             CANCEL: 'CONTEST_CANCEL',
-            FORCE_EVALUATE: 'CONTEST_FORCE_EVALUATE'
+            FORCE_EVALUATE: 'CONTEST_FORCE_EVALUATE',
+            CREATE: 'CONTEST_CREATE'
+        },
+        CONTEST_MANAGEMENT: {
+            VIEW_CREDITS: 'CONTEST_VIEW_CREDITS',
+            VIEW_CREDIT: 'CONTEST_VIEW_CREDIT',
+            GRANT_CREDIT: 'CONTEST_GRANT_CREDIT',
+            REVOKE_CREDIT: 'CONTEST_REVOKE_CREDIT',
+            VIEW_CREDIT_STATS: 'CONTEST_VIEW_CREDIT_STATS'
         },
         SERVICE: {
             START: 'SERVICE_START',
             STOP: 'SERVICE_STOP',
-            CONFIGURE: 'SERVICE_CONFIGURE'
+            CONFIGURE: 'SERVICE_CONFIGURE',
+            STATUS: 'SERVICE_STATUS'
         },
         WALLET: {
             CREATE: 'WALLET_CREATE',
             UPDATE: 'WALLET_UPDATE',
-            DELETE: 'WALLET_DELETE'
+            DELETE: 'WALLET_DELETE',
+            VANITY_FALLBACK: 'VANITY_WALLET_FALLBACK'
         },
         TOKEN: {
             CREATE: 'TOKEN_CREATE',

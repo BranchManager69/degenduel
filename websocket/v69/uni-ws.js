@@ -29,20 +29,27 @@ import { fancyColors, wsColors } from '../../utils/colors.js';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/prisma.js';
 import { getTokenAddress } from '../../utils/token-config-util.js';
-
-// Config
-import config from '../../config/config.js';
-const AUTH_DEBUG_MODE = config.debug_modes.auth === true || config.debug_modes.auth === 'true';
-const WS_DEBUG_MODE = config.debug_modes.websocket === true || config.debug_modes.websocket === 'true';
-logApi.info('AUTH_DEBUG_MODE (uni-ws):', AUTH_DEBUG_MODE);
-logApi.info('WS_DEBUG_MODE (uni-ws):', WS_DEBUG_MODE);
-
-// Import services as needed
 import marketDataService from '../../services/market-data/marketDataService.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 import tokenBalanceModule from './token-balance-module.js';
 import solanaBalanceModule from './solana-balance-module.js';
 // Initialize both balance modules when unified WebSocket is created
+
+// Config
+import config from '../../config/config.js';
+const WSAUTH_DEBUG_OVERRIDE = 'false'; // at-the-edge override for debugging
+const WS_DEBUG_MODE = config.debug_modes.websocket === true || config.debug_modes.websocket === 'true' || WSAUTH_DEBUG_OVERRIDE === 'true';
+const AUTH_DEBUG_MODE = config.debug_modes.auth === true || config.debug_modes.auth === 'true' || WSAUTH_DEBUG_OVERRIDE === 'true';
+if (WSAUTH_DEBUG_OVERRIDE) {
+  logApi.info('WSAUTH_DEBUG_OVERRIDE (uni-ws):', WSAUTH_DEBUG_OVERRIDE);
+} else {
+  if (WS_DEBUG_MODE) {
+    logApi.info('WS_DEBUG_MODE (uni-ws):', WS_DEBUG_MODE);
+  }
+  if (AUTH_DEBUG_MODE) {
+    logApi.info('AUTH_DEBUG_MODE (uni-ws):', AUTH_DEBUG_MODE);
+  }
+}
 
 // Import terminal data fetch function
 async function fetchTerminalData() {
@@ -162,6 +169,7 @@ class UnifiedWebSocketServer {
         // Accept first protocol if provided, or null otherwise
         return protocols?.[0] || null;
       },
+
       // Create custom verifyClient function to add more logging
       verifyClient: (info, callback) => {
         // Log detailed client info before verification (only if debug mode is enabled)
@@ -189,8 +197,8 @@ class UnifiedWebSocketServer {
           });
         }
         
-        // Always accept connections - we'll handle auth later
-        callback(true);
+        // Always accept connections - we'll handle auth later (???)
+        callback(true); // ??
       }
     });
     
@@ -3189,7 +3197,7 @@ export function createUnifiedWebSocket(httpServer) {
         logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} SOLANA BALANCE MODULE ${fancyColors.RESET} Error initializing Solana balance module: ${error.message}`);
       });
     
-    // Store in config instead of using global
+    // Store in config (instead of using global)
     config.websocket.unifiedWebSocket = ws;
   }
   return config.websocket.unifiedWebSocket;

@@ -1,12 +1,21 @@
+// services/contest-wallet/treasury-certifier.js
+
 /**
- * TreasuryCertifier - Validates wallet operations and transaction flow integrity
+ * TreasuryCertifier
+ * Validates wallet operations and transaction flow integrity
  * 
  * This module provides independent certification that the Treasury functionality
- * is working properly by transferring funds between wallets and verifying balances.
+ *   is working properly by transferring funds between wallets and verifying balances.
+ * 
  * It serves as a startup proof-of-operation that all critical wallet functions
- * are operating correctly before the service is considered fully operational.
+ *   are operating correctly before the service is considered fully operational.
  * 
  * @module services/contest-wallet/treasury-certifier
+ * @author @BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-21
+ * @updated 2025-04-28
+ * 
  */
 
 import { Keypair, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';

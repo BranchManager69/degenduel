@@ -10,13 +10,16 @@
  * - Solana PubSub WebSocket proxying
  */
 
+import WebSocket from 'ws';
 import prisma from '../../../config/prisma.js';
-import serviceEvents from '../../../utils/service-suite/service-events.js';
-import marketDataService from '../../../services/market-data/marketDataService.js';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors, wsColors } from '../../../utils/colors.js';
+import serviceEvents from '../../../utils/service-suite/service-events.js'; // Why importing but not using?
+import marketDataService from '../../../services/market-data/marketDataService.js'; // Why importing but not using?
+import vanityWalletService from '../../../services/vanity-wallet/vanity-wallet-service.js';
+
+// Config
 import config from '../../../config/config.js';
-import WebSocket from 'ws';
 
 // Solana PubSub subscription limits by tier
 const SOLANA_SUBSCRIPTION_LIMITS = {
@@ -26,7 +29,6 @@ const SOLANA_SUBSCRIPTION_LIMITS = {
 };
 
 // Import vanity wallet service
-import vanityWalletService from '../../../services/vanity-wallet/vanity-wallet-service.js';
 
 /**
  * Fetch terminal data from the database
@@ -65,6 +67,7 @@ export async function fetchTerminalData() {
     };
   });
 
+  // Return full data object (for Terminal dashboard)
   return {
     platformName: "DegenDuel",
     platformDescription: "High-stakes crypto trading competitions",
@@ -76,7 +79,7 @@ export async function fetchTerminalData() {
       upcomingContests: stats?.upcoming_contests || 0,
       totalPrizePool: `${stats?.total_prize_pool ? String(stats.total_prize_pool) : '0'}`,
       platformTraffic: "High",
-      socialGrowth: "+5% this week",
+      socialGrowth: "Unknown",
       waitlistUsers: stats?.waitlist_count || 0
     },
 
@@ -90,20 +93,20 @@ export async function fetchTerminalData() {
       treasuryAllocation: `${tokenConfig.treasury_allocation_percent}%`,
       initialPrice: `$${Number(tokenConfig.initial_price).toFixed(2)}`,
       marketCap: `$${(Number(tokenConfig.initial_circulating) * Number(tokenConfig.initial_price)).toLocaleString()}`,
-      liquidityLockPeriod: "2 years",
+      liquidityLockPeriod: "Unknown",
       networkType: "Solana",
       tokenType: "SPL",
       decimals: 9
     } : null,
 
     launch: tokenConfig ? {
-      method: tokenConfig.launch_method,
-      platforms: ["Raydium", "Orca"],
+      method: tokenConfig.launch_method || "PumpFun Bonding Curve",
+      platforms: ["PumpFun", "PumpSwap"],
       privateSaleStatus: "Completed",
-      publicSaleStatus: "Live",
-      kycRequired: true,
-      minPurchase: "100 USDC",
-      maxPurchase: "5000 USDC"
+      publicSaleStatus: "Ongoing",
+      kycRequired: false,
+      minPurchase: "Unknown",
+      maxPurchase: "Unknown"
     } : null,
 
     roadmap: formattedRoadmap,
@@ -244,10 +247,6 @@ async function getSystemComponentStatus() {
 }
 
 /**
- * Register service event handlers with the unified WebSocket server
- * @param {Object} server - The unified WebSocket server instance
- */
-/**
  * Fetch vanity dashboard data from the service
  * @returns {Promise<Object>} Vanity dashboard data object
  */
@@ -264,6 +263,10 @@ export async function fetchVanityDashboardData() {
   }
 }
 
+/**
+ * Register service event handlers with the unified WebSocket server
+ * @param {Object} server - The unified WebSocket server instance
+ */
 export function registerServiceEvents(server) {
   // Store reference in global config for other services to use
   config.websocket.unifiedWebSocket = server;

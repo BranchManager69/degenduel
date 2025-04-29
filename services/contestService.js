@@ -1,3 +1,29 @@
+// services/contestService.js
+
+/*
+ * NOTE:
+
+ *   THIS IS *NOT* A SERVICE !!!!!!!
+ *
+ *     AS CURRENTLY DESIGNED, IT IS A MODULE THAT EXPORTS FUNCTIONS.
+ *     SOMEDAY, IT SHOULD BE CONVERTED INTO A SERVICE!
+ * 
+ *     AS A TEMPORARY SOLUTION, ITS FUNCTIONS ARE USED IN LIEU OF THE DESIRED SERVICE.
+ * 
+ *     THIS IS A HACK!
+ */
+
+/**
+ * Contest Service (beta)
+ *  
+ * This handles the creation and management of contests.
+ * 
+ * @author @BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-28
+ * @updated 2025-04-28
+ */
+
 import prisma from '../config/prisma.js';
 import { verifyTransaction } from '../utils/solana-suite/web3-v2/solana-connection-v2.js';
 
@@ -100,3 +126,220 @@ export async function joinContest(contestId, walletAddress, transactionSignature
 
   return { participant, verification };
 }
+
+/**
+ * Create a new contest with optional credit verification for regular users
+ * @param {Object} contestData - Contest data to create
+ * @param {Object} userData - User data including wallet address and role
+ * @param {Object} options - Additional options
+ * @returns {Promise<Object>} - Created contest with wallet info
+ */
+export async function createContest(contestData, userData, options = {}) {
+  // Import the credit verifier utility
+  const { verifyUserHasCredit, consumeCredit } = await import('../utils/contest-credit-verifier.js');
+  
+  // Import wallet service
+  const contestWalletService = await import('./contest-wallet/contestWalletService.js');
+  
+  // Validate inputs
+  if (!contestData || !userData) {
+    throw new Error('Missing contestData or userData');
+  }
+  
+  const { 
+    name, 
+    contest_code, 
+    description, 
+    entry_fee, 
+    start_time, 
+    end_time, 
+    min_participants,
+    max_participants,
+    allowed_buckets = [],
+    visibility = 'public'
+  } = contestData;
+  
+  const { wallet_address: userId, role } = userData;
+  const isAdmin = role === 'admin' || role === 'superadmin';
+  
+  // Required fields validation
+  const requiredFields = ['name', 'contest_code', 'entry_fee', 'start_time', 'end_time'];
+  const missingFields = requiredFields.filter(field => !contestData[field]);
+  if (missingFields.length > 0) {
+    throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+  }
+  
+  // Date validation
+  const startDate = new Date(start_time);
+  const endDate = new Date(end_time);
+  const now = new Date();
+  
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    throw new Error('Invalid date format for start_time or end_time');
+  }
+  
+  if (startDate <= now) {
+    throw new Error('start_time must be in the future');
+  }
+  
+  if (endDate <= startDate) {
+    throw new Error('end_time must be after start_time');
+  }
+  
+  // For non-admin users, verify they have a credit
+  let creditResult = { hasCredit: true, credit: null };
+  if (!isAdmin) {
+    creditResult = await verifyUserHasCredit(userId);
+    if (!creditResult.hasCredit) {
+      throw new Error(creditResult.error || 'No available contest creation credits');
+    }
+  }
+  
+  // Create contest with transaction to ensure atomicity
+  return await prisma.$transaction(async (tx) => {
+    // Create the contest
+    const contest = await tx.contests.create({
+      data: {
+        name,
+        contest_code,
+        description: description || '',
+        entry_fee,
+        start_time: startDate,
+        end_time: endDate,
+        min_participants: min_participants || 2,
+        max_participants: max_participants || 50,
+        allowed_buckets,
+        status: 'pending',
+        visibility,
+        created_by_user: userId
+      }
+    });
+    
+    // Create contest wallet
+    let contestWallet;
+    try {
+      contestWallet = await contestWalletService.default.createContestWallet(contest.id, tx);
+      
+      // Log success if it's a vanity wallet
+      if (contestWallet.is_vanity) {
+        logApi.info(`Assigned vanity wallet to contest #${contest.id}`);
+      }
+    } catch (walletError) {
+      throw new Error(`Failed to create contest wallet: ${walletError.message}`);
+    }
+    
+    // For non-admin users, consume a credit
+    if (!isAdmin && creditResult.credit) {
+      const creditUsed = await consumeCredit(creditResult.credit.id, contest.id, tx);
+      
+      if (!creditUsed.success) {
+        throw new Error(creditUsed.error || 'Failed to consume contest creation credit');
+      }
+      
+      // Update the contest with the credit used
+      await tx.contests.update({
+        where: { id: contest.id },
+        data: {
+          creator_credit_used: creditResult.credit.id
+        }
+      });
+    }
+    
+    // Generate contest image asynchronously (if function exists)
+    if (options.generateImage !== false) {
+      try {
+        // Use dynamic import to avoid circular dependencies
+        const contestImageService = await import('./contestImageService.js');
+        
+        // Start image generation in the background (non-blocking)
+        contestImageService.default.generateContestImage(contest)
+          .then(imageUrl => {
+            // Update contest with image URL
+            return prisma.contests.update({
+              where: { id: contest.id },
+              data: { image_url: imageUrl }
+            });
+          })
+          .catch(error => {
+            console.error('Failed to generate contest image:', error);
+          });
+      } catch (error) {
+        // Continue even if image generation setup fails
+        console.error('Failed to set up contest image generation:', error);
+      }
+    }
+    
+    // Return the created contest with additional info
+    return {
+      ...contest,
+      wallet_address: contestWallet.wallet_address,
+      is_vanity: contestWallet.is_vanity || false,
+      vanity_type: contestWallet.vanity_type || null,
+      credit_used: !isAdmin && creditResult.credit ? creditResult.credit.id : null
+    };
+  });
+}
+
+/**
+ * Get a contest by ID
+ * @param {number} contestId - ID of the contest to get
+ * @returns {Promise<Object>} - Contest object
+ */
+export async function getContestById(contestId) {
+  // Validate inputs
+  if (!contestId || isNaN(contestId)) {
+    throw new Error('Invalid contestId');
+  }
+
+  // Fetch contest with wallet and participant count
+  const contest = await prisma.contests.findUnique({
+    where: { id: contestId },
+    include: {
+      contest_wallets: true,
+      _count: { select: { contest_participants: true } }
+    }
+  });
+
+  if (!contest) {
+    throw new Error('Contest not found');
+  }
+
+  return contest;
+}
+
+/**
+ * Get all contests
+ * @returns {Promise<Object>} - Contest object
+ */ 
+export async function getAllContests() {
+  // Fetch all contests
+  const contests = await prisma.contests.findMany();
+  return contests;
+}
+
+/**
+ * Get all contests by user
+ * @param {string} userId - ID of the user to get contests for
+ * @returns {Promise<Object>} - Contest object
+ */
+export async function getAllContestsByUser(userId) {
+  // Fetch all contests by user
+  const contests = await prisma.contests.findMany({
+    where: { created_by_user: userId }
+  });
+  return contests;
+} 
+
+/**
+ * Get all contests by user
+ * @param {string} userId - ID of the user to get contests for
+ * @returns {Promise<Object>} - Contest object
+ */ 
+export async function getContestSchedules() {
+  // Fetch all contest schedules
+  const schedules = await prisma.contest_schedules.findMany();
+  return schedules;
+}
+
+// Export all functions
+export { joinContest, createContest, getContestById, getAllContests, getAllContestsByUser, getContestSchedules };

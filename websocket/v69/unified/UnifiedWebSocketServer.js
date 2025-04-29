@@ -301,4 +301,24 @@ export default class UnifiedWebSocketServer {
       });
     }, 1500);
   }
+  
+  cleanup() {
+    log.info('Cleaning up Unified WebSocket Server resources...');
+    
+    // Clear all subscriptions
+    Object.keys(this.subscriptions).forEach(topic => {
+      this.subscriptions[topic].clear();
+    });
+    
+    // Clear all clients
+    this.clients.clear();
+    this.authenticatedClients.clear();
+    
+    // Remove any event listeners
+    if (this.eventHandlers) {
+      this.eventHandlers.clear();
+    }
+    
+    log.info('Unified WebSocket Server cleanup completed');
+  }
 }

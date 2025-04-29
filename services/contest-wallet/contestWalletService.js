@@ -4,10 +4,14 @@
  * Contest Wallet Service
  * 
  * This service is responsible for managing contest wallets.
- * It has been updated to use SolanaEngine which provides enhanced RPC capabilities
- * with multi-endpoint support and automatic failover.
+ *   It has been updated to use SolanaEngine which provides enhanced RPC capabilities
+ *   with multi-endpoint support and automatic failover.
  * 
  * @module services/contest-wallet/contestWalletService
+ * @author @BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-28
+ * @updated 2025-04-28
  */
 
 // Polyfill WebSocket for Node.js (use ws package)
@@ -227,6 +231,7 @@ class ContestWalletService extends BaseService {
         };
     }
     
+    // Initialize the TreasuryCertifier
     /**
      * Initialize the TreasuryCertifier and perform stranded funds recovery
      * This method initializes the TreasuryCertifier component and
@@ -310,6 +315,7 @@ class ContestWalletService extends BaseService {
         }
     }
 
+    // Initialize the contest wallet service
     /**
      * Initialize the contest wallet service
      * Overrides the BaseService initialize method to add service profile check
@@ -678,7 +684,25 @@ class ContestWalletService extends BaseService {
                     throw dbError;
                 }
             } else {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('Fallback')} No vanity wallet available, generating random wallet`);
+                logApi.warn(`${formatLog.tag()} ${formatLog.header('Fallback')} No vanity wallet available, generating random wallet for contest #${contestId}`);
+                
+                // Log the fallback to admin logger
+                const contest = await prisma.contests.findUnique({
+                    where: { id: contestId },
+                    select: { created_by_user: true, is_admin: true }
+                });
+                
+                // Use admin logger to log the vanity wallet fallback
+                await AdminLogger.logAction(
+                    'system', 
+                    AdminLogger.Actions.WALLET.VANITY_FALLBACK, 
+                    {
+                        contestId,
+                        created_by: contest?.created_by_user || 'system',
+                        is_admin_created: !!contest?.is_admin,
+                        reason: 'No vanity wallets available in pool'
+                    }
+                );
                 
                 // Fall back to random address generation
                 const keypair = Keypair.generate();
@@ -742,6 +766,14 @@ class ContestWalletService extends BaseService {
                     },
                     adminContext
                 );
+            }
+            
+            // Log additional admin warning if we created a non-vanity wallet
+            if (contestWallet && !contestWallet.is_vanity) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.header('Warning')} Contest #${contestId} created with non-vanity wallet - consider generating more vanity wallets`, {
+                    contestId,
+                    walletAddress: contestWallet.wallet_address
+                });
             }
             
             // Return the contest wallet
@@ -848,7 +880,7 @@ class ContestWalletService extends BaseService {
         }
     }
     
-    // Bulk update all wallets' balances
+    // Update all wallets' balances via polling fallback
     /**
      * Start the traditional polling fallback for wallet balances
      * This method is called when WebSocket monitoring fails or is unavailable
@@ -923,11 +955,6 @@ class ContestWalletService extends BaseService {
         };
     }
     
-    /**
-     * Bulk update all wallets' balances
-     * 
-     * @returns {Promise<Object>} - The results of the operation
-     */
     /**
      * Initialize WebSocket account monitoring for all contest wallets
      * This method sets up real-time monitoring of contest wallet balances
@@ -1464,6 +1491,11 @@ class ContestWalletService extends BaseService {
         }
     }
     
+    /**
+     * Bulk update all wallets' balances
+     * 
+     * @returns {Promise<Object>} - The results of the operation
+     */
     async updateAllWalletBalances() {
         logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting ${fancyColors.RESET} Contest wallet balance refresh cycle`);
 
@@ -1869,15 +1901,12 @@ class ContestWalletService extends BaseService {
     }
 
     // Main operation implementation - periodic health checks and balance updates
-    /**
-     * Perform the main operation of the contest wallet service
-     * 
-     * @returns {Promise<Object>} - The results of the operation
-     */
+
     /**
      * Implements the onPerformOperation method required by BaseService
      * This gets called regularly by the BaseService to perform the service's main operation
      * and is used for circuit breaker recovery
+     * 
      * @returns {Promise<boolean>} Success status
      */
     async onPerformOperation() {
@@ -1898,6 +1927,11 @@ class ContestWalletService extends BaseService {
         }
     }
 
+    /**
+     * Perform the main operation of the contest wallet service
+     * 
+     * @returns {Promise<Object>} - The results of the operation
+     */
     async performOperation() {
         const startTime = Date.now();
         
@@ -1955,6 +1989,7 @@ class ContestWalletService extends BaseService {
     
     /**
      * Decrypt private key from encrypted storage
+     * 
      * @param {string} encryptedData - The encrypted private key data
      * @returns {string} - The decrypted private key
      */
@@ -2007,6 +2042,7 @@ class ContestWalletService extends BaseService {
 
     /**
      * Perform a blockchain transfer from a contest wallet to a destination address
+     * 
      * @param {Object} sourceWallet - The source wallet object containing encrypted private key
      * @param {string} destinationAddress - The destination wallet address
      * @param {number} amount - The amount to transfer in SOL
@@ -2260,7 +2296,14 @@ class ContestWalletService extends BaseService {
         }
     }
     
-    // Helper to execute the actual transfer once we have a valid keypair
+    /**
+     * Helper to execute the actual transfer once we have a valid keypair
+     * 
+     * @param {Keypair} fromKeypair - The source wallet keypair
+     * @param {string} destinationAddress - The destination wallet address
+     * @param {number} amount - The amount of SOL to transfer
+     * @returns {Promise<string>} - The signature of the transaction
+     */
     async executeTransfer(fromKeypair, destinationAddress, amount) {
         try {
             // Verify keypair structure and validity
@@ -2770,12 +2813,8 @@ class ContestWalletService extends BaseService {
             throw error;
         }
     }
-    /**
-     * Schedule a self-test to run after service startup
-     * 
-     * @param {number} [delayMs=5000] - Delay in milliseconds before running the test
-     * @returns {void}
-     */
+
+        
     /**
      * Run startup certification of the wallet functionality
      * 
@@ -2886,6 +2925,72 @@ class ContestWalletService extends BaseService {
         // Continue with normal service shutdown
         return super.stop();
     }
+
+    // DEPRECATED:
+
+    /**
+     * IMPORTANT NOTE:
+     *   This Is an AI generated function and I did not even look at it and I have no clue what it does or if it's even supposed to do anything at all.
+     *   I don't even think it was being used ever but I just wanted to finish it off
+     * 
+     * Schedule a self-test to run after service startup
+     * 
+     * @param {number} [delayMs=5000] - Delay in milliseconds before running the test
+     * @returns {void}
+     */
+    /*
+    async scheduleSelfTest(delayMs = 5000) {
+        try {
+            // Check if certification is enabled in environment or config
+            const runCertification = process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
+                                    (config.service_test && config.service_test.contest_wallet_self_test);
+            
+            if (!runCertification) {
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping Treasury Certification (not enabled)')}`);
+                return;
+            }
+            
+            // NEVER create a new TreasuryCertifier here - always use the one from initTreasuryCertifier    
+            // If there's no treasuryCertifier yet, don't run the test
+            if (!this.treasuryCertifier) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier not initialized. Skipping self-test.')}`);
+                return;
+            }
+            
+            // The persistent pool should already be initialized in initTreasuryCertifier()
+            // If it's not initialized by now, there's a problem we shouldn't try to fix here
+            if (!this.treasuryCertifier.persistentPool) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Persistent certification pool not initialized. Skipping self-test.')}`);
+                return;
+            }
+            
+            // Test wallets should also be initialized with the pool - no need to reinitialize
+            if (this.treasuryCertifier.persistentPool && 
+                (!this.treasuryCertifier.persistentTestWallets || 
+                 Object.keys(this.treasuryCertifier.persistentTestWallets).length === 0)) {
+                
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Persistent pool exists but test wallets are missing. Skipping self-test.')}`);
+                return;
+            }
+            
+            // Check if a certification is already in progress (using _currentCertification from TreasuryCertifier)
+            if (this.treasuryCertifier._currentCertification && this.treasuryCertifier._currentCertification.inProgress) {
+                logApi.info(`${formatLog.tag()} ${formatLog.info(`Certification already in progress with ID: ${this.treasuryCertifier._currentCertification.id}, skipping second certification`)}`);
+                return;
+            }
+
+            // Run the certification process
+            await this.treasuryCertifier.runCertification(delayMs);
+            
+        } catch (error) {
+            // Log but don't fail initialization if certification setup fails
+            logApi.error(`${formatLog.tag()} ${formatLog.error('Treasury Certification error:')}`, {
+                error: error.message,
+                stack: error.stack
+            });
+        }
+    }
+    */
 }
 
 // Export service singleton

@@ -56,16 +56,16 @@ model contest_portfolios {
 }
 
 model contest_templates {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   name                String
   description         String?
   duration_minutes    Int?
-  entry_fee           Decimal?          @default(0) @db.Decimal(20, 0)
-  max_participants    Int?              @default(2)
-  bucket_requirements Json?             @default("{}")
-  scoring_rules       Json?             @default("{}")
-  is_active           Boolean?          @default(true)
-  created_at          DateTime?         @default(now()) @db.Timestamptz(6)
+  entry_fee           Decimal?           @default(0) @db.Decimal(20, 0)
+  max_participants    Int?               @default(2)
+  bucket_requirements Json?              @default("{}")
+  scoring_rules       Json?              @default("{}")
+  is_active           Boolean?           @default(true)
+  created_at          DateTime?          @default(now()) @db.Timestamptz(6)
   schedule            contest_schedule[]
 
   @@index([name], map: "idx_contest_templates_name")
@@ -164,6 +164,9 @@ model contests {
   cancelled_at              DateTime?                   @db.Timestamptz(6)
   completed_at              DateTime?                   @db.Timestamptz(6)
   cancellation_reason       String?
+  visibility                String                      @default("public") @db.VarChar(20) // public or private
+  created_by_user           String?                     @db.VarChar(44) // Wallet address of user who created contest
+  creator_credit_used       Int?                        // ID of the credit used to create this contest
   ai_decisions              ai_decisions[]
   blockchain_transactions   blockchain_transactions[]
   contest_participants      contest_participants[]
@@ -177,10 +180,14 @@ model contests {
   vanity_wallet             vanity_wallet_pool?
   schedule                  contest_schedule?           @relation(fields: [schedule_id], references: [id])
   schedule_id               Int?
+  creator                   users?                      @relation("ContestCreator", fields: [created_by_user], references: [wallet_address])
+  creation_credit           contest_creation_credits?   @relation(fields: [creator_credit_used], references: [id])
 
   @@index([status])
   @@index([start_time])
   @@index([end_time])
+  @@index([visibility])
+  @@index([created_by_user])
   @@map("contests")
 }
 
@@ -223,12 +230,12 @@ model token_prices {
 }
 
 model token_price_history {
-  id         Int      @id @default(autoincrement())
-  token_id   Int
-  price      Decimal  @db.Decimal(20, 8)
-  source     String?  @db.VarChar(50) // Where the price came from: "jupiter", "helius", "manual", etc.
-  timestamp  DateTime @default(now()) @db.Timestamptz(6)
-  tokens     tokens   @relation(fields: [token_id], references: [id], onDelete: Cascade)
+  id        Int      @id @default(autoincrement())
+  token_id  Int
+  price     Decimal  @db.Decimal(20, 8)
+  source    String?  @db.VarChar(50) // Where the price came from: "jupiter", "helius", "manual", etc.
+  timestamp DateTime @default(now()) @db.Timestamptz(6)
+  tokens    tokens   @relation(fields: [token_id], references: [id], onDelete: Cascade)
 
   @@index([token_id])
   @@index([timestamp(sort: Desc)])
@@ -239,10 +246,14 @@ model token_price_history {
 model tokens {
   id                        Int                         @id @default(autoincrement())
   address                   String                      @unique(map: "unique_token_address")
-  symbol                    String?                     
-  name                      String?                     
+  symbol                    String?
+  name                      String?
   decimals                  Int?                        @default(9)
   is_active                 Boolean                     @default(true)
+  first_discovery           DateTime?                   @default(now()) @db.Timestamptz(6)
+  last_discovery            DateTime?                   @default(now()) @db.Timestamptz(6)
+  discovery_count           Int?                        @default(0)
+  metadata_status           String?                     @default("pending")
   created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
   updated_at                DateTime?                   @default(now()) @db.Timestamptz(6)
   image_url                 String?                     @db.VarChar(255)
@@ -252,16 +263,16 @@ model tokens {
   telegram_url              String?                     @db.VarChar(255)
   discord_url               String?                     @db.VarChar(255)
   website_url               String?                     @db.VarChar(255)
-  coingeckoId               String?                     // Coingecko ID for this token 
-  tags                      Json?                       // Tags from Jupiter stored as JSON
-  raw_supply                BigInt?                     // Total supply in smallest units (raw from blockchain)
+  coingeckoId               String? // Coingecko ID for this token 
+  tags                      Json? // Tags from Jupiter stored as JSON
+  raw_supply                BigInt? // Total supply in smallest units (raw from blockchain)
   total_supply              Decimal?                    @db.Decimal(38, 18) // Normalized supply with decimals applied
   refresh_interval_seconds  Int                         @default(30) // Default refresh every 30 seconds
   priority_score            Int                         @default(0) // Higher score = higher priority for refreshing
-  last_refresh_attempt      DateTime?                   // When refresh was last attempted
-  last_refresh_success      DateTime?                   // When refresh last succeeded
-  last_price_change         DateTime?                   // When price last changed
-  refresh_metadata          Json?                       @default("{}")  // Additional metadata for refresh scheduler
+  last_refresh_attempt      DateTime? // When refresh was last attempted
+  last_refresh_success      DateTime? // When refresh last succeeded
+  last_price_change         DateTime? // When price last changed
+  refresh_metadata          Json?                       @default("{}") // Additional metadata for refresh scheduler
   ai_decisions              ai_decisions[]
   contest_portfolio_trades  contest_portfolio_trades[]
   contest_portfolios        contest_portfolios[]
@@ -277,9 +288,9 @@ model tokens {
   volume_history            token_volume_history[]
   liquidity_history         token_liquidity_history[]
   market_cap_history        token_market_cap_history[]
-  pools                     token_pools[]               // DEX pools relation
-  monitored_tokens          monitored_tokens?           // Monitoring relation for Discord alerts
-  pool_price_changes        pool_price_changes[]        // Real-time price changes from pool monitoring
+  pools                     token_pools[] // DEX pools relation
+  monitored_tokens          monitored_tokens? // Monitoring relation for Discord alerts
+  pool_price_changes        pool_price_changes[] // Real-time price changes from pool monitoring
 
   @@index([symbol], map: "idx_tokens_symbol")
   @@map("tokens")
@@ -421,6 +432,8 @@ model users {
   ai_conversations          ai_conversations[]          @relation("UserAIConversations")
   client_errors             client_errors[]
   biometric_credentials     biometric_credentials[]
+  created_contests          contests[]                  @relation("ContestCreator")
+  contest_credits           contest_creation_credits[]  @relation("UserContestCredits")
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -484,7 +497,7 @@ model auth_challenges {
   nonce          String
   expires_at     DateTime  @db.Timestamptz(6)
   created_at     DateTime? @default(now()) @db.Timestamptz(6)
-  credential_id  String?   // Added for biometric auth challenges
+  credential_id  String? // Added for biometric auth challenges
 
   @@index([expires_at], map: "idx_auth_challenges_expires")
   @@map("auth_challenges")
@@ -576,20 +589,20 @@ model banned_ips {
 }
 
 model user_ip_history {
-  id            Int       @id @default(autoincrement())
-  wallet_address String    @db.VarChar(44)
-  ip_address     String    @db.VarChar(45) // IPv6 can be longer
-  user_agent     String?   @db.Text
-  first_seen     DateTime  @default(now()) @db.Timestamptz(6)
-  last_seen      DateTime  @default(now()) @db.Timestamptz(6)
-  access_count   Int       @default(1)
-  country_code   String?   @db.VarChar(2)
-  region         String?   @db.VarChar(100)
-  city           String?   @db.VarChar(100)
-  is_suspicious  Boolean   @default(false)
-  notes          String?   @db.Text
-  metadata       Json?     @default("{}")
-  users          users     @relation(fields: [wallet_address], references: [wallet_address], onDelete: Cascade)
+  id             Int      @id @default(autoincrement())
+  wallet_address String   @db.VarChar(44)
+  ip_address     String   @db.VarChar(45) // IPv6 can be longer
+  user_agent     String?  @db.Text
+  first_seen     DateTime @default(now()) @db.Timestamptz(6)
+  last_seen      DateTime @default(now()) @db.Timestamptz(6)
+  access_count   Int      @default(1)
+  country_code   String?  @db.VarChar(2)
+  region         String?  @db.VarChar(100)
+  city           String?  @db.VarChar(100)
+  is_suspicious  Boolean  @default(false)
+  notes          String?  @db.Text
+  metadata       Json?    @default("{}")
+  users          users    @relation(fields: [wallet_address], references: [wallet_address], onDelete: Cascade)
 
   @@unique([wallet_address, ip_address], name: "user_ip_unique")
   @@index([ip_address], map: "idx_user_ip_address")
@@ -625,28 +638,28 @@ model system_settings {
 }
 
 model service_configuration {
-  id                 String    @id @default(cuid())
-  service_name       String    @unique // Unique service identifier
-  display_name       String    // Human-readable name
-  
+  id           String @id @default(cuid())
+  service_name String @unique // Unique service identifier
+  display_name String // Human-readable name
+
   // Core configuration
-  enabled            Boolean   @default(true)
-  check_interval_ms  Int       @default(60000) // How often the service runs
-  
+  enabled           Boolean @default(true)
+  check_interval_ms Int     @default(60000) // How often the service runs
+
   // Optional advanced configuration (stored as JSON for flexibility)
-  circuit_breaker    Json?     // Circuit breaker settings
-  backoff            Json?     // Backoff settings
-  thresholds         Json?     // Various thresholds
-  
+  circuit_breaker Json? // Circuit breaker settings
+  backoff         Json? // Backoff settings
+  thresholds      Json? // Various thresholds
+
   // Metadata
-  last_updated       DateTime  @default(now()) @updatedAt
-  updated_by         String?   // Admin who made the change
-  
+  last_updated DateTime @default(now()) @updatedAt
+  updated_by   String? // Admin who made the change
+
   // Service status tracking (read-only fields updated by the service)
-  last_run_at        DateTime?
+  last_run_at          DateTime?
   last_run_duration_ms Int?
-  last_status        String?   // 'success', 'failure', 'degraded'
-  status_message     String?
+  last_status          String? // 'success', 'failure', 'degraded'
+  status_message       String?
 
   @@map("service_configuration")
 }
@@ -729,26 +742,26 @@ model websocket_messages {
 }
 
 model vanity_wallet_pool {
-  id              Int               @id @default(autoincrement())
-  wallet_address  String?           @unique // Null until address is generated
-  private_key     String?           // Encrypted private key, null until generated
-  pattern         String            // The pattern to match (e.g., "DUEL" or "DEGEN")
-  is_suffix       Boolean           @default(false) // Whether pattern should be at end of address
-  case_sensitive  Boolean           @default(true)  // Whether pattern matching is case sensitive
-  is_used         Boolean           @default(false) // Whether this vanity address has been assigned
-  used_at         DateTime?         // When the vanity address was assigned 
-  used_by_contest Int?              @unique         // The contest using this vanity address
-  job_id          String?           @unique         // External GPU job ID
+  id              Int                @id @default(autoincrement())
+  wallet_address  String?            @unique // Null until address is generated
+  private_key     String? // Encrypted private key, null until generated
+  pattern         String // The pattern to match (e.g., "DUEL" or "DEGEN")
+  is_suffix       Boolean            @default(false) // Whether pattern should be at end of address
+  case_sensitive  Boolean            @default(true) // Whether pattern matching is case sensitive
+  is_used         Boolean            @default(false) // Whether this vanity address has been assigned
+  used_at         DateTime? // When the vanity address was assigned 
+  used_by_contest Int?               @unique // The contest using this vanity address
+  job_id          String?            @unique // External GPU job ID
   status          VanityWalletStatus @default(pending) // Status of the generation request
-  attempts        BigInt?           // Number of attempts made to find this address
-  duration_ms     BigInt?           // Time taken to generate in milliseconds
-  requested_by    String?           // Admin who requested this wallet
-  request_ip      String?           // IP address that requested this wallet
-  callback_url    String?           // URL for job completion callback
-  created_at      DateTime          @default(now())
-  updated_at      DateTime          @updatedAt
-  completed_at    DateTime?         // When the address generation was completed
-  contest         contests?         @relation(fields: [used_by_contest], references: [id])
+  attempts        BigInt? // Number of attempts made to find this address
+  duration_ms     BigInt? // Time taken to generate in milliseconds
+  requested_by    String? // Admin who requested this wallet
+  request_ip      String? // IP address that requested this wallet
+  callback_url    String? // URL for job completion callback
+  created_at      DateTime           @default(now())
+  updated_at      DateTime           @updatedAt
+  completed_at    DateTime? // When the address generation was completed
+  contest         contests?          @relation(fields: [used_by_contest], references: [id])
 
   @@index([is_used])
   @@index([pattern])
@@ -757,11 +770,11 @@ model vanity_wallet_pool {
 }
 
 enum VanityWalletStatus {
-  pending     // Just created, not yet sent to GPU service
-  processing  // Sent to GPU service, awaiting result
-  completed   // Successfully generated
-  failed      // Failed to generate
-  cancelled   // Request was cancelled
+  pending // Just created, not yet sent to GPU service
+  processing // Sent to GPU service, awaiting result
+  completed // Successfully generated
+  failed // Failed to generate
+  cancelled // Request was cancelled
 }
 
 model referrals {
@@ -952,7 +965,7 @@ model circuit_breaker_config {
 }
 
 model authorized_devices {
-  id            Int      @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   wallet_address String   @db.Text
   device_id      String   @db.Text
   device_name    String?  @db.Text
@@ -960,8 +973,8 @@ model authorized_devices {
   last_used      DateTime @default(now()) @db.Timestamptz(6)
   created_at     DateTime @default(now()) @db.Timestamptz(6)
   is_active      Boolean  @default(true)
-  
-  user           users    @relation(fields: [wallet_address], references: [wallet_address], name: "UserAuthorizedDevices", onDelete: Cascade, onUpdate: Cascade)
+
+  user users @relation(fields: [wallet_address], references: [wallet_address], name: "UserAuthorizedDevices", onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([wallet_address, device_id], name: "authorized_devices_wallet_address_device_id_key")
   @@index([wallet_address], name: "idx_authorized_devices_wallet")
@@ -1062,18 +1075,18 @@ model token_websites {
 }
 
 model ai_conversations {
-  id                 String    @id @default(uuid())
-  wallet_address     String    @db.VarChar(44)
-  conversation_id    String    @unique
-  context            String?   @db.VarChar(50)
-  message_count      Int       @default(0)
-  total_tokens_used  Int       @default(0)
-  first_message_at   DateTime  @default(now()) @db.Timestamptz(6)
-  last_message_at    DateTime  @default(now()) @db.Timestamptz(6)
-  is_active          Boolean   @default(true)
-  metadata           Json?     @default("{}")
-  user               users     @relation("UserAIConversations", fields: [wallet_address], references: [wallet_address], onDelete: Cascade)
-  messages           ai_conversation_messages[]
+  id                String                     @id @default(uuid())
+  wallet_address    String                     @db.VarChar(44)
+  conversation_id   String                     @unique
+  context           String?                    @db.VarChar(50)
+  message_count     Int                        @default(0)
+  total_tokens_used Int                        @default(0)
+  first_message_at  DateTime                   @default(now()) @db.Timestamptz(6)
+  last_message_at   DateTime                   @default(now()) @db.Timestamptz(6)
+  is_active         Boolean                    @default(true)
+  metadata          Json?                      @default("{}")
+  user              users                      @relation("UserAIConversations", fields: [wallet_address], references: [wallet_address], onDelete: Cascade)
+  messages          ai_conversation_messages[]
 
   @@index([wallet_address])
   @@index([conversation_id])
@@ -1082,13 +1095,13 @@ model ai_conversations {
 }
 
 model ai_conversation_messages {
-  id                 String          @id @default(uuid())
-  conversation_id    String
-  role               String          @db.VarChar(20)
-  content            String          @db.Text
-  tokens             Int?
-  created_at         DateTime        @default(now()) @db.Timestamptz(6)
-  conversation       ai_conversations @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  id              String           @id @default(uuid())
+  conversation_id String
+  role            String           @db.VarChar(20)
+  content         String           @db.Text
+  tokens          Int?
+  created_at      DateTime         @default(now()) @db.Timestamptz(6)
+  conversation    ai_conversations @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
 
   @@index([conversation_id])
   @@index([created_at])
@@ -1097,34 +1110,34 @@ model ai_conversation_messages {
 
 // AI analysis for client errors
 model ai_error_analyses {
-  id                      Int                @id @default(autoincrement())
-  summary                 String             @db.Text
-  analyzed_at             DateTime           @default(now()) @db.Timestamptz(6)
-  error_count             Int
-  time_window_minutes     Int
-  severity_distribution   Json?              @default("{}")
-  browser_distribution    Json?              @default("{}")
-  os_distribution         Json?              @default("{}")
-  top_errors              Json?              @default("[]")
-  created_by              String?            @db.VarChar(44)
-  analyzed_errors         ai_analyzed_errors[]
-  
+  id                    Int                  @id @default(autoincrement())
+  summary               String               @db.Text
+  analyzed_at           DateTime             @default(now()) @db.Timestamptz(6)
+  error_count           Int
+  time_window_minutes   Int
+  severity_distribution Json?                @default("{}")
+  browser_distribution  Json?                @default("{}")
+  os_distribution       Json?                @default("{}")
+  top_errors            Json?                @default("[]")
+  created_by            String?              @db.VarChar(44)
+  analyzed_errors       ai_analyzed_errors[]
+
   // AI model and cost tracking
-  model_used              String?            @db.VarChar(50) // The AI model used (e.g., "gpt-4", "claude-3-opus")
-  tokens_used             Int?               // Total tokens used for this analysis
-  tokens_prompt           Int?               // Tokens used in the prompt
-  tokens_completion       Int?               // Tokens used in the completion/response
-  estimated_cost_usd      Float?             // Estimated cost in USD
+  model_used         String? @db.VarChar(50) // The AI model used (e.g., "gpt-4", "claude-3-opus")
+  tokens_used        Int? // Total tokens used for this analysis
+  tokens_prompt      Int? // Tokens used in the prompt
+  tokens_completion  Int? // Tokens used in the completion/response
+  estimated_cost_usd Float? // Estimated cost in USD
 
   // New extension fields
-  actionability_score     Int?               // 1-10 score indicating how actionable the insights are
-  issue_categories        Json?              @default("[]") // Array of issue categories (routing, auth, ui, etc.)
-  recommended_actions     Json?              @default("[]") // Structured list of recommended actions
-  resolution_status       String?            @db.VarChar(20) // "pending", "in_progress", "resolved", "wont_fix"
-  assigned_to             String?            @db.VarChar(44) // Wallet address of user assigned to fix
-  priority                Int?               // 1-5 scale where 5 is highest priority
-  estimated_impact        String?            @db.VarChar(50) // User impact description (e.g., "10% of admin users")
-  related_services        Json?              @default("[]") // List of related services affected
+  actionability_score Int? // 1-10 score indicating how actionable the insights are
+  issue_categories    Json?   @default("[]") // Array of issue categories (routing, auth, ui, etc.)
+  recommended_actions Json?   @default("[]") // Structured list of recommended actions
+  resolution_status   String? @db.VarChar(20) // "pending", "in_progress", "resolved", "wont_fix"
+  assigned_to         String? @db.VarChar(44) // Wallet address of user assigned to fix
+  priority            Int? // 1-5 scale where 5 is highest priority
+  estimated_impact    String? @db.VarChar(50) // User impact description (e.g., "10% of admin users")
+  related_services    Json?   @default("[]") // List of related services affected
 
   @@index([analyzed_at])
   @@index([resolution_status])
@@ -1134,12 +1147,12 @@ model ai_error_analyses {
 
 // Junction table to track which errors have been analyzed
 model ai_analyzed_errors {
-  id              Int                @id @default(autoincrement())
-  error_id        String             // References client_errors.error_id
-  analysis_id     Int                
-  analyzed_at     DateTime           @default(now()) @db.Timestamptz(6)
-  analysis        ai_error_analyses  @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
-  
+  id          Int               @id @default(autoincrement())
+  error_id    String // References client_errors.error_id
+  analysis_id Int
+  analyzed_at DateTime          @default(now()) @db.Timestamptz(6)
+  analysis    ai_error_analyses @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+
   @@unique([error_id, analysis_id])
   @@index([error_id])
   @@index([analysis_id])
@@ -1148,16 +1161,16 @@ model ai_analyzed_errors {
 
 // AI analysis for admin actions
 model ai_admin_action_analyses {
-  id                     Int                       @id @default(autoincrement())
-  summary                String                    @db.Text
-  analyzed_at            DateTime                  @default(now()) @db.Timestamptz(6)
-  action_count           Int
-  time_window_minutes    Int
-  action_distribution    Json?                     @default("{}")
-  admin_distribution     Json?                     @default("{}")
-  top_actions            Json?                     @default("[]")
-  analyzed_actions       ai_analyzed_admin_actions[]
-  created_by             String?                   @db.VarChar(44)
+  id                  Int                         @id @default(autoincrement())
+  summary             String                      @db.Text
+  analyzed_at         DateTime                    @default(now()) @db.Timestamptz(6)
+  action_count        Int
+  time_window_minutes Int
+  action_distribution Json?                       @default("{}")
+  admin_distribution  Json?                       @default("{}")
+  top_actions         Json?                       @default("[]")
+  analyzed_actions    ai_analyzed_admin_actions[]
+  created_by          String?                     @db.VarChar(44)
 
   @@index([analyzed_at])
   @@map("ai_admin_action_analyses")
@@ -1165,12 +1178,12 @@ model ai_admin_action_analyses {
 
 // Junction table to track which admin actions have been analyzed
 model ai_analyzed_admin_actions {
-  id              Int                       @id @default(autoincrement())
-  action_id       Int                       // References admin_logs.id
-  analysis_id     Int                
-  analyzed_at     DateTime                  @default(now()) @db.Timestamptz(6)
-  analysis        ai_admin_action_analyses  @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
-  
+  id          Int                      @id @default(autoincrement())
+  action_id   Int // References admin_logs.id
+  analysis_id Int
+  analyzed_at DateTime                 @default(now()) @db.Timestamptz(6)
+  analysis    ai_admin_action_analyses @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+
   @@unique([action_id, analysis_id])
   @@index([action_id])
   @@index([analysis_id])
@@ -1178,38 +1191,38 @@ model ai_analyzed_admin_actions {
 }
 
 model ai_log_analyses {
-  id                     Int       @id @default(autoincrement())
-  summary                String    @db.Text
-  analyzed_at            DateTime  @default(now()) @db.Timestamptz(6)
-  log_file               String    @db.VarChar(255)
-  lines_analyzed         Int
-  created_by             String?   @db.VarChar(44)
+  id             Int      @id @default(autoincrement())
+  summary        String   @db.Text
+  analyzed_at    DateTime @default(now()) @db.Timestamptz(6)
+  log_file       String   @db.VarChar(255)
+  lines_analyzed Int
+  created_by     String?  @db.VarChar(44)
 
   @@index([analyzed_at])
   @@map("ai_log_analyses")
 }
 
 model ai_service_log_analyses {
-  id                     Int                        @id @default(autoincrement())
-  service                String                     @db.VarChar(50)
-  summary                String                     @db.Text
-  analyzed_at            DateTime                   @default(now()) @db.Timestamptz(6)
-  log_count              Int
-  time_window_hours      Int
-  created_by             String?                    @db.VarChar(44)
-  analyzed_logs          ai_analyzed_service_logs[]
-  
+  id                Int                        @id @default(autoincrement())
+  service           String                     @db.VarChar(50)
+  summary           String                     @db.Text
+  analyzed_at       DateTime                   @default(now()) @db.Timestamptz(6)
+  log_count         Int
+  time_window_hours Int
+  created_by        String?                    @db.VarChar(44)
+  analyzed_logs     ai_analyzed_service_logs[]
+
   // New extension fields
-  performance_score      Int?                       // 1-10 score where 10 is excellent performance
-  health_status          String?                    @db.VarChar(20) // "healthy", "degraded", "failing", "unknown"
-  log_patterns           Json?                      @default("[]")  // Array of detected log patterns
-  anomalies_detected     Json?                      @default("[]")  // Array of anomalies detected in logs
-  common_operations      Json?                      @default("[]")  // Most common operations in logs
-  operation_frequency    Json?                      @default("{}")  // Frequency of different operations
-  operation_success_rate Json?                      @default("{}")  // Success rate by operation type
-  performance_metrics    Json?                      @default("{}")  // Performance metrics extracted from logs
-  service_dependencies   Json?                      @default("[]")  // Other services this service depends on
-  recommendations        Json?                      @default("[]")  // AI recommendations for service improvement
+  performance_score      Int? // 1-10 score where 10 is excellent performance
+  health_status          String? @db.VarChar(20) // "healthy", "degraded", "failing", "unknown"
+  log_patterns           Json?   @default("[]") // Array of detected log patterns
+  anomalies_detected     Json?   @default("[]") // Array of anomalies detected in logs
+  common_operations      Json?   @default("[]") // Most common operations in logs
+  operation_frequency    Json?   @default("{}") // Frequency of different operations
+  operation_success_rate Json?   @default("{}") // Success rate by operation type
+  performance_metrics    Json?   @default("{}") // Performance metrics extracted from logs
+  service_dependencies   Json?   @default("[]") // Other services this service depends on
+  recommendations        Json?   @default("[]") // AI recommendations for service improvement
 
   @@index([analyzed_at])
   @@index([service])
@@ -1218,13 +1231,13 @@ model ai_service_log_analyses {
 }
 
 model ai_analyzed_service_logs {
-  id              Int                      @id @default(autoincrement())
-  log_id          Int                      // References service_logs.id
-  service         String                   @db.VarChar(50)
-  analysis_id     Int                
-  analyzed_at     DateTime                 @default(now()) @db.Timestamptz(6)
-  analysis        ai_service_log_analyses  @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
-  
+  id          Int                     @id @default(autoincrement())
+  log_id      Int // References service_logs.id
+  service     String                  @db.VarChar(50)
+  analysis_id Int
+  analyzed_at DateTime                @default(now()) @db.Timestamptz(6)
+  analysis    ai_service_log_analyses @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+
   @@unique([log_id, analysis_id])
   @@index([log_id])
   @@index([analysis_id])
@@ -1234,19 +1247,19 @@ model ai_analyzed_service_logs {
 
 // Service logs for tracking service-specific events and states
 model service_logs {
-  id                 Int       @id @default(autoincrement())
-  service            String    @db.VarChar(50) // Service identifier (e.g., 'solana_engine', 'token_refresh')
-  level              String    @db.VarChar(20) // Log level (info, warn, error, debug)
-  message            String    @db.Text // The log message
-  details            Json?     @default("{}") // Additional structured details
-  metadata           Json?     @default("{}") // Extra context data
-  instance_id        String?   @db.VarChar(100) // For multi-instance services
-  created_at         DateTime  @default(now()) @db.Timestamptz(6)
-  related_entity     String?   @db.VarChar(100) // Related entity (token address, contest ID, etc.)
-  event_type         String?   @db.VarChar(50) // Type of event (restart, health check, etc.)
-  duration_ms        Int?      // For performance tracking
-  environment        String?   @db.VarChar(20) // Production, staging, etc.
-  
+  id             Int      @id @default(autoincrement())
+  service        String   @db.VarChar(50) // Service identifier (e.g., 'solana_engine', 'token_refresh')
+  level          String   @db.VarChar(20) // Log level (info, warn, error, debug)
+  message        String   @db.Text // The log message
+  details        Json?    @default("{}") // Additional structured details
+  metadata       Json?    @default("{}") // Extra context data
+  instance_id    String?  @db.VarChar(100) // For multi-instance services
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  related_entity String?  @db.VarChar(100) // Related entity (token address, contest ID, etc.)
+  event_type     String?  @db.VarChar(50) // Type of event (restart, health check, etc.)
+  duration_ms    Int? // For performance tracking
+  environment    String?  @db.VarChar(20) // Production, staging, etc.
+
   @@index([service, level])
   @@index([created_at])
   @@index([service, created_at])
@@ -1257,28 +1270,28 @@ model service_logs {
 }
 
 model websocket_connections {
-  id                 Int       @id @default(autoincrement())
-  connection_id      String    // Unique session identifier for the WebSocket connection
-  ip_address         String    @db.VarChar(45) // IPv6 can be longer
-  user_agent         String?   @db.Text
-  wallet_address     String?   @db.VarChar(44)
-  nickname           String?   @db.VarChar(100)
-  is_authenticated   Boolean   @default(false)
-  environment        String?   @db.VarChar(20) // 'production', 'development', etc.
-  origin             String?   @db.Text
-  connected_at       DateTime  @default(now()) @db.Timestamptz(6)
-  disconnected_at    DateTime? @db.Timestamptz(6)
-  duration_seconds   Int?
-  close_code         Int?
-  close_reason       String?   @db.Text
-  subscribed_topics  Json?     @default("[]")
-  messages_received  Int       @default(0)
-  messages_sent      Int       @default(0)
-  connection_error   String?   @db.Text
-  country            String?   @db.VarChar(2)
-  region             String?   @db.VarChar(100)
-  city               String?   @db.VarChar(100)
-  metadata           Json?     @default("{}")
+  id                Int       @id @default(autoincrement())
+  connection_id     String // Unique session identifier for the WebSocket connection
+  ip_address        String    @db.VarChar(45) // IPv6 can be longer
+  user_agent        String?   @db.Text
+  wallet_address    String?   @db.VarChar(44)
+  nickname          String?   @db.VarChar(100)
+  is_authenticated  Boolean   @default(false)
+  environment       String?   @db.VarChar(20) // 'production', 'development', etc.
+  origin            String?   @db.Text
+  connected_at      DateTime  @default(now()) @db.Timestamptz(6)
+  disconnected_at   DateTime? @db.Timestamptz(6)
+  duration_seconds  Int?
+  close_code        Int?
+  close_reason      String?   @db.Text
+  subscribed_topics Json?     @default("[]")
+  messages_received Int       @default(0)
+  messages_sent     Int       @default(0)
+  connection_error  String?   @db.Text
+  country           String?   @db.VarChar(2)
+  region            String?   @db.VarChar(100)
+  city              String?   @db.VarChar(100)
+  metadata          Json?     @default("{}")
 
   @@index([connection_id])
   @@index([ip_address])
@@ -1290,35 +1303,35 @@ model websocket_connections {
 }
 
 model client_errors {
-  id              Int       @id @default(autoincrement())
-  error_id        String    @unique // Unique identifier for grouping similar errors
-  wallet_address  String?   @db.VarChar(44)
-  user_id         Int?      // References users.id
-  message         String    @db.Text
-  level           String    @default("error") @db.VarChar(20)
-  stack_trace     String?   @db.Text
-  source_url      String?   @db.Text
-  line_number     Int?
-  column_number   Int?
-  browser         String?   @db.VarChar(100)
-  browser_version String?   @db.VarChar(50)
-  os              String?   @db.VarChar(50)
-  device          String?   @db.VarChar(50)
-  ip_address      String?   @db.VarChar(45)
-  session_id      String?   @db.VarChar(100)
-  environment     String?   @db.VarChar(20) // 'production', 'development', etc.
-  status          String?   @default("open") @db.VarChar(20)
-  resolved_at     DateTime? @db.Timestamptz(6)
-  resolved_by     String?   @db.VarChar(44)
-  resolution_note String?   @db.Text
-  is_critical     Boolean?  @default(false)
-  occurrences     Int       @default(1)
+  id               Int       @id @default(autoincrement())
+  error_id         String    @unique // Unique identifier for grouping similar errors
+  wallet_address   String?   @db.VarChar(44)
+  user_id          Int? // References users.id
+  message          String    @db.Text
+  level            String    @default("error") @db.VarChar(20)
+  stack_trace      String?   @db.Text
+  source_url       String?   @db.Text
+  line_number      Int?
+  column_number    Int?
+  browser          String?   @db.VarChar(100)
+  browser_version  String?   @db.VarChar(50)
+  os               String?   @db.VarChar(50)
+  device           String?   @db.VarChar(50)
+  ip_address       String?   @db.VarChar(45)
+  session_id       String?   @db.VarChar(100)
+  environment      String?   @db.VarChar(20) // 'production', 'development', etc.
+  status           String?   @default("open") @db.VarChar(20)
+  resolved_at      DateTime? @db.Timestamptz(6)
+  resolved_by      String?   @db.VarChar(44)
+  resolution_note  String?   @db.Text
+  is_critical      Boolean?  @default(false)
+  occurrences      Int       @default(1)
   last_occurred_at DateTime? @default(now()) @db.Timestamptz(6)
-  created_at      DateTime  @default(now()) @db.Timestamptz(6)
-  metadata        Json?     @default("{}")
-  tags            String[]
-  
-  user            users?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  metadata         Json?     @default("{}")
+  tags             String[]
+
+  user users? @relation(fields: [user_id], references: [id], onDelete: SetNull)
 
   @@index([wallet_address], map: "idx_client_errors_wallet")
   @@index([status], map: "idx_client_errors_status")
@@ -1330,167 +1343,167 @@ model client_errors {
 }
 
 model config_solana_engine {
-  id                 String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Cache Configuration
-  token_metadata_ttl Int       @default(86400)    // Token metadata cache TTL in seconds (24h default)
-  token_price_ttl    Int       @default(3600)     // Token price cache TTL in seconds (1h default)
-  wallet_data_ttl    Int       @default(300)      // Wallet data cache TTL in seconds (5m default)
-  
+  token_metadata_ttl Int @default(86400) // Token metadata cache TTL in seconds (24h default)
+  token_price_ttl    Int @default(3600) // Token price cache TTL in seconds (1h default)
+  wallet_data_ttl    Int @default(300) // Wallet data cache TTL in seconds (5m default)
+
   // RPC Configuration
-  connection_strategy String    @default("adaptive") // "round-robin", "weighted", or "adaptive"
-  health_check_interval Int     @default(60000)    // Health check interval in ms
-  failure_threshold   Int       @default(2)        // Failures before marking endpoint unhealthy
-  recovery_threshold  Int       @default(3)        // Successes before marking endpoint healthy again
-  
+  connection_strategy   String @default("adaptive") // "round-robin", "weighted", or "adaptive"
+  health_check_interval Int    @default(60000) // Health check interval in ms
+  failure_threshold     Int    @default(2) // Failures before marking endpoint unhealthy
+  recovery_threshold    Int    @default(3) // Successes before marking endpoint healthy again
+
   // Rate Limiting
-  max_concurrent_requests Int   @default(5)        // Maximum concurrent requests
-  request_spacing_ms   Int      @default(100)      // Minimum time between operations
-  base_backoff_ms      Int      @default(250)      // Base backoff time for retries
-  
+  max_concurrent_requests Int @default(5) // Maximum concurrent requests
+  request_spacing_ms      Int @default(100) // Minimum time between operations
+  base_backoff_ms         Int @default(250) // Base backoff time for retries
+
   // Endpoint Weights (stored as JSON)
-  endpoint_weights    Json?     @default("{}")     // Custom weights for specific endpoints
-  
+  endpoint_weights Json? @default("{}") // Custom weights for specific endpoints
+
   // Admin Features
-  admin_bypass_cache  Boolean   @default(false)    // Whether admin operations bypass cache by default
-  
+  admin_bypass_cache Boolean @default(false) // Whether admin operations bypass cache by default
+
   // Metadata
-  last_updated        DateTime  @default(now()) @updatedAt
-  updated_by          String?   @db.VarChar(44)    // Admin who made the change
-  
+  last_updated DateTime @default(now()) @updatedAt
+  updated_by   String?  @db.VarChar(44) // Admin who made the change
+
   @@map("config_solana_engine")
 }
 
 model config_contest_wallet {
-  id                     String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Core Configuration
-  check_interval_ms      Int       @default(60000)    // Check interval in milliseconds (1 min default)
-  
+  check_interval_ms Int @default(60000) // Check interval in milliseconds (1 min default)
+
   // Reclaim Settings
-  min_balance_to_reclaim Decimal   @default(0.05) @db.Decimal(10, 8)   // Minimum SOL balance to reclaim
-  min_amount_to_transfer Decimal   @default(0.01) @db.Decimal(10, 8)   // Minimum amount to transfer back
-  reclaim_contest_statuses Json     @default("[\"completed\", \"cancelled\"]") // Contest statuses for reclaim
-  
+  min_balance_to_reclaim   Decimal @default(0.05) @db.Decimal(10, 8) // Minimum SOL balance to reclaim
+  min_amount_to_transfer   Decimal @default(0.01) @db.Decimal(10, 8) // Minimum amount to transfer back
+  reclaim_contest_statuses Json    @default("[\"completed\", \"cancelled\"]") // Contest statuses for reclaim
+
   // Vanity Wallet Settings
-  vanity_wallet_paths    Json      @default("{\"DUEL\":\"/home/websites/degenduel/addresses/keypairs/public/_DUEL\", \"DEGEN\":\"/home/websites/degenduel/addresses/keypairs/public/_DEGEN\"}")
-  
+  vanity_wallet_paths Json @default("{\"DUEL\":\"/home/websites/degenduel/addresses/keypairs/public/_DUEL\", \"DEGEN\":\"/home/websites/degenduel/addresses/keypairs/public/_DEGEN\"}")
+
   // Wallet Encryption
-  encryption_algorithm   String    @default("aes-256-gcm")  // Encryption algorithm for wallet keys
-  
+  encryption_algorithm String @default("aes-256-gcm") // Encryption algorithm for wallet keys
+
   // Circuit Breaker
-  failure_threshold      Int       @default(5)      // Failures before circuit breaker trips
-  reset_timeout_ms       Int       @default(60000)  // Reset timeout in milliseconds
-  min_healthy_period_ms  Int       @default(120000) // Min time to consider service healthy
-  
+  failure_threshold     Int @default(5) // Failures before circuit breaker trips
+  reset_timeout_ms      Int @default(60000) // Reset timeout in milliseconds
+  min_healthy_period_ms Int @default(120000) // Min time to consider service healthy
+
   // Backoff Settings
-  initial_delay_ms       Int       @default(1000)   // Initial delay for backoff
-  max_delay_ms           Int       @default(30000)  // Maximum delay for backoff
-  backoff_factor         Int       @default(2)      // Multiplier for backoff
-  
+  initial_delay_ms Int @default(1000) // Initial delay for backoff
+  max_delay_ms     Int @default(30000) // Maximum delay for backoff
+  backoff_factor   Int @default(2) // Multiplier for backoff
+
   // Admin Features
-  enable_vanity_wallets  Boolean   @default(true)    // Whether to use vanity wallets for contests
-  
+  enable_vanity_wallets Boolean @default(true) // Whether to use vanity wallets for contests
+
   // Metadata
-  last_updated           DateTime  @default(now()) @updatedAt
-  updated_by             String?   @db.VarChar(44)    // Admin who made the change
-  
+  last_updated DateTime @default(now()) @updatedAt
+  updated_by   String?  @db.VarChar(44) // Admin who made the change
+
   @@map("config_contest_wallet")
 }
 
 model config_admin_wallet {
-  id                      String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Core Configuration
-  check_interval_ms       Int       @default(60000)    // Check interval in milliseconds (1 min default)
-  
+  check_interval_ms Int @default(60000) // Check interval in milliseconds (1 min default)
+
   // Wallet Settings
-  min_sol_balance         Decimal   @default(0.05) @db.Decimal(10, 8)   // Minimum SOL balance to maintain
-  max_parallel_transfers  Int       @default(5)      // Max number of transfers to process in parallel
-  transfer_timeout_ms     Int       @default(30000)  // Timeout for transfer operations
-  max_batch_size          Int       @default(50)     // Maximum batch size for operations
-  
+  min_sol_balance        Decimal @default(0.05) @db.Decimal(10, 8) // Minimum SOL balance to maintain
+  max_parallel_transfers Int     @default(5) // Max number of transfers to process in parallel
+  transfer_timeout_ms    Int     @default(30000) // Timeout for transfer operations
+  max_batch_size         Int     @default(50) // Maximum batch size for operations
+
   // Wallet Encryption
-  encryption_algorithm    String    @default("aes-256-gcm")  // Encryption algorithm
-  key_length              Int       @default(32)     // Encryption key length
-  iv_length               Int       @default(16)     // Initialization vector length
-  tag_length              Int       @default(16)     // Authentication tag length
-  
+  encryption_algorithm String @default("aes-256-gcm") // Encryption algorithm
+  key_length           Int    @default(32) // Encryption key length
+  iv_length            Int    @default(16) // Initialization vector length
+  tag_length           Int    @default(16) // Authentication tag length
+
   // Circuit Breaker
-  failure_threshold       Int       @default(7)      // Failures before circuit breaker trips
-  reset_timeout_ms        Int       @default(80000)  // Reset timeout in milliseconds
-  min_healthy_period_ms   Int       @default(150000) // Min time to consider service healthy
-  
+  failure_threshold     Int @default(7) // Failures before circuit breaker trips
+  reset_timeout_ms      Int @default(80000) // Reset timeout in milliseconds
+  min_healthy_period_ms Int @default(150000) // Min time to consider service healthy
+
   // Backoff Settings
-  initial_delay_ms        Int       @default(1000)   // Initial delay for backoff
-  max_delay_ms            Int       @default(30000)  // Maximum delay for backoff
-  backoff_factor          Int       @default(2)      // Multiplier for backoff
-  
+  initial_delay_ms Int @default(1000) // Initial delay for backoff
+  max_delay_ms     Int @default(30000) // Maximum delay for backoff
+  backoff_factor   Int @default(2) // Multiplier for backoff
+
   // Security Settings
-  require_admin_approval  Boolean   @default(true)   // Whether large transfers require approval
-  large_transfer_threshold Decimal  @default(10.0) @db.Decimal(10, 8)  // Threshold for "large" transfers
-  
+  require_admin_approval   Boolean @default(true) // Whether large transfers require approval
+  large_transfer_threshold Decimal @default(10.0) @db.Decimal(10, 8) // Threshold for "large" transfers
+
   // Metadata
-  last_updated            DateTime  @default(now()) @updatedAt
-  updated_by              String?   @db.VarChar(44)  // Admin who made the change
-  
+  last_updated DateTime @default(now()) @updatedAt
+  updated_by   String?  @db.VarChar(44) // Admin who made the change
+
   @@map("config_admin_wallet")
 }
 
 model config_ai_service {
-  id                       String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Core Configuration
-  check_interval_ms        Int       @default(600000)   // Check interval (10 min default)
-  
+  check_interval_ms Int @default(600000) // Check interval (10 min default)
+
   // Analysis Settings
-  client_error_lookback_minutes Int  @default(10)       // Minutes to look back for client errors
-  min_errors_to_analyze    Int       @default(1)        // Minimum errors to trigger analysis
-  admin_action_lookback_minutes Int  @default(15)       // Minutes to look back for admin actions
-  min_actions_to_analyze   Int       @default(1)        // Minimum actions to trigger analysis
-  
+  client_error_lookback_minutes Int @default(10) // Minutes to look back for client errors
+  min_errors_to_analyze         Int @default(1) // Minimum errors to trigger analysis
+  admin_action_lookback_minutes Int @default(15) // Minutes to look back for admin actions
+  min_actions_to_analyze        Int @default(1) // Minimum actions to trigger analysis
+
   // Model Configurations (as JSON for flexibility)
-  model_loadouts           Json      @default("{\"default\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4},\"errorAnalysis\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4},\"adminAnalysis\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4}}")
-  
+  model_loadouts Json @default("{\"default\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4},\"errorAnalysis\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4},\"adminAnalysis\":{\"model\":\"gpt-4.1-mini\",\"maxTokens\":4048,\"temperature\":0.4}}")
+
   // System Prompts (as JSON)
-  system_prompts           Json      @default("{}")     // System prompts for different tasks
-  
+  system_prompts Json @default("{}") // System prompts for different tasks
+
   // Circuit Breaker
-  failure_threshold        Int       @default(3)        // Failures before circuit breaker trips
-  reset_timeout_ms         Int       @default(30000)    // Reset timeout in milliseconds
-  
+  failure_threshold Int @default(3) // Failures before circuit breaker trips
+  reset_timeout_ms  Int @default(30000) // Reset timeout in milliseconds
+
   // Rate Limiting
-  max_tokens_per_minute    Int       @default(100000)   // Token rate limit for API calls
-  max_conversations_per_user Int     @default(5)        // Max concurrent conversations per user
-  
+  max_tokens_per_minute      Int @default(100000) // Token rate limit for API calls
+  max_conversations_per_user Int @default(5) // Max concurrent conversations per user
+
   // Feature Flags
-  enable_error_analysis    Boolean   @default(true)     // Whether to enable error analysis
-  enable_admin_analysis    Boolean   @default(true)     // Whether to enable admin action analysis
-  enable_user_ai_convos    Boolean   @default(true)     // Whether to enable user AI conversations
-  
+  enable_error_analysis Boolean @default(true) // Whether to enable error analysis
+  enable_admin_analysis Boolean @default(true) // Whether to enable admin action analysis
+  enable_user_ai_convos Boolean @default(true) // Whether to enable user AI conversations
+
   // Metadata
-  last_updated             DateTime  @default(now()) @updatedAt
-  updated_by               String?   @db.VarChar(44)    // Admin who made the change
-  
+  last_updated DateTime @default(now()) @updatedAt
+  updated_by   String?  @db.VarChar(44) // Admin who made the change
+
   @@map("config_ai_service")
 }
 
 model rpc_benchmark_results {
-  id              Int       @id @default(autoincrement())
-  test_run_id     String    // Unique identifier for test run batch
-  timestamp       DateTime  @default(now())
-  provider        String    // RPC provider name (e.g., "Helius", "BranchRPC")
-  method          String    // RPC method tested (e.g., "getLatestBlockhash")
-  test_type       String    // Type of test (e.g., "rpc", "network")
-  min_latency     Float?    // Minimum latency in ms
-  max_latency     Float?    // Maximum latency in ms
-  avg_latency     Float?    // Average latency in ms
-  median_latency  Float?    // Median latency in ms
-  stdev           Float?    // Standard deviation of latencies
-  success_count   Int       @default(0)
-  failure_count   Int       @default(0)
-  raw_latencies   Json?     // Raw latency measurements as JSON array
-  notes           String?   // Optional notes about the test
+  id             Int      @id @default(autoincrement())
+  test_run_id    String // Unique identifier for test run batch
+  timestamp      DateTime @default(now())
+  provider       String // RPC provider name (e.g., "Helius", "BranchRPC")
+  method         String // RPC method tested (e.g., "getLatestBlockhash")
+  test_type      String // Type of test (e.g., "rpc", "network")
+  min_latency    Float? // Minimum latency in ms
+  max_latency    Float? // Maximum latency in ms
+  avg_latency    Float? // Average latency in ms
+  median_latency Float? // Median latency in ms
+  stdev          Float? // Standard deviation of latencies
+  success_count  Int      @default(0)
+  failure_count  Int      @default(0)
+  raw_latencies  Json? // Raw latency measurements as JSON array
+  notes          String? // Optional notes about the test
 
   @@index([test_run_id])
   @@index([provider])
@@ -1501,16 +1514,16 @@ model rpc_benchmark_results {
 
 // Token rank history information
 model token_rank_history {
-  id          Int       @id @default(autoincrement())       // id
-  token_id    Int                                           // Foreign key to tokens table
-  rank        Int                                           // Position in ranking (1-1000+)
-  timeframe   String?   @db.VarChar(20)                     // [new 4/25/25] options are 5m, 1h, 6h, 24h (i think?)
-  timestamp   DateTime  @default(now()) @db.Timestamptz(6)  // ts
-  source      String?   @db.VarChar(50)                     // Source of ranking data (e.g. 'jupiter', 'manual')
-  snapshot_id String?   @db.VarChar(100)                    // Optional batch ID for grouping ranks from same update
-  
+  id          Int      @id @default(autoincrement()) // id
+  token_id    Int // Foreign key to tokens table
+  rank        Int // Position in ranking (1-1000+)
+  timeframe   String?  @db.VarChar(20) // [new 4/25/25] options are 5m, 1h, 6h, 24h (i think?)
+  timestamp   DateTime @default(now()) @db.Timestamptz(6) // ts
+  source      String?  @db.VarChar(50) // Source of ranking data (e.g. 'jupiter', 'manual')
+  snapshot_id String?  @db.VarChar(100) // Optional batch ID for grouping ranks from same update
+
   // Relations
-  tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
+  tokens tokens @relation(fields: [token_id], references: [id], onDelete: Cascade)
 
   @@index([token_id])
   @@index([timestamp(sort: Desc)])
@@ -1521,17 +1534,17 @@ model token_rank_history {
 
 // Volume history table for tracking token volume over time
 model token_volume_history {
-  id          Int       @id @default(autoincrement())
-  token_id    Int       // Foreign key to tokens table
-  volume      Decimal   @db.Decimal(20, 0) // Volume in smallest token units
-  volume_usd  Decimal?  @db.Decimal(20, 2) // Volume in USD (if available)
-  change_24h  Decimal?  @db.Decimal(5, 2)  // 24h volume change percentage
-  timestamp   DateTime  @default(now()) @db.Timestamptz(6)
-  source      String?   @db.VarChar(50)    // Source of volume data (e.g. 'jupiter', 'coingecko')
-  snapshot_id String?   @db.VarChar(100)   // Optional batch ID for grouping from same update
-  
+  id          Int      @id @default(autoincrement())
+  token_id    Int // Foreign key to tokens table
+  volume      Decimal  @db.Decimal(20, 0) // Volume in smallest token units
+  volume_usd  Decimal? @db.Decimal(20, 2) // Volume in USD (if available)
+  change_24h  Decimal? @db.Decimal(5, 2) // 24h volume change percentage
+  timestamp   DateTime @default(now()) @db.Timestamptz(6)
+  source      String?  @db.VarChar(50) // Source of volume data (e.g. 'jupiter', 'coingecko')
+  snapshot_id String?  @db.VarChar(100) // Optional batch ID for grouping from same update
+
   // Relations
-  tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
+  tokens tokens @relation(fields: [token_id], references: [id], onDelete: Cascade)
 
   @@index([token_id])
   @@index([timestamp(sort: Desc)])
@@ -1542,16 +1555,16 @@ model token_volume_history {
 
 // Liquidity history table for tracking token liquidity over time
 model token_liquidity_history {
-  id          Int       @id @default(autoincrement())
-  token_id    Int       // Foreign key to tokens table
-  liquidity   Decimal   @db.Decimal(20, 0) // Liquidity in smallest token units
-  change_24h  Decimal?  @db.Decimal(5, 2)  // 24h liquidity change percentage
-  timestamp   DateTime  @default(now()) @db.Timestamptz(6)
-  source      String?   @db.VarChar(50)    // Source of liquidity data
-  snapshot_id String?   @db.VarChar(100)   // Optional batch ID for grouping from same update
-  
+  id          Int      @id @default(autoincrement())
+  token_id    Int // Foreign key to tokens table
+  liquidity   Decimal  @db.Decimal(20, 0) // Liquidity in smallest token units
+  change_24h  Decimal? @db.Decimal(5, 2) // 24h liquidity change percentage
+  timestamp   DateTime @default(now()) @db.Timestamptz(6)
+  source      String?  @db.VarChar(50) // Source of liquidity data
+  snapshot_id String?  @db.VarChar(100) // Optional batch ID for grouping from same update
+
   // Relations
-  tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
+  tokens tokens @relation(fields: [token_id], references: [id], onDelete: Cascade)
 
   @@index([token_id])
   @@index([timestamp(sort: Desc)])
@@ -1562,17 +1575,17 @@ model token_liquidity_history {
 
 // Market cap history table for tracking token market cap over time
 model token_market_cap_history {
-  id          Int       @id @default(autoincrement())
-  token_id    Int       // Foreign key to tokens table
-  market_cap  Decimal   @db.Decimal(20, 0) // Market cap in smallest units
-  fdv         Decimal?  @db.Decimal(20, 0) // Fully diluted valuation if available
-  change_24h  Decimal?  @db.Decimal(5, 2)  // 24h market cap change percentage
-  timestamp   DateTime  @default(now()) @db.Timestamptz(6)
-  source      String?   @db.VarChar(50)    // Source of market cap data
-  snapshot_id String?   @db.VarChar(100)   // Optional batch ID for grouping from same update
-  
+  id          Int      @id @default(autoincrement())
+  token_id    Int // Foreign key to tokens table
+  market_cap  Decimal  @db.Decimal(20, 0) // Market cap in smallest units
+  fdv         Decimal? @db.Decimal(20, 0) // Fully diluted valuation if available
+  change_24h  Decimal? @db.Decimal(5, 2) // 24h market cap change percentage
+  timestamp   DateTime @default(now()) @db.Timestamptz(6)
+  source      String?  @db.VarChar(50) // Source of market cap data
+  snapshot_id String?  @db.VarChar(100) // Optional batch ID for grouping from same update
+
   // Relations
-  tokens      tokens    @relation(fields: [token_id], references: [id], onDelete: Cascade)
+  tokens tokens @relation(fields: [token_id], references: [id], onDelete: Cascade)
 
   @@index([token_id])
   @@index([timestamp(sort: Desc)])
@@ -1582,15 +1595,15 @@ model token_market_cap_history {
 }
 
 model token_pools {
-  address       String   @db.Text
-  tokenAddress  String   @db.Text
-  token         tokens   @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
-  dex           String   @db.Text // RAYDIUM_AMM_V4, PUMP_SWAP, etc.
-  programId     String   @db.Text // The program address
-  dataSize      Int      // Size of the account data
-  tokenOffset   Int      // Offset where token address is found
-  createdAt     DateTime @default(now())
-  lastUpdated   DateTime @updatedAt
+  address      String   @db.Text
+  tokenAddress String   @db.Text
+  token        tokens   @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
+  dex          String   @db.Text // RAYDIUM_AMM_V4, PUMP_SWAP, etc.
+  programId    String   @db.Text // The program address
+  dataSize     Int // Size of the account data
+  tokenOffset  Int // Offset where token address is found
+  createdAt    DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
 
   @@id([address, tokenAddress])
   @@index([dex])
@@ -1599,56 +1612,56 @@ model token_pools {
 }
 
 model monitored_tokens {
-  token_address         String    @id @db.VarChar(44)
+  token_address         String   @id @db.VarChar(44)
   token_name            String?
   token_symbol          String?
-  decimals              Int       @default(9)
-  monitor_buys          Boolean   @default(true)
-  monitor_sells         Boolean   @default(true)
-  min_transaction_value Decimal   @default(0) @db.Decimal(20, 8)
-  created_at            DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  token                 tokens    @relation(fields: [token_address], references: [address], onDelete: Cascade, onUpdate: Cascade)
+  decimals              Int      @default(9)
+  monitor_buys          Boolean  @default(true)
+  monitor_sells         Boolean  @default(true)
+  min_transaction_value Decimal  @default(0) @db.Decimal(20, 8)
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  token                 tokens   @relation(fields: [token_address], references: [address], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("monitored_tokens")
 }
 
 model token_config {
-  id                          Int      @id @default(autoincrement())
-  address                     String?  @db.VarChar(44)
-  symbol                      String   @db.VarChar(10)
-  total_supply                BigInt
-  initial_circulating         BigInt
+  id                           Int     @id @default(autoincrement())
+  address                      String? @db.VarChar(44)
+  symbol                       String  @db.VarChar(10)
+  total_supply                 BigInt
+  initial_circulating          BigInt
   community_allocation_percent Int
-  team_allocation_percent     Int
-  treasury_allocation_percent Int
-  initial_price               Decimal  @db.Decimal(20, 10)
-  launch_method               String   @db.VarChar(50)
+  team_allocation_percent      Int
+  treasury_allocation_percent  Int
+  initial_price                Decimal @db.Decimal(20, 10)
+  launch_method                String  @db.VarChar(50)
 
   @@map("token_config")
 }
 
 model contest_schedule {
-  id                  Int               @id @default(autoincrement())
-  name                String            // Name of the schedule
-  template_id         Int               // References contest_templates
-  hour                Int?              // Hour of day (0-23)
-  minute              Int?              @default(0) // Minute of hour (0-59)
-  days                Int[]             // Days of week (0=Sunday, 6=Saturday) 
-  entry_fee_override  Decimal?          @db.Decimal(20, 8) // Optional override of template fee
-  name_override       String?           // Optional override of contest name
-  description_override String?          // Optional override of contest description
-  duration_hours      Float?            @default(1.0) // Duration in hours
-  enabled             Boolean           @default(true) // Whether this schedule is active
-  advance_notice_hours Int?             @default(1) // Hours in advance to create contest
-  min_participants_override Int?        // Override min participants from template
-  max_participants_override Int?        // Override max participants from template
-  allow_multiple_hours Boolean          @default(false) // For tri-hourly type schedules
-  multiple_hours      Int[]             // Array of hours for multiple hour schedules
-  created_at          DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at          DateTime          @updatedAt @db.Timestamptz(6)
-  template            contest_templates @relation(fields: [template_id], references: [id])
-  contests            contests[]
+  id                        Int               @id @default(autoincrement())
+  name                      String // Name of the schedule
+  template_id               Int // References contest_templates
+  hour                      Int? // Hour of day (0-23)
+  minute                    Int?              @default(0) // Minute of hour (0-59)
+  days                      Int[] // Days of week (0=Sunday, 6=Saturday) 
+  entry_fee_override        Decimal?          @db.Decimal(20, 8) // Optional override of template fee
+  name_override             String? // Optional override of contest name
+  description_override      String? // Optional override of contest description
+  duration_hours            Float?            @default(1.0) // Duration in hours
+  enabled                   Boolean           @default(true) // Whether this schedule is active
+  advance_notice_hours      Int?              @default(1) // Hours in advance to create contest
+  min_participants_override Int? // Override min participants from template
+  max_participants_override Int? // Override max participants from template
+  allow_multiple_hours      Boolean           @default(false) // For tri-hourly type schedules
+  multiple_hours            Int[] // Array of hours for multiple hour schedules
+  created_at                DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime          @updatedAt @db.Timestamptz(6)
+  template                  contest_templates @relation(fields: [template_id], references: [id])
+  contests                  contests[]
 
   @@index([enabled])
   @@index([template_id])
@@ -1656,52 +1669,52 @@ model contest_schedule {
 }
 
 model roadmap_phases {
-  id             Int            @id @default(autoincrement())
+  id             Int             @id @default(autoincrement())
   quarter_number Int
   year           Int
-  title          String         @db.VarChar(100)
+  title          String          @db.VarChar(100)
   tasks          roadmap_tasks[]
 
   @@map("roadmap_phases")
 }
 
 model roadmap_tasks {
-  id          Int           @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   phase_id    Int
-  description String        @db.Text
+  description String         @db.Text
   phase       roadmap_phases @relation(fields: [phase_id], references: [id])
 
   @@map("roadmap_tasks")
 }
 
 model platform_stats {
-  id               Int      @id @default(autoincrement())
-  user_count       Int      @default(0)
-  upcoming_contests Int      @default(0)
-  total_prize_pool Decimal  @default(0)
-  waitlist_count   Int      @default(0)
+  id                Int     @id @default(autoincrement())
+  user_count        Int     @default(0)
+  upcoming_contests Int     @default(0)
+  total_prize_pool  Decimal @default(0)
+  waitlist_count    Int     @default(0)
 
   @@map("platform_stats")
 }
 
 model terminal_commands {
-  id               Int      @id @default(autoincrement())
-  command_name     String   @unique @db.VarChar(50)
-  command_response String   @db.Text
+  id               Int    @id @default(autoincrement())
+  command_name     String @unique @db.VarChar(50)
+  command_response String @db.Text
 
   @@map("terminal_commands")
 }
 
 model pool_price_changes {
-  id              Int      @id @default(autoincrement())
-  tokenAddress    String   @db.VarChar(44)
-  poolAddress     String   @db.Text
-  price           Decimal  @db.Decimal(20, 8)
-  previousPrice   Decimal  @db.Decimal(20, 8)
-  changePercent   Decimal  @db.Decimal(10, 2)
-  liquidity       Decimal  @db.Decimal(20, 0) @default(0)
-  timestamp       DateTime @default(now()) @db.Timestamptz(6)
-  token           tokens   @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
+  id            Int      @id @default(autoincrement())
+  tokenAddress  String   @db.VarChar(44)
+  poolAddress   String   @db.Text
+  price         Decimal  @db.Decimal(20, 8)
+  previousPrice Decimal  @db.Decimal(20, 8)
+  changePercent Decimal  @db.Decimal(10, 2)
+  liquidity     Decimal  @default(0) @db.Decimal(20, 0)
+  timestamp     DateTime @default(now()) @db.Timestamptz(6)
+  token         tokens   @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
 
   @@index([tokenAddress])
   @@index([poolAddress])
@@ -1713,32 +1726,62 @@ model pool_price_changes {
 
 // Token refresh priority configuration
 model token_refresh_priority_tiers {
-  id                        Int       @id @default(autoincrement())
-  name                      String    @unique @db.VarChar(50) // e.g., "CRITICAL", "HIGH", etc.
-  description               String?   @db.Text
-  
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(50) // e.g., "CRITICAL", "HIGH", etc.
+  description String? @db.Text
+
   // Core configuration
-  priority_score            Int       // Priority score used for sorting (higher = refreshed sooner)
-  refresh_interval_seconds  Int       // Base refresh interval in seconds
-  rank_threshold            Int       // Maximum rank for this tier
-  
+  priority_score           Int // Priority score used for sorting (higher = refreshed sooner)
+  refresh_interval_seconds Int // Base refresh interval in seconds
+  rank_threshold           Int // Maximum rank for this tier
+
   // Advanced settings
-  volatility_factor         Float     @default(1.0)  // Multiplier for adjusting intervals based on volatility
-  max_tokens_per_batch      Int?      // Maximum tokens per batch for this tier (null = use global default)
-  batch_delay_ms            Int?      // Delay between batches for this tier (null = use global default)
-  
+  volatility_factor    Float @default(1.0) // Multiplier for adjusting intervals based on volatility
+  max_tokens_per_batch Int? // Maximum tokens per batch for this tier (null = use global default)
+  batch_delay_ms       Int? // Delay between batches for this tier (null = use global default)
+
   // Tokens in this tier (virtual relationship - not stored)
-  token_count               Int       @default(0)    // Number of tokens currently in this tier
-  
+  token_count Int @default(0) // Number of tokens currently in this tier
+
   // Admin metadata
-  created_at                DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at                DateTime  @updatedAt @db.Timestamptz(6)
-  updated_by                String?   @db.VarChar(44) // Admin who updated this tier
-  is_active                 Boolean   @default(true)  // Whether this tier is currently active
-  
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+  updated_by String?  @db.VarChar(44) // Admin who updated this tier
+  is_active  Boolean  @default(true) // Whether this tier is currently active
+
   @@index([priority_score])
   @@index([refresh_interval_seconds])
   @@index([rank_threshold])
   @@index([is_active])
   @@map("token_refresh_priority_tiers")
+}
+
+// Contest creation credits system
+model contest_creation_credits {
+  id             Int       @id @default(autoincrement())
+  user_id        String    @db.VarChar(44) // Wallet address of user who owns this credit
+  source         String    @db.VarChar(50) // Where the credit came from: "admin_grant", "purchase", "achievement"
+  status         String    @default("active") @db.VarChar(20) // active, used, expired, revoked
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  used_at        DateTime? @db.Timestamptz(6)
+  expires_at     DateTime? @db.Timestamptz(6)
+  price_paid     Decimal?  @db.Decimal(20, 8) // If purchased, how much was paid
+  transaction_id String?   @db.VarChar(64) // Transaction ID if purchased
+  granted_by     String?   @db.VarChar(44) // Admin who granted this credit if admin_grant
+  metadata       Json?     @default("{}")
+  
+  // Extra fields for receipt/record-keeping
+  purchase_txn_signature String? @db.VarChar(100) // Solana transaction signature if purchased
+  receipt_number         String? @db.VarChar(30) // Receipt number for accounting
+  contest_settings       Json?   @default("{}") // Pre-configured settings for contests created with this credit
+  
+  // Relations
+  user     users      @relation("UserContestCredits", fields: [user_id], references: [wallet_address], onDelete: Cascade)
+  contest  contests[]
+
+  @@index([user_id])
+  @@index([status])
+  @@index([expires_at])
+  @@index([source])
+  @@map("contest_creation_credits")
 }

@@ -416,6 +416,42 @@ class TokenDetectionService extends BaseService {
             logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Error stopping service:${fancyColors.RESET}`, error);
         }
     }
+    
+    /**
+     * Clean up resources and reset state before shutdown
+     * @returns {Promise<void>}
+     */
+    async cleanup() {
+        try {
+            // Stop the service first
+            await this.stop();
+            
+            // Reset processing state
+            this.isProcessingBatch = false;
+            this.processingQueue = [];
+            
+            // Initialize stats with safe default values
+            this.stats = {
+                operations: {
+                    total: 0,
+                    successful: 0,
+                    failed: 0
+                },
+                lastCheck: null,
+                totalDetected: 0,
+                tokensAdded: 0,
+                tokensRemoved: 0,
+                lastBatchSize: 0,
+                detectionHistory: []
+            };
+            
+            logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} CLEANUP ${fancyColors.RESET} Service resources cleaned up`);
+            return true;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Error during cleanup:${fancyColors.RESET}`, error);
+            return false;
+        }
+    }
 }
 
 // Create and export singleton instance
