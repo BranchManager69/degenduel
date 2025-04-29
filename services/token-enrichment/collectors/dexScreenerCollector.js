@@ -65,6 +65,102 @@ class DexScreenerCollector {
   }
 
   /**
+   * Get token data for multiple tokens in a batch
+   * @param {string[]} tokenAddresses - Array of Solana token addresses
+   * @returns {Promise<Object>} Map of token addresses to token data
+   */
+  async getTokensByAddressBatch(tokenAddresses) {
+    try {
+      if (!tokenAddresses || !Array.isArray(tokenAddresses) || tokenAddresses.length === 0) {
+        return {};
+      }
+
+      logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Fetching batch token data for ${tokenAddresses.length} tokens`);
+      
+      // Check cache first and collect missing tokens
+      const results = {};
+      const missingTokens = [];
+
+      for (const address of tokenAddresses) {
+        const cacheKey = `address_${address}`;
+        const cachedData = this.getCachedData(cacheKey);
+        
+        if (cachedData) {
+          results[address] = cachedData;
+        } else {
+          missingTokens.push(address);
+        }
+      }
+
+      // If all tokens were in cache, return results
+      if (missingTokens.length === 0) {
+        logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} All ${tokenAddresses.length} tokens found in cache`);
+        return results;
+      }
+
+      // DexScreener doesn't have a true batch endpoint, but we can optimize with parallel requests
+      // Group missing tokens into chunks of 10 (reasonable for parallel processing)
+      const CHUNK_SIZE = 10; // Lower to avoid rate limiting
+      const chunks = this.chunkArray(missingTokens, CHUNK_SIZE);
+      
+      logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Fetching ${missingTokens.length} tokens in ${chunks.length} batch(es)`);
+      
+      // Process each chunk with parallel requests
+      for (const [index, chunk] of chunks.entries()) {
+        try {
+          // Create array of promises for parallel execution
+          const tokenPromises = chunk.map(address => {
+            return this.getTokenByAddress(address)
+              .then(data => {
+                if (data) {
+                  // Already cached inside getTokenByAddress
+                  results[address] = data;
+                }
+                return { address, success: !!data };
+              })
+              .catch(error => {
+                logApi.debug(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token ${address}:${fancyColors.RESET}`, error.message);
+                return { address, success: false, error: error.message };
+              });
+          });
+          
+          // Wait for all promises in the chunk to complete
+          const chunkResults = await Promise.all(tokenPromises);
+          
+          // Log chunk completion
+          const successCount = chunkResults.filter(r => r.success).length;
+          logApi.debug(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Processed batch ${index + 1}/${chunks.length}: ${successCount}/${chunk.length} successful`);
+          
+          // Add delay between chunks to avoid rate limiting
+          if (index < chunks.length - 1) {
+            await this.sleep(1000); // DexScreener has stricter rate limits
+          }
+        } catch (chunkError) {
+          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error processing chunk ${index + 1}:${fancyColors.RESET}`, chunkError);
+        }
+      }
+
+      // Log summary
+      const successCount = Object.keys(results).length;
+      logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Successfully fetched ${successCount}/${tokenAddresses.length} tokens in batch`);
+      
+      return results;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token processing:${fancyColors.RESET}`, error);
+      return {};
+    }
+  }
+
+  /**
+   * Helper method to add delay
+   * @param {number} ms - Milliseconds to sleep
+   * @returns {Promise<void>}
+   */
+  async sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
    * Search for tokens on DexScreener by name or symbol
    * @param {string} query - Search query (name or symbol)
    * @returns {Promise<Array>} Array of matching tokens
@@ -167,6 +263,20 @@ class DexScreenerCollector {
     }
 
     return tokenData;
+  }
+
+  /**
+   * Helper method to split an array into chunks
+   * @param {Array} array - The array to split
+   * @param {number} chunkSize - Size of each chunk
+   * @returns {Array[]} Array of chunks
+   */
+  chunkArray(array, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
   }
 
   /**

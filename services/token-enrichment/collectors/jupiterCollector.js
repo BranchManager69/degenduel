@@ -80,6 +80,113 @@ class JupiterCollector {
   }
 
   /**
+   * Get token information for multiple tokens in a batch
+   * @param {string[]} tokenAddresses - Array of Solana token addresses
+   * @returns {Promise<Object>} Map of token addresses to token data
+   */
+  async getTokenInfoBatch(tokenAddresses) {
+    try {
+      if (!tokenAddresses || !Array.isArray(tokenAddresses) || tokenAddresses.length === 0) {
+        return {};
+      }
+
+      logApi.info(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} Fetching batch token info for ${tokenAddresses.length} tokens`);
+      
+      // Check cache first and collect missing tokens
+      const results = {};
+      const missingTokens = [];
+
+      for (const address of tokenAddresses) {
+        const cacheKey = `token_${address}`;
+        const cachedData = this.getCachedData(cacheKey);
+        
+        if (cachedData) {
+          results[address] = cachedData;
+        } else {
+          missingTokens.push(address);
+        }
+      }
+
+      // If all tokens were in cache, return results
+      if (missingTokens.length === 0) {
+        logApi.info(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} All ${tokenAddresses.length} tokens found in cache`);
+        return results;
+      }
+
+      // Ensure collector is initialized
+      if (!this.jupiterClient || !this.jupiterClient.initialized) {
+        await this.initialize();
+      }
+
+      // Process missing tokens in chunks (Jupiter's limit is 100 tokens per request)
+      const CHUNK_SIZE = 100;
+      const chunks = this.chunkArray(missingTokens, CHUNK_SIZE);
+      
+      logApi.info(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} Fetching ${missingTokens.length} tokens in ${chunks.length} batch(es)`);
+      
+      // Get token information for each chunk
+      for (const [index, chunk] of chunks.entries()) {
+        try {
+          // Get tokenList from Jupiter client and filter to the chunk tokens
+          const tokenMap = this.jupiterClient.tokenMap || {};
+          
+          // Extract information for each token in the chunk
+          for (const address of chunk) {
+            const tokenInfo = tokenMap[address];
+            if (tokenInfo) {
+              // Process into standard format
+              const processedData = this.processTokenInfo(tokenInfo);
+              
+              // Cache the results
+              this.cacheData(`token_${address}`, processedData);
+              
+              // Add to results
+              results[address] = processedData;
+            } else {
+              // Individual fallback if token not in map
+              try {
+                const individualTokenInfo = await this.jupiterClient.getTokenInfo(address);
+                if (individualTokenInfo) {
+                  const processedData = this.processTokenInfo(individualTokenInfo);
+                  this.cacheData(`token_${address}`, processedData);
+                  results[address] = processedData;
+                }
+              } catch (individualError) {
+                logApi.debug(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching individual token ${address}:${fancyColors.RESET}`, individualError);
+              }
+            }
+          }
+          
+          logApi.debug(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} Processed batch ${index + 1}/${chunks.length} (${chunk.length} tokens)`);
+        } catch (chunkError) {
+          logApi.error(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token batch ${index + 1}:${fancyColors.RESET}`, chunkError);
+          
+          // Individual fallback for each token in the failed chunk
+          for (const address of chunk) {
+            try {
+              const individualResult = await this.getTokenInfo(address);
+              if (individualResult) {
+                results[address] = individualResult;
+              }
+            } catch (individualError) {
+              logApi.debug(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching individual token ${address}:${fancyColors.RESET}`, individualError);
+            }
+          }
+        }
+      }
+
+      // Log summary
+      const successCount = Object.keys(results).length;
+      logApi.info(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} Successfully fetched ${successCount}/${tokenAddresses.length} tokens in batch`);
+      
+      return results;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token info:${fancyColors.RESET}`, error);
+      return {};
+    }
+  }
+
+  /**
    * Get token price from Jupiter
    * @param {string} tokenAddress - Solana token address
    * @returns {Promise<Object>} Token price data from Jupiter
@@ -173,6 +280,20 @@ class JupiterCollector {
       logoURI: tokenInfo.logoURI || null,
       tags: tokenInfo.tags || []
     };
+  }
+
+  /**
+   * Helper method to split an array into chunks
+   * @param {Array} array - The array to split
+   * @param {number} chunkSize - Size of each chunk
+   * @returns {Array[]} Array of chunks
+   */
+  chunkArray(array, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
   }
 
   /**

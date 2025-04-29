@@ -127,6 +127,27 @@ class TokenEnrichmentService extends BaseService {
       // Start background processing
       this.startProcessingQueue();
       
+      // Schedule recovery of stuck tokens after a brief delay (5 seconds)
+      setTimeout(async () => {
+        try {
+          // Run a recovery pass on startup to fix stuck tokens
+          const result = await this.reprocessStuckTokens(250); // Process up to 250 stuck tokens
+          logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Startup recovery completed: ${result.enqueued} tokens re-enqueued`);
+          
+          // Set up a periodic recovery process (every 30 minutes)
+          setInterval(async () => {
+            try {
+              const periodicResult = await this.reprocessStuckTokens(100);
+              logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Periodic recovery completed: ${periodicResult.enqueued} tokens re-enqueued`);
+            } catch (err) {
+              logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Periodic recovery failed:`, err);
+            }
+          }, 30 * 60 * 1000); // Run every 30 minutes
+        } catch (err) {
+          logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Startup recovery failed:`, err);
+        }
+      }, 5000);
+      
       this.isInitialized = true;
       logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Token enrichment service ready`);
       return true;
@@ -163,25 +184,48 @@ class TokenEnrichmentService extends BaseService {
       });
       
       if (existingToken) {
-        // Token already exists, update discovery timestamp
+        // Token already exists, update discovery timestamp and increment counter
+        const currentCount = existingToken.discovery_count || 0;
         await this.db.tokens.update({
           where: { id: existingToken.id },
           data: { 
             last_discovery: new Date(),
-            discovery_count: { increment: 1 }
+            discovery_count: currentCount + 1  // Explicitly increment rather than using { increment: 1 }
           }
         });
+        
+        logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Updated discovery count for ${tokenInfo.address} to ${currentCount + 1}`);
         
         // Only re-enqueue for enrichment if it's been a while or metadata is incomplete
         // Get enrichment data from refresh_metadata if available
         const refreshMetadata = existingToken.refresh_metadata || {};
         const lastEnrichmentAttempt = refreshMetadata.last_enrichment_attempt 
                                     ? new Date(refreshMetadata.last_enrichment_attempt) 
-                                    : null;
+                                    : existingToken.last_refresh_attempt;  // Fallback to last_refresh_attempt
+                                    
+        const lastEnrichmentSuccess = refreshMetadata.last_enrichment_success
+                                    ? new Date(refreshMetadata.last_enrichment_success)
+                                    : existingToken.last_refresh_success;  // Fallback to last_refresh_success
         
-        const shouldReEnrich = existingToken.metadata_status !== 'complete' || 
-                               !lastEnrichmentAttempt ||
-                               new Date() - lastEnrichmentAttempt > 24 * 60 * 60 * 1000;
+        const attemptCount = refreshMetadata.enrichment_attempts || 0;
+        const daysSinceLastAttempt = lastEnrichmentAttempt 
+                                    ? (new Date() - lastEnrichmentAttempt) / (1000 * 60 * 60 * 24)
+                                    : 999; // Large number to ensure processing if no attempt record
+        
+        // Calculate re-enrichment conditions
+        const isPending = existingToken.metadata_status === 'pending';
+        const isFailed = existingToken.metadata_status === 'failed';
+        const isOldAttempt = daysSinceLastAttempt > 1; // Re-attempt if older than 1 day
+        const hasLowAttempts = attemptCount < 3; // Retry if fewer than 3 attempts
+        
+        // Decide whether to re-enrich based on more nuanced conditions
+        const shouldReEnrich = (isPending && (isOldAttempt || hasLowAttempts)) || // Retry pending with conditions
+                               isFailed && isOldAttempt || // Retry failed if it's been a while
+                               !lastEnrichmentAttempt || // Always try if never attempted
+                               daysSinceLastAttempt > 7; // Weekly refresh for all tokens
+        
+        // Log decision for debugging
+        logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Re-enrichment decision for ${tokenInfo.address}: ${shouldReEnrich ? 'YES' : 'NO'} (status: ${existingToken.metadata_status}, attempts: ${attemptCount}, days since: ${daysSinceLastAttempt.toFixed(1)})`);
         
         if (shouldReEnrich) {
           // Add to enrichment queue with medium priority
@@ -247,9 +291,25 @@ class TokenEnrichmentService extends BaseService {
   startProcessingQueue() {
     // Set interval to check queue and start processing if needed
     setInterval(() => {
-      if (this.processingQueue.length > 0 && !this.batchProcessing && this.activeBatches < CONFIG.MAX_CONCURRENT_BATCHES) {
-        this.processNextBatch();
+      // Start processing batches if queue has items and we're under max batches
+      const canStartBatches = this.processingQueue.length > 0 && this.activeBatches < CONFIG.MAX_CONCURRENT_BATCHES;
+      
+      if (canStartBatches) {
+        const batchesToStart = Math.min(
+          CONFIG.MAX_CONCURRENT_BATCHES - this.activeBatches,
+          Math.ceil(this.processingQueue.length / CONFIG.BATCH_SIZE)
+        );
+        
+        logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Starting ${batchesToStart} batches (queue: ${this.processingQueue.length}, active: ${this.activeBatches})`);
+        
+        // Start multiple batches in parallel (up to MAX_CONCURRENT_BATCHES)
+        for (let i = 0; i < batchesToStart; i++) {
+          this.processNextBatch();
+        }
       }
+      
+      // Report status periodically
+      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Queue status: ${this.processingQueue.length} items, ${this.activeBatches}/${CONFIG.MAX_CONCURRENT_BATCHES} active batches`);
     }, 5000); // Check every 5 seconds
     
     logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Started queue processing monitor`);
@@ -280,11 +340,49 @@ class TokenEnrichmentService extends BaseService {
       const batch = this.processingQueue.splice(0, CONFIG.BATCH_SIZE);
       this.stats.currentQueueSize = this.processingQueue.length;
       
-      // Process each token in the batch
-      const processingPromises = batch.map(item => this.enrichToken(item.address));
+      // Extract addresses from batch
+      const batchAddresses = batch.map(item => item.address);
       
-      // Wait for all tokens to be processed
-      await Promise.allSettled(processingPromises);
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} BATCH START ${fancyColors.RESET} Processing batch of ${batchAddresses.length} tokens using batch API calls`);
+      
+      // Collect data in batches
+      try {
+        // Step 1: Get Jupiter data in batch
+        const jupiterData = await jupiterCollector.getTokenInfoBatch(batchAddresses);
+        await this.sleep(CONFIG.THROTTLE_MS);
+        
+        // Step 2: Get Helius data in batch
+        const heliusData = await heliusCollector.getTokenMetadataBatch(batchAddresses);
+        await this.sleep(CONFIG.THROTTLE_MS);
+        
+        // Step 3: Get DexScreener data in batch
+        const dexScreenerData = await dexScreenerCollector.getTokensByAddressBatch(batchAddresses);
+        
+        // Process each token with the collected data
+        const processingPromises = batch.map(item => {
+          // Create a combined data object for this token
+          const tokenData = {
+            address: item.address,
+            jupiter: jupiterData[item.address] || null,
+            helius: heliusData[item.address] || null,
+            dexscreener: dexScreenerData[item.address] || null
+          };
+          
+          // Process and store the token data
+          return this.processAndStoreToken(item.address, tokenData);
+        });
+        
+        // Wait for all tokens to be processed
+        await Promise.allSettled(processingPromises);
+        
+        logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} BATCH COMPLETE ${fancyColors.RESET} Processed ${batchAddresses.length} tokens in batch mode`);
+      } catch (batchError) {
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error in batch processing, falling back to individual processing:${fancyColors.RESET}`, batchError);
+        
+        // Fallback to processing tokens individually
+        const processingPromises = batch.map(item => this.enrichToken(item.address));
+        await Promise.allSettled(processingPromises);
+      }
       
       // Clean up
       this.activeBatches--;
@@ -306,6 +404,102 @@ class TokenEnrichmentService extends BaseService {
   }
   
   /**
+   * Process and store token data from batch processing
+   * @param {string} tokenAddress - Token address
+   * @param {Object} enrichedData - Combined data from all sources
+   * @returns {Promise<boolean>} Success status
+   */
+  async processAndStoreToken(tokenAddress, enrichedData) {
+    try {
+      // Start timing
+      const startTime = Date.now();
+      
+      // Increment enrichment attempts counter
+      const attemptCount = await this.incrementEnrichmentAttempts(tokenAddress);
+      
+      // Update token record to mark enrichment attempt
+      await this.db.tokens.updateMany({
+        where: { address: tokenAddress },
+        data: { 
+          last_refresh_attempt: new Date() // Using existing last_refresh_attempt field
+        }
+      });
+      
+      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Processing batch data for ${tokenAddress} (attempt ${attemptCount})`);
+      
+      // Check if we have any useful data
+      const hasData = enrichedData.jupiter || enrichedData.helius || enrichedData.dexscreener;
+      if (!hasData) {
+        logApi.warn(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.YELLOW}No data collected for ${tokenAddress}${fancyColors.RESET}`);
+        
+        // Update token record to mark failed enrichment
+        await this.db.tokens.updateMany({
+          where: { address: tokenAddress },
+          data: { 
+            metadata_status: 'failed',
+            refresh_metadata: {
+              last_enrichment_error: 'No data collected',
+              last_error_time: new Date().toISOString()
+            }
+          }
+        });
+        
+        this.stats.processedFailed++;
+        return false;
+      }
+      
+      // Store the enriched data
+      const success = await this.storeTokenData(tokenAddress, enrichedData);
+      
+      // Update statistics
+      this.stats.processedTotal++;
+      if (success) {
+        this.stats.processedSuccess++;
+      } else {
+        this.stats.processedFailed++;
+      }
+      
+      this.stats.lastProcessedTime = new Date().toISOString();
+      
+      // Log performance
+      const elapsedMs = Date.now() - startTime;
+      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${success ? fancyColors.GREEN : fancyColors.YELLOW}Processed ${tokenAddress} in ${elapsedMs}ms (${success ? 'success' : 'partial'})${fancyColors.RESET}`);
+      
+      // Emit event if successful
+      if (success) {
+        serviceEvents.emit('token:enriched', {
+          address: tokenAddress,
+          enrichedAt: new Date().toISOString(),
+          sources: Object.keys(enrichedData).filter(key => enrichedData[key] !== null && key !== 'address')
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token ${tokenAddress}:${fancyColors.RESET}`, error);
+      
+      // Update token record to mark failed enrichment
+      try {
+        await this.db.tokens.updateMany({
+          where: { address: tokenAddress },
+          data: { 
+            metadata_status: 'failed',
+            refresh_metadata: {
+              last_enrichment_error: error.message,
+              last_error_time: new Date().toISOString()
+            }
+          }
+        });
+      } catch (dbError) {
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Database error:${fancyColors.RESET}`, dbError);
+      }
+      
+      this.stats.processedFailed++;
+      return false;
+    }
+  }
+  
+  /**
    * Get current enrichment attempts count
    * @param {string} tokenAddress - Token address
    * @returns {Promise<number>} - Current attempts count or 0
@@ -319,9 +513,53 @@ class TokenEnrichmentService extends BaseService {
       if (!token) return 0;
       
       // Get attempts from refresh_metadata if available
-      return token.refresh_metadata?.enrichment_attempts || 0;
+      const currentAttempts = token.refresh_metadata?.enrichment_attempts || 0;
+      
+      // Log for debugging
+      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Token ${tokenAddress} has ${currentAttempts} enrichment attempts`);
+      
+      return currentAttempts;
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting enrichment attempts:${fancyColors.RESET}`, error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Update enrichment attempts count
+   * @param {string} tokenAddress - Token address
+   * @returns {Promise<number>} - New attempts count
+   */
+  async incrementEnrichmentAttempts(tokenAddress) {
+    try {
+      const token = await this.db.tokens.findFirst({
+        where: { address: tokenAddress }
+      });
+      
+      if (!token) return 0;
+      
+      // Get current attempts from refresh_metadata if available
+      const currentAttempts = token.refresh_metadata?.enrichment_attempts || 0;
+      const newAttempts = currentAttempts + 1;
+      
+      // Update with new count
+      const refreshMetadata = {
+        ...(token.refresh_metadata || {}),
+        enrichment_attempts: newAttempts,
+        last_enrichment_attempt: new Date().toISOString()
+      };
+      
+      await this.db.tokens.update({
+        where: { id: token.id },
+        data: { 
+          refresh_metadata: refreshMetadata
+        }
+      });
+      
+      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Incremented enrichment attempts for ${tokenAddress} to ${newAttempts}`);
+      return newAttempts;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error incrementing enrichment attempts:${fancyColors.RESET}`, error);
       return 0;
     }
   }
@@ -335,17 +573,19 @@ class TokenEnrichmentService extends BaseService {
       // Start timing
       const startTime = Date.now();
       
+      // Increment enrichment attempts counter
+      const attemptCount = await this.incrementEnrichmentAttempts(tokenAddress);
+      
       // Update token record to mark enrichment attempt
       await this.db.tokens.updateMany({
         where: { address: tokenAddress },
         data: { 
-          last_refresh_attempt: new Date(), // Using existing last_refresh_attempt field
-          refresh_metadata: {
-            last_enrichment_attempt: new Date().toISOString(),
-            enrichment_attempts: 1 // Initialize counter
-          }
+          last_refresh_attempt: new Date() // Using existing last_refresh_attempt field
         }
       });
+      
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Starting enrichment for ${tokenAddress} (attempt ${attemptCount})`);
+      
       
       // Get token data from all sources
       const enrichedData = await this.collectTokenData(tokenAddress);
@@ -502,9 +742,17 @@ class TokenEnrichmentService extends BaseService {
           image_url: combinedData.imageUrl,
           description: combinedData.description,
           last_refresh_success: new Date(), // Use existing field instead of 'last_enrichment'
-          metadata_status: 'complete'
+          metadata_status: 'complete', // Set status to complete
+          refresh_metadata: {
+            ...existingToken.refresh_metadata,
+            last_enrichment_success: new Date().toISOString(),
+            enrichment_status: 'complete'  // Also store in metadata JSON for redundancy
+          }
         }
       });
+      
+      // Log status change
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} STATUS UPDATE ${fancyColors.RESET} Token ${tokenAddress} metadata status changed to 'complete'`);
       
       // Store token price if available
       if (combinedData.price !== undefined) {
@@ -747,9 +995,66 @@ class TokenEnrichmentService extends BaseService {
   }
   
   /**
+   * Reprocess tokens stuck in 'pending' state
+   * @param {number} limit - Maximum number of tokens to reprocess
+   * @returns {Promise<{ processed: number, enqueued: number }>}
+   */
+  async reprocessStuckTokens(limit = 100) {
+    try {
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} RECOVERY ${fancyColors.RESET} Finding stuck tokens (limit: ${limit})...`);
+      
+      // Find tokens that are stuck in pending state
+      const stuckTokens = await this.db.tokens.findMany({
+        where: {
+          metadata_status: 'pending',
+          last_refresh_attempt: {
+            lt: new Date(Date.now() - 24 * 60 * 60 * 1000) // Older than 24 hours
+          }
+        },
+        take: limit,
+        orderBy: { 
+          last_refresh_attempt: 'asc' // Oldest first
+        }
+      });
+      
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Found ${stuckTokens.length} tokens stuck in 'pending' state`);
+      
+      let enqueued = 0;
+      
+      // Re-enqueue them with high priority
+      for (const token of stuckTokens) {
+        await this.enqueueTokenEnrichment(token.address, CONFIG.PRIORITY_TIERS.HIGH);
+        enqueued++;
+      }
+      
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} RECOVERY COMPLETE ${fancyColors.RESET} Re-enqueued ${enqueued} tokens for processing`);
+      
+      return {
+        processed: stuckTokens.length,
+        enqueued
+      };
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error reprocessing stuck tokens:${fancyColors.RESET}`, error);
+      return {
+        processed: 0,
+        enqueued: 0
+      };
+    }
+  }
+  
+  /**
    * Stop the service
    * @returns {Promise<void>}
    */
+  /**
+   * Sleep utility function for delay
+   * @param {number} ms - Milliseconds to sleep
+   * @returns {Promise<void>}
+   */
+  async sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
   async stop() {
     try {
       await super.stop();

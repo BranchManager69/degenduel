@@ -61,6 +61,118 @@ class HeliusCollector {
   }
 
   /**
+   * Get token metadata for multiple tokens in a batch
+   * @param {string[]} tokenAddresses - Array of Solana token addresses
+   * @returns {Promise<Object>} Map of token addresses to token metadata
+   */
+  async getTokenMetadataBatch(tokenAddresses) {
+    try {
+      if (!tokenAddresses || !Array.isArray(tokenAddresses) || tokenAddresses.length === 0) {
+        return {};
+      }
+
+      logApi.info(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} Fetching batch token metadata for ${tokenAddresses.length} tokens`);
+      
+      // Check cache first and collect missing tokens
+      const results = {};
+      const missingTokens = [];
+
+      for (const address of tokenAddresses) {
+        const cacheKey = `metadata_${address}`;
+        const cachedData = this.getCachedData(cacheKey);
+        
+        if (cachedData) {
+          results[address] = cachedData;
+        } else {
+          missingTokens.push(address);
+        }
+      }
+
+      // If all tokens were in cache, return results
+      if (missingTokens.length === 0) {
+        logApi.info(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} All ${tokenAddresses.length} tokens found in cache`);
+        return results;
+      }
+
+      // Ensure Helius client is initialized
+      if (!this.heliusClient.initialized) {
+        await this.heliusClient.initialize();
+      }
+
+      // Process missing tokens in chunks (Helius limit is 100 tokens per request)
+      const CHUNK_SIZE = 100;
+      const chunks = this.chunkArray(missingTokens, CHUNK_SIZE);
+      
+      logApi.info(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} Fetching ${missingTokens.length} tokens in ${chunks.length} batch(es)`);
+      
+      // Get token metadata for each chunk
+      for (const [index, chunk] of chunks.entries()) {
+        try {
+          // Use the batch method from Helius client
+          const batchMetadata = await this.heliusClient.getTokensMetadata(chunk);
+          
+          if (batchMetadata && Array.isArray(batchMetadata)) {
+            // Process and cache each token's metadata
+            for (const metadata of batchMetadata) {
+              if (metadata && metadata.mint) {
+                const address = metadata.mint;
+                const processedData = this.processTokenMetadata(metadata);
+                
+                if (processedData) {
+                  // Cache the results
+                  this.cacheData(`metadata_${address}`, processedData);
+                  
+                  // Add to results
+                  results[address] = processedData;
+                }
+              }
+            }
+          }
+          
+          logApi.debug(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} Processed batch ${index + 1}/${chunks.length} (${chunk.length} tokens)`);
+        } catch (chunkError) {
+          logApi.error(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching metadata batch ${index + 1}:${fancyColors.RESET}`, chunkError);
+          
+          // Individual fallback for each token in the failed chunk
+          for (const address of chunk) {
+            try {
+              const individualResult = await this.getTokenMetadata(address);
+              if (individualResult) {
+                results[address] = individualResult;
+              }
+            } catch (individualError) {
+              logApi.debug(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching individual token ${address}:${fancyColors.RESET}`, individualError);
+            }
+          }
+        }
+        
+        // Add a small delay between chunks to avoid rate limiting
+        if (index < chunks.length - 1) {
+          await this.sleep(200);
+        }
+      }
+
+      // Log summary
+      const successCount = Object.keys(results).length;
+      logApi.info(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} Successfully fetched ${successCount}/${tokenAddresses.length} tokens in batch`);
+      
+      return results;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token metadata:${fancyColors.RESET}`, error);
+      return {};
+    }
+  }
+
+  /**
+   * Helper method to add delay
+   * @param {number} ms - Milliseconds to sleep
+   * @returns {Promise<void>}
+   */
+  async sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
    * Get token balance and supply information
    * @param {string} tokenAddress - Solana token address
    * @returns {Promise<Object>} Token supply data
@@ -150,6 +262,20 @@ class HeliusCollector {
     }
     
     return socials;
+  }
+
+  /**
+   * Helper method to split an array into chunks
+   * @param {Array} array - The array to split
+   * @param {number} chunkSize - Size of each chunk
+   * @returns {Array[]} Array of chunks
+   */
+  chunkArray(array, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
   }
 
   /**
