@@ -962,7 +962,7 @@ const config = {
     // Configuration for the unified WebSocket
     config: {
       path: '/api/v69/ws',
-      maxPayload: 1024 * 50, // 50KB max payload
+      maxPayload: 5 * 1024 * 1024, // 5MB max payload (increased from 50KB)
       perMessageDeflate: false, // Explicitly disable compression to avoid client issues
     },
     

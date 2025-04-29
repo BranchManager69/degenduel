@@ -26,8 +26,12 @@ export function createUnifiedWebSocket(server, options = {}) {
     configuredPath: config.websocket?.config?.path || '/api/v69/ws'
   })}`);
   
-  // Create the server instance
-  const wsServer = new UnifiedWebSocketServer(server, options);
+  // Create the server instance with config settings
+  const serverOptions = {
+    ...options,
+    maxPayload: config.websocket?.config?.maxPayload || 5 * 1024 * 1024 // Use config value or 5MB default
+  };
+  const wsServer = new UnifiedWebSocketServer(server, serverOptions);
   
   // Store in config
   if (config && config.websocket) {

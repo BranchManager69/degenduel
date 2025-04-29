@@ -60,11 +60,15 @@ export default class UnifiedWebSocketServer {
     this.isShuttingDown = false;
     this.initTopicSubscriptions();
     
-    // Initialize WebSocket server
+    // Initialize WebSocket server 
     this.wss = new WebSocketServer({ 
       noServer: true,
-      maxPayload: options.maxPayload || 50 * 1024 * 1024, // 50MB default max payload
+      maxPayload: options.maxPayload || 5 * 1024 * 1024, // 5MB default max payload (reduced from 50MB to match config.js)
     });
+    
+    // Log the actual max payload size used
+    const maxPayloadSizeMB = (this.wss.options.maxPayload / (1024 * 1024)).toFixed(2);
+    log.info(`WebSocket server configured with maxPayload size: ${maxPayloadSizeMB}MB`);
     
     this.setupServerEvents();
     this.setupServiceEvents();
@@ -86,7 +90,17 @@ export default class UnifiedWebSocketServer {
     });
 
     this.wss.on('error', (error) => {
-      log.error(`WebSocket server error: ${error.message}`);
+      // Check if this is a message size limit error
+      if (error.message && error.message.includes('received frame size exceeds maximum')) {
+        log.error(`WebSocket server error: Message size limit exceeded (${(this.wss.options.maxPayload / (1024 * 1024)).toFixed(2)}MB limit). Error: ${error.message}`, {
+          error_type: 'message_size_exceeded',
+          maxPayload: this.wss.options.maxPayload,
+          maxPayloadMB: (this.wss.options.maxPayload / (1024 * 1024)).toFixed(2),
+          _highlight: true
+        });
+      } else {
+        log.error(`WebSocket server error: ${error.message}`);
+      }
     });
 
     log.info('WebSocket server events configured');
