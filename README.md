@@ -14,6 +14,12 @@
 
 # ⚔️ DEGENDUEL ⚔️
 
+## 🚀 Quick Start
+
+- Use the universal tool runner to access all project tools: `dd`
+- The tool provides easy access to scripts, tests, and utilities with a simple menu interface
+- Type `dd` in your terminal and select the tool you want to run
+
 ## 📋 Overview
 
 DegenDuel is a competitive crypto trading simulation platform built on a service-oriented architecture with real-time data capabilities. The platform enables users to:

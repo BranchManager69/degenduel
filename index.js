@@ -119,6 +119,8 @@ import terminalRoutes from "./routes/terminal-routes.js";
 import websocketApiGuideRoutes from "./routes/websocket-api-guide.js";
 // Blinks routes (doesn't exist yet)
 import blinksRoutes from "./routes/blinks/index.js";
+// Profile image generator routes
+import profileImageGeneratorRoutes from "./routes/users/profile-image-generator.js";
 // Solana RPC Proxy route
 import solanaRpcProxyRoutes from "./routes/solana-rpc-proxy.js";
 
@@ -317,6 +319,8 @@ app.use("/api/referrals", maintenanceCheck, referralRoutes);
 app.use("/api/blinks", maintenanceCheck, blinksRoutes);
 // Virtual Agent routes (inaccessible when in maintenance mode)
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
+// Profile Image Generator routes (inaccessible when in maintenance mode)
+app.use("/api", maintenanceCheck, profileImageGeneratorRoutes);
 // AI chat routes (inaccessible when in maintenance mode)
 app.use("/api/ai", maintenanceCheck, aiRoutes);
 // Solana RPC proxy route - available even during maintenance mode

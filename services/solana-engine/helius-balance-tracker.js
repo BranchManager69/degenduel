@@ -548,8 +548,27 @@ class HeliusBalanceTracker {
     try {
       const accounts = await heliusClient.tokens.fetchFromHeliusRPC('getBalance', [walletAddress]);
       
+      logApi.info(`${formatLog.tag()} ${formatLog.header('SOL BALANCE RAW')} for wallet ${formatLog.address(walletAddress)}: ${JSON.stringify({accounts, type: typeof accounts})}`);
+      
       // Convert lamports to SOL (1 SOL = 1,000,000,000 lamports)
-      const solBalance = accounts / 1_000_000_000;
+      // Check if accounts has valid value or result structure
+      let lamports = 0;
+      
+      if (typeof accounts === 'number') {
+        lamports = accounts;
+      } else if (accounts && typeof accounts === 'object' && 'value' in accounts) {
+        lamports = accounts.value;
+      } else if (accounts && typeof accounts === 'object' && 'result' in accounts) {
+        lamports = accounts.result;
+      }
+      
+      // Verify value is a valid number
+      if (typeof lamports !== 'number' || isNaN(lamports)) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Invalid SOL balance data:')} ${JSON.stringify({accounts, lamports})}`);
+        return 0;
+      }
+      
+      const solBalance = lamports / 1_000_000_000;
       
       return solBalance;
     } catch (error) {

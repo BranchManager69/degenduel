@@ -251,6 +251,74 @@ export const AIApi = {
     };
     
     return descriptions[loadoutType] || 'Custom AI configuration';
+  },
+  
+  // ========== IMAGE GENERATION METHODS ==========
+  
+  /**
+   * Generate an AI image with the given prompt and options
+   * 
+   * @param {String} prompt - Text prompt for the image generation
+   * @param {String} imageType - Type of image (profile, contest, general)
+   * @param {Object} options - Additional options and metadata
+   * @returns {Promise<Object>} - Object containing image URL and metadata
+   */
+  async generateImage(prompt, imageType = 'general', options = {}) {
+    return aiService.generateImage(prompt, imageType, options);
+  },
+  
+  /**
+   * Generate an AI profile image for a user
+   * 
+   * @param {String} walletAddress - User's wallet address
+   * @param {Object} options - Generation options including style
+   * @returns {Promise<String>} - URL of the generated profile image
+   */
+  async generateUserProfileImage(walletAddress, options = {}) {
+    return aiService.generateUserProfileImage(walletAddress, options);
+  },
+  
+  /**
+   * Generate an enhanced profile image that incorporates token logos or other elements
+   * 
+   * @param {String} walletAddress - User's wallet address
+   * @param {Array} sourceImages - Path(s) to source image(s) to incorporate
+   * @param {Object} options - Generation options including style
+   * @returns {Promise<String>} - URL of the generated profile image
+   */
+  async generateEnhancedProfileImage(walletAddress, sourceImages = [], options = {}) {
+    return aiService.generateEnhancedProfileImage(walletAddress, sourceImages, options);
+  },
+  
+  /**
+   * Generate an image edit using source images and a prompt
+   * 
+   * @param {Array|String} sourceImages - Path(s) to source image(s)
+   * @param {String} prompt - The prompt describing the desired edits
+   * @param {String|null} maskPath - Optional path to mask image
+   * @param {Object} options - Additional options for generation
+   * @returns {Promise<Object>} - Object containing the image URL and metadata
+   */
+  async generateImageEdit(sourceImages, prompt, maskPath = null, options = {}) {
+    return aiService.generateImageEdit(sourceImages, prompt, maskPath, options);
+  },
+  
+  /**
+   * Get available style options for profile images
+   * 
+   * @returns {Array<Object>} - List of available styles with descriptions
+   */
+  getProfileImageStyles() {
+    return aiService.getProfileImageStyles();
+  },
+  
+  /**
+   * Get image configuration templates for different image types
+   * 
+   * @returns {Object} - Configuration templates
+   */
+  getImageConfigTemplates() {
+    return aiService.getImageConfigTemplates();
   }
 };
 

@@ -26,6 +26,7 @@
     "test-discord-oauth": "node tests/test-discord-interactive.js",
     "test-discord-service": "node tests/test-discord-interactive.js --test-discord-service",
     "balance-tracking": "tests/token-balance-tracking-test.js",
+    "dd": "node tools/dd.js",
     "// LEGACY BENCHMARK COMMANDS": "====================================================================================================",
     "benchmark:run": "python3 tests/solana_rpc_benchmark_enhanced.py --simple",
     "benchmark:run-and-import": "npm run benchmark:run && node scripts/import-benchmark-results.js",

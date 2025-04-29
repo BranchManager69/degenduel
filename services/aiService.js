@@ -4,10 +4,11 @@
  * AI Service
  * 
  * This service provides AI functionality throughout the DegenDuel platform.
- * It has two main components:
+ * It has three main components:
  * 
  * 1. Periodic Analysis: Runs every 10 minutes to analyze client errors and admin actions
  * 2. On-Demand API: Provides chat completion and streaming responses for application use
+ * 3. Image Generation: Creates AI-generated images for various use cases including user profiles
  * 
  * The service implements circuit breaking to handle OpenAI API outages gracefully.
  */
@@ -22,6 +23,7 @@ import OpenAI from 'openai';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../config/prisma.js';
 import config from '../config/config.js';
+import imageGenerator from './ai-service/image-generator.js';
 
 // Get AI loadout config
 const aiLoadout = config.ai?.openai_model_loadout || {};
@@ -974,5 +976,13 @@ serviceManager.register(aiService);
 
 // Export the generateChatCompletion method directly for routes
 export const generateChatCompletion = aiService.generateChatCompletion.bind(aiService);
+
+// Add image generation methods to the AI service
+aiService.generateImage = imageGenerator.generateImage;
+aiService.generateUserProfileImage = imageGenerator.generateUserProfileImage;
+aiService.generateImageEdit = imageGenerator.generateImageEdit;
+aiService.generateEnhancedProfileImage = imageGenerator.generateEnhancedProfileImage;
+aiService.getProfileImageStyles = imageGenerator.getProfileImageStyles;
+aiService.getImageConfigTemplates = imageGenerator.getConfigTemplates;
 
 export default aiService;

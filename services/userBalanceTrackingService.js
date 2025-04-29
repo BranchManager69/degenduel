@@ -1202,6 +1202,7 @@ class UserBalanceTrackingService extends BaseService {
                 });
             } else {
                 logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE WS INVALID ${fancyColors.RESET} Invalid balance (${balance}) for wallet ${walletAddress}, cannot convert to lamports`);
+                logApi.info(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE DIAGNOSTIC ${fancyColors.RESET} Raw balance value: ${typeof balance}, value: ${balance}, isNaN: ${isNaN(balance)}, source: ${source}. Response source: ${JSON.stringify({source})}`);
             }
             
             // Update user record with latest balance - only if balance is valid
