@@ -22,8 +22,8 @@ import serviceManager from '../../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 
-// Import database client
-import { PrismaClient } from '@prisma/client';
+// Import singleton database client
+import prisma from '../../config/prisma.js';
 
 // Import data collectors
 import dexScreenerCollector from './collectors/dexScreenerCollector.js';
@@ -155,10 +155,11 @@ class TokenEnrichmentService extends BaseService {
    */
   async initialize() {
     try {
-      // Create database connection
-      this.db = new PrismaClient({
-        datasourceUrl: process.env.DATABASE_URL
-      });
+      // Call parent initialize to set up base service functionality
+      await super.initialize();
+      
+      // Use the singleton Prisma client
+      this.db = prisma;
       
       // Register with service manager with explicit dependencies
       const dependencies = [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE];
@@ -186,11 +187,11 @@ class TokenEnrichmentService extends BaseService {
               const periodicResult = await this.reprocessStuckTokens(100);
               logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Periodic recovery completed: ${periodicResult.enqueued} tokens re-enqueued`);
             } catch (err) {
-              logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Periodic recovery failed:`, err);
+              logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Periodic recovery failed: ${err.message || 'Unknown error'}`);
             }
           }, 10 * 60 * 1000); // Run every 10 minutes
         } catch (err) {
-          logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Startup recovery failed:`, err);
+          logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Startup recovery failed: ${err.message || 'Unknown error'}`);
         }
       }, 5000);
       
@@ -198,7 +199,10 @@ class TokenEnrichmentService extends BaseService {
       logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Token enrichment service ready`);
       return true;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      // Handle the error properly using BaseService's handler
+      await this.handleError(error);
+      this.isInitialized = false;
       return false;
     }
   }
@@ -295,7 +299,8 @@ class TokenEnrichmentService extends BaseService {
         await this.enqueueTokenEnrichment(tokenInfo.address, CONFIG.PRIORITY_TIERS.HIGH);
       }
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling new token:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling new token:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Error details: ${error.code || ''} ${error.name || ''}`); // Safe details without circular refs
     }
   }
   
@@ -333,7 +338,8 @@ class TokenEnrichmentService extends BaseService {
           }
         } catch (scoreError) {
           // On error, assign zero priority
-          logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting priority score for ${tokenAddress}:${fancyColors.RESET}`, scoreError);
+          logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting priority score for ${tokenAddress}:${fancyColors.RESET} ${scoreError.message || 'Unknown error'}`);
+          logApi.debug(`[TokenEnrichmentSvc] Score error details for ${tokenAddress}: ${scoreError.code || ''} ${scoreError.name || ''}`);
           priorityScore = 0;
         }
       }
@@ -359,7 +365,8 @@ class TokenEnrichmentService extends BaseService {
         this.processNextBatch();
       }
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error enqueueing token:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error enqueueing token:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Enqueue error details: ${error.code || ''} ${error.name || ''}`);
     }
   }
   
@@ -492,7 +499,8 @@ class TokenEnrichmentService extends BaseService {
         
         logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} BATCH COMPLETE ${fancyColors.RESET} Processed ${batchAddresses.length} tokens in batch mode: ${successCount} success, ${failCount} failed`);
       } catch (batchError) {
-        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} ${fancyColors.RED}Falling back to individual processing:${fancyColors.RESET}`, batchError);
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} ${fancyColors.RED}Falling back to individual processing:${fancyColors.RESET} ${batchError.message || 'Unknown error'}`);
+        logApi.debug(`[TokenEnrichmentSvc] Batch failure details: ${batchError.code || ''} ${batchError.name || ''}`);
         
         // Fallback to processing tokens individually
         logApi.warn(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Starting individual fallback processing for ${batch.length} tokens${fancyColors.RESET}`);
@@ -528,7 +536,8 @@ class TokenEnrichmentService extends BaseService {
         }, CONFIG.BATCH_DELAY_MS);
       }
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing batch:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing batch:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Batch processing error details: ${error.code || ''} ${error.name || ''}`);
       
       // Reduce active batches count and reset processing flag if needed
       this.activeBatches--;
