@@ -59,7 +59,8 @@ class DexScreenerCollector {
       
       return null;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token by address:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token by address:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[DexScreenerCollector] Error details: Status ${error?.response?.status || 'unknown'}, URL: ${error?.config?.url || 'unknown'}`);
       return null;
     }
   }
@@ -124,7 +125,7 @@ class DexScreenerCollector {
           });
           
         } catch (batchError) {
-          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} Error with DexScreener batch ${i+1}/${batches.length} for ${batch.length} tokens:`, batchError);
+          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} Error with DexScreener batch ${i+1}/${batches.length} for ${batch.length} tokens: ${batchError.message || 'Unknown error'}`);
           
           // Fall back to sequential processing for failed batch
           logApi.warn(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.YELLOW}Falling back to sequential API calls for ${batch.length} tokens${fancyColors.RESET}`);
@@ -142,7 +143,7 @@ class DexScreenerCollector {
                 fallbackFailed++;
               }
             } catch (individualError) {
-              logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in fallback for token ${address}:${fancyColors.RESET}`, individualError);
+              logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in fallback for token ${address}:${fancyColors.RESET} ${individualError.message || 'Unknown error'}`);
               fallbackFailed++;
             }
             
@@ -161,7 +162,7 @@ class DexScreenerCollector {
       
       return results;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token fetch:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token fetch:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
       return {};
     }
   }
@@ -238,7 +239,7 @@ class DexScreenerCollector {
             await this.sleep(1000); // DexScreener has stricter rate limits
           }
         } catch (chunkError) {
-          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error processing chunk ${index + 1}:${fancyColors.RESET}`, chunkError);
+          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error processing chunk ${index + 1}:${fancyColors.RESET} ${chunkError.message || 'Unknown error'}`);
         }
       }
 
@@ -248,7 +249,7 @@ class DexScreenerCollector {
       
       return results;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token processing:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token processing:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
       return {};
     }
   }
@@ -291,7 +292,7 @@ class DexScreenerCollector {
       
       return [];
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error searching tokens:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error searching tokens:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
       return [];
     }
   }
