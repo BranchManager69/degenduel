@@ -276,6 +276,7 @@ model tokens {
   last_refresh_attempt      DateTime? // When refresh was last attempted
   last_refresh_success      DateTime? // When refresh last succeeded
   last_price_change         DateTime? // When price last changed
+  last_priority_calculation DateTime? // When priority score was last calculated
   refresh_metadata          Json?                       @default("{}") // Additional metadata for refresh scheduler
   ai_decisions              ai_decisions[]
   contest_portfolio_trades  contest_portfolio_trades[]

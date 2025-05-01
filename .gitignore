@@ -94,6 +94,8 @@ data/
 db/
 *.dbml
 *.sql
+# Exception for Prisma migrations
+!prisma/migrations/**/*.sql
 
 # Logs and debug files
 logs/
