@@ -2,28 +2,35 @@
 
 /**
  * Token Enrichment Service
+ * @module services/token-enrichment/tokenEnrichmentService
  * 
  * This service coordinates the collection and storage of token metadata
  * from various sources. It receives events from the token detection service
  * and enriches the token data with metadata from multiple providers.
  * 
- * @module services/token-enrichment/tokenEnrichmentService
  * @author BranchManager69
  * @version 1.9.0
- * @created 2025-04-29
- * @updated 2025-04-30
+ * @created 2025-04-28
+ * @updated 2025-05-01
  */
 
-import { BaseService } from '../../utils/service-suite/base-service.js';
-import { ServiceError } from '../../utils/service-suite/service-error.js'; // why is this unused?
-import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../utils/colors.js';
-import serviceManager from '../../utils/service-suite/service-manager.js';
-import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
-import serviceEvents from '../../utils/service-suite/service-events.js';
+// Service Suite
+import { BaseService } from '../../../utils/service-suite/base-service.js';
+import { SERVICE_NAMES } from '../../../utils/service-suite/service-constants.js';
+import serviceManager from '../../../utils/service-suite/service-manager.js';
+import serviceEvents from '../../../utils/service-suite/service-events.js';
+import { ServiceError } from '../../../utils/service-suite/service-error.js'; // why is this unused?
+// Prisma
+import prisma from '../../../config/prisma.js';
+// Redis
+import redisManager from '../../../utils/redis-suite/redis-manager.js'; // no stated need for this
+// Logger
+import { logApi } from '../../../utils/logger-suite/logger.js';
+import { fancyColors } from '../../../utils/colors.js';
 
-// Import singleton database client
-import prisma from '../../config/prisma.js';
+// Config
+//import { config } from '../../config/config.js';
+//const isDev = config.getEnvironment() === 'development';
 
 // Import data collectors
 import dexScreenerCollector from './collectors/dexScreenerCollector.js';
@@ -213,12 +220,30 @@ class TokenEnrichmentService extends BaseService {
   registerEventListeners() {
     // Listen for new token events from token detection service
     serviceEvents.on('token:new', async (tokenInfo) => {
-      await this.handleNewToken(tokenInfo);
+      try {
+        await this.handleNewToken(tokenInfo);
+      } catch (error) {
+        // Always use handleError for proper circuit breaker integration
+        await this.handleError(error);
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling token:new event:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      }
     });
     
     // Listen for manual enrichment requests
     serviceEvents.on('token:enrich', async (tokenInfo) => {
-      await this.enqueueTokenEnrichment(tokenInfo.address, CONFIG.PRIORITY_TIERS.HIGH);
+      try {
+        await this.enqueueTokenEnrichment(tokenInfo.address, CONFIG.PRIORITY_TIERS.HIGH);
+      } catch (error) {
+        await this.handleError(error);
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling token:enrich event:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      }
+    });
+    
+    // Listen for system events
+    serviceEvents.on('system:maintenance', (data) => {
+      // Pause processing during maintenance
+      this.pauseProcessing = data.active;
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${data.active ? 'Paused' : 'Resumed'} processing due to maintenance mode`);
     });
   }
   
@@ -375,29 +400,67 @@ class TokenEnrichmentService extends BaseService {
    */
   startProcessingQueue() {
     // Set interval to check queue and start processing if needed
-    setInterval(() => {
-      // Start processing batches if queue has items and we're under max batches
-      const canStartBatches = this.processingQueue.length > 0 && this.activeBatches < CONFIG.MAX_CONCURRENT_BATCHES;
-      
-      if (canStartBatches) {
-        const batchesToStart = Math.min(
-          CONFIG.MAX_CONCURRENT_BATCHES - this.activeBatches,
-          Math.ceil(this.processingQueue.length / CONFIG.BATCH_SIZE)
-        );
+    this.processingInterval = setInterval(() => {
+      // Only process if not in maintenance mode
+      if (!this.pauseProcessing) {
+        // Start processing batches if queue has items and we're under max batches
+        const canStartBatches = this.processingQueue.length > 0 && this.activeBatches < CONFIG.MAX_CONCURRENT_BATCHES;
         
-        logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Starting ${batchesToStart} batches (queue: ${this.processingQueue.length}, active: ${this.activeBatches})`);
-        
-        // Start multiple batches in parallel (up to MAX_CONCURRENT_BATCHES)
-        for (let i = 0; i < batchesToStart; i++) {
-          this.processNextBatch();
+        if (canStartBatches) {
+          const batchesToStart = Math.min(
+            CONFIG.MAX_CONCURRENT_BATCHES - this.activeBatches,
+            Math.ceil(this.processingQueue.length / CONFIG.BATCH_SIZE)
+          );
+          
+          logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Starting ${batchesToStart} batches (queue: ${this.processingQueue.length}, active: ${this.activeBatches})`);
+          
+          // Start multiple batches in parallel (up to MAX_CONCURRENT_BATCHES)
+          for (let i = 0; i < batchesToStart; i++) {
+            this.processNextBatch();
+          }
         }
+        
+        // Report status periodically
+        logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Queue status: ${this.processingQueue.length} items, ${this.activeBatches}/${CONFIG.MAX_CONCURRENT_BATCHES} active batches`);
       }
       
-      // Report status periodically
-      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Queue status: ${this.processingQueue.length} items, ${this.activeBatches}/${CONFIG.MAX_CONCURRENT_BATCHES} active batches`);
+      // Emit heartbeat for service monitoring
+      this.emitHeartbeat();
     }, 5000); // Check every 5 seconds
     
     logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Started queue processing monitor`);
+  }
+  
+  /**
+   * Emit service heartbeat event
+   * Used for health monitoring
+   */
+  emitHeartbeat() {
+    try {
+      // Create safe stats object (no circular references)
+      const safeStats = {
+        queueSize: this.processingQueue.length,
+        activeBatches: this.activeBatches,
+        processedTotal: this.stats.processedTotal,
+        processedSuccess: this.stats.processedSuccess,
+        processedFailed: this.stats.processedFailed,
+        lastProcessedTime: this.stats.lastProcessedTime,
+        sources: {
+          dexscreener: { ...this.stats.sources.dexscreener },
+          helius: { ...this.stats.sources.helius },
+          jupiter: { ...this.stats.sources.jupiter }
+        }
+      };
+      
+      // Emit service heartbeat event
+      serviceEvents.emit('service:heartbeat', {
+        name: this.name,
+        timestamp: new Date().toISOString(),
+        stats: safeStats
+      });
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error emitting heartbeat:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+    }
   }
   
   /**
@@ -1432,10 +1495,6 @@ class TokenEnrichmentService extends BaseService {
   }
   
   /**
-   * Stop the service
-   * @returns {Promise<void>}
-   */
-  /**
    * Sleep utility function for delay
    * @param {number} ms - Milliseconds to sleep
    * @returns {Promise<void>}
@@ -1444,20 +1503,52 @@ class TokenEnrichmentService extends BaseService {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
   
+  /**
+   * Stop the service
+   * @returns {Promise<boolean>}
+   */
   async stop() {
     try {
+      // Call parent stop first to handle BaseService cleanup
       await super.stop();
       
       // Clean up event listeners
       serviceEvents.removeAllListeners('token:new');
       serviceEvents.removeAllListeners('token:enrich');
+      serviceEvents.removeAllListeners('system:maintenance');
       
-      // Close database connection
-      await this.db.$disconnect();
+      // Clear processing interval
+      if (this.processingInterval) {
+        clearInterval(this.processingInterval);
+        this.processingInterval = null;
+      }
+      
+      // Clear any timers/intervals
+      if (this.recoveryTimeout) {
+        clearTimeout(this.recoveryTimeout);
+        this.recoveryTimeout = null;
+      }
+      
+      // Do not actually disconnect Prisma client, as it's a singleton
+      // Just clean up our reference to it
+      this.db = null;
+      
+      // Emit service stopped event
+      serviceEvents.emit('service:stopped', {
+        name: this.name,
+        timestamp: new Date().toISOString(),
+        stats: {
+          processedTotal: this.stats.processedTotal,
+          processedSuccess: this.stats.processedSuccess,
+          processedFailed: this.stats.processedFailed
+        }
+      });
       
       logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} STOPPED ${fancyColors.RESET}`);
+      return true;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error stopping service:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error stopping service:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      return false;
     }
   }
 }
