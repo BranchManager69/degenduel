@@ -24,6 +24,10 @@ services/vanity-wallet/temp_keypairs
 services/vanity-wallet/addresses/keypairs/
 services/vanity-wallet/addresses/keypairs/**
 
+# dmail
+dmail/
+dmail/**
+
 # Home scrapes
 home/
 home/**

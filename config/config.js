@@ -4,9 +4,8 @@
  * 2025-03-25: Therefore this is OLD but still in use
  */
 
-import os from 'os';
+//import os from 'os';
 
-// OUTDATED WAY OF USING CONFIG, BUT OK...
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -126,12 +125,14 @@ const OPENAI_IMAGE_API_KEY = process.env.OPENAI_IMAGE_API_KEY;
 const IPINFO_API_KEY = process.env.IPINFO_API_KEY;
 const JUPITER_API_KEY = process.env.JUPITER_API_KEY;
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
+const OPTIMIZE_API_KEY = process.env.OPTIMIZE_API_KEY;
+
 
 /* Master config object */
 
 const config = {
   // DUEL token contract address
-  contract_address_real: CONTRACT_ADDRESS_REAL,
+  contract_address_real: process.env.CONTRACT_ADDRESS_REAL,
   
   // Discord configuration
   discord: {
@@ -273,6 +274,7 @@ const config = {
     ipinfo: IPINFO_API_KEY,
     helius: HELIUS_API_KEY,
     jupiter: JUPITER_API_KEY,
+    optimize: OPTIMIZE_API_KEY,
   },
 
   // AI config

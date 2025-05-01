@@ -8,25 +8,27 @@
  */
 
 import { WebSocketServer } from 'ws';
-import http from 'http';
 import { parse as parseUrl } from 'url';
 import { v4 as uuidv4 } from 'uuid';
-import config from '../../../config/config.js';
+import prisma from '../../../config/prisma.js';
 import logger from '../../../utils/logger-suite/logger.js';
+
+// Config
+import config from '../../../config/config.js';
 
 // Import modular components
 import { 
-  validateToken, 
-  verifySubscriptionPermissions,
-  getClientInfo,
-  parseMessage,
-  formatMessage,
-  handleClientError
+  validateToken,  // TODO: Why is this not being used?
+  verifySubscriptionPermissions, // TODO: Why is this not being used?
+  getClientInfo, // TODO: Why is this not being used?
+  parseMessage, // TODO: Why is this not being used?
+  formatMessage, // <---------------------------------------- That's all we need? Really?
+  handleClientError // TODO: Why is this not being used?
 } from './utils.js';
 
 import {
   registerServiceEvents,
-  fetchTerminalData
+  fetchTerminalData // TODO: Why is this not being used? (i know; just testing you)
 } from './services.js';
 
 import {
@@ -48,6 +50,7 @@ import {
 } from './handlers.js';
 
 // Create a logger instance for the unified WebSocket server
+//   [I'll allow it but this is the only time that I can think of where we use two separate loggers in the same file - 4/30/2025]
 const log = logger.forService('UNIFIED_WS');
 
 export default class UnifiedWebSocketServer {
@@ -72,6 +75,81 @@ export default class UnifiedWebSocketServer {
     
     this.setupServerEvents();
     this.setupServiceEvents();
+    
+    // Initialize broadcast statistics
+    this.broadcastStats = {
+      messagesByTopic: {},
+      lastReportTime: Date.now(),
+      totalMessages: 0
+    };
+    
+    // Set up unified periodic reporting (every minute)
+    setInterval(async () => {
+      // PART 1: Report connection status
+      const clientCount = this.clients.size;
+      const authenticatedCount = this.authenticatedClients.size;
+      
+      // Count clients by topic
+      const topicCounts = {};
+      Object.entries(this.subscriptions).forEach(([topic, subscribers]) => {
+        if (subscribers.size > 0) {
+          topicCounts[topic] = subscribers.size;
+        }
+      });
+      
+      // Format the topic counts for display
+      const topicCountsStr = Object.entries(topicCounts)
+        .map(([topic, count]) => `${topic}: ${count}`)
+        .join(', ');
+      
+      log.info(`WebSocket status: ${clientCount} connected clients (${authenticatedCount} authenticated) - Subscriptions: ${topicCountsStr}`);
+      
+      // PART 2: Report activity summary
+      if (this.broadcastStats.totalMessages > 0) {
+        const now = Date.now();
+        const elapsedSeconds = ((now - this.broadcastStats.lastReportTime) / 1000).toFixed(1);
+        const topicStats = Object.entries(this.broadcastStats.messagesByTopic)
+          .map(([topic, count]) => `${topic}: ${count}`)
+          .join(', ');
+          
+        log.info(`WebSocket activity: ${this.broadcastStats.totalMessages} messages in past ${elapsedSeconds}s (${topicStats})`);
+        
+        // PART 3: Store connection metrics in database for long-term analysis
+        // Note: We store these in the service_logs table in the main database where other UNIFIED_WS logs are already stored
+        try {
+          // Store connection stats in the main degenduel database (not market_data or reflections)
+          await prisma.service_logs.create({
+            data: {
+              service: 'UNIFIED_WS',
+              level: 'info',
+              message: 'WebSocket metrics',
+              details: {
+                active_connections: clientCount,
+                authenticated_connections: authenticatedCount,
+                connections_by_topic: topicCounts,
+                messages_sent: this.broadcastStats.totalMessages,
+                messages_by_topic: this.broadcastStats.messagesByTopic
+              },
+              event_type: 'websocket_metrics',
+              metadata: {
+                environment: config.getEnvironment() // Use config helper instead of process.env directly
+              }
+            }
+          });
+          
+          // Detailed log (once per minute is acceptable) at debug level
+          log.debug('Stored WebSocket metrics in database');
+        } catch (err) {
+          // Don't let database errors break the WebSocket server
+          log.error(`Failed to store WebSocket metrics: ${err.message}`);
+        }
+        
+        // Reset activity counters
+        this.broadcastStats.messagesByTopic = {};
+        this.broadcastStats.totalMessages = 0;
+        this.broadcastStats.lastReportTime = now;
+      }
+    }, 60000); // Report every minute
   }
 
   initTopicSubscriptions() {
@@ -150,7 +228,21 @@ export default class UnifiedWebSocketServer {
       }
     }
     
+    // Initialize stats collection if not already done
+    if (!this.broadcastStats) {
+      this.broadcastStats = {
+        messagesByTopic: {},
+        lastReportTime: Date.now(),
+        totalMessages: 0
+      };
+    }
+    
+    // Update statistics if messages were sent
     if (sentCount > 0) {
+      this.broadcastStats.totalMessages += sentCount;
+      this.broadcastStats.messagesByTopic[topic] = (this.broadcastStats.messagesByTopic[topic] || 0) + sentCount;
+      
+      // Keep the detailed log at debug level for those who want to see it
       log.debug(`Broadcast to ${sentCount} clients on topic ${topic}`);
     }
   }

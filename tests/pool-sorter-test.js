@@ -5,7 +5,8 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import { dexscreenerClient } from '../services/solana-engine/dexscreener-client.js';
 
 // Target token address
-const TOKEN_ADDRESS = process.argv[2] || "DitHyRMQiSDhn5cnKMJV2CDDt6sVct96YrECiM49pump";
+const TOKEN_ADDRESS = process.argv[2] || "38PgzpJYu2HkiYvV8qePFakB8tuobPdGm2FFEn7Dpump";
+//const TOKEN_ADDRESS = process.argv[2] || "DitHyRMQiSDhn5cnKMJV2CDDt6sVct96YrECiM49pump";
 
 // Format currency for display
 function formatCurrency(amount) {

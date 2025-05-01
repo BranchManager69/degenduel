@@ -1,4 +1,5 @@
 // tests/market-cap-analyzer.js
+
 // Comprehensive token market analytics tool with detailed liquidity analysis
 
 import { logApi } from '../utils/logger-suite/logger.js';

@@ -1,6 +1,13 @@
+// routes/v3/tokens.js
+
 /**
  * Token v3 routes for DegenDuel
- * Uses the new market database implementation
+ *  Uses the new market database implementation
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-01-14
+ * @updated 2025-04-30
  */
 
 import express from 'express';
@@ -35,45 +42,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/v3/tokens/:symbol
- * @desc Get token details by symbol
- * @access Public
- */
-router.get('/:symbol', async (req, res) => {
-    try {
-        const symbol = req.params.symbol;
-        
-        if (!symbol) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Token symbol is required'
-            });
-        }
-        
-        const token = await marketDataService.getToken(symbol);
-        
-        if (!token) {
-            return res.status(404).json({
-                status: 'error',
-                message: `Token ${symbol} not found`
-            });
-        }
-        
-        return res.json({
-            status: 'success',
-            data: token
-        });
-    } catch (error) {
-        logApi.error(`${fancyColors.MAGENTA}[v3/tokens]${fancyColors.RESET} ${fancyColors.RED}Error fetching token:${fancyColors.RESET}`, error);
-        
-        return res.status(500).json({
-            status: 'error',
-            message: 'Failed to fetch token data',
-            error: error.message
-        });
-    }
-});
 
 /**
  * @route GET /api/v3/tokens/address/:address
@@ -97,6 +65,46 @@ router.get('/address/:address', async (req, res) => {
             return res.status(404).json({
                 status: 'error',
                 message: `Token with address ${address} not found`
+            });
+        }
+        
+        return res.json({
+            status: 'success',
+            data: token
+        });
+    } catch (error) {
+        logApi.error(`${fancyColors.MAGENTA}[v3/tokens]${fancyColors.RESET} ${fancyColors.RED}Error fetching token:${fancyColors.RESET}`, error);
+        
+        return res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch token data',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route GET /api/v3/tokens/:symbol
+ * @desc Get token details by symbol
+ * @access Public
+ */
+router.get('/:symbol', async (req, res) => {
+    try {
+        const symbol = req.params.symbol;
+        
+        if (!symbol) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Token symbol is required'
+            });
+        }
+        
+        const token = await marketDataService.getToken(symbol);
+        
+        if (!token) {
+            return res.status(404).json({
+                status: 'error',
+                message: `Token ${symbol} not found`
             });
         }
         

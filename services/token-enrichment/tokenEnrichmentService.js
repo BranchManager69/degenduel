@@ -302,10 +302,10 @@ class TokenEnrichmentService extends BaseService {
   /**
    * Enqueue a token for enrichment
    * @param {string} tokenAddress - Token address
-   * @param {number} priority - Priority tier
+   * @param {number} priorityTier - Priority tier from CONFIG.PRIORITY_TIERS
    * @param {number} priorityScore - Optional priority score (0-100)
    */
-  async enqueueTokenEnrichment(tokenAddress, priority = CONFIG.PRIORITY_TIERS.MEDIUM, priorityScore = null) {
+  async enqueueTokenEnrichment(tokenAddress, priorityTier = CONFIG.PRIORITY_TIERS.MEDIUM, priorityScore = null) {
     try {
       // Get priority score from database if not provided
       if (priorityScore === null) {
@@ -328,21 +328,21 @@ class TokenEnrichmentService extends BaseService {
               }
             });
           } else {
-            // Default priority score for unknown tokens
-            priorityScore = 50;
+            // Unknown tokens get zero priority
+            priorityScore = 0;
           }
         } catch (scoreError) {
-          // Use default priority score on error
+          // On error, assign zero priority
           logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting priority score for ${tokenAddress}:${fancyColors.RESET}`, scoreError);
-          priorityScore = 50;
+          priorityScore = 0;
         }
       }
       
       // Create queue item
       const queueItem = {
         address: tokenAddress,
-        priority, // Traditional tiered priority
-        priorityScore, // Numeric score for finer-grained sorting
+        priorityTier, // Old tier-based priority (renamed for clarity)
+        priorityScore, // Primary numeric score for sorting (0-100)
         addedAt: new Date(),
         attempts: 0
       };
@@ -352,7 +352,7 @@ class TokenEnrichmentService extends BaseService {
       this.stats.enqueuedTotal++;
       this.stats.currentQueueSize = this.processingQueue.length;
       
-      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Enqueued ${tokenAddress} for enrichment (priority: ${priority}, score: ${priorityScore}, queue size: ${this.processingQueue.length})`);
+      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Enqueued ${tokenAddress} for enrichment (tier: ${priorityTier}, score: ${priorityScore}, queue size: ${this.processingQueue.length})`);
       
       // Start processing if not already running
       if (!this.batchProcessing && this.activeBatches < CONFIG.MAX_CONCURRENT_BATCHES) {
@@ -406,19 +406,20 @@ class TokenEnrichmentService extends BaseService {
     this.activeBatches++;
     
     try {
-      // Sort queue by priority_score (high scores first) and then timestamp
+      // Sort queue primarily by priorityScore (high scores first) then by other factors
       this.processingQueue.sort((a, b) => {
-        // For traditional priority tier-based sorting
-        if (a.priority !== b.priority) {
-          return a.priority - b.priority; // Lower tier number = higher priority
+        // Primary sorting by priorityScore (higher score = higher priority)
+        if (a.priorityScore !== b.priorityScore) {
+          return b.priorityScore - a.priorityScore;
         }
         
-        // For dynamic priority score-based sorting (if available)
-        if (a.priorityScore !== undefined && b.priorityScore !== undefined) {
-          return b.priorityScore - a.priorityScore; // Higher score = higher priority
+        // Secondary sorting by tier (lower tier number = higher priority)
+        if (a.priorityTier !== b.priorityTier) {
+          return a.priorityTier - b.priorityTier;
         }
         
-        return a.addedAt - b.addedAt; // Older items first
+        // Tertiary sorting by age (older items first)
+        return a.addedAt - b.addedAt;
       });
       
       // Take the next batch
@@ -867,14 +868,24 @@ class TokenEnrichmentService extends BaseService {
       // Define metadata status - fix previous issue where status was not being updated properly
       let metadataStatus = 'pending'; // Default status
       
-      // Determine complete status based on having minimum required fields
-      const hasBasicInfo = combinedData.symbol && combinedData.name && combinedData.decimals;
+      // CRITICAL: Address is the most important field for any token - it must exist
+      // Then check other required basic info fields
+      const hasAddress = !!tokenAddress; // Must have valid token address
+      const hasBasicInfo = hasAddress && 
+                           combinedData.symbol && 
+                           combinedData.name && 
+                           combinedData.decimals;
       
-      // Check if we have at least basic token info
-      if (hasBasicInfo) {
+      // Check if we have the required token info
+      if (!hasAddress) {
+        // No address = automatic failure
+        metadataStatus = 'failed';
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Missing address for token, cannot process${fancyColors.RESET}`);
+      } else if (hasBasicInfo) {
+        // Has all required fields
         metadataStatus = 'complete';
       } else if (existingToken.metadata_status === 'pending' && existingToken.last_refresh_attempt) {
-        // If this is a retry and we still don't have basic info, mark as failed
+        // If this is a retry and we still don't have all basic info, mark as failed
         metadataStatus = 'failed';
       }
       
@@ -944,12 +955,18 @@ class TokenEnrichmentService extends BaseService {
           const oldPrice = parseFloat(existingToken.token_prices.price || '0');
           const newPrice = parseFloat(combinedData.price || '0');
           
-          // If price changed by more than 1%, update last_price_change
-          if (Math.abs((newPrice - oldPrice) / oldPrice) > 0.01) {
+          // Update last_price_change whenever ANY price change is detected
+          // This ensures we capture all price movements, even small ones that accumulate
+          if (newPrice !== oldPrice) {
             await this.db.tokens.update({
               where: { id: existingToken.id },
               data: { last_price_change: new Date() }
             });
+            
+            // Still log significant changes (>1%) for monitoring
+            if (Math.abs((newPrice - oldPrice) / oldPrice) > 0.01) {
+              logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Significant price change for ${tokenAddress}: ${oldPrice} -> ${newPrice} (${((newPrice - oldPrice) / oldPrice * 100).toFixed(2)}%)`);
+            }
           }
         }
       }
@@ -1385,6 +1402,7 @@ class TokenEnrichmentService extends BaseService {
         });
         
         // Add token to processing queue with updated priorityScore
+        // Use HIGH priority tier but priorityScore for fine-grained sorting
         await this.enqueueTokenEnrichment(token.address, CONFIG.PRIORITY_TIERS.HIGH, priorityScore);
         enqueued++;
       }

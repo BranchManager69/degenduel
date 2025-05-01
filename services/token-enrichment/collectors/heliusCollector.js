@@ -59,6 +59,116 @@ class HeliusCollector {
       return null;
     }
   }
+  
+  /**
+   * Get token metadata for multiple tokens in a batch
+   * @param {string[]} tokenAddresses - Array of token addresses to fetch metadata for
+   * @returns {Promise<Object>} - Map of token addresses to their metadata
+   */
+  async getTokenMetadataBatch(tokenAddresses) {
+    try {
+      if (!Array.isArray(tokenAddresses) || tokenAddresses.length === 0) {
+        return {};
+      }
+      
+      logApi.info(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} Fetching batch token metadata for ${tokenAddresses.length} tokens`);
+      
+      // Check cache first for all tokens
+      const results = {};
+      const uncachedAddresses = [];
+      
+      // First check which tokens we already have in cache
+      for (const address of tokenAddresses) {
+        const cacheKey = `metadata_${address}`;
+        const cachedData = this.getCachedData(cacheKey);
+        
+        if (cachedData) {
+          results[address] = cachedData;
+        } else {
+          uncachedAddresses.push(address);
+        }
+      }
+      
+      // If all tokens were cached, return immediately
+      if (uncachedAddresses.length === 0) {
+        return results;
+      }
+      
+      // Ensure Helius client is initialized
+      if (!this.heliusClient.initialized) {
+        await this.heliusClient.initialize();
+      }
+      
+      // Helius supports up to 100 tokens in a single batch request
+      const BATCH_SIZE = 100;
+      
+      // Split into batches for processing
+      const batches = [];
+      for (let i = 0; i < uncachedAddresses.length; i += BATCH_SIZE) {
+        batches.push(uncachedAddresses.slice(i, i + BATCH_SIZE));
+      }
+      
+      // Process each batch
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        try {
+          // Use Helius's batch tokens endpoint
+          const metadataArray = await this.heliusClient.getTokensMetadata(batch);
+          
+          // Process each token in the batch
+          if (metadataArray && Array.isArray(metadataArray)) {
+            for (const metadata of metadataArray) {
+              if (metadata && metadata.mint) {
+                const address = metadata.mint;
+                const processedData = this.processTokenMetadata(metadata);
+                
+                // Cache and add to results
+                if (processedData) {
+                  results[address] = processedData;
+                  this.cacheData(`metadata_${address}`, processedData);
+                }
+              }
+            }
+          }
+        } catch (batchError) {
+          logApi.error(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} Error with Helius batch ${i+1}/${batches.length} for ${batch.length} tokens:`, batchError);
+          
+          // Fall back to individual processing if batch fails
+          logApi.warn(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.YELLOW}Falling back to individual API calls for ${batch.length} tokens${fancyColors.RESET}`);
+          
+          let fallbackSuccess = 0;
+          let fallbackFailed = 0;
+          
+          for (const address of batch) {
+            try {
+              const tokenMetadata = await this.getTokenMetadata(address);
+              if (tokenMetadata) {
+                results[address] = tokenMetadata;
+                fallbackSuccess++;
+              } else {
+                fallbackFailed++;
+              }
+            } catch (individualError) {
+              logApi.error(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.RED}Error in fallback for token ${address}:${fancyColors.RESET}`, individualError);
+              fallbackFailed++;
+            }
+          }
+          
+          logApi.warn(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} FALLBACK SUMMARY ${fancyColors.RESET} Helius individual fallbacks: ${fallbackSuccess} success, ${fallbackFailed} failed`)
+        }
+        
+        // Add a small delay between batches to avoid rate limits
+        if (i < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching batch token metadata:${fancyColors.RESET}`, error);
+      return {};
+    }
+  }
 
   /**
    * Get token metadata for multiple tokens in a batch

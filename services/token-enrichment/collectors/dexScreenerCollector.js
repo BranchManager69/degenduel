@@ -63,6 +63,108 @@ class DexScreenerCollector {
       return null;
     }
   }
+  
+  /**
+   * Get token data for multiple addresses in a batch
+   * @param {string[]} tokenAddresses - Array of token addresses to fetch
+   * @returns {Promise<Object>} Map of token addresses to their data
+   */
+  async getTokensByAddressBatch(tokenAddresses) {
+    try {
+      if (!Array.isArray(tokenAddresses) || tokenAddresses.length === 0) {
+        return {};
+      }
+      
+      logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Fetching batch token data for ${tokenAddresses.length} tokens`);
+      
+      // First check cache for all tokens
+      const results = {};
+      const uncachedAddresses = [];
+      
+      for (const address of tokenAddresses) {
+        const cacheKey = `address_${address}`;
+        const cachedData = this.getCachedData(cacheKey);
+        
+        if (cachedData) {
+          results[address] = cachedData;
+        } else {
+          uncachedAddresses.push(address);
+        }
+      }
+      
+      // If all tokens were cached, return immediately
+      if (uncachedAddresses.length === 0) {
+        return results;
+      }
+      
+      // DexScreener doesn't have a true batch API, but we can optimize with smaller parallel batches
+      // Using chunks of 10 tokens per batch to avoid overwhelming the API
+      const BATCH_SIZE = 10;
+      
+      // Split into batches
+      const batches = [];
+      for (let i = 0; i < uncachedAddresses.length; i += BATCH_SIZE) {
+        batches.push(uncachedAddresses.slice(i, i + BATCH_SIZE));
+      }
+      
+      // Process each batch with parallel requests
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        
+        try {
+          // Process all tokens in this batch concurrently
+          const batchPromises = batch.map(address => this.getTokenByAddress(address));
+          const batchResults = await Promise.all(batchPromises);
+          
+          // Add results to the main results object
+          batch.forEach((address, index) => {
+            if (batchResults[index]) {
+              results[address] = batchResults[index];
+            }
+          });
+          
+        } catch (batchError) {
+          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} Error with DexScreener batch ${i+1}/${batches.length} for ${batch.length} tokens:`, batchError);
+          
+          // Fall back to sequential processing for failed batch
+          logApi.warn(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.YELLOW}Falling back to sequential API calls for ${batch.length} tokens${fancyColors.RESET}`);
+          
+          let fallbackSuccess = 0;
+          let fallbackFailed = 0;
+          
+          for (const address of batch) {
+            try {
+              const tokenData = await this.getTokenByAddress(address);
+              if (tokenData) {
+                results[address] = tokenData;
+                fallbackSuccess++;
+              } else {
+                fallbackFailed++;
+              }
+            } catch (individualError) {
+              logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in fallback for token ${address}:${fancyColors.RESET}`, individualError);
+              fallbackFailed++;
+            }
+            
+            // Add a small delay between requests to avoid rate limits
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          logApi.warn(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} FALLBACK SUMMARY ${fancyColors.RESET} DexScreener sequential fallbacks: ${fallbackSuccess} success, ${fallbackFailed} failed`)
+        }
+        
+        // Add a pause between batches to respect DexScreener's stricter rate limits
+        if (i < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token fetch:${fancyColors.RESET}`, error);
+      return {};
+    }
+  }
 
   /**
    * Get token data for multiple tokens in a batch

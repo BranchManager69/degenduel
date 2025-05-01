@@ -688,9 +688,14 @@ async function initializeServer() {
             
             // Send Discord notification for server startup
             try {
-                const discordNotificationService = (await import('./services/discordNotificationService.js')).default;
-                await discordNotificationService.sendServerStartupNotification();
-                logApi.info('✅ Sent server startup notification to Discord');
+                // Only instantiate Discord notification service if enabled in config
+                if (config.services.discord_notification_service) {
+                    const discordNotificationService = (await import('./services/discordNotificationService.js')).default;
+                    await discordNotificationService.sendServerStartupNotification();
+                    logApi.info('✅ Sent server startup notification to Discord');
+                } else {
+                    logApi.info('ℹ️ Discord notifications disabled in config, skipping startup notification');
+                }
             } catch (error) {
                 logApi.error(`Failed to send server startup notification to Discord: ${error.message}`);
             }

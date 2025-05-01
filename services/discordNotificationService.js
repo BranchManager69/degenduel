@@ -1,12 +1,15 @@
 // services/discordNotificationService.js
 
 /**
+ * Discord Notification Service
+ * 
  * This service is responsible for sending notifications to Discord.
  * It is used to send notifications to the Discord server for various events.
  * 
  * @author BranchManager69
  * @version 1.9.0
- * @since 2025-04-27
+ * @created 2025-04-27
+ * @updated 2025-05-01
  */
 
 import DiscordWebhook from '../utils/discord-webhook.js';
@@ -17,7 +20,8 @@ import { SERVICE_EVENTS } from '../utils/service-suite/service-events.js';
 import { fancyColors } from '../utils/colors.js';
 
 // This is a service-specific logger that writes to the database
-//   TODO: Why do we only do this for the Discord Notification Service? Seems like a big missed opportunity to have our existing single logger for all services doing the task in question.
+//   TODO: Why do we only do this for the Discord Notification Service? 
+//         Seems like a big missed opportunity to have our existing SINGLE logger (logApi).
 import { logApi } from '../utils/logger-suite/logger.js';
 const logger = logApi.forService(SERVICE_NAMES.DISCORD_NOTIFICATION);
 
@@ -38,10 +42,7 @@ const tradesWebhookUrl = discordWebhookUrls.trades;
 
 /**
  * Discord notification service for sending automated notifications to the DegenDuel Discord server via webhooks.
- * 
- * @author BranchManager69
- * @version 1.9.0
- * @since 2025-04-27
+ * @extends BaseService
  */
 class DiscordNotificationService extends BaseService {
   constructor() {
@@ -64,7 +65,7 @@ class DiscordNotificationService extends BaseService {
       }
     });
     
-    // Default webhooks - these would come from config or environment variables
+    // Default webhooks - these SHOULD come from config or environment variables
     this.webhookUrls = {
       adminLogs: adminLogsWebhookUrl,
       system: systemWebhookUrl,

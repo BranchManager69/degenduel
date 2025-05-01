@@ -274,16 +274,21 @@ class AdminWalletService extends BaseService {
 
     // Proxy methods to our modular implementations
     
-    // Wallet encryption/decryption
+    /* Wallet encryption/decryption */
+
+    // Encrypt a wallet
     encryptWallet(privateKey) {
         return walletCrypto.encryptWallet(privateKey, this.config, process.env.WALLET_ENCRYPTION_KEY);
     }
 
+    // Decrypt a wallet
     decryptWallet(encryptedData) {
         return walletCrypto.decryptWallet(encryptedData, process.env.WALLET_ENCRYPTION_KEY);
     }
 
-    // Transfer operations
+    /* Transfer operations */
+
+    // Transfer SOL (single wallet)
     async transferSOL(fromWalletEncrypted, toAddress, amount, description = '', adminId = null, context = {}) {
         const startTime = Date.now();
         
@@ -351,6 +356,7 @@ class AdminWalletService extends BaseService {
         }
     }
 
+    // Transfer tokens (single wallet)
     async transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '', adminId = null, context = {}) {
         const startTime = Date.now();
         
@@ -420,7 +426,7 @@ class AdminWalletService extends BaseService {
         }
     }
 
-    // Batch operations
+    // Transfer SOL (batch)
     async massTransferSOL(fromWalletEncrypted, transfers) {
         return batchOperations.massTransferSOL(
             fromWalletEncrypted,
@@ -432,6 +438,7 @@ class AdminWalletService extends BaseService {
         );
     }
 
+    // Transfer tokens (batch)
     async massTransferTokens(fromWalletEncrypted, mint, transfers) {
         return batchOperations.massTransferTokens(
             fromWalletEncrypted, 
@@ -444,19 +451,28 @@ class AdminWalletService extends BaseService {
         );
     }
 
-    // Balance operations
+    /* Balance operations */
+
+    // Update the balance of a single wallet
     async updateWalletBalance(wallet) {
         return walletBalance.updateWalletBalance(wallet, solanaEngine, this.config, this.walletStats);
     }
     
+    // Update the balances of all the wallets
     async updateAllWalletBalances() {
         return walletBalance.updateAllWalletBalances(solanaEngine, this.config, this.walletStats);
     }
-    
+
+    /* Wallet state operations */   
+
+    // Check the states of the wallets
     async checkWalletStates() {
         return walletBalance.checkWalletStates(solanaEngine, this.config);
     }
 
+    /* Start/stop */
+
+    // Stop the service
     async stop() {
         try {
             await super.stop();
@@ -487,6 +503,7 @@ class AdminWalletService extends BaseService {
         }
     }
     
+    // Perform the main operation of the service
     /**
      * Implements the onPerformOperation method required by BaseService
      * This gets called regularly by the BaseService to perform the service's main operation
@@ -511,7 +528,13 @@ class AdminWalletService extends BaseService {
         }
     }
 
-    // Main operation implementation - periodic health checks and balance updates
+    // Main operation implementation:
+    //   - Periodic health checks
+    //   - Balance updates
+    /**
+     * Perform the main operation of the service
+     * @returns {Promise<Object>} - The result of the operation
+     */
     async performOperation() {
         const startTime = Date.now();
         
@@ -559,6 +582,9 @@ class AdminWalletService extends BaseService {
         }
     }
     
+    /* Status check */
+
+    // Get the service status
     /**
      * Get the service status
      * @returns {Object} - The status of the service

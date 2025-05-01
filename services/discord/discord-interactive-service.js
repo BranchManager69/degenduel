@@ -5,8 +5,9 @@
  * the Discord server via the DegenDuel AI Discord bot for various events.
  * 
  * @author BranchManager69
- * @version 2.0.0
- * @since 2025-04-26
+ * @version 1.9.0
+ * @created 2025-04-26
+ * @updated 2025-04-26
  */
 
 import { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';

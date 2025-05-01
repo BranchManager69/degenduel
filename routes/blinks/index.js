@@ -1,21 +1,68 @@
 // routes/blinks/index.js
 
+/** 
+ * Blinks are cool! More coming soon.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-29
+ * @updated 2025-05-01
+ */
+
 import express from 'express';
-import { requireAuth } from '../../middleware/auth.js';
+import * as crypto from 'crypto';
+import { PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
+import { createMemoInstruction } from '@solana/spl-memo';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { config } from '../../config/config.js';
 import { prisma } from '../../config/prisma.js';
-
-// Import Solana packages
-import { PublicKey, Connection } from '@solana/web3.js';
-import { createTransferInstruction } from '@solana/spl-token';
-import { getMemoInstruction } from '@solana/spl-memo';
-
-// Import SolanaEngine for transaction building
-import SolanaEngine from '../../services/solana-engine/solana-engine.js';
 import { solanaEngine } from '../../services/solana-engine/index.js';
 
+// Config
+import { config } from '../../config/config.js';
+
+// Get wallet address of the DegenDuel Treasury
+const DEGENDUEL_TREASURY_ADDRESS = config.degenduel_treasury_wallet;
+logApi.info('🏦 DegenDuel Treasury address:', DEGENDUEL_TREASURY_ADDRESS);
+
+// Blinks router
 const router = express.Router();
+
+/* HELPERS */
+
+/**
+ * Helper function to build a transaction for Solana Actions
+ * 
+ * @param {PublicKey} feePayer - The user's public key who will pay the transaction fee
+ * @param {Array<TransactionInstruction>} instructions - Array of transaction instructions
+ * @returns {Promise<{transaction: Transaction, blockhash: string, lastValidBlockHeight: number}>}
+ */
+async function buildActionTransaction(feePayer, instructions) {
+  try {
+    // Get the latest blockhash
+    const { blockhash, lastValidBlockHeight } = await solanaEngine.executeConnectionMethod('getLatestBlockhash');
+    
+    // Create a new transaction
+    const transaction = new Transaction({
+      feePayer,
+      blockhash,
+      lastValidBlockHeight
+    });
+    
+    // Add all instructions
+    transaction.add(...instructions);
+    
+    return {
+      transaction,
+      blockhash,
+      lastValidBlockHeight
+    };
+  } catch (error) {
+    logApi.error('Error building action transaction', { error });
+    throw new Error(`Failed to build transaction: ${error.message}`);
+  }
+}
+
+/* CORS */
 
 // CORS configuration for Actions protocol
 const setupActionsCors = (req, res, next) => {
@@ -30,7 +77,10 @@ const setupActionsCors = (req, res, next) => {
   next();
 };
 
+// Apply CORS middleware to all Actions routes
 router.use(setupActionsCors);
+
+/* ACTIONS ROUTES */
 
 /**
  * GET /api/blinks/join-contest
@@ -113,49 +163,225 @@ router.post('/join-contest', async (req, res) => {
     const contestWalletAddress = contestConfig.settings.wallet_address;
     const entryFee = contest.entry_fee || 0.05; // Default to 0.05 SOL if not specified
     
-    // 4. Build transaction instructions
+    // 4. Get or generate portfolio for user
     try {
-      // Create a memo instruction with contest metadata
-      const memoInstruction = getMemoInstruction(JSON.stringify({
-        action: "contest_entry",
-        contest_id,
-        user: account,
-        timestamp: Date.now()
-      }));
-      
-      // Get a recent blockhash
-      const { blockhash, lastValidBlockHeight } = await solanaEngine.executeConnectionMethod('getLatestBlockhash');
-      
-      // Build the transaction
-      const transaction = await solanaEngine.buildTransaction({
-        feePayer: userPubkey,
-        instructions: [
-          // SOL transfer instruction to contest wallet
-          {
-            programId: '11111111111111111111111111111111', // System program
-            keys: [
-              { pubkey: userPubkey, isSigner: true, isWritable: true },
-              { pubkey: new PublicKey(contestWalletAddress), isSigner: false, isWritable: true }
-            ],
-            data: Buffer.from([
-              2, // Transfer instruction index
-              ...new Uint8Array(new BigUint64Array([BigInt(entryFee * 1_000_000_000)]).buffer) // amount in lamports
-            ])
-          },
-          // Memo instruction with contest data
-          memoInstruction
-        ],
-        blockhash,
-        lastValidBlockHeight
+      // Try to find user's most recent portfolio
+      let portfolio;
+      let portfolioSource = "previous"; // Track source for analytics
+
+      // First, try to get the user's most recent contest portfolio
+      const recentPortfolio = await prisma.contest_portfolios.findMany({
+        where: {
+          users: {
+            wallet_address: account
+          }
+        },
+        include: {
+          tokens: {
+            select: {
+              address: true,
+              symbol: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          created_at: 'desc'
+        },
+        take: 10 // Get several to ensure we get enough unique tokens
       });
+
+      if (recentPortfolio && recentPortfolio.length > 0) {
+        // Process user's previous portfolio selections
+        const tokenWeights = {};
+        
+        // Count token occurrences to find favorites
+        recentPortfolio.forEach(entry => {
+          const tokenAddress = entry.tokens.address;
+          if (!tokenWeights[tokenAddress]) {
+            tokenWeights[tokenAddress] = {
+              weight: 0,
+              count: 0,
+              address: tokenAddress,
+              symbol: entry.tokens.symbol,
+              name: entry.tokens.name
+            };
+          }
+          tokenWeights[tokenAddress].weight += entry.weight;
+          tokenWeights[tokenAddress].count += 1;
+        });
+        
+        // Convert to array and normalize weights to total 100%
+        const tokens = Object.values(tokenWeights);
+        const totalWeight = tokens.reduce((sum, token) => sum + token.weight, 0);
+        
+        portfolio = {
+          tokens: tokens.map(token => ({
+            contractAddress: token.address,
+            weight: Math.round((token.weight / totalWeight) * 100),
+            symbol: token.symbol || null,
+            name: token.name || null
+          }))
+        };
+        
+        // Ensure weights sum to exactly 100%
+        const actualTotal = portfolio.tokens.reduce((sum, token) => sum + token.weight, 0);
+        if (actualTotal !== 100 && portfolio.tokens.length > 0) {
+          // Add/subtract the difference from the highest weight token
+          const sortedTokens = [...portfolio.tokens].sort((a, b) => b.weight - a.weight);
+          sortedTokens[0].weight += (100 - actualTotal);
+        }
+      } else {
+        // No previous portfolio, generate an "AI portfolio"
+        portfolioSource = "ai";
+        
+        // Get trending tokens for the AI portfolio - reduced to 4 tokens
+        const trendingTokens = await prisma.tokens.findMany({
+          where: {
+            is_active: true
+          },
+          orderBy: {
+            priority_score: 'desc'
+          },
+          take: 4
+        });
+        
+        if (trendingTokens.length > 0) {
+          // Create a portfolio with trending tokens
+          portfolio = {
+            tokens: trendingTokens.map((token, index) => {
+              // Improved weight distribution: 40-30-20-10
+              let weight;
+              if (index === 0) weight = 40;      // First token: 40%
+              else if (index === 1) weight = 30; // Second token: 30%
+              else if (index === 2) weight = 20; // Third token: 20%
+              else weight = 10;                  // Fourth token: 10%
+              
+              return {
+                contractAddress: token.address,
+                weight: Math.round(weight),
+                symbol: token.symbol || null,
+                name: token.name || null
+              };
+            })
+          };
+          
+          // Ensure weights sum to exactly 100%
+          const actualTotal = portfolio.tokens.reduce((sum, token) => sum + token.weight, 0);
+          if (actualTotal !== 100 && portfolio.tokens.length > 0) {
+            portfolio.tokens[0].weight += (100 - actualTotal);
+          }
+        } else {
+          // Fallback if no trending tokens found
+          return res.status(500).json({ 
+            error: 'Unable to generate portfolio',
+            action: "redirect",
+            redirect_url: `https://degenduel.me/contest/${contest_id}/select-portfolio?wallet=${account}`
+          });
+        }
+      }
+      
+      // Format portfolio details for memo and response
+      const portfolioSummary = portfolio.tokens.map(t => 
+        `${t.symbol || t.contractAddress.slice(0,4)}...: ${t.weight}%`
+      ).join(', ');
+      
+      // Generate a unique ID for this specific portfolio entry attempt
+      const portfolioId = crypto.randomUUID(); 
+
+      // --- Create the formatted memo string with Bar Chart ---
+      const MAX_BAR_WIDTH = 20; // Max characters for the bar
+      const PERCENT_PER_BLOCK = 100 / MAX_BAR_WIDTH; // e.g., 5% if width is 20
+      const LABEL_WIDTH = 10; // Width for "SYMBOL: " part (e.g., 8 + 2)
+      const BLOCK_CHAR = '█'; // Unicode Full Block
+
+      let memoLines = [];
+
+      // Line 1: Contest Name (ALL CAPS)
+      memoLines.push(`${contest.name.toUpperCase()}`);
+      memoLines.push(''); // Blank line for separation
+
+      // Line 2: Portfolio Source Description with Emoji
+      const sourceEmoji = portfolioSource === "ai" ? '🤖' : '📊';
+      const portfolioSourceDescription = portfolioSource === "ai" 
+        ? `${sourceEmoji} AI Selection:` 
+        : `${sourceEmoji} Your Latest Lineup:`;
+      memoLines.push(portfolioSourceDescription);
+
+      // Lines 3+: Portfolio Bar Chart
+      portfolio.tokens.forEach(token => {
+        // Prepare label (Symbol + :), pad to LABEL_WIDTH
+        const symbol = token.symbol || token.contractAddress.slice(0, 6); // Use symbol or fallback to short address
+        const label = `${symbol}: `.padEnd(LABEL_WIDTH, ' '); 
+        
+        // Calculate bar length
+        const weight = token.weight || 0;
+        let numBlocks = 0;
+        if (weight > 0) {
+          numBlocks = Math.max(1, Math.ceil(weight / PERCENT_PER_BLOCK)); // At least 1 block if > 0%
+          numBlocks = Math.min(numBlocks, MAX_BAR_WIDTH); // Cap at max width
+        }
+        const bar = BLOCK_CHAR.repeat(numBlocks);
+
+        memoLines.push(`${label}${bar}`);
+      });
+      memoLines.push(''); // Blank line for separation
+
+      // Updated format: CID and Fee on same line, Ref on its own line
+      memoLines.push(`CID: ${contest_id} Fee: ${entryFee} SOL`);
+      memoLines.push(`Ref: ${portfolioId}`);
+
+      const memoData = memoLines.join('\\n');
+      // --- End formatted memo string ---
+
+      // Create a memo instruction with the formatted string
+      const memoInstruction = createMemoInstruction(
+        memoData,          // First argument: the formatted memo string
+        [userPubkey]       // Second argument: array of signers (the user paying the fee)
+      );
+      
+      // Create a SOL transfer instruction (lamports = SOL * 10^9)
+      const lamports = Math.floor(entryFee * 1_000_000_000);
+      const transferInstruction = SystemProgram.transfer({
+        fromPubkey: userPubkey,
+        toPubkey: new PublicKey(contestWalletAddress),
+        lamports: lamports
+      });
+      
+      // Build the transaction using our helper
+      const { transaction, blockhash } = await buildActionTransaction(
+        userPubkey,
+        [transferInstruction, memoInstruction]
+      );
       
       // Serialize transaction to base64
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false }).toString('base64');
       
-      // Return the transaction for signing
+      // Store portfolio temporarily for retrieval after transaction confirmation
+      // This approach ensures the portfolio data is available when verifying the transaction
+      await prisma.pending_contest_entries.create({
+        data: {
+          wallet_address: account,
+          contest_id: parseInt(contest_id),
+          portfolio: portfolio, // The actual portfolio object
+          portfolio_id: portfolioId, // Store the generated ID to link it
+          expires_at: new Date(Date.now() + 3600000), // 1 hour expiration
+          status: 'pending'
+        }
+      });
+      
+      // Return the transaction for signing in Solana Actions format
       return res.json({
         transaction: serializedTransaction,
-        message: `Join contest ${contest.name}`,
+        message: `Join contest ${contest.name} with ${portfolioSource === "ai" ? "AI generated" : "your latest"} portfolio (${entryFee} SOL)`, // Updated message text
+        memo_preview: memoData, // Add the generated memo for preview if desired
+        portfolio_summary: portfolioSummary, // Keep original summary for potential non-Action UI use
+        portfolio_source: portfolioSource, // Keep source info
+        portfolio_tokens: portfolio.tokens.map(t => ({
+          address: t.contractAddress,
+          weight: t.weight,
+          symbol: t.symbol || null
+        })),
         blockhash
       });
       

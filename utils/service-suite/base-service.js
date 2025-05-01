@@ -1,18 +1,18 @@
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
 import { 
-    getCircuitBreakerConfig, 
-    isHealthy, 
+    getCircuitBreakerConfig,  // why is this not being used?
+    isHealthy,  // why is this not being used?
     shouldReset,
     calculateBackoffDelay,
-    getCircuitBreakerStatus 
+    getCircuitBreakerStatus  // why is this not being used?
 } from './circuit-breaker-config.js';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'events'; // why is this not being used?
 import serviceManager from './service-manager.js';
 import serviceEvents from './service-events.js';
 import { ServiceError } from './service-error.js';
 import { fancyColors, serviceColors, logColors } from '../colors.js';
-import ServiceConfigUtil from './service-config-util.js';
+import ServiceConfigUtil from './service-config-util.js'; // why is this not being used?
 const VERBOSE_SERVICE_INIT = false;
 
 /**

@@ -900,7 +900,7 @@ const TIMEOUTS = {
  *                   items:
  *                     $ref: '#/components/schemas/Portfolio'
  */
-// Enter a contest with initial portfolio in a single atomic transaction
+// Enter a contest with initial portfolio in a single atomic transaction (AUTHENTICATED)
 router.post('/:id/enter', requireAuth, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -2941,6 +2941,9 @@ router.get('/user-participations', async (req, res) => {
     });
   }
 });
+
+
+/* Contest Schedules */
 
 /**
  * @swagger

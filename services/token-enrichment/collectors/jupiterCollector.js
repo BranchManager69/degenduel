@@ -78,6 +78,123 @@ class JupiterCollector {
       return null;
     }
   }
+  
+  /**
+   * Get token information for multiple addresses in a single batch request
+   * @param {string[]} tokenAddresses - Array of Solana token addresses
+   * @returns {Promise<Object>} Map of token addresses to their data
+   */
+  async getTokenInfoBatch(tokenAddresses) {
+    try {
+      if (!Array.isArray(tokenAddresses) || tokenAddresses.length === 0) {
+        return {};
+      }
+      
+      logApi.info(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} Fetching batch token info for ${tokenAddresses.length} tokens`);
+      
+      // Group addresses into chunks of 100 (Jupiter's limit)
+      const BATCH_SIZE = 100; // Jupiter's API limit
+      const results = {};
+      
+      // Check cache first for all tokens
+      const uncachedAddresses = [];
+      
+      // First check which tokens we already have in cache
+      for (const address of tokenAddresses) {
+        const cacheKey = `token_${address}`;
+        const cachedData = this.getCachedData(cacheKey);
+        
+        if (cachedData) {
+          results[address] = cachedData;
+        } else {
+          uncachedAddresses.push(address);
+        }
+      }
+      
+      // If all tokens were cached, return immediately
+      if (uncachedAddresses.length === 0) {
+        return results;
+      }
+      
+      // Ensure collector is initialized
+      if (!this.jupiterClient || !this.jupiterClient.initialized) {
+        await this.initialize();
+      }
+      
+      // For uncached tokens, process in batches
+      // Process in chunks to comply with API limits
+      const chunks = [];
+      for (let i = 0; i < uncachedAddresses.length; i += BATCH_SIZE) {
+        chunks.push(uncachedAddresses.slice(i, i + BATCH_SIZE));
+      }
+      
+      // Process each batch using Jupiter's batch API
+      for (const chunk of chunks) {
+        try {
+          // Get the prices/data for this batch from Jupiter
+          const batchPrices = await this.jupiterClient.getPrices(chunk);
+          
+          // Loop through token addresses in this chunk
+          for (const address of chunk) {
+            // Look up individual token info from Jupiter's token map
+            const tokenInfo = this.jupiterClient.getTokenInfo(address);
+            
+            if (tokenInfo) {
+              // Process and merge with price data (if available)
+              const processedData = this.processTokenInfo(tokenInfo);
+              
+              // Add price data if available
+              if (batchPrices && batchPrices[address]) {
+                processedData.price = batchPrices[address].price || 0;
+                processedData.priceTimestamp = Date.now();
+              }
+              
+              // Cache and store the result
+              results[address] = processedData;
+              this.cacheData(`token_${address}`, processedData);
+            } else {
+              logApi.debug(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} No token info found for ${address} in batch`);
+            }
+          }
+        } catch (batchError) {
+          logApi.error(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} Error with Jupiter batch processing for ${chunk.length} tokens:`, batchError);
+          
+          // Fall back to individual processing if batch fails
+          logApi.warn(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.YELLOW}Falling back to individual API calls for ${chunk.length} tokens${fancyColors.RESET}`);
+          
+          let fallbackSuccess = 0;
+          let fallbackFailed = 0;
+          
+          for (const address of chunk) {
+            try {
+              const tokenData = await this.getTokenInfo(address);
+              if (tokenData) {
+                results[address] = tokenData;
+                fallbackSuccess++;
+              } else {
+                fallbackFailed++;
+              }
+            } catch (individualError) {
+              logApi.error(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error in fallback for token ${address}:${fancyColors.RESET}`, individualError);
+              fallbackFailed++;
+            }
+          }
+          
+          logApi.warn(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} FALLBACK SUMMARY ${fancyColors.RESET} Jupiter individual fallbacks: ${fallbackSuccess} success, ${fallbackFailed} failed`)
+        }
+        
+        // Add a small delay between chunks to avoid rate limits
+        if (chunks.length > 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching batch token info:${fancyColors.RESET}`, error);
+      return {};
+    }
+  }
 
   /**
    * Get token information for multiple tokens in a batch
