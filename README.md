@@ -17,7 +17,12 @@
 ## 📑 Solana Web3.js v2 Migration Documents
 
 - [Web3.js v2 Migration Guide](./SOLANA_WEB3_V2_MIGRATION_GUIDE.md) - Step-by-step guide for migrating Admin Wallet Service
+- [Admin Wallet Migration Plan](./ADMIN_WALLET_MIGRATION_PLAN.md) - Detailed migration plan for Admin Wallet Service
 - [SolanaEngine v2 Migration Plan](./SOLANA_ENGINE_V2_MIGRATION_PLAN.md) - Comprehensive plan for rewriting SolanaEngine service
+- [Contest Wallet v2 Migration Plan](./CONTEST_WALLET_V2_MIGRATION_PLAN.md) - Migration strategy for Contest Wallet Service
+- [Market Data v2 Migration Plan](./MARKET_DATA_V2_MIGRATION_PLAN.md) - Integration plan for Market Data Service
+- [Vanity Wallet v2 Migration Plan](./VANITY_WALLET_V2_MIGRATION_PLAN.md) - Migration approach for Vanity Wallet Service
+- [Pool Data Manager v2 Migration Plan](./POOL_DATA_MANAGER_V2_MIGRATION_PLAN.md) - Migration approach for Pool Data Manager Service
 
 ## 🚀 Quick Start
 
