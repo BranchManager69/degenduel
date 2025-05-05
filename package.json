@@ -4,6 +4,9 @@
   "version": "0.8.1",
   "type": "module",
   "scripts": {
+    "// DOCUMENTATION": "================================================================================================================",
+    "loose": "ls -lt *.md | cat",
+    "loose:save": "ls -lt *.md | cat > LOOSE_DOCS.md",
     "// MASTER DEGENDUEL RESTART (PREFERRED RESTART METHOD)": "==================================================================================",
     "re": "pm2 delete all && pm2 start ecosystem.config.cjs",
     "cf": "node scripts/fix-dduel-redirect.js",
