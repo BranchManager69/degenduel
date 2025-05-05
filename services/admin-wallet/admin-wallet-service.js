@@ -1,38 +1,52 @@
 // services/admin-wallet/admin-wallet-service.js
 
-/*
- * This service is responsible for managing administrative wallet operations.
+/**
+ * Admin Wallet Service
+ *
+ * @description This service is responsible for managing administrative wallet operations.
  * It handles secure wallet management, SOL/token transfers, and mass operations
  * for admin wallets. This service is completely separate from Contest Wallet Service
  * and manages platform-owned wallets for administrative purposes.
  * 
- * This version is updated to use SolanaEngine directly for improved RPC performance
+ * This version should be updated to use SolanaEngine directly for improved RPC performance
  * and reliability through multi-endpoint support and automatic failover.
+ * 
+ * NOTE: UPDATE ADMIN WALLET SERVICE TO USE SOLANA ENGINE DIRECTLY FOR IMPROVED RPC PERFORMANCE!
+ * NOTE: UPDATE ADMIN WALLET SERVICE TO USE SOLANA WEB3.JS v2.x WITH SHIMS FOR SUPPORT!
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-14
+ * @updated 2025-05-05
  */
 
-// ** Service Auth **
-import { generateServiceAuthHeader } from '../../config/service-auth.js';
-// ** Service Class **
+// Service Auth
+import { generateServiceAuthHeader } from '../../config/service-auth.js'; // why is this unused?
+// Service Class
 import { BaseService } from '../../utils/service-suite/base-service.js';
 import { ServiceError } from '../../utils/service-suite/service-error.js';
-import { config } from '../../config/config.js';
-import { logApi } from '../../utils/logger-suite/logger.js';
-import AdminLogger from '../../utils/admin-logger.js';
 import prisma from '../../config/prisma.js';
-// ** Service Manager **
-import serviceManager from '../../utils/service-suite/service-manager.js';
-import { SERVICE_NAMES, SERVICE_LAYERS, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
-// ** Solana **
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { solanaEngine } from '../../services/solana-engine/index.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
-
-// ** Import wallet modules **
+import AdminLogger from '../../utils/admin-logger.js';
+// Service Manager
+import serviceManager from '../../utils/service-suite/service-manager.js';
+import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
+import { SERVICE_LAYERS } from '../../utils/service-suite/service-constants.js'; // why is this unused?
+// Solana
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'; // why are these unused?
+// Solana Engine
+import { solanaEngine } from '../../services/solana-engine/index.js';
+// Wallet modules
 import walletCrypto from './modules/wallet-crypto.js';
 import walletTransactions from './modules/wallet-transactions.js';
 import batchOperations from './modules/batch-operations.js';
 import walletBalance from './modules/wallet-balance.js';
 
+// Config
+import { config } from '../../config/config.js';
+
+// Admin Wallet Config
 const ADMIN_WALLET_CONFIG = {
     name: SERVICE_NAMES.ADMIN_WALLET,
     description: getServiceMetadata(SERVICE_NAMES.ADMIN_WALLET).description,
@@ -617,6 +631,6 @@ class AdminWalletService extends BaseService {
     }
 }
 
-// Export service singleton
+// Export Admin Wallet Service singleton
 const adminWalletService = new AdminWalletService();
 export default adminWalletService;

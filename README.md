@@ -14,6 +14,11 @@
 
 # ⚔️ DEGENDUEL ⚔️
 
+## 📑 Solana Web3.js v2 Migration Documents
+
+- [Web3.js v2 Migration Guide](./SOLANA_WEB3_V2_MIGRATION_GUIDE.md) - Step-by-step guide for migrating Admin Wallet Service
+- [SolanaEngine v2 Migration Plan](./SOLANA_ENGINE_V2_MIGRATION_PLAN.md) - Comprehensive plan for rewriting SolanaEngine service
+
 ## 🚀 Quick Start
 
 - Use the universal tool runner to access all project tools: `dd`

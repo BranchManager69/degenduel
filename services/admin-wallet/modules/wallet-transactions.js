@@ -7,8 +7,13 @@
  * @module wallet-transactions
  */
 
+import prisma from '../../../config/prisma.js';
+import { logApi } from '../../../utils/logger-suite/logger.js';
+import { ServiceError } from '../../../utils/service-suite/service-error.js';
+import { decryptWallet, createKeypairFromPrivateKey } from './wallet-crypto.js';
 import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
 // Import SPL Token as CommonJS module (fix for ESM compatibility)
+// THIS "METHOD" OF IMPORTING SPL TOKEN IS **BROKEN** AND NONSENSICAL!!!
 import pkg from '@solana/spl-token';
 const { 
   getAssociatedTokenAddress, 
@@ -18,16 +23,11 @@ const {
   ASSOCIATED_TOKEN_PROGRAM_ID
 } = pkg;
 
-import prisma from '../../../config/prisma.js';
-import { ServiceError } from '../../../utils/service-suite/service-error.js';
-import { decryptWallet, createKeypairFromPrivateKey } from './wallet-crypto.js';
-import { logApi } from '../../../utils/logger-suite/logger.js';
+// SolanaEngine for transaction processing
+import { solanaEngine } from '../../solana-engine/index.js'; // why is this unused?
 
 // Config
-import { config } from '../../../config/config.js';
-
-// SolanaEngine for transaction processing
-import { solanaEngine } from '../../solana-engine/index.js';
+import { config } from '../../../config/config.js'; // why is this unused?
 
 /**
  * Transfers SOL from one wallet to another with validation and balance checks
