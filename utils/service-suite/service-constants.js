@@ -1,8 +1,22 @@
 // utils/service-suite/service-constants.js
 
 /**
- * Service name constants and configurations
- * This file serves as the single source of truth for service names
+ * Service Constants
+ * @description Centralized constants for service names, layers, metadata, and configurations.
+ * 
+ * NOTE: 
+ * This is ideally used by all services.
+ * However, due to technical debt, some services do not follow this standard.
+ * 
+ * NOTE:
+ * If you begin to migrate a service to a true DegenDuel BaseService,
+ * then you'd better DO IT RIGHT -- or DON'T FUCKING DO IT AT ALL!!!!!!!!!!!
+ * [BECAUSE THE MESS I AM NOW SOLVING WILL NEVER BE ALLOWED TO HAPPEN AGAIN!!!!!!!!!]
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-02
  */
 
 // Default circuit breaker configuration
@@ -27,6 +41,7 @@ export const SERVICE_NAMES = {
     TOKEN_DEX_DATA: 'token_dex_data_service', // DEX pool data service
     TOKEN_DETECTION: 'token_detection_service', // New token detection service
     TOKEN_ENRICHMENT: 'token_enrichment_service', // New token enrichment service
+    JUPITER_CLIENT: 'jupiter_client', // Jupiter API client for market data
 
     // Contest Layer Services
     CONTEST_EVALUATION: 'contest_evaluation_service',
@@ -63,6 +78,22 @@ export const SERVICE_LAYERS = {
     CONTEST: 'contest_layer',
     WALLET: 'wallet_layer',
     INFRASTRUCTURE: 'infrastructure_layer',
+};
+
+export const SERVICE_VERBOSITY = {
+    SILENT: 'silent',
+    LOW: 'low',
+    NORMAL: 'normal',
+    HIGH: 'high',
+    DEBUG: 'debug'
+};
+
+export const SERVICE_CRITICALITY = {
+    CRITICAL: 'critical',
+    HIGH: 'high',
+    MEDIUM: 'medium',
+    LOW: 'low',
+    DEBUG: 'debug'
 };
 
 export const SERVICE_METADATA = {
@@ -104,6 +135,13 @@ export const SERVICE_METADATA = {
         updateFrequency: '1m',
         criticalLevel: 'medium',
         dependencies: [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE]
+    },
+    [SERVICE_NAMES.JUPITER_CLIENT]: {
+        layer: SERVICE_LAYERS.DATA,
+        description: 'Jupiter API client for market data',
+        updateFrequency: '1m',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         layer: SERVICE_LAYERS.DATA,
@@ -271,7 +309,7 @@ export const SERVICE_METADATA = {
 
 /* Helper functions */
 
-// Get service metadata
+// Get a service's metadata
 /**
  * Get the metadata for a given service name
  * 
@@ -282,7 +320,7 @@ export function getServiceMetadata(serviceName) {
     return SERVICE_METADATA[serviceName];
 }
 
-// Get service layer
+// Get a service layer
 /**
  * Get the layer for a given service name
  * 
@@ -293,7 +331,7 @@ export function getServiceLayer(serviceName) {
     return SERVICE_METADATA[serviceName]?.layer;
 }
 
-// Get services in a layer
+// Get the services of a layer
 /**
  * Get all services in a given layer
  * 
@@ -306,7 +344,7 @@ export function getServicesInLayer(layer) {
         .map(([serviceName]) => serviceName);
 }
 
-// Validate service name
+// Validate a service name
 /**
  * Validate if a given service name exists in the SERVICE_NAMES object
  * 
@@ -351,23 +389,29 @@ export function validateDependencyChain(serviceName) {
     const visited = new Set();
     const recursionStack = new Set();
 
+    // Helper function to check for recursive cycles
     function hasCycle(service) {
         visited.add(service);
         recursionStack.add(service);
 
+        // Get the dependencies of the service
         const dependencies = getServiceDependencies(service);
         for (const dep of dependencies) {
             if (!visited.has(dep)) {
+                // If the dependency hasn't been visited, check for cycles
                 if (hasCycle(dep)) return true;
             } else if (recursionStack.has(dep)) {
+                // If the dependency is already in the recursion stack, we have a cycle
                 return true;
             }
         }
 
+        // Remove the service from the recursion stack
         recursionStack.delete(service);
         return false;
     }
 
+    // Check for cycles
     return !hasCycle(serviceName);
 }
 

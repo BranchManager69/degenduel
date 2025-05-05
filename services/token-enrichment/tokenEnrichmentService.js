@@ -15,18 +15,18 @@
  */
 
 // Service Suite
-import { BaseService } from '../../../utils/service-suite/base-service.js';
-import { SERVICE_NAMES } from '../../../utils/service-suite/service-constants.js';
-import serviceManager from '../../../utils/service-suite/service-manager.js';
-import serviceEvents from '../../../utils/service-suite/service-events.js';
-import { ServiceError } from '../../../utils/service-suite/service-error.js'; // why is this unused?
+import { BaseService } from '../../utils/service-suite/base-service.js';
+import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
+import serviceManager from '../../utils/service-suite/service-manager.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
+import { ServiceError } from '../../utils/service-suite/service-error.js'; // why is this unused?
 // Prisma
-import prisma from '../../../config/prisma.js';
+import prisma from '../../config/prisma.js';
 // Redis
-import redisManager from '../../../utils/redis-suite/redis-manager.js'; // no stated need for this
+import redisManager from '../../utils/redis-suite/redis-manager.js'; // no stated need for this
 // Logger
-import { logApi } from '../../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../../utils/colors.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
+import { fancyColors } from '../../utils/colors.js';
 
 // Config
 //import { config } from '../../config/config.js';
@@ -380,10 +380,14 @@ class TokenEnrichmentService extends BaseService {
       
       // Add to processing queue
       this.processingQueue.push(queueItem);
-      this.stats.enqueuedTotal++;
-      this.stats.currentQueueSize = this.processingQueue.length;
       
-      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Enqueued ${tokenAddress} for enrichment (tier: ${priorityTier}, score: ${priorityScore}, queue size: ${this.processingQueue.length})`);
+      // Safely update stats with null checks
+      if (this.stats) {
+        this.stats.enqueuedTotal = (this.stats.enqueuedTotal || 0) + 1;
+        this.stats.currentQueueSize = this.processingQueue ? this.processingQueue.length : 0;
+      }
+      
+      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Enqueued ${tokenAddress} for enrichment (tier: ${priorityTier}, score: ${priorityScore}, queue size: ${this.processingQueue ? this.processingQueue.length : 0})`);
       
       // Start processing if not already running
       if (!this.batchProcessing && this.activeBatches < CONFIG.MAX_CONCURRENT_BATCHES) {
@@ -467,13 +471,20 @@ class TokenEnrichmentService extends BaseService {
    * Process the next batch of tokens with more efficient parallel processing
    */
   async processNextBatch() {
-    if (this.processingQueue.length === 0) {
+    // First check if circuit breaker is open
+    if (this.isCircuitBreakerOpen()) {
+      logApi.warn(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Circuit breaker open, skipping batch processing${fancyColors.RESET}`);
+      this.batchProcessing = false;
+      return;
+    }
+    
+    if (!this.processingQueue || this.processingQueue.length === 0) {
       this.batchProcessing = false;
       return;
     }
     
     this.batchProcessing = true;
-    this.activeBatches++;
+    this.activeBatches = (this.activeBatches || 0) + 1;
     
     try {
       // Sort queue primarily by priorityScore (high scores first) then by other factors
@@ -494,7 +505,11 @@ class TokenEnrichmentService extends BaseService {
       
       // Take the next batch
       const batch = this.processingQueue.splice(0, CONFIG.BATCH_SIZE);
-      this.stats.currentQueueSize = this.processingQueue.length;
+      
+      // Safely update stats
+      if (this.stats) {
+        this.stats.currentQueueSize = this.processingQueue ? this.processingQueue.length : 0;
+      }
       
       // Extract addresses from batch
       const batchAddresses = batch.map(item => item.address);
@@ -656,15 +671,17 @@ class TokenEnrichmentService extends BaseService {
       // Store the enriched data
       const success = await this.storeTokenData(tokenAddress, enrichedData);
       
-      // Update statistics
-      this.stats.processedTotal++;
-      if (success) {
-        this.stats.processedSuccess++;
-      } else {
-        this.stats.processedFailed++;
+      // Update statistics with safe access
+      if (this.stats) {
+        this.stats.processedTotal = (this.stats.processedTotal || 0) + 1;
+        if (success) {
+          this.stats.processedSuccess = (this.stats.processedSuccess || 0) + 1;
+        } else {
+          this.stats.processedFailed = (this.stats.processedFailed || 0) + 1;
+        }
+        
+        this.stats.lastProcessedTime = new Date().toISOString();
       }
-      
-      this.stats.lastProcessedTime = new Date().toISOString();
       
       // Log performance
       const elapsedMs = Date.now() - startTime;
@@ -681,7 +698,8 @@ class TokenEnrichmentService extends BaseService {
       
       return success;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token ${tokenAddress}:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token ${tokenAddress}:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Error details: ${error.code || ''} ${error.name || ''} ${error.stack ? error.stack.split('\n')[0] : ''}`);
       
       // Update token record to mark failed enrichment
       try {
@@ -696,7 +714,8 @@ class TokenEnrichmentService extends BaseService {
           }
         });
       } catch (dbError) {
-        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Database error:${fancyColors.RESET}`, dbError);
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Database error:${fancyColors.RESET} ${dbError.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Database error details: ${dbError.code || ''} ${dbError.name || ''}`);
       }
       
       this.stats.processedFailed++;
@@ -818,15 +837,17 @@ class TokenEnrichmentService extends BaseService {
       // Store the enriched data
       const success = await this.storeTokenData(tokenAddress, enrichedData);
       
-      // Update statistics
-      this.stats.processedTotal++;
-      if (success) {
-        this.stats.processedSuccess++;
-      } else {
-        this.stats.processedFailed++;
+      // Update statistics with safe access
+      if (this.stats) {
+        this.stats.processedTotal = (this.stats.processedTotal || 0) + 1;
+        if (success) {
+          this.stats.processedSuccess = (this.stats.processedSuccess || 0) + 1;
+        } else {
+          this.stats.processedFailed = (this.stats.processedFailed || 0) + 1;
+        }
+        
+        this.stats.lastProcessedTime = new Date().toISOString();
       }
-      
-      this.stats.lastProcessedTime = new Date().toISOString();
       
       // Log performance
       const elapsedMs = Date.now() - startTime;
@@ -843,7 +864,8 @@ class TokenEnrichmentService extends BaseService {
       
       return success;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error enriching token ${tokenAddress}:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error enriching token ${tokenAddress}:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Enrichment error details: ${error.code || ''} ${error.name || ''} ${error.stack ? error.stack.split('\n')[0] : ''}`);
       
       // Update token record to mark failed enrichment
       try {
@@ -858,7 +880,8 @@ class TokenEnrichmentService extends BaseService {
           }
         });
       } catch (dbError) {
-        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Database error:${fancyColors.RESET}`, dbError);
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Database error:${fancyColors.RESET} ${dbError.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Database error details: ${dbError.code || ''} ${dbError.name || ''}`);
       }
       
       this.stats.processedFailed++;
@@ -970,14 +993,37 @@ class TokenEnrichmentService extends BaseService {
           decimals: combinedData.decimals,
           color: combinedData.color || '#888888',
           image_url: combinedData.imageUrl,
+          // Use dedicated columns for additional images
+          header_image_url: combinedData.headerUrl,
+          open_graph_image_url: combinedData.openGraphUrl,
           description: combinedData.description,
           last_refresh_success: new Date(),
           metadata_status: metadataStatus,
           discovery_count: existingToken.discovery_count + 1, // Fix discovery count increment
+          
+          // Store enhanced metadata in the refresh_metadata JSON field
           refresh_metadata: {
             ...existingToken.refresh_metadata,
             last_enrichment_success: new Date().toISOString(),
-            enrichment_status: metadataStatus
+            enrichment_status: metadataStatus,
+            
+            // NEW: Store enhanced market data
+            enhanced_market_data: {
+              // Detailed price changes for all timeframes
+              priceChanges: combinedData.priceChanges,
+              
+              // Detailed volume data for all timeframes
+              volumes: combinedData.volumes,
+              
+              // Transaction counts
+              transactions: combinedData.transactions,
+              
+              // Creation date
+              pairCreatedAt: combinedData.pairCreatedAt ? combinedData.pairCreatedAt.toISOString() : null,
+              
+              // Boost information
+              boosts: combinedData.boosts
+            }
           }
         }
       });
@@ -1045,13 +1091,18 @@ class TokenEnrichmentService extends BaseService {
       
       // Store social links if available
       if (combinedData.socials && Object.keys(combinedData.socials).length > 0) {
-        // Delete existing socials
+        // Extract website URL (if any) - we'll handle this separately
+        const websiteUrl = combinedData.socials.website;
+        const otherSocials = {...combinedData.socials};
+        delete otherSocials.website;
+        
+        // Delete existing social links (except website which is in token_websites)
         await this.db.token_socials.deleteMany({
           where: { token_id: existingToken.id }
         });
         
-        // Add new socials
-        for (const [type, url] of Object.entries(combinedData.socials)) {
+        // Add social media links (Twitter, Telegram, Discord, etc.)
+        for (const [type, url] of Object.entries(otherSocials)) {
           if (url) {
             await this.db.token_socials.create({
               data: {
@@ -1062,31 +1113,77 @@ class TokenEnrichmentService extends BaseService {
             });
           }
         }
-      }
-      
-      // Store website if available
-      if (combinedData.socials?.website) {
-        try {
-          await this.db.token_websites.upsert({
-            where: { 
-              id: (await this.db.token_websites.findFirst({
-                where: { 
+        
+        // NEW: Store all websites in dedicated table if available
+        // First, handle the primary website for backward compatibility
+        if (websiteUrl) {
+          try {
+            // Get the website label if available from DexScreener
+            const websiteLabel = enrichedData.dexscreener?.websiteLabel || 'Official';
+            
+            await this.db.token_websites.upsert({
+              where: { 
+                id: (await this.db.token_websites.findFirst({
+                  where: { 
+                    token_id: existingToken.id,
+                    label: websiteLabel
+                  }
+                }))?.id || 0
+              },
+              update: {
+                url: websiteUrl.substring(0, 255)
+              },
+              create: {
+                token_id: existingToken.id,
+                label: websiteLabel,
+                url: websiteUrl.substring(0, 255)
+              }
+            });
+            
+            logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Updated primary website for ${tokenAddress}: ${websiteUrl}`);
+          } catch (websiteError) {
+            logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error storing primary website for ${tokenAddress}:${fancyColors.RESET}`, websiteError);
+          }
+        }
+        
+        // NEW: Store additional websites if available
+        if (combinedData.websites && Array.isArray(combinedData.websites) && combinedData.websites.length > 1) {
+          try {
+            // Skip the first website as it's already been handled above
+            for (let i = 1; i < combinedData.websites.length; i++) {
+              const website = combinedData.websites[i];
+              if (!website.url) continue;
+              
+              // Store additional website with its label
+              await this.db.token_websites.upsert({
+                where: {
+                  id: (await this.db.token_websites.findFirst({
+                    where: {
+                      token_id: existingToken.id,
+                      label: website.label || `Additional ${i}`
+                    }
+                  }))?.id || 0
+                },
+                update: {
+                  url: website.url.substring(0, 255)
+                },
+                create: {
                   token_id: existingToken.id,
-                  label: 'Official'
+                  label: website.label || `Additional ${i}`,
+                  url: website.url.substring(0, 255)
                 }
-              }))?.id || 0
-            },
-            update: {
-              url: combinedData.socials.website.substring(0, 255)
-            },
-            create: {
-              token_id: existingToken.id,
-              label: 'Official',
-              url: combinedData.socials.website.substring(0, 255)
+              });
             }
-          });
-        } catch (websiteError) {
-          logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error storing website for ${tokenAddress}:${fancyColors.RESET}`, websiteError);
+            
+            logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Stored ${combinedData.websites.length - 1} additional websites for ${tokenAddress}`);
+          } catch (additionalWebsiteError) {
+            logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error storing additional websites for ${tokenAddress}:${fancyColors.RESET}`, additionalWebsiteError);
+          }
+        }
+        
+        // Log successful social data update
+        if (Object.keys(otherSocials).length > 0) {
+          logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Updated social links for ${tokenAddress}: ${Object.keys(otherSocials).join(', ')}`);
         }
       }
       
@@ -1141,8 +1238,10 @@ class TokenEnrichmentService extends BaseService {
       name: ['dexscreener', 'helius', 'jupiter'],
       decimals: ['jupiter', 'helius', 'dexscreener'],
       price: ['dexscreener', 'jupiter'],
-      imageUrl: ['helius', 'jupiter'],
-      description: ['helius']
+      imageUrl: ['dexscreener', 'helius', 'jupiter'], // Now prioritize DexScreener for images
+      description: ['dexscreener', 'helius'], // Now prioritize DexScreener for descriptions too
+      headerUrl: ['dexscreener'],
+      openGraphUrl: ['dexscreener']
     };
     
     // Prepare result object
@@ -1164,8 +1263,11 @@ class TokenEnrichmentService extends BaseService {
           if (field === 'name') value = data.dexscreener.name;
           if (field === 'decimals') value = 9; // DexScreener doesn't provide decimals, default to 9
           if (field === 'price') value = data.dexscreener.price;
-          if (field === 'imageUrl') value = null; // DexScreener doesn't provide image URL
-          if (field === 'description') value = null; // DexScreener doesn't provide description
+          // NEW: DexScreener now provides image URL and other media
+          if (field === 'imageUrl') value = data.dexscreener.metadata?.imageUrl;
+          if (field === 'description') value = data.dexscreener.metadata?.description;
+          if (field === 'headerUrl') value = data.dexscreener.metadata?.headerUrl;
+          if (field === 'openGraphUrl') value = data.dexscreener.metadata?.openGraphUrl;
         } else if (source === 'helius') {
           if (field === 'symbol') value = data.helius.symbol;
           if (field === 'name') value = data.helius.name;
@@ -1192,21 +1294,59 @@ class TokenEnrichmentService extends BaseService {
     
     // Merge market data (from DexScreener primarily)
     if (data.dexscreener) {
+      // Basic market data
       result.priceChange24h = data.dexscreener.priceChange24h;
       result.volume24h = data.dexscreener.volume24h;
-      result.liquidity = data.dexscreener.liquidity;
+      result.liquidity = data.dexscreener.liquidity?.usd || data.dexscreener.liquidity; // Handle both formats
       result.fdv = data.dexscreener.fdv;
       result.marketCap = data.dexscreener.marketCap;
+      
+      // NEW: Add detailed price changes for all timeframes
+      result.priceChanges = data.dexscreener.priceChange || {};
+      
+      // NEW: Add detailed volume data for all timeframes
+      result.volumes = data.dexscreener.volume || {};
+      
+      // NEW: Add transaction counts
+      result.transactions = data.dexscreener.txns || {};
+      
+      // NEW: Add pair creation date if available
+      if (data.dexscreener.pairCreatedAt) {
+        result.pairCreatedAt = data.dexscreener.pairCreatedAt;
+      }
+      
+      // NEW: Add boost information if available
+      if (data.dexscreener.boosts) {
+        result.boosts = data.dexscreener.boosts;
+      }
     }
     
     // Merge social data
     result.socials = {};
     
+    // NEW: Store all websites in a dedicated array
+    result.websites = [];
+    
     // Add socials from DexScreener
-    if (data.dexscreener && data.dexscreener.socials) {
-      Object.entries(data.dexscreener.socials).forEach(([type, url]) => {
-        if (url) result.socials[type] = url;
-      });
+    if (data.dexscreener) {
+      // Copy all social links
+      if (data.dexscreener.socials) {
+        Object.entries(data.dexscreener.socials).forEach(([type, url]) => {
+          if (url) result.socials[type] = url;
+        });
+      }
+      
+      // NEW: Copy all websites with their labels
+      if (data.dexscreener.websites && Array.isArray(data.dexscreener.websites)) {
+        result.websites = [...data.dexscreener.websites];
+        
+        // For backward compatibility, copy website label
+        if (data.dexscreener.websiteLabel) {
+          result.websiteLabel = data.dexscreener.websiteLabel;
+        } else if (result.websites.length > 0) {
+          result.websiteLabel = result.websites[0].label || 'Official';
+        }
+      }
     }
     
     // Add socials from Helius (only if not already present)
@@ -1249,9 +1389,22 @@ class TokenEnrichmentService extends BaseService {
       // All good
       return true;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Health check failed:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Health check failed:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Health check error details: ${error.code || ''} ${error.name || ''}`);
       throw error;
     }
+  }
+  
+  /**
+   * Check if the circuit breaker is currently open
+   * @returns {boolean} True if circuit breaker is open
+   */
+  isCircuitBreakerOpen() {
+    // Access the circuit breaker from BaseService
+    if (this.circuitBreaker) {
+      return this.circuitBreaker.isOpen();
+    }
+    return false; 
   }
   
   /**
@@ -1260,23 +1413,62 @@ class TokenEnrichmentService extends BaseService {
    */
   async performOperation() {
     try {
+      // Check if circuit breaker is open
+      if (this.isCircuitBreakerOpen()) {
+        logApi.warn(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Circuit breaker open, skipping operation${fancyColors.RESET}`);
+        
+        // Emit circuit breaker status event
+        serviceEvents.emit('service:circuit-breaker', {
+          name: this.name,
+          status: 'open',
+          timestamp: new Date().toISOString()
+        });
+        
+        return {
+          success: false,
+          error: 'Circuit breaker open',
+          circuitBreaker: 'open'
+        };
+      }
+      
       // Check service health
       await this.checkServiceHealth();
       
-      // Update statistics
-      this.stats.currentQueueSize = this.processingQueue.length;
+      // Update statistics (with safe access)
+      if (this.stats) {
+        this.stats.currentQueueSize = this.processingQueue ? this.processingQueue.length : 0;
+      }
       
-      // Do other operation tasks as needed
-      // For now, just check health and return stats
+      // Emit service status event for monitoring
+      serviceEvents.emit('token-enrichment:status', {
+        name: this.name,
+        status: 'healthy',
+        queueSize: this.processingQueue ? this.processingQueue.length : 0,
+        activeBatches: this.activeBatches || 0,
+        timestamp: new Date().toISOString()
+      });
       
+      // Return health status and safe stats
       return {
         success: true,
-        stats: this.stats
+        stats: this.stats ? { ...this.stats } : {}
       };
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Operation failed:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Operation failed:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Operation error details: ${error.code || ''} ${error.name || ''}`);
       
+      // Always use handleError for proper circuit breaker integration
       await this.handleError(error);
+      
+      // Emit failure event
+      serviceEvents.emit('token-enrichment:error', {
+        name: this.name,
+        error: {
+          message: error.message,
+          code: error.code
+        },
+        timestamp: new Date().toISOString()
+      });
       
       return {
         success: false,
@@ -1486,7 +1678,8 @@ class TokenEnrichmentService extends BaseService {
         enqueued
       };
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error reprocessing stuck tokens:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error reprocessing stuck tokens:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+      logApi.debug(`[TokenEnrichmentSvc] Reprocessing error details: ${error.code || ''} ${error.name || ''}`);
       return {
         processed: 0,
         enqueued: 0

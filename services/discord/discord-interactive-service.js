@@ -1,6 +1,18 @@
 // services/discord/discord-interactive-service.js
 
 /**
+ * =============================================================================
+ * IMPORTANT: Service Responsibilities Overview
+ * -----------------------------------------------------------------------------
+ * This service acts as the primary Discord Bot, handling user interactions,
+ * role management, DMs, and orchestrating certain event-driven notifications.
+ * For a detailed breakdown of responsibilities between this service and the
+ * webhook-based notification service, please see:
+ * ./DISCORD_SERVICES_OVERVIEW.md
+ * =============================================================================
+ */
+
+/**
  * This service is responsible for sending interactive notifications to 
  * the Discord server via the DegenDuel AI Discord bot for various events.
  * 
@@ -17,6 +29,9 @@ import { BaseService } from '../../utils/service-suite/base-service.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js'; 
 import serviceEvents from '../../utils/service-suite/service-events.js';
 import prisma from '../../config/prisma.js';
+import discordNotificationService from './discordNotificationService.js'; // Import the webhook service
+import { SERVICE_EVENTS } from '../../utils/service-suite/service-events.js'; // Import the event keys
+import { discordConfig } from './discordConfig.js'; // Import the new Discord config
 
 // Config
 import config from '../../config/config.js';
@@ -110,6 +125,10 @@ class DiscordInteractiveService extends BaseService {
 
     // Listen for token price movements
     serviceEvents.on('token:pump', this.handleTokenPump.bind(this));
+
+    // --- Listen for Privilege Changes --- 
+    serviceEvents.on(SERVICE_EVENTS.PRIVILEGE_GRANTED, this.onPrivilegeGranted.bind(this));
+    serviceEvents.on(SERVICE_EVENTS.PRIVILEGE_REVOKED, this.onPrivilegeRevoked.bind(this));
   }
 
   setupInteractionHandlers() {
@@ -883,6 +902,298 @@ class DiscordInteractiveService extends BaseService {
     
     return this.sendToChannel('devYap', null, [embed], components.length > 0 ? components : null);
   }
+
+  // --- Role Management --- 
+
+  /**
+   * Grants the JUP Liker role to a specific Discord user.
+   * @param {string} discordUserId - The Discord User ID.
+   */
+  async grantJupLikeRole(discordUserId) {
+    if (!discordUserId) {
+      logApi.warn('[Discord] Attempted to grant role with no Discord User ID.');
+      return false;
+    }
+    if (!this.isInitialized || !this.client) {
+      logApi.error('[Discord] Cannot grant role, client not initialized.');
+      return false;
+    }
+
+    try {
+      const guild = await this.client.guilds.fetch(discordConfig.GUILD_ID);
+      if (!guild) {
+        logApi.error(`[Discord] Could not find Guild with ID ${discordConfig.GUILD_ID}`);
+        return false;
+      }
+
+      const member = await guild.members.fetch(discordUserId).catch(() => null); // Fetch member, return null if not found
+      if (!member) {
+        logApi.warn(`[Discord] Could not find member with ID ${discordUserId} in guild ${guild.name}. Cannot grant role.`);
+        return false; // User might not be in the server
+      }
+
+      const role = await guild.roles.fetch(discordConfig.roles.JUP_LIKER_ROLE_ID).catch(() => null);
+      if (!role) {
+        logApi.error(`[Discord] Could not find Role with ID ${discordConfig.roles.JUP_LIKER_ROLE_ID} in guild ${guild.name}.`);
+        return false;
+      }
+      
+      // Check if member already has the role
+      if (member.roles.cache.has(role.id)) {
+          logApi.info(`[Discord] Member ${discordUserId} already has role ${role.name}. No action needed.`);
+          return true; // Already has role
+      }
+
+      await member.roles.add(role);
+      logApi.info(`[Discord] Successfully granted role "${role.name}" to user ${discordUserId}.`);
+      return true;
+
+    } catch (error) {
+      logApi.error(`[Discord] Error granting JUP Liker role to user ${discordUserId}:`, error);
+      // Check for specific permissions errors
+      if (error.code === 50013) { // Missing Permissions
+          logApi.error('[Discord] Bot is missing __Manage Roles__ permission.');
+      }
+      return false;
+    }
+  }
+
+  /**
+   * Revokes the JUP Liker role from a specific Discord user.
+   * @param {string} discordUserId - The Discord User ID.
+   */
+  async revokeJupLikeRole(discordUserId) {
+     if (!discordUserId) {
+      logApi.warn('[Discord] Attempted to revoke role with no Discord User ID.');
+      return false;
+    }
+     if (!this.isInitialized || !this.client) {
+      logApi.error('[Discord] Cannot revoke role, client not initialized.');
+      return false;
+    }
+
+    try {
+      const guild = await this.client.guilds.fetch(discordConfig.GUILD_ID);
+       if (!guild) {
+        logApi.error(`[Discord] Could not find Guild with ID ${discordConfig.GUILD_ID}`);
+        return false;
+      }
+
+      const member = await guild.members.fetch(discordUserId).catch(() => null); // Fetch member, return null if not found
+      if (!member) {
+        logApi.warn(`[Discord] Could not find member with ID ${discordUserId} in guild ${guild.name}. Cannot revoke role.`);
+        return false; // User might not be in the server
+      }
+
+      const role = await guild.roles.fetch(discordConfig.roles.JUP_LIKER_ROLE_ID).catch(() => null);
+      if (!role) {
+        logApi.error(`[Discord] Could not find Role with ID ${discordConfig.roles.JUP_LIKER_ROLE_ID} in guild ${guild.name}.`);
+        return false;
+      }
+      
+      // Check if member even has the role to begin with
+      if (!member.roles.cache.has(role.id)) {
+          logApi.info(`[Discord] Member ${discordUserId} does not have role ${role.name}. No action needed.`);
+          return true; // Doesn't have role
+      }
+
+      await member.roles.remove(role);
+      logApi.info(`[Discord] Successfully revoked role "${role.name}" from user ${discordUserId}.`);
+      return true;
+
+    } catch (error) {
+      logApi.error(`[Discord] Error revoking JUP Liker role from user ${discordUserId}:`, error);
+      // Check for specific permissions errors
+
+      // TODO: This is a bit of a hack, we should probably handle this in a more graceful way
+      //       For example, we could try to re-fetch the role and member, or even re-fetch the guild.
+      //       We could also try to handle specific errors differently.
+      //       For now, we'll just log the error and return false.
+      //       We should also probably handle the case where the user doesn't have the role to begin with.      
+      if (error.code === 50013) { // Missing Permissions
+          logApi.error('[Discord] Bot is missing __Manage Roles__ permission.');
+      }
+      return false;
+    }
+  }
+  // --- End Role Management ---
+
+  // --- Privilege Event Handlers ---
+  async onPrivilegeGranted(payload) {
+    const { walletAddress, privilegeKey, username } = payload;
+    logApi.info(`[Discord] Received PRIVILEGE_GRANTED event for ${walletAddress} (Twitter: ${username}, Key: ${privilegeKey})`);
+
+    // We only care about the JUP Like role for now
+    if (privilegeKey !== 'JUP_LIKE_DISCORD_ROLE') {
+        return;
+    }
+
+    try {
+        // 1. Find Discord User ID and Nickname
+        const userData = await prisma.users.findUnique({
+            where: { wallet_address: walletAddress },
+            select: {
+                nickname: true, // Get the DegenDuel nickname
+                social_profiles: {
+                    where: { platform: 'discord' },
+                    select: { platform_user_id: true }
+                }
+            }
+        });
+        
+        const nickname = userData?.nickname || walletAddress.substring(0, 6); // Fallback to short wallet if no nickname
+        const discordUserId = userData?.social_profiles?.[0]?.platform_user_id;
+
+        // --- Fetch Discord PFP (if Discord ID exists) ---
+        let discordPfpUrl = null;
+        if (discordUserId) {
+            try {
+                const discordUser = await this.client.users.fetch(discordUserId);
+                discordPfpUrl = discordUser?.displayAvatarURL({ dynamic: true, size: 256 }); // Get dynamic URL (gif support), 256px
+                logApi.info(`[Discord] Fetched Discord PFP for ${discordUserId}: ${discordPfpUrl}`);
+            } catch (fetchError) {
+                logApi.warn(`[Discord] Could not fetch Discord user ${discordUserId} for PFP:`, fetchError.message);
+            }
+        }
+        // --- End Fetch Discord PFP ---
+        
+        // --- Placeholder for Twitter PFP --- 
+        // TODO: Implement logic to fetch Twitter PFP URL using the 'username' (Twitter handle)
+        const twitterPfpUrl = null; // Stubbed value
+        // --- End Placeholder ---
+
+        // --- Placeholder for Image Generation --- 
+        // TODO: Implement image generation service call
+        // Example: const generatedImageUrl = await imageGenerationService.createChadBadge({ 
+        //     nickname: nickname, 
+        //     discordPfpUrl: discordPfpUrl, // Might be null
+        //     twitterUsername: username,
+        //     twitterPfpUrl: twitterPfpUrl // Will be null for now
+        // });
+        const generatedImageUrl = null; // Stubbed value - replace with actual generated image URL
+        logApi.info(`[Discord] Placeholder: Image generation would happen here for ${nickname}.`);
+        // --- End Image Generation Placeholder ---
+
+        // Grant Role & Send Notifications only if Discord ID is linked
+        if (!discordUserId) {
+            logApi.info(`[Discord] User ${walletAddress} has no linked Discord account. Cannot grant role or announce.`);
+             // Still log to admin channel even if no Discord ID found
+            const adminLogMessage = `✅ Privilege Granted (No Discord Link): 
+  - Wallet: ${walletAddress}
+  - Twitter: ${username}
+  - Action: Privilege recorded in DB, but Discord actions skipped.`;
+            await this.sendGrantToAdminLog(adminLogMessage);
+            return; // Stop processing for this user
+        }
+
+        // 2. Grant Discord Role
+        const roleGranted = await this.grantJupLikeRole(discordUserId);
+
+        // 3. Send Notifications (Admin Log and Public Announcement)
+        if (roleGranted) { // roleGranted returns true if successful or if user already had it
+            
+            // Send details to Admin Log channel
+            const adminLogMessage = `✅ Privilege Granted: 
+  - Wallet: ${walletAddress}
+  - Twitter: ${username}
+  - Discord: <@${discordUserId}> (${discordUserId})
+  - Action: "Chad" role granted (or user already had it).`;
+            await this.sendGrantToAdminLog(adminLogMessage);
+            
+            // Send Public Announcement via Webhook
+            const publicWebhook = discordNotificationService.webhooks.mainChat; 
+            if (publicWebhook) {
+                const message = `🎉 <@${discordUserId}> just proved their loyalty and earned the **Chad** role for liking our token on Jupiter! 💪`;
+                try { 
+                    // Send message WITH the generated image if available
+                    await publicWebhook.send({ content: message, embeds: generatedImageUrl ? [{ image: { url: generatedImageUrl } }] : [] });
+                    logApi.info(`[Discord] Sent public grant announcement for ${discordUserId} to mainChat channel ${generatedImageUrl ? 'with image' : 'without image'}.`);
+                } catch (webhookError) {
+                    logApi.error(`[Discord] Failed to send public grant announcement to mainChat webhook:`, webhookError);
+                }
+            } else {
+                 logApi.warn(`[Discord] Main chat webhook not configured, cannot send public grant announcement.`);
+            }
+        }
+
+    } catch (error) {
+        logApi.error(`[Discord] Error processing PRIVILEGE_GRANTED for ${walletAddress}:`, error);
+    }
+  }
+
+  async onPrivilegeRevoked(payload) {
+      const { walletAddress, privilegeKey, username } = payload;
+      logApi.info(`[Discord] Received PRIVILEGE_REVOKED event for ${walletAddress} (Twitter: ${username}, Key: ${privilegeKey})`);
+
+      // We only care about the JUP Like role for now
+      if (privilegeKey !== 'JUP_LIKE_DISCORD_ROLE') {
+          return;
+      }
+
+      try {
+          // 1. Find Discord User ID
+          const discordProfile = await prisma.user_social_profiles.findFirst({
+              where: { wallet_address: walletAddress, platform: 'discord' },
+              select: { platform_user_id: true }
+          });
+          const discordUserId = discordProfile?.platform_user_id;
+
+          if (!discordUserId) {
+              logApi.info(`[Discord] User ${walletAddress} has no linked Discord account. Cannot revoke role or send DM/admin log.`);
+               // Still send admin log even if no Discord ID found?
+              this.sendRevokeToAdminLog(`User ${walletAddress} (Twitter: ${username}) unliked, but no Discord ID found.`);
+              return;
+          }
+
+          // 2. Revoke Discord Role
+          const roleRevoked = await this.revokeJupLikeRole(discordUserId);
+
+          // 3. Send DM to User (if role revoke seemed successful or user didn't have it)
+          if (roleRevoked) { // roleRevoked returns true if successful or if user didn't have role
+              try {
+                  const dmMessage = `Hi <@${discordUserId}>, we noticed you unliked the token on Jupiter. As a result, the "Chad" role has been removed from your profile. Thanks for your past support!`;
+                  await this.client.users.send(discordUserId, dmMessage);
+                  logApi.info(`[Discord] Sent revocation DM to ${discordUserId}.`);
+              } catch (dmError) {
+                  if (dmError.code === 50007) { // Cannot send messages to this user
+                      logApi.warn(`[Discord] Could not send DM to ${discordUserId} (User may have DMs disabled or blocked the bot).`);
+                  } else {
+                      logApi.error(`[Discord] Error sending revocation DM to ${discordUserId}:`, dmError);
+                  }
+              }
+          }
+          
+          // 4. Send Admin Log via Webhook
+          const adminLogMessage = `👎 User Unliked: 
+  - Wallet: ${walletAddress}
+  - Twitter: ${username}
+  - Discord: <@${discordUserId}> (${discordUserId})
+  - Action: "Chad" role revoked (or user didn't have it).`;
+          await this.sendRevokeToAdminLog(adminLogMessage);
+
+      } catch (error) {
+          logApi.error(`[Discord] Error processing PRIVILEGE_REVOKED for ${walletAddress}:`, error);
+      }
+  }
+
+  // Helper to send to admin log webhook
+  async sendRevokeToAdminLog(message) {
+      const adminWebhook = discordNotificationService.webhooks.adminLogs;
+      if (adminWebhook) {
+          try {
+              // Use createErrorEmbed for visibility
+              const embed = adminWebhook.createErrorEmbed('Privilege Revoked: JUP Like', message);
+              await adminWebhook.sendEmbed(embed);
+              logApi.info(`[Discord] Sent revocation details to admin log channel.`);
+          } catch (webhookError) {
+               logApi.error(`[Discord] Failed to send revocation details to admin log webhook:`, webhookError);
+          }
+      } else {
+          logApi.warn(`[Discord] Admin Logs webhook not configured, cannot send revocation log.`);
+      }
+  }
+
+  // --- End Privilege Event Handlers ---
 
   async performOperation() {
     // Just check Discord client connection

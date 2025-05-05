@@ -4,9 +4,9 @@
  * Vanity Wallet Service Entry Point
  */
 
-import vanityWalletService from './vanity-wallet-service.js';
+import vanityWalletService, { getDashboardData } from './vanity-wallet-service.js';
 import VanityApiClient from './vanity-api-client.js';
 
 // Export components
-export { VanityApiClient };
+export { VanityApiClient, getDashboardData };
 export default vanityWalletService;

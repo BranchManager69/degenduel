@@ -1,6 +1,12 @@
 // services/market-data/tokenListDeltaTracker.js
 
 /**
+ * NOTE:
+ * This module is responsible for tracking changes to token lists using Redis for fast set operations.
+ * It efficiently detects new and removed tokens when comparing successive token lists.
+ */
+
+/**
  * Token List Delta Tracker
  * 
  * Efficiently tracks changes to token lists using Redis for fast set operations.
@@ -36,12 +42,24 @@
  * 
  * See TOKEN_PROCESSING_SYSTEM.md for complete documentation.
  * -----------------------------------------------------------------------------
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-02
  */
 
+// Redis
 import { default as redisManager } from '../../utils/redis-suite/redis-manager.js';
+// Logger
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 
+// Config
+import config from '../../config/config.js';
+logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}Config:${fancyColors.RESET}`, config);
+
+// Token List Delta Tracker class
 class TokenListDeltaTracker {
   constructor() {
     this.KEY_PREFIX = 'jupiter_tokens';

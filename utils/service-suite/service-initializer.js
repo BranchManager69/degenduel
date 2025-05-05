@@ -1,21 +1,33 @@
 // utils/service-suite/service-initializer.js
 
-/*
+/**
+ * Service Initializer
+ * @description This module is responsible for orchestrating the initialization of all DegenDuel services.
+ * It ensures services are registered and initialized in the correct dependency order.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-02
+ */
+
+/**
+ * NOTE:
  * This module is responsible for orchestrating the initialization of all DegenDuel services.
  * It ensures services are registered and initialized in the correct dependency order.
  */
 
-// Service initialization verbosity - disable verbosity
-const VERBOSE_SERVICE_INIT_LOGS = false;
-
-import { logApi } from '../logger-suite/logger.js';
-import AdminLogger from '../admin-logger.js';
+// Service Suite
 import serviceManager from './service-manager.js';
-import { SERVICE_NAMES, SERVICE_LAYERS } from './service-constants.js';
+import { SERVICE_NAMES, SERVICE_LAYERS, SERVICE_VERBOSITY } from './service-constants.js';
+// Logger
+import { logApi } from '../logger-suite/logger.js';
 import { fancyColors, serviceColors } from '../colors.js';
-
+import AdminLogger from '../admin-logger.js';
 // Config
 import { config } from '../../config/config.js';
+const VERBOSE_SERVICE_INIT_LOGS = false;
+// Service initialization verbosity - disable verbosity
 
 /* Import all DegenDuel services */
 
@@ -40,7 +52,7 @@ import tokenEnrichmentService from '../../services/token-enrichment/index.js';
 
 //   (3)  Contest Layer
 // Discord notification service
-import discordNotificationService from '../../services/discordNotificationService.js';
+import discordNotificationService from '../../services/discord/discordNotificationService.js';
 import discordInteractiveService from '../../services/discord/discord-interactive-service.js';
 
 //   (4)  Contest Layer

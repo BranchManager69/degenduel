@@ -114,7 +114,7 @@ async function main() {
     if (!dexScreenerToken) {
       console.log(`\n🔄 Attempting direct fetch from DexScreener API...`);
       try {
-        const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/solana/${TARGET_TOKEN_ADDRESS}`);
+        const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${TARGET_TOKEN_ADDRESS}`);
         
         if (response.ok) {
           const data = await response.json();

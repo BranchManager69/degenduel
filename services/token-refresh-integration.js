@@ -1,29 +1,41 @@
+// services/token-refresh-integration.js
+
 /**
  * Token Refresh Integration Module
- * 
- * This module integrates the advanced token refresh scheduler with the rest of the system,
+ * @description Integrates the advanced token refresh scheduler with the rest of the system,
  * exposing its capabilities to other services in a controlled way.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-02
  */
 
+// Service Suite
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { logApi } from '../utils/logger-suite/logger.js';
-import { fancyColors } from '../utils/colors.js';
-import { PrismaClient } from '@prisma/client';
-import tokenRefreshScheduler from './token-refresh-scheduler.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import serviceEvents from '../utils/service-suite/service-events.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
+// Logger
+import { logApi } from '../utils/logger-suite/logger.js';
+import { fancyColors } from '../utils/colors.js';
+// Prisma
+import { PrismaClient } from '@prisma/client';
+// Token Refresh Scheduler
+import tokenRefreshScheduler from './token-refresh-scheduler.js';
+
+// Config
 import { config } from '../config/config.js';
 
 // Initialize Prisma client
-const prisma = new PrismaClient();
+const prisma = new PrismaClient(); // <--------- WRONG!!!
 
 // Service configuration
-const TOKEN_REFRESH_CONFIG = {
+const TOKEN_REFRESH_CONFIG = { // <------------- WRONG!!!
   name: 'token_refresh_scheduler_service',
   displayName: 'Token Refresh Scheduler',
   description: 'Advanced service for optimally scheduling token price updates',
-  intervalMs: 0, // No automatic interval - managed internally
+  intervalMs: 0, // No automatic interval - managed internally  (EXCUSE ME!!?!?!??!?)
   dependencies: [
     SERVICE_NAMES.MARKET_DATA, 
     SERVICE_NAMES.SOLANA_ENGINE,
@@ -55,8 +67,7 @@ export const initializeTokenRefresh = async () => {
     
     // Initialize the scheduler
     await tokenRefreshScheduler.initialize();
-    
-    // Register the scheduler with the service manager
+    // Register the scheduler with the ServiceManager
     // This is already registered now, so we don't need to do it again
     // serviceManager.register(tokenRefreshScheduler);
     

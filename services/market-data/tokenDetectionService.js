@@ -2,42 +2,49 @@
 
 /**
  * Token Detection Service
- * 
- * A service that continuously monitors for new tokens on the Solana blockchain.
- * It efficiently detects new tokens by comparing successive token lists from Jupiter API
- * and schedules processing of new tokens.
- * 
  * @module services/market-data/tokenDetectionService
+ * 
+ * @description A service that continuously monitors for new tokens on the Solana blockchain.
+ * 
+ * It efficiently detects new tokens by comparing successive token lists 
+ * from Jupiter API and schedules processing of new tokens.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-02
  */
 
+// Service Suite
 import { BaseService } from '../../utils/service-suite/base-service.js';
 import { ServiceError } from '../../utils/service-suite/service-error.js';
-import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../utils/colors.js';
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
+// Logger
+import { logApi } from '../../utils/logger-suite/logger.js';
+import { fancyColors } from '../../utils/colors.js';
+// Jupiter Client
 import { getJupiterClient } from '../solana-engine/jupiter-client.js';
+// Token List Delta Tracker
 import tokenListDeltaTracker from './tokenListDeltaTracker.js';
-import marketDataRepository from './marketDataRepository.js';
+// Market Data Repository
+import marketDataRepository from './marketDataRepository.js'; // what is this?
 
-// Configuration constants
+// Config
+import { config } from '../../config/config.js';
 const CONFIG = {
     // How often to check for new tokens (in seconds)
     CHECK_INTERVAL_SECONDS: 30,
-    
     // Cleanup old token sets daily to save Redis memory
     CLEANUP_INTERVAL_HOURS: 24,
-    
     // How long to keep old token sets for historical analysis (in days)
     KEEP_OLD_SETS_DAYS: 1,
-    
     // Maximum number of tokens to process in a batch
     BATCH_SIZE: 50,
-    
     // Delay between processing batches (in milliseconds)
     BATCH_DELAY_MS: 100
-};
+}; // extra config?
 
 /**
  * Token Detection Service

@@ -1,22 +1,43 @@
+// services/token-enrichment/collectors/dexScreenerCollector.js
+
 /**
  * DexScreener Data Collector
+ * @module services/token-enrichment/collectors/dexScreenerCollector
  * 
  * This module provides functionality to collect token data from DexScreener API.
  * DexScreener provides rich market data including price, volume, liquidity, and
  * token social information.
  * 
- * @module services/token-enrichment/collectors/dexScreenerCollector
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-04-28
+ * @updated 2025-05-02
  */
 
+import axios from 'axios'; // need for DexScreener API
+// Service Suite
+import { BaseService } from '../../../utils/service-suite/base-service.js';
+import { SERVICE_NAMES } from '../../../utils/service-suite/service-constants.js';
+import serviceManager from '../../../utils/service-suite/service-manager.js';
+import serviceEvents from '../../../utils/service-suite/service-events.js';
+import { ServiceError } from '../../../utils/service-suite/service-error.js'; // why is this unused?
+// Prisma
+import prisma from '../../../config/prisma.js'; // why is this unused?
+// Redis
+import redisManager from '../../../utils/redis-suite/redis-manager.js'; // why is this unused?
+// Logger
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
-import axios from 'axios';
-import { config } from '../../../config/config.js';
+
+// Config
+//import { config } from '../../../config/config.js';
+//const isDev = config.getEnvironment() === 'development';
 
 // Cache collector to avoid redundant API calls
 const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutes
 const dataCache = new Map();
 
+// DexScreener Collector class
 class DexScreenerCollector {
   constructor() {
     this.apiBaseUrl = 'https://api.dexscreener.com/latest/dex';
@@ -44,8 +65,8 @@ class DexScreenerCollector {
         return cachedData;
       }
 
-      // Make API request
-      const response = await this.axiosInstance.get(`/tokens/solana/${tokenAddress}`);
+      // Make API request - NOTE: The correct format is '/tokens/{tokenAddress}' without 'solana/'
+      const response = await this.axiosInstance.get(`/tokens/${tokenAddress}`);
       
       // Process response
       if (response.data && response.data.pairs && response.data.pairs.length > 0) {
@@ -69,108 +90,6 @@ class DexScreenerCollector {
    * Get token data for multiple addresses in a batch
    * @param {string[]} tokenAddresses - Array of token addresses to fetch
    * @returns {Promise<Object>} Map of token addresses to their data
-   */
-  async getTokensByAddressBatch(tokenAddresses) {
-    try {
-      if (!Array.isArray(tokenAddresses) || tokenAddresses.length === 0) {
-        return {};
-      }
-      
-      logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Fetching batch token data for ${tokenAddresses.length} tokens`);
-      
-      // First check cache for all tokens
-      const results = {};
-      const uncachedAddresses = [];
-      
-      for (const address of tokenAddresses) {
-        const cacheKey = `address_${address}`;
-        const cachedData = this.getCachedData(cacheKey);
-        
-        if (cachedData) {
-          results[address] = cachedData;
-        } else {
-          uncachedAddresses.push(address);
-        }
-      }
-      
-      // If all tokens were cached, return immediately
-      if (uncachedAddresses.length === 0) {
-        return results;
-      }
-      
-      // DexScreener doesn't have a true batch API, but we can optimize with smaller parallel batches
-      // Using chunks of 10 tokens per batch to avoid overwhelming the API
-      const BATCH_SIZE = 10;
-      
-      // Split into batches
-      const batches = [];
-      for (let i = 0; i < uncachedAddresses.length; i += BATCH_SIZE) {
-        batches.push(uncachedAddresses.slice(i, i + BATCH_SIZE));
-      }
-      
-      // Process each batch with parallel requests
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        
-        try {
-          // Process all tokens in this batch concurrently
-          const batchPromises = batch.map(address => this.getTokenByAddress(address));
-          const batchResults = await Promise.all(batchPromises);
-          
-          // Add results to the main results object
-          batch.forEach((address, index) => {
-            if (batchResults[index]) {
-              results[address] = batchResults[index];
-            }
-          });
-          
-        } catch (batchError) {
-          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} Error with DexScreener batch ${i+1}/${batches.length} for ${batch.length} tokens: ${batchError.message || 'Unknown error'}`);
-          
-          // Fall back to sequential processing for failed batch
-          logApi.warn(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.YELLOW}Falling back to sequential API calls for ${batch.length} tokens${fancyColors.RESET}`);
-          
-          let fallbackSuccess = 0;
-          let fallbackFailed = 0;
-          
-          for (const address of batch) {
-            try {
-              const tokenData = await this.getTokenByAddress(address);
-              if (tokenData) {
-                results[address] = tokenData;
-                fallbackSuccess++;
-              } else {
-                fallbackFailed++;
-              }
-            } catch (individualError) {
-              logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in fallback for token ${address}:${fancyColors.RESET} ${individualError.message || 'Unknown error'}`);
-              fallbackFailed++;
-            }
-            
-            // Add a small delay between requests to avoid rate limits
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-          
-          logApi.warn(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} FALLBACK SUMMARY ${fancyColors.RESET} DexScreener sequential fallbacks: ${fallbackSuccess} success, ${fallbackFailed} failed`)
-        }
-        
-        // Add a pause between batches to respect DexScreener's stricter rate limits
-        if (i < batches.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-      
-      return results;
-    } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token fetch:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
-      return {};
-    }
-  }
-
-  /**
-   * Get token data for multiple tokens in a batch
-   * @param {string[]} tokenAddresses - Array of Solana token addresses
-   * @returns {Promise<Object>} Map of token addresses to token data
    */
   async getTokensByAddressBatch(tokenAddresses) {
     try {
@@ -201,45 +120,105 @@ class DexScreenerCollector {
         return results;
       }
 
-      // DexScreener doesn't have a true batch endpoint, but we can optimize with parallel requests
-      // Group missing tokens into chunks of 10 (reasonable for parallel processing)
-      const CHUNK_SIZE = 10; // Lower to avoid rate limiting
-      const chunks = this.chunkArray(missingTokens, CHUNK_SIZE);
+      // DexScreener supports up to 30 token addresses in a single comma-separated request
+      // Split missing tokens into chunks of 30 to optimize API usage
+      const MAX_TOKENS_PER_REQUEST = 30; // DexScreener supports up to 30 tokens per request
+      const chunks = this.chunkArray(missingTokens, MAX_TOKENS_PER_REQUEST);
       
-      logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Fetching ${missingTokens.length} tokens in ${chunks.length} batch(es)`);
+      logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Fetching ${missingTokens.length} tokens in ${chunks.length} batch request(s)`);
       
-      // Process each chunk with parallel requests
+      // Process each chunk with a single batch request per 30 tokens
       for (const [index, chunk] of chunks.entries()) {
         try {
-          // Create array of promises for parallel execution
-          const tokenPromises = chunk.map(address => {
-            return this.getTokenByAddress(address)
-              .then(data => {
+          // Calculate URL length to prevent issues with extremely long URLs
+          const batchUrl = `/tokens/${chunk.join(',')}`;
+          const fullUrl = `${this.apiBaseUrl}${batchUrl}`;
+          
+          // Check URL length to prevent HTTP 414 errors (URL too long)
+          // Most servers can handle ~2000 chars, but we'll be conservative
+          if (fullUrl.length > 1800) {
+            logApi.warn(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} URL too long (${fullUrl.length} chars), splitting batch`);
+            
+            // Split this batch in half and process recursively
+            const halfSize = Math.ceil(chunk.length / 2);
+            const firstHalf = chunk.slice(0, halfSize);
+            const secondHalf = chunk.slice(halfSize);
+            
+            // Process each half with individual requests
+            for (const address of [...firstHalf, ...secondHalf]) {
+              try {
+                const data = await this.getTokenByAddress(address);
                 if (data) {
-                  // Already cached inside getTokenByAddress
                   results[address] = data;
                 }
-                return { address, success: !!data };
-              })
-              .catch(error => {
-                logApi.debug(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token ${address}:${fancyColors.RESET}`, error.message);
-                return { address, success: false, error: error.message };
-              });
-          });
-          
-          // Wait for all promises in the chunk to complete
-          const chunkResults = await Promise.all(tokenPromises);
-          
-          // Log chunk completion
-          const successCount = chunkResults.filter(r => r.success).length;
-          logApi.debug(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Processed batch ${index + 1}/${chunks.length}: ${successCount}/${chunk.length} successful`);
-          
-          // Add delay between chunks to avoid rate limiting
-          if (index < chunks.length - 1) {
-            await this.sleep(1000); // DexScreener has stricter rate limits
+              } catch (error) {
+                logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token ${address}:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+              }
+            }
+            continue;
           }
-        } catch (chunkError) {
-          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error processing chunk ${index + 1}:${fancyColors.RESET} ${chunkError.message || 'Unknown error'}`);
+          
+          // Make the batch request using comma-separated addresses
+          logApi.debug(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Making batch request for ${chunk.length} tokens`);
+          const response = await this.axiosInstance.get(batchUrl);
+          
+          // Process response
+          if (response.data && response.data.pairs && response.data.pairs.length > 0) {
+            // Group pairs by token address for easier processing
+            const pairsByToken = {};
+            
+            // Sort pairs by token address
+            for (const pair of response.data.pairs) {
+              const tokenAddress = pair.baseToken?.address;
+              if (!tokenAddress) continue;
+              
+              if (!pairsByToken[tokenAddress]) {
+                pairsByToken[tokenAddress] = [];
+              }
+              pairsByToken[tokenAddress].push(pair);
+            }
+            
+            // Process each token's pairs
+            for (const [tokenAddress, tokenPairs] of Object.entries(pairsByToken)) {
+              // Create a response-like object for each token
+              const tokenData = {
+                pairs: tokenPairs
+              };
+              
+              // Process token data
+              const data = this.processTokenData(tokenData);
+              if (data) {
+                // Cache and add to results
+                this.cacheData(`address_${tokenAddress}`, data);
+                results[tokenAddress] = data;
+              }
+            }
+          }
+          
+          // Log batch completion
+          const batchSuccessCount = chunk.filter(address => results[address]).length;
+          logApi.debug(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Processed batch ${index + 1}/${chunks.length}: ${batchSuccessCount}/${chunk.length} successful`);
+          
+          // Add delay between batches to avoid rate limiting
+          if (index < chunks.length - 1) {
+            await this.sleep(500); // Reduced delay since we're sending fewer requests
+          }
+        } catch (batchError) {
+          logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error processing batch ${index + 1}:${fancyColors.RESET} ${batchError.message || 'Unknown error'}`);
+          
+          // Fallback to individual requests for this batch if the batch request failed
+          logApi.info(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} Falling back to individual requests for batch ${index + 1}`);
+          
+          for (const address of chunk) {
+            try {
+              const data = await this.getTokenByAddress(address);
+              if (data) {
+                results[address] = data;
+              }
+            } catch (error) {
+              logApi.error(`${fancyColors.GOLD}[DexScreenerCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token ${address}:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+            }
+          }
         }
       }
 
@@ -253,6 +232,7 @@ class DexScreenerCollector {
       return {};
     }
   }
+
 
   /**
    * Helper method to add delay
@@ -326,43 +306,164 @@ class DexScreenerCollector {
     tokenData.pools = pairs.map(pair => ({
       name: pair.dexId,
       address: pair.pairAddress,
+      labels: pair.labels || [],
       liquidity: parseFloat(pair.liquidity?.usd || 0),
       volume24h: parseFloat(pair.volume?.h24 || 0),
-      price: parseFloat(pair.priceUsd || 0)
+      price: parseFloat(pair.priceUsd || 0),
+      pairCreatedAt: pair.pairCreatedAt ? new Date(pair.pairCreatedAt) : null
     }));
     
     return tokenData;
   }
 
   /**
-   * Process pair data from DexScreener
+   * Process pair data from DexScreener - COMPLETE VERSION
+   * This extracts ALL fields from the DexScreener API
    * @param {Object} pair - DexScreener pair data
    * @returns {Object} Processed token data
    */
   processPairData(pair) {
+    // Basic token data
     const tokenData = {
+      // Basic token identification
       address: pair.baseToken?.address || '',
       name: pair.baseToken?.name || '',
       symbol: pair.baseToken?.symbol || '',
+      
+      // Pair information
+      pairAddress: pair.pairAddress || '',
+      dex: pair.dexId || '',
+      chainId: pair.chainId || 'solana',
+      url: pair.url || `https://dexscreener.com/solana/${pair.pairAddress}`,
+      labels: pair.labels || [],
+      pairCreatedAt: pair.pairCreatedAt ? new Date(pair.pairCreatedAt) : null,
+      
+      // Quote token information
+      quoteToken: {
+        address: pair.quoteToken?.address || '',
+        name: pair.quoteToken?.name || '',
+        symbol: pair.quoteToken?.symbol || ''
+      },
+      
+      // Price information
       price: parseFloat(pair.priceUsd || 0),
-      priceChange24h: parseFloat(pair.priceChange?.h24 || 0),
-      volume24h: parseFloat(pair.volume?.h24 || 0),
-      liquidity: parseFloat(pair.liquidity?.usd || 0),
+      priceNative: parseFloat(pair.priceNative || 0),
+      
+      // Price changes - all timeframes
+      priceChange: {
+        m5: parseFloat(pair.priceChange?.m5 || 0),
+        h1: parseFloat(pair.priceChange?.h1 || 0),
+        h6: parseFloat(pair.priceChange?.h6 || 0),
+        h24: parseFloat(pair.priceChange?.h24 || 0)
+      },
+      
+      // Market metrics
       fdv: parseFloat(pair.fdv || 0),
       marketCap: parseFloat(pair.marketCap || 0),
-      pairAddress: pair.pairAddress,
-      dex: pair.dexId,
-      url: `https://dexscreener.com/solana/${pair.pairAddress}`,
-      socials: {}
+      
+      // Detailed liquidity
+      liquidity: {
+        usd: parseFloat(pair.liquidity?.usd || 0),
+        base: parseFloat(pair.liquidity?.base || 0),
+        quote: parseFloat(pair.liquidity?.quote || 0)
+      },
+      
+      // Detailed volume - all timeframes
+      volume: {
+        m5: parseFloat(pair.volume?.m5 || 0),
+        h1: parseFloat(pair.volume?.h1 || 0),
+        h6: parseFloat(pair.volume?.h6 || 0),
+        h24: parseFloat(pair.volume?.h24 || 0)
+      },
+      
+      // Detailed transactions - all timeframes
+      txns: {
+        m5: {
+          buys: parseInt(pair.txns?.m5?.buys || 0, 10),
+          sells: parseInt(pair.txns?.m5?.sells || 0, 10)
+        },
+        h1: {
+          buys: parseInt(pair.txns?.h1?.buys || 0, 10),
+          sells: parseInt(pair.txns?.h1?.sells || 0, 10)
+        },
+        h6: {
+          buys: parseInt(pair.txns?.h6?.buys || 0, 10),
+          sells: parseInt(pair.txns?.h6?.sells || 0, 10)
+        },
+        h24: {
+          buys: parseInt(pair.txns?.h24?.buys || 0, 10),
+          sells: parseInt(pair.txns?.h24?.sells || 0, 10)
+        }
+      },
+      
+      // For compatibility with existing code
+      priceChange24h: parseFloat(pair.priceChange?.h24 || 0),
+      volume24h: parseFloat(pair.volume?.h24 || 0),
+      
+      // Social links placeholder (to be filled below)
+      socials: {},
+      websites: [],
+      
+      // Metadata fields
+      metadata: {
+        imageUrl: null,
+        headerUrl: null,
+        openGraphUrl: null,
+        description: null
+      },
+      
+      // Boost data
+      boosts: pair.boosts || null
     };
 
-    // Extract social links
-    if (pair.links) {
-      if (pair.links.website) tokenData.socials.website = pair.links.website;
-      if (pair.links.twitter) tokenData.socials.twitter = pair.links.twitter;
-      if (pair.links.telegram) tokenData.socials.telegram = pair.links.telegram;
-      if (pair.links.discord) tokenData.socials.discord = pair.links.discord;
-      if (pair.links.medium) tokenData.socials.medium = pair.links.medium;
+    // Extract media, social links and websites from info field
+    if (pair.info) {
+      // Media: Image URL
+      if (pair.info.imageUrl) {
+        tokenData.metadata.imageUrl = pair.info.imageUrl;
+      }
+      
+      // Media: Header image
+      if (pair.info.header) {
+        tokenData.metadata.headerUrl = pair.info.header;
+      }
+      
+      // Media: OpenGraph image
+      if (pair.info.openGraph) {
+        tokenData.metadata.openGraphUrl = pair.info.openGraph;
+      }
+      
+      // Description
+      if (pair.info.description) {
+        tokenData.metadata.description = pair.info.description;
+      }
+      
+      // Social links from info.socials array
+      if (pair.info.socials && Array.isArray(pair.info.socials)) {
+        pair.info.socials.forEach(social => {
+          if (social.type && social.url) {
+            tokenData.socials[social.type] = social.url;
+          }
+        });
+      }
+      
+      // All websites from info.websites array
+      if (pair.info.websites && Array.isArray(pair.info.websites)) {
+        pair.info.websites.forEach(website => {
+          if (website.url) {
+            tokenData.websites.push({
+              label: website.label || 'Official',
+              url: website.url
+            });
+            
+            // Set first website as 'website' in socials for simplicity
+            if (tokenData.websites.length === 1) {
+              tokenData.socials.website = website.url;
+              tokenData.websiteLabel = website.label || 'Official';
+            }
+          }
+        });
+      }
     }
 
     return tokenData;

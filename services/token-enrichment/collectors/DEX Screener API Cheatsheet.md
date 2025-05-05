@@ -294,9 +294,9 @@ The DEX Screener API is a RESTful API that provides access to DEX Screener data.
 <a name="get-pairs-by-token-address"></a>
 - **Get pairs by token address:**
   ```
-  GET https://api.dexscreener.com/latest/dex/tokens/{chainId}/{tokenAddresses}
+  GET https://api.dexscreener.com/latest/dex/tokens/{tokenAddresses}
   ```
-  *Note: `{tokenAddresses}` can be a comma-separated list of up to 30 addresses.*
+  *Note: `{tokenAddresses}` can be a comma-separated list of up to 30 addresses. The chainId is not needed in the URL path.*
 
   **Response Format:**
 

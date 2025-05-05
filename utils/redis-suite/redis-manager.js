@@ -2,18 +2,28 @@
 
 /**
  * Redis Manager
+ * @module utils/redis-suite/redis-manager
  * 
  * This module provides a singleton instance of the Redis client.
  * It handles the connection to the Redis server and provides methods for getting and setting values in Redis.
  * 
- * @module utils/redis-suite/redis-manager
- * @version 1.0.0
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-01-14
+ * @updated 2025-05-01
  */
 
+// Redis
 import Redis from 'ioredis';
+// Logger
 import { logApi } from '../logger-suite/logger.js';
 import { fancyColors } from '../colors.js';
 
+/**
+ * Redis Manager
+ * @class RedisManager
+ * @description Manages the Redis client connection and provides methods for interacting with Redis
+ */
 class RedisManager {
     constructor() {
         this.client = null;

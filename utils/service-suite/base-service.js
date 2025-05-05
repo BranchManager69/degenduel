@@ -1,4 +1,17 @@
+// utils/service-suite/base-service.js
+
+/**
+ * Base service class that all DegenDuel services should extend
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-20
+ * @updated 2025-05-01
+ */
+
+// Prisma
 import prisma from '../../config/prisma.js';
+// Logger
 import { logApi } from '../logger-suite/logger.js';
 import { 
     getCircuitBreakerConfig,  // why is this not being used?
@@ -502,6 +515,25 @@ export class BaseService {
      * Handle operation error
      */
     async handleError(error) {
+        // Ensure stats structure exists
+        if (!this.stats) {
+            this.stats = {};
+        }
+        if (!this.stats.operations) {
+            this.stats.operations = { total: 0, successful: 0, failed: 0 };
+        }
+        if (!this.stats.history) {
+            this.stats.history = {
+                consecutiveFailures: 0,
+                lastError: null,
+                lastErrorTime: null
+            };
+        }
+        if (!this.stats.circuitBreaker) {
+            this.stats.circuitBreaker = { failures: 0, lastFailure: null, isOpen: false };
+        }
+
+        // Update stats safely
         this.stats.operations.total++;
         this.stats.operations.failed++;
         this.stats.history.consecutiveFailures++;
@@ -510,41 +542,40 @@ export class BaseService {
         this.stats.circuitBreaker.failures++;
         this.stats.circuitBreaker.lastFailure = new Date().toISOString();
 
-        // Check if we should open the circuit
+        // Circuit breaker logic
         if (this.stats.circuitBreaker.failures >= this.config.circuitBreaker.failureThreshold) {
-            logApi.warn(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET} \n\t\t\t  ${fancyColors.RAINBOW_BLUE}${fancyColors.BG_RED}  >> ${fancyColors.BOLD} ${this.config.description}: ${fancyColors.RESET}${fancyColors.BG_RED}${fancyColors.DARK_RED}${fancyColors.BOLD}  ${this.stats.circuitBreaker.failures}${fancyColors.RESET}${fancyColors.BG_RED}${fancyColors.DARK_RED} consecutive failures ${fancyColors.RESET}`);
+            logApi.warn(
+                `${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET}` +
+                ` ${serviceColors.failed}${this.name}${fancyColors.RESET}\n` +
+                `\t${fancyColors.RAINBOW_BLUE}${fancyColors.BG_RED} >> ` +
+                `${fancyColors.BOLD}${this.config.description}: ` +
+                `${this.stats.circuitBreaker.failures}${fancyColors.RESET}` +
+                `${fancyColors.BG_RED}${fancyColors.DARK_RED}${fancyColors.BOLD} consecutive failures${fancyColors.RESET}`
+            );
             this.stats.circuitBreaker.isOpen = true;
-            
-            // Send service status alert via Discord
+
+            // Send alerts and schedule recovery
             try {
-                // Import error alerter dynamically to avoid circular dependencies
-                import('../../utils/error-alerter.js').then(module => {
-                    const errorAlerter = module.default;
-                    errorAlerter.sendServiceStatusAlert(
-                        this.name, 
-                        'down', 
-                        `Service has experienced ${this.stats.circuitBreaker.failures} consecutive failures. Last error: ${error.message}`
-                    );
-                }).catch(alertError => {
-                    logApi.error(`Failed to send service status alert: ${alertError.message}`);
-                });
-                
-                // Also send critical error alert with more details about the error
-                import('../../utils/error-alerter.js').then(module => {
-                    const errorAlerter = module.default;
-                    errorAlerter.sendCriticalErrorAlert(error, this.name, {
+                const { default: errorAlerter } = await import('../../utils/error-alerter.js');
+                errorAlerter.sendServiceStatusAlert(
+                    this.name,
+                    'down',
+                    `Service has experienced ${this.stats.circuitBreaker.failures} consecutive failures. Last error: ${error.message}`
+                );
+                errorAlerter.sendCriticalErrorAlert(
+                    error,
+                    this.name,
+                    {
                         description: this.config.description,
                         failures: this.stats.circuitBreaker.failures,
                         lastSuccess: this.stats.circuitBreaker.lastSuccess,
                         status: 'Circuit Open'
-                    });
-                }).catch(alertError => {
-                    logApi.error(`Failed to send critical error alert: ${alertError.message}`);
-                });
-            } catch (alertError) {
-                logApi.error(`Failed to alert service failure: ${alertError.message}`);
+                    }
+                );
+            } catch (alerterErr) {
+                logApi.error(`Failed to send service failure alert: ${alerterErr.message}`);
             }
-            // Schedule recovery attempt
+
             await this.attemptCircuitRecovery();
         }
 

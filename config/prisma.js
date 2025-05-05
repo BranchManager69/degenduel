@@ -14,12 +14,15 @@
 import { logApi } from '../utils/logger-suite/logger.js';
 // Prisma
 import { PrismaClient } from '@prisma/client';
-import { withOptimize } from "@prisma/extension-optimize"; // new Optimize extension
+// TEMPORARILY DISABLED OPTIMIZE EXTENSION TO ELIMINATE HTTP 409 MESSAGES
+// import { withOptimize } from "@prisma/extension-optimize"; // new Optimize extension
 import './database-env.js';  // This must be imported before creating PrismaClient
 
 // Config
 import config from '../config/config.js';
 const OPTIMIZE_API_KEY = config.api_keys.optimize;
+const env = config.getEnvironment();
+const isDev = env === 'development';
 
 // Create the base Prisma client first
 const basePrisma = new PrismaClient({
@@ -30,6 +33,7 @@ const basePrisma = new PrismaClient({
     { level: 'warn',  emit: 'event' },
     { level: 'error', emit: 'event' },
   ],
+  errorFormat: 'pretty',
 });
 
 // Register event listeners on the base client
@@ -39,14 +43,24 @@ basePrisma.$on('info',  e => logApi.info('Info:', e));
 basePrisma.$on('warn',  e => logApi.warn('Warning:', e));
 basePrisma.$on('error', e => logApi.error('Error:', e));
 
-// Then extend it with Optimize
-const prisma = basePrisma.$extends(withOptimize({
-  apiKey: OPTIMIZE_API_KEY,
-  // We can still control Optimize's own logging if we want:
-  log: ['warn', 'error'],
-  errorFormat: 'pretty',
-}))
-
 // DegenDuel Prisma client singleton
+// TEMPORARILY DISABLED OPTIMIZE EXTENSION TO ELIMINATE HTTP 409 MESSAGES
+// TO RE-ENABLE: Remove the next line and uncomment the block below
+const prisma = basePrisma;
+
+/* 
+// Original Optimize integration - commented out to prevent HTTP 409 error messages
+const prisma = isDev && OPTIMIZE_API_KEY
+  // in dev _and_ with a key, extend with Optimize
+  ? basePrisma.$extends(
+      withOptimize({
+        apiKey: OPTIMIZE_API_KEY,
+        log: ['warn','error'],
+      })
+    )
+  // otherwise just use the base client
+  : basePrisma;
+*/
+
 export { prisma };
 export default prisma;

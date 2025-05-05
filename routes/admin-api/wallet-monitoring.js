@@ -1,17 +1,46 @@
 // routes/admin-api/wallet-monitoring.js
 
+
 /**
- * API endpoints for monitoring and controlling user wallet balance tracking
- * Restricted to superadmin role
+ * admin-api/wallet-monitoring.js provides:
+ * - /status - get service status
+ * - /wallets - get tracked wallets
+ * - /history/:walletAddress - get wallet balance history
+ * - /check/:walletAddress - force balance check
+ * - /settings - update tracking settings
+ * - /dashboard - get dashboard data
+ * - /start - start the service
+ * - /stop - stop the service
+ * 
+ * Implementation approach:
+ * - admin-api/wallet-monitoring.js uses Redis caching
+ * - admin-api/wallet-monitoring.js includes trend analysis
+ * - admin-api/wallet-monitoring.js uses raw SQL queries via prisma.$queryRawUnsafe
+ * 
+ * Meanwhile,
+ * - 'admin/wallet-monitoring.js' implements admin controls for the wallet monitoring service
  */
 
+/**
+ * NOTE:    DO NOT CONFUSE THIS WITH
+ *          routes/admin/wallet-monitoring.js
+ * 
+ * This is the superadmin interface for monitoring and controlling user wallet balance tracking.
+ * The API routes are used by the superadmin dashboard.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-20
+ * @updated 2025-05-01
+*/
+
 import express from 'express';
+import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
+import { safeBigIntToJSON, lamportsToSol } from '../../utils/bigint-utils.js';
+import prisma from '../../config/prisma.js';
 import userBalanceTrackingService from '../../services/userBalanceTrackingService.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import prisma from '../../config/prisma.js';
-import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
-import { fancyColors } from '../../utils/colors.js';
-import { safeBigIntToJSON, lamportsToSol } from '../../utils/bigint-utils.js';
+import { fancyColors } from '../../utils/colors.js'; // why is this unused?
 
 const router = express.Router();
 

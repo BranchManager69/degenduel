@@ -38,7 +38,9 @@ export const SERVICE_EVENTS = {
     SYSTEM_ALERT: 'system:alert',
     SYSTEM_MAINTENANCE: 'system:maintenance',
     SYSTEM_STARTUP: 'system:startup',
-    SYSTEM_SHUTDOWN: 'system:shutdown'
+    SYSTEM_SHUTDOWN: 'system:shutdown',
+    PRIVILEGE_GRANTED: 'privilege:granted',
+    PRIVILEGE_REVOKED: 'privilege:revoked'
 };
 
 class ServiceEventManager extends EventEmitter {

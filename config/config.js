@@ -20,14 +20,13 @@ const test_secret_dev_access_token = process.env.BRANCH_MANAGER_ACCESS_SECRET ||
 const MASTER_RPC_THROTTLE = process.env.MASTER_RPC_THROTTLE || 1.0; // (default = 1.0) applies to variables marked with ^^^
 
  // Helpful DegenDuel API endpoints
-const LOBBY_API = process.env.LOBBY_API; // DEPRECATED
-const REFLECTIONS_API = process.env.REFLECTIONS_API; // DEPRECATED
-const DD_SERV_API = process.env.DD_SERV_API; // deprecating!
-const DATA_API = process.env.DATA_API; // DEPRECATED
-const GAME_API = process.env.GAME_API; // DEPRECATED
-// Fallback API in case data service is unavailable
-const LOCAL_FALLBACK_API = null; // (DISABLED to avoid circular dependency issue during startup)
-////const LOCAL_PORT = process.env.PORT || process.env.API_PORT || 3004;
+//const LOBBY_API = process.env.LOBBY_API; // DEPRECATED
+//const REFLECTIONS_API = process.env.REFLECTIONS_API; // DEPRECATED
+//const DATA_API = process.env.DATA_API; // DEPRECATED
+//const GAME_API = process.env.GAME_API; // DEPRECATED
+const DD_SERV_API = process.env.DD_SERV_API;
+// Fallback API (for backward compatibility -- there should be no need for this)
+const FALLBACK_API = process.env.DD_SERV_API; // (DISABLED to avoid circular dependency issue during startup)
 
 // DegenDuel launch config
 const DEGENDUEL_LAUNCH_DATETIME_STRING_FROM_ENV = process.env.DEGENDUEL_LAUNCH_DATETIME_STRING || '2025-12-25T18:00:00Z';
@@ -77,6 +76,7 @@ const OPENAI_DEFAULT_SYSTEM_PROMPT = `
 
 // REAL TOKEN ADDRESS ($DUEL or testing address)
 const CONTRACT_ADDRESS_REAL = process.env.CONTRACT_ADDRESS_REAL;
+const CONTRACT_ADDRESS_FAKE = process.env.CONTRACT_ADDRESS_FAKE;
 
 // Custom prompt templates for DegenDuel
 const OPENAI_PROMPT_TEMPLATES = {
@@ -131,9 +131,9 @@ const OPTIMIZE_API_KEY = process.env.OPTIMIZE_API_KEY;
 /* Master config object */
 
 const config = {
-  // DUEL token contract address
-  contract_address_real: process.env.CONTRACT_ADDRESS_REAL,
-  
+  // DUEL CA
+  contract_address_real: CONTRACT_ADDRESS_REAL,
+  contract_address_fake: CONTRACT_ADDRESS_FAKE,
   // Discord configuration
   discord: {
     // Discord webhooks
@@ -244,7 +244,7 @@ const config = {
   port:
     process.env.PORT || process.env.API_PORT,
   
-    // JWT secret:
+  // JWT secret:
   jwt: {
     secret: process.env.JWT_SECRET
   },
@@ -252,11 +252,11 @@ const config = {
   // DD API URLs:
   api_urls: {
     dd_serv: DD_SERV_API,
-    data: DATA_API,
-    game: GAME_API,
-    lobby: LOBBY_API,
-    reflections: REFLECTIONS_API,
-    fallback: LOCAL_FALLBACK_API,
+    //data: DATA_API,
+    //game: GAME_API,
+    //lobby: LOBBY_API,
+    //reflections: REFLECTIONS_API,
+    fallback: FALLBACK_API,
   },
 
   // Privy API
@@ -618,7 +618,6 @@ const config = {
     full_url: process.env.IPINFO_API_FULL_URL,
   },
   
-
   /* Helper functions for environment and service configuration */
   
   // Get current environment
@@ -654,6 +653,7 @@ const config = {
     
     return { profile, enabledServices, disabledServices };
   },
+
   // Device authentication settings:
   device_auth_enabled: 
     process.env.DEVICE_AUTH_ENABLED === 'true' || false,
@@ -711,9 +711,7 @@ const config = {
     // Development profile - services disabled by default (just AI API for now)
     development: {
 
-      // ENABLED IN DEVELOPMENT
-      //   These are ULTIMATELY HARMLESS and MORE CONVENIENT for me to test:
-      ai_service: true, // Keep AI service enabled in development for testing
+      ai_service: false,
 
       // DISABLED IN DEVELOPMENT 
       //   These are NOT NEEDED and CAUSE SERIOUS ISSUES with concurrent prod services (race conditions):

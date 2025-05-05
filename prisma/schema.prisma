@@ -261,12 +261,10 @@ model tokens {
   created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
   updated_at                DateTime?                   @default(now()) @db.Timestamptz(6)
   image_url                 String?                     @db.VarChar(255)
+  header_image_url          String?                     @db.VarChar(512)
+  open_graph_image_url      String?                     @db.VarChar(512)
   color                     String?                     @default("#888888")
   description               String?
-  twitter_url               String?                     @db.VarChar(255)
-  telegram_url              String?                     @db.VarChar(255)
-  discord_url               String?                     @db.VarChar(255)
-  website_url               String?                     @db.VarChar(255)
   coingeckoId               String? // Coingecko ID for this token 
   tags                      Json? // Tags from Jupiter stored as JSON
   raw_supply                BigInt? // Total supply in smallest units (raw from blockchain)
@@ -440,6 +438,7 @@ model users {
   created_contests          contests[]                  @relation("ContestCreator")
   contest_credits           contest_creation_credits[]  @relation("UserContestCredits")
   pending_contest_entries   pending_contest_entries[]   @relation("UserPendingContestEntries")
+  privileges                user_privileges[] // Added back-relation for user privileges
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -1810,4 +1809,43 @@ model pending_contest_entries {
   @@index([contest_id])
   @@index([status])
   @@index([expires_at])
+}
+
+model JupLike {
+  id        Int      @id @default(autoincrement())
+  token_address String   @db.VarChar(44) // Added: Which token was liked
+  username  String   @unique @db.VarChar(30) // Twitter username
+  status    JupLikeStatus @default(LIKING) // Track current like status
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at") // Track last status update
+
+  @@unique([token_address, username]) // Changed: Unique constraint per token/user pair
+  @@index([token_address]) // Added: Index on token_address
+  @@index([username]) // Added: Index on username (useful for lookups across tokens)
+  @@map("jup_likes")
+}
+
+// Enum for JupLike status
+enum JupLikeStatus {
+  LIKING  // User is currently liking the token
+  UNLIKED // User previously liked but has unliked
+}
+
+// Table to track specific privileges granted to users
+model user_privileges {
+  id             Int      @id @default(autoincrement())
+  wallet_address String   @db.VarChar(44)
+  privilege_key  String   @db.VarChar(100) // e.g., "JUP_LIKE_DISCORD_ROLE"
+  source         String?  @db.VarChar(50) // e.g., "jup_like_check"
+  granted_at     DateTime @default(now()) @db.Timestamptz(6)
+  revoked_at     DateTime? @db.Timestamptz(6) // Null means active
+  metadata       Json?    @default("{}")
+
+  // Foreign key relationship to users table
+  user users @relation(fields: [wallet_address], references: [wallet_address], onDelete: Cascade)
+
+  @@unique([wallet_address, privilege_key], name: "user_privilege_unique") // User should only have one instance of each privilege type
+  @@index([wallet_address])
+  @@index([privilege_key])
+  @@index([revoked_at]) // Useful for finding active privileges
+  @@map("user_privileges")
 }

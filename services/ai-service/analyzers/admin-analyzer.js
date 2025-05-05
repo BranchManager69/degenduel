@@ -7,6 +7,8 @@
  * - Generating AI analysis summaries
  * - Calculating action distributions by type and admin
  * - Storing analysis results in the database
+ * 
+ * @see /services/ai-service/README.md for complete documentation and architecture
  */
 
 import { logApi } from '../../../utils/logger-suite/logger.js';

@@ -1,0 +1,633 @@
+===== DegenDuel Service Architecture Compliance Audit =====
+Running in: /home/branchmanager/websites/degenduel
+
+[0;34mSearching for service files...[0m
+Found 73 potential service files
+
+[0;34mChecking for BaseService extension...[0m
+[0;31m✗[0m ./services/solana-engine/dexscreener-client.js contains a Service class but doesn't extend BaseService
+[0;32m✓[0m ./services/solana-engine/solana-engine.js extends BaseService
+[0;31m✗[0m ./services/solana-engine/jupiter-client.js contains a Service class but doesn't extend BaseService
+[0;31m✗[0m ./services/solana-engine/helius-client.js contains a Service class but doesn't extend BaseService
+[0;32m✓[0m ./services/adminWalletService.js extends BaseService
+[0;32m✓[0m ./services/market-data/tokenDetectionService.js extends BaseService
+[0;32m✓[0m ./services/market-data/marketDataService.js extends BaseService
+[0;32m✓[0m ./services/discord/discord-interactive-service.js extends BaseService
+[0;32m✓[0m ./services/userBalanceTrackingService.js extends BaseService
+[0;32m✓[0m ./services/tokenMonitorService.js extends BaseService
+[0;31m✗[0m ./services/liquidity-sim/index.js contains a Service class but doesn't extend BaseService
+[0;32m✓[0m ./services/vanity-wallet/vanity-wallet-service.js extends BaseService
+[0;32m✓[0m ./services/liquidityService.js extends BaseService
+[0;32m✓[0m ./services/referralService.js extends BaseService
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js extends BaseService
+[0;32m✓[0m ./services/token-refresh-integration.js extends BaseService
+[0;32m✓[0m ./services/solanaService.js extends BaseService
+[0;32m✓[0m ./services/walletRakeService.js extends BaseService
+[0;32m✓[0m ./services/levelingService.js extends BaseService
+[0;32m✓[0m ./services/tokenWhitelistService.js extends BaseService
+[0;32m✓[0m ./services/ai-service/ai-service.js extends BaseService
+[0;32m✓[0m ./services/walletGenerationService.js extends BaseService
+[0;32m✓[0m ./services/aiService.js extends BaseService
+[0;32m✓[0m ./services/discordNotificationService.js extends BaseService
+[0;32m✓[0m ./services/token-dex-data-service.js extends BaseService
+[0;32m✓[0m ./services/token-refresh-scheduler.js extends BaseService
+[0;32m✓[0m ./services/achievementService.js extends BaseService
+[0;32m✓[0m ./services/admin-wallet/admin-wallet-service.js extends BaseService
+
+[0;34mChecking for super.initialize() calls...[0m
+[0;32m✓[0m ./services/solana-engine/solana-engine.js calls super.initialize()
+[0;32m✓[0m ./services/adminWalletService.js calls super.initialize()
+[0;31m✗[0m ./services/market-data/tokenDetectionService.js extends BaseService but doesn't call super.initialize()
+[0;31m✗[0m ./services/market-data/marketDataService.js extends BaseService but doesn't call super.initialize()
+[0;31m✗[0m ./services/discord/discord-interactive-service.js extends BaseService but doesn't call super.initialize()
+[0;32m✓[0m ./services/userBalanceTrackingService.js calls super.initialize()
+[0;32m✓[0m ./services/tokenMonitorService.js calls super.initialize()
+[0;31m✗[0m ./services/vanity-wallet/vanity-wallet-service.js extends BaseService but doesn't call super.initialize()
+[0;32m✓[0m ./services/liquidityService.js calls super.initialize()
+[0;32m✓[0m ./services/referralService.js calls super.initialize()
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js calls super.initialize()
+[0;31m✗[0m ./services/token-refresh-integration.js extends BaseService but doesn't call super.initialize()
+[0;32m✓[0m ./services/solanaService.js calls super.initialize()
+[0;32m✓[0m ./services/walletRakeService.js calls super.initialize()
+[0;32m✓[0m ./services/levelingService.js calls super.initialize()
+[0;32m✓[0m ./services/tokenWhitelistService.js calls super.initialize()
+[0;32m✓[0m ./services/ai-service/ai-service.js calls super.initialize()
+[0;32m✓[0m ./services/walletGenerationService.js calls super.initialize()
+[0;32m✓[0m ./services/aiService.js calls super.initialize()
+[0;31m✗[0m ./services/discordNotificationService.js extends BaseService but doesn't call super.initialize()
+[0;31m✗[0m ./services/token-dex-data-service.js extends BaseService but doesn't call super.initialize()
+[0;31m✗[0m ./services/token-refresh-scheduler.js extends BaseService but doesn't call super.initialize()
+[0;32m✓[0m ./services/achievementService.js calls super.initialize()
+[0;32m✓[0m ./services/admin-wallet/admin-wallet-service.js calls super.initialize()
+
+[0;34mChecking for service event emission...[0m
+[1;33m?[0m ./services/solana-engine/solana-engine.js may not emit service events
+[1;33m?[0m ./services/adminWalletService.js may not emit service events
+[0;32m✓[0m ./services/market-data/tokenDetectionService.js emits service events
+[0;32m✓[0m ./services/market-data/marketDataService.js emits service events
+[1;33m?[0m ./services/discord/discord-interactive-service.js may not emit service events
+[1;33m?[0m ./services/userBalanceTrackingService.js may not emit service events
+[0;32m✓[0m ./services/tokenMonitorService.js emits service events
+[1;33m?[0m ./services/vanity-wallet/vanity-wallet-service.js may not emit service events
+[1;33m?[0m ./services/liquidityService.js may not emit service events
+[1;33m?[0m ./services/referralService.js may not emit service events
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js emits service events
+[1;33m?[0m ./services/token-refresh-integration.js may not emit service events
+[1;33m?[0m ./services/solanaService.js may not emit service events
+[1;33m?[0m ./services/walletRakeService.js may not emit service events
+[0;32m✓[0m ./services/levelingService.js emits service events
+[1;33m?[0m ./services/tokenWhitelistService.js may not emit service events
+[1;33m?[0m ./services/ai-service/ai-service.js may not emit service events
+[1;33m?[0m ./services/walletGenerationService.js may not emit service events
+[1;33m?[0m ./services/aiService.js may not emit service events
+[1;33m?[0m ./services/discordNotificationService.js may not emit service events
+[1;33m?[0m ./services/token-dex-data-service.js may not emit service events
+[1;33m?[0m ./services/token-refresh-scheduler.js may not emit service events
+[1;33m?[0m ./services/achievementService.js may not emit service events
+[1;33m?[0m ./services/admin-wallet/admin-wallet-service.js may not emit service events
+
+[0;34mChecking for circuit breaker implementation...[0m
+[1;33m?[0m ./services/solana-engine/solana-engine.js may not implement circuit breaker pattern
+[0;32m✓[0m ./services/adminWalletService.js implements circuit breaker pattern
+[1;33m?[0m ./services/market-data/tokenDetectionService.js may not implement circuit breaker pattern
+[0;32m✓[0m ./services/market-data/marketDataService.js implements circuit breaker pattern
+[1;33m?[0m ./services/discord/discord-interactive-service.js may not implement circuit breaker pattern
+[0;32m✓[0m ./services/userBalanceTrackingService.js implements circuit breaker pattern
+[1;33m?[0m ./services/tokenMonitorService.js may not implement circuit breaker pattern
+[1;33m?[0m ./services/vanity-wallet/vanity-wallet-service.js may not implement circuit breaker pattern
+[0;32m✓[0m ./services/liquidityService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/referralService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/token-refresh-integration.js implements circuit breaker pattern
+[0;32m✓[0m ./services/solanaService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/walletRakeService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/levelingService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/tokenWhitelistService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/ai-service/ai-service.js implements circuit breaker pattern
+[0;32m✓[0m ./services/walletGenerationService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/aiService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/discordNotificationService.js implements circuit breaker pattern
+[1;33m?[0m ./services/token-dex-data-service.js may not implement circuit breaker pattern
+[1;33m?[0m ./services/token-refresh-scheduler.js may not implement circuit breaker pattern
+[0;32m✓[0m ./services/achievementService.js implements circuit breaker pattern
+[0;32m✓[0m ./services/admin-wallet/admin-wallet-service.js implements circuit breaker pattern
+
+[0;34mChecking for handleError usage...[0m
+[0;31m✗[0m ./services/solana-engine/solana-engine.js doesn't use handleError method
+[0;32m✓[0m ./services/adminWalletService.js uses handleError
+[0;32m✓[0m ./services/market-data/tokenDetectionService.js uses handleError
+[0;32m✓[0m ./services/market-data/marketDataService.js uses handleError
+[0;31m✗[0m ./services/discord/discord-interactive-service.js doesn't use handleError method
+[0;31m✗[0m ./services/userBalanceTrackingService.js doesn't use handleError method
+[0;31m✗[0m ./services/tokenMonitorService.js doesn't use handleError method
+[0;31m✗[0m ./services/vanity-wallet/vanity-wallet-service.js doesn't use handleError method
+[0;32m✓[0m ./services/liquidityService.js uses handleError
+[0;32m✓[0m ./services/referralService.js uses handleError
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js uses handleError
+[0;31m✗[0m ./services/token-refresh-integration.js doesn't use handleError method
+[0;31m✗[0m ./services/solanaService.js doesn't use handleError method
+[0;32m✓[0m ./services/walletRakeService.js uses handleError
+[0;31m✗[0m ./services/levelingService.js doesn't use handleError method
+[0;32m✓[0m ./services/tokenWhitelistService.js uses handleError
+[0;31m✗[0m ./services/ai-service/ai-service.js doesn't use handleError method
+[0;32m✓[0m ./services/walletGenerationService.js uses handleError
+[0;31m✗[0m ./services/aiService.js doesn't use handleError method
+[0;31m✗[0m ./services/discordNotificationService.js doesn't use handleError method
+[0;31m✗[0m ./services/token-dex-data-service.js doesn't use handleError method
+[0;32m✓[0m ./services/token-refresh-scheduler.js uses handleError
+[0;32m✓[0m ./services/achievementService.js uses handleError
+[0;32m✓[0m ./services/admin-wallet/admin-wallet-service.js uses handleError
+
+[0;34mChecking for unsafe stats access patterns...[0m
+[0;32m✓[0m ./services/solana-engine/solana-engine.js has no obvious unsafe stats access
+[0;32m✓[0m ./services/adminWalletService.js has no obvious unsafe stats access
+[0;31m✗[0m ./services/market-data/tokenDetectionService.js may have unsafe stats access without null checks:
+202:            this.stats.lastCheck = new Date().toISOString();
+203:            this.stats.lastBatchSize = tokenAddresses.length;
+206:                this.stats.totalDetected += changes.added.length;
+   ... and 4 more instances
+[0;31m✗[0m ./services/market-data/marketDataService.js may have unsafe stats access without null checks:
+443:            const lastFailure = new Date(this.stats.circuitBreaker.lastFailure || 0);
+451:                this.stats.circuitBreaker.isOpen = false;
+452:                this.stats.circuitBreaker.failures = 0;
+   ... and 2 more instances
+[0;32m✓[0m ./services/discord/discord-interactive-service.js has no obvious unsafe stats access
+[0;31m✗[0m ./services/userBalanceTrackingService.js may have unsafe stats access without null checks:
+1289:                serviceStartTime: this.stats.history.lastStarted,
+[0;32m✓[0m ./services/tokenMonitorService.js has no obvious unsafe stats access
+[0;32m✓[0m ./services/vanity-wallet/vanity-wallet-service.js has no obvious unsafe stats access
+[0;32m✓[0m ./services/liquidityService.js has no obvious unsafe stats access
+[0;32m✓[0m ./services/referralService.js has no obvious unsafe stats access
+[0;31m✗[0m ./services/token-enrichment/tokenEnrichmentService.js may have unsafe stats access without null checks:
+386:        this.stats.enqueuedTotal = (this.stats.enqueuedTotal || 0) + 1;
+387:        this.stats.currentQueueSize = this.processingQueue ? this.processingQueue.length : 0;
+448:        processedTotal: this.stats.processedTotal,
+   ... and 27 more instances
+[0;32m✓[0m ./services/token-refresh-integration.js has no obvious unsafe stats access
+[0;31m✗[0m ./services/solanaService.js may have unsafe stats access without null checks:
+562:                serviceStartTime: this.stats.history.lastStarted
+[0;32m✓[0m ./services/walletRakeService.js has no obvious unsafe stats access
+[0;32m✓[0m ./services/levelingService.js has no obvious unsafe stats access
+[0;32m✓[0m ./services/tokenWhitelistService.js has no obvious unsafe stats access
+[0;31m✗[0m ./services/ai-service/ai-service.js may have unsafe stats access without null checks:
+270:      this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
+271:      this.stats.operations.total++;
+272:      this.stats.operations.successful++;
+   ... and 20 more instances
+[0;32m✓[0m ./services/walletGenerationService.js has no obvious unsafe stats access
+[0;31m✗[0m ./services/aiService.js may have unsafe stats access without null checks:
+257:      this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
+258:      this.stats.operations.total++;
+259:      this.stats.operations.successful++;
+   ... and 12 more instances
+[0;31m✗[0m ./services/discordNotificationService.js may have unsafe stats access without null checks:
+297:          circuitBreakerStatus: this.stats.circuitBreaker.isOpen ? 'open' : 'closed'
+[0;32m✓[0m ./services/token-dex-data-service.js has no obvious unsafe stats access
+[0;32m✓[0m ./services/token-refresh-scheduler.js has no obvious unsafe stats access
+[0;32m✓[0m ./services/achievementService.js has no obvious unsafe stats access
+[0;31m✗[0m ./services/admin-wallet/admin-wallet-service.js may have unsafe stats access without null checks:
+613:                serviceStartTime: this.stats.history.lastStarted,
+
+[0;34mChecking for prisma singleton import...[0m
+[0;31m✗[0m ./services/solana-engine/solana-engine.js creates new PrismaClient instance
+[0;32m✓[0m ./services/adminWalletService.js imports prisma singleton
+[0;31m✗[0m ./services/market-data/marketDataService.js creates new PrismaClient instance
+[0;32m✓[0m ./services/discord/discord-interactive-service.js imports prisma singleton
+[0;32m✓[0m ./services/userBalanceTrackingService.js imports prisma singleton
+[0;32m✓[0m ./services/tokenMonitorService.js imports prisma singleton
+[0;32m✓[0m ./services/vanity-wallet/vanity-wallet-service.js imports prisma singleton
+[0;32m✓[0m ./services/liquidityService.js imports prisma singleton
+[0;32m✓[0m ./services/referralService.js imports prisma singleton
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js imports prisma singleton
+[0;31m✗[0m ./services/token-refresh-integration.js creates new PrismaClient instance
+[0;32m✓[0m ./services/walletRakeService.js imports prisma singleton
+[0;32m✓[0m ./services/levelingService.js imports prisma singleton
+[0;32m✓[0m ./services/tokenWhitelistService.js imports prisma singleton
+[0;32m✓[0m ./services/ai-service/ai-service.js imports prisma singleton
+[0;32m✓[0m ./services/walletGenerationService.js imports prisma singleton
+[0;32m✓[0m ./services/aiService.js imports prisma singleton
+[0;32m✓[0m ./services/discordNotificationService.js imports prisma singleton
+[0;31m✗[0m ./services/token-dex-data-service.js creates new PrismaClient instance
+[0;31m✗[0m ./services/token-refresh-scheduler.js creates new PrismaClient instance
+[0;32m✓[0m ./services/achievementService.js imports prisma singleton
+[0;32m✓[0m ./services/admin-wallet/admin-wallet-service.js imports prisma singleton
+
+[0;34mChecking for stop method implementation...[0m
+[1;33m?[0m ./services/solana-engine/solana-engine.js implements stop method but doesn't call super.stop()
+[0;32m✓[0m ./services/adminWalletService.js implements stop method with super.stop()
+[0;32m✓[0m ./services/market-data/tokenDetectionService.js implements stop method with super.stop()
+[0;32m✓[0m ./services/market-data/marketDataService.js implements stop method with super.stop()
+[0;32m✓[0m ./services/discord/discord-interactive-service.js implements stop method with super.stop()
+[0;32m✓[0m ./services/userBalanceTrackingService.js implements stop method with super.stop()
+[0;31m✗[0m ./services/tokenMonitorService.js doesn't implement stop method
+[0;31m✗[0m ./services/vanity-wallet/vanity-wallet-service.js doesn't implement stop method
+[0;32m✓[0m ./services/liquidityService.js implements stop method with super.stop()
+[0;32m✓[0m ./services/referralService.js implements stop method with super.stop()
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js implements stop method with super.stop()
+[0;31m✗[0m ./services/token-refresh-integration.js doesn't implement stop method
+[0;32m✓[0m ./services/solanaService.js implements stop method with super.stop()
+[0;32m✓[0m ./services/walletRakeService.js implements stop method with super.stop()
+[0;31m✗[0m ./services/levelingService.js doesn't implement stop method
+[0;32m✓[0m ./services/tokenWhitelistService.js implements stop method with super.stop()
+[0;31m✗[0m ./services/ai-service/ai-service.js doesn't implement stop method
+[0;32m✓[0m ./services/walletGenerationService.js implements stop method with super.stop()
+[0;31m✗[0m ./services/aiService.js doesn't implement stop method
+[0;31m✗[0m ./services/discordNotificationService.js doesn't implement stop method
+[0;31m✗[0m ./services/token-dex-data-service.js doesn't implement stop method
+[1;33m?[0m ./services/token-refresh-scheduler.js implements stop method but doesn't call super.stop()
+[0;32m✓[0m ./services/achievementService.js implements stop method with super.stop()
+[0;32m✓[0m ./services/admin-wallet/admin-wallet-service.js implements stop method with super.stop()
+
+[0;34mChecking for serviceManager.register usage...[0m
+[0;31m✗[0m ./services/solana-engine/solana-engine.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/adminWalletService.js doesn't use serviceManager.register
+[0;32m✓[0m ./services/market-data/tokenDetectionService.js uses serviceManager.register at line 90
+[0;32m✓[0m ./services/market-data/marketDataService.js uses serviceManager.register at line 180
+[0;31m✗[0m ./services/discord/discord-interactive-service.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/userBalanceTrackingService.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/tokenMonitorService.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/vanity-wallet/vanity-wallet-service.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/liquidityService.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/referralService.js doesn't use serviceManager.register
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js uses serviceManager.register at line 173
+[0;32m✓[0m ./services/token-refresh-integration.js uses serviceManager.register at line 61
+[0;31m✗[0m ./services/solanaService.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/walletRakeService.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/levelingService.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/tokenWhitelistService.js doesn't use serviceManager.register
+[0;32m✓[0m ./services/ai-service/ai-service.js uses serviceManager.register at line 1012
+[0;31m✗[0m ./services/walletGenerationService.js doesn't use serviceManager.register
+[0;32m✓[0m ./services/aiService.js uses serviceManager.register at line 975
+[0;31m✗[0m ./services/discordNotificationService.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/token-dex-data-service.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/token-refresh-scheduler.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/achievementService.js doesn't use serviceManager.register
+[0;31m✗[0m ./services/admin-wallet/admin-wallet-service.js doesn't use serviceManager.register
+
+[0;34mChecking for potential circular reference issues in error logging...[0m
+[0;32m✓[0m ./services/pool-data-manager/helius-integration.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/pool-data-manager/pool-data-manager.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/pool-data-manager/index.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/solana-engine/connection-manager.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/solana-engine/dexscreener-client.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/solana-engine/helius-balance-tracker.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/solana-engine/solana-engine.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/solana-engine/jupiter-client.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/solana-engine/helius-client.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/solana-engine/helius-pool-tracker.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/solana-engine/index.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/adminWalletService.js has potential circular reference in error logging:
+130:                logApi.error('Failed to get Solana connection from SolanaServiceManager:', error);
+725:            logApi.error('Error stopping Admin Wallet Service:', error);
+900:            logApi.error('☠️ Admin wallet service operation failed:', error);
+[0;31m✗[0m ./services/market-data/marketDataAnalytics.js has potential circular reference in error logging:
+118:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing price changes:${fancyColors.RESET}`, error);
+207:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing volume changes:${fancyColors.RESET}`, error);
+314:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error sorting tokens by relevance:${fancyColors.RESET}`, error);
+[0;32m✓[0m ./services/market-data/marketDataEnricher.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/market-data/tokenDetectionService.js has potential circular reference in error logging:
+114:            logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Initialization failed:${fancyColors.RESET}`, error);
+132:                logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Error in check interval:${fancyColors.RESET}`, error);
+154:                logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Error in cleanup interval:${fancyColors.RESET}`, error);
+   ... and 7 more instances
+[0;31m✗[0m ./services/market-data/tokenListDeltaTracker.js has potential circular reference in error logging:
+132:      logApi.error(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.RED}Error tracking token changes:${fancyColors.RESET}`, error);
+157:      logApi.error(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.RED}Error getting tracked tokens:${fancyColors.RESET}`, error);
+201:      logApi.error(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.RED}Error cleaning up old token sets:${fancyColors.RESET}`, error);
+   ... and 1 more instances
+[0;31m✗[0m ./services/market-data/marketDataService.js has potential circular reference in error logging:
+265:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
+286:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking token sync status:${fancyColors.RESET}`, error);
+312:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking for new tokens:${fancyColors.RESET}`, error);
+   ... and 11 more instances
+[0;31m✗[0m ./services/market-data/marketDataBatchProcessor.js has potential circular reference in error logging:
+205:                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Batch ${batchIndex + 1}/${totalBatches}: Error fetching metadata:${fancyColors.RESET}`, error.message);
+227:                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Batch ${batchIndex + 1}/${totalBatches}: Error fetching prices:${fancyColors.RESET}`, error.message);
+259:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing batch ${batchIndex + 1}/${totalBatches}:${fancyColors.RESET}`, error);
+[0;31m✗[0m ./services/market-data/marketDataRankTracker.js has potential circular reference in error logging:
+314:                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing hot tokens:${fancyColors.RESET}`, error);
+338:                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing rank risers:${fancyColors.RESET}`, error);
+362:                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing rank droppers:${fancyColors.RESET}`, error);
+   ... and 1 more instances
+[0;31m✗[0m ./services/market-data/marketDataRepository.js has potential circular reference in error logging:
+53:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting existing tokens:${fancyColors.RESET}`, error);
+145:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting all tokens:${fancyColors.RESET}`, error);
+225:            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token by symbol:${fancyColors.RESET}`, error);
+   ... and 7 more instances
+[0;32m✓[0m ./services/market-data/index.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/discord/discord-interactive-service.js has potential circular reference in error logging:
+94:      logApi.error('Discord Interactive Bot initialization failed:', error);
+142:        logApi.error('Error handling Discord interaction:', error);
+289:      logApi.error('Failed to send contest started notification:', error);
+   ... and 6 more instances
+[0;31m✗[0m ./services/userBalanceTrackingService.js has potential circular reference in error logging:
+214:            logApi.error('Failed to initialize User Balance Tracking Service:', error);
+1327:        logApi.error('Error verifying balance tracking schema:', error);
+[0;31m✗[0m ./services/tokenMonitorService.js has potential circular reference in error logging:
+80:      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
+142:      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Error loading monitored tokens:${fancyColors.RESET}`, error);
+211:      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Error adding token to monitor:${fancyColors.RESET}`, error);
+   ... and 8 more instances
+[0;32m✓[0m ./services/userProfileImageService.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/liquidity-sim/modules/liquidation-simulator.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/liquidity-sim/modules/volume-profiles.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/liquidity-sim/modules/amm-math.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/liquidity-sim/index.js has potential circular reference in error logging:
+43:      logApi.error('[LiquiditySimService] Error initializing service:', error);
+68:      logApi.error('[LiquiditySimService] Error during shutdown:', error);
+171:      logApi.error('[LiquiditySimService] Error broadcasting simulation results:', error);
+   ... and 2 more instances
+[0;32m✓[0m ./services/vanity-wallet/generators/local-generator.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/vanity-wallet/generators/index.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/vanity-wallet/vanity-api-client.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/vanity-wallet/vanity-wallet-service.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/vanity-wallet/index.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/liquidityService.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/referralService.js has potential circular reference in error logging:
+377:                    logApi.error(`Failed to process referral ${referral.id}:`, error);
+710:                logApi.error('Failed to update rankings:', error);
+809:            logApi.error('Error stopping Referral Service:', error);
+[0;31m✗[0m ./services/token-enrichment/collectors/jupiterCollector.js has potential circular reference in error logging:
+38:      logApi.error(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error initializing:${fancyColors.RESET}`, error);
+77:      logApi.error(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token info:${fancyColors.RESET}`, error);
+194:      logApi.error(`${fancyColors.GOLD}[JupiterCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching batch token info:${fancyColors.RESET}`, error);
+   ... and 3 more instances
+[0;31m✗[0m ./services/token-enrichment/collectors/heliusCollector.js has potential circular reference in error logging:
+58:      logApi.error(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching token metadata:${fancyColors.RESET}`, error);
+168:      logApi.error(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.RED}Error fetching batch token metadata:${fancyColors.RESET}`, error);
+271:      logApi.error(`${fancyColors.GOLD}[HeliusCollector]${fancyColors.RESET} ${fancyColors.RED}Error in batch token metadata:${fancyColors.RESET}`, error);
+   ... and 1 more instances
+[0;32m✓[0m ./services/token-enrichment/collectors/dexScreenerCollector.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/token-enrichment/tokenEnrichmentService.js has potential circular reference in error logging:
+747:      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting enrichment attempts:${fancyColors.RESET}`, error);
+786:      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error incrementing enrichment attempts:${fancyColors.RESET}`, error);
+936:      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error collecting token data:${fancyColors.RESET}`, error);
+   ... and 4 more instances
+[0;32m✓[0m ./services/token-enrichment/index.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/token-refresh-integration.js has potential circular reference in error logging:
+72:    logApi.error(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Initialization error:`, error);
+91:      logApi.error(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Error handling token update event:`, error);
+152:    logApi.error(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Error refreshing token:`, error);
+   ... and 6 more instances
+[0;31m✗[0m ./services/solanaService.js has potential circular reference in error logging:
+244:            logApi.error('Error processing Solana RPC request queue:', error);
+416:            logApi.warn('Solana connection error detected, attempting reconnect...', error);
+460:            logApi.error('Failed to reconnect to Solana:', error);
+   ... and 2 more instances
+[0;31m✗[0m ./services/walletRakeService.js has potential circular reference in error logging:
+187:            logApi.error('Wallet Rake Service initialization error:', error);
+560:            logApi.error('Force rake operation failed:', error);
+591:            logApi.error('Error stopping Wallet Rake Service:', error);
+[0;31m✗[0m ./services/levelingService.js has potential circular reference in error logging:
+49:            logApi.error('Leveling Service initialization error:', error);
+343:            logApi.error('Leveling service health check failed:', error);
+[0;32m✓[0m ./services/tokenWhitelistService.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/ai-service/image-generator.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/ai-service/utils/additional-functions.js has potential circular reference in error logging:
+239:    logApi.error(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Error fetching token metrics history:`, error);
+393:    logApi.error(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Error fetching platform activity:`, error);
+443:    logApi.error(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Error fetching service status:`, error);
+   ... and 4 more instances
+[0;31m✗[0m ./services/ai-service/utils/terminal-function-handler.js has potential circular reference in error logging:
+311:    logApi.error(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Error parsing function arguments:`, error);
+397:    logApi.error(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Function call error:`, error);
+735:    logApi.error(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Error fetching active contests:`, error);
+   ... and 3 more instances
+[0;31m✗[0m ./services/ai-service/utils/prompt-builder.js has potential circular reference in error logging:
+81:    logApi.warn(`${fancyColors.MAGENTA}[${serviceName}]${fancyColors.RESET} Failed to enhance system prompt with user data:`, error);
+[0;32m✓[0m ./services/ai-service/models/loadout-config.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/ai-service/ai-service.js has potential circular reference in error logging:
+159:      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
+280:      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Analysis operation failed:${fancyColors.RESET}`, error);
+409:          logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Failed to enhance prompt with user context; Falling back to default. Details:`, error);
+   ... and 8 more instances
+[0;31m✗[0m ./services/ai-service/analyzers/admin-analyzer.js has potential circular reference in error logging:
+171:    logApi.error(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.RED}Admin actions analysis failed:${fancyColors.RESET}`, error);
+[0;31m✗[0m ./services/ai-service/analyzers/error-analyzer.js has potential circular reference in error logging:
+189:    logApi.error(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.RED}Client error analysis failed:${fancyColors.RESET}`, error);
+[0;31m✗[0m ./services/ai-service/analyzers/log-analyzer.js has potential circular reference in error logging:
+115:    logApi.error(`${fancyColors.MAGENTA}[${aiService.name}]${fancyColors.RESET} ${fancyColors.RED}Error log analysis failed:${fancyColors.RESET}`, error);
+428:    logApi.error(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.RED}Service log analysis failed for ${serviceKey}:${fancyColors.RESET}`, error);
+[0;32m✓[0m ./services/ai-service/index.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/token-history-functions.js has potential circular reference in error logging:
+62:        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error batch recording volume history:${fancyColors.RESET}`, error);
+108:        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error batch recording liquidity history:${fancyColors.RESET}`, error);
+155:        logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error batch recording market cap history:${fancyColors.RESET}`, error);
+   ... and 2 more instances
+[0;31m✗[0m ./services/walletGenerationService.js has potential circular reference in error logging:
+156:            logApi.error('Wallet Generator Service initialization error:', error);
+493:            logApi.error('Error stopping Wallet Generator Service:', error);
+534:            logApi.error('Error during wallet generator cleanup:', error);
+[0;31m✗[0m ./services/aiService.js has potential circular reference in error logging:
+228:      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
+267:      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Analysis operation failed:${fancyColors.RESET}`, error);
+391:      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Client error analysis failed:${fancyColors.RESET}`, error);
+   ... and 6 more instances
+[0;31m✗[0m ./services/discordNotificationService.js has potential circular reference in error logging:
+196:      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send server startup notification:${fancyColors.RESET}`, error);
+227:      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send server shutdown notification:${fancyColors.RESET}`, error);
+724:      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send contest activity notification:${fancyColors.RESET}`, error);
+   ... and 7 more instances
+[0;32m✓[0m ./services/token-dex-data-service.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/token-refresh-scheduler.js has potential circular reference in error logging:
+180:      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
+218:      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error loading configuration:`, error);
+263:      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error loading priority tiers:`, error);
+   ... and 4 more instances
+[0;32m✓[0m ./services/token-refresh-scheduler/rank-analyzer.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/token-refresh-scheduler/metrics-collector.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/token-refresh-scheduler/priority-queue.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/token-refresh-scheduler/batch-optimizer.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/achievementService.js has potential circular reference in error logging:
+195:            logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Achievement Service initialization error:${fancyColors.RESET}`, error);
+338:                    logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Failed to process achievements for user ${user.id}:${fancyColors.RESET}`, error);
+380:                    logApi.error(`${fancyColors.MAGENTA}[achievementService]${fancyColors.RESET} ${fancyColors.RED}Failed to check category ${category.id} for user ${user.id}:${fancyColors.RESET}`, error);
+   ... and 1 more instances
+[0;32m✓[0m ./services/admin-wallet/modules/wallet-transactions.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/admin-wallet/modules/wallet-crypto.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/admin-wallet/modules/batch-operations.js has no obvious circular references in error logging
+[0;32m✓[0m ./services/admin-wallet/modules/wallet-balance.js has no obvious circular references in error logging
+[0;31m✗[0m ./services/admin-wallet/admin-wallet-service.js has potential circular reference in error logging:
+501:            logApi.error('Error stopping Admin Wallet Service:', error);
+579:            logApi.error('☠️ Admin wallet service operation failed:', error);
+[0;32m✓[0m ./services/admin-wallet/index.js has no obvious circular references in error logging
+
+[0;34mChecking for unsafe nested property access...[0m
+[1;33m?[0m ./services/solana-engine/solana-engine.js may have unsafe nested property access:
+13: * @version 1.0.0
+80:      tokenData: config.websocket.topics.MARKET_DATA,
+114:      const connectionManagerInitialized = await this.connectionManager.initialize();
+   ... and 30 more instances
+[1;33m?[0m ./services/adminWalletService.js may have unsafe nested property access:
+141:                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Admin Wallet Service is disabled in the '${config.services.active_profile}' service profile`);
+152:            const settings = await prisma.system_settings.findUnique({
+163:                    ...this.config,
+   ... and 88 more instances
+[1;33m?[0m ./services/market-data/tokenDetectionService.js may have unsafe nested property access:
+102:            serviceEvents.on('token:new', this.handleNewToken.bind(this));
+170:            const tokenList = this.jupiterClient.tokenList;
+202:            this.stats.lastCheck = new Date().toISOString();
+   ... and 16 more instances
+[1;33m?[0m ./services/market-data/marketDataService.js may have unsafe nested property access:
+1:// services/marketDataService.js.slim
+70:    datasourceUrl: process.env.DATABASE_URL
+185:                logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Market Data Service is disabled in the '${config.services.active_profile}' service profile`);
+   ... and 49 more instances
+[1;33m?[0m ./services/discord/discord-interactive-service.js may have unsafe nested property access:
+8: * @version 1.9.0
+48:      contests: config.discord.channel_ids.contests,
+49:      trades: config.discord.channel_ids.trades,
+   ... and 47 more instances
+[1;33m?[0m ./services/userBalanceTrackingService.js may have unsafe nested property access:
+28:const USER_BALANCE_TRACKING_MODE = FORCE_WEBSOCKET_MODE ? 'websocket' : config.service_thresholds.user_balance_tracking_mode; // 'polling' or 'websocket'
+29:const USER_BALANCE_TRACKING_DYNAMIC_TARGET_RPC_CALLS_PER_DAY = config.service_thresholds.user_balance_tracking_dynamic_target_rpc_calls_per_day; // dynamic target RPC calls per day (specific to user balance tracking service)
+30:const USER_BALANCE_TRACKING_CHECK_INTERVAL = config.service_intervals.user_balance_tracking_check_interval; // cycle interval (minutes)
+   ... and 108 more instances
+[1;33m?[0m ./services/tokenMonitorService.js may have unsafe nested property access:
+47:        logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Token Monitor Service is disabled in the '${config.services.active_profile}' service profile`);
+73:        jupiterClient.onPriceUpdate(this.handlePriceUpdate.bind(this));
+77:      logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Token Monitor Service initialized with ${this.monitoredTokens.size} tokens${fancyColors.RESET}`);
+   ... and 19 more instances
+[1;33m?[0m ./services/vanity-wallet/vanity-wallet-service.js may have unsafe nested property access:
+106:        this.targetCounts = config.vanityWallet.targetCounts;
+110:        this.intervalMs = 1000 * 60 * config.vanityWallet.checkIntervalMinutes;
+112:        this.config.checkIntervalMs = this.intervalMs;
+   ... and 56 more instances
+[1;33m?[0m ./services/liquidityService.js may have unsafe nested property access:
+39:        masterWallet: config.master_wallet.address
+49:        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+105:                this.config.checkIntervalMs // Default from static config
+   ... and 49 more instances
+[1;33m?[0m ./services/referralService.js may have unsafe nested property access:
+118:                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Referral Service is disabled in the '${config.services.active_profile}' service profile`);
+130:                this.referralStats.dependencies.contestEvaluation = {
+138:            const settings = await prisma.system_settings.findUnique({
+   ... and 72 more instances
+[1;33m?[0m ./services/token-enrichment/tokenEnrichmentService.js may have unsafe nested property access:
+12: * @version 1.9.0
+235:        await this.enqueueTokenEnrichment(tokenInfo.address, CONFIG.PRIORITY_TIERS.HIGH);
+257:      const existingToken = await this.db.tokens.findFirst({
+   ... and 86 more instances
+[1;33m?[0m ./services/token-refresh-integration.js may have unsafe nested property access:
+50:      logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Token Refresh Scheduler is disabled in the '${config.services.active_profile}' service profile`);
+85:        logApi.info(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Received token update event for ${data.updatedTokens.length} tokens`);
+123:    const token = await prisma.tokens.findFirst({
+   ... and 5 more instances
+[1;33m?[0m ./services/solanaService.js may have unsafe nested property access:
+16: * @version 0.6.9
+72:            maxConcurrentRequests: SOLANA_SERVICE_CONFIG.rpcLimiter.maxConcurrentRequests,
+89:                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Solana Service is disabled in the '${config.services.active_profile}' service profile`);
+   ... and 70 more instances
+[1;33m?[0m ./services/walletRakeService.js may have unsafe nested property access:
+46:        min_balance_sol: config.master_wallet.min_contest_wallet_balance,
+47:        master_wallet: config.master_wallet.address,
+64:        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+   ... and 69 more instances
+[1;33m?[0m ./services/levelingService.js may have unsafe nested property access:
+41:                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Leveling Service is disabled in the '${config.services.active_profile}' service profile`);
+84:                const user = await tx.users.findUnique({
+99:                const nextLevel = await tx.user_levels.findFirst({
+   ... and 10 more instances
+[1;33m?[0m ./services/tokenWhitelistService.js may have unsafe nested property access:
+73:        this.umi = createUmi(config.rpc_urls.primary).use(mplTokenMetadata());
+119:                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Token Whitelist Service is disabled in the '${config.services.active_profile}' service profile`);
+127:            const settings = await prisma.system_settings.findUnique({
+   ... and 66 more instances
+[1;33m?[0m ./services/ai-service/ai-service.js may have unsafe nested property access:
+18: * @version 1.9.0
+130:        apiKey: config.api_keys.openai
+136:        const cleanupResult = await logApi.serviceLog.cleanup(14);
+   ... and 71 more instances
+[1;33m?[0m ./services/walletGenerationService.js may have unsafe nested property access:
+88:                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Wallet Generator Service is disabled in the '${config.services.active_profile}' service profile`);
+99:            const settings = await prisma.system_settings.findUnique({
+110:                    ...this.config,
+   ... and 61 more instances
+[1;33m?[0m ./services/aiService.js may have unsafe nested property access:
+208:        logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} AI Service is disabled in the '${config.services.active_profile}' service profile`);
+222:        apiKey: config.api_keys.openai
+257:      this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
+   ... and 58 more instances
+[1;33m?[0m ./services/discordNotificationService.js may have unsafe nested property access:
+10: * @version 1.9.0
+98:      const serviceConfig = await prisma.service_configuration.findUnique({
+133:    this.events.on(SERVICE_EVENTS.CONTEST_CREATED, this.onContestCreated.bind(this));
+   ... and 60 more instances
+[1;33m?[0m ./services/token-dex-data-service.js may have unsafe nested property access:
+84:        logApi.warn(`${formatLog.tag()} ${formatLog.warning('SERVICE DISABLED')} Token DEX Data Service is disabled in the '${config.services.active_profile}' service profile`);
+96:      serviceEvents.on('token.refresh', this.handleTokenRefreshEvent.bind(this));
+97:      serviceEvents.on('token.batch.refresh', this.handleBatchRefreshEvent.bind(this));
+   ... and 61 more instances
+[1;33m?[0m ./services/token-refresh-scheduler.js may have unsafe nested property access:
+148:        logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Token Refresh Scheduler is disabled in the '${config.services.active_profile}' service profile`);
+175:      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Token Refresh Scheduler ready with ${this.activeTokens.size} active tokens`);
+199:      this.config.prioritizationEnabled = process.env.TOKEN_REFRESH_PRIORITIZATION !== 'false';
+   ... and 47 more instances
+[1;33m?[0m ./services/achievementService.js may have unsafe nested property access:
+104:                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Achievement Service is disabled in the '${config.services.active_profile}' service profile`);
+118:            const settings = await prisma.system_settings.findUnique({
+129:                    ...this.config,
+   ... and 62 more instances
+[1;33m?[0m ./services/admin-wallet/admin-wallet-service.js may have unsafe nested property access:
+137:                logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Admin Wallet Service is disabled in the '${config.services.active_profile}' service profile`);
+167:            this.walletStats.dependencies.SOLANA_ENGINE.status = 'available';
+168:            this.walletStats.dependencies.SOLANA_ENGINE.lastCheck = new Date();
+   ... and 50 more instances
+
+[0;34mChecking for proper async/await usage in error handling...[0m
+[0;32m✓[0m ./services/solana-engine/solana-engine.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/adminWalletService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/market-data/tokenDetectionService.js appears to use proper async/await patterns
+[1;33m?[0m ./services/market-data/marketDataService.js may have missing await in promise handling:
+569:            .then(success => {
+601:            .catch(err => {
+[0;32m✓[0m ./services/discord/discord-interactive-service.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/userBalanceTrackingService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/tokenMonitorService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/vanity-wallet/vanity-wallet-service.js appears to use proper async/await patterns
+[1;33m?[0m ./services/liquidityService.js may have missing await in promise handling:
+119:                        () => this.performOperation().catch(error => this.handleError(error)),
+[0;32m✓[0m ./services/referralService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/token-enrichment/tokenEnrichmentService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/token-refresh-integration.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/solanaService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/walletRakeService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/levelingService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/tokenWhitelistService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/ai-service/ai-service.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/walletGenerationService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/aiService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/discordNotificationService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/token-dex-data-service.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/token-refresh-scheduler.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/achievementService.js appears to use proper async/await patterns
+[0;32m✓[0m ./services/admin-wallet/admin-wallet-service.js appears to use proper async/await patterns
+
+[0;34mChecking for potential circular dependency imports...[0m
+[0;31m✗[0m Potential circular import detected:
+  ./services/vanity-wallet/vanity-api-client.js imports index.js
+  ./services/vanity-wallet/index.js imports vanity-api-client.js
+[0;31m✗[0m Potential circular import detected:
+  ./services/vanity-wallet/vanity-wallet-service.js imports index.js
+  ./services/vanity-wallet/index.js imports vanity-wallet-service.js
+[0;31m✗[0m Potential circular import detected:
+  ./services/vanity-wallet/index.js imports vanity-api-client.js
+  ./services/vanity-wallet/vanity-api-client.js imports index.js
+[0;31m✗[0m Potential circular import detected:
+  ./services/vanity-wallet/index.js imports vanity-wallet-service.js
+  ./services/vanity-wallet/vanity-wallet-service.js imports index.js
+[0;31m✗[0m Potential circular import detected:
+  ./services/admin-wallet/modules/wallet-transactions.js imports index.js
+  ./services/admin-wallet/index.js imports wallet-transactions.js
+[0;31m✗[0m Potential circular import detected:
+  ./services/admin-wallet/admin-wallet-service.js imports index.js
+  ./services/admin-wallet/index.js imports admin-wallet-service.js
+[0;31m✗[0m Potential circular import detected:
+  ./services/admin-wallet/index.js imports wallet-transactions.js
+  ./services/admin-wallet/modules/wallet-transactions.js imports index.js
+[0;31m✗[0m Potential circular import detected:
+  ./services/admin-wallet/index.js imports admin-wallet-service.js
+  ./services/admin-wallet/admin-wallet-service.js imports index.js
+
+===== Audit Complete =====
+For detailed analysis, pipe this output to a file: ./service-audit.sh > service-audit-results.txt

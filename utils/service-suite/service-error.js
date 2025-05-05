@@ -1,3 +1,5 @@
+// utils/service-suite/service-error.js
+
 /**
  * Standard error types for DegenDuel services
  */
@@ -12,7 +14,15 @@ export const ServiceErrorTypes = {
     AUTHENTICATION: 'AUTHENTICATION_ERROR',
     RATE_LIMIT: 'RATE_LIMIT_ERROR',
     CIRCUIT_BREAKER: 'CIRCUIT_BREAKER_ERROR',
-    SERVICE_DISABLED: 'SERVICE_DISABLED'
+    DEPENDENCY:       'DEPENDENCY_ERROR',
+    SERVICE_DISABLED: 'SERVICE_DISABLED',
+    SERVICE_NOT_FOUND: 'SERVICE_NOT_FOUND',
+    SERVICE_ALREADY_RUNNING: 'SERVICE_ALREADY_RUNNING',
+    SERVICE_ALREADY_STOPPED: 'SERVICE_ALREADY_STOPPED',
+    SERVICE_ALREADY_STARTED: 'SERVICE_ALREADY_STARTED',
+    SERVICE_ALREADY_STOPPING: 'SERVICE_ALREADY_STOPPING',
+    SERVICE_ALREADY_STARTING: 'SERVICE_ALREADY_STARTING',
+    SERVICE_ALREADY_RESTARTING: 'SERVICE_ALREADY_RESTARTING'
 };
 
 /**
@@ -108,6 +118,94 @@ export class ServiceError extends Error {
         return new ServiceError(
             ServiceErrorTypes.SERVICE_DISABLED,
             `Service ${serviceName} is disabled via dashboard`,
+            details
+        );
+    }
+
+    /**
+     * Create a dependency error
+     */
+    static dependency(message, details = {}) {
+        return new ServiceError(
+            ServiceErrorTypes.DEPENDENCY,
+            message,
+            details
+        );
+    }
+
+    /**
+     * Create a service not found error
+     */
+    static serviceNotFound(serviceName, details = {}) {
+        return new ServiceError(
+            ServiceErrorTypes.SERVICE_NOT_FOUND,
+            `Service ${serviceName} not found`,
+            details
+        );
+    }
+
+    /**
+     * Create a service already running error
+     */
+    static serviceAlreadyRunning(serviceName, details = {}) {
+        return new ServiceError(
+            ServiceErrorTypes.SERVICE_ALREADY_RUNNING,
+            `Service ${serviceName} is already running`,
+            details
+        );
+    }
+
+    /**
+     * Create a service already stopped error
+     */
+    static serviceAlreadyStopped(serviceName, details = {}) {
+        return new ServiceError(
+            ServiceErrorTypes.SERVICE_ALREADY_STOPPED,
+            `Service ${serviceName} is already stopped`,
+            details
+        );
+    }
+
+    /**
+     * Create a service already started error
+     */
+    static serviceAlreadyStarted(serviceName, details = {}) {
+        return new ServiceError(
+            ServiceErrorTypes.SERVICE_ALREADY_STARTED,
+            `Service ${serviceName} is already started`,
+            details
+        );
+    }
+
+    /**
+     * Create a service already stopping error
+     */
+    static serviceAlreadyStopping(serviceName, details = {}) {
+        return new ServiceError(
+            ServiceErrorTypes.SERVICE_ALREADY_STOPPING,
+            `Service ${serviceName} is already stopping`,
+            details
+        );
+    }
+
+    /**
+     * Create a service already starting error
+     */
+    static serviceAlreadyStarting(serviceName, details = {}) {
+        return new ServiceError(
+            ServiceErrorTypes.SERVICE_ALREADY_STARTING,
+            `Service ${serviceName} is already starting`,
+            details
+        );
+    }
+
+    /**
+     * Create a service already restarting error
+     */
+    static serviceAlreadyRestarting(serviceName, details = {}) {
+        return new ServiceError(
+            ServiceErrorTypes.SERVICE_ALREADY_RESTARTING,
+            `Service ${serviceName} is already restarting`,
             details
         );
     }

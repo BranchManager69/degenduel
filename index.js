@@ -109,12 +109,12 @@ import referralRoutes from "./routes/referrals.js";
 import virtualAgentRoutes from "./routes/virtual-agent.js";
 // Device authentication routes
 import deviceRoutes from "./routes/devices.js";
-// AI chat routes
-import aiRoutes from "./routes/ai.js";
+// AI chat routes (legacy)
+import legacyAiRoutes from "./routes/ai.js";
 // Client logging routes
 import logsRoutes from "./routes/logs.js";
-// Terminal data routes
-import terminalRoutes from "./routes/terminal-routes.js";
+// AI service routes (new)
+import aiRoutes from "./routes/ai-routes.js";
 // WebSocket API Guide routes
 import websocketApiGuideRoutes from "./routes/websocket-api-guide.js";
 // Blinks routes (doesn't exist yet)
@@ -321,15 +321,15 @@ app.use("/api/blinks", maintenanceCheck, blinksRoutes);
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
 // Profile Image Generator routes (inaccessible when in maintenance mode)
 app.use("/api", maintenanceCheck, profileImageGeneratorRoutes);
-// AI chat routes (inaccessible when in maintenance mode)
-app.use("/api/ai", maintenanceCheck, aiRoutes);
+// Legacy AI chat routes (inaccessible when in maintenance mode)
+app.use("/api/ai", maintenanceCheck, legacyAiRoutes);
 // Solana RPC proxy route - available even during maintenance mode
 // (so apps can still interact with blockchain during site maintenance)
 app.use("/api/solana-rpc", solanaRpcProxyRoutes);
 // Client logging routes (no maintenance check to collect errors during maintenance)
 app.use("/api/logs", logsRoutes);
-// Terminal data routes
-app.use("/api/terminal", terminalRoutes);
+// New AI service routes (accessible even during maintenance)
+app.use("/api/ai", aiRoutes);
 // WebSocket API Guide routes
 app.use("/api/websocket-guide", websocketApiGuideRoutes);
 // Test routes (no maintenance check needed)

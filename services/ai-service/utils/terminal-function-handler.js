@@ -1,8 +1,16 @@
+// services/ai-service/utils/terminal-function-handler.js
+// @see /services/ai-service/README.md for complete documentation and architecture
+
 /**
  * Token Function Handler
  * 
- * This module provides functions for handling token-related function calls
+ * @description Provides functions for handling token-related function calls
  * in the AI service using the OpenAI Responses API.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-01
  */
 
 import prisma from '../../../config/prisma.js';
@@ -21,7 +29,8 @@ import {
 } from './additional-functions.js';
 
 // Config
-import { config } from '../../../config/config.js';
+//import { config } from '../../../config/config.js';
+//const { ai } = config;
 
 /**
  * Function definitions for the terminal responses API
@@ -303,8 +312,17 @@ export async function handleFunctionCall(functionCall, options = {}) {
     args = {}; // Default to empty object if parsing fails
   }
   
-  // Check if user has admin privileges for admin-only functions
-  const isAdminFunction = functionName.startsWith('get') && (
+/* TODO:
+ * 
+ * - Modularize the function definitions into separate files
+ * - Centralize function names by role requirements (none/authenticated/admin/superadmin)
+ * - Add a helper function to format the function arguments
+ * - Add a helper function to format the function response
+ * 
+ */
+
+  // Check if user has privileges for admin/superadmin-only functions
+  const isAdministratorFunction = functionName.startsWith('get') && (
     functionName === 'getServiceStatus' ||
     functionName === 'getSystemSettings' ||
     functionName === 'getWebSocketStats' ||
@@ -312,19 +330,21 @@ export async function handleFunctionCall(functionCall, options = {}) {
     functionName === 'getDiscordWebhookEvents'
   );
   
+  // Check for elevated privileges
   const userRole = options.userRole || 'user';
-  const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+  const isAdministrator = userRole === 'admin' || userRole === 'superadmin'; // 'administrator' means either admin or superadmin; doesn't matter which
   
-  if (isAdminFunction && !isAdmin) {
+  if (isAdministratorFunction && !isAdministrator) {
     return {
       error: "Permission denied",
-      details: "This function requires admin privileges",
+      details: "This info requires administrator privileges",
       function: functionName
     };
   }
   
   logApi.info(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Handling function call: ${functionName} (user role: ${userRole})`);
   
+  // Function call handler
   try {
     // Route to the appropriate handler based on function name
     switch (functionName) {
@@ -373,6 +393,7 @@ export async function handleFunctionCall(functionCall, options = {}) {
         };
     }
   } catch (error) {
+    // Error during function call
     logApi.error(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Function call error:`, error);
     return {
       error: error.message || "Internal error processing function call",
@@ -391,6 +412,7 @@ async function handleGetTokenPrice({ tokenSymbol, tokenAddress }) {
   // Find the token in the database
   const token = await findToken(tokenSymbol, tokenAddress);
   
+  // Token not found
   if (!token) {
     return { 
       error: "Token not found", 
@@ -405,8 +427,13 @@ async function handleGetTokenPrice({ tokenSymbol, tokenAddress }) {
     name: token.name,
     address: token.address,
   };
-  
-  // Dynamically add price data if available
+
+  /* 
+   * PERFECT OPPORTUNITY TO USE THE TOKEN ENRICHMENT SERVICE!
+   * 
+   */
+
+  // Dynamically add price data (if available)
   if (token.token_prices) {
     Object.keys(token.token_prices).forEach(key => {
       // Skip internal Prisma fields
@@ -425,16 +452,40 @@ async function handleGetTokenPrice({ tokenSymbol, tokenAddress }) {
     });
   }
   
-  // Add social links if available
+  // Add social links (if available)
   tokenInfo.social_links = {};
-  ['twitter_url', 'telegram_url', 'discord_url', 'website_url'].forEach(field => {
-    if (token[field]) {
-      const linkType = field.replace('_url', '');
-      tokenInfo.social_links[linkType] = token[field];
-    }
-  });
   
-  // Add tags if available
+  // Add social media links from token_socials (Twitter, Telegram, Discord, etc.)
+  if (token.token_socials && token.token_socials.length > 0) {
+    token.token_socials.forEach(social => {
+      if (social.url) {
+        tokenInfo.social_links[social.type] = social.url;
+      }
+    });
+  }
+  
+  // Check for the token's website (stored in separate table)
+  const getWebsite = async () => {
+    try {
+      const website = await prisma.token_websites.findFirst({
+        where: { 
+          token_id: token.id,
+          label: 'Official'
+        }
+      });
+      
+      if (website && website.url) {
+        tokenInfo.social_links.website = website.url;
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.MAGENTA}[AI Service]${fancyColors.RESET} Error fetching token website:`, error);
+    }
+  };
+  
+  // Execute website fetch
+  await getWebsite();
+  
+  // Add tags (if available)
   if (token.tags) {
     try {
       tokenInfo.tags = typeof token.tags === 'string' ? JSON.parse(token.tags) : token.tags;
@@ -443,7 +494,7 @@ async function handleGetTokenPrice({ tokenSymbol, tokenAddress }) {
     }
   }
   
-  // Add monitored status if available
+  // Add monitored status (if available)
   if (token.monitored_tokens) {
     tokenInfo.is_monitored = true;
     tokenInfo.monitor_buys = token.monitored_tokens.monitor_buys;
@@ -572,7 +623,8 @@ async function handleGetTokenPools({ tokenSymbol }) {
 }
 
 /**
- * Helper function to find a token by symbol or address
+ * Helper: Find token by address (beta: symbol search)
+ * @description This function is used to find a token by address (includes beta support for symbol search).
  * 
  * @param {string} symbol - Token symbol
  * @param {string} address - Token address
@@ -580,15 +632,18 @@ async function handleGetTokenPools({ tokenSymbol }) {
  */
 async function findToken(symbol, address) {
   if (address) {
+    // Find token by address
     return prisma.tokens.findUnique({
       where: { address },
       include: { 
         token_prices: true,
         token_socials: true,
+        token_websites: true, // Include websites
         monitored_tokens: true
       }
     });
   } else {
+    // Find token by symbol
     return prisma.tokens.findFirst({
       where: { 
         symbol: { equals: symbol, mode: 'insensitive' },
@@ -597,6 +652,7 @@ async function findToken(symbol, address) {
       include: { 
         token_prices: true,
         token_socials: true,
+        token_websites: true, // Include websites
         monitored_tokens: true
       }
     });

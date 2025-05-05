@@ -1,3 +1,5 @@
+// services/token-refresh-scheduler.js
+
 /**
  * Advanced Token Refresh Scheduler
  * 
@@ -10,20 +12,32 @@
  * - Prioritization of actively traded tokens
  * - Efficient batching to maximize throughput
  * - Circuit breaking for API failures
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-02
  */
 
+// Service Suite
 import { BaseService } from '../utils/service-suite/base-service.js';
+import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
+// Prisma
+import { PrismaClient } from '@prisma/client';
+// Solana Engine
+import { jupiterClient, getJupiterClient } from './solana-engine/jupiter-client.js';
+import { heliusClient } from './solana-engine/helius-client.js';
+// Logger
 import { logApi } from '../utils/logger-suite/logger.js';
 import { fancyColors } from '../utils/colors.js';
-import { PrismaClient } from '@prisma/client';
-import { getJupiterClient, jupiterClient } from './solana-engine/jupiter-client.js';
-import { heliusClient } from './solana-engine/helius-client.js';
-import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
-import { config } from '../config/config.js';
+// Token Refresh Scheduler components
 import PriorityQueue from './token-refresh-scheduler/priority-queue.js';
 import TokenRankAnalyzer from './token-refresh-scheduler/rank-analyzer.js';
 import BatchOptimizer from './token-refresh-scheduler/batch-optimizer.js';
 import MetricsCollector from './token-refresh-scheduler/metrics-collector.js';
+
+// Config
+import { config } from '../config/config.js';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -50,7 +64,7 @@ let PRIORITY_TIERS = {
     volatility_factor: 1.5,
     rank_threshold: 200
   },
-  MEDIUM: { 
+  NORMAL: { 
     score: 200,
     interval: 60,    // 1 minute
     volatility_factor: 1.2,

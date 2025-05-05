@@ -1,18 +1,39 @@
+// services/ai-service/models/loadout-config.js
+
 /**
- * AI Model Loadout Configuration Module
+ * AI Model Loadout Configurations
+ * @description Configuration for the AI Service loadouts.
  * 
- * This module contains the configuration for different AI model loadouts
- * used by the AI service. Each loadout configures:
- * - Model to use
- * - Temperature
- * - Max tokens
- * - System prompt
+ * @see /services/ai-service/README.md for complete documentation and architecture
+ *   Each loadout configures:
+ *     - Model
+ *     - System prompt
+ *     - Temperature
+ *     - Max tokens
+ *     - Function calls
+ *     - Streaming
+ *     - Structured output
+ *     - ... much more.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-02
  */
 
-import config from '../../../config/config.js';
-import { SERVICE_NAMES } from '../../../utils/service-suite/service-constants.js';
+/**
+ * Many imports are missing!
+ * If we intend to make this a true DegenDuel Service, then we need to add the missing imports.
 
-// Get AI loadout config from application config
+ */
+
+// Service Suite
+import { SERVICE_NAMES } from '../../../utils/service-suite/service-constants.js';
+import { SERVICE_LAYERS } from '../../../utils/service-suite/service-constants.js';
+
+// Config
+import config from '../../../config/config.js';
+// Get AI loadout config
 const aiLoadout = config.ai?.openai_model_loadout || {};
 
 /**
@@ -24,8 +45,8 @@ const AI_SERVICE_CONFIG = {
   layer: 'application',
   criticalLevel: 'non-critical',
   
-  // Run analysis every 10 minutes
-  checkIntervalMs: 10 * 60 * 1000,
+  // Run analysis every 60 minutes
+  checkIntervalMs: 60 * 60 * 1000,
   
   circuitBreaker: {
     enabled: true,
@@ -50,12 +71,12 @@ const AI_SERVICE_CONFIG = {
       generalLogs: {
         enabled: true,
         maxLines: 1000,
-        runIntervalMinutes: 5  // Changed from 30 to 5 minutes
+        runIntervalMinutes: 60
       },
       errorLogs: {
         enabled: true,
         maxErrors: 50,
-        runIntervalMinutes: 5  // Changed from 15 to 5 minutes
+        runIntervalMinutes: 60
       },
       serviceLogs: {
         enabled: true,
@@ -110,7 +131,7 @@ const AI_SERVICE_CONFIG = {
           'solana_engine'
         ],
         maxLines: 500,
-        runIntervalMinutes: 5  // Running every 5 minutes as specified
+        runIntervalMinutes: 60
       }
     }
   },

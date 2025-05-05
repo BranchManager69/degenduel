@@ -1,42 +1,61 @@
+// services/ai-service/ai-service.js
+
 /**
  * AI Service Core Implementation
+ * @description DegenDuel's most powerful AI capabilities.
+ * @see /services/ai-service/README.md for complete documentation and architecture
  * 
  * This service provides AI functionality throughout the DegenDuel platform:
- * 1. Periodic Analysis: Runs every 10 minutes to analyze client errors and admin actions
- * 2. On-Demand API: Provides chat completion and streaming responses
+ *     1. Periodic Analysis: Runs every 10 minutes to analyze client errors and admin actions
+ *     2. On-Demand API: Provides chat completion and streaming responses
  * 
- * The service implements circuit breaking to handle OpenAI API outages gracefully.
+ * Implements circuit breaking to handle OpenAI API outages gracefully.
+ *     Test with tests/terminal-ai-real-test.js
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-14
+ * @updated 2025-05-02
  */
 
-import { BaseService } from '../../utils/service-suite/base-service.js';
-import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
-import serviceManager from '../../utils/service-suite/service-manager.js';
-import { ServiceError } from '../../utils/service-suite/service-error.js';
-import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
-// Import both fancyColors and service-specific colors
 import OpenAI from 'openai';
 import { v4 as uuidv4 } from 'uuid';
+// Service Suite
+import serviceManager from '../../utils/service-suite/service-manager.js';
+import { BaseService } from '../../utils/service-suite/base-service.js';
+import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js'; // Why is this unused?
+import { ServiceError } from '../../utils/service-suite/service-error.js';
+// Prisma
 import prisma from '../../config/prisma.js';
-import config from '../../config/config.js';
+// Logger
+import { logApi } from '../../utils/logger-suite/logger.js';
+import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
 
-// Import configuration
+// Config
+import config from '../../config/config.js';
 import AI_SERVICE_CONFIG from './models/loadout-config.js';
 
-// Import analyzers
-import { analyzeRecentClientErrors } from './analyzers/error-analyzer.js';
+/* Auto-Analyzers */
+import { 
+  analyzeErrorLogs, 
+  analyzeGeneralLogs, 
+  analyzeServiceLogs
+} from './analyzers/log-analyzer.js';
 import { analyzeRecentAdminActions } from './analyzers/admin-analyzer.js';
-import { analyzeErrorLogs, analyzeGeneralLogs, analyzeServiceLogs } from './analyzers/log-analyzer.js';
+import { analyzeRecentClientErrors } from './analyzers/error-analyzer.js';
 
-// Import prompt utilities
+/* Prompt Builder */
 import { 
   enhancePromptWithUserContext, 
-  sanitizeMessages, 
-  ensureSystemPrompt
+  ensureSystemPrompt,
+  sanitizeMessages
 } from './utils/prompt-builder.js';
 
-// Import terminal function handling
-import { TERMINAL_FUNCTIONS, handleFunctionCall } from './utils/terminal-function-handler.js';
+/* Handler [OF WHAT??] */
+import { 
+  TERMINAL_FUNCTIONS, 
+  handleFunctionCall 
+} from './utils/terminal-function-handler.js';
 
 /**
  * AIService class - implements both periodic analysis and on-demand AI functionality
@@ -44,7 +63,10 @@ import { TERMINAL_FUNCTIONS, handleFunctionCall } from './utils/terminal-functio
  */
 class AIService extends BaseService {
   constructor() {
+    // Initialize service
     super(AI_SERVICE_CONFIG);
+    
+    // Start without an OpenAI client
     this.openai = null;
     
     // Track analysis stats
@@ -62,6 +84,16 @@ class AIService extends BaseService {
         actionsAnalyzed: 0
       }
     };
+
+    // Track token usage (new! 5/2/2025; not used yet) 
+    //   IF YOU SEE THIS, INTEGRATE IT! PLEASE!
+    this.tokenUsage = {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      lastReset: null,
+      lastSummary: null
+    };
     
     // Track log analysis runs to respect configured intervals
     this.lastLogAnalysisRun = {
@@ -72,7 +104,7 @@ class AIService extends BaseService {
   }
   
   /**
-   * Initialize the service
+   * Initialize the AI service
    */
   async initialize() {
     try {
@@ -82,29 +114,31 @@ class AIService extends BaseService {
         return false;
       }
       
-      // Ensure we have an API key
+      // Ensure we have an OpenAI API key set
       if (!config.api_keys?.openai) {
         logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} MISSING API KEY ${fancyColors.RESET} OpenAI API key is not configured. AI features will be disabled.`);
         return false;
       }
       
+      // Initialize the base service (why?)
       await super.initialize();
       
-      // Initialize OpenAI client
+      // Initialize OpenAI client using API key
       this.openai = new OpenAI({
         apiKey: config.api_keys.openai
       });
       
-      // Automatically clean up old service logs (older than 30 days)
+      // Automatically clean up old service logs (older than 14 days)
       try {
-        const cleanupResult = await logApi.serviceLog.cleanup(30);
+        // Clean up old service logs
+        const cleanupResult = await logApi.serviceLog.cleanup(14);
         logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Cleaned up ${cleanupResult.deletedCount} old service logs${fancyColors.RESET}`);
         
         // Write cleanup event to service logs
         await logApi.serviceLog.write(
           this.name,
           'info',
-          `Startup maintenance: cleaned up ${cleanupResult.deletedCount} old service logs older than 30 days`,
+          `Startup maintenance: cleaned up ${cleanupResult.deletedCount} old service logs older than 14 days`,
           { deletedCount: cleanupResult.deletedCount, olderThan: cleanupResult.olderThan },
           {},
           'log_cleanup',
@@ -112,25 +146,28 @@ class AIService extends BaseService {
           null
         );
       } catch (cleanupError) {
-        // Don't fail initialization if cleanup fails
+        // Log, but don't fail initialization if cleanup fails
         logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}Failed to clean up old service logs:${fancyColors.RESET}`, cleanupError);
       }
       
       logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}AI Service initialized with periodic analysis enabled${fancyColors.RESET}`);
       return true;
     } catch (error) {
+      // Log initialization error
       logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
       throw error;
     }
   }
   
   /**
-   * Main service operation - runs on the configured interval
+   * Main service operation - 
+   * Runs periodic AI analysis jobs on the configured interval
    */
   async onPerformOperation() {
-    // This is where periodic analysis runs
+    // Start timing the operation
     const startTime = Date.now();
     
+    // Run the analysis jobs
     try {
       let results = {
         clientErrors: null,
@@ -142,25 +179,25 @@ class AIService extends BaseService {
         }
       };
       
-      // Run client error analysis
+      // (1) [CLIENT ERRORS] -- Dispatch AI analysis job
       if (this.config.analysis.clientErrors.enabled) {
         results.clientErrors = await analyzeRecentClientErrors(this);
       }
       
-      // Run admin actions analysis
+      // (2) [ADMIN ACTIONS] -- Dispatch AI analysis job
       if (this.config.analysis.adminActions.enabled) {
         results.adminActions = await analyzeRecentAdminActions(this);
       }
       
-      // Run log analysis if enabled
+      // (3) [GENERAL LOGS] -- Dispatch AI analysis job
       if (this.config.analysis.logs?.enabled) {
-        // 1. General log analysis
+
+        // (3.1) [MISC. SERVER LOG ANALYSIS]
         if (this.config.analysis.logs.generalLogs?.enabled) {
-          // Only run general log analysis on the scheduled interval
+          // Adhere to scheduled intervals for General Log Analysis jobs
           const shouldRunGeneralLogs = !this.lastLogAnalysisRun?.general || 
             (Date.now() - this.lastLogAnalysisRun.general) > 
             (this.config.analysis.logs.generalLogs.runIntervalMinutes * 60 * 1000);
-            
           if (shouldRunGeneralLogs) {
             results.logs.general = await analyzeGeneralLogs(
               this,
@@ -172,24 +209,27 @@ class AIService extends BaseService {
           }
         }
         
-        // 2. Error log analysis
+        // (3.2) [ERROR LOG ANALYSIS]
         if (this.config.analysis.logs.errorLogs?.enabled) {
-          // Only run error log analysis on the scheduled interval
+          // Adhere to scheduled intervals for Error Log Analysis jobs
           const shouldRunErrorLogs = !this.lastLogAnalysisRun?.error || 
             (Date.now() - this.lastLogAnalysisRun.error) > 
             (this.config.analysis.logs.errorLogs.runIntervalMinutes * 60 * 1000);
-            
+          // If Error Log Analysis is due to be run, dispatch AI analysis job
           if (shouldRunErrorLogs) {
+            // Run AI analysis job
             results.logs.error = await analyzeErrorLogs(
               this,
               this.config.analysis.logs.errorLogs.maxErrors
             );
+
+            // Update last run timestamp
             this.lastLogAnalysisRun = this.lastLogAnalysisRun || {};
             this.lastLogAnalysisRun.error = Date.now();
           }
         }
         
-        // 3. Service log analysis
+        // (3.3) [SERVICE LOG ANALYSIS]
         if (this.config.analysis.logs.serviceLogs?.enabled && 
             this.config.analysis.logs.serviceLogs.services?.length > 0) {
           // Initialize service tracking if needed
@@ -213,8 +253,17 @@ class AIService extends BaseService {
             }
           }
         }
-      }
+
+        // ...
+        // TODO: more automated 'general logs' analyses coming soon
+        // ...
       
+      }
+
+      // ...
+      // TODO: more automated superadmin-privileged analyses coming soon
+      // ...
+
       // Update performance stats
       this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
       this.stats.operations.total++;
@@ -230,7 +279,72 @@ class AIService extends BaseService {
       throw new ServiceError('ai_analysis_failed', error);
     }
   }
+
+  // ------------------------------------------------------------------------------------------------
+
+  /* Store Conversations in DB */
+
+  /**
+   * Helper method to store a conversation in the database
+   * 
+   * @param {string} conversationId - Conversation ID
+   * @param {string} walletAddress - User's wallet address
+   * @param {Object} userMessage - User's message
+   * @param {string} assistantResponse - AI assistant's response
+   * @param {string} loadoutType - The loadout type used
+   */
+  async storeConversation(conversationId, walletAddress, userMessage, assistantResponse, loadoutType) {
+    // Upsert the conversation record
+    const conversation = await prisma.ai_conversations.upsert({
+      where: { conversation_id: conversationId },
+      update: {
+        message_count: { increment: 2 },
+        total_tokens_used: { increment: assistantResponse.length },
+        last_message_at: new Date()
+      },
+      // Create a new conversation record if it doesn't exist
+      create: {
+        conversation_id: conversationId,
+        wallet_address: walletAddress,
+        context: loadoutType, // Store the loadout type as context
+        first_message_at: new Date(),
+        last_message_at: new Date(),
+        message_count: 2,
+        total_tokens_used: assistantResponse.length
+      }
+    });
+    
+    // Store user message
+    if (userMessage?.role === 'user') {
+      await prisma.ai_conversation_messages.create({
+        data: { 
+          conversation_id: conversationId, 
+          role: userMessage.role, 
+          content: userMessage.content 
+        }
+      });
+    }
+    
+    // Store AI response
+    await prisma.ai_conversation_messages.create({
+      data: { 
+        conversation_id: conversationId, 
+        role: 'assistant', 
+        content: assistantResponse 
+      }
+    });
+    
+    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Stored conversation and messages`, {
+      conversationId,
+      walletAddress,
+      loadout: loadoutType
+    });
+  }
   
+  // ------------------------------------------------------------------------------------------------
+  
+  /* Generate AI Responses */
+
   /**
    * Generate a chat completion using OpenAI Chat API
    * 
@@ -258,7 +372,7 @@ class AIService extends BaseService {
         model: loadout.model
       });
       
-      // Get base system prompt from loadout
+      // Get default base system prompt from loadout
       let systemPrompt = loadout.systemPrompt;
       
       // Track conversation if user is authenticated
@@ -281,6 +395,7 @@ class AIService extends BaseService {
           }
           
           // Enhance prompt with user context
+          //   TODO: Don't need to use 'await' here
           systemPrompt = await enhancePromptWithUserContext(
             systemPrompt, 
             walletAddress, 
@@ -288,8 +403,9 @@ class AIService extends BaseService {
             this.name
           );
         } catch (error) {
-          // If there's an error getting user data, just use the default prompt
-          logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Failed to enhance system prompt with user data:`, error);
+          // If there's an error retrieving user data, just use the default system prompt
+          logApi.warn(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} Failed to enhance prompt with user context; Falling back to default. Details:`, error);
+          systemPrompt = loadout.systemPrompt;
         }
       }
       
@@ -310,7 +426,8 @@ class AIService extends BaseService {
         internal: options.internal || false
       });
       
-      // Make API request to OpenAI using loadout configuration
+      // Send CHAT COMPLETION request [Highly Outdated; use OpenAI Responses API instead]
+      // to OpenAI using selected loadout configuration
       const response = await this.openai.chat.completions.create({
         model: loadout.model,
         messages: messagesWithSystem,
@@ -320,7 +437,7 @@ class AIService extends BaseService {
       });
       
       // Log successful response (with usage metrics for cost tracking)
-      logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} AI chat response generated`, {
+      logApi.info(`${serviceSpecificColors.aiService.tag}[AISvc]${fancyColors.RESET} AI chat completion generated`, {
         userId: options.userId || 'anonymous',
         model: loadout.model,
         promptTokens: response.usage.prompt_tokens,
@@ -414,15 +531,12 @@ class AIService extends BaseService {
       // Update error stats
       this.stats.operations.total++;
       this.stats.operations.failed++;
-      
       // Handle OpenAI-specific errors
       logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} OpenAI API error:`, error);
-      
       // Check for billing/quota error specifically
       if (error.status === 429 && error.message && error.message.includes('exceeded your current quota')) {
         throw new ServiceError('openai_quota_exceeded', '[DEV IS BROKE!] Looks like Branch Manager needs to pay the AI bill... The rest of the DegenDuel server is functioning properly!');
       }
-      
       // Determine other error types and rethrow with appropriate status
       if (error.status === 401) {
         throw new ServiceError('openai_auth_error', 'Authentication error with AI service');
@@ -692,63 +806,6 @@ Call these functions when applicable to provide real-time, accurate data. If a u
       }
     }
   }
-  
-  /**
-   * Helper method to store a conversation in the database
-   * 
-   * @param {string} conversationId - Conversation ID
-   * @param {string} walletAddress - User's wallet address
-   * @param {Object} userMessage - User's message
-   * @param {string} assistantResponse - AI assistant's response
-   * @param {string} loadoutType - The loadout type used
-   */
-  async storeConversation(conversationId, walletAddress, userMessage, assistantResponse, loadoutType) {
-    // Upsert the conversation record
-    const conversation = await prisma.ai_conversations.upsert({
-      where: { conversation_id: conversationId },
-      update: {
-        message_count: { increment: 2 },
-        total_tokens_used: { increment: assistantResponse.length },
-        last_message_at: new Date()
-      },
-      // Create a new conversation record if it doesn't exist
-      create: {
-        conversation_id: conversationId,
-        wallet_address: walletAddress,
-        context: loadoutType, // Store the loadout type as context
-        first_message_at: new Date(),
-        last_message_at: new Date(),
-        message_count: 2,
-        total_tokens_used: assistantResponse.length
-      }
-    });
-    
-    // Store user message
-    if (userMessage?.role === 'user') {
-      await prisma.ai_conversation_messages.create({
-        data: { 
-          conversation_id: conversationId, 
-          role: userMessage.role, 
-          content: userMessage.content 
-        }
-      });
-    }
-    
-    // Store AI response
-    await prisma.ai_conversation_messages.create({
-      data: { 
-        conversation_id: conversationId, 
-        role: 'assistant', 
-        content: assistantResponse 
-      }
-    });
-    
-    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Stored conversation and messages`, {
-      conversationId,
-      walletAddress,
-      loadout: loadoutType
-    });
-  }
 
   /**
    * Generate an AI response using OpenAI Responses API with streaming
@@ -758,6 +815,11 @@ Call these functions when applicable to provide real-time, accurate data. If a u
    * @returns {Object} Response with stream and conversationId
    */
   async generateAIResponse(messages, options = {}) {
+    // Make a RESPONSES API request to OpenAI using loadout configuration
+    //   -- This is the new and improved way to make ALL OpenAI API calls.
+    //   -- It's flexible and far more powerful than the deprecated Chat Completions API (NEVER USE THAT SHIT AGAIN!!!!!).
+    
+    // Start timing the operation
     const startTime = Date.now();
     
     try {
@@ -827,8 +889,9 @@ Call these functions when applicable to provide real-time, accurate data. If a u
         service: 'AI',
         conversationId
       });
-      
-      // Make API request to OpenAI using loadout configuration
+
+      // Call the OpenAI Responses API
+      //   Utilizes function calling, powerful custom tools, and response streaming.
       const stream = await this.openai.responses.create({
         model: loadout.model,
         input: messagesWithSystem,
@@ -933,15 +996,216 @@ Call these functions when applicable to provide real-time, accurate data. If a u
       }
     }
   }
+
+  /**
+   * Generate an AI response using OpenAI Responses API with streaming
+   * 
+   * @param {Array} messages - Array of message objects
+   * @param {Object} options - Options for the API call
+   * @returns {Object} Response with stream and conversationId
+   */
+  async generateDidiResponse(messages, options = {}) {
+    // Make a RESPONSES API request to OpenAI using loadout configuration
+    //   -- This is the new and improved way to make ALL OpenAI API calls.
+    //   -- It's flexible and far more powerful than the deprecated Chat Completions API (NEVER USE THAT SHIT AGAIN!!!!!).
+    
+    // Start timing the operation
+    const startTime = Date.now();
+    
+    try {
+      // Check if circuit breaker is open
+      if (this.stats.circuitBreaker.isOpen) {
+        throw new ServiceError('ai_service_circuit_open', 'AI service circuit breaker is open');
+      }
+      
+      // Determine which loadout to use
+      const loadoutType = options.loadoutType || 'default';
+      const loadout = this.config.loadouts[loadoutType] || this.config.loadouts.default;
+      
+      // Log which loadout we're using
+      logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Using AI loadout for streaming: ${loadoutType}`, { 
+        temperature: loadout.temperature,
+        maxTokens: loadout.maxTokens,
+        model: loadout.model
+      });
+      
+      // Get base system prompt from loadout
+      let systemPrompt = loadout.systemPrompt;
+      
+      // Track conversation if user is authenticated
+      let conversationId = options.conversationId;
+      let isAuthenticated = false;
+      let walletAddress = null;
+      
+      // Check if we have a logged-in user
+      if (options.userId && options.userId !== 'anonymous') {
+        try {
+          // Get wallet address from userId (if it's not already a wallet address)
+          walletAddress = options.walletAddress || options.userId;
+          isAuthenticated = true;
+          const userRole = options.userRole || 'unauthenticated';
+          
+          // Create or get existing conversation
+          if (!conversationId) {
+            // Generate a new UUID for this conversation
+            conversationId = uuidv4();
+          }
+          
+          // Enhance prompt with user context
+          systemPrompt = await enhancePromptWithUserContext(
+            systemPrompt, 
+            walletAddress, 
+            userRole,
+            this.name
+          );
+        } catch (err) {
+          // If user lookup fails, just use the default prompt
+          logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} User lookup failed:`, err);
+        }
+      }
+      
+      // Validate and sanitize messages to prevent null content
+      const sanitizedMessages = sanitizeMessages(messages);
+      
+      // Add system prompt to messages - ensure the security template is applied
+      const messagesWithSystem = ensureSystemPrompt(sanitizedMessages, systemPrompt);
+      
+      // Log request (with sensitive data removed)
+      logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} AI response stream request received`, {
+        userId: options.userId || 'anonymous',
+        model: loadout.model,
+        loadout: loadoutType,
+        messageCount: sanitizedMessages.length,
+        service: 'AI',
+        conversationId
+      });
+
+      // Call the OpenAI Responses API
+      //   Utilizes function calling, powerful custom tools, and response streaming.
+      const stream = await this.openai.responses.create({
+        model: loadout.model,
+        input: messagesWithSystem,
+        temperature: loadout.temperature,
+        max_tokens: loadout.maxTokens,
+        stream: true,
+        tools: options.functions ? options.functions.map(fn => ({
+          type: "function",
+          name: fn.name,
+          description: fn.description,
+          parameters: fn.parameters
+        })) : [], // support function calling with proper tools format
+        tool_choice: options.functions?.length > 0 ? "required" : "auto", // Force function calling if functions are provided
+      }, { responseType: 'stream' });
+      
+      // Track for performance metrics
+      this.stats.operations.total++;
+      this.stats.operations.successful++;
+      
+      // Process the stream response
+      let fullResponse = '';
+      stream.data.on('data', chunk => {
+        // Split the chunk into payloads
+        const payloads = chunk.toString().split('\n\n').filter(Boolean)
+          .map(p => {
+            try {
+              return JSON.parse(p.replace(/^data: /, ''));
+            } catch (e) {
+              return null;
+            }
+          })
+          .filter(Boolean);
+        
+        // Process each payload in the stream
+        for (const payload of payloads) {
+          if (payload.choices[0]?.delta?.content) {
+            fullResponse += payload.choices[0].delta.content;
+          }
+          
+          // Handle function calls if present in streaming format
+          if (payload.choices?.[0]?.delta?.tool_calls) {
+            // Tool call detected in streaming
+            const toolCalls = payload.choices[0].delta.tool_calls;
+            for (const toolCall of toolCalls) {
+              if (toolCall.type === 'function') {
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { 
+                  function: toolCall.function
+                });
+              }
+            }
+          }
+        }
+      });
+      
+      // Handle the end of the stream
+      stream.data.on('end', async () => {
+        // Update performance metrics
+        this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
+        
+        if (isAuthenticated && walletAddress && conversationId) {
+          try {
+            // Get the last user message
+            const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
+            
+            // Store the conversation
+            await this.storeConversation(
+              conversationId,
+              walletAddress,
+              userMessage,
+              fullResponse,
+              loadoutType
+            );
+          } catch (e) {
+            // Log storage failure
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Storage failure during AI conversation update for streaming response:`, e);
+          }
+        }
+      });
+      
+      // (is this truly streaming?)
+
+      // Return the stream response
+      return {
+        stream: stream.data,
+        conversationId
+      };
+    } catch (error) {
+      // Update error stats
+      this.stats.operations.total++;
+      this.stats.operations.failed++;
+      // Log the error
+      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} DegenDuel AI Error:`, error);
+      // Check for specific error types
+      if (error.status === 429 && error.message && error.message.includes('exceeded your current quota')) {
+        throw new ServiceError('openai_quota_exceeded', '[DEV IS BROKE?] Looks like @BranchManager69 needs to pay the server bill... The rest of the DegenDuel server is functioning properly.');
+      } else if (error.status === 401) {
+        throw new ServiceError('openai_auth_error', 'Authentication error with AI service');
+      } else if (error.status === 429) {
+        throw new ServiceError('openai_rate_limit', 'Rate limit exceeded for AI service');
+      } else {
+        throw new ServiceError('openai_api_error', 'AI service streaming error');
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+
 }
 
-// Create and export singleton instance
+// ------------------------------------------------------------------------------------------------
+
+// Initialize the service
 const aiService = new AIService();
 
-// Register with service manager
+// Register service instance with the Service Manager
 serviceManager.register(aiService);
 
-// Export the generateChatCompletion method directly for routes
-export const generateTokenAIResponse = aiService.generateTokenAIResponse.bind(aiService);
-
+// Export service instance
 export default aiService;
+
+// (Optional) Export methods we want to expose to other code
+//   Example: Specialized response generators
+export const generateDidiResponse = aiService.generateDidiResponse.bind(aiService);
+export const generateAIResponse = aiService.generateAIResponse.bind(aiService);
+export const generateTokenAIResponse = aiService.generateTokenAIResponse.bind(aiService);
+//   Example: Legacy
+export const generateLegacyChatCompletion = aiService.generateChatCompletion.bind(aiService); 

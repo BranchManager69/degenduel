@@ -6,17 +6,25 @@
  * 
  * @author @BranchManager69
  * @version 1.9.0
- * @since 2025-04-26
+ * @since 2025-05-02
  */
 
 import axios from 'axios';
+import { BaseService } from '../../utils/service-suite/base-service.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { jupiterConfig } from '../../config/external-api/jupiter-config.js';
-import redisManager from '../../utils/redis-suite/redis-manager.js'; // why import if unused?
-
-// Config
-import { config } from '../../config/config.js'; // currently unused but really should be used
+import serviceManager from '../../utils/service-suite/service-manager.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
+import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
+import { 
+  safe, 
+  inc, 
+  set, 
+  logError, 
+  isCircuitOpen,
+  safeStats 
+} from '../../utils/service-suite/safe-service.js';
 
 // Formatting helpers for consistent logging
 const formatLog = {
@@ -69,8 +77,13 @@ class JupiterBase {
       
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message;
-      logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to fetch from Jupiter API (${endpoint}):`)} ${errorMessage}`);
+      // Use safe error logging to prevent circular references
+      logError(
+        logApi,
+        'JupiterBase',
+        `Failed to fetch from Jupiter API (${endpoint})`,
+        error
+      );
       throw error;
     }
   }
@@ -94,10 +107,11 @@ class TokenListService extends JupiterBase {
       
       const response = await this.makeRequest('GET', this.config.endpoints.tokens.getTokens);
       
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Fetched token list with')} ${formatLog.count(response?.length || 0)} tokens`);
+      logApi.info(`${formatLog.tag()} ${formatLog.success('Fetched token list with')} ${formatLog.count(safe(response, 'length', 0))} tokens`);
       return response;
     } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch token list:')} ${error.message}`);
+      // Use safe error logging
+      logError(logApi, 'TokenListService', 'Failed to fetch token list', error);
       throw error;
     }
   }
@@ -108,8 +122,14 @@ class TokenListService extends JupiterBase {
    * @returns {Object} - Map of mint address to token info
    */
   createTokenMap(tokenList) {
+    if (!tokenList || !Array.isArray(tokenList)) {
+      return {};
+    }
+    
     return tokenList.reduce((map, token) => {
-      map[token.address] = token;
+      if (token && token.address) {
+        map[token.address] = token;
+      }
       return map;
     }, {});
   }
@@ -150,7 +170,7 @@ class PriceService extends JupiterBase {
       return; // Already polling
     }
     
-    if (this.subscriptions.size === 0) {
+    if (!this.subscriptions || this.subscriptions.size === 0) {
       return; // No tokens to poll for
     }
     
@@ -194,7 +214,8 @@ class PriceService extends JupiterBase {
       } catch (error) {
         // Release the lock in case of an error
         this.isFetchingPrices = false;
-        logApi.error(`${formatLog.tag()} ${formatLog.error('Price polling failed:')} ${error.message}`);
+        // Use safe error logging
+        logError(logApi, 'PriceService', 'Price polling failed', error);
       }
     }, this.pollingFrequency);
   }
@@ -218,7 +239,7 @@ class PriceService extends JupiterBase {
    * @param {Object} priceData - Price data from Jupiter API
    */
   notifyPriceUpdateCallbacks(priceData) {
-    if (this.priceUpdateCallbacks.length === 0) {
+    if (!this.priceUpdateCallbacks || this.priceUpdateCallbacks.length === 0) {
       return;
     }
     
@@ -226,7 +247,8 @@ class PriceService extends JupiterBase {
       try {
         callback(priceData);
       } catch (error) {
-        logApi.error(`${formatLog.tag()} ${formatLog.error('Error in price update callback:')} ${error.message}`);
+        // Use safe error logging
+        logError(logApi, 'PriceService', 'Error in price update callback', error);
       }
     }
   }
@@ -239,6 +261,10 @@ class PriceService extends JupiterBase {
   onPriceUpdate(callback) {
     if (typeof callback !== 'function') {
       throw new Error('Callback must be a function');
+    }
+    
+    if (!this.priceUpdateCallbacks) {
+      this.priceUpdateCallbacks = [];
     }
     
     this.priceUpdateCallbacks.push(callback);
@@ -258,7 +284,16 @@ class PriceService extends JupiterBase {
    */
   async subscribeToPrices(mintAddresses) {
     try {
+      if (!Array.isArray(mintAddresses) || mintAddresses.length === 0) {
+        return true; // Nothing to do
+      }
+      
       logApi.info(`${formatLog.tag()} ${formatLog.header('SUBSCRIBING')} to prices for ${formatLog.count(mintAddresses.length)} tokens (delegated from solana_engine_service)`);
+      
+      // Initialize the subscriptions map if it doesn't exist
+      if (!this.subscriptions) {
+        this.subscriptions = new Map();
+      }
       
       // Filter out already subscribed tokens
       const newTokens = mintAddresses.filter(address => !this.subscriptions.has(address));
@@ -303,7 +338,8 @@ class PriceService extends JupiterBase {
     } catch (error) {
       // Make sure to release the lock if there was an error
       this.isFetchingPrices = false;
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to subscribe to prices:')} ${error.message}`);
+      // Use safe error logging
+      logError(logApi, 'PriceService', 'Failed to subscribe to prices', error);
       return false;
     }
   }
@@ -316,6 +352,14 @@ class PriceService extends JupiterBase {
    */
   async unsubscribeFromPrices(mintAddresses) {
     try {
+      if (!Array.isArray(mintAddresses) || mintAddresses.length === 0) {
+        return true; // Nothing to do
+      }
+      
+      if (!this.subscriptions) {
+        return true; // No subscriptions exist
+      }
+      
       logApi.info(`${formatLog.tag()} ${formatLog.header('UNSUBSCRIBING')} from prices for ${formatLog.count(mintAddresses.length)} tokens`);
       
       // Filter out tokens that aren't subscribed
@@ -339,7 +383,8 @@ class PriceService extends JupiterBase {
       logApi.info(`${formatLog.tag()} ${formatLog.success('Unsubscribed from prices for')} ${formatLog.count(subscribedTokens.length)} tokens`);
       return true;
     } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to unsubscribe from prices:')} ${error.message}`);
+      // Use safe error logging
+      logError(logApi, 'PriceService', 'Failed to unsubscribe from prices', error);
       return false;
     }
   }
@@ -350,7 +395,6 @@ class PriceService extends JupiterBase {
    * @returns {Promise<Object>} - Map of token addresses to price data
    */
   async getPrices(mintAddresses) {
-
     // Get prices for specified tokens via Jupiter API
     try {
       // Check if mintAddresses is a valid array of mint addresses
@@ -367,7 +411,7 @@ class PriceService extends JupiterBase {
       // The Jupiter API docs specify a maximum of 100 tokens per request
       //   But we need to be careful about URI length limits (rare but possible)
       //   Hard maximum is 100 tokens per request (enforced by Jupiter API on all paid tiers)
-      const MAX_TOKENS_PER_REQUEST = this.config.rateLimit.maxTokensPerRequest || 100;
+      const MAX_TOKENS_PER_REQUEST = safe(this.config, 'rateLimit.maxTokensPerRequest', 100);
       
       // Track if we've had URI too long errors and use that to adapt
       //   Use class variables to persist across calls
@@ -386,14 +430,13 @@ class PriceService extends JupiterBase {
       // Use the optimal batch size for this request
       const effectiveBatchSize = this.constructor.currentOptimalBatchSize;
       const allFetchedPrices = {};
-      let fetchErrorCount = 0;
       
       // Split into batches and process them sequentially with proper rate limiting
       const totalBatches = Math.ceil(mintAddresses.length / effectiveBatchSize);
       
       // OPTIMIZATION: Setup parallel processing with concurrency control
       //   Process multiple batches in parallel while respecting rate limits
-      const MAX_CONCURRENT_REQUESTS = this.config.rateLimit.maxRequestsPerSecond;
+      const MAX_CONCURRENT_REQUESTS = safe(this.config, 'rateLimit.maxRequestsPerSecond', 3);
       
       // Define a throttle function to control concurrency
       const throttleBatches = async (batches) => {
@@ -443,7 +486,7 @@ class PriceService extends JupiterBase {
             logApi.warn(`${formatLog.tag()} ${formatLog.warning(`${failures.length} batch failures in current chunk`)}`);
             
             // If we're hitting rate limits, add a small delay before the next chunk
-            const hasRateLimitErrors = failures.some(f => f.error?.response?.status === 429);
+            const hasRateLimitErrors = failures.some(f => safe(f, 'error.response.status') === 429);
             if (hasRateLimitErrors) {
               logApi.warn(`${formatLog.tag()} ${formatLog.warning('Rate limit detected, adding delay before next chunk')}`);
               await new Promise(resolve => setTimeout(resolve, 1000));
@@ -476,11 +519,10 @@ class PriceService extends JupiterBase {
       // Merge results into allFetchedPrices
       Object.assign(allFetchedPrices, allResults);
 
-      // Return the results
       return allFetchedPrices;
     } catch (error) {
-      // Use a single detailed error log instead of multiple similar ones
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch prices:')} ${error.message}`);
+      // Use safe error logging
+      logError(logApi, 'PriceService', 'Failed to fetch prices', error);
       throw error;
     }
   }
@@ -532,7 +574,8 @@ class PriceService extends JupiterBase {
       // Return the price history
       return priceHistory;
     } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch price history:')} ${error.message}`);
+      // Use safe error logging
+      logError(logApi, 'PriceService', 'Failed to fetch price history', error);
       // Re-throw the error
       throw error;
     } finally {
@@ -568,7 +611,8 @@ class SwapService extends JupiterBase {
       // Return the response
       return response;
     } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to fetch swap quote:')} ${error.message}`);
+      // Use safe error logging
+      logError(logApi, 'SwapService', 'Failed to fetch swap quote', error);
       // Re-throw the error
       throw error;
     }
@@ -583,37 +627,84 @@ class SwapService extends JupiterBase {
  * - For free access (no API key): https://lite-api.jup.ag/
  * 
  * Note: As of May 1, 2025, api.jup.ag will return 401 errors without an API key
+ * 
+ * @extends BaseService
  */
-class JupiterClient {
+class JupiterClient extends BaseService {
   constructor() {
-    this.config = jupiterConfig;
-    this.initialized = false;
+    // Initialize base service with proper configuration
+    super({
+      name: SERVICE_NAMES.JUPITER_CLIENT,
+      description: 'Jupiter API client for market data',
+      dependencies: [SERVICE_NAMES.SOLANA_ENGINE],
+      layer: 'DATA',
+      criticalLevel: 'MEDIUM',
+      // Circuit breaker configuration
+      circuitBreaker: {
+        enabled: true,
+        failureThreshold: 5,
+        resetTimeoutMs: 30000,
+        healthCheckIntervalMs: 15000,
+        description: 'Manages Jupiter API connectivity'
+      }
+    });
+    
+    this.jupiterConfig = jupiterConfig;
     
     // Create service modules
-    this.tokens = new TokenListService(this.config);
-    this.prices = new PriceService(this.config);
-    this.swaps = new SwapService(this.config);
+    this.tokens = null;
+    this.prices = null;
+    this.swaps = null;
     
     this.tokenList = null;
     this.tokenMap = null;
     
     // Configuration for automatic polling
     this.useAutomaticPolling = false; // Default to disabled, use TokenRefreshScheduler instead
+    
+    // Custom stats for this service
+    this.stats.customStats = {
+      tokens: {
+        total: 0,
+        subscribed: 0
+      },
+      api: {
+        successful: 0,
+        failed: 0,
+        lastRequest: null,
+        lastResponse: null,
+        lastError: null
+      }
+    };
   }
 
   /**
    * Initialize the Jupiter client
    */
   async initialize() {
-    if (!this.config.apiKey) {
-      logApi.warn(`${formatLog.tag()} ${formatLog.warning('Jupiter API key not configured. Market data features will be limited.')}`);
-    }
-
     try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('INITIALIZING')} Jupiter client`);
+      // Call the base service initialization first
+      await super.initialize();
+      
+      // Register this service with the service manager
+      serviceManager.register(this.name, this.dependencies);
+      
+      // Check Jupiter API key configuration
+      if (!this.jupiterConfig.apiKey) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Jupiter API key not configured. Market data features will be limited.')}`);
+      }
+
+      // Initialize service modules
+      this.tokens = new TokenListService(this.jupiterConfig);
+      this.prices = new PriceService(this.jupiterConfig);
+      this.swaps = new SwapService(this.jupiterConfig);
       
       // Initialize token list and map
       this.tokenList = await this.tokens.fetchTokenList();
+      
+      // Track token count in stats
+      set(this.stats.customStats.tokens, 'total', safe(this.tokenList, 'length', 0));
+      
       this.tokenMap = this.tokens.createTokenMap(this.tokenList);
       
       // Configure automatic polling based on client setting
@@ -625,11 +716,108 @@ class JupiterClient {
         logApi.info(`${formatLog.tag()} ${formatLog.info('Automatic price polling is ENABLED. This may conflict with TokenRefreshScheduler.')}`);
       }
       
-      this.initialized = true;
       logApi.info(`${formatLog.tag()} ${formatLog.success('Jupiter client initialized successfully')}`);
+      
+      // Emit service initialized event with safe data
+      serviceEvents.emit('service:initialized', {
+        name: this.name,
+        config: this._getSafeConfig(),
+        stats: this._getSafeStats()
+      });
+      
       return true;
     } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize Jupiter client:')} ${error.message}`);
+      // Use safe error logging
+      logError(logApi, this.name, 'Failed to initialize Jupiter client', error);
+      
+      // Update stats
+      set(this.stats.customStats.api, 'lastError', error.message);
+      await this.handleError(error);
+      
+      return false;
+    }
+  }
+  
+  /**
+   * Check if circuit breaker is open
+   * @returns {boolean} True if the circuit breaker is open
+   */
+  isCircuitBreakerOpen() {
+    return isCircuitOpen(this);
+  }
+  
+  /**
+   * Perform the service's main operation - heartbeat to check Jupiter API status
+   */
+  async performOperation() {
+    try {
+      // Check if circuit breaker is open
+      if (this.isCircuitBreakerOpen()) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Circuit breaker is open, skipping operation')}`);
+        return;
+      }
+      
+      // For heartbeat, do a lightweight request
+      if (!this.tokenList || this.tokenList.length === 0) {
+        // If no token list, fetch it
+        this.tokenList = await this.tokens.fetchTokenList();
+        this.tokenMap = this.tokens.createTokenMap(this.tokenList);
+        
+        // Update stats
+        set(this.stats.customStats.tokens, 'total', safe(this.tokenList, 'length', 0));
+      } else {
+        // Get a sample token for price check
+        const sampleToken = this.tokenList[0];
+        
+        if (sampleToken && sampleToken.address) {
+          // Get the price for the sample token
+          const prices = await this.prices.getPrices([sampleToken.address]);
+          
+          // Update stats
+          inc(this.stats.customStats.api, 'successful');
+          set(this.stats.customStats.api, 'lastRequest', new Date().toISOString());
+          set(this.stats.customStats.api, 'lastResponse', new Date().toISOString());
+        }
+      }
+      
+      // Record success for circuit breaker
+      await this.recordSuccess();
+      
+      // Emit heartbeat event
+      serviceEvents.emit('service:heartbeat', {
+        name: this.name,
+        config: this._getSafeConfig(),
+        stats: safeStats(this.stats)
+      });
+      
+      return true;
+    } catch (error) {
+      // Update stats for error tracking
+      inc(this.stats.customStats.api, 'failed');
+      set(this.stats.customStats.api, 'lastError', error.message);
+      
+      // Handle error through base service
+      await this.handleError(error);
+      return false;
+    }
+  }
+  
+  /**
+   * Stop the service
+   */
+  async stop() {
+    try {
+      // Disable polling
+      if (this.prices && this.prices.pollingInterval) {
+        this.prices.stopPolling();
+      }
+      
+      // Call base service stop
+      await super.stop();
+      
+      return true;
+    } catch (error) {
+      logError(logApi, this.name, 'Error stopping JupiterClient', error);
       return false;
     }
   }
@@ -655,7 +843,10 @@ class JupiterClient {
         logApi.info(`${formatLog.tag()} ${formatLog.header('ENABLED')} automatic price polling`);
         
         // Start polling if we're initialized and have subscriptions
-        if (this.initialized && this.prices.subscriptions.size > 0 && !this.prices.pollingInterval) {
+        if (this.isInitialized && 
+            this.prices.subscriptions && 
+            this.prices.subscriptions.size > 0 && 
+            !this.prices.pollingInterval) {
           this.prices.startPolling();
         }
       } else {
@@ -686,7 +877,31 @@ class JupiterClient {
    * @returns {boolean} - Success status
    */
   async subscribeToPrices(mintAddresses) {
-    return this.prices.subscribeToPrices(mintAddresses);
+    try {
+      if (!Array.isArray(mintAddresses) || mintAddresses.length === 0) {
+        return true;
+      }
+      
+      // Check if circuit breaker is open
+      if (this.isCircuitBreakerOpen()) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Circuit breaker is open, skipping price subscription')}`);
+        return false;
+      }
+      
+      const result = await this.prices.subscribeToPrices(mintAddresses);
+      
+      // Update stats
+      if (result && this.prices.subscriptions) {
+        set(this.stats.customStats.tokens, 'subscribed', this.prices.subscriptions.size);
+      }
+      
+      return result;
+    } catch (error) {
+      // Use safe error logging
+      logError(logApi, this.name, 'Error subscribing to prices', error);
+      await this.handleError(error);
+      return false;
+    }
   }
 
   /**
@@ -695,7 +910,24 @@ class JupiterClient {
    * @returns {boolean} - Success status
    */
   async unsubscribeFromPrices(mintAddresses) {
-    return this.prices.unsubscribeFromPrices(mintAddresses);
+    try {
+      if (!Array.isArray(mintAddresses) || mintAddresses.length === 0) {
+        return true;
+      }
+      
+      const result = await this.prices.unsubscribeFromPrices(mintAddresses);
+      
+      // Update stats
+      if (result && this.prices.subscriptions) {
+        set(this.stats.customStats.tokens, 'subscribed', this.prices.subscriptions.size);
+      }
+      
+      return result;
+    } catch (error) {
+      // Use safe error logging
+      logError(logApi, this.name, 'Error unsubscribing from prices', error);
+      return false;
+    }
   }
 
   /**
@@ -704,32 +936,57 @@ class JupiterClient {
    * @returns {Promise<Object>} - Map of token addresses to price data
    */
   async getPrices(mintAddresses) {
-    // Check if the price service is already fetching prices
-    if (this.prices.isFetchingPrices) {
-      logApi.info(`${formatLog.tag()} ${formatLog.info('Delaying price fetch as a previous batch is still processing')}`);
-      
-      // Wait for the current operation to complete with a maximum timeout
-      const maxWaitMs = 5000;
-      const startWait = Date.now();
-      while (this.prices.isFetchingPrices && (Date.now() - startWait < maxWaitMs)) {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Wait in 100ms intervals
-      }
-      
-      // If we're still locked after maximum wait time, proceed anyway but log it
-      if (this.prices.isFetchingPrices) {
-        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Proceeding with new price fetch despite ongoing batch process (timeout exceeded)')}`);
-      }
-    }
-    
-    // Set the lock before starting the fetch
-    this.prices.isFetchingPrices = true;
-    this.prices.lastFetchTime = Date.now();
-    
     try {
-      return await this.prices.getPrices(mintAddresses);
-    } finally {
-      // Always release the lock when done
-      this.prices.isFetchingPrices = false;
+      // Check if the circuit breaker is open
+      if (this.isCircuitBreakerOpen()) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Circuit breaker is open, skipping price fetch')}`);
+        throw new Error('Circuit breaker is open, cannot fetch prices');
+      }
+      
+      // Check if the price service is already fetching prices
+      if (this.prices.isFetchingPrices) {
+        logApi.info(`${formatLog.tag()} ${formatLog.info('Delaying price fetch as a previous batch is still processing')}`);
+        
+        // Wait for the current operation to complete with a maximum timeout
+        const maxWaitMs = 5000;
+        const startWait = Date.now();
+        while (this.prices.isFetchingPrices && (Date.now() - startWait < maxWaitMs)) {
+          await new Promise(resolve => setTimeout(resolve, 100)); // Wait in 100ms intervals
+        }
+        
+        // If we're still locked after maximum wait time, proceed anyway but log it
+        if (this.prices.isFetchingPrices) {
+          logApi.warn(`${formatLog.tag()} ${formatLog.warning('Proceeding with new price fetch despite ongoing batch process (timeout exceeded)')}`);
+        }
+      }
+      
+      // Set the lock before starting the fetch
+      this.prices.isFetchingPrices = true;
+      this.prices.lastFetchTime = Date.now();
+      
+      try {
+        const result = await this.prices.getPrices(mintAddresses);
+        
+        // Update stats
+        inc(this.stats.customStats.api, 'successful');
+        set(this.stats.customStats.api, 'lastRequest', new Date().toISOString());
+        set(this.stats.customStats.api, 'lastResponse', new Date().toISOString());
+        
+        return result;
+      } finally {
+        // Always release the lock when done
+        this.prices.isFetchingPrices = false;
+      }
+    } catch (error) {
+      // Update stats for error tracking
+      inc(this.stats.customStats.api, 'failed');
+      set(this.stats.customStats.api, 'lastError', error.message);
+      
+      // Handle error through base service
+      await this.handleError(error);
+      
+      // Re-throw to notify caller
+      throw error;
     }
   }
 
@@ -740,7 +997,32 @@ class JupiterClient {
    * @returns {Promise<Object>} - Price history data
    */
   async getPriceHistory(mintAddress, interval = '7d') {
-    return this.prices.getPriceHistory(mintAddress, interval);
+    try {
+      // Check if the circuit breaker is open
+      if (this.isCircuitBreakerOpen()) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Circuit breaker is open, skipping price history fetch')}`);
+        throw new Error('Circuit breaker is open, cannot fetch price history');
+      }
+      
+      const result = await this.prices.getPriceHistory(mintAddress, interval);
+      
+      // Update stats
+      inc(this.stats.customStats.api, 'successful');
+      set(this.stats.customStats.api, 'lastRequest', new Date().toISOString());
+      set(this.stats.customStats.api, 'lastResponse', new Date().toISOString());
+      
+      return result;
+    } catch (error) {
+      // Update stats for error tracking
+      inc(this.stats.customStats.api, 'failed');
+      set(this.stats.customStats.api, 'lastError', error.message);
+      
+      // Handle error through base service
+      await this.handleError(error);
+      
+      // Re-throw to notify caller
+      throw error;
+    }
   }
 
   /**
@@ -749,7 +1031,32 @@ class JupiterClient {
    * @returns {Promise<Object>} - Swap quote details
    */
   async getSwapQuote(params) {
-    return this.swaps.getSwapQuote(params);
+    try {
+      // Check if the circuit breaker is open
+      if (this.isCircuitBreakerOpen()) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Circuit breaker is open, skipping swap quote fetch')}`);
+        throw new Error('Circuit breaker is open, cannot fetch swap quote');
+      }
+      
+      const result = await this.swaps.getSwapQuote(params);
+      
+      // Update stats
+      inc(this.stats.customStats.api, 'successful');
+      set(this.stats.customStats.api, 'lastRequest', new Date().toISOString());
+      set(this.stats.customStats.api, 'lastResponse', new Date().toISOString());
+      
+      return result;
+    } catch (error) {
+      // Update stats for error tracking
+      inc(this.stats.customStats.api, 'failed');
+      set(this.stats.customStats.api, 'lastError', error.message);
+      
+      // Handle error through base service
+      await this.handleError(error);
+      
+      // Re-throw to notify caller
+      throw error;
+    }
   }
 
   /**

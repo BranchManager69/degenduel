@@ -1,5 +1,6 @@
 // services/ai-service/image-generator.js
 // Multi-purpose AI image generation module for the AI service
+// @see /services/ai-service/README.md for complete documentation and architecture
 
 import OpenAI from 'openai';
 import fs from 'fs/promises';

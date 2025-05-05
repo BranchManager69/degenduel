@@ -3,29 +3,35 @@
 /**
  * AI Service
  * 
- * This service provides AI functionality throughout the DegenDuel platform.
- * It has three main components:
+ * @description This service provides AI functionality throughout the DegenDuel platform.
  * 
+ * AI Service has three main components:
  * 1. Periodic Analysis: Runs every 10 minutes to analyze client errors and admin actions
  * 2. On-Demand API: Provides chat completion and streaming responses for application use
  * 3. Image Generation: Creates AI-generated images for various use cases including user profiles
  * 
  * The service implements circuit breaking to handle OpenAI API outages gracefully.
+ * 
+ * @author BranchManager69
+ * @version 1.8.9
+ * @created 2025-04-14
+ * @updated 2025-05-02
  */
 
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
-import { logApi } from '../utils/logger-suite/logger.js';
-import { fancyColors } from '../utils/colors.js';
 import OpenAI from 'openai';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../config/prisma.js';
-import config from '../config/config.js';
 import imageGenerator from './ai-service/image-generator.js';
+// Logger
+import { logApi } from '../utils/logger-suite/logger.js';
+import { fancyColors } from '../utils/colors.js';
 
-// Get AI loadout config
+// Config
+import config from '../config/config.js';
 const aiLoadout = config.ai?.openai_model_loadout || {};
 
 // AI Service configuration
@@ -501,7 +507,231 @@ class AIService extends BaseService {
   }
   
   // ========== ON-DEMAND API METHODS ==========
-  
+  /**
+   * Generate an AI response using OpenAI Responses API
+   * 
+   * @param {Array} messages - Array of message objects
+   * @param {Object} options - Options for the API call
+   * @returns {Object} Response with stream and conversationId
+   */
+  async generateAIResponse(messages, options = {}) {
+    const startTime = Date.now();
+    
+    try {
+      // Check if circuit breaker is open
+      if (this.stats.circuitBreaker.isOpen) {
+        throw new ServiceError('ai_service_circuit_open', 'AI service circuit breaker is open');
+      }
+      
+      // Determine which loadout to use
+      const loadoutType = options.loadoutType || 'default';
+      const loadout = this.config.loadouts[loadoutType] || this.config.loadouts.default;
+      
+      // Log which loadout we're using
+      logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Using AI loadout for streaming: ${loadoutType}`, { 
+        temperature: loadout.temperature,
+        maxTokens: loadout.maxTokens,
+        model: loadout.model
+      });
+      
+      // Get base system prompt from loadout
+      let systemPrompt = loadout.systemPrompt;
+      
+      // Track conversation if user is authenticated
+      let conversationId = options.conversationId;
+      let isAuthenticated = false;
+      let walletAddress = null;
+      
+      // Check if we have a logged-in user
+      if (options.userId && options.userId !== 'anonymous') {
+        try {
+          // Get wallet address from userId (if it's not already a wallet address)
+          walletAddress = options.walletAddress || options.userId;
+          isAuthenticated = true;
+          const userRole = options.userRole || 'unauthenticated';
+          
+          // Create or get existing conversation
+          if (!conversationId) {
+            // Generate a new UUID for this conversation
+            conversationId = uuidv4();
+          }
+          
+          // Look up user information from database
+          const user = await prisma.users.findUnique({
+            where: { wallet_address: walletAddress.toString() },
+            include: {
+              user_stats: true,
+              user_level: true,
+              user_achievements: { take: 3, orderBy: { achieved_at: 'desc' } },
+            },
+          });
+          
+          // If user is found, build personalized system prompt with user data
+          if (user) {
+            const userAchievementCount = user.user_achievements?.length || 0;
+            const contestsEntered = user.user_stats?.contests_entered || 0;
+            const contestsWon = user.user_stats?.contests_won || 0;
+            const userLevel = user.user_level?.level_number || 1;
+            const userTitle = user.user_level?.title || 'Novice';
+            
+            // Calculate account age in days
+            const accountAge = user.created_at ?
+              Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 'Unknown';
+            
+            // Enhance the system prompt with user information
+            systemPrompt = `${systemPrompt}\n\nYou are speaking with ${user.nickname || user.username || 'a DegenDuel user'} (role: ${userRole}), who has:\n- DegenDuel Level: ${userLevel} (${userTitle})\n- Achievements: ${userAchievementCount} unlocked\n- Contest experience: Entered ${contestsEntered} contests, won ${contestsWon}\n- Account age: ${accountAge} days`;
+          }
+        } catch (err) {
+          // If user lookup fails, just use the default prompt
+          logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} User lookup failed:`, err);
+        }
+      }
+      
+      // Validate and sanitize messages to prevent null content
+      const sanitizedMessages = messages.map(m => ({
+        role: m.role,
+        content: m.content ?? ''
+      }));
+      
+      // Add system prompt to messages
+      const messagesWithSystem = sanitizedMessages.some(m => m.role === 'system')
+        ? sanitizedMessages
+        : [{ role: 'system', content: systemPrompt }, ...sanitizedMessages];
+      
+      // Log request (with sensitive data removed)
+      logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} AI response stream request received`, {
+        userId: options.userId || 'anonymous',
+        model: loadout.model,
+        loadout: loadoutType,
+        messageCount: sanitizedMessages.length,
+        service: 'AI',
+        conversationId
+      });
+      
+      // Make API request to OpenAI using loadout configuration
+      const stream = await this.openai.responses.create({
+        model: loadout.model,
+        input: messagesWithSystem,
+        temperature: loadout.temperature,
+        max_tokens: loadout.maxTokens,
+        stream: true,
+        functions: options.functions || [], // support function calling
+      }, { responseType: 'stream' });
+      
+      // Track for performance metrics
+      this.stats.operations.total++;
+      this.stats.operations.successful++;
+      
+      // Process the stream response
+      let fullResponse = '';
+      stream.data.on('data', chunk => {
+        // Split the chunk into payloads
+        const payloads = chunk.toString().split('\n\n').filter(Boolean)
+          .map(p => {
+            try {
+              return JSON.parse(p.replace(/^data: /, ''));
+            } catch (e) {
+              return null;
+            }
+          })
+          .filter(Boolean);
+        
+        // Process each payload in the stream
+        for (const payload of payloads) {
+          if (payload.choices[0]?.delta?.content) {
+            fullResponse += payload.choices[0].delta.content;
+          }
+          
+          // Handle function call if present...
+          if (payload.choices[0]?.message?.function_call) {
+            // You can wire in your function_call logic here
+            const functionCall = payload.choices[0].message.function_call;
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { functionCall });
+          }
+        }
+      });
+      
+      // Handle the end of the stream
+      stream.data.on('end', async () => {
+        // Update performance metrics
+        this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
+        
+        if (isAuthenticated && walletAddress && conversationId) {
+          try {
+            // Get the last user message
+            const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
+            
+            // Upsert the conversation record
+            const conversation = await prisma.ai_conversations.upsert({
+              where: { conversation_id: conversationId },
+              update: {
+                message_count: { increment: 2 },
+                total_tokens_used: { increment: fullResponse.length },
+                last_message_at: new Date()
+              },
+              // Create a new conversation record if it doesn't exist
+              create: {
+                conversation_id: conversationId,
+                wallet_address: walletAddress,
+                context: loadoutType, // Store the loadout type as context
+                first_message_at: new Date(),
+                last_message_at: new Date(),
+                message_count: 2,
+                total_tokens_used: fullResponse.length
+              }
+            });
+            
+            // Store user message
+            if (userMessage.role === 'user') {
+              await prisma.ai_conversation_messages.create({
+                data: { conversation_id: conversationId, role: userMessage.role, content: userMessage.content }
+              });
+            }
+            
+            // Store AI response
+            await prisma.ai_conversation_messages.create({
+              data: { conversation_id: conversationId, role: 'assistant', content: fullResponse }
+            });
+            
+            // Log successful storage
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Stored conversation and messages for streaming response`, { 
+              conversationId, 
+              walletAddress,
+              loadout: loadoutType
+            });
+          } catch (e) {
+            // Log storage failure
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Storage failure during AI conversation update for streaming response:`, e);
+          }
+        }
+      });
+      
+      // Return the stream response
+      return {
+        stream: stream.data,
+        conversationId
+      };
+    } catch (error) {
+      // Update error stats
+      this.stats.operations.total++;
+      this.stats.operations.failed++;
+      
+      // Log the error
+      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} OpenAI Responses API error:`, error);
+      
+      // Check for specific error types
+      if (error.status === 429 && error.message && error.message.includes('exceeded your current quota')) {
+        throw new ServiceError('openai_quota_exceeded', '[DEV IS BROKE!] Looks like Branch Manager needs to pay the AI bill... The rest of the DegenDuel server is functioning properly!');
+      } else if (error.status === 401) {
+        throw new ServiceError('openai_auth_error', 'Authentication error with AI service');
+      } else if (error.status === 429) {
+        throw new ServiceError('openai_rate_limit', 'Rate limit exceeded for AI service');
+      } else {
+        throw new ServiceError('openai_api_error', 'AI service streaming error');
+      }
+    }
+  }
+
   /**
    * Generate a chat completion using OpenAI Chat API
    * 
@@ -742,242 +972,24 @@ Address them by name if they provided one, and adapt your responses to their exp
     }
   }
   
-  /**
-   * Generate an AI response using OpenAI Responses API
-   * 
-   * @param {Array} messages - Array of message objects
-   * @param {Object} options - Options for the API call
-   * @returns {Object} Response with stream and conversationId
-   */
-  async generateAIResponse(messages, options = {}) {
-    const startTime = Date.now();
-    
-    try {
-      // Check if circuit breaker is open
-      if (this.stats.circuitBreaker.isOpen) {
-        throw new ServiceError('ai_service_circuit_open', 'AI service circuit breaker is open');
-      }
-      
-      // Determine which loadout to use
-      const loadoutType = options.loadoutType || 'default';
-      const loadout = this.config.loadouts[loadoutType] || this.config.loadouts.default;
-      
-      // Log which loadout we're using
-      logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Using AI loadout for streaming: ${loadoutType}`, { 
-        temperature: loadout.temperature,
-        maxTokens: loadout.maxTokens,
-        model: loadout.model
-      });
-      
-      // Get base system prompt from loadout
-      let systemPrompt = loadout.systemPrompt;
-      
-      // Track conversation if user is authenticated
-      let conversationId = options.conversationId;
-      let isAuthenticated = false;
-      let walletAddress = null;
-      
-      // Check if we have a logged-in user
-      if (options.userId && options.userId !== 'anonymous') {
-        try {
-          // Get wallet address from userId (if it's not already a wallet address)
-          walletAddress = options.walletAddress || options.userId;
-          isAuthenticated = true;
-          const userRole = options.userRole || 'unauthenticated';
-          
-          // Create or get existing conversation
-          if (!conversationId) {
-            // Generate a new UUID for this conversation
-            conversationId = uuidv4();
-          }
-          
-          // Look up user information from database
-          const user = await prisma.users.findUnique({
-            where: { wallet_address: walletAddress.toString() },
-            include: {
-              user_stats: true,
-              user_level: true,
-              user_achievements: { take: 3, orderBy: { achieved_at: 'desc' } },
-            },
-          });
-          
-          // If user is found, build personalized system prompt with user data
-          if (user) {
-            const userAchievementCount = user.user_achievements?.length || 0;
-            const contestsEntered = user.user_stats?.contests_entered || 0;
-            const contestsWon = user.user_stats?.contests_won || 0;
-            const userLevel = user.user_level?.level_number || 1;
-            const userTitle = user.user_level?.title || 'Novice';
-            
-            // Calculate account age in days
-            const accountAge = user.created_at ?
-              Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 'Unknown';
-            
-            // Enhance the system prompt with user information
-            systemPrompt = `${systemPrompt}\n\nYou are speaking with ${user.nickname || user.username || 'a DegenDuel user'} (role: ${userRole}), who has:\n- DegenDuel Level: ${userLevel} (${userTitle})\n- Achievements: ${userAchievementCount} unlocked\n- Contest experience: Entered ${contestsEntered} contests, won ${contestsWon}\n- Account age: ${accountAge} days`;
-          }
-        } catch (err) {
-          // If user lookup fails, just use the default prompt
-          logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} User lookup failed:`, err);
-        }
-      }
-      
-      // Validate and sanitize messages to prevent null content
-      const sanitizedMessages = messages.map(m => ({
-        role: m.role,
-        content: m.content ?? ''
-      }));
-      
-      // Add system prompt to messages
-      const messagesWithSystem = sanitizedMessages.some(m => m.role === 'system')
-        ? sanitizedMessages
-        : [{ role: 'system', content: systemPrompt }, ...sanitizedMessages];
-      
-      // Log request (with sensitive data removed)
-      logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} AI response stream request received`, {
-        userId: options.userId || 'anonymous',
-        model: loadout.model,
-        loadout: loadoutType,
-        messageCount: sanitizedMessages.length,
-        service: 'AI',
-        conversationId
-      });
-      
-      // Make API request to OpenAI using loadout configuration
-      const stream = await this.openai.responses.create({
-        model: loadout.model,
-        input: messagesWithSystem,
-        temperature: loadout.temperature,
-        max_tokens: loadout.maxTokens,
-        stream: true,
-        functions: options.functions || [], // support function calling
-      }, { responseType: 'stream' });
-      
-      // Track for performance metrics
-      this.stats.operations.total++;
-      this.stats.operations.successful++;
-      
-      // Process the stream response
-      let fullResponse = '';
-      stream.data.on('data', chunk => {
-        // Split the chunk into payloads
-        const payloads = chunk.toString().split('\n\n').filter(Boolean)
-          .map(p => {
-            try {
-              return JSON.parse(p.replace(/^data: /, ''));
-            } catch (e) {
-              return null;
-            }
-          })
-          .filter(Boolean);
-        
-        // Process each payload in the stream
-        for (const payload of payloads) {
-          if (payload.choices[0]?.delta?.content) {
-            fullResponse += payload.choices[0].delta.content;
-          }
-          
-          // Handle function call if present...
-          if (payload.choices[0]?.message?.function_call) {
-            // You can wire in your function_call logic here
-            const functionCall = payload.choices[0].message.function_call;
-            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { functionCall });
-          }
-        }
-      });
-      
-      // Handle the end of the stream
-      stream.data.on('end', async () => {
-        // Update performance metrics
-        this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
-        
-        if (isAuthenticated && walletAddress && conversationId) {
-          try {
-            // Get the last user message
-            const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
-            
-            // Upsert the conversation record
-            const conversation = await prisma.ai_conversations.upsert({
-              where: { conversation_id: conversationId },
-              update: {
-                message_count: { increment: 2 },
-                total_tokens_used: { increment: fullResponse.length },
-                last_message_at: new Date()
-              },
-              // Create a new conversation record if it doesn't exist
-              create: {
-                conversation_id: conversationId,
-                wallet_address: walletAddress,
-                context: loadoutType, // Store the loadout type as context
-                first_message_at: new Date(),
-                last_message_at: new Date(),
-                message_count: 2,
-                total_tokens_used: fullResponse.length
-              }
-            });
-            
-            // Store user message
-            if (userMessage.role === 'user') {
-              await prisma.ai_conversation_messages.create({
-                data: { conversation_id: conversationId, role: userMessage.role, content: userMessage.content }
-              });
-            }
-            
-            // Store AI response
-            await prisma.ai_conversation_messages.create({
-              data: { conversation_id: conversationId, role: 'assistant', content: fullResponse }
-            });
-            
-            // Log successful storage
-            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Stored conversation and messages for streaming response`, { 
-              conversationId, 
-              walletAddress,
-              loadout: loadoutType
-            });
-          } catch (e) {
-            // Log storage failure
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Storage failure during AI conversation update for streaming response:`, e);
-          }
-        }
-      });
-      
-      // Return the stream response
-      return {
-        stream: stream.data,
-        conversationId
-      };
-    } catch (error) {
-      // Update error stats
-      this.stats.operations.total++;
-      this.stats.operations.failed++;
-      
-      // Log the error
-      logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} OpenAI Responses API error:`, error);
-      
-      // Check for specific error types
-      if (error.status === 429 && error.message && error.message.includes('exceeded your current quota')) {
-        throw new ServiceError('openai_quota_exceeded', '[DEV IS BROKE!] Looks like Branch Manager needs to pay the AI bill... The rest of the DegenDuel server is functioning properly!');
-      } else if (error.status === 401) {
-        throw new ServiceError('openai_auth_error', 'Authentication error with AI service');
-      } else if (error.status === 429) {
-        throw new ServiceError('openai_rate_limit', 'Rate limit exceeded for AI service');
-      } else {
-        throw new ServiceError('openai_api_error', 'AI service streaming error');
-      }
-    }
-  }
 }
 
 // Create and export singleton instance
 const aiService = new AIService();
 
-// Register with service manager
+// Register AI Service singleton with service manager
 serviceManager.register(aiService);
 
-// Export the generateChatCompletion method directly for routes
+// Export the generateAIResponse (LATEST AND GREATEST) method
+//   TODO: Why? They should import aiService and call it directly
+export const generateAIResponse = aiService.generateAIResponse.bind(aiService);
+
+// Export the generateChatCompletion method (OLD AND SHITTY) directly for routes
+//   TODO: Why? They should import aiService and call it directly
 export const generateChatCompletion = aiService.generateChatCompletion.bind(aiService);
 
 // Add image generation methods to the AI service
+//   TODO: ARE THESE UP TO DATE?
 aiService.generateImage = imageGenerator.generateImage;
 aiService.generateUserProfileImage = imageGenerator.generateUserProfileImage;
 aiService.generateImageEdit = imageGenerator.generateImageEdit;

@@ -1,44 +1,48 @@
 // services/discordNotificationService.js
 
 /**
+ * =============================================================================
+ * IMPORTANT: Service Responsibilities Overview
+ * -----------------------------------------------------------------------------
+ * This service focuses SOLELY on sending outgoing messages to Discord channels
+ * via pre-configured Webhooks. It does NOT log in as a bot and cannot manage
+ * roles, send DMs, or handle user interactions.
+ * For a detailed breakdown of responsibilities between this service and the
+ * interactive bot service, please see:
+ * ./DISCORD_SERVICES_OVERVIEW.md
+ * =============================================================================
+ */
+
+/**
  * Discord Notification Service
- * 
- * This service is responsible for sending notifications to Discord.
+ * @description This service is responsible for sending notifications to Discord.
  * It is used to send notifications to the Discord server for various events.
  * 
  * @author BranchManager69
  * @version 1.9.0
  * @created 2025-04-27
- * @updated 2025-05-01
+ * @updated 2025-05-02
  */
 
-import DiscordWebhook from '../utils/discord-webhook.js';
-import prisma from '../config/prisma.js';
-import { BaseService } from '../utils/service-suite/base-service.js';
-import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
-import { SERVICE_EVENTS } from '../utils/service-suite/service-events.js';
-import { fancyColors } from '../utils/colors.js';
+// Service Suite
+import { BaseService } from '../../utils/service-suite/base-service.js';
+import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
+import { SERVICE_EVENTS } from '../../utils/service-suite/service-events.js';
+import DiscordWebhook from '../../utils/discord-webhook.js';
+// Database
+import prisma from '../../config/prisma.js';
+
+// Config
+import { discordConfig } from './discordConfig.js'; // Use the dedicated Discord config
+
+// Import fancyColors from colors.js utility
+import { fancyColors } from '../../utils/colors.js';
 
 // This is a service-specific logger that writes to the database
 //   TODO: Why do we only do this for the Discord Notification Service? 
 //         Seems like a big missed opportunity to have our existing SINGLE logger (logApi).
-import { logApi } from '../utils/logger-suite/logger.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
 const logger = logApi.forService(SERVICE_NAMES.DISCORD_NOTIFICATION);
-
-// Config
-import { config } from '../config/config.js';
-
-// Get the set of DegenDuel Discord webhook URLs
-const discordWebhookUrls = config.discord_webhook_urls;
-// Get each individual webhook URL
-const adminLogsWebhookUrl = discordWebhookUrls.admin_logs;
-const systemWebhookUrl = discordWebhookUrls.system;
-const alertsWebhookUrl = discordWebhookUrls.alerts;
-const contestsWebhookUrl = discordWebhookUrls.contests;
-const transactionsWebhookUrl = discordWebhookUrls.transactions;
-const tokensWebhookUrl = discordWebhookUrls.tokens;
-const tradesWebhookUrl = discordWebhookUrls.trades;
-// might be missing a few webhooks here (e.g. #general !?!?s)
 
 /**
  * Discord notification service for sending automated notifications to the DegenDuel Discord server via webhooks.
@@ -65,16 +69,8 @@ class DiscordNotificationService extends BaseService {
       }
     });
     
-    // Default webhooks - these SHOULD come from config or environment variables
-    this.webhookUrls = {
-      adminLogs: adminLogsWebhookUrl,
-      system: systemWebhookUrl,
-      alerts: alertsWebhookUrl,
-      contests: contestsWebhookUrl,
-      transactions: transactionsWebhookUrl,
-      tokens: tokensWebhookUrl,
-      trades: tradesWebhookUrl,
-    };
+    // Use webhook URLs from the dedicated discordConfig
+    this.webhookUrls = discordConfig.webhooks;
     
     // Initialize webhook clients
     this.webhooks = {};
@@ -101,12 +97,12 @@ class DiscordNotificationService extends BaseService {
       
       // Log the service configuration
       if (serviceConfig) {
-        logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}Loading service configuration`, {
+        logger.info(`${fancyColors.CYAN}[Discord] ${fancyColors.YELLOW}Loading service configuration`, {
           eventType: 'service_init',
           details: { configFound: true }
         });
       } else {
-        logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.yellow}No configuration found, using defaults`, {
+        logger.info(`${fancyColors.CYAN}[Discord] ${fancyColors.YELLOW}No configuration found, using defaults`, {
           eventType: 'service_init',
           details: { configFound: false, usingDefaults: true }
         });
@@ -117,7 +113,7 @@ class DiscordNotificationService extends BaseService {
       return true;
     } catch (error) {
       // Log the initialization error
-      logger.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Initialization error:`, {
+      logger.error(`${fancyColors.CYAN}[Discord] ${fancyColors.RED}Initialization error:`, {
         eventType: 'service_init_error',
         error
       });
@@ -193,7 +189,7 @@ class DiscordNotificationService extends BaseService {
       logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent server startup notification\x1b[0m`);
     } catch (error) {
       // Log the error
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send server startup notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send server startup notification:${fancyColors.RESET}`, error);
     }
   }
   
@@ -224,7 +220,7 @@ class DiscordNotificationService extends BaseService {
       logApi.info(`\x1b[96m[Discord]\x1b[0m \x1b[32mSent server shutdown notification\x1b[0m`);
     } catch (error) {
       // Log the error
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send server shutdown notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send server shutdown notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -328,12 +324,12 @@ class DiscordNotificationService extends BaseService {
    * @param {Object} contestData - Contest data
    */
   async onContestCreated(contestData) {
-    // Check if the contests webhook is configured
-    if (!this.webhooks.contests) return;
+    // Use the 'duels' webhook for contest creation
+    if (!this.webhooks.duels) return;
     
     try {
       // Log the incoming contest data
-      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.blue}Received contest creation event`, {
+      logger.info(`${fancyColors.CYAN}[Discord] ${fancyColors.BLUE}Received contest creation event`, {
         eventType: 'contest_created',
         relatedEntity: contestData.contest_code,
         details: {
@@ -558,18 +554,18 @@ class DiscordNotificationService extends BaseService {
       
       // Send the embed and components to the contests webhook
       const requestStartTime = Date.now();
-      await this.webhooks.contests.sendEmbed(embed, components);
+      await this.webhooks.duels.sendEmbed(embed, components);
       const requestEndTime = Date.now();
       
       // Log successful notification with performance metrics
-      logger.info(`${fancyColors.brightCyan}[Discord] ${fancyColors.green}Sent enhanced contest notification`, {
+      logger.info(`${fancyColors.CYAN}[Discord] ${fancyColors.GREEN}Sent enhanced contest notification`, {
         eventType: 'webhook_sent',
         relatedEntity: contestData.contest_code,
         durationMs: requestEndTime - requestStartTime,
         details: {
           contestId: contestData.id,
           contestStatus: contestData.status,
-          webhookType: 'contests',
+          webhookType: 'duels',
           notificationType: 'contest_creation',
           hasImage: !!contestData.image_url,
           hasButtons: true
@@ -577,13 +573,13 @@ class DiscordNotificationService extends BaseService {
       });
     } catch (error) {
       // Log the error with appropriate context
-      logger.error(`${fancyColors.brightCyan}[Discord] ${fancyColors.red}Failed to send contest notification:`, {
+      logger.error(`${fancyColors.CYAN}[Discord] ${fancyColors.RED}Failed to send contest notification:`, {
         eventType: 'webhook_error',
         relatedEntity: contestData.contest_code,
         error,
         details: {
           contestId: contestData.id,
-          webhookType: 'contests',
+          webhookType: 'duels',
           errorMessage: error.message
         }
       });
@@ -679,7 +675,8 @@ class DiscordNotificationService extends BaseService {
    * @param {Object} activityData - Contest activity data
    */
   async onContestActivity(activityData) {
-    if (!this.webhooks.contests) return;
+    // Use the 'duels' webhook for contest activity
+    if (!this.webhooks.duels) return;
     
     try {
       // Handle different types of contest activity
@@ -702,7 +699,7 @@ class DiscordNotificationService extends BaseService {
           }
         }
         
-        const embed = this.webhooks.contests.createInfoEmbed(
+        const embed = this.webhooks.duels.createInfoEmbed(
           `👤 New Participant in ${activityData.contestName}`,
           `${activityData.userDisplayName} has joined the contest!`
         );
@@ -717,11 +714,11 @@ class DiscordNotificationService extends BaseService {
           { name: 'Starts', value: new Date(activityData.startTime).toLocaleString(), inline: true },
         ];
         
-        await this.webhooks.contests.sendEmbed(embed);
-        logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent contest join notification${fancyColors.RESET}`);
+        await this.webhooks.duels.sendEmbed(embed);
+        logApi.info(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.GREEN}Sent contest join notification${fancyColors.RESET}`);
       }
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send contest activity notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send contest activity notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -730,7 +727,8 @@ class DiscordNotificationService extends BaseService {
    * @param {Object} completionData - Contest completion data including winners
    */
   async onContestCompleted(completionData) {
-    if (!this.webhooks.contests) return;
+    // Use the 'duels' webhook for contest completion
+    if (!this.webhooks.duels) return;
     
     try {
       // Get medal emojis for the top 3 places
@@ -789,12 +787,12 @@ class DiscordNotificationService extends BaseService {
       }
       
       // Send the rich embed to Discord
-      await this.webhooks.contests.sendEmbed(embed);
+      await this.webhooks.duels.sendEmbed(embed);
       
       // Log success
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent contest completion notification for contest #${completionData.contest_id}${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.GREEN}Sent contest completion notification for contest #${completionData.contest_id}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send contest completion notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send contest completion notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -825,9 +823,9 @@ class DiscordNotificationService extends BaseService {
       }
       
       await this.webhooks.transactions.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent large transaction notification${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.GREEN}Sent large transaction notification${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send transaction notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send transaction notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -836,7 +834,8 @@ class DiscordNotificationService extends BaseService {
    * @param {Object} achievementData - Achievement data
    */
   async onUserAchievement(achievementData) {
-    if (!this.webhooks.contests) return;
+    // Send achievements to the main chat?
+    if (!this.webhooks.mainChat) return;
     
     try {
       // Format the achievement notification
@@ -861,10 +860,10 @@ class DiscordNotificationService extends BaseService {
       }
       
       // Send the notification
-      await this.webhooks.contests.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent achievement notification for user ${achievementData.user_name}${fancyColors.RESET}`);
+      await this.webhooks.mainChat.sendEmbed(embed);
+      logApi.info(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.GREEN}Sent achievement notification for user ${achievementData.user_name}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send achievement notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send achievement notification:${fancyColors.RESET}`, error);
     }
   }
   
@@ -873,7 +872,8 @@ class DiscordNotificationService extends BaseService {
    * @param {Object} levelData - Level up data
    */
   async onUserLevelUp(levelData) {
-    if (!this.webhooks.contests) return;
+    // Send level ups to the main chat?
+    if (!this.webhooks.mainChat) return;
     
     try {
       // Get an appropriate level up emoji based on level
@@ -914,10 +914,10 @@ class DiscordNotificationService extends BaseService {
       }
       
       // Send the notification
-      await this.webhooks.contests.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent level up notification for user ${levelData.user_name}${fancyColors.RESET}`);
+      await this.webhooks.mainChat.sendEmbed(embed);
+      logApi.info(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.GREEN}Sent level up notification for user ${levelData.user_name}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send level up notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send level up notification:${fancyColors.RESET}`, error);
     }
   }
   
@@ -926,7 +926,8 @@ class DiscordNotificationService extends BaseService {
    * @param {Object} milestoneData - Milestone data
    */
   async onUserMilestone(milestoneData) {
-    if (!this.webhooks.contests) return;
+    // Send milestones to the main chat?
+    if (!this.webhooks.mainChat) return;
     
     try {
       // Format the milestone notification
@@ -952,10 +953,10 @@ class DiscordNotificationService extends BaseService {
       }
       
       // Send the notification
-      await this.webhooks.contests.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent milestone notification for user ${milestoneData.user_name}${fancyColors.RESET}`);
+      await this.webhooks.mainChat.sendEmbed(embed);
+      logApi.info(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.GREEN}Sent milestone notification for user ${milestoneData.user_name}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send milestone notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send milestone notification:${fancyColors.RESET}`, error);
     }
   }
 
@@ -1024,9 +1025,9 @@ class DiscordNotificationService extends BaseService {
       
       // Send the notification
       await webhook.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent token purchase notification for ${tokenData.token_symbol || tokenData.token_address}${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.GREEN}Sent token purchase notification for ${tokenData.token_symbol || tokenData.token_address}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send token purchase notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send token purchase notification:${fancyColors.RESET}`, error);
     }
   }
   
@@ -1095,9 +1096,9 @@ class DiscordNotificationService extends BaseService {
       
       // Send the notification
       await webhook.sendEmbed(embed);
-      logApi.info(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.green}Sent token sale notification for ${tokenData.token_symbol || tokenData.token_address}${fancyColors.RESET}`);
+      logApi.info(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.GREEN}Sent token sale notification for ${tokenData.token_symbol || tokenData.token_address}${fancyColors.RESET}`);
     } catch (error) {
-      logApi.error(`${fancyColors.brightCyan}[Discord]${fancyColors.RESET} ${fancyColors.red}Failed to send token sale notification:${fancyColors.RESET}`, error);
+      logApi.error(`${fancyColors.CYAN}[Discord]${fancyColors.RESET} ${fancyColors.RED}Failed to send token sale notification:${fancyColors.RESET}`, error);
     }
   }
 

@@ -25,10 +25,10 @@ declare module '../../config/config.js' {
       [key: string]: string;
     };
     api_urls: {
-      data: string;
-      lobby: string;
-      reflections: string;
-      game: string;
+      //data: string;
+      //lobby: string;
+      //reflections: string;
+      //game: string;
       dd_serv: string;
     };
   }

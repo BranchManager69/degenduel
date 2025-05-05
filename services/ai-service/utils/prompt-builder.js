@@ -1,13 +1,25 @@
+// services/ai-service/utils/prompt-builder.js
+// @see /services/ai-service/README.md for complete documentation and architecture
+
 /**
  * Prompt Builder Utility Module
  * 
- * This module provides utilities for building and enhancing AI prompts,
+ * @description Provides utilities for building and enhancing AI prompts,
  * including adding user context and ensuring proper prompt structure.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-01
  */
 
 import prisma from '../../../config/prisma.js';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
+
+// Config
+//import config from '../../../config/config.js';
+//const { ai } = config;
 
 /**
  * Enhance a system prompt with user information

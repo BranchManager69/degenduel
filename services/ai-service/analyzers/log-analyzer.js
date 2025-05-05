@@ -6,6 +6,8 @@
  * - Analyzing error logs to identify patterns
  * - Generating summaries and recommendations
  * - Broadcasting analysis results to admins
+ * 
+ * @see /services/ai-service/README.md for complete documentation and architecture
  */
 
 import { logApi } from '../../../utils/logger-suite/logger.js';

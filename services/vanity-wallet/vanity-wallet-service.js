@@ -92,9 +92,12 @@ class VanityWalletService extends BaseService {
   /**
    * Initialize the service
    */
-  async init() {
+  async initialize() {
     try {
       logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Initializing ${fancyColors.RESET} Vanity Wallet Service`);
+      
+      // Call parent class initialize method first
+      await super.initialize();
       
       // Check if WALLET_ENCRYPTION_KEY is set
       if (!process.env.WALLET_ENCRYPTION_KEY) {
@@ -126,9 +129,6 @@ class VanityWalletService extends BaseService {
       // Set as operational
       this.isOperational = true;
       
-      // Call BaseService initialize method
-      await this.initialize();
-      
       return true;
     } catch (error) {
       logApi.error(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Initializing service: ${error.message}`, {
@@ -137,6 +137,14 @@ class VanityWalletService extends BaseService {
       });
       return false;
     }
+  }
+  
+  /**
+   * Legacy init method for backward compatibility
+   * @deprecated Use initialize() instead
+   */
+  async init() {
+    return this.initialize();
   }
   
   /**
@@ -150,7 +158,8 @@ class VanityWalletService extends BaseService {
   }
   
   /**
-   * Called when the service starts
+   * Called when the service starts via the BaseService lifecycle
+   * This method is called by BaseService.start()
    */
   async onServiceStart() {
     logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Starting ${fancyColors.RESET} Vanity Wallet Service`);
@@ -174,6 +183,14 @@ class VanityWalletService extends BaseService {
     
     // BaseService will handle the interval automatically via performOperation
     return true;
+  }
+  
+  /**
+   * Legacy start method for backward compatibility 
+   * @deprecated Use BaseService.start() instead
+   */
+  async start() {
+    return super.start();
   }
   
   /**
@@ -470,7 +487,8 @@ class VanityWalletService extends BaseService {
   }
   
   /**
-   * Called when the service stops
+   * Called when the service stops - part of the BaseService lifecycle
+   * This method is called by BaseService.stop()
    */
   async onServiceStop() {
     logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Stopping ${fancyColors.RESET} Vanity Wallet Service`);
@@ -484,6 +502,14 @@ class VanityWalletService extends BaseService {
     // Clean up any resources if needed
     // BaseService will handle clearing the main service interval
     return true;
+  }
+  
+  /**
+   * Legacy stop method for backward compatibility
+   * @deprecated Use BaseService.stop() instead
+   */
+  async stop() {
+    return super.stop();
   }
   
   /**
@@ -1504,18 +1530,6 @@ function formatUptime(seconds) {
 // Create a singleton instance
 const vanityWalletService = new VanityWalletService();
 
-// Export the service instance and its methods
-export default {
-  init: () => vanityWalletService.init(),
-  start: () => vanityWalletService.start(),
-  stop: () => vanityWalletService.stop(),
-  getStatus: () => vanityWalletService.getStatus(),
-  getDashboardData,
-  // Expose properties needed by tests and other modules
-  patterns: vanityWalletService.patterns,
-  targetCounts: vanityWalletService.targetCounts,
-  calculateTimeout: (pattern, caseSensitive) => vanityWalletService.calculateTimeout(pattern, caseSensitive),
-  checkAndGenerateAddresses: () => vanityWalletService.checkAndGenerateAddresses(),
-  generateVanityAddress: (pattern, options) => vanityWalletService.generateVanityAddress(pattern, options),
-  generator: vanityWalletService.generator
-};
+// Export the actual service instance directly
+export { getDashboardData };
+export default vanityWalletService;

@@ -1,15 +1,20 @@
+// utils/token-config-util.js
+
 /**
- * Token Config Utility 
+ * Token Config Utility
+ * @description Provides easy access to token configuration throughout the application.
  * 
- * This utility provides easy access to token configuration throughout the application.
- * It handles BigInt conversions and provides a caching layer for performance.
- */
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-05-02
+ * @updated 2025-05-02
+*/
 
 import prisma from '../config/prisma.js';
 import { logApi } from './logger-suite/logger.js';
 
-// Cache timing (5 minutes)
-const CACHE_TTL = 5 * 60 * 1000;
+// Cache timing (0 minutes)
+const CACHE_TTL = 0 * 60 * 1000; // People will go berzerk if there is even a slight delay in revealing the CA
 
 // Cache object
 let tokenConfigCache = {
@@ -18,7 +23,7 @@ let tokenConfigCache = {
 };
 
 /**
- * Get the token configuration from the database with caching
+ * Get the token_config from the database with caching
  * 
  * @param {boolean} [forceRefresh=false] - Force a refresh of the cache
  * @returns {Promise<Object|null>} - The token configuration or null if not found

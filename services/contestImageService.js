@@ -1,4 +1,4 @@
-// contestImageService.js
+// contestImageService.js (lagging in updates but works)
 // Service to generate and manage AI-generated images for contests
 
 import OpenAI from 'openai';

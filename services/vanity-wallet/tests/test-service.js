@@ -7,9 +7,12 @@
  * 1. Initializing the service
  * 2. Checking the status
  * 3. Running the address generation and pool management
+ * 
+ * UPDATED: This test now uses the singleton service instance instead of creating a new instance,
+ * which aligns with the new service architecture where services are exported as instances.
  */
 
-import VanityWalletService from './vanity-wallet-service.js';
+import vanityWalletService from '../index.js';
 import prisma from '../../config/prisma.js';
 import { config } from '../../config/config.js';
 
@@ -17,12 +20,12 @@ async function testVanityWalletService() {
   try {
     console.log(`=== TESTING VANITY WALLET SERVICE ===\n`);
     
-    // Create the service
-    const service = new VanityWalletService();
+    // Use the singleton service instance
+    const service = vanityWalletService;
     
     // Step 1: Initialize the service
     console.log(`Initializing service...`);
-    const initialized = await service.init();
+    const initialized = await service.initialize(); // Using the BaseService method directly
     
     if (initialized) {
       console.log(`✅ Service initialized successfully`);
@@ -38,12 +41,12 @@ async function testVanityWalletService() {
     
     // Step 3: Start the service using BaseService interface
     console.log(`\nStarting service...`);
-    await service.start();
+    await service.start(); // This is already the BaseService method
     console.log(`✅ Service started`);
     
     // Step 4: Manually run the operation once
     console.log(`\nRunning a generation operation...`);
-    await service.performOperation();
+    await service.performOperation(); // This is a BaseService method
     console.log(`✅ Operation completed`);
     
     // Step 5: Wait for a bit to allow for automatic generation
@@ -53,7 +56,7 @@ async function testVanityWalletService() {
     
     // Step 6: Check updated status
     console.log(`\nChecking updated status...`);
-    const updatedStatus = await service.getStatus();
+    const updatedStatus = await service.getStatus(); // This method is specific to VanityWalletService
     console.log(JSON.stringify(updatedStatus, null, 2));
     
     // Step 7: Check if any wallets were generated
@@ -80,7 +83,7 @@ async function testVanityWalletService() {
     
     // Step 8: Stop the service using BaseService interface
     console.log(`\nStopping service...`);
-    await service.stop();
+    await service.stop(); // This is already the BaseService method
     console.log(`✅ Service stopped`);
     
     console.log(`\n=== TEST COMPLETE ===`);

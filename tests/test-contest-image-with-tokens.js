@@ -320,7 +320,7 @@ async function enhanceTokensWithDexScreenerData(tokens) {
               // Try to get data directly using DexScreener client
               try {
                 console.log("  ⚠️ Trying to fetch target token data directly...");
-                const directResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/solana/DitHyRMQiSDhn5cnKMJV2CDDt6sVct96YrECiM49pump`);
+                const directResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/DitHyRMQiSDhn5cnKMJV2CDDt6sVct96YrECiM49pump`);
                 
                 if (directResponse.ok) {
                   const directData = await directResponse.json();

@@ -1,17 +1,25 @@
+// tests/terminal-ai-real-test.js
+
+// DEGENDUEL's MOST POWERFUL AI SERVICE
+//   Utilizes ai-service/ai-service.js to test the terminal functions
+
 /**
  * Terminal AI Real Integration Test
+ * @description Uses DegenDuel's AI service to test the terminal functions.
  * 
- * This test uses the actual OpenAI API to test the terminal functions.
- * It shows how your functions are called in a real conversation with OpenAI.
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-01
  */
 
-import OpenAI from 'openai';
 import { handleFunctionCall, TERMINAL_FUNCTIONS } from '../services/ai-service/utils/terminal-function-handler.js';
 import prisma from '../config/prisma.js';
-import { fancyColors } from '../utils/colors.js';
-import config from '../config/config.js';
-import { logApi } from '../utils/logger-suite/logger.js';
 import aiService from '../services/ai-service/ai-service.js';
+import { fancyColors } from '../utils/colors.js';
+import { logApi } from '../utils/logger-suite/logger.js'; // Why is this unused?
+import OpenAI from 'openai'; // Why is this unused?
+import config from '../config/config.js'; // Why is this unused?
 
 /**
  * Test the terminal functions with the real OpenAI API

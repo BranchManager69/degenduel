@@ -8,6 +8,8 @@
  * - Calculating error distributions by severity, browser, and OS
  * - Storing analysis results in the database
  * - Broadcasting notifications to admin users
+ * 
+ * @see /services/ai-service/README.md for complete documentation and architecture
  */
 
 import { logApi } from '../../../utils/logger-suite/logger.js';

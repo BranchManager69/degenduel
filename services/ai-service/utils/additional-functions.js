@@ -1,34 +1,25 @@
+// services/ai-service/utils/additional-functions.js
+// @see /services/ai-service/README.md for complete documentation and architecture
+
 /**
  * Additional Functions for AI Terminal Assistant
  * 
- * This module adds more function definitions and handlers for the AI terminal,
+ * @description Adds more function definitions and handlers for the AI terminal,
  * including token metrics history, platform activity, system status and admin functions.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-10
+ * @updated 2025-05-01
  */
 
 import prisma from '../../../config/prisma.js';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
 
-/**
- * Format number for display
- * 
- * @param {number|string|BigInt} num - Number to format
- * @returns {string} - Formatted string
- */
-export function formatNumber(num) {
-  if (!num) return "Unknown";
-  
-  // Convert to number if it's not already
-  const value = typeof num === 'string' ? parseFloat(num) : Number(num);
-  
-  if (isNaN(value)) return "Unknown";
-  
-  // Format based on size
-  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
-  return `${value.toFixed(2)}`;
-}
+// Config
+//import config from '../../../config/config.js';
+//const { ai } = config;
 
 /**
  * Handle getTokenMetricsHistory function call
@@ -719,6 +710,29 @@ export async function handleGetDiscordWebhookEvents({ eventType, limit = 5 }, op
       details: error.message
     };
   }
+}
+
+/* Helpers */
+
+/**
+ * Format number for display
+ * 
+ * @param {number|string|BigInt} num - Number to format
+ * @returns {string} - Formatted string
+ */
+function formatNumber(num) {
+  if (!num) return "Unknown";
+  
+  // Convert to number if it's not already
+  const value = typeof num === 'string' ? parseFloat(num) : Number(num);
+  
+  if (isNaN(value)) return "Unknown";
+  
+  // Format based on size
+  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
+  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
+  if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
+  return `${value.toFixed(2)}`;
 }
 
 /**

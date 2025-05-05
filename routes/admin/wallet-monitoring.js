@@ -1,19 +1,46 @@
+// routes/admin/wallet-monitoring.js
+
 /**
- * Wallet Monitoring API Routes
+ * admin/wallet-monitoring.js provides:
+ * - /balances - recent wallet balance history
+ * - /balances/:walletAddress - wallet history with trends
+ * - /current-balances - all wallet balances with caching
+ * - /refresh-cache - refresh Redis cache
  * 
- * This route provides API endpoints for monitoring wallet balances.
+ * Implementation approach:
+ * - admin/wallet-monitoring.js uses Redis caching
+ * - admin/wallet-monitoring.js includes trend analysis
+ * - admin/wallet-monitoring.js uses raw SQL queries via prisma.$queryRawUnsafe
+ * 
+ * Meanwhile,
+ * - 'admin-api/wallet-monitoring.js' implements controls for the userBalanceTrackingService
  */
+
+/**
+ * NOTE:    DO NOT CONFUSE THIS WITH
+ *          routes/admin-api/wallet-monitoring.js
+ * 
+ * This is the admin interface for the wallet monitoring service.
+ * The API routes are used by the admin dashboard.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-20
+ * @updated 2025-05-01
+*/
 
 import express from 'express';
 import { requireAuth, requireAdmin, requireSuperAdmin } from '../../middleware/auth.js';
 import prisma from '../../config/prisma.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { safeBigIntToJSON, lamportsToSol } from '../../utils/bigint-utils.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
+import { safeBigIntToJSON, lamportsToSol } from '../../utils/bigint-utils.js'; // why lamportsToSol is this unused?
+
+// interesting use of logger for service... want to adopt widely?
+const logger = logApi.forService('WALLET_MONITOR');
 
 const router = express.Router();
-const logger = logApi.forService('WALLET_MONITOR');
 
 /**
  * @api {get} /api/admin/wallet-monitoring/balances Get recent wallet balance history

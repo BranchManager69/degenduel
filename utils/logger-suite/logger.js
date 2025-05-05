@@ -1303,6 +1303,7 @@ const logApi = winston.createLogger({
 });
 
 // Log where logs are being written to on startup
+// Just show the banner always - simple and reliable
 console.log(`${fancyColors.BOLD}${fancyColors.BG_DARK_CYAN} ${fancyColors.DARK_BLACK}DegenDuel Logger Initialized ${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}Console log level: ${fancyColors.UNDERLINE}${CONSOLE_LEVEL}${fancyColors.RESET}`);
 console.log(`${fancyColors.CYAN}File log level: ${FILE_LOG_LEVEL}${fancyColors.RESET}`);
