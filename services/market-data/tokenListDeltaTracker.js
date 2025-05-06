@@ -56,15 +56,14 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 
 // Config
-import config from '../../config/config.js';
-logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}Config:${fancyColors.RESET}`, config);
+//import config from '../../config/config.js'; // why is this unused?
 
 // Token List Delta Tracker class
 class TokenListDeltaTracker {
   constructor() {
     this.KEY_PREFIX = 'jupiter_tokens';
     this.LATEST_KEY = `${this.KEY_PREFIX}_latest`;
-    this.EXPIRY_DAYS = 1; // Keep sets for 1 day
+    this.EXPIRY_DAYS = 0.003; // Keep sets for ~5 minutes only
   }
 
   /**
@@ -99,7 +98,7 @@ class TokenListDeltaTracker {
         pipeline.sadd(currentKey, ...batch);
       }
       
-      pipeline.expire(currentKey, 60 * 60 * 24 * this.EXPIRY_DAYS); // Expire after EXPIRY_DAYS
+      pipeline.expire(currentKey, 300); // Expire after 5 minutes (hard-coded for safety)
       
       // Get the previous latest key
       pipeline.get(this.LATEST_KEY);
@@ -182,7 +181,7 @@ class TokenListDeltaTracker {
    * @param {number} keepDays - Number of days to keep token sets
    * @returns {Promise<number>} - Number of keys removed
    */
-  async cleanupOldSets(keepDays = 1) {
+  async cleanupOldSets(keepDays = 0.003) { // Default to 5 minutes
     try {
       const client = redisManager.client;
       const keys = await client.keys(`${this.KEY_PREFIX}_*`);

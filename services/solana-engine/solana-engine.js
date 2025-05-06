@@ -2,30 +2,36 @@
 
 /**
  * Solana Engine Service
- * 
- * This service provides comprehensive Solana integration using Helius and Jupiter APIs.
- * It offers token metadata, market data, and blockchain operations.
- * 
- * It replaces solanaService, tokenSyncService, and marketDataService
- * with a more robust implementation using premium APIs.
- * 
  * @module services/solana-engine/solana-engine
- * @version 1.0.0
+ * 
+ * @description This service provides comprehensive Solana integration using Helius and Jupiter APIs.
+ *              It offers token metadata, market data, and blockchain operations.
+ * 
+ *              It replaces solanaService, tokenSyncService, and marketDataService
+ *              with a more robust implementation using premium APIs.
+ * 
  * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-05-05
+ * @updated 2025-05-05
  */
 
 import { BaseService } from '../../utils/service-suite/base-service.js';
+import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { serviceColors, fancyColors } from '../../utils/colors.js';
+import { fancyColors, serviceColors } from '../../utils/colors.js';
 import { heliusClient } from './helius-client.js';
 import { jupiterClient } from './jupiter-client.js';
 import { dexscreenerClient } from './dexscreener-client.js';
 import { heliusPoolTracker } from './helius-pool-tracker.js';
-import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import { Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
-import { PrismaClient } from '@prisma/client';
 import connectionManager from './connection-manager.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
+
+// WRONG! DO NOT IMPORT A BRAND NEW PRISMA CLIENT HERE!
+import { PrismaClient } from '@prisma/client';
+// CORRECT! USE THE EXISTING PRISMA CLIENT FROM THE ADMIN WALLET SERVICE
+//import prisma from '../../config/prisma.js';
 
 // Config
 import config from '../../config/config.js';

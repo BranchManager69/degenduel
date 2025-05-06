@@ -2,29 +2,24 @@
 
 /**
  * Admin Wallet Service
+ * @module admin-wallet-service
  *
- * @description This service is responsible for managing administrative wallet operations.
- * It handles secure wallet management, SOL/token transfers, and mass operations
- * for admin wallets. This service is completely separate from Contest Wallet Service
- * and manages platform-owned wallets for administrative purposes.
- * 
- * This version should be updated to use SolanaEngine directly for improved RPC performance
- * and reliability through multi-endpoint support and automatic failover.
- * 
- * NOTE: UPDATE ADMIN WALLET SERVICE TO USE SOLANA ENGINE DIRECTLY FOR IMPROVED RPC PERFORMANCE!
- * NOTE: UPDATE ADMIN WALLET SERVICE TO USE SOLANA WEB3.JS v2.x WITH SHIMS FOR SUPPORT!
+ * @description Service responsible for managing administrative wallet operations.
+ *              Handles secure wallet management, SOL/token transfers (single & batch),
+ *              and balance monitoring. Delegates Solana interactions to modular components
+ *              using the v2 compatibility layer.
  * 
  * @author BranchManager69
- * @version 1.9.0
- * @created 2025-04-14
+ * @version 2.0.0
+ * @created 2025-05-05
  * @updated 2025-05-05
  */
 
-// Service Auth
-import { generateServiceAuthHeader } from '../../config/service-auth.js'; // why is this unused?
+// Service Auth (Currently unused)
+// import { generateServiceAuthHeader } from '../../config/service-auth.js';
 // Service Class
 import { BaseService } from '../../utils/service-suite/base-service.js';
-import { ServiceError } from '../../utils/service-suite/service-error.js';
+import { ServiceError } from '../../utils/service-suite/service-error.js'; // Keep if used in BaseService or direct throws
 import prisma from '../../config/prisma.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
@@ -32,12 +27,12 @@ import AdminLogger from '../../utils/admin-logger.js';
 // Service Manager
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
-import { SERVICE_LAYERS } from '../../utils/service-suite/service-constants.js'; // why is this unused?
-// Solana
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'; // why are these unused?
-// Solana Engine
+// import { SERVICE_LAYERS } from '../../utils/service-suite/service-constants.js'; // Unused
+// Solana v1 imports (Removed as unused and logic delegated)
+// import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+// Solana Engine (Used via delegation in modules)
 import { solanaEngine } from '../../services/solana-engine/index.js';
-// Wallet modules
+// Wallet modules (Delegated operations)
 import walletCrypto from './modules/wallet-crypto.js';
 import walletTransactions from './modules/wallet-transactions.js';
 import batchOperations from './modules/batch-operations.js';
@@ -292,11 +287,13 @@ class AdminWalletService extends BaseService {
 
     // Encrypt a wallet
     encryptWallet(privateKey) {
+        // Delegate to crypto module
         return walletCrypto.encryptWallet(privateKey, this.config, process.env.WALLET_ENCRYPTION_KEY);
     }
 
     // Decrypt a wallet
     decryptWallet(encryptedData) {
+        // Delegate to crypto module
         return walletCrypto.decryptWallet(encryptedData, process.env.WALLET_ENCRYPTION_KEY);
     }
 
@@ -442,6 +439,7 @@ class AdminWalletService extends BaseService {
 
     // Transfer SOL (batch)
     async massTransferSOL(fromWalletEncrypted, transfers) {
+        // Delegate to batch module
         return batchOperations.massTransferSOL(
             fromWalletEncrypted,
             transfers, 
@@ -454,6 +452,7 @@ class AdminWalletService extends BaseService {
 
     // Transfer tokens (batch)
     async massTransferTokens(fromWalletEncrypted, mint, transfers) {
+        // Delegate to batch module
         return batchOperations.massTransferTokens(
             fromWalletEncrypted, 
             mint, 
@@ -469,11 +468,13 @@ class AdminWalletService extends BaseService {
 
     // Update the balance of a single wallet
     async updateWalletBalance(wallet) {
+        // Delegate to balance module
         return walletBalance.updateWalletBalance(wallet, solanaEngine, this.config, this.walletStats);
     }
     
     // Update the balances of all the wallets
     async updateAllWalletBalances() {
+        // Delegate to balance module
         return walletBalance.updateAllWalletBalances(solanaEngine, this.config, this.walletStats);
     }
 
@@ -481,6 +482,7 @@ class AdminWalletService extends BaseService {
 
     // Check the states of the wallets
     async checkWalletStates() {
+        // Delegate to balance module
         return walletBalance.checkWalletStates(solanaEngine, this.config);
     }
 

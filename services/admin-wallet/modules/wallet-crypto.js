@@ -1,9 +1,28 @@
+// services/admin-wallet/modules/wallet-crypto.js
+
+/**
+ * Admin Wallet Cryptography Module
+ * @module wallet-crypto
+ * 
+ * @description Handles encryption and decryption of wallet private keys using AES-256-GCM
+ *              and provides functions for creating Solana keypairs from various 
+ *              private key formats, including legacy decoding and v2 compatibility.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-05-05
+ * @updated 2025-05-05
+ */
+
+import { logApi } from '../../../utils/logger-suite/logger.js';
+import { fancyColors } from '../../../utils/colors.js';
 import crypto from 'crypto';
 import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
-import { logApi } from '../../../utils/logger-suite/logger.js';
 import { ServiceError } from '../../../utils/service-suite/service-error.js';
-import { fancyColors } from '../../../utils/colors.js';
+import { createKeypairFromPrivateKey as createKeypairV2Compat } from '../utils/solana-compat.js';
+
+/* Functions */
 
 /**
  * Encrypts a wallet private key using AES-256-GCM
@@ -87,14 +106,74 @@ export function decryptWallet(encryptedData, encryptionKey) {
 }
 
 /**
- * Creates a Solana keypair from various possible private key formats
+ * Creates a Solana keypair using the v2 compatibility layer.
+ * Assumes the input is the raw private key bytes or a format 
+ * the compatibility layer can handle.
  * 
- * @param {string} decryptedPrivateKey - The decrypted private key in various formats
- * @returns {Keypair} - The Solana keypair
+ * @param {Uint8Array | Buffer | number[] | string} privateKeyInput - The private key bytes or a string format.
+ * @returns {object} - The Solana keypair (v1 or v2 compatible).
  */
-export function createKeypairFromPrivateKey(decryptedPrivateKey) {
+export function createKeypairFromPrivateKeyCompat(privateKeyInput) {
+    // This function is now async because the compat function it calls is async
+    return (async () => { 
+        try {
+            let privateKeyBytes;
+
+            // If input is a string, try decoding using the legacy method first
+            if (typeof privateKeyInput === 'string') {
+                logApi.debug('Input to createKeypairCompat is string, attempting legacy decode...');
+                try {
+                    // Use legacy function to get v1 keypair, then extract bytes
+                    const legacyKeypair = createKeypairFromPrivateKeyLegacy(privateKeyInput);
+                    // secretKey is the 64-byte Uint8Array in v1 Keypair
+                    privateKeyBytes = legacyKeypair.secretKey; 
+                     if (!privateKeyBytes || privateKeyBytes.length !== 64) {
+                        throw new Error('Legacy decoder did not return valid 64-byte secret key.');
+                    }
+                    logApi.debug('Successfully decoded string input using legacy method.');
+                } catch (legacyError) {
+                    logApi.error('Failed to decode string input using legacy method:', legacyError);
+                    // If legacy decoding fails, we might still try the compat layer directly
+                    // if the string happens to be a format it supports (e.g., bs58 handled by v2)
+                    // For now, re-throw as it indicates an unexpected string format
+                    throw new Error(`Could not decode private key string format via legacy method: ${legacyError.message}`);
+                }
+            } else if (privateKeyInput instanceof Uint8Array || Buffer.isBuffer(privateKeyInput)) {
+                 // Input is already bytes
+                privateKeyBytes = privateKeyInput;
+            } else {
+                throw new Error('Invalid input type for createKeypairFromPrivateKeyCompat. Expected Uint8Array, Buffer, or string.');
+            }
+
+            // Now use the compatibility layer function with the definite bytes
+            // Await the result as the underlying function is now async
+            const keypair = await createKeypairV2Compat(privateKeyBytes);
+            if (!keypair || !keypair.publicKey) {
+                throw new Error('Compatibility layer failed to create valid keypair from derived bytes');
+            }
+            logApi.debug('Created keypair using v2 compatibility layer from processed input.');
+            return keypair;
+        } catch (error) {
+            logApi.error('Error creating keypair via compatibility layer:', error);
+            throw ServiceError.operation('Failed to create keypair using compatibility layer', {
+                error: error.message,
+                type: 'KEYPAIR_CREATION_ERROR'
+            });
+        }
+    })(); // Immediately invoke the async IIFE
+}
+
+/**
+ * [LEGACY] Creates a Solana keypair from various possible private key formats.
+ * Attempts to decode hex, base58, base64, and JSON formats.
+ * Uses v1 Keypair.fromSecretKey.
+ * 
+ * @param {string} decryptedPrivateKey - The decrypted private key string in various formats.
+ * @returns {Keypair} - The v1 Solana keypair.
+ */
+export function createKeypairFromPrivateKeyLegacy(decryptedPrivateKey) {
     // Debug info for key troubleshooting
-    logApi.info(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} Working with decrypted key length: ${decryptedPrivateKey.length}, format: ${typeof decryptedPrivateKey}`);
+    logApi.info(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} [Legacy] Working with decrypted key length: ${decryptedPrivateKey.length}, format: ${typeof decryptedPrivateKey}`);
     
     let privateKeyBytes;
     let fromKeypair;
@@ -242,14 +321,18 @@ export function createKeypairFromPrivateKey(decryptedPrivateKey) {
     
     // Verify we got a valid keypair
     if (!fromKeypair || !fromKeypair.publicKey) {
-        throw new Error('Failed to generate valid keypair from private key');
+        throw new Error('[Legacy] Failed to generate valid keypair from private key');
     }
     
+    logApi.info(`${fancyColors.CYAN}[adminWalletService]${fancyColors.RESET} [Legacy] Successfully created keypair: ${fromKeypair.publicKey.toBase58()}`);
     return fromKeypair;
 }
+
+/* Exports */
 
 export default {
     encryptWallet,
     decryptWallet,
-    createKeypairFromPrivateKey
+    createKeypairFromPrivateKeyCompat,
+    createKeypairFromPrivateKeyLegacy
 }; 

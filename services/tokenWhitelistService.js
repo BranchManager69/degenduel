@@ -1,5 +1,12 @@
 // services/tokenWhitelistService.js
 
+//
+//
+// COMPLETELY DEPRECATED!
+// SCHEDULED FOR DELETION!
+//
+//
+
 /*
  * This service is responsible for managing the DegenDuel Token Whitelist.
  * It handles token verification, submission fee processing, and whitelist management.

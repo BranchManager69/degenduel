@@ -1,36 +1,62 @@
-import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+// services/admin-wallet/modules/wallet-balance.js
+
+/**
+ * Admin Wallet Balance Module
+ * @module wallet-balance
+ * 
+ * @description Handles fetching and updating SOL balances for managed administrative wallets.
+ *              Uses the v2 compatibility layer for Solana RPC interactions.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-05-05
+ * @updated 2025-05-05
+ */
+
 import prisma from '../../../config/prisma.js';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
+// Import from compatibility layer
+import { toAddress, executeRpcMethod, LAMPORTS_PER_SOL, getLamportsFromRpcResult } from '../utils/solana-compat.js';
+// Removed all direct v1 imports
+// import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 /**
- * Fetch and update Solana balance for a managed wallet
+ * Fetch and update Solana balance for a single managed wallet using the compatibility layer.
  * 
- * @param {Object} wallet - Wallet object from the database
- * @param {Object} solanaEngine - SolanaEngine instance
+ * @param {Object} wallet - Wallet object from the database (must have public_key)
+ * @param {Object} solanaEngine - SolanaEngine instance (passed to compatibility layer)
  * @param {Object} config - Service configuration
  * @param {Object} walletStats - Stats tracking object for the service
  * @returns {Object} - Result of the balance update operation
  */
 export async function updateWalletBalance(wallet, solanaEngine, config, walletStats) {
+    const startTime = Date.now();
+    let addressString = wallet.public_key;
+    
     try {
-        const startTime = Date.now();
-        
         // Skip if no wallet address
-        if (!wallet.public_key) {
+        if (!addressString) {
             return {
                 success: false,
                 error: 'No wallet address provided'
             };
         }
         
-        // Get current Solana balance via SolanaEngine
-        const publicKey = new PublicKey(wallet.public_key);
-        const lamports = await solanaEngine.executeConnectionMethod(
+        // Convert address using compatibility layer
+        const addressObject = toAddress(addressString);
+        
+        // Get current Solana balance via compatibility layer executing through SolanaEngine
+        const balanceResult = await executeRpcMethod(
+            solanaEngine,
             'getBalance',
-            publicKey,
-            { endpointId: config.wallet.preferredEndpoints.balanceChecks }
+            addressObject, // Pass the v2 Address object
+            // Pass options object if needed by compat layer or SolanaEngine
+            { commitment: 'confirmed', endpointId: config.wallet.preferredEndpoints.balanceChecks } 
         );
+        
+        // Use utility function to normalize the result
+        const lamports = getLamportsFromRpcResult(balanceResult, 'getBalance', addressString);
         
         const solBalance = lamports / LAMPORTS_PER_SOL;
         
@@ -52,42 +78,41 @@ export async function updateWalletBalance(wallet, solanaEngine, config, walletSt
             }
         });
         
-        // Update stats
+        // Update stats (logic remains the same)
         if (walletStats) {
             walletStats.balance_updates.total++;
             walletStats.balance_updates.successful++;
             walletStats.balance_updates.last_update = new Date().toISOString();
             walletStats.wallets.updated++;
             
-            // Update performance metrics
             const duration = Date.now() - startTime;
-            walletStats.performance.average_balance_update_time_ms = 
-                (walletStats.performance.average_balance_update_time_ms * 
-                    (walletStats.balance_updates.total - 1) + duration) / 
-                walletStats.balance_updates.total;
+            if (walletStats.balance_updates.total > 0) { // Avoid division by zero
+                walletStats.performance.average_balance_update_time_ms = 
+                    ((walletStats.performance.average_balance_update_time_ms || 0) * 
+                        (walletStats.balance_updates.total - 1) + duration) / 
+                    walletStats.balance_updates.total;
+            }
         }
         
-        // Get previous balance for comparison
         const previousBalance = currentMetadata?.balance?.sol || 0;
         
         return {
             success: true,
             wallet_id: wallet.id,
-            public_key: wallet.public_key,
+            public_key: addressString,
             label: wallet.label,
             previous_balance: previousBalance,
             current_balance: solBalance,
             difference: solBalance - previousBalance
         };
     } catch (error) {
-        // Update error stats
         if (walletStats) {
             walletStats.balance_updates.failed++;
         }
         
         logApi.error('Failed to update admin wallet balance', {
             wallet_id: wallet.id,
-            public_key: wallet.public_key,
+            public_key: addressString,
             error: error.message,
             stack: error.stack
         });
@@ -95,14 +120,14 @@ export async function updateWalletBalance(wallet, solanaEngine, config, walletSt
         return {
             success: false,
             wallet_id: wallet.id,
-            public_key: wallet.public_key,
+            public_key: addressString,
             error: error.message
         };
     }
 }
 
 /**
- * Update balances for all managed wallets
+ * Update balances for all managed wallets using the compatibility layer.
  * 
  * @param {Object} solanaEngine - SolanaEngine instance
  * @param {Object} config - Service configuration
@@ -110,9 +135,10 @@ export async function updateWalletBalance(wallet, solanaEngine, config, walletSt
  * @returns {Object} - Results of the bulk balance update operation
  */
 export async function updateAllWalletBalances(solanaEngine, config, walletStats) {
+    // Function body remains largely the same as it delegates to updateWalletBalance
+    // No direct RPC calls here that need changing.
     const startTime = Date.now();
     try {
-        // Get all managed wallets
         const managedWallets = await prisma.managed_wallets.findMany({
             where: {
                 status: 'active'
@@ -126,16 +152,17 @@ export async function updateAllWalletBalances(solanaEngine, config, walletStats)
             updates: []
         };
         
-        // Update each wallet's balance
         for (const wallet of managedWallets) {
+             if (!wallet.public_key) {
+                logApi.warn(`Skipping wallet ID ${wallet.id} due to missing public_key.`);
+                results.failed++; // Count as failed if no key
+                continue;
+            }
             try {
-                // Update balance
                 const updateResult = await updateWalletBalance(wallet, solanaEngine, config, walletStats);
                 
                 if (updateResult.success) {
                     results.updated++;
-                    
-                    // Only add significant balance changes to the results
                     if (Math.abs(updateResult.difference) > 0.001) {
                         results.updates.push(updateResult);
                     }
@@ -152,7 +179,6 @@ export async function updateAllWalletBalances(solanaEngine, config, walletStats)
             }
         }
         
-        // Update overall performance stats
         if (walletStats) {
             walletStats.performance.last_operation_time_ms = Date.now() - startTime;
         }
@@ -171,15 +197,15 @@ export async function updateAllWalletBalances(solanaEngine, config, walletStats)
 }
 
 /**
- * Check the health status of managed wallets
+ * Check the health status of managed wallets using the compatibility layer.
  * 
  * @param {Object} solanaEngine - SolanaEngine instance
  * @param {Object} config - Service configuration
  * @returns {Object} - Results of the wallet health check
  */
 export async function checkWalletStates(solanaEngine, config) {
+    const startTime = Date.now(); // Add timing for consistency
     try {
-        // Get active wallets
         const wallets = await prisma.managed_wallets.findMany({
             where: { status: 'active' }
         });
@@ -190,36 +216,54 @@ export async function checkWalletStates(solanaEngine, config) {
             issues: []
         };
 
-        // Check each wallet's state using SolanaEngine
         for (const wallet of wallets) {
+            let addressString = wallet.public_key || wallet.wallet_address; // Handle potential legacy field name
+             if (!addressString) {
+                logApi.warn(`Skipping wallet state check for ID ${wallet.id} due to missing address.`);
+                continue;
+            }
+            
             try {
-                // Use SolanaEngine for balance checks
-                const balance = await solanaEngine.executeConnectionMethod(
+                 // Convert address using compatibility layer
+                const addressObject = toAddress(addressString);
+                
+                // Use compatibility layer for balance check
+                const balanceResult = await executeRpcMethod(
+                    solanaEngine,
                     'getBalance',
-                    new PublicKey(wallet.wallet_address),
-                    { endpointId: config.wallet.preferredEndpoints.balanceChecks }
+                    addressObject,
+                    { commitment: 'confirmed', endpointId: config.wallet.preferredEndpoints.balanceChecks }
                 );
                 
+                // Use utility function to normalize the result
+                const balanceLamports = getLamportsFromRpcResult(balanceResult, 'getBalance', addressString);
+                
                 results.checked++;
+                
+                // Use LAMPORTS_PER_SOL from compat layer
+                const minBalanceLamports = config.wallet.operations.minSOLBalance * LAMPORTS_PER_SOL;
 
-                if (balance < config.wallet.operations.minSOLBalance * LAMPORTS_PER_SOL) {
+                if (balanceLamports < minBalanceLamports) {
                     results.issues.push({
-                        wallet: wallet.wallet_address,
+                        wallet: addressString,
                         type: 'low_balance',
-                        balance: balance / LAMPORTS_PER_SOL
+                        balance: balanceLamports / LAMPORTS_PER_SOL, // Use checked lamports value
+                        min_required: config.wallet.operations.minSOLBalance
                     });
                 } else {
                     results.healthy++;
                 }
             } catch (error) {
-                results.issues.push({
-                    wallet: wallet.wallet_address,
+                 results.checked++; // Still counts as checked even if failed
+                 results.issues.push({
+                    wallet: addressString,
                     type: 'check_failed',
                     error: error.message
                 });
             }
         }
-
+        
+        logApi.info(`Wallet state check completed in ${Date.now() - startTime}ms. Checked: ${results.checked}, Healthy: ${results.healthy}, Issues: ${results.issues.length}`);
         return results;
     } catch (error) {
         logApi.error('Failed to check wallet states', {

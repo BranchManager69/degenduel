@@ -123,7 +123,7 @@ class RpcManager {
       }
       
       // Test the connection with a simple RPC call
-      const slot = await this.rpc.getSlot();
+      const slot = await this.rpc.getSlot().send();
       
       this.endpoint = rpcEndpoint;
       this.initialized = true;
@@ -177,8 +177,9 @@ class RpcManager {
         throw new Error(`Method ${methodName} not found on RPC client`);
       }
       
-      // Call the method with the provided arguments
-      return await this.rpc[methodName](...args);
+      // Call the method with the provided arguments AND call .send() to execute the request
+      // This is required in web3.js v2 - methods return a request object that needs .send() to execute
+      return await this.rpc[methodName](...args).send();
     } catch (error) {
       logApi.error(`Failed to execute RPC method ${methodName}: ${error.message}`);
       throw error;
@@ -245,7 +246,7 @@ export function createKeypairFromPrivateKey(privateKeyBytes) {
 ```javascript
 // services/solana-engine-v2/utils/transaction-utils.js
 
-import { getBase64EncodedWireTransaction, getSignatureFromTransaction } from '@solana/transactions';
+import { getBase64EncodedWireTransaction, getSignatureFromTransaction, compileTransaction } from '@solana/transactions';
 import { appendTransactionMessageInstruction, setTransactionMessageLifetimeUsingBlockhash } from '@solana/transaction-messages';
 import { transferSol } from '@solana/rpc-api';
 import { logApi } from '../../../utils/logger-suite/logger.js';
@@ -256,18 +257,19 @@ import { logApi } from '../../../utils/logger-suite/logger.js';
 export async function sendTransactionWithRetry(rpc, transaction, signers, options = {}) {
   const {
     maxRetries = 3,
+    maxBlockHeightRetries = options.blockHeightRetries || 3,
     commitment = 'confirmed',
     skipPreflight = false,
     preflightCommitment = commitment
   } = options;
   
   let signature = null;
-  let retryCount = 0;
+  let blockHeightRetryCount = 0;
   
-  while (retryCount <= maxRetries) {
+  while (blockHeightRetryCount <= maxBlockHeightRetries) {
     try {
-      // Get latest blockhash
-      const { value: { blockhash, lastValidBlockHeight } } = await rpc.getLatestBlockhash();
+      // Get latest blockhash (always fetch fresh on retry)
+      const { value: { blockhash, lastValidBlockHeight } } = await rpc.getLatestBlockhash().send();
       
       // Set the blockhash
       transaction = setTransactionMessageLifetimeUsingBlockhash(
@@ -275,22 +277,31 @@ export async function sendTransactionWithRetry(rpc, transaction, signers, option
         { blockhash, lastValidBlockHeight }
       );
       
+      // Compile the transaction (v2 requirement)
+      const compiledTx = compileTransaction(transaction);
+      
+      // Sign the transaction (assuming signers are v2 compatible)
+      // If using the v2 signing method, you would extract private keys from signers
+      // const privateKeys = signers.map(s => s.privateKey);
+      // const signedTx = await signTransaction(privateKeys, compiledTx);
+      
       // Sign and send the transaction
-      signature = await rpc.sendTransaction(transaction, {
+      signature = await rpc.sendTransaction(compiledTx, {
         skipPreflight,
         preflightCommitment,
         commitment
-      });
+      }).send();
       
       // Log success
       logApi.info(`Transaction sent: ${signature}`);
       return signature;
       
     } catch (error) {
-      // Handle blockheight exceeded error
-      if (error.message.includes('block height exceeded') && retryCount < maxRetries) {
-        retryCount++;
-        logApi.warn(`Block height exceeded, retrying (${retryCount}/${maxRetries})...`);
+      // Handle blockheight exceeded error specifically
+      if (error.message.includes('block height exceeded') && blockHeightRetryCount < maxBlockHeightRetries) {
+        blockHeightRetryCount++;
+        logApi.warn(`Block height exceeded, retrying (${blockHeightRetryCount}/${maxBlockHeightRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
         continue;
       }
       
@@ -315,14 +326,19 @@ export async function confirmTransaction(rpc, signature, blockhash, lastValidBlo
     
     // Wait for confirmation with timeout
     const confirmation = await Promise.race([
-      rpc.confirmTransaction(confirmationStrategy, commitment),
+      rpc.confirmTransaction(confirmationStrategy, commitment).send(),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Transaction confirmation timeout')), timeout)
       )
     ]);
     
     if (confirmation?.value?.err) {
-      throw new Error(`Transaction failed: ${confirmation.value.err}`);
+      const errorMsg = JSON.stringify(confirmation.value.err);
+      logApi.error(`Transaction confirmed with error: ${errorMsg}`);
+      if (errorMsg.includes('block height exceeded')) {
+        throw new Error(`Transaction confirmed with error: block height exceeded`);
+      }
+      throw new Error(`Transaction failed: ${errorMsg}`);
     }
     
     return 'confirmed';
@@ -506,7 +522,7 @@ class SolanaEngineV2Service extends BaseService {
       // If blockhash and lastValidBlockHeight not provided, get the latest
       let confirmationInfo = { blockhash, lastValidBlockHeight };
       if (!blockhash || !lastValidBlockHeight) {
-        const { value } = await rpc.getLatestBlockhash();
+        const { value } = await rpc.getLatestBlockhash().send();
         confirmationInfo = value;
       }
       
@@ -671,21 +687,26 @@ export function createCompatSolanaEngine() {
 
 1. **Week 1**:
    - Set up new package structure
-   - Implement RPC Manager
-   - Implement address and transaction utilities
-   - Implement basic SolanaEngineV2 service structure
+   - Implement RPC Manager (core connection, basic execution)
+   - Ensure `RpcManager` addresses essential `ConnectionManager` features (endpoint handling, health checks)
+   - Implement address and transaction utilities (including detailed retry/confirmation logic)
+   - Implement basic SolanaEngineV2 service structure (initialization, state variables)
+   - Add Prisma configuration management methods
 
 2. **Week 2**:
-   - Implement client services (Jupiter, Helius, DexScreener)
+   - Implement client services (Jupiter, Helius, DexScreener) - initial setup
+   - Begin migration of key data-fetching methods
    - Implement compatibility utilities
-   - Add token data and price functionality
+   - Implement WebSocket/real-time data handling integration
 
 ### Phase 2: Testing (1 week)
 
 1. Create comprehensive test suite
-   - Unit tests for RPC Manager
-   - Unit tests for transaction utilities
-   - Integration tests with Solana devnet
+   - Unit tests for RPC Manager (including endpoint logic)
+   - Unit tests for transaction utilities (esp. retry/confirmation)
+   - Tests for WebSocket/real-time updates
+   - Tests for configuration management
+   - Integration tests with Solana devnet for core functions and client methods
 
 2. Conduct performance testing
    - Compare old vs. new implementation
@@ -710,13 +731,17 @@ export function createCompatSolanaEngine() {
 
 While SolanaEngineV2 uses Web3.js v2 internally, it must provide a compatible interface for existing services. The compatibility utilities will allow for a smooth transition.
 
+### Client Integration Scope
+
+Migrating the numerous specific data fetching methods (e.g., `fetchTokenMetadata`, `getTokenPrice`, `getSwapQuote`) integrated with Helius, Jupiter, and DexScreener represents a significant portion of the implementation effort. Each method needs careful adaptation to v2 client libraries or direct API interactions.
+
 ### Performance Impact
 
 Web3.js v2 should provide better performance, especially in terms of bundle size and runtime efficiency. We should measure and document these improvements.
 
 ### Error Handling
 
-The new implementation should maintain or improve upon the robust error handling of the original, particularly for transaction retries and circuit breaker patterns.
+The new implementation must replicate the robust error handling of the original, particularly the nuanced transaction retry logic (e.g., for block height exceeded errors) and specific checks during transaction confirmation observed in the v1 engine code. Implementing this correctly in the v2 functional style is critical.
 
 ### Testing Strategy
 

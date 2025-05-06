@@ -2,9 +2,6 @@
   <img src="https://degenduel.me/assets/media/logos/transparent_WHITE.png" alt="DegenDuel Logo (White)" width="300">
   
   [![Node.js](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org/)
-  [![Express](https://img.shields.io/badge/Express-4.x-lightgrey)](https://expressjs.com/)
-  [![Prisma](https://img.shields.io/badge/Prisma-16.x-blue)](https://prisma.io/)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![Solana](https://img.shields.io/badge/Solana-SDK-green)](https://solana.com/)
   [![WebSocket](https://img.shields.io/badge/WebSocket-Unified-orange)](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)
   [![Circuit Breaker](https://img.shields.io/badge/Circuit%20Breaker-Enabled-red)](https://martinfowler.com/bliki/CircuitBreaker.html)
@@ -14,216 +11,91 @@
 
 # ⚔️ DEGENDUEL ⚔️
 
-## 📑 Solana Web3.js v2 Migration Documents
+## 💫 Platform Highlights
 
-- [Web3.js v2 Migration Guide](./SOLANA_WEB3_V2_MIGRATION_GUIDE.md) - Step-by-step guide for migrating Admin Wallet Service
-- [Admin Wallet Migration Plan](./ADMIN_WALLET_MIGRATION_PLAN.md) - Detailed migration plan for Admin Wallet Service
-- [SolanaEngine v2 Migration Plan](./SOLANA_ENGINE_V2_MIGRATION_PLAN.md) - Comprehensive plan for rewriting SolanaEngine service
-- [Contest Wallet v2 Migration Plan](./CONTEST_WALLET_V2_MIGRATION_PLAN.md) - Migration strategy for Contest Wallet Service
-- [Market Data v2 Migration Plan](./MARKET_DATA_V2_MIGRATION_PLAN.md) - Integration plan for Market Data Service
-- [Vanity Wallet v2 Migration Plan](./VANITY_WALLET_V2_MIGRATION_PLAN.md) - Migration approach for Vanity Wallet Service
-- [Pool Data Manager v2 Migration Plan](./POOL_DATA_MANAGER_V2_MIGRATION_PLAN.md) - Migration approach for Pool Data Manager Service
+DegenDuel is a sophisticated real-time crypto trading competition platform with advanced capabilities:
 
-## 🚀 Quick Start
+- **Real-time Market Data Engine** - Millisecond token price updates via WebSockets
+- **Unified WebSocket Architecture** - Single-connection access to all platform data streams
+- **Multi-tier Service Architecture** - 20+ specialized microservices with circuit breakers
+- **Solana Blockchain Integration** - Custom RPC proxy, transaction monitoring, and token tracking
+- **AI-powered Terminal** - Natural language interface to token data and platform functions
+- **Contest Generation System** - Dynamic contest creation with automated treasury management
+- **Token Enrichment Pipeline** - Multi-source metadata enrichment for thousands of tokens
+- **Vanity Wallet Generation** - Custom-branded wallet address generation with secure storage
 
-- Use the universal tool runner to access all project tools: `dd`
-- The tool provides easy access to scripts, tests, and utilities with a simple menu interface
-- Type `dd` in your terminal and select the tool you want to run
+## 🚀 Latest Documents
 
-## 📋 Overview
+- [**WebSocket Service Architecture**](./6-MAY-WEBSOCKET-SERVICE-ARCHITECTURE.md) - Comprehensive guide to the unified WebSocket system (May 6, 2025)
+- [**Token Enrichment Enhancement Plan**](./TOKEN_ENRICHMENT_ENHANCEMENT_PLAN.md) - Advanced token metadata pipeline
+- [**AI Service Implementation**](./AI_SERVICE_IMPLEMENTATION.md) - Natural language terminal interface
+- [**Service Architecture**](./SERVICE_ARCHITECTURE.md) - Core platform architecture overview
 
-DegenDuel is a competitive crypto trading simulation platform built on a service-oriented architecture with real-time data capabilities. The platform enables users to:
+## 🛠️ Core Technology Stack
 
-- Authenticate with Solana wallets
-- Participate in trading competitions
-- Track portfolios and performance
-- Earn achievements and level up
-- Compete on leaderboards
-- Refer friends for rewards
+- **Backend**: Node.js with Express.js
+- **Database**: PostgreSQL with Prisma ORM
+- **Real-time**: Custom WebSocket implementation with unified topics
+- **Blockchain**: Solana with custom Web3.js extensions
+- **Resilience**: Service manager with circuit breakers
+- **Monitoring**: Integrated metrics and logging
+- **Caching**: Redis for high-performance data access
 
-The system is designed with resilience as a primary concern, implementing circuit breakers, service monitoring, and graceful degradation patterns throughout.
+## 🏗️ Architecture Overview
 
-**Core Technologies:**
-- Node.js/Express backend
-- PostgreSQL database with Prisma ORM
-- Solana Web3 integration
-- WebSocket-based real-time data
-- PM2 process management
-- JWT-based authentication
+DegenDuel's architecture is built on five key pillars:
 
-## 🏗️ Architecture
+### 1. Service-Oriented Design
 
-The DegenDuel platform follows a service-oriented architecture with specialized components for different business domains.
+- **20+ Specialized Services** - Each with clear responsibility and resilience patterns
+- **Unified Service Manager** - Centralized lifecycle management and monitoring
+- **Circuit Breaker Pattern** - Automatic failure detection and graceful degradation
+- **Service Profiles** - Environment-specific service configurations
 
-### Service Architecture
+### 2. Real-time Data Architecture
 
-The system is built around a robust service framework with:
+- **Unified WebSocket Server** - Single connection point for all real-time data
+- **Topic-Based Subscriptions** - Filtered data access by category
+- **Role-Based Access Control** - Authentication-aware data delivery
+- **Service-to-WebSocket Integration** - Direct event publication from services
 
-**Service Layers:**
-1. **Infrastructure Layer**: Core services like SolanaEngine, WalletGenerationService
-2. **Data Layer**: MarketDataService with premium API integration
-3. **Contest Layer**: ContestEvaluationService, AchievementService
-4. **Wallet Layer**: ContestWalletService, AdminWalletService
+### 3. Token Data Pipeline
 
-**Key Services:**
-- **SolanaEngine**: Enhanced blockchain connectivity with premium APIs
-- **MarketDataService**: Real-time market data and token management
-- **AchievementService**: User achievement tracking and rewards
-- **ContestEvaluationService**: Contest lifecycle management
-- **LevelingService**: User progression system
-- **ReferralService**: Referral program management
-- **TokenMonitorService**: Monitors specific token transactions (buys/sells)
-- **DiscordNotificationService**: Sends real-time notifications to Discord
+- **Multi-Source Data Collection** - DEX data, on-chain data, and social metrics
+- **Continuous Enrichment** - Background processing for metadata enhancement
+- **Ranking Algorithm** - Sophisticated token ranking based on multiple factors
+- **Real-time Price Monitoring** - Sub-second price updates for tracked tokens
 
-**Service Pattern:**
-- All services extend `BaseService`
-- Consistent lifecycle methods (initialize, performOperation, stop)
-- Self-contained state and metrics
-- Circuit breaker integration
-- Standard error handling
+### 4. Blockchain Integration
 
-**Service Management:**
-- `ServiceManager` singleton for centralized management
-- Dependency-aware initialization
-- Health monitoring
-- State persistence
-- WebSocket status broadcasting
+- **Enhanced RPC Connectivity** - Premium Solana RPC endpoints with load balancing
+- **Account Monitoring** - Real-time tracking of on-chain activity
+- **Transaction Building** - Sophisticated multi-signature transaction workflows
+- **Wallet Management** - Secure key storage with encryption
 
-### Database Architecture
+### 5. Contest Engine
 
-The application uses PostgreSQL as its primary database with a well-structured schema:
+- **Dynamic Contest Creation** - User and admin contest generation
+- **Automated Treasury Management** - Secure prize pool handling
+- **Real-time Leaderboards** - Live performance tracking
+- **Prize Distribution** - Automated rewards allocation
 
-**Core Data Models:**
-1. **User System**: users, user_levels, user_achievements
-2. **Contest System**: contests, contest_participants, contest_portfolios
-3. **Token System**: tokens, token_prices, token_buckets
-4. **Transaction System**: transactions, blockchain_transactions, wallet_balance_history
-5. **Referral System**: referrals, referral_clicks, referral_rewards
-6. **Service Management**: circuit_breaker_states, system_settings
+## 🔐 Security Features
 
-### WebSocket Infrastructure
+- **JWT Authentication** - Secure token-based authentication
+- **Role-Based Access** - Fine-grained permissions system
+- **WebSocket Authentication** - Secure real-time connections
+- **Encrypted Storage** - Sensitive data protection
+- **Rate Limiting** - Request throttling to prevent abuse
+- **IP Tracking and Banning** - Automated abuse prevention
 
-DegenDuel uses a unified WebSocket system for all real-time communications through a single connection point.
+## 🔥 Performance Optimizations
 
-**Unified WebSocket System (v69):**
-- **Single Connection**: All data flows through one WebSocket connection
-- **Topic-Based Subscriptions**: Subscribe to specific data channels
-- **JWT Authentication**: Secure access to restricted topics
-- **Path**: `/api/v69/ws`
-
-## 🛠️ Developer Setup
-
-### Prerequisites
-
-- Node.js 20.x or higher
-- npm 8.x or higher
-- PostgreSQL 16.x
-- Git
-
-### Local Development
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-org/degenduel.git
-   cd degenduel
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Setup environment variables**
-   - Copy `.env.example` to `.env`
-   - Update database credentials
-   - Configure Solana RPC endpoints
-
-4. **Initialize the database**
-   ```bash
-   npx prisma migrate deploy
-   npx prisma generate
-   ```
-
-5. **Start the development server**
-   ```bash
-   # Development mode with hot reload
-   npm run dev
-   
-   # Or using PM2
-   npm run pm2:start
-   ```
-
-### Database Setup
-
-**Prisma Commands:**
-```bash
-# Generate Prisma client
-npx prisma generate
-
-# Create migration (development)
-npx prisma migrate dev --name your_migration_name
-
-# Apply migrations (production)
-npx prisma migrate deploy
-```
-
-## 📊 System Management
-
-### Process Management
-
-DegenDuel uses PM2 with simplified npm scripts:
-
-```bash
-# View running processes
-npm run pm2
-
-# MASTER RESTART COMMAND (RECOMMENDED)
-npm run re  # pm2 delete all && pm2 start ecosystem.config.cjs && pm2 logs
-
-# Manage all services
-npm run pm2:start-all    # Start all services
-npm run pm2:stop-all     # Stop all services
-npm run pm2:restart-all & # Restart all services (NON-BLOCKING)
-```
-
-### Logs and Monitoring
-
-**Logging System:**
-- Console logging with colors
-- File logging to `/logs` directory
-- Logtail remote logging
-- Service-specific logging
-
-**Log Access:**
-```bash
-# Check latest logs (non-blocking)
-tail -n 50 /home/branchmanager/.pm2/logs/degenduel-api-out.log
-
-# Check error logs
-tail -n 50 /home/branchmanager/.pm2/logs/degenduel-api-error.log
-
-# Follow logs in a second terminal
-tail -f /home/branchmanager/.pm2/logs/degenduel-api-out.log &
-```
-
-### Circuit Breaker System
-
-The application implements the circuit breaker pattern to manage service health:
-
-**Circuit States:**
-- `CLOSED`: Service operating normally
-- `OPEN`: Service has failures beyond threshold, requests rejected
-- `HALF_OPEN`: Testing if service has recovered
-
-## 🔄 Additional Resources
-
-- **Wallet Dashboard**: [ADMIN_WALLET_DASHBOARD.md](/ADMIN_WALLET_DASHBOARD.md)
-- **Vanity Wallet Generation**: [VANITY_WALLET_GENERATION.md](/VANITY_WALLET_GENERATION.md) - Process flow and architecture of the vanity wallet generation system
-- **Technical Reference**: [TECHNICAL_REFERENCE.md](/TECHNICAL_REFERENCE.md) - Comprehensive API, WebSocket, and integration documentation
-- **Wallet Balance Tracking**: [WALLET_BALANCE_TRACKING.md](/WALLET_BALANCE_TRACKING.md) - Detailed guide on user and contest wallet balance monitoring with polling and WebSocket modes
-- **DegenDuel RPC Proxy**: [DD-RPC.md](/DD-RPC.md) - Secure proxy system for Solana RPC and WebSocket PubSub connections (Team Integration Guide)
-- **Frontend Repository**: [degenduel-fe](https://github.com/BranchManager69/degenduel-fe)
-- **Unified WebSocket**: [WEBSOCKET_UNIFIED_SYSTEM.md](/docs/services/WEBSOCKET_UNIFIED_SYSTEM.md)
+- **Connection Pooling** - Efficient database connections
+- **Redis Caching** - High-speed data access
+- **Batched Operations** - Bulk database transactions
+- **WebSocket Message Compression** - Reduced bandwidth usage
+- **Service Prioritization** - Resource allocation based on importance
 
 ---
 

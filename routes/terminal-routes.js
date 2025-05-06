@@ -265,4 +265,38 @@ router.get('/token-info/:addressOrSymbol', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/terminal/terminal-data:
+ *   get:
+ *     summary: Get terminal data directly (without WebSocket)
+ *     tags: [Terminal]
+ *     responses:
+ *       200:
+ *         description: Terminal data successfully retrieved
+ *       500:
+ *         description: Server error
+ */
+router.get('/terminal-data', async (req, res) => {
+  try {
+    // Import the fetchTerminalData function from the unified services module
+    const { fetchTerminalData } = await import('../websocket/v69/unified/services.js');
+    
+    // Get terminal data using the existing function
+    const terminalData = await fetchTerminalData();
+    
+    // Return the data
+    return res.status(200).json(terminalData);
+  } catch (error) {
+    // Handle errors
+    logApi.error('Terminal data error:', error);
+    
+    // Return 500 error response
+    return res.status(500).json({
+      error: 'Failed to retrieve terminal data',
+      type: 'server'
+    });
+  }
+});
+
 export default router;

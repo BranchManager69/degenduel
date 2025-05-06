@@ -1,3 +1,18 @@
+// services/admin-wallet/modules/batch-operations.js
+
+/**
+ * Admin Wallet Batch Operations Module
+ * @module batch-operations
+ * 
+ * @description Handles mass transfers (SOL and tokens) by orchestrating 
+ *              calls to individual transfer functions.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-05-05
+ * @updated 2025-05-05
+ */
+
 import { ServiceError } from '../../../utils/service-suite/service-error.js';
 import { transferSOL, transferToken } from './wallet-transactions.js';
 

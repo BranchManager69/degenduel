@@ -21,6 +21,7 @@ import vanityCallbackRoutes from './admin/vanity-callback.js';
 import tokenSyncRoutes from './admin/token-sync.js';
 import tokenRefreshRoutes from './admin/token-refresh.js';
 import discordWebhooksRoutes from './admin/discord-webhooks.js';
+import redisAdminAuthValidator from './admin/redis-admin-auth-validator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +48,9 @@ router.use('/admin/ai/sql', aiSqlRoutes);
 
 // Mount the AI Analysis routes
 router.use('/admin/ai-analysis', aiAnalysisRoutes);
+
+// Mount Redis Admin authentication validator endpoint - using path that matches Nginx config
+router.use('/auth-check', redisAdminAuthValidator);
 
 // Mount the Service Metrics routes
 router.use('/admin/metrics', serviceMetricsRoutes);

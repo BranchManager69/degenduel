@@ -123,6 +123,8 @@ import blinksRoutes from "./routes/blinks/index.js";
 import profileImageGeneratorRoutes from "./routes/users/profile-image-generator.js";
 // Solana RPC Proxy route
 import solanaRpcProxyRoutes from "./routes/solana-rpc-proxy.js";
+// Terminal data routes
+import terminalRoutes from "./routes/terminal-routes.js";
 
 // Import Liquidity Sim admin routes
 import liquiditySimRoutes from './routes/liquidity-sim-routes.js';
@@ -330,6 +332,8 @@ app.use("/api/solana-rpc", solanaRpcProxyRoutes);
 app.use("/api/logs", logsRoutes);
 // New AI service routes (accessible even during maintenance)
 app.use("/api/ai", aiRoutes);
+// Terminal data routes (accessible even during maintenance)
+app.use("/api/terminal", terminalRoutes);
 // WebSocket API Guide routes
 app.use("/api/websocket-guide", websocketApiGuideRoutes);
 // Test routes (no maintenance check needed)

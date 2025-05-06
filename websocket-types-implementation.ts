@@ -1,13 +1,19 @@
-// Implementation for ../degenduel-shared/src/websocket-types.ts
+/**
+ * WebSocket Type Definitions for DegenDuel
+ * 
+ * This file contains shared type definitions for WebSocket communication
+ * between the frontend and backend systems.
+ */
 
 /**
- * Available WebSocket message topics
+ * WebSocket Topics
+ * Used to organize messages by functional area
  */
 export enum DDWebSocketTopic {
   MARKET_DATA = 'market-data',
   PORTFOLIO = 'portfolio',
   SYSTEM = 'system',
-  CONTEST = 'contest', 
+  CONTEST = 'contest',
   USER = 'user',
   ADMIN = 'admin',
   WALLET = 'wallet',
@@ -18,7 +24,8 @@ export enum DDWebSocketTopic {
 }
 
 /**
- * WebSocket message types for client-server communication
+ * WebSocket Message Types
+ * Used to categorize the purpose of each message
  */
 export enum DDWebSocketMessageType {
   // Client -> Server messages
@@ -29,193 +36,151 @@ export enum DDWebSocketMessageType {
   
   // Server -> Client messages
   DATA = 'DATA',
+  RESPONSE = 'RESPONSE',
   ERROR = 'ERROR',
   SYSTEM = 'SYSTEM',
   ACKNOWLEDGMENT = 'ACKNOWLEDGMENT'
 }
 
 /**
- * Base WebSocket message interface
- * All WebSocket messages extend this interface
+ * WebSocket Action Names
+ * Standard action names for client requests and server responses
+ */
+export enum DDWebSocketActions {
+  // MARKET_DATA topic actions
+  GET_TOKENS = 'getTokens',
+  GET_TOKEN = 'getToken',
+  
+  // USER topic actions
+  GET_PROFILE = 'getProfile',
+  
+  // LOGS topic actions
+  SEND_CLIENT_LOG = 'sendClientLog',
+  
+  // SYSTEM topic actions
+  GET_STATUS = 'getStatus',
+  GET_SETTINGS = 'getSettings',
+  STATUS_UPDATE = 'status_update',
+  
+  // WALLET topic actions with transaction subtype
+  GET_TRANSACTIONS = 'getTransactions',
+  GET_TRANSACTION = 'getTransaction',
+  
+  // WALLET topic actions with settings subtype
+  UPDATE_SETTINGS = 'updateSettings',
+  
+  // WALLET_BALANCE topic actions
+  GET_SOLANA_BALANCE = 'getSolanaBalance',
+  GET_TOKEN_BALANCE = 'getTokenBalance',
+  GET_WALLET_BALANCE = 'getWalletBalance',
+  GET_BALANCE = 'getBalance',
+  REFRESH_TOKEN_BALANCE = 'refreshTokenBalance',
+  TOKEN_BALANCE_UPDATE = 'tokenBalanceUpdate',
+  
+  // TERMINAL topic actions
+  GET_DATA = 'getData',
+  UPDATE = 'update',
+  
+  // CONTEST topic actions
+  GET_CONTESTS = 'getContests',
+  GET_CONTEST = 'getContest',
+  CREATE_CONTEST = 'createContest',
+  JOIN_CONTEST = 'joinContest',
+  GET_CONTEST_SCHEDULES = 'getContestSchedules',
+  GET_USER_CONTESTS = 'getUserContests',
+  UPDATE_CONTEST = 'updateContest',
+  CANCEL_CONTEST = 'cancelContest',
+  START_CONTEST = 'startContest',
+  END_CONTEST = 'endContest',
+  
+  // ADMIN topic actions
+  GET_SYSTEM_STATUS = 'getSystemStatus',
+  
+  // Subscription actions for all topics
+  SUBSCRIBE = 'subscribe',
+  UNSUBSCRIBE = 'unsubscribe'
+}
+
+/**
+ * Base WebSocket Message Interface
  */
 export interface DDWebSocketMessage {
   type: DDWebSocketMessageType;
-  requestId?: string;
-  timestamp?: number;
+  topic: DDWebSocketTopic;
+  timestamp?: string;
+  subtype?: string;
 }
 
 /**
- * Client subscription message
- */
-export interface DDWebSocketSubscribeMessage extends DDWebSocketMessage {
-  type: DDWebSocketMessageType.SUBSCRIBE;
-  topics: DDWebSocketTopic[];
-  auth?: string; // Optional auth token for authenticated topics
-}
-
-/**
- * Client unsubscribe message
- */
-export interface DDWebSocketUnsubscribeMessage extends DDWebSocketMessage {
-  type: DDWebSocketMessageType.UNSUBSCRIBE;
-  topics: DDWebSocketTopic[];
-}
-
-/**
- * Client request message for specific data
+ * WebSocket Request Message Interface
+ * Used for messages from client to server
  */
 export interface DDWebSocketRequestMessage extends DDWebSocketMessage {
-  type: DDWebSocketMessageType.REQUEST;
-  topic: DDWebSocketTopic;
-  action: string;
-  params?: Record<string, any>;
+  type: DDWebSocketMessageType.REQUEST | DDWebSocketMessageType.COMMAND;
+  action: DDWebSocketActions;
+  data?: any;
+  requestId?: string;
 }
 
 /**
- * Client command message to perform an action
+ * WebSocket Response Message Interface
+ * Used for server responses to client requests
  */
-export interface DDWebSocketCommandMessage extends DDWebSocketMessage {
-  type: DDWebSocketMessageType.COMMAND;
-  topic: DDWebSocketTopic;
-  command: string;
-  params?: Record<string, any>;
+export interface DDWebSocketResponseMessage extends DDWebSocketMessage {
+  type: DDWebSocketMessageType.RESPONSE;
+  action: DDWebSocketActions;
+  data: any;
+  requestId?: string;
 }
 
 /**
- * Server data message with payload
+ * WebSocket Data Message Interface
+ * Used for pushed data from server to client
  */
-export interface DDWebSocketDataMessage<T = any> extends DDWebSocketMessage {
+export interface DDWebSocketDataMessage extends DDWebSocketMessage {
   type: DDWebSocketMessageType.DATA;
-  topic: DDWebSocketTopic;
-  data: T;
+  action?: DDWebSocketActions;
+  data: any;
 }
 
 /**
- * Server error message
+ * WebSocket Subscription Message Interface
+ * Used for subscribing to topics
+ */
+export interface DDWebSocketSubscriptionMessage extends DDWebSocketMessage {
+  type: DDWebSocketMessageType.SUBSCRIBE | DDWebSocketMessageType.UNSUBSCRIBE;
+  data?: {
+    parameters?: any;
+  }
+}
+
+/**
+ * WebSocket Error Message Interface
+ * Used for error responses
  */
 export interface DDWebSocketErrorMessage extends DDWebSocketMessage {
   type: DDWebSocketMessageType.ERROR;
-  topic?: DDWebSocketTopic;
   error: string;
   code: number;
+  requestId?: string;
 }
 
 /**
- * Server system message
- */
-export interface DDWebSocketSystemMessage extends DDWebSocketMessage {
-  type: DDWebSocketMessageType.SYSTEM;
-  topic: DDWebSocketTopic.SYSTEM;
-  action: string;
-  data?: any;
-}
-
-/**
- * Server acknowledgment message
+ * WebSocket Acknowledgment Message Interface
+ * Used for acknowledging subscription requests
  */
 export interface DDWebSocketAcknowledgmentMessage extends DDWebSocketMessage {
   type: DDWebSocketMessageType.ACKNOWLEDGMENT;
-  topic: DDWebSocketTopic;
-  requestId: string;
-  success: boolean;
-  message?: string;
+  action: DDWebSocketActions;
+  data: any;
+  requestId?: string;
 }
 
 /**
- * Market data message payload
+ * WebSocket System Message Interface
+ * Used for system-level notifications
  */
-export interface DDMarketDataPayload {
-  tokenAddress: string;
-  symbol: string;
-  name: string;
-  price: number;
-  change24h: number;
-  volume24h?: number;
-  marketCap?: number;
-  lastUpdate: number;
-}
-
-/**
- * Portfolio data message payload
- */
-export interface DDPortfolioPayload {
-  walletAddress: string;
-  totalValue: number;
-  tokens: Array<{
-    tokenAddress: string;
-    symbol: string;
-    quantity: string;
-    value: number;
-    weight: number;
-  }>;
-  lastUpdate: number;
-}
-
-/**
- * Contest data message payload
- */
-export interface DDContestPayload {
-  id: string;
-  code: string;
-  name: string;
-  startTime: number;
-  endTime: number;
-  status: DDContestStatus;
-  participants: number;
-  maxParticipants: number;
-  entryFee: number;
-  prizePool: number;
-  lastUpdate: number;
-}
-
-/**
- * Wallet balance data message payload
- */
-export interface DDWalletBalancePayload {
-  walletAddress: string;
-  sol: number;
-  tokens: Array<{
-    tokenAddress: string;
-    symbol: string;
-    balance: string;
-    valueUsd?: number;
-  }>;
-  lastUpdate: number;
-}
-
-/**
- * User data message payload
- */
-export interface DDUserPayload {
-  walletAddress: string;
-  nickname: string;
-  achievementPoints: number;
-  level: number;
-  experience: number;
-  contestsEntered: number;
-  contestsWon: number;
-  lastUpdate: number;
-}
-
-/**
- * Terminal data message payload
- */
-export interface DDTerminalPayload {
-  commandId: string;
-  output: string;
-  status: 'running' | 'completed' | 'error';
-  progress?: number;
-  error?: string;
-  lastUpdate: number;
-}
-
-/**
- * Contest status enum
- * Used in the contest payloads
- */
-export enum DDContestStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled'
+export interface DDWebSocketSystemMessage extends DDWebSocketMessage {
+  type: DDWebSocketMessageType.SYSTEM;
+  data: any;
 }
