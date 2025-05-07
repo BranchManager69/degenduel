@@ -29,6 +29,7 @@ import SystemSettingsUtil from '../system-settings-util.js';
 import { fancyColors } from '../colors.js';
 
 const VERBOSE_SERVICE_INIT = false;
+const DEBUG_SERVICE_REGISTRATION = process.env.DEBUG_SERVICE_REGISTRATION === 'true' || false;
 
 /**
  * Consolidated service management system for DegenDuel
@@ -104,8 +105,10 @@ class ServiceManager {
      */ 
     register(serviceOrName, dependencies = []) {
         // Extreme debugging - log the caller
-        const callStack = new Error().stack || '';
-        logApi.info(`${fancyColors.RED}🔥 CALLER: ${callStack.split('\n').slice(0, 5).join('\n')}${fancyColors.RESET}`);
+        if (DEBUG_SERVICE_REGISTRATION) {
+            const callStack = new Error().stack || '';
+            logApi.info(`${fancyColors.RED}🔥 CALLER (DEBUG): ${callStack.split('\n').slice(0, 5).join('\n')}${fancyColors.RESET}`);
+        }
         
         // CRITICAL FIX: Prevent all undefined registrations
         if (!serviceOrName || serviceOrName === undefined) {

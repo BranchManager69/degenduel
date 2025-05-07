@@ -692,6 +692,7 @@ async function initializeServer() {
             
             // Send Discord notification for server startup
             try {
+                // TODO: Check to see if this is causing our problems with the discord notification service
                 // Only instantiate Discord notification service if enabled in config
                 if (config.services.discord_notification_service) {
                     const discordNotificationService = (await import('./services/discordNotificationService.js')).default;
