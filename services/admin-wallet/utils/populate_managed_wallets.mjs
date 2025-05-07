@@ -14,6 +14,8 @@ import { executeRpcMethod as executeRpcCompat, getLamportsFromRpcResult as getLa
 // import { solanaEngine } from '../../../services/solana-engine/index.js'; // Not needed directly for balance checks if using direct rpc config
 import { config as globalConfig } from '../../../config/config.js'; // For RPC URL & Solscan base
 
+const BATCH_SIZE_GET_MULTIPLE_ACCOUNTS = 90; // Max items per getMultipleAccounts call
+
 // --- Script Configuration via yargs ---
 const argv = yargs(hideBin(process.argv))
   .option('count', {
@@ -191,90 +193,120 @@ async function populateWallets() {
             level: 'info'
         });
 
-        // --- Sanity Balance Check with Enhanced Summary ---
-        logApi.info(fancyColors.CYAN + '\n--- Performing Sanity Balance Check on All Managed Wallets (using direct v2 via compat layer) ---' + fancyColors.RESET);
+        // --- Sanity Balance Check (Batched) ---
+        logApi.info(fancyColors.CYAN + '\n--- Performing Batched Sanity Balance Check on ALL Managed Wallets --- shallower --- ' + fancyColors.RESET);
         
         const directRpcConfig = { url: globalConfig.rpc_urls.primary, commitment: 'confirmed' }; 
         const solscanBaseUrl = globalConfig.solana?.explorer_urls?.solscan || 'https://solscan.io/account';
 
-        // Fetch only wallets relevant to this run or all if desired (for now, all)
-        const allManagedWallets = await prisma.managed_wallets.findMany({
-             where: { ownerId: ownerIdToAssign }, // Check only wallets created for this owner OR all?
+        const allManagedWalletsInDb = await prisma.managed_wallets.findMany({
              orderBy: { created_at: 'asc' } 
         });
-        logApi.info(`Found ${allManagedWallets.length} managed wallets for Owner ID ${ownerIdToAssign} to check balances for.`);
-        if (allManagedWallets.length === 0 && totalWalletsToCreate > 0) {
-             logApi.warn(fancyColors.YELLOW + `Warning: No wallets found for owner ID ${ownerIdToAssign} after creation. Check DB.` + fancyColors.RESET);
-        }
+        logApi.info(`Found ${allManagedWalletsInDb.length} total managed wallets in DB to check balances for.`);
 
+        if (allManagedWalletsInDb.length === 0) {
+            logApi.info('No managed wallets found in DB to check balances.');
+            return; // Exit balance check if no wallets
+        }
 
         const balanceData = [];
         let totalSolAcrossWallets = 0;
         let walletsWithBalance = 0;
         let walletsWithZeroBalance = 0;
-        let walletsErrored = 0;
+        let walletsErroredInRpc = 0; // Specifically for RPC errors during batch fetch
 
-        logApi.progress.start(); // Start progress for balance check
-        let walletsChecked = 0;
+        logApi.progress.start(); 
+        let walletsProcessedCount = 0;
 
-        for (const mw of allManagedWallets) {
-            let solBalance = 0;
-            let errorMsg = null;
+        for (let i = 0; i < allManagedWalletsInDb.length; i += BATCH_SIZE_GET_MULTIPLE_ACCOUNTS) {
+            const batchOfWallets = allManagedWalletsInDb.slice(i, i + BATCH_SIZE_GET_MULTIPLE_ACCOUNTS);
+            const batchPublicKeys = batchOfWallets.map(w => w.public_key);
+            logApi.debug(`Processing batch of ${batchPublicKeys.length} wallets for balance check (starts with ${batchPublicKeys[0]})`);
+
             try {
-                const balanceResult = await executeRpcCompat(
+                const accountsInfo = await executeRpcCompat(
                     directRpcConfig, 
-                    'getBalance',
-                    toAddressCompat(mw.public_key)
+                    'getMultipleAccountsInfo',
+                    batchPublicKeys,
+                    { commitment: 'confirmed' } // Pass commitment as options object
                 );
-                const lamports = getLamportsCompat(balanceResult, 'getBalance', mw.public_key);
-                solBalance = lamports / LAMPORTS_PER_SOL_COMPAT;
-                
-                if (solBalance > 0) {
-                    walletsWithBalance++;
-                    totalSolAcrossWallets += solBalance;
-                } else {
-                    walletsWithZeroBalance++;
-                }
-            } catch (balanceError) {
-                errorMsg = balanceError.message;
-                walletsErrored++;
-                // Don't log here, will be summarized
-            }
-            balanceData.push({
-                id: mw.id,
-                publicKey: mw.public_key,
-                label: mw.label,
-                ownerId: mw.ownerId,
-                balance: solBalance,
-                error: errorMsg,
-                solscanLink: `${solscanBaseUrl}/${mw.public_key}`
-            });
-            walletsChecked++;
-            logApi.progress.update(walletsChecked, allManagedWallets.length, [`Checking balance for ${mw.public_key.substring(0,8)}...`]);
-            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
-        }
-        logApi.progress.finish({ message: "Balance check scan complete.", level: 'info' });
 
+                accountsInfo.forEach((accountInfo, indexInBatch) => {
+                    const wallet = batchOfWallets[indexInBatch];
+                    let solBalance = 0;
+                    let errorMsg = null;
+
+                    if (accountInfo) {
+                        solBalance = accountInfo.lamports / LAMPORTS_PER_SOL_COMPAT;
+                        if (solBalance > 0) {
+                            walletsWithBalance++;
+                            totalSolAcrossWallets += solBalance;
+                        } else {
+                            walletsWithZeroBalance++;
+                        }
+                    } else {
+                        // Account might not exist on-chain yet or error fetching this specific one
+                        errorMsg = 'Account info not found or error for this public key in batch.';
+                        walletsWithZeroBalance++; // Treat as zero for summary, but flag
+                        logApi.warn(`No account info for ${wallet.public_key} in batch response.`);
+                    }
+                    balanceData.push({
+                        id: wallet.id,
+                        publicKey: wallet.public_key,
+                        label: wallet.label,
+                        ownerId: wallet.ownerId,
+                        balance: solBalance,
+                        error: errorMsg,
+                        solscanLink: `${solscanBaseUrl}/${wallet.public_key}`
+                    });
+                    walletsProcessedCount++;
+                    logApi.progress.update(walletsProcessedCount, allManagedWalletsInDb.length, [`Checked ${walletsProcessedCount}/${allManagedWalletsInDb.length}`]);
+                });
+            } catch (batchError) {
+                logApi.error(fancyColors.RED + `Error fetching batch of account infos (starts with ${batchPublicKeys[0]}): ${batchError.message}` + fancyColors.RESET);
+                walletsErroredInRpc += batchPublicKeys.length; // Mark all in batch as errored for summary
+                // Store error for each wallet in this failed batch
+                batchOfWallets.forEach(wallet => {
+                    balanceData.push({
+                        id: wallet.id,
+                        publicKey: wallet.public_key,
+                        label: wallet.label,
+                        ownerId: wallet.ownerId,
+                        balance: 0,
+                        error: `Batch RPC Error: ${batchError.message}`,
+                        solscanLink: `${solscanBaseUrl}/${wallet.public_key}`
+                    });
+                    walletsProcessedCount++;
+                    logApi.progress.update(walletsProcessedCount, allManagedWalletsInDb.length, [`Checked ${walletsProcessedCount}/${allManagedWalletsInDb.length} (batch error)`]);
+                });
+            }
+            // Optional: Add a small delay between batches if rate limiting is a concern
+            // await new Promise(resolve => setTimeout(resolve, 50)); 
+        }
+        logApi.progress.finish({ message: "All wallet balance checks complete.", level: 'info' });
 
         // --- Display Summary ---
-        logApi.info(fancyColors.CYAN + '\n--- Balance Check Summary ---' + fancyColors.RESET);
-        logApi.info(`Total Wallets Checked for Owner ID ${ownerIdToAssign}: ${allManagedWallets.length}`);
+        logApi.info(fancyColors.CYAN + '\n--- Batched Balance Check Summary (ALL Wallets) ---' + fancyColors.RESET);
+        logApi.info(`Total Wallets Checked in DB: ${allManagedWalletsInDb.length}`);
         logApi.info(`${fancyColors.GREEN}Wallets with SOL Balance (>0): ${walletsWithBalance}${fancyColors.RESET}`);
-        logApi.info(`Wallets with Zero Balance: ${walletsWithZeroBalance}`);
-        if (walletsErrored > 0) {
-            logApi.error(`${fancyColors.RED}Wallets with Balance Check Errors: ${walletsErrored}${fancyColors.RESET}`);
+        logApi.info(`Wallets with Zero Balance (or not found in batch): ${walletsWithZeroBalance}`);
+        if (walletsErroredInRpc > 0) {
+            logApi.error(`${fancyColors.RED}Wallets with RPC/Batch Fetch Errors: ${walletsErroredInRpc}${fancyColors.RESET}`);
         }
         logApi.info(`${fancyColors.GREEN}Total SOL across checked wallets (with balance > 0): ${totalSolAcrossWallets.toFixed(9)} SOL${fancyColors.RESET}`);
 
-        const erroredWallets = balanceData.filter(w => w.error);
-        if (erroredWallets.length > 0) {
-            logApi.warn(fancyColors.YELLOW + '\nWallets that Errored During Balance Check:' + fancyColors.RESET);
-            erroredWallets.forEach(w => {
+        const erroredWalletsForDisplay = balanceData.filter(w => w.error);
+        if (erroredWalletsForDisplay.length > 0) {
+            logApi.warn(fancyColors.YELLOW + '\nWallets that had issues during Balance Check:' + fancyColors.RESET);
+            erroredWalletsForDisplay.slice(0, 10).forEach(w => { // Display up to 10 errors
                 logApi.warn(`  Label: ${w.label || 'N/A'}, Pubkey: ${w.publicKey}, OwnerID: ${w.ownerId || 'N/A'}, Error: ${w.error}`);
             });
+            if (erroredWalletsForDisplay.length > 10) {
+                logApi.warn(`  ... and ${erroredWalletsForDisplay.length - 10} more wallets with errors.`);
+            }
         }
 
-        const walletsToDisplay = balanceData.filter(w => w.balance > 0).sort((a, b) => b.balance - a.balance);
+        const walletsToDisplay = balanceData.filter(w => w.balance > 0 && !w.error).sort((a, b) => b.balance - a.balance);
         const displayCount = Math.min(walletsToDisplay.length, walletsWithBalance < 10 ? walletsWithBalance : 5);
 
         if (displayCount > 0) {
@@ -292,18 +324,15 @@ async function populateWallets() {
              logApi.info(fancyColors.CYAN + 'All wallets with balances already listed or none have significant balance.' + fancyColors.RESET);
         }
         
-        if (allManagedWallets.length > 10 && walletsWithBalance > displayCount) {
+        if (allManagedWalletsInDb.length > 10 && walletsWithBalance > displayCount) {
             logApi.info(fancyColors.CYAN + `... and ${walletsWithBalance - displayCount} more wallets with balances not listed in top summary.` + fancyColors.RESET);
-        }
-        if (allManagedWallets.length > 10 && walletsWithZeroBalance > 0 && walletsWithBalance === 0 && walletsErrored === 0) {
-             logApi.info(fancyColors.CYAN + `All ${walletsWithZeroBalance} checked wallets have 0.00 SOL.` + fancyColors.RESET);
         }
         // --- END Sanity Balance Check ---
 
     } catch (error) {
-        logApi.error(fancyColors.RED + '\n--- An Error Occurred During Population ---' + fancyColors.RESET);
-        logApi.error(error.message, error.stack ? error.stack.split('\n').slice(0,5).join('\n') : 'No stack'); // Log only first few lines of stack
-        logApi.info(fancyColors.YELLOW + `Created ${walletsCreated} wallets before error.` + fancyColors.RESET);
+        logApi.error(fancyColors.RED + '\n--- An Error Occurred During Population Script ---' + fancyColors.RESET);
+        logApi.error(error.message, error.stack ? error.stack.split('\n').slice(0,5).join('\n') : 'No stack');
+        // walletsCreated would have been logged by progress.finish if it got that far
     } finally {
         await prisma.$disconnect();
         logApi.info(fancyColors.CYAN + 'Prisma client disconnected.' + fancyColors.RESET);
@@ -312,7 +341,7 @@ async function populateWallets() {
 
 populateWallets().catch(err => {
   // Catch unhandled promise rejections from populateWallets
-  logApi.error(fancyColors.RED + 'Unhandled error in populateWallets:' + fancyColors.RESET, err);
+  logApi.error(fancyColors.RED + 'Unhandled error in populateWallets execution:' + fancyColors.RESET, err);
   prisma.$disconnect(); // Ensure prisma disconnects on fatal error
   process.exit(1);
 }); 

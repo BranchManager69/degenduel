@@ -145,6 +145,17 @@ export function executeRpcMethod(connection, method, ...args) {
       case 'getTokenAccountBalance':
         // getTokenAccountBalance(account, config?) account is args[0], config is args[1]
         return rpc.getTokenAccountBalance(toAddress(args[0]), args[1]).send();
+      case 'getMultipleAccountsInfo': {
+        // Expects args[0] to be an array of public key strings
+        // Optional args[1] can be the commitment or options object
+        if (!Array.isArray(args[0])) {
+          throw new Error('getMultipleAccountsInfo expects an array of public key strings as its first argument.');
+        }
+        const addresses = args[0].map(pkString => toAddress(pkString));
+        // The getMultipleAccounts method might take an options object as its second argument for commitment, etc.
+        // For simplicity, we assume any second arg is that options object.
+        return rpc.getMultipleAccounts(addresses, args[1]).send(); 
+      }
       // Add cases for other commonly used RPC methods as needed
       default:
         // Maybe try dynamic dispatch if method exists?
