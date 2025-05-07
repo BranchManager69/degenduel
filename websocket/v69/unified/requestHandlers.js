@@ -16,6 +16,8 @@ import { heliusBalanceTracker } from '../../../services/solana-engine/helius-bal
 import marketDataService from '../../../services/market-data/marketDataService.js';
 import tokenBalanceModule from './modules/token-balance-module.js';
 import solanaBalanceModule from './modules/solana-balance-module.js';
+// Import shared WebSocket action enum
+import { DDWebSocketActions } from '@branchmanager69/degenduel-shared';
 
 // NOTE:
 // The 'Contest Service' was designed as a service but has since been converted 
@@ -626,14 +628,14 @@ async function handleWalletBalanceRequest(ws, message, sendMessage, sendError) {
 async function handleTerminalRequest(ws, message, sendMessage, sendError) {
   try {
     switch (message.action) {
-      case 'getData':
-        // Get terminal data
+      case DDWebSocketActions.GET_DATA:
+        // Get terminal data using the shared enum constant
         const terminalData = await fetchTerminalData();
         
         sendMessage(ws, {
           type: MESSAGE_TYPES.RESPONSE,
           topic: TOPICS.TERMINAL,
-          action: 'getData',
+          action: DDWebSocketActions.GET_DATA,
           data: terminalData,
           requestId: message.requestId
         });

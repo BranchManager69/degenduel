@@ -17,6 +17,8 @@ import { fancyColors, wsColors } from '../../../utils/colors.js';
 import serviceEvents from '../../../utils/service-suite/service-events.js'; // Why importing but not using?
 import marketDataService from '../../../services/market-data/marketDataService.js'; // Why importing but not using?
 import vanityWalletService from '../../../services/vanity-wallet/vanity-wallet-service.js';
+// Import shared WebSocket action enum
+import { DDWebSocketActions } from '@branchmanager69/degenduel-shared';
 
 // Config
 import config from '../../../config/config.js';
@@ -289,7 +291,7 @@ export function registerServiceEvents(server) {
       type: 'DATA',
       topic: config.websocket.topics.TERMINAL,
       subtype: 'terminal',
-      action: 'update',
+      action: DDWebSocketActions.TERMINAL_UPDATE,
       data: data,
       timestamp: new Date().toISOString()
     })
@@ -302,7 +304,7 @@ export function registerServiceEvents(server) {
       type: 'DATA',
       topic: config.websocket.topics.TERMINAL,
       subtype: 'vanity-dashboard',
-      action: 'update',
+      action: DDWebSocketActions.UPDATE, // Use generic UPDATE for the vanity dashboard
       data: data,
       timestamp: new Date().toISOString()
     })
@@ -314,7 +316,7 @@ export function registerServiceEvents(server) {
     (data) => server.broadcastToTopic(config.websocket.topics.SYSTEM, {
       type: 'DATA',
       topic: config.websocket.topics.SYSTEM,
-      action: 'status_update',
+      action: DDWebSocketActions.STATUS_UPDATE,
       data: data,
       timestamp: new Date().toISOString()
     })

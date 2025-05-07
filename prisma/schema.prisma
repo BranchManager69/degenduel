@@ -439,6 +439,7 @@ model users {
   contest_credits           contest_creation_credits[]  @relation("UserContestCredits")
   pending_contest_entries   pending_contest_entries[]   @relation("UserPendingContestEntries")
   privileges                user_privileges[] // Added back-relation for user privileges
+  owned_managed_wallets     managed_wallets[]           @relation("ManagedWalletOwner") // Added back-relation for managed wallets
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -864,6 +865,11 @@ model managed_wallets {
   created_at            DateTime @default(now()) @db.Timestamptz(6)
   updated_at            DateTime @updatedAt @db.Timestamptz(6)
 
+  // Link to the User who owns/manages this wallet
+  ownerId               Int?      // Foreign key to users.id
+  owner                 users?    @relation("ManagedWalletOwner", fields: [ownerId], references: [id])
+
+  @@index([ownerId]) // Add index for querying by owner
   @@map("managed_wallets")
 }
 
@@ -1848,4 +1854,28 @@ model user_privileges {
   @@index([privilege_key])
   @@index([revoked_at]) // Useful for finding active privileges
   @@map("user_privileges")
+}
+
+model BatchTransferItem {
+  id                String   @id @default(cuid())
+  batchIdentifier   String   // Identifier for the overall batch operation (e.g., UUID)
+  itemIdentifier    String   @unique // Unique identifier for this specific item within this batch run
+
+  status            String   // "SUCCESS", "FAILED_PERMANENT", "SKIPPED_IDEMPOTENT"
+  signature         String?  // Transaction signature if successful
+  error             String?  @db.Text // Errors can be long
+
+  fromWalletAddress String   @db.VarChar(44) // Public key of the sending admin wallet
+  toAddress         String   @db.VarChar(44) // Recipient wallet address
+  amount            Decimal  @db.Decimal(38, 18) // Increased precision for token amounts
+  mint              String?  @db.VarChar(44) // Token mint address, if applicable
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([batchIdentifier])
+  @@index([fromWalletAddress])
+  @@index([toAddress])
+  @@index([status])
+  @@map("batch_transfer_items")
 }

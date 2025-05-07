@@ -115,6 +115,7 @@ export const getIpInfo = async (ip) => {
 };
 
 // Helper function to handle circular references in objects
+// (currently not used)
 const getCircularReplacer = () => {
   const seen = new WeakSet();
   return (key, value) => {
@@ -129,6 +130,7 @@ const getCircularReplacer = () => {
 };
 
 // Custom format that safely stringifies objects
+// (currently not used)
 const safeStringify = (obj) => {
   const seen = new WeakSet();
   return JSON.stringify(obj, (key, value) => {
@@ -1713,6 +1715,64 @@ logApi.serviceLog = {
   }
 };
 
+// --- Progress Bar Utility ---
+logApi.progress = {
+  isTTY: process.stdout.isTTY, // Check if output is a TTY
+  lastMessageLength: 0,
+
+  start: function() {
+    if (!this.isTTY) return;
+    // Nothing special to do on start, but included for completeness
+    this.lastMessageLength = 0;
+  },
+
+  update: function(current, total, messageParts = []) {
+    if (!this.isTTY) {
+      // Fallback for non-TTY environments: log every 10% or so
+      if (current % Math.max(1, Math.floor(total / 10)) === 0 || current === total || current === 1) {
+        const message = messageParts.join(' ') + ` ${current}/${total}`;
+        // Use originalConsoleLog to bypass Winston/Logtail for these specific progress updates
+        // formatTimestamp is available in this file's scope
+        originalConsoleLog(`${formatTimestamp(new Date())} [INFO] [SCRIPT_PROGRESS] ${message}`);
+      }
+      return;
+    }
+
+    const percent = Math.floor((current / total) * 100);
+    const barLength = 20;
+    const filledLength = Math.floor((barLength * current) / total);
+    const bar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
+    
+    let message = messageParts.join(' ');
+    if (message) message += ' '; // Add a space if there's a custom message
+
+    const progressMessage = `\r${message}${current}/${total} [${bar}] ${percent}% `;
+
+    // Clear the previous line content by overwriting with spaces if new message is shorter
+    const clearLength = Math.max(0, this.lastMessageLength - progressMessage.length);
+    process.stdout.write(progressMessage + ' '.repeat(clearLength));
+    this.lastMessageLength = progressMessage.length;
+  },
+
+  finish: function({ message = "", level = 'info', service = 'SCRIPT_PROGRESS' } = {}) {
+    if (!this.isTTY && message) {
+        logApi[level](message, { service });
+        return;
+    }
+    if (!this.isTTY) return;
+
+    // Clear the progress line completely
+    process.stdout.write('\r' + ' '.repeat(this.lastMessageLength) + '\r');
+    this.lastMessageLength = 0;
+    
+    if (message) {
+      // Log the final message on a new line using the standard logger
+      logApi[level](message, { service });
+    }
+  }
+};
+// --- End Progress Bar Utility ---
+
 // Patch console.log and console.error to capture and reformat specific types of messages
 const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
@@ -1763,8 +1823,6 @@ console.error = function() {
   // For all other messages, call the original console.error
   originalConsoleError.apply(console, arguments);
 };
-
-// Removed WebSocket RSV1 fixes as they interfered with Logtail connectivity
 
 // Export both default and named
 export { ANALYTICS_PATTERNS, LOG_PATTERNS, logApi };

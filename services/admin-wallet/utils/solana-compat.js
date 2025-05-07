@@ -118,18 +118,21 @@ export function executeRpcMethod(connection, method, ...args) {
     // Route to the appropriate v2 RPC API *method on the rpc object*
     switch (method) {
       case 'getBalance':
-        // Call getBalance as a method on the rpc object and use .send()
-        return rpc.getBalance({ address: toAddress(args[0]), commitment: args[1]?.commitment }).send(); 
+        // getBalance expects the Address object directly as the first arg.
+        // Commitment is handled by the rpc client config (rpcConfigForCall).
+        return rpc.getBalance(toAddress(args[0])).send(); 
       case 'getLatestBlockhash':
-        // Call getLatestBlockhash as a method and use .send()
-        return rpc.getLatestBlockhash({ commitment: args[0]?.commitment }).send();
+        // getLatestBlockhash can take an optional config with commitment.
+        // If args[0] is that config, pass it; otherwise, rely on client default.
+        return rpc.getLatestBlockhash(args[0]).send();
       case 'getFeeForMessage':
-        // Call getFeeForMessage as a method and use .send()
-        return rpc.getFeeForMessage(args[0], { commitment: args[1]?.commitment }).send(); 
+        // getFeeForMessage(message, config?) message is args[0], config is args[1]
+        return rpc.getFeeForMessage(args[0], args[1]).send(); 
       case 'getTokenSupply':
-        // Call getTokenSupply as a method and use .send()
-        return rpc.getTokenSupply({ mint: toAddress(args[0]), commitment: args[1]?.commitment }).send();
-      case 'getTokenAccountsByOwner': {
+        // getTokenSupply(mint, config?) mint is args[0], config is args[1]
+        return rpc.getTokenSupply(toAddress(args[0]), args[1]).send();
+      case 'getTokenAccountsByOwner': { 
+        // getTokenAccountsByOwner(owner, filter, config?) owner is args[0], filter is args[1], config is args[2]
         const filterArg = args[1];
         let programIdFilter = {};
         if (typeof filterArg === 'string') {
@@ -137,20 +140,11 @@ export function executeRpcMethod(connection, method, ...args) {
         } else if (filterArg?.mint) {
           programIdFilter = { mint: toAddress(filterArg.mint) };
         }
-        // Call getTokenAccountsByOwner as a method and use .send()
-        return rpc.getTokenAccountsByOwner({
-          owner: toAddress(args[0]),
-          filter: programIdFilter,
-          encoding: args[2]?.encoding || 'jsonParsed',
-          commitment: args[2]?.commitment
-        }).send();
+        return rpc.getTokenAccountsByOwner(toAddress(args[0]), programIdFilter, args[2]).send();
       }
       case 'getTokenAccountBalance':
-         // Call getTokenAccountBalance as a method and use .send()
-        return rpc.getTokenAccountBalance({ 
-          account: toAddress(args[0]),
-          commitment: args[1]?.commitment
-         }).send();
+        // getTokenAccountBalance(account, config?) account is args[0], config is args[1]
+        return rpc.getTokenAccountBalance(toAddress(args[0]), args[1]).send();
       // Add cases for other commonly used RPC methods as needed
       default:
         // Maybe try dynamic dispatch if method exists?

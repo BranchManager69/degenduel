@@ -4,13 +4,15 @@
   "version": "0.8.1",
   "type": "module",
   "scripts": {
-    "// DOCUMENTATION": "================================================================================================================",
+    "// MAY 2025 SCRIPTS": "================================================================================================================",
+    "make:admin:wallet": "node services/admin-wallet/utils/populate_managed_wallets.mjs --owner-wallet BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp --count 10",
+    "// DOCUMENTATION": "===================================================================================================================",
     "loose": "ls -lt *.md | cat",
     "loose:save": "ls -lt *.md | cat > LOOSE_DOCS.md",
-    "// MASTER DEGENDUEL RESTART (PREFERRED RESTART METHOD)": "==================================================================================",
+    "// MASTER DEGENDUEL RESTART (PREFERRED RESTART METHOD)": "=============================================================================",
     "re": "pm2 delete all && pm2 start ecosystem.config.cjs",
     "cf": "node scripts/fix-dduel-redirect.js",
-    "// INTERACTIVE TOOLS": "=======================================================================================================",
+    "// INTERACTIVE TOOLS": "===============================================================================================================",
     "tokens": "node diagnostics/token-menu.js",
     "dex": "node diagnostics/dexscreener-diagnostics.js",
     "dex:enhanced": "node tests/enhanced-dexscreener-test.js",
@@ -195,6 +197,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@branchmanager69/degenduel-shared": "^1.0.7",
     "@coral-xyz/anchor": "^0.31.0",
     "@faker-js/faker": "^9.4.0",
     "@logtail/node": "^0.5.2",

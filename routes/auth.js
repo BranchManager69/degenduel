@@ -2071,6 +2071,226 @@ router.post('/verify-privy', async (req, res) => {
 
 /**
  * @swagger
+ * /api/auth/link-privy:
+ *   post:
+ *     summary: Link Privy account to existing authenticated user
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - userId
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Privy authentication token
+ *               userId:
+ *                 type: string
+ *                 description: Privy user ID
+ *     responses:
+ *       200:
+ *         description: Privy account linked successfully
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Invalid Privy token or not authenticated
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/link-privy', requireAuth, async (req, res) => {
+  try {
+    const { token, userId } = req.body;
+    const authenticatedWallet = req.user.wallet_address;
+    
+    authLogger.info(`Link Privy request received \n\t`, { 
+      userId, 
+      authenticatedWallet,
+      hasToken: !!token
+    });
+
+    // Validate request data
+    if (!token || !userId) {
+      authLogger.warn(`Missing required fields for Privy linking \n\t`, { 
+        hasToken: !!token, 
+        hasUserId: !!userId,
+        authenticatedWallet
+      });
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Verify the Privy token
+    let authClaims;
+    try {
+      const verifyStartTime = performance.now();
+      authClaims = await privyClient.verifyAuthToken(token);
+      const verifyEndTime = performance.now();
+      
+      authLogger.info(`Privy token verified for linking \n\t`, { 
+        userId: authClaims.userId,
+        tokenUserId: userId,
+        tokenMatch: authClaims.userId === userId,
+        verificationTimeMs: (verifyEndTime - verifyStartTime).toFixed(2),
+        authenticatedWallet
+      });
+      
+      // Verify that the userId in the token matches the userId in the request
+      if (authClaims.userId !== userId) {
+        authLogger.warn(`User ID mismatch in Privy linking \n\t`, { 
+          tokenUserId: authClaims.userId, 
+          requestUserId: userId,
+          authenticatedWallet
+        });
+        return res.status(401).json({ error: 'Invalid user ID' });
+      }
+    } catch (error) {
+      authLogger.error(`Failed to verify Privy token for linking \n\t`, {
+        error: error.message,
+        stack: error.stack,
+        userId,
+        authenticatedWallet
+      });
+      return res.status(401).json({ error: 'Invalid Privy token' });
+    }
+
+    // Get user details from Privy
+    let privyUser;
+    try {
+      privyUser = await privyClient.getUser(userId);
+      
+      authLogger.info(`Retrieved Privy user details for linking \n\t`, {
+        userId,
+        userDetails: {
+          hasWallet: !!privyUser.wallet,
+          walletAddress: privyUser.wallet?.address 
+            ? `${privyUser.wallet.address.substring(0, 6)}...${privyUser.wallet.address.slice(-4)}` 
+            : 'none',
+          hasEmail: !!privyUser.email?.address,
+          hasPhone: !!privyUser.phone?.number,
+          hasFido: !!privyUser.fido,
+          linkedAccounts: privyUser.linkedAccounts?.length || 0
+        },
+        authenticatedWallet
+      });
+    } catch (error) {
+      authLogger.error(`Failed to get Privy user details for linking \n\t`, {
+        error: error.message,
+        stack: error.stack,
+        userId,
+        authenticatedWallet
+      });
+      return res.status(500).json({ error: 'Failed to get user details from Privy' });
+    }
+
+    // Since we don't yet have a proper table migration, use user_social_profiles
+    // This follows your existing pattern for social identities
+    
+    // Check if this Privy account is already linked to another wallet
+    const existing = await prisma.user_social_profiles.findFirst({
+      where: { 
+        platform: 'privy',
+        platform_user_id: userId
+      }
+    });
+
+    if (existing && existing.wallet_address !== authenticatedWallet) {
+      authLogger.warn(`Privy account already linked to a different wallet \n\t`, {
+        privyUserId: userId,
+        existingWallet: existing.wallet_address,
+        requestingWallet: authenticatedWallet
+      });
+      
+      return res.status(400).json({
+        error: 'Privy account already linked',
+        details: 'This Privy account is already linked to a different wallet address'
+      });
+    }
+
+    // Create or update the Privy link in user_social_profiles
+    const now = new Date();
+    
+    // Prepare metadata
+    const metadata = {
+      email: privyUser.email?.address,
+      phone: privyUser.phone?.number,
+      linkedAccounts: privyUser.linkedAccounts?.map(account => ({
+        type: account.type,
+        linkedAt: account.linkedAt
+      })),
+      lastVerified: now.toISOString()
+    };
+
+    // We'll use user_social_profiles which already exists in your schema
+    try {
+      // Upsert the social profile
+      await prisma.user_social_profiles.upsert({
+        where: {
+          wallet_address_platform: {
+            wallet_address: authenticatedWallet,
+            platform: 'privy'
+          }
+        },
+        update: {
+          platform_user_id: userId,
+          username: privyUser.email?.address || `privy_user_${userId.substring(0, 8)}`,
+          verified: true,
+          last_verified: now,
+          metadata: metadata,
+          updated_at: now
+        },
+        create: {
+          wallet_address: authenticatedWallet,
+          platform: 'privy',
+          platform_user_id: userId,
+          username: privyUser.email?.address || `privy_user_${userId.substring(0, 8)}`,
+          verified: true,
+          verification_date: now,
+          last_verified: now,
+          metadata: metadata,
+          created_at: now,
+          updated_at: now
+        }
+      });
+      
+      authLogger.info(`Privy account successfully linked \n\t`, {
+        wallet: authenticatedWallet,
+        privyUserId: userId,
+        linkTime: now.toISOString()
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Privy account linked successfully',
+        wallet: authenticatedWallet,
+        privy_user_id: userId
+      });
+    } catch (upsertError) {
+      // Log and return any errors
+      authLogger.error(`Failed to link Privy account \n\t`, {
+        error: upsertError.message,
+        stack: upsertError.stack,
+        authenticatedWallet,
+        privyUserId: userId
+      });
+      return res.status(500).json({ error: 'Failed to link Privy account' });
+    }
+  } catch (error) {
+    authLogger.error(`Privy account linking failed \n\t`, {
+      error: error.message,
+      stack: error.stack,
+      wallet: req.user?.wallet_address
+    });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
  * /api/auth/status:
  *   get:
  *     summary: Get comprehensive authentication status
@@ -2334,226 +2554,6 @@ router.get('/status', async (req, res) => {
     authLogger.error(`Failed to generate auth status \n\t`, {
       error: error.message,
       stack: error.stack
-    });
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-/**
- * @swagger
- * /api/auth/link-privy:
- *   post:
- *     summary: Link Privy account to existing authenticated user
- *     tags: [Authentication]
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - token
- *               - userId
- *             properties:
- *               token:
- *                 type: string
- *                 description: Privy authentication token
- *               userId:
- *                 type: string
- *                 description: Privy user ID
- *     responses:
- *       200:
- *         description: Privy account linked successfully
- *       400:
- *         description: Missing required fields
- *       401:
- *         description: Invalid Privy token or not authenticated
- *       500:
- *         description: Internal server error
- */
-router.post('/link-privy', requireAuth, async (req, res) => {
-  try {
-    const { token, userId } = req.body;
-    const authenticatedWallet = req.user.wallet_address;
-    
-    authLogger.info(`Link Privy request received \n\t`, { 
-      userId, 
-      authenticatedWallet,
-      hasToken: !!token
-    });
-
-    // Validate request data
-    if (!token || !userId) {
-      authLogger.warn(`Missing required fields for Privy linking \n\t`, { 
-        hasToken: !!token, 
-        hasUserId: !!userId,
-        authenticatedWallet
-      });
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Verify the Privy token
-    let authClaims;
-    try {
-      const verifyStartTime = performance.now();
-      authClaims = await privyClient.verifyAuthToken(token);
-      const verifyEndTime = performance.now();
-      
-      authLogger.info(`Privy token verified for linking \n\t`, { 
-        userId: authClaims.userId,
-        tokenUserId: userId,
-        tokenMatch: authClaims.userId === userId,
-        verificationTimeMs: (verifyEndTime - verifyStartTime).toFixed(2),
-        authenticatedWallet
-      });
-      
-      // Verify that the userId in the token matches the userId in the request
-      if (authClaims.userId !== userId) {
-        authLogger.warn(`User ID mismatch in Privy linking \n\t`, { 
-          tokenUserId: authClaims.userId, 
-          requestUserId: userId,
-          authenticatedWallet
-        });
-        return res.status(401).json({ error: 'Invalid user ID' });
-      }
-    } catch (error) {
-      authLogger.error(`Failed to verify Privy token for linking \n\t`, {
-        error: error.message,
-        stack: error.stack,
-        userId,
-        authenticatedWallet
-      });
-      return res.status(401).json({ error: 'Invalid Privy token' });
-    }
-
-    // Get user details from Privy
-    let privyUser;
-    try {
-      privyUser = await privyClient.getUser(userId);
-      
-      authLogger.info(`Retrieved Privy user details for linking \n\t`, {
-        userId,
-        userDetails: {
-          hasWallet: !!privyUser.wallet,
-          walletAddress: privyUser.wallet?.address 
-            ? `${privyUser.wallet.address.substring(0, 6)}...${privyUser.wallet.address.slice(-4)}` 
-            : 'none',
-          hasEmail: !!privyUser.email?.address,
-          hasPhone: !!privyUser.phone?.number,
-          hasFido: !!privyUser.fido,
-          linkedAccounts: privyUser.linkedAccounts?.length || 0
-        },
-        authenticatedWallet
-      });
-    } catch (error) {
-      authLogger.error(`Failed to get Privy user details for linking \n\t`, {
-        error: error.message,
-        stack: error.stack,
-        userId,
-        authenticatedWallet
-      });
-      return res.status(500).json({ error: 'Failed to get user details from Privy' });
-    }
-
-    // Since we don't yet have a proper table migration, use user_social_profiles
-    // This follows your existing pattern for social identities
-    
-    // Check if this Privy account is already linked to another wallet
-    const existing = await prisma.user_social_profiles.findFirst({
-      where: { 
-        platform: 'privy',
-        platform_user_id: userId
-      }
-    });
-
-    if (existing && existing.wallet_address !== authenticatedWallet) {
-      authLogger.warn(`Privy account already linked to a different wallet \n\t`, {
-        privyUserId: userId,
-        existingWallet: existing.wallet_address,
-        requestingWallet: authenticatedWallet
-      });
-      
-      return res.status(400).json({
-        error: 'Privy account already linked',
-        details: 'This Privy account is already linked to a different wallet address'
-      });
-    }
-
-    // Create or update the Privy link in user_social_profiles
-    const now = new Date();
-    
-    // Prepare metadata
-    const metadata = {
-      email: privyUser.email?.address,
-      phone: privyUser.phone?.number,
-      linkedAccounts: privyUser.linkedAccounts?.map(account => ({
-        type: account.type,
-        linkedAt: account.linkedAt
-      })),
-      lastVerified: now.toISOString()
-    };
-
-    // We'll use user_social_profiles which already exists in your schema
-    try {
-      // Upsert the social profile
-      await prisma.user_social_profiles.upsert({
-        where: {
-          wallet_address_platform: {
-            wallet_address: authenticatedWallet,
-            platform: 'privy'
-          }
-        },
-        update: {
-          platform_user_id: userId,
-          username: privyUser.email?.address || `privy_user_${userId.substring(0, 8)}`,
-          verified: true,
-          last_verified: now,
-          metadata: metadata,
-          updated_at: now
-        },
-        create: {
-          wallet_address: authenticatedWallet,
-          platform: 'privy',
-          platform_user_id: userId,
-          username: privyUser.email?.address || `privy_user_${userId.substring(0, 8)}`,
-          verified: true,
-          verification_date: now,
-          last_verified: now,
-          metadata: metadata,
-          created_at: now,
-          updated_at: now
-        }
-      });
-      
-      authLogger.info(`Privy account successfully linked \n\t`, {
-        wallet: authenticatedWallet,
-        privyUserId: userId,
-        linkTime: now.toISOString()
-      });
-      
-      return res.json({
-        success: true,
-        message: 'Privy account linked successfully',
-        wallet: authenticatedWallet,
-        privy_user_id: userId
-      });
-    } catch (upsertError) {
-      // Log and return any errors
-      authLogger.error(`Failed to link Privy account \n\t`, {
-        error: upsertError.message,
-        stack: upsertError.stack,
-        authenticatedWallet,
-        privyUserId: userId
-      });
-      return res.status(500).json({ error: 'Failed to link Privy account' });
-    }
-  } catch (error) {
-    authLogger.error(`Privy account linking failed \n\t`, {
-      error: error.message,
-      stack: error.stack,
-      wallet: req.user?.wallet_address
     });
     return res.status(500).json({ error: 'Internal server error' });
   }
