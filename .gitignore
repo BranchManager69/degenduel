@@ -162,6 +162,13 @@ scripts/shortcuts/
 archive
 archive/**
 
+# Cloudflare config
+.cloudflare-config.json
+
+# Collab
+collab/
+collab/**
+
 # Exceptions to allow specific files
 !.gitignore
 !.claude

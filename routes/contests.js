@@ -707,6 +707,14 @@ router.post('/', requireAuth, async (req, res) => {
         duration: Date.now() - startTime
       });
 
+      // Handle specific "No available contest creation credits" error
+      if (error.message && error.message.toLowerCase().includes('no available contest creation credits')) {
+        return res.status(403).json({
+          error: 'Insufficient Credits',
+          message: 'You do not have enough credits to create a new contest.'
+        });
+      }
+
       // Handle specific wallet errors
       if (error.name === 'WalletError') {
         return res.status(500).json({
@@ -715,17 +723,28 @@ router.post('/', requireAuth, async (req, res) => {
           message: error.message
         });
       }
+
+      // Generic error response for other unhandled errors within this block
+      return res.status(500).json({
+        error: 'Failed to create contest',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred while creating the contest.'
+      });
     }
   } catch (error) {
-    logApi.error('Error in contest creation:', {
-      requestId,
+    // This is the outer catch, ensure it also sends a response if an error reaches here.
+    logApi.error('Unhandled error in contest creation route:', {
+      requestId, // If requestId is defined in this scope, otherwise remove or ensure it is.
       error: error instanceof Error ? {
         name: error.name,
         message: error.message,
         code: error.code,
         stack: req.environment === 'development' ? error.stack : undefined
       } : error,
-      duration: Date.now() - startTime
+      // duration: Date.now() - startTime // startTime might not be in this scope
+    });
+    res.status(500).json({
+      error: 'An unexpected server error occurred',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected server error occurred.'
     });
   }
   
