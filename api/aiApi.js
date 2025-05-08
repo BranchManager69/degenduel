@@ -7,7 +7,8 @@
  * This abstracts away the details of the underlying AI service implementation.
  */
 
-import aiService from '../services/aiService.js';
+import aiService from '../services/ai-service/index.js';
+import imageGenerator from '../services/ai-service/image-generator.js';
 import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
@@ -26,7 +27,7 @@ export const AIApi = {
    * @returns {Object} Response with content and usage statistics
    */
   async generateCompletion(messages, options = {}, loadoutType = 'default') {
-    return aiService.generateChatCompletion(messages, {
+    return aiService.generateFullResponse(messages, {
       ...options,
       loadoutType
     });
@@ -264,7 +265,7 @@ export const AIApi = {
    * @returns {Promise<Object>} - Object containing image URL and metadata
    */
   async generateImage(prompt, imageType = 'general', options = {}) {
-    return aiService.generateImage(prompt, imageType, options);
+    return imageGenerator.generateImage(prompt, imageType, options);
   },
   
   /**
@@ -275,7 +276,7 @@ export const AIApi = {
    * @returns {Promise<String>} - URL of the generated profile image
    */
   async generateUserProfileImage(walletAddress, options = {}) {
-    return aiService.generateUserProfileImage(walletAddress, options);
+    return imageGenerator.generateUserProfileImage(walletAddress, options);
   },
   
   /**
@@ -287,7 +288,7 @@ export const AIApi = {
    * @returns {Promise<String>} - URL of the generated profile image
    */
   async generateEnhancedProfileImage(walletAddress, sourceImages = [], options = {}) {
-    return aiService.generateEnhancedProfileImage(walletAddress, sourceImages, options);
+    return imageGenerator.generateEnhancedProfileImage(walletAddress, sourceImages, options);
   },
   
   /**
@@ -300,7 +301,7 @@ export const AIApi = {
    * @returns {Promise<Object>} - Object containing the image URL and metadata
    */
   async generateImageEdit(sourceImages, prompt, maskPath = null, options = {}) {
-    return aiService.generateImageEdit(sourceImages, prompt, maskPath, options);
+    return imageGenerator.generateImageEdit(sourceImages, prompt, maskPath, options);
   },
   
   /**
@@ -309,7 +310,7 @@ export const AIApi = {
    * @returns {Array<Object>} - List of available styles with descriptions
    */
   getProfileImageStyles() {
-    return aiService.getProfileImageStyles();
+    return imageGenerator.getProfileImageStyles();
   },
   
   /**
@@ -318,7 +319,7 @@ export const AIApi = {
    * @returns {Object} - Configuration templates
    */
   getImageConfigTemplates() {
-    return aiService.getImageConfigTemplates();
+    return imageGenerator.getImageConfigTemplates();
   }
 };
 

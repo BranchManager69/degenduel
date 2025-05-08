@@ -8,7 +8,7 @@
  */
 
 import express from 'express';
-import aiService, { generateChatCompletion } from '../services/aiService.js';
+import aiService from '../services/ai-service/index.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import rateLimit from 'express-rate-limit';
 import prisma from '../config/prisma.js';
@@ -144,7 +144,7 @@ router.post('/chat', aiLimiter, async (req, res) => {
     const userNickname = req.user?.nickname || req.user?.username || 'a DegenDuel user';
     
     // Process chat completion with enhanced options
-    const result = await generateChatCompletion(messages, {
+    const result = await aiService.generateFullResponse(messages, {
       conversationId,
       userId,
       walletAddress,
@@ -276,7 +276,7 @@ router.post('/chat/degen', requireAuth, aiLimiter, async (req, res) => {
     const userNickname = req.user?.nickname || req.user?.username || 'a DegenDuel user';
     
     // Process chat completion with enhanced options
-    const result = await generateChatCompletion(messages, {
+    const result = await aiService.generateFullResponse(messages, {
       conversationId,
       userId,
       walletAddress,
@@ -408,7 +408,7 @@ router.post('/chat/admin', requireAdmin, aiLimiter, async (req, res) => {
     const userNickname = req.user?.nickname || req.user?.username || 'a DegenDuel user';
     
     // Process chat completion with enhanced options
-    const result = await generateChatCompletion(messages, {
+    const result = await aiService.generateFullResponse(messages, {
       conversationId,
       userId,
       walletAddress,
@@ -540,7 +540,7 @@ router.post('/chat/superadmin', requireSuperAdmin, aiLimiter, async (req, res) =
     const userNickname = req.user?.nickname || req.user?.username || 'a DegenDuel user';
     
     // Process chat completion with enhanced options
-    const result = await generateChatCompletion(messages, {
+    const result = await aiService.generateFullResponse(messages, {
       conversationId,
       userId,
       walletAddress,

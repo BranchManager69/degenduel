@@ -70,6 +70,9 @@ import vanityWalletService from '../../services/vanity-wallet/index.js';
 // DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
 // import walletRakeService from '../../services/walletRakeService.js';
 
+//   (6) Application Layer (New)
+import aiService from '../../services/ai-service/index.js';
+
 /**
  * ServiceInitializer class
  * 
@@ -101,6 +104,7 @@ class ServiceInitializer {
             await this.registerDataLayer();
             await this.registerContestLayer();
             await this.registerWalletLayer();
+            await this.registerApplicationLayer();
 
             // Register all service dependencies
             this.registerDependencies();
@@ -413,6 +417,29 @@ class ServiceInitializer {
         
         if (VERBOSE_SERVICE_INIT_LOGS) {
             logApi.info(`${fancyColors.GREEN}┗━━━━━━━━━━━ ✅ WALLET LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
+        }
+    }
+
+    /**
+     * Register Application Layer services
+     * High-level services used across the application
+     */
+    static async registerApplicationLayer() {
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.BLUE}┏━━━━━━━━━━━━━━━━━━ Application Layer (5/5) ━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
+        }
+
+        // Register AI Service
+        if (config.services.ai_service) { // Check config
+            serviceManager.register(aiService); // Register the imported canonical instance
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of ai_service - disabled in config${fancyColors.RESET}`);
+        }
+
+        // ... register other future application-level services here ...
+
+        if (VERBOSE_SERVICE_INIT_LOGS) {
+            logApi.info(`${fancyColors.BLUE}┗━━━━━━━━━━━ ✅ APPLICATION LAYER REGISTRATION COMPLETE${fancyColors.RESET}`);
         }
     }
 

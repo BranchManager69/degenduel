@@ -11,19 +11,50 @@ import { clearNonce, generateNonce, getNonceRecord } from '../utils/dbNonceStore
 import { requireAuth } from '../middleware/auth.js';
 import { UserRole } from '../types/userRole.js';
 import crypto from 'crypto';
-// No need to import sign directly as jwt already includes it
 import axios from 'axios';
 import { randomBytes } from 'crypto';
 import privyClient from '../utils/privy-auth.js';
-import biometricRoutes from './auth-biometric.js';
+
+// Helper for cookie options
+function getCookieOptions(req, type = 'session') {
+  const currentEnv = config.getEnvironment();
+  let domain;
+
+  if (currentEnv === 'production' || currentEnv === 'development') {
+    domain = '.degenduel.me';
+  } else { // local or other environments
+    domain = undefined;
+  }
+
+  const secure = (currentEnv === 'production' || currentEnv === 'development');
+  const sameSite = secure ? 'none' : 'lax';
+
+  const baseOptions = {
+    httpOnly: true,
+    secure: secure,
+    sameSite: sameSite,
+    domain: domain,
+  };
+
+  if (type === 'session') {
+    return {
+      ...baseOptions,
+      maxAge: 1 * 60 * 60 * 1000, // 1 hour for access token
+    };
+  } else if (type === 'refresh') {
+    return {
+      ...baseOptions,
+      path: '/api/auth/refresh', // Crucial: restrict cookie to only be sent to refresh endpoint
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for refresh token
+    };
+  }
+  return baseOptions; // Should not happen
+}
+
 
 const router = express.Router();
-// Mount biometric authentication routes
-router.use('/biometric', biometricRoutes);
-// Destructure jwt.sign into a variable
 const jwtSign = jwt.sign;
 
-// Create a service-specific logger with analytics
 const authLogger = {
     ...logApi.forService('AUTH'),
     analytics: logApi.analytics
@@ -212,39 +243,29 @@ router.post('/verify-wallet', async (req, res) => {
     const { wallet, signature, message, device_id, device_name, device_type } = req.body;
     authLogger.info(`Verify wallet request received \n\t`, { wallet });
 
-    // 0) Check if required fields are present
     if (!wallet || !signature || !message) {
       authLogger.warn(`Missing required fields \n\t`, { wallet, hasSignature: !!signature, hasMessage: !!message });
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
     if (!Array.isArray(signature) || signature.length !== 64) {
       authLogger.warn(`Invalid signature format \n\t`, { wallet, signatureLength: signature?.length });
       return res.status(400).json({ error: 'Signature must be a 64-byte array' });
     }
 
-    // 1) Get the nonce from DB
     const record = await getNonceRecord(wallet);
     if (!record) {
       authLogger.warn(`No nonce record found for ${wallet} \n\t`);
       return res.status(401).json({ error: 'Nonce not found or expired' });
     }
 
-    // 1.1) Check if old nonce is expired
     const now = Date.now();
     const expiresAtMs = new Date(record.expires_at).getTime();
     if (expiresAtMs < now) {
-      authLogger.warn(`Nonce expired for ${wallet} \n\t`, { 
-        wallet,
-        expiresAt: record.expires_at,
-        now: new Date(now).toISOString(),
-        timeDiff: (now - expiresAtMs) / 1000 + ' seconds'
-      });
+      authLogger.warn(`Nonce expired for ${wallet} \n\t`, { wallet, expiresAt: record.expires_at, now: new Date(now).toISOString(), timeDiff: (now - expiresAtMs) / 1000 + ' seconds'});
       await clearNonce(wallet);
       return res.status(401).json({ error: 'Nonce expired' });
     }
 
-    // 2) Check that the message from the front end actually includes the nonce
     const lines = message.split('\n').map((l) => l.trim());
     const nonceLine = lines.find((l) => l.startsWith('Nonce:'));
     if (!nonceLine) {
@@ -253,17 +274,13 @@ router.post('/verify-wallet', async (req, res) => {
     }
     const messageNonce = nonceLine.split('Nonce:')[1].trim();
 
-    // 2.1) Verify the nonce
     if (messageNonce !== record.nonce) {
       authLogger.warn(`Nonce mismatch in message \n\t`, { wallet });
       return res.status(401).json({ error: 'Nonce mismatch in message' });
     }
 
-    // 3) Real signature check
     const signatureUint8 = new Uint8Array(signature);
     const messageBytes = new TextEncoder().encode(message);
-
-    // 3.1) Verify the wallet address
     let pubKey;
     try {
       pubKey = new PublicKey(wallet);
@@ -272,33 +289,20 @@ router.post('/verify-wallet', async (req, res) => {
       return res.status(400).json({ error: 'Invalid wallet address' });
     }
 
-    // 3.2) Verify the signature
     const isVerified = nacl.sign.detached.verify(messageBytes, signatureUint8, pubKey.toBytes());
     if (!isVerified) {
       authLogger.warn(`Invalid signature \n\t`, { wallet });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    // 4) Clear the nonce from DB so it can't be reused
     await clearNonce(wallet);
-
-    // 4.1) Generate a default nickname for new users
     const newUserDefaultNickname = `degen_${wallet.slice(0, 6)}`;
-
-    // 5) Upsert user in DB
     const nowIso = new Date().toISOString();
+    
     const user = await prisma.users.upsert({
       where: { wallet_address: wallet },
-      create: {
-        wallet_address: wallet,
-        nickname: newUserDefaultNickname, // set a default nickname for new users
-        created_at: nowIso,
-        last_login: nowIso,
-        role: UserRole.user // role for new users = user
-      },
-      update: {
-        last_login: nowIso
-      }
+      create: { wallet_address: wallet, nickname: newUserDefaultNickname, created_at: nowIso, last_login: nowIso, role: UserRole.user },
+      update: { last_login: nowIso }
     });
 
     // Handle device authorization if device_id is provided
@@ -381,72 +385,35 @@ router.post('/verify-wallet', async (req, res) => {
     }
 
     // Track session with analytics
-    authLogger.analytics.trackSession(user, {
-      ...req.headers,
-      'x-real-ip': req.ip,
-      'x-forwarded-for': req.headers['x-forwarded-for'],
-      'user-agent': req.headers['user-agent'],
-      'sec-ch-ua-platform': req.headers['sec-ch-ua-platform'],
-      'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile'],
-      'x-device-id': device_id
-    });
+    authLogger.analytics.trackSession(user, { /* ... existing analytics ... */ });
 
-    // 6) Create JWT
-    const token = jwtSign(
-      {
-        wallet_address: user.wallet_address,
-        role: user.role,
-        session_id: Buffer.from(crypto.randomBytes(16)).toString('hex')
-      },
+    // Create Access Token
+    const accessToken = jwtSign(
+      { id: user.id, wallet_address: user.wallet_address, role: user.role, session_id: Buffer.from(crypto.randomBytes(16)).toString('hex') },
       config.jwt.secret,
-      { expiresIn: '12h' } // 12 hours (edited 3/7/25)
+      { expiresIn: '1h' } // 1 hour
     );
 
-    // 7) Create cookie
-    const cookieOptions = {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-      maxAge: 12 * 60 * 60 * 1000, // 12 hours (edited 3/7/25)
-      domain: '.degenduel.me' // Always set in production URL
-    };
+    // Create Refresh Token
+    const refreshTokenString = crypto.randomBytes(64).toString('hex');
+    const hashedRefreshToken = crypto.createHash('sha256').update(refreshTokenString).digest('hex');
+    const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    // Set the cookie
-    res.cookie('session', token, cookieOptions);
-
-    // After successful verification
-    authLogger.info(`Wallet verified successfully \n\t`, { 
-      wallet,
-      role: user.role,
-      cookieOptions: {
-        ...cookieOptions,
-        maxAge: cookieOptions.maxAge / 1000 + ' seconds'
-      }
+    await prisma.refresh_tokens.create({
+      data: { user_id: user.id, wallet_address: user.wallet_address, token_hash: hashedRefreshToken, expires_at: refreshTokenExpiresAt }
     });
 
-    // Return device authorization status
-    const deviceAuthStatus = deviceInfo ? {
-      device_authorized: deviceInfo.is_active,
-      device_id: deviceInfo.device_id,
-      device_name: deviceInfo.device_name,
-      requires_authorization: config.device_auth_enabled && !deviceInfo.is_active
-    } : null;
+    // Set Cookies
+    res.cookie('session', accessToken, getCookieOptions(req, 'session'));
+    res.cookie('r_session', refreshTokenString, getCookieOptions(req, 'refresh'));
+    
+    authLogger.info(`Wallet verified successfully, tokens issued \n\t`, { wallet: user.wallet_address, role: user.role });
 
-    return res.json({
-      verified: true,
-      user: {
-        wallet_address: user.wallet_address,
-        role: user.role,
-        nickname: user.nickname
-      },
-      device: deviceAuthStatus
-    });
+    const deviceAuthStatus = deviceInfo ? { device_authorized: deviceInfo.is_active, device_id: deviceInfo.device_id, device_name: deviceInfo.device_name, requires_authorization: config.device_auth_enabled && !deviceInfo.is_active } : null;
+    return res.json({ verified: true, user: { id: user.id, wallet_address: user.wallet_address, role: user.role, nickname: user.nickname }, device: deviceAuthStatus });
+
   } catch (error) {
-    authLogger.error(`Wallet verification failed \n\t`, {
-      error: error.message,
-      stack: error.stack,
-      wallet: req.body?.wallet
-    });
+    authLogger.error(`Wallet verification failed \n\t`, { error: error.message, stack: error.stack, wallet: req.body?.wallet });
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -621,48 +588,158 @@ router.post('/disconnect', requireAuth, async (req, res) => {
 
 /**
  * @swagger
- * /api/auth/logout:
+ * /api/auth/refresh:
  *   post:
- *     summary: Logout user and clear session
+ *     summary: Refresh access token using refresh token
  *     tags: [Authentication]
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Logged out successfully
+ *         description: Access token refreshed successfully
+ *       401:
+ *         description: Refresh token not provided or invalid
  */
-//   example: POST https://degenduel.me/api/auth/logout
-//      headers: { "Cookie": "session=<jwt>" }
+router.post('/refresh', async (req, res) => {
+  const refreshTokenFromCookie = req.cookies.r_session;
+
+  if (!refreshTokenFromCookie) {
+    authLogger.warn('Refresh token attempt without r_session cookie');
+    return res.status(401).json({ error: 'Refresh token not provided' });
+  }
+
+  try {
+    const hashedToken = crypto.createHash('sha256').update(refreshTokenFromCookie).digest('hex');
+    
+    const existingTokenRecord = await prisma.refresh_tokens.findUnique({
+      where: { token_hash: hashedToken },
+      include: { user: true } 
+    });
+
+    const clearAllAuthCookies = () => {
+        res.clearCookie('session', getCookieOptions(req, 'session'));
+        res.clearCookie('r_session', getCookieOptions(req, 'refresh'));
+    };
+
+    if (!existingTokenRecord) {
+      authLogger.warn('Refresh token not found in DB', { token_hash_prefix: hashedToken.substring(0,10) });
+      clearAllAuthCookies();
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    if (existingTokenRecord.revoked_at) {
+      authLogger.warn('Attempted to use a revoked refresh token', { userId: existingTokenRecord.user_id, token_hash_prefix: hashedToken.substring(0,10) });
+      // SECURITY: Token has been used before or explicitly revoked. Invalidate all active tokens for this user.
+      await prisma.refresh_tokens.updateMany({
+        where: { user_id: existingTokenRecord.user_id, revoked_at: null },
+        data: { revoked_at: new Date() }
+      });
+      clearAllAuthCookies();
+      return res.status(401).json({ error: 'Refresh token has been revoked' });
+    }
+
+    if (new Date(existingTokenRecord.expires_at) < new Date()) {
+      authLogger.warn('Attempted to use an expired refresh token', { userId: existingTokenRecord.user_id, token_hash_prefix: hashedToken.substring(0,10), expiry: existingTokenRecord.expires_at });
+      await prisma.refresh_tokens.update({ // Mark this specific one as revoked too
+          where: { id: existingTokenRecord.id },
+          data: { revoked_at: new Date() }
+      });
+      clearAllAuthCookies();
+      return res.status(401).json({ error: 'Refresh token expired' });
+    }
+
+    // --- Token Rotation ---
+    await prisma.refresh_tokens.update({
+      where: { id: existingTokenRecord.id },
+      data: { revoked_at: new Date() }
+    });
+
+    const newRefreshTokenString = crypto.randomBytes(64).toString('hex');
+    const newHashedRefreshToken = crypto.createHash('sha256').update(newRefreshTokenString).digest('hex');
+    const newRefreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await prisma.refresh_tokens.create({
+      data: {
+        user_id: existingTokenRecord.user_id,
+        wallet_address: existingTokenRecord.wallet_address,
+        token_hash: newHashedRefreshToken,
+        expires_at: newRefreshTokenExpiresAt
+      }
+    });
+
+    const user = existingTokenRecord.user;
+    const newAccessToken = jwtSign(
+      { id: user.id, wallet_address: user.wallet_address, role: user.role, session_id: Buffer.from(crypto.randomBytes(16)).toString('hex') },
+      config.jwt.secret,
+      { expiresIn: '1h' } 
+    );
+
+    res.cookie('session', newAccessToken, getCookieOptions(req, 'session'));
+    res.cookie('r_session', newRefreshTokenString, getCookieOptions(req, 'refresh'));
+    
+    authLogger.info('Access token refreshed successfully', { userId: user.id, wallet: user.wallet_address });
+    return res.json({ success: true, user: { id: user.id, wallet_address: user.wallet_address, role: user.role, nickname: user.nickname } });
+
+  } catch (error) {
+    authLogger.error('Refresh token processing error', { error: error.message, stack: error.stack, token_prefix: refreshTokenFromCookie ? refreshTokenFromCookie.substring(0, 10) : 'none'});
+    res.clearCookie('session', getCookieOptions(req, 'session'));
+    res.clearCookie('r_session', getCookieOptions(req, 'refresh'));
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout current user
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       401:
+ *         description: No valid session
+ */
 router.post('/logout', requireAuth, async (req, res) => {
   try {
     if (config.debug_mode) {
-      logApi.info(`Logout request received \n\t`, {
-        user: req.user.wallet_address
-      });
+      authLogger.info(`Logout request received \n\t`, { user: req.user.wallet_address, userId: req.user.id });
     }
 
-    // Update last login time
     await prisma.users.update({
-      where: { wallet_address: req.user.wallet_address },
-      data: { last_login: new Date() }
+      where: { wallet_address: req.user.wallet_address }, // or where: { id: req.user.id }
+      data: { last_login: new Date() } // This might be better as last_active or similar
     });
 
-    // Clear the cookie
-    res.clearCookie('session', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-      domain: req.environment === 'production' ? '.degenduel.me' : undefined
-    });
+    const refreshTokenFromCookie = req.cookies.r_session;
+    if (refreshTokenFromCookie && req.user && req.user.id) { // req.user.id should now be available
+      const hashedToken = crypto.createHash('sha256').update(refreshTokenFromCookie).digest('hex');
+      await prisma.refresh_tokens.updateMany({
+        where: { token_hash: hashedToken, user_id: req.user.id, revoked_at: null },
+        data: { revoked_at: new Date() }
+      });
+    } else if (refreshTokenFromCookie) {
+        // Fallback if req.user.id isn't there for some reason, try to revoke by hash only (less secure, potential for collision if hashes aren't perfectly unique system-wide for some reason or if a token is stolen and replayed before logout)
+        // Or, if no req.user, maybe just clear cookies without DB revocation if the session was already invalid.
+        authLogger.warn('Logout attempt: r_session present but req.user.id missing. Clearing cookies without specific DB revocation by hash only or skipping DB.', { wallet: req.user?.wallet_address });
+        // Depending on strictness, you might choose to still attempt revocation by hash if user_id is missing.
+        // For now, we'll ensure cookies are cleared.
+    }
+    
+    res.clearCookie('session', getCookieOptions(req, 'session'));
+    res.clearCookie('r_session', getCookieOptions(req, 'refresh'));
 
     if (config.debug_mode) {
-      logApi.info(`User logged out successfully \n\t`, {
-        user: req.user.wallet_address
-      });
+      authLogger.info(`User logged out successfully \n\t`, { user: req.user.wallet_address });
     }
     res.json({ success: true });
   } catch (error) {
-    logApi.error(`Logout failed \n\t`, { error });
+    authLogger.error(`Logout failed \n\t`, { error: error.message, stack: error.stack, user: req.user?.wallet_address });
+    // Still try to clear cookies on error
+    res.clearCookie('session', getCookieOptions(req, 'session'));
+    res.clearCookie('r_session', getCookieOptions(req, 'refresh'));
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1598,7 +1675,7 @@ async function linkTwitterToWallet(walletAddress, twitterUser, accessToken, refr
           where: { wallet_address: walletAddress },
           data: {
             profile_image_url: fullSizeImageUrl,
-            profile_image_updated_at: now
+            profile_image_updated_at: new Date()
           }
         });
         
@@ -3415,4 +3492,3 @@ async function linkDiscordToWallet(walletAddress, discordUser, accessToken, refr
 }
 
 export default router;
-

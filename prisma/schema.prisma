@@ -440,6 +440,7 @@ model users {
   pending_contest_entries   pending_contest_entries[]   @relation("UserPendingContestEntries")
   privileges                user_privileges[] // Added back-relation for user privileges
   owned_managed_wallets     managed_wallets[]           @relation("ManagedWalletOwner") // Added back-relation for managed wallets
+  refresh_tokens            refresh_tokens[]
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -1878,4 +1879,21 @@ model BatchTransferItem {
   @@index([toAddress])
   @@index([status])
   @@map("batch_transfer_items")
+}
+
+model refresh_tokens {
+  id             String    @id @default(cuid())
+  token_hash     String    @unique
+  user_id        Int
+  wallet_address String // Denormalized from users table for easier direct lookup if ever needed
+  expires_at     DateTime
+  created_at     DateTime  @default(now())
+  revoked_at     DateTime?
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([wallet_address])
+  @@index([expires_at])
+  @@map("refresh_tokens")
 }
